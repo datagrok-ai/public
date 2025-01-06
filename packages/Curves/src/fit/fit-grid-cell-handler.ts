@@ -260,38 +260,25 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
-    if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.pointColor))
-          chartData.seriesOptions.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].pointColor : ''))
-          chartData.series![0].pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-    }
-
-    if (!isColorValid(dfChartOptions.seriesOptions?.fitLineColor) && !isColorValid(columnChartOptions.seriesOptions?.fitLineColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.fitLineColor))
-          chartData.seriesOptions.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].fitLineColor : ''))
-          chartData.series![0].fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+    const setValidColors = (colorFieldName: string) => {
+      if (dfChartOptions.seriesOptions && !isColorValid(dfChartOptions.seriesOptions[colorFieldName]) &&
+        columnChartOptions.seriesOptions && !isColorValid(columnChartOptions.seriesOptions[colorFieldName])) {
+        if (chartData.seriesOptions) {
+          if (!isColorValid(chartData.seriesOptions[colorFieldName]))
+            chartData.seriesOptions[colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
+              DG.Color.red : DG.Color.getCategoricalColor(0));
+        }
+        else {
+          if (!isColorValid(chartData.series ? chartData.series[0][colorFieldName] : ''))
+            chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
+              DG.Color.red : DG.Color.getCategoricalColor(0));
+        }
       }
     }
 
-    if (!isColorValid(dfChartOptions.seriesOptions?.outlierColor) && !isColorValid(columnChartOptions.seriesOptions?.outlierColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.outlierColor))
-          chartData.seriesOptions.outlierColor = DG.Color.toHtml(DG.Color.red);
-      }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].outlierColor : ''))
-          chartData.series![0].outlierColor = DG.Color.toHtml(DG.Color.red);
-      }
-    }
+    setValidColors('pointColor');
+    setValidColors('fitLineColor');
+    setValidColors('outlierColor');
 
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
@@ -312,9 +299,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     ui.forms.addGroup(form, 'Chart options', fitChartDataProperties.map((p) => ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
 
+    const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];
     const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
       {description: 'Controls whether to show series statistics or aggregated statistics',
-        defaultValue: 'All', choices: ['all', 'aggregated'], nullable: false});
+        defaultValue: 'all', choices: choices, nullable: false});
     const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
@@ -326,7 +314,9 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     }});
 
     function createFitPane(): HTMLElement {
-      const host = ui.divV(seriesStatsInput.stringValue === 'aggregated' ? [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root]);
+      const hostItems = (chartData.series?.length ?? 0) > 1 ? seriesStatsInput.stringValue === 'aggregated' ?
+        [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root] : null;
+      const host = ui.divV(hostItems!);
       const dataBounds = getChartBounds(chartData);
       if (dataBounds.x <= 0 && chartData.chartOptions) chartData.chartOptions.logX = false;
       if (dataBounds.y <= 0 && chartData.chartOptions) chartData.chartOptions.logY = false;

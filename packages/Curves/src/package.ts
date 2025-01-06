@@ -45,7 +45,7 @@ export function _initCurves(): void {
 export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number): void {
   const grid = DG.Viewer.grid(df);
   const chartColumn = grid.col(colName)!;
-  const column = DG.Column.float(`${colName}_${seriesName}_${propName}`, chartColumn.column?.length);
+  const column = DG.Column.float(`${colName} ${seriesName} ${propName}`, chartColumn.column?.length);
   column.tags[SOURCE_COLUMN_TAG] = colName;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = propName;
@@ -78,7 +78,7 @@ export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName:
 export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string): void {
   const grid = DG.Viewer.grid(df);
   const chartColumn = grid.col(colName)!;
-  const column = DG.Column.float(`${colName}_${aggrType}_${propName}`, chartColumn.column?.length);
+  const column = DG.Column.float(`${colName} ${aggrType} ${propName}`, chartColumn.column?.length);
   column.tags[SOURCE_COLUMN_TAG] = colName;
   column.tags[SERIES_AGGREGATION_TAG] = aggrType;
   column.tags[STATISTICS_TAG] = propName;
