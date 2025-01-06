@@ -204,7 +204,6 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 
       if (inputs.length !== 0) {
         value = false;
-        console.log(inputs);
         message += 'Viewer functions should take no arguments\n';
       }
 
@@ -553,8 +552,6 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
   for (const line of script.split('\n')) {
     if (!line)
       continue;
-    if (data.name === 'MCL' || data.name === 'MCLClustering')
-      console.log(line);
     //@ts-ignore
     const match = line.match(utils.fileParamRegex[fileExtention]);
     if (match) {
@@ -586,8 +583,6 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
       if (nm && !match) {
-        if (data.name === 'MCL' || data.name === 'MCLClustering')
-          console.log(data)
         data.name = data.name || nm[1];
         funcData.push(data);
         data = { name: '', inputs: [], outputs: [] };

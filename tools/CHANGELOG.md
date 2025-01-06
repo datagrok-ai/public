@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.55 (2025-01-06)
+
+### Features
+
+* Removed unnecessary outputs in grok check
+
+
 ## 4.13.54 (2025-01-06)
 
 ### Features
