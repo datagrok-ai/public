@@ -196,7 +196,7 @@ export const fileParamRegex = {
 
 export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;
 
-export const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
+export const nameRegex = /(?:|(?:static)(?:export )(?:async )function )\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?).*/;
 
 export const absUrlRegex = new RegExp('^(?:[a-z+]+:)?//', 'i');
 

@@ -204,6 +204,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 
       if (inputs.length !== 0) {
         value = false;
+        console.log(inputs);
         message += 'Viewer functions should take no arguments\n';
       }
 
@@ -282,6 +283,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
   for (const file of files) {
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
+
     for (const f of functions) {
       const paramsCheck = checkFunctions.params(f);
       if (!paramsCheck.value)
@@ -292,10 +294,12 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
       else if (roles.length === 1) {
         const vr = checkFunctions[roles[0]](f);
-        if (!vr.value)
+        if (!vr.value) {
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
+        }
+
       }
-      if(f.isInvalidateOnWithoutCache)
+      if (f.isInvalidateOnWithoutCache)
         warnings.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
 
       if (f.cache)
@@ -316,7 +320,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
   'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
   'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
-  'common/vue.js': { 'vue': 'Vue'}
+  'common/vue.js': { 'vue': 'Vue' }
 };
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
@@ -549,6 +553,8 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
   for (const line of script.split('\n')) {
     if (!line)
       continue;
+    if (data.name === 'MCL' || data.name === 'MCLClustering')
+      console.log(line);
     //@ts-ignore
     const match = line.match(utils.fileParamRegex[fileExtention]);
     if (match) {
@@ -580,6 +586,8 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
       if (nm && !match) {
+        if (data.name === 'MCL' || data.name === 'MCLClustering')
+          console.log(data)
         data.name = data.name || nm[1];
         funcData.push(data);
         data = { name: '', inputs: [], outputs: [] };

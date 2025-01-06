@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.54 (2025-01-06)
+
+### Features
+
+* Grok check regex update
+
+
 ## 4.13.53 (2025-01-06)
 
 ### Features
