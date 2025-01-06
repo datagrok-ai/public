@@ -17,7 +17,9 @@ Templates in HitDesign contain essential configurations for conducting a campaig
 
 - **Name** : Identifies the template.
 
-- **Campaign Prefix** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
+- **Key** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
+
+- **Layout** : Template can be created with default layout for the campaign table. Layouts can be loaded from local computer or file share mounted on Datagrok. This layout can be applied to the campaign table at any time using the 'Apply Layout' button on ribbon pannel. If layout was loaded from mounted file share, it will be synced with the original file source, so any changes made to the layout file will be automatically applied to the campaign table.
 
 - **Additional fields** : Configure additional fields for the template, which will be prompted for input during campaign creation. These fields include name, type, and whether they are required or not. For example, additional field for a campaign can be a target protein name, Head scientist name, deadlile, etc.
 

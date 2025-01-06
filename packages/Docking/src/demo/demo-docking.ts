@@ -1,25 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {BINDING_ENERGY_COL, CACHED_DOCKING, POSE_COL, _package, setPose} from '../utils/constants';
-import { addColorCoding, prepareAutoDockData } from '../package';
 import { delay } from '@datagrok-libraries/utils/src/test';
+
+import {BINDING_ENERGY_COL, POSE_COL, _package, setPose} from '../utils/constants';
+import { addColorCoding } from '../utils/utils';
 
 export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   const table = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(name));
   grok.shell.windows.showProperties = true;
   return grok.shell.addTableView(table);
-}
-
-export async function prepareDockingData(
-  table: DG.DataFrame, resultsPath: string, target: string, smilesCol: string, poses: number
-): Promise<void> {
-  const autodockResults = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(resultsPath));
-  const dockingData = await prepareAutoDockData(target, table, smilesCol, poses);
-  //@ts-ignore
-  CACHED_DOCKING.K.push(dockingData);
-  //@ts-ignore
-  CACHED_DOCKING.V.push(autodockResults);
 }
 
 export async function _demoDocking(): Promise<void> {
@@ -47,7 +37,5 @@ export async function _demoDocking(): Promise<void> {
   table.col(POSE_COL)!.setTag('docking.role', 'ligand');
   grid.invalidate();
   setPose(POSE_COL);
-
-  await prepareDockingData(table, 'System:AppData/Docking/demo_files/autodock_results.csv', 'BACE1', 'SMILES', 10);
   table.currentCell = table.cell(0, POSE_COL);
 }

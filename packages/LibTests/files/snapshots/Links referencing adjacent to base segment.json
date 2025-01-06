@@ -1,0 +1,72 @@
+[
+  [
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 1
+        }
+      ],
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "stepSub",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 5
+        }
+      ],
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 4
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "stepSub",
+                "idx": 6
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ]
+]

@@ -5,7 +5,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Support for importing and previewing SQLite files.",
   "repository": {
     "type": "git",
@@ -13,8 +13,8 @@
     "directory": "packages/SQLite"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "datagrok-api": "^1.23.0",
+    "@datagrok-libraries/utils": "^4.4.0",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"

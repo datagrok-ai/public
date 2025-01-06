@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.7.1 (2024-12-30)
+
+Moved some tests from Bio package to Helm package (for Bio not to depend on Helm)
+
 ## 2.6.0 (2024-11-18)
 
 Correct helm loading

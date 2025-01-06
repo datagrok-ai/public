@@ -100,6 +100,8 @@ export class Events {
 
   get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }
 
+  get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs('d4-current-view-changing'); }
+
   get onCurrentObjectChanged(): rxjs.Observable<any> { return __obs('d4-current-object-changed'); }
 
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
@@ -118,6 +120,8 @@ export class Events {
   get onQueryFinished(): rxjs.Observable<any> { return __obs('d4-query-finished'); }
 
   get onViewChanged(): rxjs.Observable<any> { return __obs('grok-view-changed'); }
+
+  get onViewChanging(): rxjs.Observable<any> { return __obs('grok-view-changing'); }
 
   get onViewAdded(): rxjs.Observable<View> { return __obs('grok-view-added'); }
 

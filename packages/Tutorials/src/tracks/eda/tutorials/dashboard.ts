@@ -78,7 +78,8 @@ export class DashboardTutorial extends Tutorial {
         return lines.length > 0 && lines[0] !== undefined && lines[0].textContent?.trim() === paramAnnotation;
       })), null, paramQueryDescription);
 
-    await this.buttonClickAction($('.d4-ribbon')[0]!, 'Save the query', 'SAVE');
+    await this.buttonClickAction((grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
+      'Save the query', 'SAVE');
 
     const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
     await this.action(
@@ -93,7 +94,7 @@ export class DashboardTutorial extends Tutorial {
     const resultRowCount = 645;
     await this.action('Click "OK" to run the query', grok.functions.onAfterRunAction.pipe(filter((call) => {
       const res = call.outputs.get('result');
-      return call.func.name === 'StoresInState' &&
+      return (call.func.name === 'StoresInState' || call.func.name.includes('StoresInState_')) &&
         res instanceof DG.DataFrame && res?.rowCount === resultRowCount;
     })), $(paramEditorDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 

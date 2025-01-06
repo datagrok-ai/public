@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete, showHelpWithDelay} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 
 export type StepState = {
@@ -206,7 +206,7 @@ export class PipelineView extends FunctionView {
     );
 
     const stepScripts = this.initialConfig.map(async (config) => {
-      const stepScript = await grok.functions.eval(config.funcName);
+      const stepScript = DG.Func.byName(config.funcName);
       return {stepScript, stepId: getStepId(config)};
     });
     const scriptsWithStepId = await Promise.all(stepScripts) as {stepScript: DG.Script, stepId: string}[];
@@ -237,7 +237,7 @@ export class PipelineView extends FunctionView {
       // TO DO: replace for type guard
       const editorName = (scriptWithId.stepScript.script) ? extractEditor(scriptWithId.stepScript): DEFAULT_EDITOR;
       if (!editorFuncs[editorName])
-        editorFuncs[editorName] = await(grok.functions.eval(editorName.split(' ').join('')) as Promise<DG.Func>);
+        editorFuncs[editorName] = DG.Func.byName(editorName.split(' ').join(''));
       this.steps[scriptWithId.stepId].editor = editorName;
 
       return Promise.resolve();
@@ -366,7 +366,7 @@ export class PipelineView extends FunctionView {
 
         if (currentStep && this.helpFiles[currentStep.func.nqName]) {
           if (this.getHelpState() === 'opened')
-            this.showHelpWithDelay(currentStep)
+            this.showHelpWithDelay(currentStep);
         }
       };
 
@@ -578,10 +578,7 @@ export class PipelineView extends FunctionView {
   }
 
   private async showHelpWithDelay(currentStep: StepState) {
-    grok.shell.windows.help.visible = true;
-    // Workaround to deal with help panel bug
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+    showHelpWithDelay(this.helpFiles[currentStep.func.nqName]);
   }
 
   private findCurrentStep() {
@@ -687,7 +684,7 @@ export class PipelineView extends FunctionView {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }
-    if (callCopy.id) callCopy.newId();
+    callCopy.newId();
 
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
@@ -822,7 +819,7 @@ export class PipelineView extends FunctionView {
         if (lastCall)
           res[stepId] = await fcToSerializable(lastCall, step.view);
       }
-      const data = serialize(res, 0);
+      const data = serialize(res);
       return data;
     }
   }

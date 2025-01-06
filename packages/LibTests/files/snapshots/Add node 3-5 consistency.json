@@ -1,0 +1,1572 @@
+[
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepAdd\",\"idx\":0}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepAdd\",\"idx\":0}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepAdd\",\"idx\":0}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 10,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepSub\",\"idx\":1}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 30,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepSub\",\"idx\":1}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 30,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepSub\",\"idx\":1}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 30,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepAdd\",\"idx\":0}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 60,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepAdd\",\"idx\":0}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 60,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepAdd\",\"idx\":0}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 50,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 60,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepSub\",\"idx\":1}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 70,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepSub\",\"idx\":1}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 70,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepSub\",\"idx\":1}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 70,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepMul\",\"idx\":2}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 2
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 100,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepMul\",\"idx\":2}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 100,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepMul\",\"idx\":2}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 80,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 90,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 100,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":3}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 110,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":3}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 110,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":3}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 40,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 110,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepMul\",\"idx\":3}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 0.5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 130,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 0.5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 0.5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": true
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepMul\",\"idx\":3}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 130,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepMul\",\"idx\":3}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 120,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 130,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepAdd\",\"idx\":0}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 150,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepAdd\",\"idx\":0}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 150,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepAdd\",\"idx\":0}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 150,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepSub\",\"idx\":1}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 170,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepSub\",\"idx\":1}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 170,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepSub\",\"idx\":1}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 170,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepMul\",\"idx\":2}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 190,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepMul\",\"idx\":2}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 190,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepMul\",\"idx\":2}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 190,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepDiv\",\"idx\":3}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 210,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 5
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepDiv\",\"idx\":3}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 210,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"pipeline5\",\"idx\":4},{\"id\":\"stepDiv\",\"idx\":3}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 140,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 210,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepDiv\",\"idx\":5}], state: a",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": null
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": null
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": null
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 23.5
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 240,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 23.5
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepDiv\",\"idx\":5}], state: b",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 240,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 4
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 0, path: [{\"id\":\"stepDiv\",\"idx\":5}], state: res",
+    "data": [
+      {
+        "frame": 0,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 20,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 160,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 180,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 200,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 220,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 240,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 1, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":4}], state: a",
+    "data": [
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "restriction": "restricted",
+            "inconsistent": false,
+            "assignedValue": 3
+          },
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 1, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":4}], state: b",
+    "data": [
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  },
+  {
+    "expectName": "type: consistency, gen: 1, path: [{\"id\":\"pipeline3\",\"idx\":2},{\"id\":\"stepDiv\",\"idx\":4}], state: res",
+    "data": [
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      }
+    ]
+  }
+]

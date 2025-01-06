@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import {Observable} from 'rxjs';
 import {ValidationResultBase} from './validation';
 
 export interface SubscriptionLike {

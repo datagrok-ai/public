@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.40.1 (2024-12-25)
+
+- History fixes and removing obsolete API calls
+
 ## 1.39.7 (2024-11-25)
 
 - Added method to render model preview in BrowseTree

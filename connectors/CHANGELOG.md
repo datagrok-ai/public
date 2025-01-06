@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.1.20 (2024-09-17) WIP
+# 2.2.25 (2024-12-02) WIP
+
+* TableQuery: Join supports
+
+# 2.1.20 (2024-09-17)
 
 * Foreign keys retrieval support
 * Denodo provider fixes and schema browsing support

@@ -144,7 +144,7 @@ To open, on the **Status Bar**, click **Columns:**
 
 <br/>
 
-![](../../deploy/releases/platform/img/column-preview-filter-by-type.gif)
+![](../../deploy/releases/img/column-preview-filter-by-type.gif)
 
 </TabItem>
 <TabItem value="repositioning" label="Repositioning">
@@ -164,7 +164,7 @@ their content is automatically visualized in the **Context Panel**.
 
 <br/>
 
-![](../../deploy/releases/platform/img/plots-info-pane.gif)
+![](../../deploy/releases/img/plots-info-pane.gif)
 
 </TabItem>
 </Tabs>
@@ -187,6 +187,19 @@ and visualize the content.
 
 You can also [resize selected columns](#resizing-columns) by mouse-dragging column border in the header.
 
+### Hiding and unhiding columns
+
+There are many ways to hide a column:
+* [Resize](#resizing-columns) it, bringing its width to 0
+* Right-click, select "Order or hide columns...", and uncheck corresponding checkboxes
+* Select a number of columns and click "Hide" on the context panel
+
+You can tell whether there are hidden columns by looking at the column header separators -
+it gets bolder and darker if there are hidden columns. To unhide a column, double-click
+on the corresponding column separator, like shown on the picture below:
+
+![](img/grid-unhide-columns.gif)
+
 ### Resizing columns
 
 There are multiple ways to resize a column:
@@ -194,6 +207,31 @@ There are multiple ways to resize a column:
 * Right-click on the grid, and choose one of the options under "Column sizing" 
 
 ![](img/grid-resize-multiple-columns.gif)
+
+### Resizing rows and columns
+
+When you resize row heights, columns widths automatically adjust in order to provide
+the best experience. This lets you "zoom out" to see the bigger picture, or the opposite -
+zoom in to see additional details in the cell (especially useful for dynamic cells that
+render differently depending on your zoom level, such as proteins, users, forms, or 
+JIRA tickets).
+
+![](img/grid-dynamic-column-widths.gif)
+
+You can do mouse-panning (with the right mouse button) just like in a Google map! It is 
+particularly useful if you are exploring a big and wide dataset in the zoomed-out mode.
+
+![](img/grid-mouse-pan-content.gif)
+
+### Column groups
+
+Group columns together by selecting them and then choosing the "Group columns..." action 
+in the context panel. You can also specify group color. Once columns are grouped, group name will appear above 
+columns names. You can use it for selecting and moving all columns at once.
+
+You can quickly show or hide groups of columns from [filters](filters.md).
+
+![](img/grid-column-groups.gif)
 
 ## Cells
 
@@ -217,7 +255,7 @@ To apply a cell renderer manually:
   >additional parameters. 
 1. Click **OK**.
 
-![](../../deploy/releases/platform/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
+![](../../deploy/releases/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
 Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers].  //TODO: New doc: supported-cell-renderers.md-->
 
@@ -244,7 +282,7 @@ To add a smart form, right-click a cell and select **Add** > **Summary Columns**
 
 <br/>
 
-![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+![smart forms](../../deploy/releases/img/smart-forms.gif)
 
 </TabItem>
 <TabItem value="sparklines" label="Sparklines">
@@ -293,7 +331,7 @@ Here's how:
 1. [Link the tables](../../transform/link-tables.md).
 1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset. 
 
-![Linked table data in cell](../../deploy/releases/platform/img/grid-nested-linked-tables.gif) 
+![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
 ### Images
 

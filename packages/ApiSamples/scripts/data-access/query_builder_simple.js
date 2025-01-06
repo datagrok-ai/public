@@ -1,11 +1,15 @@
-//tags: TableQueryBuilder, TableQuery
+//tags: TableQueryBuilder, TableQuery 
 
-grok.data.db.buildQuery('Samples:PostgresNorthwind', 'orders')
-    .then((builder) => builder
-        .select(['shipcity', 'shipcountry', 'orderdate']) // TableQueryBuilder
-        .where('orderdate', 'before 1996-08-26', DG.TYPE.DATE_TIME) // TableQueryBuilder
-        .sortBy('orderdate', false) // TableQueryBuilder
-        .limit(10) // TableQueryBuilder
-        .build() // TableQuery
-        .executeTable()) // DataFrame
-    .then((df) => grok.shell.addTable(df));
+try {
+  let df = await grok.data.db
+  .buildQuery("Samples:PostgresNorthwind", "orders")
+  .select(["shipcity", "shipcountry", "orderdate"])
+  .where("orderdate", "before 1996-08-26", DG.TYPE.DATE_TIME)
+  .sortBy("orderdate", false)
+  .limit(10)
+  .build()
+  .executeTable()
+  grok.shell.addTableView(df);
+} catch (e) {
+  grok.shell.error(e);
+}

@@ -601,8 +601,9 @@
 }
 
 .chem-mmpa-add-to-workspace-button {
-  margin-top: 7px;
-  margin-right: 10px;
+  margin-top: 5px;
+  margin-left: 5px;
+  color: #2083d5;
 }
 
 .chem-mmpa-grid-help-icon {
@@ -620,8 +621,23 @@
 
 .chem-mmpa-fragments-filters-icon {
   padding-left: 5px;
-  padding-top: 5px;
+  padding-top: 6px;
   font-size: 12px;
+}
+
+.chem-mmpa-fragments-sort-icon-x-axis {
+  padding-left: 5px;
+  padding-top: 6px;
+  font-size: 12px;
+  position: absolute;
+}
+
+.chem-mmpa-fragments-sort-icon-y-axis {
+    font-size: 12px;
+    position: absolute;
+    transform: rotate(90deg);
+    padding-bottom: 5px;
+    padding-left: 6px;
 }
 
 .selected > .chem-mmpa-add-tab-header-button {
@@ -673,6 +689,14 @@
 
 .mmpa-slider-input > .ui-input-options {
   width: 40px;
+}
+
+.mmp-pairs-grid-cliffs-tab.cliffs-closed {
+  display: none!important;
+}
+
+.mmp-pairs-grid-cliffs-tab.cliffs-opened {
+  display:flex;
 }
 
 .mmpa-bool-input {
@@ -736,6 +760,17 @@
   display: flex !important;
 }
 
+.chem-mmpa-no-pairs-warning {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+  left: 200px;
+  display: none !important;
+}
+
+.chem-mmp-no-pairs .chem-mmpa-no-pairs-warning {
+  display: flex !important;
+}
 
 .chem-search-panel-wrapper {
   overflow: hidden;
@@ -750,6 +785,72 @@
   display: none;
 }
 
+.chem-mmp-trellis-plot div[name="SummaryLook"] {
+  display: none;
+}
+
+.mmp-trellis-summary-column {
+  padding-left: 7px;
+  padding-top: 4px;
+}
+
+.mmp-trellis-summary-col-dlg select {
+  display: none;
+}
+
 .chem-mmp-trellis-plot .d4-column-selector-triangle {
-  visibility: hidden;
+  display: none;
+}
+
+.chem-mmp-trellis-plot .d4-column-selector {
+  pointer-events: none;
+}
+
+.chem-mmp-trellis-sort-type-invisible {
+  display: none!important;
+}
+
+.chem-mmp-trellis-column-picker {
+  margin-left: 7px;
+  margin-top: 3px;
+
+}
+
+.chem-mmp-fragments-grid-mode-choice {
+  padding-left: 7px;
+  margin-top: -2px;
+  padding-right: 7px;
+}
+
+.chem-mmp-fragments-grid-mode-choice select {
+  width: 65px!important;
+}
+
+.chem-mmp-grid-info-message div {
+  font-size: 12px;
+  padding-right: 10px;
+  color: var(--grey-5);
+}
+
+.chem-mmp-context-pane-headers {
+  padding-top: 5px;
+  padding-right: 10px;
+}
+
+.chem-mmp-context-pane-item {
+  padding-top: 5px;
+}
+
+.chem-mmp-context-pane-mol-header {
+  align-content: center;
+}
+
+.chem-mmp-show-pairs-checkbox {
+  padding-right: 5px;
+  padding-left: 10px;
+  margin-top: -5px;
+}
+
+.chem-mmp-show-pairs-checkbox label {
+  margin-right: 3px!important;
 }

@@ -3,13 +3,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject, merge} from 'rxjs';
+import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getContextHelp, getFeature, getFeatures, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
@@ -308,7 +308,7 @@ export abstract class FunctionView extends DG.ViewBase {
     if (runId && !this.options.isTabbed)
       this.linkFunccall(await historyUtils.loadRun(runId));
     else {
-      const func: DG.Func = await grok.functions.eval(this.initValue);
+      const func = DG.Func.byName(this.initValue);
       this.linkFunccall(func.prepare({}));
     }
 
@@ -354,7 +354,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async onComparisonLaunch(fullFuncCalls: DG.FuncCall[]) {
     const comparator = this.comparatorFunc;
     if (comparator) {
-      const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
+      const comparatorFunc = DG.Func.byName(comparator);
       const comparatorCall = await comparatorFunc.prepare(
         {params: {'comparedRuns': fullFuncCalls}},
       ).call();
@@ -376,7 +376,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const compareCustomizer = this.compareCustomizer;
     if (compareCustomizer) {
-      const compareCustomizerFunc: DG.Func = await grok.functions.eval(compareCustomizer);
+      const compareCustomizerFunc = DG.Func.byName(compareCustomizer);
       await compareCustomizerFunc.prepare(
         {params: {'defaultView': defaultView}},
       ).call();
@@ -796,7 +796,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async exportRunJson() {
     if (this._lastCall) {
       const data = await fcToSerializable(this._lastCall, this);
-      return serialize(data, 0);
+      return serialize(data);
     }
   }
 
@@ -878,7 +878,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get runningOnInput() {
-    return this.func.options['runOnInput'] === 'true';
+    return isRunningOnInput(this.func);
   }
 
   protected get runningOnStart() {
@@ -894,49 +894,19 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get hasContextHelp() {
-    const readmePath = this.func.options['help'] as string | undefined;
-
-    return !!readmePath;
+    return !!hasContextHelp(this.func);
   }
 
-  private helpCache = null as string | null;
-
   public async getContextHelp() {
-    const helpPath = this.func.options['help'];
-
-    if (!helpPath) return null;
-
-    if (this.helpCache) return this.helpCache;
-
-    const packagePath = `System:AppData/${helpPath}`;
-    if (await grok.dapi.files.exists(packagePath)) {
-      const readme = await grok.dapi.files.readAsText(packagePath);
-      this.helpCache = readme;
-      return readme;
-    }
-
-    const homePath = `${grok.shell.user.name}.home/${helpPath}`;
-    if (await grok.dapi.files.exists(homePath)) {
-      const readme = await grok.dapi.files.readAsText(homePath);
-      this.helpCache = readme;
-      return readme;
-    }
-
-    return null;
+    return getContextHelp(this.func);
   }
 
   protected get features(): Record<string, boolean> | string[] {
-    return JSON.parse(this.func.options['features'] ?? '{}');
+    return getFeatures(this.func);
   }
 
   private getFeature(featureName: string, defaultValue: boolean) {
-    if (this.features instanceof Array)
-      return this.features.includes(featureName);
-
-    if (this.features instanceof Object)
-      return this.features[featureName] ?? defaultValue;
-
-    return defaultValue;
+    return getFeature(this.features, featureName, defaultValue);
   }
 
   protected get isExportEnabled() {

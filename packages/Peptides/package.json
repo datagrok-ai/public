@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -13,13 +13,13 @@
     "directory": "packages/Peptides"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.9",
-    "@datagrok-libraries/math": "^1.2.3",
-    "@datagrok-libraries/ml": "^6.7.5",
+    "@datagrok-libraries/bio": "^5.46.1",
+    "@datagrok-libraries/math": "^1.2.4",
+    "@datagrok-libraries/ml": "^6.7.6",
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.0",
-    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/utils": "^4.4.0",
+    "datagrok-api": "^1.23.0",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
     "file-loader": "^6.2.0",
@@ -30,10 +30,10 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.7",
     "@datagrok-libraries/js-draw-lite": "^0.0.5",
-    "@datagrok/bio": "^2.16.9",
-    "@datagrok/chem": "^1.12.0",
+    "@datagrok/bio": "^2.18.0",
+    "@datagrok/chem": "^1.13.0",
     "@datagrok/dendrogram": "^1.2.33",
-    "@datagrok/helm": "^2.5.9",
+    "@datagrok/helm": "^2.7.0",
     "@types/uuid": "^10.0.0",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",

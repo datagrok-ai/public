@@ -88,7 +88,7 @@ category('Stats: fromColumn', () => {
     const stats = DG.Stats.histogramsByCategories(t.getCol('number'), t.getCol('population'));
     expect(stats.toString(), '1,0,0,0,0,0,0,0,0,0');
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Stats: fromValues', () => {
   const floatArr = new Float32Array([1.5, 2.3, 3.7, 4.8, 5.23]);
@@ -110,4 +110,4 @@ category('Stats: fromValues', () => {
   test('avg js', async () => {
     expect(jsStats.avg, 3);
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});

@@ -296,7 +296,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
       }
       if(f.isInvalidateOnWithoutCache)
-        warnings.push(`File ${file}, function ${f.name}: Cant use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
+        warnings.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
 
       if (f.cache)
         if (!utils.cahceValues.includes(f.cache))
@@ -316,6 +316,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
   'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
   'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
+  'common/vue.js': { 'vue': 'Vue'}
 };
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {

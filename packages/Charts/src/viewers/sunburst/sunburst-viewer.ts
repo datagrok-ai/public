@@ -155,7 +155,7 @@ export class SunburstViewer extends EChartViewer {
 
       ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
       if (params.data.semType === DG.SEMTYPE.MOLECULE) {
-        const image = await TreeUtils.getMoleculeImage(params.name);
+        const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
         const { width, height } = image;
 
         if (width && height) {
@@ -225,6 +225,7 @@ export class SunburstViewer extends EChartViewer {
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
       const {viewer} = args.args;
       if (viewer instanceof SunburstViewer)
@@ -247,7 +248,6 @@ export class SunburstViewer extends EChartViewer {
         !columnNamesToRemove.includes(columnName));
       this.render();
     }));
-    this.addSelectionOrDataSubs();
   }
 
   onTableAttached(propertyChanged?: boolean): void {
@@ -285,6 +285,22 @@ export class SunburstViewer extends EChartViewer {
       rowSource, this.inheritFromGrid);
   }
 
+  async renderMolecule(params: any, width: number, height: number) {
+    const image = await TreeUtils.getMoleculeImage(params.name, width, height);
+    const img = new Image();
+    img.src = image!.toDataURL('image/png');
+    params.data.label = {
+      show: true,
+      formatter: '{b}',
+      color: 'rgba(0,0,0,0)',
+      height: height.toString(),
+      width: width.toString(),
+      backgroundColor: {
+        image: img.src,
+      },
+    }
+  }
+
   formatLabel(params: any) {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
@@ -293,8 +309,27 @@ export class SunburstViewer extends EChartViewer {
       if (getCurrentItemIndex === index)
         return item;
     });
+
     const { r, r0, startAngle, endAngle } = ItemLayoutInfo;
     const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
+
+    if (params.data.semType === 'Molecule') {
+      const minImageWidth = 70;
+      const minImageHeight = 80;
+    
+      if (width >= minImageWidth && height >= minImageHeight) {
+        const scaleByWidth = width / minImageWidth;
+        const scaleByHeight = height / minImageHeight;
+        const scale = Math.min(scaleByWidth, scaleByHeight);
+    
+        const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
+        const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
+    
+        this.renderMolecule(params, renderWidth, renderHeight);
+        return ' ';
+      }
+      return ' ';
+    }
 
     const averageCharWidth = 5;
     const averageCharHeight = 10;
@@ -306,7 +341,7 @@ export class SunburstViewer extends EChartViewer {
       return ' ';
 
     const name = params.name;
-    const lines = name.split(' ');
+    const lines = name.split(/[\s-]/);
     let result = '';
     let remainingHeight = maxHeightCharacters;
 
@@ -360,9 +395,13 @@ export class SunburstViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
-      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-    );
+    if (this.filter.trueCount >= CATEGORIES_NUMBER) {
+      this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
+        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+      );
+    } else {
+      this.eligibleHierarchyNames = orderedHierarchyNames ??  this.hierarchyColumnNames;
+    }
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);

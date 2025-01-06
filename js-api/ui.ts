@@ -801,7 +801,7 @@ export namespace input {
 
   export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
-    filter?: Function;
+    filter?: (col: Column) => boolean;
   }
 
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
@@ -1054,8 +1054,8 @@ export function colorInput(name: string, value: string, onValueChanged: Function
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement): HTMLElement {
-  return api.grok_ColorPicker(color, onChanged, colorDiv);
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
+  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
 }
 
 /** @deprecated The method will be removed soon. Use {@link input.radio} instead */
@@ -1234,6 +1234,7 @@ export class tools {
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
+        form.classList.remove('ui-form-condensed');
         let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
@@ -1322,7 +1323,13 @@ export class tools {
           element.classList.contains('ui-input-text')) {
           (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
         }
-        width += optionsWidth;
+        if (optionsWidth > 0) {
+          let inputs = $(element).find('.ui-input-editor');
+          inputs.each((i) => {
+            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+          });
+        }
+        // width += optionsWidth;
       });
       // todo: analyze content(?) and metadata
       // todo: analyze more types
@@ -1644,7 +1651,7 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically.
+/** Positions child elements vertically and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -1710,7 +1717,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally.
+/** Positions child elements horizontally and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {

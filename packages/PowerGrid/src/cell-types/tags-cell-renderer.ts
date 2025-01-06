@@ -1,7 +1,28 @@
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {
+  createBaseInputs,
+  isSummarySettingsBase,
+  names,
+  SparklineType,
+  SummaryColumnColoringType
+} from "../sparklines/shared";
+import * as ui from "datagrok-api/ui";
+import {SparklinesNormalizationType} from "../sparklines/sparklines-lines";
+import {input} from "datagrok-api/ui";
+import grid = input.grid;
 
+
+export interface TagsColumnSettings {
+  columnNames: string[];
+}
+
+const _measures: {[key: string]: number} = {};
+
+function measure(g: CanvasRenderingContext2D, tag: string): number {
+  return _measures[tag] ??= g.measureText(tag).width;
+}
 
 @grok.decorators.cellRenderer({
   name: 'Tags',
@@ -24,11 +45,18 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     // somehow dart comes null here, will need to investigate it and fix it, now just a workaround
     if (!gridCell.gridColumn.dart)
       return;
-    const values: string[] = gridCell.cell.valueString.split(',').map((s) => s.trim());
+
+    const settings = this.getSettings(gridCell.gridColumn);
+    const values: string[]
+      = settings ? settings.columnNames.filter((colName) => gridCell.tableRow?.get(colName))
+      : gridCell.cell.valueString.split(',').map((s) => s.trim());
 
     let cx = 2;
-    let cy = 3;
+    let dy = h > 16 ? 5 : 2
+    let cy = dy;
+    g.font = cellStyle.font;
     g.textBaseline = 'top';
+    g.textAlign = 'left';
 
     const getColor = (tag: string) => {
       const colors = gridCell.gridColumn.temp['catColors'] ??= {};
@@ -39,27 +67,63 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
       colors[tag] ??= DG.Color.getCategoricalColor(keys.length);
     };
 
+    const len = values.map((tag) => measure(g, tag) + 3).reduce((total, num) => total + num, 0);
+    const fits = len < w * Math.round(h / 20);
+
     for (const tag of values) {
-      const width = g.measureText(tag).width;
+      const width = fits ? measure(g, tag) : 4;
       const drawTag = () => {
         const color = getColor(tag);
         g.fillStyle = DG.Color.toHtml(color);
-        g.roundRect(x + cx, y + cy, width + 4, 16, 4);
+        g.roundRect(x + cx, y + cy, width + 4, Math.min(h - 2 * dy, 17), 4);
         g.fill();
 
-        g.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
-        g.fillText(tag, x + cx + 2, y + cy + 1);
+        if (fits) {
+          g.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
+          g.fillText(tag, x + cx + 2, y + cy + 1);
+        }
       };
 
-      if (cx + width <= w) {
+      if (cx + width <= w || cy + 16 > h)
         drawTag();
-        cx += width + 8;
-      }
       else {
         cx = 2;
-        cy += 16;
+        cy += 19;
         drawTag();
       }
+
+      cx += width + 8;
+
     }
+  }
+
+  getSettings(gridColumn: DG.GridColumn): TagsColumnSettings | undefined {
+    // if we have values contained in this column as comma-separated list, we don't need settings
+    if (gridColumn.column)
+      return undefined;
+
+    return gridColumn?.settings?.columnNames !== undefined
+      ? gridColumn.settings
+      : gridColumn.settings = {
+        columnNames: [...gridColumn.grid.dataFrame.columns.boolean].map((c) => c.name)
+      };
+  }
+
+  renderSettings(gridColumn: DG.GridColumn): HTMLElement | null {
+    const settings = this.getSettings(gridColumn);
+    if (!settings)
+      return null;
+
+    return ui.inputs([
+      ui.input.columns('Columns', {
+        value: gridColumn.grid.dataFrame.columns.byNames(settings.columnNames),
+        table: gridColumn.grid.dataFrame,
+        onValueChanged: (value) => {
+          settings.columnNames = names(value);
+          gridColumn.grid.invalidate();
+        },
+        available: names(gridColumn.grid.dataFrame.columns.boolean)
+      })
+    ]);
   }
 }

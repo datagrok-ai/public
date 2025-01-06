@@ -1,13 +1,13 @@
 // Automatic dynamic loading of the package containing the handler
 
 let view = grok.shell.newView();
-grok.events.onPackageLoaded.subscribe((p) => grok.shell.info(p.name));
+grok.events.onPackageLoaded.subscribe((p) => console.log(p));
 
-DG.ObjectHandler.forSemType('plate').then((handlers) => {
-  console.log(handlers);
-  view.append(ui.list(handlers));
-});
+let handlers = await DG.ObjectHandler.forSemType('plate');
 
-var plate = {barcode: '123456'};
+console.log(handlers);
+view.append(ui.list(handlers));
+
+var plate = {barcode: 'plate'};
 var handler = DG.ObjectHandler.forEntity(plate);
 view.append(handler.name);

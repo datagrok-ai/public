@@ -23,14 +23,18 @@ grok.functions.register({
 });
 
 // results are cached
-grok.functions.call('bar', {x: 7}).then((result) => grok.shell.info(result));
-grok.functions.call('bar', {x: 7}).then((result) => grok.shell.info(result));
-grok.functions.call('bar', {x: 7}).then((result) => grok.shell.info(result));
-
-grok.functions.call('bar', {x: 8}).then((result) => grok.shell.info(result));
-grok.functions.call('bar', {x: 8}).then((result) => grok.shell.info(result));
-
-grok.functions.call('foo', {x: 12}).then((result) => grok.shell.info(result));
-grok.functions.call('foo', {x: 12}).then((result) => grok.shell.info(result));
-
+let result = await grok.functions.call('bar', {x: 7});
+grok.shell.info(result);
+result = await grok.functions.call('bar', {x: 7});
+grok.shell.info(result);
+result = await grok.functions.call('bar', {x: 7});
+grok.shell.info(result);
+result = await grok.functions.call('bar', {x: 8});
+grok.shell.info(result);
+result = await grok.functions.call('bar', {x: 8});
+grok.shell.info(result);
+result = await grok.functions.call('foo', {x: 12});
+grok.shell.info(result);
+result = await grok.functions.call('foo', {x: 12});
+grok.shell.info(result);
 grok.shell.info(counts);

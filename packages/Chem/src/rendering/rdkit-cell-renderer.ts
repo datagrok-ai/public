@@ -168,13 +168,14 @@ M  END
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
         let molHasRebuiltCoords = false;
-        const scaffoldIsMolBlock = scaffolds.length && alignByFirstSubstr ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
+        const scaffoldIsMolBlock = scaffolds.length && alignByFirstSubstr ?
+          DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
         const {haveReferenceSmarts, parentMolScaffoldMolString} = (details as any);
         if (alignedByFirstSubstr) {
           const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule,
-            parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}] : [],
-            molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false).molCtx;
+            parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}] : [], molRegenerateCoords,
+            false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false).molCtx;
           const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
           if (rdKitScaffoldMol) {
             rdKitScaffoldMol.normalize_depiction(0);
@@ -309,9 +310,11 @@ M  END
     //merge row highlight data with substruct object from fetchMolObj
     const newSubstruct: ISubstruct = {};
     if (substructureObj && scaffolds.length) {
-      const newAtoms = substruct.atoms ? substruct.atoms.concat(substructureObj.atoms ?? []) : substructureObj.atoms ?? [];
+      const newAtoms = substruct.atoms ? substruct.atoms.concat(substructureObj.atoms ?? []) :
+        substructureObj.atoms ?? [];
       const newAtomsUnique = newAtoms.filter((item, pos) => newAtoms.indexOf(item) === pos);
-      const newBonds = substruct.bonds ? substruct.bonds.concat(substructureObj.bonds ?? []) : substructureObj.bonds ?? [];
+      const newBonds = substruct.bonds ? substruct.bonds.concat(substructureObj.bonds ?? []) :
+        substructureObj.bonds ?? [];
       const newBondsUnique = newBonds.filter((item, pos) => newBonds.indexOf(item) === pos);
       if (substruct.highlightAtomColors) {
         if (substructureObj.highlightAtomColors) {
@@ -536,6 +539,7 @@ M  END
 
     //check for column with per-row ISubstruct objects for highlight
     let substructObj: ISubstruct | undefined = undefined;
+    let alignByScaffold = false;
     if (colTemp[ChemTemps.SUBSTRUCT_COL]) {
       const rawSubstructCol = df.columns.byName(colTemp[ChemTemps.SUBSTRUCT_COL]);
       if (rawSubstructCol)
@@ -547,6 +551,19 @@ M  END
           let res: ISubstruct | undefined;
           try {
             res = p.getSubstruct(gridCell.tableRowIndex);
+            if (res?.alignByScaffold) {
+              alignByScaffold = true;
+              const scaffold: IColoredScaffold = {
+                molecule: res?.alignByScaffold,
+                highlight: false,
+                align: true,
+                color: NO_SCAFFOLD_COLOR,
+              };
+              if (!highlightScaffolds)
+                highlightScaffolds = [scaffold];
+              else
+                highlightScaffolds.push(scaffold);
+            }
           } catch (err: any) {
             const [errMsg, errStack] = errInfo(err);
             _package.logger.error(errMsg, undefined, errStack);
@@ -558,7 +575,7 @@ M  END
 
     if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
       this._drawMolecule(x, y, w, h, g.canvas, molString, highlightScaffolds ?? [],
-        molRegenerateCoords, false, cellStyle, false, {}, substructObj);
+        molRegenerateCoords, false, cellStyle, alignByScaffold, {}, substructObj);
     } else {
       // drawing with a per-row scaffold
       const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
@@ -572,8 +589,8 @@ M  END
       const scaffoldFromColumn: IColoredScaffold[] = highlightScaffold ? [{molecule: scaffoldMolString}] :
         [{molecule: scaffoldMolString, color: NO_SCAFFOLD_COLOR}];
       const totalScaffolds = highlightScaffolds ? scaffoldFromColumn.concat(highlightScaffolds) : scaffoldFromColumn;
-      this._drawMolecule(x, y, w, h, g.canvas,
-        molString, totalScaffolds, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true, details, substructObj);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, totalScaffolds, molRegenerateCoords,
+        scaffoldRegenerateCoords, cellStyle, true, details, substructObj);
     }
   }
 }
@@ -619,8 +636,7 @@ function mergeSubstructs(substructList: (ISubstruct | undefined)[]): ISubstruct 
     return undefined;
   else if (substructList.length === 1)
     return substructList[0];
-  else {
+  else
     throw new Error('Multiple substruct providers are not supported.');
     // TODO: Average colors for atoms and bonds (or just merge lists)
-  }
 }

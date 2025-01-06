@@ -220,8 +220,12 @@ export class Tags {
   static LinkClickBehavior = '.linkClickBehavior';
 
   /// Pipe-separated path that defines where this column is within the hierarchy
-  /// Used for dynamic forms construction, etc
-  static Hierarchy = 'hierarchy';
+  /// Used for dynamic forms construction, etc. Applies to columns.
+  static Group = 'group';
+
+  /// JSON string containing [JS API: GroupsDescription].
+  /// Used to initialize the grid with group columns, colors, etc
+  static ColumnGroups = '.columnGroups';
 
   /// Links column and db property
   static DbPropertyName = 'dbPropertyName';

@@ -7,24 +7,25 @@ import {createTableView} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import { SHOW_FRAGS_MODE } from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 
 const pairsFromMolblock = `
      RDKit          2D
 
  13 14  0  0  0  0  0  0  0  0999 V2000
-    0.6347   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1346   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6347    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654    1.2990    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8655   -2.1650    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1346   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.1346   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.6346   -3.0311    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    1.4171    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    2.2831    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    3.1491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    3.1491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    4.0151    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    2.2831    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    1.4171    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    0.5511    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    0.5511    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9545    0.5511    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4546   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
   1  2  2  0
   2  3  1  0
   3  4  2  0
@@ -46,20 +47,20 @@ const pairsToMolblock = `
      RDKit          2D
 
  14 15  0  0  0  0  0  0  0  0999 V2000
-    0.6346   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1345   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6347    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654    1.2990    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8653   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8653   -2.1650    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -3.0312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6346   -3.0312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1345   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.1345   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    3.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    1.4172    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    2.2832    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    3.1492    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    3.1492    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    4.0152    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0453    2.2832    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    1.4172    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0454    0.5512    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5455   -0.3150    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4545   -0.3150    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9544    0.5512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9544    0.5512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4545   -0.3148    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.4545   -0.3148    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
   1  2  2  0
   2  3  1  0
   3  4  2  0
@@ -82,45 +83,45 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
   'Transformations_Fragments': {
     'From': {idxs: [1, 29, 37], values: ["CC(Br)[*:1]", "C[*:1]", "O[*:1]"]},
     'To': {idxs: [5, 9, 37], values: ["CC(C)C[*:1]", "CC(C)[*:1]", "O[*:1]"]},
-    'Pairs': {idxs: [0, 28, 39], values: [1, 2, 3]},
-    'Mean Difference Activity':
+    'Count': {idxs: [0, 28, 39], values: [1, 2, 3]},
+    '\u0394 Activity':
       {idxs: [0, 11, 30], values: [-12.23, -4.64, 6.85]},
-    'Mean Difference Permeability':
+    '\u0394 Permeability':
       {idxs: [0, 11, 30], values: [-14.59, -7.56, 8.35]},
-    'Mean Difference Toxicity':
+    '\u0394 Toxicity':
       {idxs: [0, 11, 30], values: [-2.79, -0.65, 0.86]},
   },
   'Transformations_Pairs': {
     'From': {idxs: [0, 30, 50], values: [
-      pairsFromMolblock,
-      "O=c1cc(-CC)oc2cc(O)c(O)c(O)c12",
-      "c12ccc(Cl)cc2nccc1CCC",
+      "CC(Br)C1C(=O)Oc2ccccc2C1O",
+      "CCCc1cc(=O)c2c(O)c(O)c(O)cc2o1",
+      "O=C1Oc2ccccc2C(O)C1CO",
     ]},
     'To': {idxs: [0, 30, 50], values: [
-      pairsToMolblock,
-      "O=c1cc(-CC)oc2cc(O)c(O)c(O)c12",
-      "c12ccc(Cl)cc2nccc1CC",
+      "CC(Br)C1C(=O)Oc2ccccc2C1O",
+      "CCCc1cc(=O)c2c(O)c(O)c(O)cc2o1",
+      "O=C1Oc2ccccc2C(O)C1CO",
     ]},
-    'Difference Activity':
+    '\u0394 Activity':
       {idxs: [0, 30, 50], values: [-12.23, 1.78, 10.31]},
-    'Difference Permeability':
+    '\u0394 Permeability':
       {idxs: [0, 30, 50], values: [-14.59, 1.23, 12.71]},
-    'Difference Toxicity': {idxs: [0, 30, 50], values: [-3.19, 0.29, 1.68]},
+    '\u0394 Toxicity': {idxs: [0, 30, 50], values: [-3.19, 0.29, 1.68]},
   },
   'Generation': {
     'Structure': {idxs: [0, 70, 113], values: [
-      'c12ccc(Cl)cc2nccc1CC',
-      'O=C1Oc2ccccc2C(O)C1Cc3ccc(O)cc3O',
-      'c12ccc(Cl)cc2nccc1CO',
+      'CCc1ccnc2cc(Cl)ccc12',
+      'O=C1Oc2ccccc2C(O)C1Cc1ccc(O)cc1O',
+      'OCc1ccnc2cc(Cl)ccc12',
     ]},
-    'Initial value': {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
+    'Original activity': {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
     'Activity': {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
     'Core': {idxs: [0, 70, 113],
       values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O', 'Clc1ccc2c(C[*:1])ccnc2c1']},
     'From': {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
     'To': {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
-    'Prediction': {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
-    'Generation': {idxs: [0, 70, 113],
+    'New activity': {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
+    'New molecule': {idxs: [0, 70, 113],
       values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O', 'CCCc1ccnc2cc(Cl)ccc12']},
   },
 };
@@ -160,12 +161,6 @@ category('mmpa', () => {
     //ensure fragments and pairs grids have been created
     await awaitCheck(() => document.getElementsByClassName('d4-grid').length === 3,
       'Fragments and Pairs grids haven\'t been created', 3000);
-    //ensure embeddings columns have been created for cliffs tab
-    await awaitCheck(() => tv.dataFrame.columns.names().includes('~Embed_X_1') &&
-      tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
-    //ensure embeddings columns have been calculated
-    await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0 &&
-      tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0, 'Embeddings haven\'t been calculated', 10000);
     expect(mmp.mmpa!.rules.rules.length, 40, `Incorrect rules`);
     expect(mmp.mmpa!.rules!.smilesFrags.length, 14, `Incorrect smilesFrags`);
   });
@@ -193,13 +188,13 @@ category('mmpa', () => {
     //check Fragments Grid
     await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 && fragsDf.filter.trueCount === 2, 'Incorrect fragments grid', 3000);
+    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
     await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 14, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
@@ -207,6 +202,7 @@ category('mmpa', () => {
     await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
       'Pairs haven\'t been changed after fragment change', 3000);
 
+    mmp.showFragmentsChoice!.value = SHOW_FRAGS_MODE.Current;
     //changing target molecule
     tv.dataFrame.currentRowIdx = 4;
     await awaitCheck(() => fragsDf.filter.trueCount === 3 &&
@@ -234,10 +230,21 @@ category('mmpa', () => {
       }
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
+    //open cliffs tab
+    await awaitCheck(() => mmp.root.querySelector('[name=\'Cliffs\']') != null,
+      'Cliffs tab hasn\'t been created', 10000);
+    const cliffsTabHeader = mmp.root.querySelector('[name=\'Cliffs\']') as HTMLElement;
+    cliffsTabHeader.click();
+    //ensure embeddings columns have been created for cliffs tab
+    await awaitCheck(() => tv.dataFrame.columns.names().includes('~Embed_X_1') &&
+     tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
+    //ensure embeddings columns have been calculated
+    await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0 &&
+     tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0, 'Embeddings haven\'t been calculated', 10000);
     //check created lines
     await awaitCheck(() => mmp.lines?.from.length === 81 && mmp.lines?.to.length === 81 &&
     mmp.linesIdxs!.length === 81, 'Incorrect lines number', 3000);
-    await awaitCheck(() => mmp.linesMask?.allTrue == true, 'Incorrect initial lines mask');
+    await awaitCheck(() => mmp.linesMask?.allTrue == false, 'Incorrect initial lines mask');
     checkRandomArrayVals(mmp.lines?.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
     checkRandomArrayVals(mmp.lines?.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
     checkRandomArrayVals(mmp.linesIdxs,
@@ -279,17 +286,21 @@ category('mmpa', () => {
       }
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
-    await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 3000);
+    await awaitCheck(() => mmp.root.querySelector('[name=\'Generation\']') != null,
+      'Generation tab hasn\'t been created', 10000);
+    const genTabHeader = mmp.root.querySelector('[name=\'Generation\']') as HTMLElement;
+    genTabHeader.click();
+    await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 10000);
     const genDf = mmp.generationsGrid!.dataFrame;
-    await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
+    await awaitCheck(() => genDf.rowCount === 114, 'Incorrect row count');
     checkRandomValues(genDf, 'Generation');
-    //check that 'Existing' column has been calculated
+    //check that 'Prediction' column has been calculated
     await awaitCheck(() =>
-      genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
+      genDf.columns.names().includes('Prediction'), '\'Prediction\' column hasn\'t been created', 10000);
 
-    const isExpected = genDf.col('Existing')!.toList().filter((it) => it).length == 22 ||
-      genDf.col('Existing')!.toList().filter((it) => it).length == 23;
-    expect(isExpected, true, 'Incorrect data in \'Existing\' column');
+    const isExpected = genDf.col('Prediction')!.toList().filter((it) => it).length == 22 ||
+      genDf.col('Prediction')!.toList().filter((it) => it).length == 92;
+    expect(isExpected, true, 'Incorrect data in \'Prediction\' column');
   });
 });
 

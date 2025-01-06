@@ -1,15 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
-import {
-  AutoDockRunResult, GridSize, IAutoDockService
-} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {DockerContainerStatus, awaitStatus} from '@datagrok-libraries/bio/src/utils/docker';
-import {delay, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
@@ -102,6 +97,16 @@ export class AutoDockService implements IAutoDockService {
 
   // -- Methods --
 
+  async healthCheck(): Promise<void> {
+    const path = '/health_check';
+    const params: RequestInit = {
+      method: 'GET',
+    }
+    const adRes = await this.fetchAndCheck(path, params);
+    if (!adRes)
+      throw new Error('Health check failed.');
+  }
+
   async checkOpenCl(): Promise<number> {
     const path = '/check_opencl';
     const params: RequestInit = {
@@ -118,6 +123,15 @@ export class AutoDockService implements IAutoDockService {
       throw new Error('Unexpected clinfo output');
     const clinfoCount = parseInt(clinfoOutMa[1]);
     return clinfoCount;
+  }
+
+  async terminate(): Promise<void> {
+    const params: RequestInit = {
+      method: 'POST'
+    };
+
+    const path = `/autodock/kill_process`;
+    await this.fetchAndCheck(path, params);
   }
 
   async dockLigand(receptor: BiostructureData, ligand: BiostructureData,
@@ -220,7 +234,7 @@ export class AutoDockService implements IAutoDockService {
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
       // const errMsg = (await adResponse.json())['datagrok-error'];
-      throw new Error(errMsg);
+      // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
     if ('datagrok-error' in adRes) {

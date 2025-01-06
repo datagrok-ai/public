@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
   "friendlyName": "PowerGrid",
-  "version": "1.5.0",
+  "version": "1.5.3",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "datagrok-tools": "latest",
-    "@datagrok-libraries/gridext": "../../libraries/gridext",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/gridext": "^1.4.0",
+    "@datagrok-libraries/utils": "^4.3.12",
     "@types/wu": "^2.1.44",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0",
     "dayjs": "^1.11.13",
     "wu": "^2.1.0"
   },
@@ -36,7 +36,7 @@
     "webpack-cli": "^5.1.4",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
-    "@datagrok-libraries/math": "^1.2.3",
+    "@datagrok-libraries/math": "^1.2.4",
     "@webgpu/types": "^0.1.51"
   },
   "scripts": {

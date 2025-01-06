@@ -605,7 +605,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.owner = t.options?.owner ?? '';
   if (!filter) {
     let params = {
-      'success': r.success, 'result': r.result, 'ms': r.ms,
+      'success': r.success, 'result': r.result, 'ms': r.ms, 'date': r.date,
       'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
       'flaking': DG.Test.isReproducing && r.success,
       'timeoutWarning' : DG.Test.isInBenchmark  && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)

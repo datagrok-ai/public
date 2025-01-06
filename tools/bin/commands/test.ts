@@ -2,21 +2,19 @@
 import { exec } from 'child_process';
 import fs from 'fs';
 import os from 'os';
-import path from 'path';
-import puppeteer from 'puppeteer';
-import { Browser, Page } from 'puppeteer';
+import path from 'path'; 
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
-import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests as OrganizedTest } from '../utils/test-utils';
+import { BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout } from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd'];
 
 const curDir = process.cwd();
 const grokDir = path.join(os.homedir(), '.grok');
@@ -40,8 +38,8 @@ export async function test(args: TestArgs): Promise<boolean> {
 
   if (args.platform && packageName !== 'ApiTests')
     color.warn('--platform flag can only be used in the ApiTests package');
-  if (args.core && packageName !== 'DevTools')
-    color.warn('--core flag can only be used in the DevTools package');
+  // if (args.core && packageName !== 'DevTools')
+  //   color.warn('--core flag can only be used in the DevTools package');
 
 
   if (!args.package) {
@@ -56,8 +54,8 @@ export async function test(args: TestArgs): Promise<boolean> {
   let res = await runTesting(args);
   if (args.csv)
     saveCsvResults([res.csv], csvReportDir);
-  printWorkersResult(res, args.verbose)
-  if (!res)
+  printBrowsersResult(res, args.verbose)
+  if (res.failed)
     testUtils.exitWithCode(1);
   else
     testUtils.exitWithCode(0);
@@ -76,6 +74,17 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
+  if (parsed.length == 0)
+    return {
+      failed: true,
+      verbosePassed: 'Package not found',
+      verboseSkipped: 'Package not found',
+      verboseFailed: 'Package not found',
+      passedAmount: 0,
+      skippedAmount: 0,
+      failedAmount: 0,
+      csv: ''
+    };
   let organized: OrganizedTest[] = parsed[0].map(testObj => ({
     package: testObj.packageName,
     params: {
@@ -87,58 +96,70 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       }
     }
   }));
-  let filtered: OrganizedTest[] = []
+  let filtered: OrganizedTest[] = [];
+  let categoryRegex = new RegExp(`${args.category?.replaceAll(' ', '')}.*`)
   if (args.category) {
     for (let element of organized) {
-      if (element.params.category === args.category) {
+      if ((categoryRegex.test(element.params.category.replaceAll(' ', '')))) {
         if (element.params.test === args.test || !args.test)
           filtered.push(element);
       }
     }
     organized = filtered;
   }
-
+  if (args.verbose){
+    console.log(filtered);
+    console.log(`Tests total: ${filtered.length}`);
+  }
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
   let r: ResultObject;
-  do {
-    r = await runWorker(organized, {
-      benchmark: args.benchmark ?? false,
-      catchUnhandled: args.catchUnhandled ?? false,
-      gui: args.gui ?? false,
-      record: args.record ?? false,
-      report: args.report ?? false,
-      verbose: args.verbose ?? false,
-      stopOnTimeout: true
-    }, 1, testInvocationTimeout);
-    let testsLeft: OrganizedTest[] = [];
-    let testsToReproduce: OrganizedTest[] = [];
-    for (let testData of organized) {
-      if (!r.csv.includes(`${testData.params.category},${testData.params.test}`))
-        testsLeft.push(testData);
-      if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
-        testsToReproduce.push(testData);
+  let browserId = 1;
+  await timeout(async () => {
+    do {
+      r = await runBrowser(organized, {
+        benchmark: args.benchmark ?? false,
+        catchUnhandled: args.catchUnhandled ?? false,
+        gui: args.gui ?? false,
+        record: args.record ?? false,
+        report: args.report ?? false,
+        verbose: args.verbose ?? false,
+        ciCd: args['ci-cd'] ?? false,
+        stopOnTimeout: true
+      }, browserId, testInvocationTimeout);
+      let testsLeft: OrganizedTest[] = [];
+      let testsToReproduce: OrganizedTest[] = [];
+      for (let testData of organized) {
+        if (!r.verbosePassed.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !r.verboseSkipped.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !new RegExp(`${testData.params.category.trim()}[^\\n]*: (before|after)`).test(r.verboseFailed))
+          testsLeft.push(testData);
+        if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
+          testsToReproduce.push(testData);
+        }
       }
-    }
-    if (testsToReproduce.length > 0) {
-      let reproduced = await reproducedTest(args, testsToReproduce);
-      for (let test of testsToReproduce) {
-        let reproducedTest = reproduced.get(test);
-        if (reproducedTest && !reproducedTest.failed)
-          r = await updateResultsByReproduced(r, reproducedTest, test)
+      if (testsToReproduce.length > 0) {
+        let reproduced = await reproducedTest(args, testsToReproduce);
+        for (let test of testsToReproduce) {
+          let reproducedTest = reproduced.get(test);
+          if (reproducedTest && !reproducedTest.failed)
+            r = await updateResultsByReproduced(r, reproducedTest, test)
+        }
       }
+      testsResults.push(r);
+      organized = testsLeft;
+      browserId++;
     }
-    testsResults.push(r);
-    organized = testsLeft;
-  }
-  while (r.failed);
-  return await mergeWorkersResults(testsResults);
+    while (r.failed);
+  }, testInvocationTimeout)
+  return await mergeBrowsersResults(testsResults);
 }
 
 async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[]): Promise<Map<OrganizedTest, ResultObject>> {
   const res: Map<OrganizedTest, ResultObject> = new Map<OrganizedTest, ResultObject>();
   for (let test of testsToReproduce) {
-    let r = await runWorker([test], {
+    let r = await runBrowser([test], {
       benchmark: args.benchmark ?? false,
       catchUnhandled: false,
       gui: false,
@@ -146,8 +167,9 @@ async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[])
       report: false,
       verbose: false,
       stopOnTimeout: true,
-      reproduce: true
-    }, 1, testInvocationTimeout);
+      reproduce: true,
+      ciCd: args['ci-cd'] ?? false
+    }, 0, testInvocationTimeout);
     if (test.params.category && test.params.test)
       res.set(test, r);
   }
@@ -163,11 +185,11 @@ async function updateResultsByReproduced(curentResult: ResultObject, reproducedR
     const key = `${row['category']},${row['name']}`;
     flakingMap[key] = row['flaking'];
   });
- 
+
   table1.rows.forEach(row => {
     const key = `${row['category']},${row['name']}`;
     if (key in flakingMap) {
-      row['flaking'] = flakingMap[key]; 
+      row['flaking'] = flakingMap[key];
     }
   });
 
@@ -206,4 +228,5 @@ interface TestArgs {
   platform?: boolean,
   core?: boolean,
   'stress-test'?: boolean,
+  'ci-cd'?: boolean
 } 

@@ -10,3 +10,7 @@ export function testPipeline(
 ): ReturnType<typeof testPipelineType> {
   return window.compute.testPipeline(...args);
 }
+
+export function makeModel(provider: string): Promise<DG.FuncCall> {
+  return window.compute.makeModel(provider);
+}

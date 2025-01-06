@@ -1,5 +1,9 @@
 # PubChemApi changelog
 
+## 1.2.2 (2024-12-27)
+
+Added more tests
+
 ## 1.2.1 (2024-11-18)
 
 ### Bug fixes

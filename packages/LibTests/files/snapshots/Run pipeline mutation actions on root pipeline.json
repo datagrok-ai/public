@@ -1,0 +1,51 @@
+{
+  "configId": "pipeline1",
+  "uuid": "",
+  "isReadonly": false,
+  "type": "parallel",
+  "steps": [
+    {
+      "configId": "nestedPipeline1",
+      "uuid": "",
+      "isReadonly": false,
+      "type": "parallel",
+      "steps": [
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "step2",
+          "funcCallId": "",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "step1",
+          "funcCallId": "",
+          "isReadonly": false
+        }
+      ],
+      "stepTypes": [
+        {
+          "configId": "step1",
+          "nqName": "LibTests:TestAdd2"
+        },
+        {
+          "configId": "step2",
+          "nqName": "LibTests:TestMul2"
+        }
+      ]
+    }
+  ],
+  "stepTypes": [
+    {
+      "configId": "nestedPipeline1"
+    },
+    {
+      "configId": "step",
+      "nqName": "LibTests:TestSub2"
+    }
+  ]
+}

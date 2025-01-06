@@ -1,0 +1,79 @@
+{
+  "name": "@datagrok/compute2",
+  "friendlyName": "Compute2",
+  "version": "1.0.0",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
+  "description": "Provides UI based on Vue/Webcomponents",
+  "dependencies": {
+    "@datagrok-libraries/compute-utils": "^1.40.0",
+    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/webcomponents-vue": "^0.0.6",
+    "@he-tree/vue": "^2.8.7",
+    "@types/wu": "^2.1.44",
+    "@vueuse/core": "^11.1.0",
+    "@vueuse/rxjs": "^11.1.0",
+    "cash-dom": "^8.1.4",
+    "datagrok-api": "^1.21.1",
+    "dayjs": "=1.11.10",
+    "fflate": "^0.8.2",
+    "idb": "^8.0.1",
+    "rxjs": "^6.6.7",
+    "vue": "^3.5.12",
+    "vue-json-pretty": "^2.4.0",
+    "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/lodash.isequal": "^4.5.8",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "@vue/babel-plugin-jsx": "^1.2.4",
+    "autoprefixer": "^10.4.20",
+    "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "latest",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "postcss": "^8.4.47",
+    "postcss-loader": "^8.1.1",
+    "source-map-loader": "^5.0.0",
+    "style-loader": "^4.0.0",
+    "tailwindcss": "^3.4.13",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "npm link vue datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils @datagrok-libraries/webcomponents @datagrok-libraries/webcomponents-vue",
+    "debug-compute2": "webpack && grok publish",
+    "release-compute2": "webpack && grok publish --release",
+    "build-compute2": "webpack",
+    "build": "webpack",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
+    "debug-compute2-dev": "webpack && grok publish dev",
+    "release-compute2-dev": "webpack && grok publish dev --release",
+    "debug-compute2-public": "webpack && grok publish public",
+    "release-compute2-public": "webpack && grok publish public --release",
+    "debug-compute2-release": "webpack && grok publish release",
+    "release-compute2-release": "webpack && grok publish release --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/webcomponents-vue run build && npm run build"
+  },
+  "sources": [
+    "common/vue.js"
+  ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:datagrok-ai/public.git",
+    "directory": "packages/Compute2"
+  }
+}

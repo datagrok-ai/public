@@ -38,12 +38,12 @@
     }
   ],
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/ml": "^6.7.5",
-    "@datagrok-libraries/math": "^1.2.3",
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/chem-meta": "^1.2.9",
+    "@datagrok-libraries/ml": "^6.7.6",
+    "@datagrok-libraries/math": "^1.2.5",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.6",
+    "@datagrok-libraries/utils": "^4.4.0",
     "@types/pako": "^2.0.3",
     "typescript-lru-cache": "^2.0.0",
     "cash-dom": "^8.1.5",
@@ -74,11 +74,8 @@
     "style-loader": "^4.0.0",
     "css-loader": "^7.1.2",
     "ts-loader": "^9.5.1",
-    "@datagrok/chembl": "^1.0.35",
     "@datagrok/charts": "^1.4.0",
-    "@datagrok/power-grid": "^1.4.0",
-    "@datagrok/pubchem-api": "^1.1.16",
-    "@datagrok/chembl-api": "^1.0.12"
+    "@datagrok/power-grid": "^1.5.0"
   },
   "browser": {
     "fs": false,

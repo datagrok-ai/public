@@ -281,7 +281,8 @@ export class RdKitService {
    * */
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
-    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan, afterBatchCalculated = () => {}) {
+    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan,
+    afterBatchCalculated = () => {}) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -328,8 +329,7 @@ export class RdKitService {
       if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx + batch.length - 1]) {
         fpResult = await this.parallelWorkers[workerIdx].getFingerprints(fpType, batch, createSmiles);
         fpCreated = true;
-      }
-      else {
+      } else {
         fpResult = {
           fps: result.fpsRes.fps.slice(batchStartIdx, batchStartIdx + batch.length),
           smiles: createSmiles ? result.fpsRes.smiles!.slice(batchStartIdx, batchStartIdx + batch.length) : batch,
@@ -342,7 +342,8 @@ export class RdKitService {
       if (searchType !== SubstructureSearchType.IS_SIMILAR) {
         let filteredMolecules: string[] = [];
         let patternFpFilterBitArray: BitArray | null = null;
-        if (searchType !== SubstructureSearchType.NOT_CONTAINS && searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
+        if (searchType !== SubstructureSearchType.NOT_CONTAINS &&
+          searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
           // *********** FILTERING using fingerprints
           patternFpFilterBitArray = this.filterByPatternFps(searchType, batch, fpRdKit, fpResult);
           filteredMolecules = this.filterMoleculesByBitArray(patternFpFilterBitArray, batch, fpResult, createSmiles);
@@ -365,7 +366,8 @@ export class RdKitService {
           checkEl:
           for (let i = 0; i < batch.length; ++i) {
             if (fpResult.fps[i]) {
-              const simScore = tanimotoSimilarity(rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
+              const simScore = tanimotoSimilarity(
+                rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
               if (simScore >= simCutOff)
                 finalBitArray.setBit(i, true);
             }
@@ -378,13 +380,14 @@ export class RdKitService {
       return {
         matches: finalBitArray,
         fpRes: fpResult,
-        fpCreated: fpCreated
+        fpCreated: fpCreated,
       };
     }, progressFunc);
   }
 
   // restore the indexes of prefiltered molecules on the whole dataset
-  restorePrefilteredMoleculesIndexes(patternFpFilterBitArray: BitArray, matchesBitArray: BitArray, finalBitArray: BitArray) {
+  restorePrefilteredMoleculesIndexes(patternFpFilterBitArray: BitArray, matchesBitArray: BitArray,
+    finalBitArray: BitArray) {
     // restore the indexes of prefiltered molecules on the whole dataset
     let matchesCounter = 0;
     for (let i = -1; (i = patternFpFilterBitArray!.findNext(i)) != -1;) {
@@ -413,7 +416,8 @@ export class RdKitService {
     return patternFpFilterBitArray;
   }
 
-  filterMoleculesByBitArray(patternFpFilterBitArray: BitArray, batch: string[], fpResult: IFpResult, createSmiles?: boolean): string[] {
+  filterMoleculesByBitArray(patternFpFilterBitArray: BitArray, batch: string[], fpResult: IFpResult,
+    createSmiles?: boolean): string[] {
     const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());
     let counter = 0;
     for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) !== -1;) {
@@ -488,7 +492,7 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): 
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string):
     Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>

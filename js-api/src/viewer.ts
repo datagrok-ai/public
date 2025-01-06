@@ -171,8 +171,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
-  static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Viewer<interfaces.IGridSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.HEAT_MAP, t, options);
+  static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
+    return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
   static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {

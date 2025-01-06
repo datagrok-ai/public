@@ -1,0 +1,18 @@
+@tailwind components;
+@tailwind utilities;
+
+.ui-input-disabled.ui-input-root i.rfv2-validation-icon {
+    background-color: white;
+}
+
+.ui-input-disabled.ui-input-root i.rfv2-validation-icon span {
+    color: #4A4A49!important;
+}
+
+.ui-input-disabled.ui-input-root i.rfv2-validation-icon a {
+    color: #2083d5!important;
+}
+
+.ui-input-disabled.ui-input-root .ui-input-options:has(i.rfv2-validation-icon) {
+    filter: none;
+}

@@ -1,8 +1,10 @@
 package grok_connect.table_query;
 
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.utils.PatternMatcher;
+import grok_connect.utils.ProviderManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,7 @@ abstract class TableQueryTest {
 
     public TableQueryTest(JdbcDataProvider provider) {
         this.provider = provider;
+        GrokConnect.providerManager = new ProviderManager();
     }
 
     @BeforeEach
@@ -297,7 +300,7 @@ abstract class TableQueryTest {
     public abstract String[] getSeveralOnJoin();
 
     private void testQuery(TableQuery tableQuery, String[] expected) {
-        String actual = provider.queryTableSql(tableQuery.connection, tableQuery);
+        String actual = provider.queryTableSql(tableQuery);
         String expectedQuery = getExpectedQuery(expected);
         Assertions.assertEquals(expectedQuery, actual);
     }

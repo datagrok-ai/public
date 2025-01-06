@@ -25,6 +25,7 @@ export class TestGridCellHandler extends DG.ObjectHandler {
                 if (testData[0] != pathPart && testData[1] != pathPart && testData[testData.length - 1] != pathPart)
                     category = [category, pathPart.trim()].join(':');
             let testResult: DG.DataFrame = await grok.functions.call(`${testData[0].trim()}:test`, { test: testData[testData.length - 1].trim(), category: category.trim() })
+            progressBar.close();
             let wasError = false;
             let wasSkipped = false;
             for (let a of testResult.rows) {

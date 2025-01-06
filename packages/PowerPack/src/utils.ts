@@ -29,7 +29,7 @@ export function getSettings(): UserWidgetsSettings {
 
 export function saveSettings(): void {
   console.log(settings);
-  let s: {[key: string]: any} = {};
+  const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
   grok.userSettings.addAll(WIDGETS_STORAGE, s);
@@ -62,8 +62,8 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
 }
 
-function createWidgetHost(title: string) {
-  const header = ui.div([ui.divText(title, 'd4-dialog-title'),], 'd4-dialog-header');
+function createWidgetHost(title: string): HTMLDivElement {
+  const header = ui.div([ui.divText(title, 'd4-dialog-title')], 'd4-dialog-header');
   const host = ui.box(null, 'power-pack-widget-host');
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
@@ -71,20 +71,22 @@ function createWidgetHost(title: string) {
 }
 
 export function widgetHostFromFunc(f: DG.Func) {
-  const host = createWidgetHost(f.friendlyName);
-  const contentDiv: HTMLDivElement = host.querySelector('.power-pack-widget-content')!;
+  const host: HTMLDivElement = createWidgetHost(f.friendlyName);
+  const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {
-      ui.setUpdateIndicator(contentDiv, false, '');
+    if (w) {
       w.factory = f;
-      if (w)
-        initWidgetHost(host, w);
-        return;
-  }).catch((e) => {
-    host.style.display = 'none';
-    host.remove();
-    console.error(`Error creating widget ${f.name}`, e);
-  }).finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+      initWidgetHost(host, w);
+    } else
+      host.remove();
+  })
+    .catch((e) => {
+      host.style.display = 'none';
+      host.remove();
+      console.error(`Error creating widget ${f.name}`, e);
+    })
+    .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
 
   setTimeout(() => {
     if (contentDiv!.children.length == 0)
@@ -99,7 +101,7 @@ export function widgetHostFromFunc(f: DG.Func) {
 
 
 export function widgetHost(w: DG.Widget/*, widgetHeader?: HTMLDivElement*/): HTMLElement {
-  const host = createWidgetHost(w.props.caption ?? '');
+  const host = createWidgetHost(w.props.hasProperty('caption') ? w.props.caption ?? '' : '');
   initWidgetHost(host, w);
   //widgetHeader ??= ui.div();
 

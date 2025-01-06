@@ -1,30 +1,35 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.39.7",
+  "version": "1.40.1",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "^4.3.12",
     "@types/lodash.clonedeepwith": "^4.5.9",
+    "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.22.0",
+    "datagrok-api": "^1.23.0",
     "dayjs": "=1.11.10",
+    "ebnf": "^1.9.1",
     "exceljs": "^4.3.0",
     "fflate": "^0.7.4",
     "html2canvas": "^1.4.1",
     "lodash.clonedeepwith": "^4.5.0",
+    "lodash.isequal": "^4.5.0",
     "rxjs": "^6.6.7",
+    "uuid": "^10.0.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/lodash.isequal": "^4.5.8",
     "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^8.57.1",
+    "@typescript-eslint/eslint-plugin": "^8.13.0",
+    "@typescript-eslint/parser": "^8.13.0",
+    "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
@@ -34,12 +39,12 @@
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "build": "tsc",
     "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "repository": {
     "type": "git",

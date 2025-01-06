@@ -9,6 +9,7 @@ import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
+import * as DG from "./dataframe";
 
 
 const api: IDartApi = <any>window;
@@ -531,7 +532,7 @@ export class GridCell {
 
   /** @returns {Row} Corresponding table row, or null. */
   get tableRow(): Row | null {
-    return this.isTableCell || this.isRowHeader ? this.cell.row : null;
+    return this.cell?.row;
   }
 
   /** @returns {number|null} Index of the corresponding table row. */
@@ -561,6 +562,14 @@ export class GridCell {
   /** @returns {Cell} Corresponding table cell. */
   get cell(): Cell {
     return new Cell(api.grok_GridCell_Get_Cell(this.dart));
+  }
+
+  /** Returns the value of the grid cell.
+   * Note that the value could differ from the corresponding table cell due to the following:
+   * 1. setting gridCell.value inside onPrepareCell
+   * 2. as a result of evaluating onPrepareValueScript */
+  get value(): any {
+    return toJs(api.grok_GridCell_Get_Value(this.dart));
   }
 
   /** @returns {GridCellStyle} Style to use for rendering. */
@@ -699,6 +708,11 @@ export class GridColumn {
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
   set isTextColorCoded(x: boolean) { api.grok_GridColumn_Set_isTextColorCoded(this.dart, x); }
 
+  /** A script that returns cell value, using the "gridCell" parameter.
+   * See example: ApiSamples/grid/advanced/dynamic-value-retrieval.js */
+  get onPrepareValueScript(): string { return api.grok_GridColumn_Get_OnPrepareValueScript(this.dart); }
+  set onPrepareValueScript(x: string) { api.grok_GridColumn_Set_OnPrepareValueScript(this.dart, x); }
+
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
 
@@ -783,6 +797,12 @@ export class GridColumnList {
   add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
     return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
+
+  /** Removes a grid column at the specified position. */
+  removeAt(index: number) { api.grok_GridColumnList_RemoveAt(this.dart, index); }
+
+  /** Removes all columns. */
+  clear() { api.grok_GridColumnList_Clear(this.dart); }
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
@@ -1058,6 +1078,11 @@ export class Grid extends Viewer<IGridSettings> {
   autoSize(maxWidth: number, maxHeight: number, minWidth?: number, minHeight?: number, autoSizeOnDataChange?: boolean): void {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
+
+  /** Renders the content of this grid to the specified canvas and bounds. */
+  render(g: CanvasRenderingContext2D, bounds: Rect) {
+    api.grok_Grid_Render(this.dart, g, bounds.toDart());
+  }
 }
 
 
@@ -1157,11 +1182,11 @@ export class GridCellRenderer extends CanvasRenderer {
   clip: boolean = true;
 
   get name(): string {
-    throw 'Not implemented';
+    throw '"name" property not implemented';
   }
 
   get cellType(): string {
-    throw 'Not implemented';
+    throw '"cellType" property not implemented';
   }
 
   renderSettings(gridColumn: GridColumn): Element | null { return null; }
@@ -1183,6 +1208,10 @@ export class GridCellRenderer extends CanvasRenderer {
 
   static register(renderer: any): void {
     api.grok_GridCellRenderer_Register(renderer);
+  }
+
+  static byName(rendererName: string): GridCellRenderer | null {
+    return api.grok_GridCellRenderer_ByName(rendererName);
   }
 
   onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
@@ -1245,6 +1274,10 @@ export class SemanticValue<T = any> {
   }
 
   static parse(s: string): SemanticValue { return api.grok_SemanticValue_Parse(s); }
+
+  static registerRegExpDetector(semType: string, regexp: string, description?: string) {
+    api.grok_SemanticValue_Register_RegExp_Detector(semType, regexp, description);
+  }
 
   get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: T) { api.grok_SemanticValue_Set_Value(this.dart, x); }

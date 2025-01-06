@@ -162,7 +162,7 @@ category('UI: Inputs', () => {
     input.fireChanged();
     input.root.remove();
   }
-}, { clear: false });
+}, {clear: false, owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input', () => {
   test('nullable', async () => {
@@ -256,7 +256,7 @@ category('UI: Choice input', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input new', () => {
   test('nullable', async () => {
@@ -348,7 +348,7 @@ category('UI: Choice input new', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Table input new', () => {
   before(async () => {
@@ -379,4 +379,4 @@ category('UI: Table input new', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});

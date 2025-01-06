@@ -1,5 +1,6 @@
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
+import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 
 //name: Fit
 //tags: cellRenderer
@@ -17,5 +18,12 @@ export function _FitChartCellRenderer() {
 //meta.icon: icons/multi-curve-viewer.png
 export function _MultiCurveViewer() {
   return new MultiCurveViewer();
+}
+
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.cellType: Plate
+export function _PlateGridCellRenderer() {
+  return new PlateGridCellRenderer();
 }
 

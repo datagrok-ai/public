@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.6.0",
+  "version": "2.7.1",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources-backup": [
@@ -18,9 +18,9 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.45.11",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/utils": "^4.3.7",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/utils": "^4.4.0",
+    "datagrok-api": "^1.23.0",
     "dayjs": "^1.10.6",
     "lru-cache": "^10.4.3",
     "rxjs": "^6.5.5",
@@ -29,8 +29,8 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.13",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/bio": "^2.16.8",
-    "@datagrok/chem": "^1.12.3",
+    "@datagrok/bio": "^2.18.1",
+    "@datagrok/chem": "^1.13.0",
     "@types/node": "17.0.45",
     "@types/webpack-env": "^1.18.5",
     "@types/wu": "^2.1.44",
@@ -50,6 +50,7 @@
   },
   "scripts": {
     "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "link-bio": "npm link @datagrok-libraries/bio",
     "debug-helm": "webpack && grok publish",
     "release-helm": "webpack && grok publish --release",
     "build-helm": "webpack",

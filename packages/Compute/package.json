@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.39.7",
+  "version": "1.40.1",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -13,24 +13,25 @@
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/compute-utils": "^1.39.5",
+    "@datagrok-libraries/compute-utils": "^1.40.0",
+    "@datagrok-libraries/utils": "^4.3.12",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.22.1",
+    "datagrok-api": "^1.23.0",
+    "dayjs": "=1.11.10",
+    "exceljs": "^4.3.0",
     "rxjs": "^6.6.7",
-    "source-map-loader": "^4.0.1",
+    "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "exceljs": "^4.3.0"
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
-    "@typescript-eslint/eslint-plugin": "^5.1.0",
-    "@typescript-eslint/parser": "^5.1.0",
-    "css-loader": "^6.5.1",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "css-loader": "^7.1.2",
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
-    "style-loader": "^3.3.1",
+    "style-loader": "^4.0.0",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
@@ -42,6 +43,8 @@
     "release-compute": "webpack && grok publish localhost --release",
     "build-compute": "webpack",
     "build": "webpack",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
     "build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
     "debug-compute-dev": "webpack && grok publish dev",
     "release-compute-dev": "grok publish dev --release",

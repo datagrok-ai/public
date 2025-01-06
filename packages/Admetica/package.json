@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -13,15 +13,15 @@
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.5.1",
-    "@datagrok-libraries/utils": "^4.3.3",
+    "@datagrok-libraries/tutorials": "^1.5.2",
+    "@datagrok-libraries/utils": "^4.4.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.22.1",
+    "datagrok-api": "^1.23.0",
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
-    "@datagrok/chem": "1.12.4",
-    "@datagrok/power-grid": "1.4.3",
+    "@datagrok/chem": "^1.13.0",
+    "@datagrok/power-grid": "^1.5.0",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",

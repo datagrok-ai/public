@@ -107,6 +107,8 @@ export class ScriptLanguage {
 
   static Octave = 'octave';
 
+  static PythonDocker = 'docker';
+
 }
 import {Entity} from '../entities'
 

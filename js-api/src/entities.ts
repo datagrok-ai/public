@@ -199,6 +199,12 @@ export class User extends Entity {
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
     } as const;
   }
+
+  static get test(): User { return new User(api.grok_User_Test()); }
+
+  static get admin(): User { return new User(api.grok_User_Admin()); }
+
+  static get system(): User { return new User(api.grok_User_System()); }
 }
 
 
@@ -494,7 +500,10 @@ export class TableQueryBuilder {
    * @param {string} table - Table name
    * @param connection - {@link DataConnection} that {@link TableQuery} will use after the build. Can be passed lately directly to {@link TableQuery}.
    * @returns {TableQueryBuilder} */
-  static from(table: string, connection?: DataConnection): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table, connection?.dart)); }
+  static from(table: string, connection?: DataConnection | string): TableQueryBuilder {
+    let conn: any = connection === undefined ? connection : connection instanceof DataConnection ? connection.dart : connection;
+    return toJs(api.grok_DbTableQueryBuilder_From(table, conn));
+  }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object
@@ -985,6 +994,20 @@ export class Group extends Entity {
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
     } as const;
   }
+
+  static get allUsers(): Group { return new Group(api.grok_Group_AllUsers()); }
+
+  static get developers(): Group { return new Group(api.grok_Group_Developers()); }
+
+  static get needToCreate(): Group { return new Group(api.grok_Group_NeedToCreate()); }
+
+  static get test(): Group { return new Group(api.grok_Group_Test()); }
+
+  static get admin(): Group { return new Group(api.grok_Group_Admin()); }
+
+  static get system(): Group { return new Group(api.grok_Group_System()); }
+
+  static get administrators(): Group { return new Group(api.grok_Group_Administrators()); }
 }
 
 /** @extends Func

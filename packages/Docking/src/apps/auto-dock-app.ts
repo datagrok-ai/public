@@ -9,7 +9,7 @@ import {
 import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {_package, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
+import {_package, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
@@ -107,19 +107,18 @@ export class AutoDockApp {
     try {
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
       const result = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.posesNum!, this.poseColName, pi);
-      const posesAllDf = result?.posesAllDf;
+      let posesAllDf = result?.posesAllDf;
       const errorValues = result?.errorValues;
-      if (posesAllDf !== undefined) {
-        errorValues?.forEach(({index, value}) => {
-          posesAllDf.rows.insertAt(index, 1);
-          posesAllDf.set(POSE_COL, index, value);
-        });
-        //@ts-ignore
-        CACHED_DOCKING.K.push(this.data);
-        //@ts-ignore
-        CACHED_DOCKING.V.push(posesAllDf);
-        return posesAllDf;
+      if (!posesAllDf) {
+        posesAllDf = DG.DataFrame.create();
+        posesAllDf.columns.addNewString(POSE_COL);
       }
+
+      errorValues?.forEach(({index, value}) => {
+        posesAllDf.rows.insertAt(index, 1);
+        posesAllDf.set(POSE_COL, index, value);
+      });
+      return posesAllDf;
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       grok.shell.error(errMsg);
@@ -166,8 +165,8 @@ async function runAutoDock(
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
-    const posesDf = await fetchWrapper(() => adSvc.dockLigand(
-      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName));
+    const posesDf = await adSvc.dockLigand(
+      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName);
 
     if (posesDf.col(ERROR_COL_NAME)) {
       errorValues[errorValues.length] = {index: lRowI, value: posesDf.get(ERROR_COL_NAME, 0)};
@@ -179,6 +178,24 @@ async function runAutoDock(
       posesDf!.rows.removeAt(1, posesDf!.rowCount - 1);
     }
     // region: add extra columns to AutoDock output
+
+    const colNames = posesDf.columns.names();
+    const nameWithExtension = receptorData.options?.name;
+    const nameWithoutExtension = nameWithExtension?.replace(/\.[^/.]+$/, '');
+    let remarkString = `REMARK   1 receptor.    ${nameWithoutExtension} J.\n`;
+    for (let i = 1; i < colNames.length; ++i) {
+      if (colNames[i] === poseColName) continue;
+      const rowValue = posesDf.get(colNames[i], 0);
+      remarkString += `REMARK   ${i + 1} ${colNames[i]}.    ${rowValue} J.`;
+      if (i !== colNames.length - 1) remarkString += '\n';
+    }
+
+    const currentPosesValue = posesDf.get(poseColName, 0);
+    const newPosesValue = currentPosesValue.replace(
+      /^COMPND.*\n/,
+      (match: string) => match + `${remarkString}\n`
+    );
+    posesDf.set(poseColName, 0, newPosesValue);
 
     const pdbqtCol = posesDf.getCol(poseColName);
     pdbqtCol.name = poseColName;

@@ -81,24 +81,24 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult dateTimePatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String queryFormat = "(toDateTime(%s) %s toDateTime(@%s))";
         String columnName = matcher.colName;
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
-                result.setQuery(String.format(queryFormat, columnName, "=", param.name));
-                result.addParam(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.setQuery(String.format(queryFormat, columnName, "=", paramName));
+                result.addParam(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.BEFORE:
             case PatternMatcher.AFTER:
                 result.setQuery(String.format(queryFormat, columnName,
-                        PatternMatcher.cmp(matcher.op, matcher.include1), param.name));
-                result.addParam(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                        PatternMatcher.cmp(matcher.op, matcher.include1), paramName));
+                result.addParam(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.RANGE_DATE_TIME:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.setQuery(String.format("(toDateTime(%s) %s toDateTime(@%s) "
                                 + "AND toDateTime(%s) %s toDateTime(@%s))", columnName,
                         PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1),

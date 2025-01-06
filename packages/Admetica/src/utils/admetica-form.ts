@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+
 import { tablePieChartIndexMap } from './admetica-utils';
 
 export class FormStateGenerator {

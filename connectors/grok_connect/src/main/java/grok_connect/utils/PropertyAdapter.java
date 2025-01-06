@@ -1,12 +1,15 @@
 package grok_connect.utils;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import java.lang.reflect.*;
 import java.util.List;
 
-
 public class PropertyAdapter implements JsonSerializer<Property> {
-
     private final Gson gson = new GsonBuilder().create();
 
     @Override

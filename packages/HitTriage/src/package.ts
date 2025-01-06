@@ -12,16 +12,29 @@ import {PeptiHitHelmColName} from './app/consts';
 import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
-export const _package = new DG.Package();
+export class HTPackage extends DG.Package {
+  molToSmilesLruCache = new DG.LruCache<string, string>(2000);
+
+  convertToSmiles(mol: string): string {
+    return this.molToSmilesLruCache.getOrCreate(mol,
+      (mol) => grok.chem.convert(mol, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles),
+    );
+  }
+}
+
+export const _package = new HTPackage();
 
 async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
+  const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
+  loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
+  const loaderItem = treeNode.item(loaderDiv);
   const camps = await loadCampaigns(name, []);
 
   for (const [_, camp] of Object.entries(camps)) {
     const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
-    if (!savePath || await grok.dapi.files.exists(savePath) === false)
+    if (!savePath || !(await grok.dapi.files.exists(savePath)))
       continue;
-    const node = treeNode.item(camp.name);
+    const node = treeNode.item(camp.friendlyName ?? camp.name);
     node.onSelected.subscribe(async (_) => {
       try {
         const df = await grok.dapi.files.readCsv(savePath);
@@ -51,6 +64,7 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
       }
     });
   }
+  loaderItem.remove();
 }
 
 //input: dynamic treeNode

@@ -38,7 +38,7 @@ export class LabelElement extends Element {
   render(g: CanvasRenderingContext2D) {
     g.fillStyle = this.style?.color ?? 'grey'
     g.textAlign = this.style?.horzAlign ?? 'left';
-    g.textBaseline = 'middle';
+    g.textBaseline = 'top';
     //g.fillText(this.text, this.bounds.x, this.bounds.y, this.bounds.width);
     drawClipped(g, this.bounds, () => {
       const x
@@ -76,9 +76,13 @@ export class GridCellElement extends Element {
 
   render(g: CanvasRenderingContext2D) {
     g.fillStyle = 'grey';
+    // if we don't do this, the text color will become same as grid background one
+    const oldIsTextColorCoded = this.gridCell.gridColumn.isTextColorCoded;
+    this.gridCell.gridColumn.isTextColorCoded = false;
     this.gridCell.renderer.render(g,
       this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height,
       this.gridCell, this.gridCell.style);
+    this.gridCell.gridColumn.isTextColorCoded = oldIsTextColorCoded;
   }
 }
 

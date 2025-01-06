@@ -1,0 +1,36 @@
+{
+  "name": "@datagrok-libraries/dock-spawn-dg",
+  "version": "0.0.1",
+  "description": "A TypeScript Version of dock-spawn with changes for Datagrok",
+  "license": "MIT",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "tsc --build --clean",
+    "lint": "eslint . --ext .ts",
+    "lint-fix": "eslint . --ext .ts --fix"
+  },
+  "dependencies": {
+    "rxjs": "^6.6.7"
+  },
+  "devDependencies": {
+    "@types/wu": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "@types/node": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:datagrok-ai/public.git",
+    "directory": "libraries/dock-spawn-dg"
+  }
+}

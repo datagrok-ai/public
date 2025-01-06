@@ -1,5 +1,9 @@
 # LibTests changelog
 
+## 1.4.1 (2024-12-25)
+
+- Release for 1.23.0
+
 ## 1.3.0 (2024-09-05)
 
 - Release for 1.21.0

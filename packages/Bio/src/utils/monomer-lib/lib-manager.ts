@@ -30,7 +30,8 @@ declare const window: MonomerLibWindowType;
 export class MonomerLibManager implements IMonomerLibHelper {
   private readonly _monomerLib = new MonomerLib({}, 'MAIN');
   private readonly _monomerSets = new MonomerSet('MAIN', []);
-
+  private _initialLoadCompleted: boolean = false;
+  public get initialLoadCompleted(): boolean { return this._initialLoadCompleted; }
   private _eventManager: MonomerLibFileEventManager;
 
   public get eventManager(): IMonomerLibFileEventManager { return this._eventManager; }
@@ -85,7 +86,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
     return this._monomerSets;
   }
 
-  /** Object containing symbols for each type of polymer where duplicate monomers are found in different libs (based on symbol as key) */
+  /** Object containing symbols for each type of polymer where duplicate monomers
+   * are found in different libs (based on symbol as key) */
   get duplicateMonomers() {
     return this._monomerLib.duplicateMonomers;
   }
@@ -107,6 +109,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       this._fileManagerPromise = (async () => {
         const fileManager: MonomerLibFileManager =
           await MonomerLibFileManager.create(this, this._eventManager, this.logger);
+        await fileManager.initializedPromise;
         return fileManager;
       })();
     }
@@ -158,6 +161,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
               });
           })),]);
         this._monomerLib.updateLibs(libs, reload);
+        this._initialLoadCompleted = true;
       } catch (err: any) {
         // WARNING: This function is not allowed to throw any exception,
         // because it will prevent further handling monomer library settings

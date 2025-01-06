@@ -159,7 +159,8 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
     case 'Word cloud': break;
     case 'Scaffold Tree': break;
     default:
-      viewerList.push(value);
+      if (value !== 'Shape Map') // return Shape Map back when it is reincarnated
+        viewerList.push(value);
       break;
     }
   }

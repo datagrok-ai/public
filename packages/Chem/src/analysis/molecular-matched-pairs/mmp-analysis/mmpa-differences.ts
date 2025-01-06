@@ -1,37 +1,39 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MmpRules, MmpAllCasesBasedData, MmpInitData, MmpRulesBasedData} from './mmpa-misc';
-import { SortData } from '../mmp-viewer/mmp-viewer';
+import {MmpAllCasesBasedData, MmpFragments, MmpInitData, MmpRules, MmpRulesBasedData} from './mmpa-misc';
+import {SortData} from '../mmp-viewer/mmp-viewer';
 
-
-export function getPlainData(rules: MmpRules, initData: MmpInitData, allCasesNumber: number, fragSortingInfo: {[key: string]: SortData}):
-[MmpRulesBasedData, MmpAllCasesBasedData] {
-  const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, fragSortingInfo); //rules n objects
+export function getPlainData(rules: MmpRules, frags: MmpFragments,
+  initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
+  const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo); //rules n objects
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
-    ruleNum, diffs, activityPairsIdxs] =
-    calculateActivityDiffs(initData.molecules, initData.activities, rules, allCasesNumber, occasions);
+    ruleNum, diffs, activityPairsIdxs, coreNums] =
+    calculateActivityDiffs(initData.molecules, initData.activities, rules, frags, allCasesNumber, occasions);
 
   const rulesBased: MmpRulesBasedData = {fromFrag, toFrag, occasions, meanDiffs};
   const allCasesBased: MmpAllCasesBasedData = {maxActs, molFrom, molTo, pairNum,
-    molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs};
+    molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coreNums};
 
   return [rulesBased, allCasesBased];
 }
 
-function getAllRulesOcasions(mmpr: MmpRules, fragSortingInfo: {[key: string]: SortData}): [string [], string [], Int32Array] {
+function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInfo: SortData):
+[string [], string [], Int32Array] {
   const allSize = mmpr.rules.length;
   const fromFrag = new Array<string>(allSize);
   const toFrag = new Array<string>(allSize);
   const occasions = new Int32Array(allSize);
   for (let i = 0; i < allSize; i++) {
     const fromFragment = mmpr.smilesFrags[mmpr.rules[i].smilesRule1];
-    fromFrag[i] = fromFragment;
-    toFrag[i] = mmpr.smilesFrags[mmpr.rules[i].smilesRule2];
+    fromFrag[i] = frags.idToName[fromFragment];
+    toFrag[i] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule2]];
     occasions[i] = mmpr.rules[i].pairs.length;
-    if (!fragSortingInfo[fromFragment])
-      fragSortingInfo[fromFragment] = {frequency: mmpr.rules[i].pairs.length};
-    else
-      fragSortingInfo[fromFragment].frequency += mmpr.rules[i].pairs.length;
+    const fragIdxInSortingInfo = fragSortingInfo.fragmentIdxs.indexOf(fromFragment);
+    if (fragIdxInSortingInfo === -1) {
+      fragSortingInfo.fragmentIdxs.push(fromFragment);
+      fragSortingInfo.frequencies.push(mmpr.rules[i].pairs.length);
+    } else
+      fragSortingInfo.frequencies[fragIdxInSortingInfo] += mmpr.rules[i].pairs.length;
   }
   return [fromFrag, toFrag, occasions];
 }
@@ -39,7 +41,7 @@ function getAllRulesOcasions(mmpr: MmpRules, fragSortingInfo: {[key: string]: So
 function calculateActivityDiffs(
   molecules: string[],
   activities: Float32Array[],
-  mmpr: MmpRules, allCasesNumber: number,
+  mmpr: MmpRules, frags: MmpFragments, allCasesNumber: number,
   occasions: Int32Array) :
   [ maxActs: number [],
     meanDiffs: Float32Array[],
@@ -52,7 +54,8 @@ function calculateActivityDiffs(
     pairsToSmiles: string[],
     ruleNum: Int32Array,
     diffs: Float32Array[],
-    activityPairsIdxs: BitArray[]
+    activityPairsIdxs: BitArray[],
+    coreNums: Int32Array,
  ] {
   const variates = activities.length;
   const maxActs = new Array<number>(variates).fill(0);
@@ -64,6 +67,7 @@ function calculateActivityDiffs(
 
   const molFrom = new Array<string>(allCasesNumber);
   const molTo = new Array<string>(allCasesNumber);
+  const coresNums = new Int32Array(allCasesNumber);
   const pairNum = new Int32Array(allCasesNumber);
   const molNumFrom = new Int32Array(allCasesNumber);
   const molNumTo = new Int32Array(allCasesNumber);
@@ -88,6 +92,7 @@ function calculateActivityDiffs(
 
       molFrom[pairIdx] = molecules[idx1];
       molTo[pairIdx] = molecules[idx2];
+      coresNums[pairIdx] = mmpr.rules[i].pairs[j].core;
 
       for (let k = 0; k < variates; k++) {
         //TODO: make more efficient
@@ -106,8 +111,8 @@ function calculateActivityDiffs(
       molNumFrom[pairIdx] = idx1;
       molNumTo[pairIdx] = idx2;
       pairNum[pairIdx] = pairIdx;
-      pairsFromSmiles[pairIdx] = mmpr.smilesFrags[mmpr.rules[i].smilesRule1];
-      pairsToSmiles[pairIdx] = mmpr.smilesFrags[mmpr.rules[i].smilesRule2];
+      pairsFromSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule1]];
+      pairsToSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule2]];
       ruleNum[pairIdx] = i;
 
       pairIdx++;
@@ -120,5 +125,5 @@ function calculateActivityDiffs(
   }
 
   return [maxActs, meanDiffs, molFrom, molTo,
-    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs];
+    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums];
 }

@@ -17,9 +17,6 @@ Mappings:
     JN:
       domain: "docker.io"
       repo: "datagrok/jupyter_notebook"
-    H2o:
-      domain: "docker.io"
-      repo: "datagrok/h2o"
     Kaniko:
       domain: "gcr.io"
       repo: "kaniko-project/executor"

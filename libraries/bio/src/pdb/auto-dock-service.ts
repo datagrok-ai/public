@@ -52,6 +52,8 @@ export interface IAutoDockService {
 
   awaitStatus(targetStatus: DockerContainerStatus, timeout?: number): Promise<void>;
 
+  healthCheck(): Promise<void>;
+
   checkOpenCl(): Promise<number>;
 
   /**
@@ -66,6 +68,8 @@ export interface IAutoDockService {
   dockLigandColumn(receptor: BiostructureData, ligandCol: DG.Column<string>, autodockGpf: string, poseCount?: number,
     posColName?: string
   ): Promise<DG.DataFrame>;
+
+  terminate(): Promise<void>;
 }
 
 export async function getAutoDockService(): Promise<IAutoDockService> {

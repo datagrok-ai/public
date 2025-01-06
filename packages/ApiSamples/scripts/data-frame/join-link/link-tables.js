@@ -12,14 +12,18 @@
 //
 // https://datagrok.ai/help/explore/link-tables
 
-grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv').then((demog) =>
-  grok.data.loadTable('https://public.datagrok.ai/demo/demog-types.csv').then((demogTypes) => {
-    grok.shell.addTableView(demog);
-    grok.shell.addTableView(demogTypes);
-    grok.data.linkTables(demogTypes, demog,
-      ['sex', 'race'], ['sex', 'race'],
-      [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
-  }));
+let demog = await grok.data.loadTable("https://public.datagrok.ai/demo/demog.csv");
+let demogTypes = await grok.data.loadTable("https://public.datagrok.ai/demo/demog-types.csv");
+
+grok.shell.addTableView(demog);
+grok.shell.addTableView(demogTypes);
+grok.data.linkTables(
+  demogTypes,
+  demog,
+  ["sex", "race"],
+  ["sex", "race"],
+  [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]
+);
 
 // Link types:
 //   From SYNC_TYPE enum:

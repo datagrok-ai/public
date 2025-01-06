@@ -22,13 +22,15 @@ export abstract class BaseViewApp {
 
   filePath: string = '';
   addTabControl: boolean = true;
-  formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement>;
+  formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement | null>;
   setFunction?: () => Promise<void>;
+  abort?: () => Promise<void>;
   uploadCachedData?: () => Promise<HTMLElement>;
   sketched: number = 0;
   mode: string = 'sketch';
 
   sketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
+  runningProcesses: (() => Promise<void>)[] = [];
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -141,32 +143,51 @@ export abstract class BaseViewApp {
       this.clearForm();
       return;
     }
-  
-    this.clearTable();
-    const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
-    if (!col) return;
-    col!.semType = DG.SEMTYPE.MOLECULE;
-    this.tableView?.dataFrame.set('smiles', 0, smiles);
-    await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-  
-    const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
-    try {
-      if (this.uploadCachedData && this.sketched === 0) {
-        this.clearForm();
-        this.formContainer.appendChild(await this.uploadCachedData());
-      } else if (this.formGenerator) {
-        const form = await this.formGenerator(this.tableView!.dataFrame);
-        this.clearForm();
-        this.formContainer.appendChild(form);
-      } else {
-        console.warn('No form generator provided.');
-      }
-    } finally {
-      splashScreen.close();
+
+    if (this.abort && this.runningProcesses.length > 0) {
+      await this.abort();
+      this.runningProcesses = [];
     }
 
-    this.sketched += 1;
-    this.tableView?.grid.invalidate();
+    const newProcessAbort = this.addNewProcess(smiles);
+    this.runningProcesses.push(newProcessAbort);
+    
+    try {
+      await newProcessAbort();
+    } finally {
+      this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+    }
+  }
+
+  private addNewProcess(smiles: string): () => Promise<void> {
+    return async () => {
+      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string');
+      if (!col) return;
+      col!.semType = DG.SEMTYPE.MOLECULE;
+      this.tableView?.dataFrame.set('smiles', 0, smiles);
+      await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+
+      const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
+      try {
+        if (this.uploadCachedData && this.sketched === 0) {
+          this.clearForm();
+          this.formContainer.appendChild(await this.uploadCachedData());
+        } else if (this.formGenerator) {
+          const form = await this.formGenerator(this.tableView!.dataFrame);
+          if (form) {
+            this.clearForm();
+            this.formContainer.appendChild(form);
+          }
+        } else {
+          console.warn('No form generator provided.');
+        }
+      } finally {
+        splashScreen.close();
+      }
+
+      this.sketched += 1;
+      this.tableView?.grid.invalidate();
+    };
   }
 
   private createFileInputPane() {

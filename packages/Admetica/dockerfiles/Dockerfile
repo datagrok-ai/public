@@ -30,11 +30,11 @@ RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_do
 
 RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
 
-USER mambauser
+USER $MAMBA_USER
 
 WORKDIR /app
 
-COPY environment.yml /app/
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /app/
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive --region us-east-2 && \
@@ -45,7 +45,7 @@ RUN set -ex ; \
     micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
-COPY . /app
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
 

@@ -85,7 +85,7 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return await MonomerLibManager.getInstance();
 }
 
-export let hydrophobPalette: SeqPaletteCustom | null = null;
+//export let hydrophobPalette: SeqPaletteCustom | null = null;
 
 export class SeqPaletteCustom implements SeqPalette {
   private readonly _palette: { [m: string]: string };
@@ -128,39 +128,42 @@ async function initBioInt() {
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
   }
-  libHelper.awaitLoaded(Infinity).then(() => {
-    // Do not wait for monomers and sets loaded
-    return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
-  });
+  await libHelper.awaitLoaded(Infinity);
+  if (!libHelper.initialLoadCompleted)
+    await libHelper.loadMonomerLib();
+  // Do not wait for monomers and sets loaded
+  libHelper.loadMonomerSets();
   const monomerLib = libHelper.getMonomerLib();
   const monomerSets = libHelper.getMonomerSets();
   // finally log
   const t2: number = window.performance.now();
   _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
 
-  const monomers: string[] = [];
-  const logPs: number[] = [];
+  // const monomers: string[] = [];
+  // const logPs: number[] = [];
 
   const seqHelper = new SeqHelper(libHelper, rdKitModule);
   _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
-  const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
-  Object.keys(series).forEach((symbol) => {
-    monomers.push(symbol);
-    const block = series[symbol].replaceAll('#R', 'O ');
-    const mol = rdKitModule.get_mol(block);
-    const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
-    logPs.push(logP);
-    mol?.delete();
-  });
 
-  const sum = logPs.reduce((a, b) => a + b, 0);
-  const avg = (sum / logPs.length) || 0;
+  // NB! do not delete the code below. not used now but in future we might use hydrophobicity palette
+  // const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
+  // Object.keys(series).forEach((symbol) => {
+  //   monomers.push(symbol);
+  //   const block = series[symbol].replaceAll('#R', 'O ');
+  //   const mol = rdKitModule.get_mol(block);
+  //   const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
+  //   logPs.push(logP);
+  //   mol?.delete();
+  // });
 
-  const palette: { [monomer: string]: string } = {};
-  for (let i = 0; i < monomers.length; i++)
-    palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+  // const sum = logPs.reduce((a, b) => a + b, 0);
+  // const avg = (sum / logPs.length) || 0;
 
-  hydrophobPalette = new SeqPaletteCustom(palette);
+  // const palette: { [monomer: string]: string } = {};
+  // for (let i = 0; i < monomers.length; i++)
+  //   palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+
+  // hydrophobPalette = new SeqPaletteCustom(palette);
 
   _package.logger.debug(`${logPrefix}, end`);
 }
@@ -961,19 +964,36 @@ export async function manageMonomersView() {
   await monomerManager.getViewRoot();
 }
 
-//name: Manage Monomers
+//name: Monomers
 //tags: app
-//meta.browsePath: Peptides | Monomers
-export async function manageMonomersApp() {
-  const monomerManager = await MonomerManager.getInstance();
-  await monomerManager.getViewRoot();
+//meta.browsePath: Peptides
+//meta.icon: files/icons/monomers.png
+//output: view v
+export async function manageLibrariesApp(): Promise<DG.View> {
+  return await showManageLibrariesView(false);
 }
 
-//name: Manage Libraries
-//tags: app
-//meta.browsePath: Peptides | Monomers
-export async function manageLibrariesApp(): Promise<void> {
-  await showManageLibrariesView();
+//name: Monomer Manager Tree Browser
+//input: dynamic treeNode
+//input: view browseView
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
+  libraries.forEach((libName) => {
+    const libNode = treeNode.item(libName);
+    // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
+    libNode.onSelected.subscribe(async () => {
+      const monomerManager = await MonomerManager.getNewInstance();
+      browseView.preview = await monomerManager.getViewRoot(libName, false);
+    });
+
+    libNode.root.addEventListener('dblclick', async (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const monomerManager = await MonomerManager.getInstance();
+      await monomerManager.getViewRoot(libName, true);
+      monomerManager.resetCurrentRowFollowing();
+    });
+  });
 }
 
 //name: saveAsFasta
@@ -989,6 +1009,13 @@ export function saveAsFasta() {
 //output: filter result
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
+  return new BioSubstructureFilter(_package.seqHelper, _package.logger);
+}
+
+//name: Bio Substructure Filter Test
+//description: Substructure filter for Helm package tests
+//output: object result
+export function bioSubstructureFilterTest(): BioSubstructureFilter {
   return new BioSubstructureFilter(_package.seqHelper, _package.logger);
 }
 

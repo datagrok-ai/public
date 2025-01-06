@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
     "wu": "^2.1.0"

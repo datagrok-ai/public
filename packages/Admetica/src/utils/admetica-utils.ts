@@ -1,14 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { _package } from '../package-test';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
-import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
+
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
-import '../css/admetica.css';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
 import { FormStateGenerator } from './admetica-form';
+import '../css/admetica.css';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -17,12 +16,6 @@ let piechartIndex = 0;
 async function getAdmeticaContainer() {
   const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
   return admeticaContainer;
-}
-
-// can be removed, need to add to container info
-async function startAdmeticaContainer(containerId: string) {
-  grok.shell.warning('Admetica container has not started yet. Try again in a few seconds');
-  grok.dapi.docker.dockerContainers.run(containerId);
 }
 
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<string | null> {
@@ -35,13 +28,19 @@ async function sendRequestToContainer(containerId: string, path: string, params:
   }
 }
 
+export async function healthCheck() {
+  const admeticaContainer = await getAdmeticaContainer();
+  const path = '/health_check';
+  const params: RequestInit = {
+    method: 'GET',
+  }
+  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  if (!response)
+    throw new Error('Health check failed.');
+}
+
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admeticaContainer = await getAdmeticaContainer();
-  if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
-    await startAdmeticaContainer(admeticaContainer?.id);
-    return null;
-  }
-
   const params: RequestInit = {
     method: 'POST',
     headers: {
@@ -51,10 +50,9 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     body: csvString
   };
 
-
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  return response;
+  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
@@ -62,11 +60,11 @@ export async function convertLD50(response: string, smilesCol: DG.Column): Promi
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
-  const molWeights = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
+  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
-    const mgPerKg = molPerKg * molWeights[i] * 1000;
+    const mgPerKg = molPerKg * molWeights.get(i) * 1000;
     return mgPerKg;
   });
   
@@ -131,7 +129,6 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[], showI
     applyColumnColorCoding(column, matchingModel);
   }
 }
-
 
 function createConditionalColoringRules(coloring: ModelColoring): { [index: string]: string | number } {
   const conditionalColors = Object.entries(coloring).slice(1);
@@ -285,6 +282,27 @@ function getTableView(dataFrame: DG.DataFrame): DG.TableView {
   return tableView;
 }
 
+function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
+  const isColumnRelatedToSubgroup = (column: string, subgroup: Subgroup): boolean => {
+    return subgroup.models.some(model => column.includes(model.name));
+  };
+
+  const createSubgroupDict = (properties: any, columnNames: string[]) => {
+    return properties.subgroup.reduce((dict: { [key: string]: { color: string; columns: string[] } }, subgroup: Subgroup) => {
+      dict[subgroup.name] = {
+        color: colorsDictionary[subgroup.name],
+        columns: columnNames.filter(column => isColumnRelatedToSubgroup(column, subgroup))
+      };
+      return dict;
+    }, {});
+  };
+
+  const subgroupDict = createSubgroupDict(properties, columnNames);
+  // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh 
+  // when adding to an existing grid. This fix will be removed once the issue is resolved.
+  table.temp['.columnGroups'] = subgroupDict;
+}
+
 export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
   if (!gridCol.column) return;
 
@@ -300,8 +318,10 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   const subgroupName = properties.subgroup.find((subg: Subgroup) =>
     subg.models.some((m: Model) => model.name.includes(m.name))
   )?.name;
-  if (subgroupName)
+  if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
+    column.setTag('group', subgroupName);
+  }
 }
 
 export function addResultColumns(
@@ -349,6 +369,7 @@ export function addResultColumns(
   if (addPiechart)
     addSparklines(viewTable, updatedModelNames, molColIdx + 2);
 
+  setAdmeGroups(viewTable, updatedModelNames);
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable);
 
@@ -462,7 +483,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
 
-  const pieChartRenderer = new PieChartCellRenderer();
+  const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 

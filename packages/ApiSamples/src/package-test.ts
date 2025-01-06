@@ -2,6 +2,7 @@ import { DataFrame, Script } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
+import {categoryOwners}  from './tests/owners';
 export const _package = new DG.Package();
 export { tests };
 
@@ -11,6 +12,7 @@ const skip = [
   // Skipped
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark',
   'menu-customization', '10k-columns-updates', '100-million-rows',
+  'sticky-meta-1-tags', 'sticky-meta-2-semtype', /* skipped as they spawn persisting data */
   'files' /* do not test manually */,
 
   // To fix
@@ -76,6 +78,11 @@ export async function initTests() {
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
     let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
+    let owner: string | undefined;
+    let fullCatName = catName + ':' + script.friendlyName;
+    for (let category of Object.keys(categoryOwners))
+      if (fullCatName.startsWith(category))
+        owner = categoryOwners[category];
     category(catName, () => {
       if(!beforeArrAdded.includes(catName) && beforeArr[catName.replaceAll(' ', '')]){
         before(async ()=>{
@@ -126,23 +133,11 @@ export async function initTests() {
             throw new Error(`Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
         }
 
-        async function evaluateScript(script: Script) {
-          let timeout: any;
-          timeout = setTimeout(() => {
-            subscription.unsubscribe();
-            throw new Error('Script didnt pass');
-          }, 10000);
-          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
-            if ((funcCall.func as any).script.replaceAll('\r', '').replaceAll('\n', '') === script.script.replaceAll('\r', '').replaceAll('\n', '')) {
-              if (timeout)
-                clearTimeout(timeout);
-              subscription.unsubscribe();  
-            }
-          });
+        async function evaluateScript(script: Script) { 
           await script.apply();
           await delay(300);
         }
-      }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
+      }, skip.includes(script.friendlyName) ? { skipReason: 'skip', owner: owner } : { timeout: 60000, owner: owner });
     });
   }
 }

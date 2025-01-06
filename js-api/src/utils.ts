@@ -240,7 +240,6 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-    DG.Test.isReproducing = true;
     for (let testParam of testsParams) {
       let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
       let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
@@ -271,14 +270,14 @@ export class Utils {
       const skipped = row.get("skipped");
       row["flaking"] = success && DG.Test.isReproducing;
 
-      if (resultDF === undefined){
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
-        resultDF = df;
-      }
-      else{
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
+      df.changeColumnType('result', COLUMN_TYPE.STRING);
+      df.changeColumnType('logs', COLUMN_TYPE.STRING);
+
+      if (resultDF === undefined)
+        resultDF = df;      
+      else
         resultDF = resultDF.append(df);
-      }
+      
       if (row["skipped"]) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
         countSkipped += 1;
@@ -821,7 +820,8 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
-  export let isReproducing   = false;
+  export let isReproducing = false;
+  export let isCiCd = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

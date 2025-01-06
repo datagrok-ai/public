@@ -9,7 +9,7 @@ import { spaceToCamelCase } from '../utils/utils';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
-
+ 
 const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -167,6 +167,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
+            process.stdout.write(`Building and publishing ${dirName}...`);
             if (skipPublish != true) {
               await utils.runScript(`npm install`, packageDir);
               if (linkPackage)
@@ -176,10 +177,10 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
               await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
             }
             packagesToRun.set(dirName, true);
-            console.log(`Package published ${dirName}`);
+            process.stdout.write(` success!\n`);
           }
           catch (e: any) {
-            console.log(`Package wasn't published ${dirName}`);
+            process.stdout.write(` fail!\n`);
           }
         }
       }
@@ -202,7 +203,6 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
-
     const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | {failReport: string}> => {
       return new Promise<LoadedPackageData[] | {failReport: string}>((resolve, reject) => {
         const promises: any[] = [];
@@ -264,27 +264,27 @@ export function addLogsToFile(filePath: string, stringToSave: string) {
   fs.appendFileSync(filePath, `${stringToSave}`);
 }
 
-export function printWorkersResult(workerResult: ResultObject, verbose: boolean = false) {
+export function printBrowsersResult(browserResult: ResultObject, verbose: boolean = false) {
   if (verbose) {
-    if ((workerResult.passedAmount ?? 0) > 0 && (workerResult.verbosePassed ?? []).length > 0) {
+    if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
       console.log("Passed: ");
-      console.log(workerResult.verbosePassed);
+      console.log(browserResult.verbosePassed);
     }
-    if ((workerResult.skippedAmount ?? 0) > 0 && (workerResult.verboseSkipped ?? []).length > 0) {
+    if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
       console.log("Skipped: ");
-      console.log(workerResult.verboseSkipped);
+      console.log(browserResult.verboseSkipped);
     }
   }
 
-  if ((workerResult.failedAmount ?? 0) > 0 && (workerResult.verboseFailed ?? []).length > 0) {
+  if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
     console.log("Failed: ");
-    console.log(workerResult.verboseFailed);
+    console.log(browserResult.verboseFailed);
   }
-  console.log("Passed amount:  " + workerResult?.passedAmount);
-  console.log("Skipped amount: " + workerResult?.skippedAmount);
-  console.log("Failed amount:  " + workerResult?.failedAmount);
+  console.log("Passed amount:  " + browserResult?.passedAmount);
+  console.log("Skipped amount: " + browserResult?.skippedAmount);
+  console.log("Failed amount:  " + browserResult?.failedAmount);
 
-  if (workerResult.failed) {
+  if (browserResult.failed) {
     color.fail('Tests failed.');
   } else {
     color.success('Tests passed.');
@@ -301,21 +301,21 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-export async function runWorker(testExecutionData: OrganizedTests[], workerOptions: WorkerOptions, workersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
   return await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
-    if (workerOptions.gui)
+    if (browserOptions.gui)
       params['headless'] = false;
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
     const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
 
-    const currentWorkerNum = workersId;
-    const logsDir = `./test-console-output-${currentWorkerNum}.log`;
-    const recordDir = `./test-record-${currentWorkerNum}.mp4`;
+    const currentBrowserNum = browsersId;
+    const logsDir = `./test-console-output-${currentBrowserNum}.log`;
+    const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
-    if (workerOptions.record) {
+    if (browserOptions.record) {
       await recorder.start(recordDir);
       await page.exposeFunction("addLogsToFile", addLogsToFile);
 
@@ -331,6 +331,8 @@ export async function runWorker(testExecutionData: OrganizedTests[], workerOptio
         (<any>window).DG.Test.isInBenchmark = true;
       if (options.reproduce)
         (<any>window).DG.Test.isReproducing = true;
+      if (options.ciCd)
+        (<any>window).DG.Test.isCiCd = true;
 
       return new Promise<any>((resolve, reject) => {
         (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
@@ -351,9 +353,9 @@ export async function runWorker(testExecutionData: OrganizedTests[], workerOptio
             })
           });
       })
-    }, testExecutionData, workerOptions);
+    }, testExecutionData, browserOptions);
 
-    if (workerOptions.record) {
+    if (browserOptions.record) {
       await recorder.stop();
     }
 
@@ -364,34 +366,34 @@ export async function runWorker(testExecutionData: OrganizedTests[], workerOptio
   }, testInvocationTimeout);
 }
 
-export async function mergeWorkersResults(workersResults: ResultObject[]): Promise<ResultObject> {
+export async function mergeBrowsersResults(browsersResults: ResultObject[]): Promise<ResultObject> {
 
   let mergedResult: ResultObject = {
-    failed: workersResults[0].failed,
-    verbosePassed: workersResults[0].verbosePassed,
-    verboseSkipped: workersResults[0].verboseSkipped,
-    verboseFailed: workersResults[0].verboseFailed,
-    passedAmount: workersResults[0].passedAmount,
-    skippedAmount: workersResults[0].skippedAmount,
-    failedAmount: workersResults[0].failedAmount,
-    csv: workersResults[0].csv
+    failed: browsersResults[0].failed,
+    verbosePassed: browsersResults[0].verbosePassed,
+    verboseSkipped: browsersResults[0].verboseSkipped,
+    verboseFailed: browsersResults[0].verboseFailed,
+    passedAmount: browsersResults[0].passedAmount,
+    skippedAmount: browsersResults[0].skippedAmount,
+    failedAmount: browsersResults[0].failedAmount,
+    csv: browsersResults[0].csv
   }
 
-  for (let workersResult of workersResults) {
-    if (mergedResult.csv === workersResult.csv)
+  for (let browsersResult of browsersResults) {
+    if (mergedResult.csv === browsersResult.csv)
       continue;
 
-    mergedResult.failed = mergedResult.failed && workersResult.failed;
-    mergedResult.verbosePassed = `${mergedResult.verbosePassed.trim()}\n${workersResult.verbosePassed.trim()}`;
-    mergedResult.verboseFailed = `${mergedResult.verboseFailed.trim()}\n${workersResult.verboseFailed.trim()}`;
-    mergedResult.verboseSkipped = `${mergedResult.verboseSkipped.trim()}\n${workersResult.verboseSkipped.trim()}`;
+    mergedResult.failed = mergedResult.failed && browsersResult.failed;
+    mergedResult.verbosePassed = `${mergedResult.verbosePassed.trim()}\n${browsersResult.verbosePassed.trim()}`;
+    mergedResult.verboseFailed = `${mergedResult.verboseFailed.trim()}\n${browsersResult.verboseFailed.trim()}`;
+    mergedResult.verboseSkipped = `${mergedResult.verboseSkipped.trim()}\n${browsersResult.verboseSkipped.trim()}`;
 
-    mergedResult.passedAmount += workersResult.passedAmount;
-    mergedResult.failedAmount += workersResult.failedAmount;
-    mergedResult.skippedAmount += workersResult.skippedAmount;
+    mergedResult.passedAmount += browsersResult.passedAmount;
+    mergedResult.failedAmount += browsersResult.failedAmount;
+    mergedResult.skippedAmount += browsersResult.skippedAmount;
 
     const resultToMerdge1 = mergedResult.csv.trim().split('\n');
-    const resultToMerdge2 = workersResult.csv.trim().split('\n');
+    const resultToMerdge2 = browsersResult.csv.trim().split('\n');
 
     const header = resultToMerdge1[0];
     mergedResult.csv = [
@@ -403,10 +405,10 @@ export async function mergeWorkersResults(workersResults: ResultObject[]): Promi
   return mergedResult;
 }
 
-export interface WorkerOptions {
+export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean
+  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean,
 }
 
 export type ResultObject = {

@@ -21,7 +21,7 @@ interface IData {
 }
 
 class ProjectDGFunctionsParser {
-    private functionRegex = new RegExp("\\s*(?:function\\s+)?(\\w+)\\s*\\(([^)]*)\\)\\s*:\\s*([^\\{\\;]*)\\s*\\{?;?\\s*$");
+    private functionRegex = new RegExp("\\s*(?:function\\s+)?(\\w+)\\s*\\(([^)]*)\\)\\s*:\\s*((?:[^\\{\\;]*)|(?:\\{.*\\}))\\s*\\{?;?\\s*$");
     private getAccessorRegex = new RegExp("\\s*get\\s+([^\\(]*)\\s*\\(\\)\\s*:\\s*([^\\{\\;]*)\\s*");
     private setAccessorRegex = new RegExp("\\s*set\\s+([^\\(]*)\\s*\\(([^\\)]*)\\)");
     private nonPublicRegex = new RegExp("\\s*((private)|(protected))\\s+");
@@ -40,7 +40,7 @@ class ProjectDGFunctionsParser {
     private wasConcatedString = false;
 
     private containerRegex = new RegExp("(?:export declare)[ ]*(?:namespace|class)[ ]*[^{|;]*(?:{|;)");
-    private containerNameRegex = new RegExp("(?<=export declare (?:class|namespace) )\\w+(?=\\s*(?:extends\\s+\\w+\\s+)?[{;]?)");
+    private containerNameRegex = new RegExp("(?<=export declare )(class|namespace) (\\w)+(?=\\s*(?:extends\\s+\\w+\\s+)?[{;]?)");
     private lastClass: string | undefined = undefined;
     private resultFunctionsObject: IIndexable = {};
 
@@ -259,7 +259,7 @@ class ProjectDGFunctionsParser {
 
     private GetContainersName(containerString: string): string | undefined {
         const classNames = containerString.match(this.containerNameRegex);
-        return classNames![0] || undefined;
+        return `${classNames![1]} ${classNames![2]}` || undefined;
     }
 
     private CountCharactersInLine(line: string, char: string): number {

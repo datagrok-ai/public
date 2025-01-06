@@ -1,7 +1,7 @@
 ### Files & Sharing
 
 1. File Preview:
-- Navigate to Browse > Files > App Data > Diff Studio > examples.
+- Navigate to Browse > Files > App Data > Diff Studio > Library.
 - Click on the file pk.ivp.
 - Expected Result: The file preview opens successfully.
 2. Modify Inputs:
