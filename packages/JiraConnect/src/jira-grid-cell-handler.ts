@@ -1,13 +1,13 @@
 
-import {delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x} from "datagrok-api/dg";
+import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from "datagrok-api/dg";
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import { loadIssueData } from "./api/data";
 import { _package } from "./package-test";
-import {AuthCreds, JiraIssue} from "./api/objects";
+import { AuthCreds, JiraIssue } from "./api/objects";
 import { getJiraCreds } from "./app/credentials";
-import {cache, issueData, queried} from "./package";
+import { cache, issueData, queried } from "./package";
 import imgBug from './images/bug.png';
 import imgEpic from './images/epic.png';
 import imgFeature from './images/feature.png';
@@ -95,7 +95,7 @@ function getIssueFields(issue: JiraIssue): Record<string, string> {
         'Status': issue.fields.status?.name ?? '',
         'Assignee': issue.fields.assignee?.displayName ?? '',
         'Creator': issue.fields.creator?.displayName ?? '',
-        'Labels': issue.fields.labels?.join('') ?? '',
+        'Labels': issue.fields.labels?.join(', ') ?? '',
     }
 }
 
@@ -215,17 +215,18 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
 
             if (ticket && props) {
                 g.fillStyle = '#4d5261';
+                g.textAlign =  "left";
 
                 if (w > 150) {
-                    g.fillText(props.Summary, x + 100, y + 16);
+                    g.fillText(props.Summary, x + 20, y + 30);
                     delete props.Summary;
                 }
 
                 if (h > 40) {
                     const fields = Object.getOwnPropertyNames(props);
                     for (let i = 0; i < fields.length; i++) {
-                        g.fillText(fields[i], x + 10, y + 40 + 20 * i);
-                        g.fillText('' + props[fields[i]], x + 80, y + 40 + 20 * i);
+                        g.fillText(fields[i], x + 20, y + 50 + 20 * i, 100);
+                        g.fillText('' + props[fields[i]], x + 80, y + 50 + 20 * i);
                     }
                 }
             }
