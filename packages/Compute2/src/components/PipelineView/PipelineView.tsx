@@ -107,7 +107,7 @@ export const PipelineView = Vue.defineComponent({
                 const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
 
                 return <div
-                  class='p-2 border-solid border-1 border-[#dbdcdf] m-4'
+                  class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
                   style={{width: '208px'}}
                   onMouseover={() => hoveredFunc.value = func}
                   onMouseleave={() => hoveredFunc.value = null}
