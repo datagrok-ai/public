@@ -42,16 +42,24 @@ export async function scrollTable(el: HTMLElement, delta: number, cycles: number
   }
 }
 
+async function getTime(func: (chartData?: IFitChartData | null) => Promise<void>, funcChartData?: IFitChartData | null): Promise<number> {
+	const start = Date.now();
+	await func(funcChartData);
+	const stop = Date.now();
+	return stop.valueOf() - start.valueOf();
+}
+
 
 category('creation', () => {
 	test('fit curve creation', async () => {
-		const start = Date.now();
-		const df = createDemoDataFrame(DG.Test.isInBenchmark ? 1000 : 100, 5, 2);
-		grok.shell.addTableView(df);
-		const stop = Date.now();
-		await delay(50);
-		console.log(`Creation took ${stop.valueOf() - start.valueOf()} ms`)
-		return `${DG.Test.isInBenchmark ? 1000 : 100} points, took ${stop.valueOf() - start.valueOf()} ms`
+		const pointsAmount = DG.Test.isInBenchmark ? 1000 : 100;
+		const func = async (chartData?: IFitChartData | null) => {
+			const df = createDemoDataFrame(pointsAmount, 5, 2);
+			grok.shell.addTableView(df);
+		};
+		const time = await getTime(func, null);
+		console.log(`Creation took ${time} ms`)
+		return `${pointsAmount} points, took ${time} ms`
 	}, {benchmark: true});
 });
 
@@ -67,11 +75,14 @@ category('rendering', () => {
 
 		const fitChartCellRenderer = new FitChartCellRenderer();
 		const fitChartData: IFitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
-		for (let i = 1; i <= renderingTimesAmount; i++) {
+		const times: number[] = [];
+		const func = async (chartData?: IFitChartData | null) => {
 			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
-		}
-		return `rendering performed ${renderingTimesAmount} times`;
+		};
+		for (let i = 1; i <= renderingTimesAmount; i++)
+			times[times.length] = await getTime(func);
+		return `rendering performed ${renderingTimesAmount} times, max time is ${Math.max(...times)} ms, min time is ${Math.min(...times)} ms, average time is ${times.reduce((a, b) => a + b, 0) / times.length} ms`;
 	}, {benchmark: true});
 
 	test('rendering different fitChartData on canvas', async () => {
@@ -84,25 +95,33 @@ category('rendering', () => {
 		const g = canvas.getContext('2d')!;
 
 		const fitChartCellRenderer = new FitChartCellRenderer();
-		for (let i = 1; i <= renderingTimesAmount; i++) {
-			const fitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
-			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), fitChartData);
+		const times: number[] = [];
+		const func = async (chartData?: IFitChartData | null) => {
+			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), chartData!);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
-		return `rendering performed ${renderingTimesAmount} times`;
+		for (let i = 1; i <= renderingTimesAmount; i++) {
+			const fitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
+			times[times.length] = await getTime(func, fitChartData);
+		}
+		return `rendering performed ${renderingTimesAmount} times, max time is ${Math.max(...times)} ms, min time is ${Math.min(...times)} ms, average time is ${times.reduce((a, b) => a + b, 0) / times.length} ms`;
 	}, {benchmark: true});
 
 	test('rendering in grid', async () => {
-		const df = createDemoDataFrame(30, 5, 2);
+		const df = createDemoDataFrame(30, 5, 5);
 		const tv = grok.shell.addTableView(df);
 		const scrollCycles = 10;
-		const scrollDelta = 300;
+		const scrollDeltaPlus = 300;
+		const scrollDeltaMinus = -300;
 		await delay(100);
 		const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
-		const start = new Date();
-		await scrollTable(canvas, scrollDelta, scrollCycles, 10);
-		const stop = new Date();
-		console.log(`curves rendering took ${stop.valueOf() - start.valueOf()} ms`);
-		return `${stop.valueOf() - start.valueOf()} ms`;
-	});
+		const func = async (chartData?: IFitChartData | null) => {
+			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 10);
+			await scrollTable(canvas, scrollDeltaMinus, scrollCycles, 10);
+			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 10);
+		};
+		const time = await getTime(func, null);
+		console.log(`curves rendering took ${time} ms`);
+		return `curves rendering took ${time} ms`;
+	}, {benchmark: true});
 });

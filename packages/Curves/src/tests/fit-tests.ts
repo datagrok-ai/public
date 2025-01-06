@@ -101,6 +101,41 @@ category('fit', () => {
 		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 
+	test('fitSeries sigmoid benchmark', async () => {
+		const start = Date.now();
+		fitSeries(sigmoidSeries, sigmoidFitFunc);
+		const stop = Date.now();
+		return `${stop.valueOf() - start.valueOf()} ms`;
+	}, {benchmark: true});
+
+	test('fitSeries linear benchmark', async () => {
+		const start = Date.now();
+		fitSeries(linearSeries, linearFitFunc);
+		const stop = Date.now();
+		return `${stop.valueOf() - start.valueOf()} ms`;
+	}, {benchmark: true});
+
+	test('fitSeries log-linear benchmark', async () => {
+		const start = Date.now();
+		fitSeries(logLinearSeries, logLinearFitFunc);
+		const stop = Date.now();
+		return `${stop.valueOf() - start.valueOf()} ms`;
+	}, {benchmark: true});
+
+	test('fitSeries exponential benchmark', async () => {
+		const start = Date.now();
+		fitSeries(exponentialSeries, exponentialFitFunc);
+		const stop = Date.now();
+		return `${stop.valueOf() - start.valueOf()} ms`;
+	}, {benchmark: true});
+
+	test('fitSeries polynomial benchmark', async () => {
+		const start = Date.now();
+		fitSeries(polynomialSeries, polynomialFitFunc);
+		const stop = Date.now();
+		return `${stop.valueOf() - start.valueOf()} ms`;
+	}, {benchmark: true});
+
 	test('getSeriesConfidenceInterval', async () => {
 		const sigmoidSeriesConfidenceIntervals = getSeriesConfidenceInterval(sigmoidSeries, sigmoidFitFunc, true);
 		const linearSeriesConfidenceIntervals = getSeriesConfidenceInterval(linearSeries, linearFitFunc, true);

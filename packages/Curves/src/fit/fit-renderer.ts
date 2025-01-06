@@ -7,7 +7,7 @@ import {
   IFitSeries,
   FitStatistics,
   fitChartDataProperties,
-  fitSeriesProperties, IFitChartOptions, IFitPoint,
+  fitSeriesProperties, IFitChartOptions, IFitPoint, FitCurve,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
@@ -238,6 +238,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
   }
 
+  static curves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>();
+
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     if (!gridCell.cell.value)
       return;
@@ -343,7 +345,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     return screenBounds.width >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_WIDTH && screenBounds.height >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_HEIGHT;
   }
 
-  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData): void {
+  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell): void {
     g.save();
     g.beginPath();
     g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
@@ -395,8 +397,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           curve = getCurve(series, fitFunc);
         }
         else {
-          // TODO: Stop refitting when we just rerender the same curve - use LruMap
-          const fitResult = fitSeries(series, fitFunc, chartLogOptions);
+          // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
+          const column = gridCell?.cell?.column;
+          const fitResult = column ? FitChartCellRenderer.curves.getOrCreate(`${JSON.stringify(data)}_${column.name}_${column.version}`, () => {
+            return fitSeries(series, fitFunc, chartLogOptions);
+          }) : fitSeries(series, fitFunc, chartLogOptions);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters]
           series.parameters = params;
@@ -453,7 +458,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       data.series = [mergeSeries(data.series!)!];
 
     g.clearRect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
-    this.renderCurves(g, screenBounds, data);
+    this.renderCurves(g, screenBounds, data, gridCell);
   }
 
   hitTest(e: MouseEvent, point: IFitPoint, viewport: Viewport): boolean {
