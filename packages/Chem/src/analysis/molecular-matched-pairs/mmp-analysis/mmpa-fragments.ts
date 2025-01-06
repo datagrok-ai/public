@@ -88,9 +88,9 @@ function fillRules(
   let ruleIndexInverse = -1;
 
   for (let ind = 0; ind < mmpRules.rules.length; ind++) {
-    if (mmpRules.rules[ind].smilesRule1 == ruleSmiles1 && mmpRules.rules[ind].smilesRule2 == ruleSmiles2)
+    if (mmpRules.rules[ind].sr1 == ruleSmiles1 && mmpRules.rules[ind].sr2 == ruleSmiles2)
       ruleIndexStraight = ind;
-    if (mmpRules.rules[ind].smilesRule1 == ruleSmiles2 && mmpRules.rules[ind].smilesRule2 == ruleSmiles1)
+    if (mmpRules.rules[ind].sr1 == ruleSmiles2 && mmpRules.rules[ind].sr2 == ruleSmiles1)
       ruleIndexInverse = ind;
   }
 
@@ -106,31 +106,31 @@ function fillRules(
   const indxFirst = ruleSmiles1 < ruleSmiles2;
   if (ruleIndexStraight == -1) {
     mmpRules.rules.push({
-      smilesRule1: indxFirst ? ruleSmiles1: ruleSmiles2,
-      smilesRule2: indxFirst ? ruleSmiles2: ruleSmiles1,
+      sr1: indxFirst ? ruleSmiles1: ruleSmiles2,
+      sr2: indxFirst ? ruleSmiles2: ruleSmiles1,
       pairs: [],
     });
     mmpRules.rules[ruleCounter].pairs
-      .push({firstStructure: indxFirst ? idxFirst : idxSecond,
-        secondStructure: indxFirst ? idxSecond : idxFirst,
+      .push({fs: indxFirst ? idxFirst : idxSecond,
+        ss: indxFirst ? idxSecond : idxFirst,
         core});
     ruleCounter++;
     mmpRules.rules.push({
-      smilesRule1: indxFirst ? ruleSmiles2: ruleSmiles1,
-      smilesRule2: indxFirst ? ruleSmiles1: ruleSmiles2,
+      sr1: indxFirst ? ruleSmiles2: ruleSmiles1,
+      sr2: indxFirst ? ruleSmiles1: ruleSmiles2,
       pairs: [],
     });
     mmpRules.rules[ruleCounter].pairs
-      .push({firstStructure: indxFirst ? idxSecond : idxFirst,
-        secondStructure: indxFirst ? idxFirst : idxSecond,
+      .push({fs: indxFirst ? idxSecond : idxFirst,
+        ss: indxFirst ? idxFirst : idxSecond,
         core});
     ruleCounter++;
     allCasesCounter += 2;
   } else {
     mmpRules.rules[ruleIndexStraight].pairs
-      .push({firstStructure: idxFirst, secondStructure: idxSecond, core});
+      .push({fs: idxFirst, ss: idxSecond, core});
     mmpRules.rules[ruleIndexInverse].pairs
-      .push({firstStructure: idxSecond, secondStructure: idxFirst, core});
+      .push({fs: idxSecond, ss: idxFirst, core});
     allCasesCounter += 2;
   }
 

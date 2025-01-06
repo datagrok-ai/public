@@ -193,7 +193,7 @@ export class MmpPairedGrids {
       if (idx !== -1) {
         for (let i = 0; i < this.mmpa!.rules.rules.length; i++) {
           for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
-            const fs = this.mmpa!.rules.rules[i].pairs[j].firstStructure;
+            const fs = this.mmpa!.rules.rules[i].pairs[j].fs;
             if (idx == fs) {
               if (idxTrue == -1)
                 idxTrue = i;
@@ -302,19 +302,19 @@ export class MmpPairedGrids {
     if (idxParent !== -1 || showAllFragsMode) {
       for (const idx of idxs) {
         if (idx !== -1) {
-          const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
-          const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
+          const ruleSmiNum1 = this.mmpa.rules.rules[idx].sr1;
+          const ruleSmiNum2 = this.mmpa.rules.rules[idx].sr2;
 
           let counter = 0;
 
           for (let i = 0; i < this.mmpa.rules.rules.length; i++) {
-            const first = this.mmpa.rules.rules[i].smilesRule1;
-            const second = this.mmpa.rules.rules[i].smilesRule2;
+            const first = this.mmpa.rules.rules[i].sr1;
+            const second = this.mmpa.rules.rules[i].sr2;
             for (let j = 0; j < this.mmpa.rules.rules[i].pairs.length; j++) {
               if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
                 maskToModify.set(counter, true, false);
                 if (!selectionIdxs) {
-                  if (!showAllFragsMode && this.mmpa.rules.rules[i].pairs[j].firstStructure == idxParent)
+                  if (!showAllFragsMode && this.mmpa.rules.rules[i].pairs[j].fs == idxParent)
                     idxPairs = counter;
                 }
               }
@@ -344,14 +344,14 @@ export class MmpPairedGrids {
     }
 
     if (idx !== -1) {
-      const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
-      const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
+      const ruleSmiNum1 = this.mmpa.rules.rules[idx].sr1;
+      const ruleSmiNum2 = this.mmpa.rules.rules[idx].sr2;
 
       let counter = 0;
 
       for (let i = 0; i < this.mmpa.rules.rules.length; i++) {
-        const first = this.mmpa.rules.rules[i].smilesRule1;
-        const second = this.mmpa.rules.rules[i].smilesRule2;
+        const first = this.mmpa.rules.rules[i].sr1;
+        const second = this.mmpa.rules.rules[i].sr2;
         for (let j = 0; j < this.mmpa.rules.rules[i].pairs.length; j++) {
           if (ruleSmiNum1 == first && ruleSmiNum2 == second)
             this.mmpMaskFrag.set(counter, true, false);
