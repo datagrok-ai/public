@@ -141,7 +141,7 @@ function renderSubsector(
     g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
     g.lineWidth = 0.6;
     g.stroke();
-    g.fillStyle = value ? hexToRgbA(sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
+    g.fillStyle = hexToRgbA(sectorColor, 0.6);
     g.fill();
   }
   return currentAngle + subsectorAngle;
@@ -297,27 +297,34 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const sectorWeight = calculateSectorWeight(sector);
         const normalizedSectorWeight = sectorWeight / totalSectorWeight;
         const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
+        const radiusFactor = Math.min(box.width, box.height) / 2;
+        const arcEnd = currentAngle + sectorAngle;
+        if (w > 40 && h > 40) {
+          g.beginPath();
+          g.moveTo(box.midX, box.midY);
+          g.arc(box.midX, box.midY, radiusFactor, currentAngle, arcEnd);
+          g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
+          g.fill();
 
-        // Render sector
-        g.beginPath();
-        g.moveTo(box.midX, box.midY);
-        g.arc(box.midX, box.midY, Math.min(box.width, box.height) / 2, currentAngle, currentAngle + sectorAngle);
-        g.closePath();
-        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
-        g.fill();
+          // Render inner circle representing the range
+          g.beginPath();
+          g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
+          g.arc(box.midX, box.midY, upperBound * radiusFactor, arcEnd, currentAngle, true);
+          g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
+          g.fill();
+        } else {
+          // Render upper bound line
+          g.beginPath();
+          g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
+          g.strokeStyle = hexToRgbA(sector.sectorColor, 0.4);
+          g.lineWidth = 1;
+          g.stroke();
+        }
 
         // Render subsectors
         let subsectorCurrentAngle = currentAngle;
         for (const subsector of sector.subsectors)
           subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, row, sectorWeight);
-
-        // Render inner circle representing the range
-        g.beginPath();
-        g.arc(box.midX, box.midY, lowerBound * (Math.min(box.width, box.height) / 2), currentAngle, currentAngle + sectorAngle);
-        g.arc(box.midX, box.midY, upperBound * (Math.min(box.width, box.height) / 2), currentAngle + sectorAngle, currentAngle, true);
-        g.closePath();
-        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
-        g.fill();
 
         currentAngle += sectorAngle;
       }
