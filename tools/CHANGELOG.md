@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.53 (2025-01-06)
+
+### Features
+
+* Updated csv output for test all(added workes id)
+
+
 ## 4.13.52 (2024-12-30)
 
 ### Features

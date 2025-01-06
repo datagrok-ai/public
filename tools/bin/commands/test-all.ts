@@ -7,6 +7,7 @@ import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
 import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToBrowserOrder } from '../utils/order-functions';
 import { BrowserOptions, loadTestsList, saveCsvResults, printBrowsersResult, runBrowser, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
+import * as Papa from 'papaparse';
 
 enum order {
   random = 0,
@@ -144,7 +145,31 @@ async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions)
     browsersPromises.push(runBrowser(browserCommands, browserOptions, browsersStarted++, testInvocationTimeout));
   }
   let resultObjects = await Promise.all(browsersPromises);
+  for (let i = 0; i < resultObjects.length; i++) {
+    resultObjects[i].csv = await addBrowserColumn(resultObjects[i].csv, i);
+  }
   return resultObjects;
+}
+
+async function addBrowserColumn(csv: string, workerNumber: number) : Promise<string> {
+  let result = "";
+  Papa.parse(csv, {
+    header: true,
+    skipEmptyLines: true, 
+    complete: function (results) {
+        const dataWithDefaultColumn = results.data.map((row: any) => {
+            row["worker"] = workerNumber;
+            return row;
+        });
+
+        result = Papa.unparse(dataWithDefaultColumn, {
+            header: true
+        });
+ 
+    }
+});
+
+  return result;
 }
 
 interface TestArgs {
