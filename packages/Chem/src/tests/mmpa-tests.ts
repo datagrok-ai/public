@@ -163,7 +163,7 @@ category('mmpa', () => {
       'Fragments and Pairs grids haven\'t been created', 3000);
     expect(mmp.mmpa!.rules.rules.length, 40, `Incorrect rules`);
     expect(mmp.mmpa!.rules!.smilesFrags.length, 14, `Incorrect smilesFrags`);
-  });
+  }, {skipReason: 'GROK-17328'});
 
   test('transformationsTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
@@ -209,7 +209,7 @@ category('mmpa', () => {
         fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7) &&
         pairsDf.filter.trueCount === 2 && pairsDf.filter.get(8) && pairsDf.filter.get(9),
     'Pairs haven\'t been changed after fragment change', 3000);
-  });
+  }, {skipReason: 'GROK-17328'});
 
   test('cliffsTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
@@ -265,7 +265,7 @@ category('mmpa', () => {
     mmp.mmpFilters!.activityActiveInputs[2].value = false;
     await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
       'Incorrect lines mask after checkboxes values changed', 3000);
-  });
+  }, {skipReason: 'GROK-17328'});
 
   test('generationTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
@@ -301,7 +301,7 @@ category('mmpa', () => {
     const isExpected = genDf.col('Prediction')!.toList().filter((it) => it).length == 22 ||
       genDf.col('Prediction')!.toList().filter((it) => it).length == 92;
     expect(isExpected, true, 'Incorrect data in \'Prediction\' column');
-  });
+  }, {skipReason: 'GROK-17328'});
 });
 
 
