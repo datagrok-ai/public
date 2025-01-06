@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.8.0 (2025-01-06)
+
+Refork MCL Viewer
+
 ## 6.7.4 (2024-10-08)
 
 MCL: Better layout for similar size clusters
