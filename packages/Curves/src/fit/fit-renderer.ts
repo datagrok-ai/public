@@ -285,7 +285,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
             gridCellValue.series![i].points[j].outlier = p.outlier;
-            gridCell.cell.value = JSON.stringify(gridCellValue);
+            gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), false);
+            const g = gridCell.grid.canvas.getContext('2d')!;
+            gridCell.render({context: g, bounds: gridCell.bounds});
           }
           return;
         }
@@ -403,10 +405,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
 
       assignSeriesColors(series, i);
-      renderConnectDots(g, series, {viewport, ratio});
-      renderPoints(g, series, {viewport, ratio});
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!});
+      renderConnectDots(g, series, {viewport, ratio});
+      renderPoints(g, series, {viewport, ratio});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag});
       if (series.parameters)
@@ -450,6 +452,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (data.chartOptions?.mergeSeries)
       data.series = [mergeSeries(data.series!)!];
 
+    g.clearRect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     this.renderCurves(g, screenBounds, data);
   }
 
