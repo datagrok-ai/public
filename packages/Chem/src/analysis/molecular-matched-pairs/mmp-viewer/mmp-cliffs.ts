@@ -33,7 +33,7 @@ export function getMmpScatterPlot(
     showColorSelector: false,
     showSizeSelector: false,
     markerDefaultSize: 7,
-    showMarkerLabels: 'Auto',
+    displayLabels: 'Auto',
   });
   //temporary fix (to save backward compatibility) since labels
   //option type has been changed from string to array in 1.23 platform version

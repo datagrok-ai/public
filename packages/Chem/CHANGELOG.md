@@ -1,11 +1,12 @@
 # Chem changelog
 
-## 1.13.1 (WIP)
+## 1.13.1 (2025-01-06)
 
 ### Bug fixes
 
 * Fix RDKit cell renderer isolating MonomerHoverData.getSubstruct
 * Fix RDKit cell renderer isolating ISubstructProvider.getSubstruct
+* Fix chem space viewer not working
 
 ## 1.13.0 (2024-10-25)
 
