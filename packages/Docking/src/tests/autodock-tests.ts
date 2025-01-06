@@ -72,4 +72,4 @@ category('AutoDock', () => {
     const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf, 10);
     expect(posesDf.rowCount, 30);
   }, {timeout: 90000, stressTest: true});
-});
+}, {owner: 'oserhiienko@datagrok.ai'});
