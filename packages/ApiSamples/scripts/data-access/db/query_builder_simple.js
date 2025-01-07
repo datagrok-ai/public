@@ -1,4 +1,4 @@
-//tags: TableQueryBuilder, TableQuery 
+//tags: TableQueryBuilder, TableQuery, query
 
 try {
   let df = await grok.data.db
