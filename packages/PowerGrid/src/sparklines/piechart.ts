@@ -299,27 +299,13 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
         const radiusFactor = Math.min(box.width, box.height) / 2;
         const arcEnd = currentAngle + sectorAngle;
-        if (w > 40 && h > 40) {
-          g.beginPath();
-          g.moveTo(box.midX, box.midY);
-          g.arc(box.midX, box.midY, radiusFactor, currentAngle, arcEnd);
-          g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
-          g.fill();
-
-          // Render inner circle representing the range
-          g.beginPath();
-          g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
-          g.arc(box.midX, box.midY, upperBound * radiusFactor, arcEnd, currentAngle, true);
-          g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
-          g.fill();
-        } else {
-          // Render upper bound line
-          g.beginPath();
-          g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
-          g.strokeStyle = hexToRgbA(sector.sectorColor, 0.4);
-          g.lineWidth = 1;
-          g.stroke();
-        }
+        
+        // Render inner circle representing the range
+        g.beginPath();
+        g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
+        g.arc(box.midX, box.midY, upperBound * radiusFactor, arcEnd, currentAngle, true);
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.2);
+        g.fill();
 
         // Render subsectors
         let subsectorCurrentAngle = currentAngle;
