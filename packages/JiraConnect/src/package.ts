@@ -80,7 +80,7 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
     if (ticketColumnList[i])
       ticketsMap.set(ticketColumnList[i], '');
 
-  const ticketKeys = Array.from(ticketsMap.keys()).map(key => key.trim());
+  const ticketKeys = Array.from(ticketsMap.keys()).map(key => (key ?? '').trim());
   const totalTickets = ticketKeys.length;
   const chunkSize = 100;
   let index = 0;
@@ -117,7 +117,7 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
 
   let resultList: string[] = [];
   for (let ticket of ticketColumnList)
-    resultList.push(ticketsMap.get(ticket.trim()) ?? '');
+    resultList.push(ticketsMap.get((ticket ?? '').trim()) ?? '');
 
   return DG.Column.fromStrings(field, resultList);
 }
