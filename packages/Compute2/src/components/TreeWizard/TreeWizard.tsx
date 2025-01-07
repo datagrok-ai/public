@@ -18,7 +18,11 @@ import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
-import {findTreeNode, findTreeNodeParrent, hasInconsistencies, hasSubtreeInconsistencies, isSubtree, reportStep} from '../../utils';
+import {
+  findNodeWithPathByUuid, findTreeNodeByPath,
+  findTreeNodeParrent, hasSubtreeInconsistencies,
+  reportStep,
+} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
@@ -121,7 +125,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
-    const searchParams = useUrlSearchParams<{id?: string, stepId?: string}>('history');
+    const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
       if (prevPanel === 'Steps') return;
@@ -252,11 +256,26 @@ export const TreeWizard = Vue.defineComponent({
       }
     });
 
-    const chosenStepState = Vue.computed(() => {
-      if (!chosenStepUuid.value || !treeState.value) return null;
+    const chosenStep = Vue.computed(() => {
+      if (!treeState.value) return null;
 
-      return findTreeNode(chosenStepUuid.value, treeState.value);
+      const node = chosenStepUuid.value ?
+        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value): undefined;
+      if (node) return node;
+
+      if (searchParams.currentStep) {
+        chosenStepUuid.value = findTreeNodeByPath(
+          searchParams.currentStep.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
+          treeState.value,
+        )?.state.uuid;
+
+        return null;
+      }
+
+      return {state: treeState.value, pathSegments: [0]};
     });
+
+    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -284,9 +303,9 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-    Vue.watch(chosenStepUuid, (newStepId) => {
-      if (newStepId)
-        searchParams.stepId = newStepId;
+    Vue.watch(chosenStep, (newStep) => {
+      if (newStep)
+        searchParams.currentStep = newStep.pathSegments.join(' ');
     });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
