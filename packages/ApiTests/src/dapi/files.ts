@@ -114,7 +114,7 @@ category('Dapi: files', () => {
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
   const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
@@ -127,4 +127,4 @@ category('Dapi: files: formats', () => {
       });
     }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
   }
-});
+}, {owner: 'aparamonov@datagrok.ai'});

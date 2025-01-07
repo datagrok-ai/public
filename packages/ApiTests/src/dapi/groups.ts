@@ -78,4 +78,4 @@ category('Dapi: groups', () => {
   after(async () => {
     await grok.dapi.groups.delete(testGroup);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

@@ -57,4 +57,4 @@ category('Settings', () => {
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
     // expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

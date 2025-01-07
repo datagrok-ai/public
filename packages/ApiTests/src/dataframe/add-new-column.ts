@@ -36,7 +36,7 @@ category('DataFrame', () => {
       }
     }
     console.log(df.columns.length);
-  });
+  }, { owner: 'mdolotova@datagrok.ai' });
 });
 
 function expectTyped(actual: any, expected: any) {

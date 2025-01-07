@@ -34,7 +34,7 @@ category('Property: General', () => {
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 category('Property: Header parsing', () => {
   let func!: DG.Func;

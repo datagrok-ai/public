@@ -43,4 +43,4 @@ category('UserSettingsStorage', () => {
     const receivedValue = grok.userSettings.getValue(storageName, key);
     expect(receivedValue == undefined);
   }, {stressTest: true});
-});
+}, { owner: 'ppolovyi@datagrok.ai'});

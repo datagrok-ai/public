@@ -246,7 +246,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-}, {clear: false});
+}, {clear: false, owner: 'dkovalyov@datagrok.ai'});
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

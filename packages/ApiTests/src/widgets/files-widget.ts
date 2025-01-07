@@ -45,5 +45,5 @@ category('Widgets', () => {
       expect(labels[1] != null, true, 'labels[1]');
       expect(labels[1]!.textContent, packageName, 'labels[1]!.textContent');
     }
-  }, {timeout: 100000});
+  }, {timeout: 100000, owner: 'dkovalyov@datagrok.ai'});
 });

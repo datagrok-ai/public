@@ -147,4 +147,4 @@ category('UI: Users', () => {
     // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
     optn.click();
   };
-}, { clear: false });
+}, { clear: false, owner: 'aparamonov@datagrok.ai' });

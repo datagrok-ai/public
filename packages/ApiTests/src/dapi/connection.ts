@@ -61,7 +61,7 @@ category('Dapi: connection', () => {
       } catch (_) {}
     }
   });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: connection cache', () => {
   const testFilePath1: string = 'System:AppData/ApiTests/test_files.txt';
@@ -162,7 +162,7 @@ category('Dapi: connection cache', () => {
       await grok.dapi.files.delete(testFilePath2);
     } catch (_) { }
   });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: TableQuery', () => {
   let dc: DG.DataConnection;
@@ -252,7 +252,7 @@ category('Dapi: TableQuery', () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
   }, { skipReason: 'GROK-11670' });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

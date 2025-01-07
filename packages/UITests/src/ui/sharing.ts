@@ -122,4 +122,4 @@ category('UI: Sharing', () => {
       'cannot find info balloon', 3000);
     v.close();
   }
-});
+}, { owner: 'aparamonov@datagrok.ai' });

@@ -218,7 +218,7 @@ Canada,4`;
     expect(df.columns.length, 2);
     expect(df.rowCount, 4);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 // Column
 
@@ -400,7 +400,7 @@ category('DataFrame: Column', () => {
     col.init((_) => 'val');
     expect(col.get(0), 'val');
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 // ColumnList
 
@@ -580,7 +580,7 @@ category('DataFrame: ColumnList', () => {
     const df1 = createDf();
     df1.columns.toString();
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 // Row
 
@@ -595,7 +595,7 @@ category('DataFrame: Row', () => {
   test('toDart', async () => {
     expect(typeof row.toDart(), 'object');
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 // RowList
 
@@ -693,4 +693,4 @@ category('DataFrame: RowList', () => {
     const str: string = createDf().rows.toString();
     expect(str.startsWith('(Instance of '), true);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

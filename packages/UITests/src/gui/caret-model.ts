@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
 
-import {getHTMLElementbyInnerText} from './gui-utils';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import { getHTMLElementbyInnerText } from './gui-utils';
+import { after, before, category, delay, expect, test } from '@datagrok-libraries/utils/src/test';
 
 category('Modeling: Caret', () => {
   const demog = grok.data.demo.demog(1000);
@@ -16,7 +16,7 @@ category('Modeling: Caret', () => {
     grok.shell.topMenu.find('Tools').find('Predictive Modeling').find('Train Model...').click(); await delay(1000);
     expect(grok.shell.v.name, 'Predictive model');
 
-    function returnInputField(classList:string, inputName:string) {
+    function returnInputField(classList: string, inputName: string) {
       const inputFields = document.getElementsByClassName(classList);
       let input;
       for (let i = 0; i <= inputFields.length; i++) {
@@ -59,4 +59,4 @@ category('Modeling: Caret', () => {
   after(async () => {
     await grok.dapi.models.delete(await grok.dapi.models.filter('Test Model Caret').first());
   });
-});
+}, { owner: 'kamelichev@datagrok.ai' });

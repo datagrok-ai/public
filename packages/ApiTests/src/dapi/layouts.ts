@@ -7,5 +7,5 @@ category('Dapi: layouts', () => {
   test('get applicable', async () => {
     const layouts = await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10));
     expect(layouts.length >= 0, true, 'error in Dapi: layouts - get applicable');
-  }, {stressTest: true});
+  }, {stressTest: true, owner: 'aparamonov@datagrok.ai'});
 });

@@ -206,7 +206,7 @@ category('UI: Tables: Link', () => {
     link.click();
     return [df1, df2];
   }
-});
+}, { owner: 'aparamonov@datagrok.ai' });
 
 function returnDialog(dialogTitle: string): DG.Dialog | undefined {
   const dialogs = DG.Dialog.getOpenDialogs();

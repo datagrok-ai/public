@@ -98,4 +98,4 @@ category('Viewers: Network Diagram', () => {
     grok.shell.closeAll();
     // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first());
   }); 
-});
+}, { owner: 'dkovalyov@datagrok.ai' });
