@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.56 (2025-01-06)
+
+### Features
+
+* Worker to browser in test all 
+
 ## 4.13.55 (2025-01-06)
 
 ### Features

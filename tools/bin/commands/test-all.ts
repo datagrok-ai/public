@@ -158,7 +158,7 @@ async function addBrowserColumn(csv: string, workerNumber: number) : Promise<str
     skipEmptyLines: true, 
     complete: function (results) {
         const dataWithDefaultColumn = results.data.map((row: any) => {
-            row["worker"] = workerNumber;
+            row["browser"] = workerNumber;
             return row;
         });
 
