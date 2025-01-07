@@ -266,7 +266,6 @@ category('Compute API: RFV Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.funcCallReplaced.pipe(take(1)).toPromise();
     view.funcCall.setParamValue('df', inputValues['df']);
     view.funcCall.setParamValue('data', inputValues['data']);
     await view.doRun();
