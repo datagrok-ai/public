@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.47.2 (2024-01-07)
+
+Use gCell bounds to remove scroll dependency in CellRendererAsyncBase
+
 ## 5.47.1 (2024-12-30)
 
 Moved bio substructure filter types from Bio package to bio library
