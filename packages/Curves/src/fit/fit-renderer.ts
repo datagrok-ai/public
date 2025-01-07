@@ -240,6 +240,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   static curves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
 
+  static inflateScreenBounds(rect: DG.Rect): DG.Rect {
+    return rect.inflate(rect.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE,
+      rect.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE);
+  }
+
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     if (!gridCell.cell.value)
       return;
@@ -256,7 +261,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     grok.shell.o = gridCell;
 
-    const screenBounds = gridCell.bounds.inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE);
+    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
     const dataBox = layoutChart(screenBounds, this.areAxesLabelsShown(screenBounds, data),
       this.isTitleShown(screenBounds, data))[0];
     const dataBounds = getChartBounds(data);
@@ -445,7 +450,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
       convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
-    const screenBounds = new DG.Rect(x, y, w, h).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE);
+    const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
       if (condition(data.series)) {
@@ -475,7 +480,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    const screenBounds = gridCell.bounds.inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE);
+    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
     if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
       screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
       const canvas = ui.canvas(300, 200);

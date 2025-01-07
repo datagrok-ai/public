@@ -77,7 +77,7 @@ category('rendering', () => {
 		const fitChartData: IFitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
 		const times: number[] = [];
 		const func = async (chartData?: IFitChartData | null) => {
-			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), fitChartData);
+			fitChartCellRenderer.renderCurves(g, FitChartCellRenderer.inflateScreenBounds(new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight)), fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		};
 		for (let i = 1; i <= renderingTimesAmount; i++)
@@ -97,7 +97,7 @@ category('rendering', () => {
 		const fitChartCellRenderer = new FitChartCellRenderer();
 		const times: number[] = [];
 		const func = async (chartData?: IFitChartData | null) => {
-			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), chartData!);
+			fitChartCellRenderer.renderCurves(g, FitChartCellRenderer.inflateScreenBounds(new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight)), chartData!);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
 		for (let i = 1; i <= renderingTimesAmount; i++) {

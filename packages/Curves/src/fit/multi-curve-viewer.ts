@@ -180,6 +180,6 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       return;
     }
     this._removeErrorMessage();
-    this.renderer.renderCurves(g, new DG.Rect(0, 0, this.canvas.width, this.canvas.height).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), this.data);
+    this.renderer.renderCurves(g, FitChartCellRenderer.inflateScreenBounds(new DG.Rect(0, 0, this.canvas.width, this.canvas.height)), this.data);
   }
 }
