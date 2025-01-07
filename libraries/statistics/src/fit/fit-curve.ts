@@ -765,9 +765,9 @@ function getSigmasForCombinedErrorModel(sigmaA: number, sigmaB: number, residues
     const sigmaACombined = sigmaA * proportion;
     const sigmaBCombined = sigmaA * (1 - proportion);
     const sigmaSqICombined: number[] = [];
-    for (let i = 0; i < residuesSquares.length; i++) {
-      sigmaSqICombined[i] = Math.pow(sigmaACombined + sigmaBCombined * pred[i], 2);
-      likelihoodCombinedLocal += residuesSquares[i] / sigmaSqICombined[i] + Math.log(2 * Math.PI * sigmaSqICombined[i]);
+    for (let j = 0; j < residuesSquares.length; j++) {
+      sigmaSqICombined[j] = Math.pow(sigmaACombined + sigmaBCombined * pred[j], 2);
+      likelihoodCombinedLocal += residuesSquares[j] / sigmaSqICombined[j] + Math.log(2 * Math.PI * sigmaSqICombined[j]);
     }
     if (likelihoodCombinedLocal < likelihoodCombined) {
       likelihoodCombined = likelihoodCombinedLocal;

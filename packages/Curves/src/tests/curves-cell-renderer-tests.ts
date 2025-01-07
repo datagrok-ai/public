@@ -108,7 +108,7 @@ category('rendering', () => {
 	}, {benchmark: true});
 
 	test('rendering in grid', async () => {
-		const df = createDemoDataFrame(30, 5, 5);
+		const df = createDemoDataFrame(50, 5, 5);
 		const tv = grok.shell.addTableView(df);
 		const scrollCycles = 10;
 		const scrollDeltaPlus = 300;
@@ -116,12 +116,12 @@ category('rendering', () => {
 		await delay(100);
 		const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
 		const func = async (chartData?: IFitChartData | null) => {
-			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 10);
-			await scrollTable(canvas, scrollDeltaMinus, scrollCycles, 10);
-			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 10);
+			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 1);
+			await scrollTable(canvas, scrollDeltaMinus, scrollCycles, 1);
+			await scrollTable(canvas, scrollDeltaPlus, scrollCycles, 1);
 		};
-		const time = await getTime(func, null);
+		const time = await getTime(func, null) - 30;
 		console.log(`curves rendering took ${time} ms`);
-		return `curves rendering took ${time} ms`;
+		return time;
 	}, {benchmark: true});
 });

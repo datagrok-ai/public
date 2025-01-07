@@ -238,7 +238,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
   }
 
-  static curves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>();
+  static curves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     if (!gridCell.cell.value)
@@ -399,7 +399,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         else {
           // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
           const column = gridCell?.cell?.column;
-          const fitResult = column ? FitChartCellRenderer.curves.getOrCreate(`${JSON.stringify(data)}_${column.name}_${column.version}`, () => {
+          const fitResult = column && gridCell?.cell ?
+            FitChartCellRenderer.curves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
             return fitSeries(series, fitFunc, chartLogOptions);
           }) : fitSeries(series, fitFunc, chartLogOptions);
           curve = fitResult.fittedCurve;
