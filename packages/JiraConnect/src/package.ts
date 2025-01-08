@@ -11,7 +11,7 @@ import { getJiraCreds } from './app/credentials';
 import { addJIRADetector } from './detectors';
 import { JiraGridCellHandler } from './jira-grid-cell-handler';
 import '../css/jira_connect.css';
-import {LruCache} from "datagrok-api/dg";
+import { LruCache } from "datagrok-api/dg";
 
 
 export const cache = new LruCache<string, JiraIssue>(100);
@@ -30,7 +30,7 @@ export async function _init(): Promise<void> {
     const projectNames = projects.map(e => e.key);
     addJIRADetector(projectNames, '');
     DG.ObjectHandler.register(new JiraGridCellHandler());
-  } 
+  }
 }
 
 //name: projectsList 
@@ -54,6 +54,8 @@ export async function projectData(projectKey: string): Promise<Project | null> {
 //input: string issueKey
 //output: object issue
 export async function issueData(issueKey: string): Promise<JiraIssue | null> {
+  if(!issueKey || issueKey?.length === 0)
+    return null;
   if (cache.has(issueKey))
     return cache.get(issueKey)!;
 
@@ -121,4 +123,3 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
 
   return DG.Column.fromStrings(field, resultList);
 }
-
