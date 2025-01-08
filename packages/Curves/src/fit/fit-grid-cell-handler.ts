@@ -11,12 +11,12 @@ import {
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   FitChartCellRenderer,
-  getChartData,
+  getOrCreateParsedChartData,
   getColumnChartOptions,
   getDataFrameChartOptions,
   isColorValid,
   mergeProperties,
-  substituteZeroes
+  substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints
 } from './fit-renderer';
 import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -50,7 +50,8 @@ const AGGREGATION_TYPES: {[key: string]: string} = {
 };
 
 
-export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOptions): FitStatistics {
+export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
+  gridCell: DG.GridCell): FitStatistics {
   const fitFunction = getSeriesFitFunction(series);
   if (series.parameters) {
     if (chartLogOptions.logX)
@@ -58,22 +59,23 @@ export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOpt
         series.parameters[2] = Math.log10(series.parameters[2]);
   }
   else {
-    const params = fitSeries(series, fitFunction, chartLogOptions).parameters;
+    const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction, chartLogOptions, gridCell).parameters;
     series.parameters = [...params];
   }
 
-  const seriesStatistics = getSeriesStatistics(series, fitFunction, chartLogOptions);
+  const seriesStatistics = getSeriesStatistics(series, fitFunction,
+    getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, gridCell), chartLogOptions);
   return seriesStatistics;
 }
 
-export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string): FitStatistics {
+export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string, gridCell: DG.GridCell): FitStatistics {
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
   const rSquaredValues: number[] = [], aucValues: number[] = [], interceptXValues: number[] =  [], interceptYValues: number[] = [],
     slopeValues: number[] = [], topValues: number[] = [], bottomValues: number[] = [];
   for (let i = 0, j = 0; i < chartData.series?.length!; i++) {
     if (chartData.series![i].points.every((p) => p.outlier))
       continue;
-    const seriesStats = calculateSeriesStats(chartData.series![i], chartLogOptions);
+    const seriesStats = calculateSeriesStats(chartData.series![i], i, chartLogOptions, gridCell);
     rSquaredValues[j] = seriesStats.rSquared!;
     aucValues[j] = seriesStats.auc!;
     interceptXValues[j] = seriesStats.interceptX!;
@@ -251,7 +253,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     // temporarily because input doesn't show the tooltip
     ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
 
-    const chartData = getChartData(gridCell);
+    const chartData = getOrCreateParsedChartData(gridCell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
@@ -325,7 +327,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
         for (let i = 0; i < chartData.series!.length; i++) {
           const series = chartData.series![i];
-          const seriesStatistics = calculateSeriesStats(series, chartLogOptions);
+          const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, gridCell);
   
           const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
             series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
@@ -341,7 +343,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         }
       }
       else {
-        const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue);
+        const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue, gridCell);
         host.appendChild(ui.panel([
             ui.h1(`series ${aggrTypeInput.stringValue}`),
             ui.input.form(seriesStatistics, statisticsProperties, {

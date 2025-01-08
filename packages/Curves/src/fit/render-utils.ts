@@ -41,6 +41,7 @@ interface FitConfidenceIntervalRenderOptions extends FitLineRenderOptions {
     userParamsFlag?: boolean;
     confidenceIntervals?: FitConfidenceIntervals;
     confidenceType?: string;
+    dataPoints?: {x: number[], y: number[]};
 }
 
 interface FitDroplineRenderOptions extends FitRenderOptions {
@@ -56,6 +57,7 @@ interface FitStatisticsRenderOptions {
     fitFunc: FitFunction;
     logOptions: LogOptions;
     dataBox: DG.Rect;
+    dataPoints?: {x: number[], y: number[]};
 }
 
 interface FitTitleRenderOptions {
@@ -263,8 +265,9 @@ export function renderConfidenceIntervals(g: CanvasRenderingContext2D, series: I
         const logOptions = renderOptions.logOptions;
         const viewport = renderOptions.viewport;
         const screenBounds = renderOptions.screenBounds;
+        const dataPoints = series.dataPoints;
 
-        const confidenceIntervals = getSeriesConfidenceInterval(series, renderOptions.fitFunc!, renderOptions.userParamsFlag!, logOptions);
+        const confidenceIntervals = getSeriesConfidenceInterval(series, renderOptions.fitFunc!, renderOptions.userParamsFlag!, dataPoints, logOptions);
         drawConfidenceInterval(g, {viewport: viewport, logOptions: logOptions, showAxes: showAxes, showAxesLabels: showAxesLabels,
             screenBounds: screenBounds, confidenceIntervals: confidenceIntervals, confidenceType: FitConstants.CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP});
         drawConfidenceInterval(g, {viewport: viewport, logOptions: logOptions, showAxes: showAxes, showAxesLabels: showAxesLabels,
@@ -360,10 +363,11 @@ function drawDropline(g: CanvasRenderingContext2D, renderOptions: FitDroplineRen
 }
 
 export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitStatisticsRenderOptions): void {
-    if ((series.showFitLine ?? true) && renderOptions.statistics) {
+    if ((series.showFitLine ?? true) && renderOptions.statistics && renderOptions.statistics.length > 0) {
         const dataBox = renderOptions.dataBox;
         const stats = renderOptions.statistics;
-        const statistics = getSeriesStatistics(series, renderOptions.fitFunc, renderOptions.logOptions);
+        const dataPoints = renderOptions.dataPoints;
+        const statistics = getSeriesStatistics(series, renderOptions.fitFunc, dataPoints, renderOptions.logOptions);
         for (let i = 0; i < stats.length; i++) {
             const statName = stats[i];
             const prop = statisticsProperties.find((p) => p.name === statName);

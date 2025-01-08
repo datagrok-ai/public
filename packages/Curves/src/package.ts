@@ -5,7 +5,7 @@ import {_FitChartCellRenderer} from './package.g';
 import * as DG from 'datagrok-api/dg';
 
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
-import {getChartData, substituteZeroes} from './fit/fit-renderer';
+import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
 import {curveDemo} from './fit/fit-demo';
 import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
@@ -56,14 +56,14 @@ export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName:
       if (gridCell.cell.value === '')
         return null;
       const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+        convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
       if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
         return null;
       if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
         chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
         substituteZeroes(chartData);
       const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-      const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
+      const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, gridCell);
       return fitResult[propName as keyof FitStatistics];
     });
   df.columns.insert(column, chartColumn.idx);
@@ -89,13 +89,13 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
       if (gridCell.cell.value === '')
         return null;
       const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+        convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
       if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
         return null;
       if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
         chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
         substituteZeroes(chartData);
-      const fitResult = getChartDataAggrStats(chartData, aggrType);
+      const fitResult = getChartDataAggrStats(chartData, aggrType, gridCell);
       return fitResult[propName as keyof FitStatistics];
     });
   df.columns.insert(column, chartColumn.idx);

@@ -159,7 +159,7 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 }
 
 /** Returns the data points of a series with filtered outliers and logarithmic data if needed */
-function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):
+export function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):
   {x: number[], y: number[]} {
   const pointsToMap = userParamsFlag ? series.points : series.points.filter((p) => !p.outlier);
   return {x: pointsToMap.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
@@ -167,36 +167,38 @@ function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFl
 }
 
 /** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitCurve {
-  const data = getDataPoints(series, logOptions, false);
+export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
+  logOptions?: LogOptions): FitCurve {
+  dataPoints ??= getDataPoints(series, logOptions, false);
   if (series.parameterBounds && logOptions?.logX)
     series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
-  return fitData(getMedianPoints(data), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+  return fitData(getMedianPoints(dataPoints), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
     series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */
-export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction,
-  userParamsFlag: boolean, logOptions?: LogOptions): FitConfidenceIntervals {
-  const data = getDataPoints(series, logOptions, userParamsFlag);
+export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean,
+  dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): FitConfidenceIntervals {
+  dataPoints ??= getDataPoints(series, logOptions, userParamsFlag);
   if (!series.parameters) {
-    const params = fitSeries(series, fitFunc).parameters;
+    const params = fitSeries(series, fitFunc, dataPoints).parameters;
     series.parameters = [...params];
   }
   const params = new Float32Array(series.parameters?.length!);
   params.set(series.parameters!);
-  return getCurveConfidenceIntervals(data, params, fitFunc.y, 0.05,
+  return getCurveConfidenceIntervals(dataPoints, params, fitFunc.y, 0.05,
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
 /** Returns series statistics */
-export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitStatistics {
-  const data = getDataPoints(series, logOptions, false);
+export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
+  logOptions?: LogOptions): FitStatistics {
+  dataPoints ??= getDataPoints(series, logOptions, false);
   if (!series.parameters) {
-    const params = fitSeries(series, fitFunc).parameters;
+    const params = fitSeries(series, fitFunc, dataPoints).parameters;
     series.parameters = [...params];
   }
   const params = new Float32Array(series.parameters?.length!);
   params.set(series.parameters!);
-  return getStatistics(data, params, fitFunc.y, true);
+  return getStatistics(dataPoints, params, fitFunc.y, true);
 }

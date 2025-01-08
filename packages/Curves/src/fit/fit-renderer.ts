@@ -7,7 +7,7 @@ import {
   IFitSeries,
   FitStatistics,
   fitChartDataProperties,
-  fitSeriesProperties, IFitChartOptions, IFitPoint, FitCurve,
+  fitSeriesProperties, IFitChartOptions, IFitPoint, FitCurve, FitFunction,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
@@ -17,7 +17,7 @@ import {
   getChartBounds,
   getSeriesFitFunction,
   getCurve,
-  LogOptions,
+  LogOptions, getDataPoints,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -135,9 +135,18 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
   return mergedSeries;
 }
 
+/** Returns either cached or constructed chart data for the specified grid cell. */
+export function getOrCreateParsedChartData(gridCell: DG.GridCell): IFitChartData {
+  const column = gridCell?.cell?.column;
+  return (column && gridCell?.cell) ?
+    FitChartCellRenderer.parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
+      return getChartData(gridCell);
+    }) : getChartData(gridCell);
+}
+
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
-export function getChartData(gridCell: DG.GridCell): IFitChartData {
+function getChartData(gridCell: DG.GridCell): IFitChartData {
   // removing '|' from JSON (how did it get here?)
   let cellValue = gridCell.cell.value as string;
   if (cellValue.includes('|'))
@@ -163,6 +172,28 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
   }
 
   return cellChartData;
+}
+
+/** Returns existing, or fits curve for the specified grid cell and series. */
+export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction,
+  chartLogOptions: LogOptions, gridCell?: DG.GridCell): FitCurve {
+  const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, gridCell);
+  // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
+  const column = gridCell?.cell?.column;
+  return (column && gridCell?.cell) ?
+    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
+      return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
+    }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
+}
+
+/** Returns existing, or maps new data points for the specified series. */
+export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: number, logOptions?: LogOptions,
+  userParamsFlag?: boolean, gridCell?: DG.GridCell): {x: number[], y: number[]} {
+  const column = gridCell?.cell?.column;
+  return (column && gridCell?.cell) ?
+    FitChartCellRenderer.curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
+      return getDataPoints(series, logOptions, userParamsFlag);
+    }) : getDataPoints(series, logOptions, userParamsFlag);
 }
 
 /** Returns existing, or creates new dataframe default chart options. */
@@ -238,7 +269,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
   }
 
-  static curves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
+  static fittedCurves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
+  static parsedCurves: DG.LruCache<string, IFitChartData> = new DG.LruCache<string, IFitChartData>(1000);
+  static curvesDataPoints: DG.LruCache<string, {x: number[], y: number[]}> = new DG.LruCache<string, {x: number[], y: number[]}>(2000);
 
   static inflateScreenBounds(rect: DG.Rect): DG.Rect {
     return rect.inflate(rect.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE,
@@ -250,7 +283,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
 
     for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
       if (condition(data.series)) {
@@ -280,8 +313,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             for (const column of columns) {
               const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
               const stats = column.tags['.seriesAggregation'] !== null ?
-                getChartDataAggrStats(data, column.tags['.seriesAggregation']) :
-                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], chartLogOptions) : null;
+                getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
+                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
               if (stats === null)
                 continue;
               column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
@@ -402,12 +435,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           curve = getCurve(series, fitFunc);
         }
         else {
-          // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
-          const column = gridCell?.cell?.column;
-          const fitResult = column && gridCell?.cell ?
-            FitChartCellRenderer.curves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
-            return fitSeries(series, fitFunc, chartLogOptions);
-          }) : fitSeries(series, fitFunc, chartLogOptions);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, gridCell);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters]
           series.parameters = params;
@@ -421,7 +449,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderConnectDots(g, series, {viewport, ratio});
       renderPoints(g, series, {viewport, ratio});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
-        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag});
+        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
+        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, gridCell)});
       if (series.parameters)
         renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
@@ -449,7 +478,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
@@ -492,7 +521,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     // TODO: add caching
     const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
-      : getChartData(gridCell);
+      : getOrCreateParsedChartData(gridCell);
 
     if (screenBounds.width >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH &&
       screenBounds.height >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
