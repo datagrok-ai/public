@@ -205,7 +205,7 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
             }
         };
 
-        if (!cache.has(key)) {
+        if (!cache.has(key) && key && key.length > 0) {
             issueData(key).then((_) => gridCell.render());
             renderKey();
         }
