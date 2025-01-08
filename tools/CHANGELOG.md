@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.57 (2025-01-08)
+
+### Features
+
+* Test failed results fix
+
 ## 4.13.56 (2025-01-06)
 
 ### Features
