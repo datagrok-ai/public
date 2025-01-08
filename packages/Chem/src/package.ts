@@ -2131,12 +2131,13 @@ export async function reinvent(ligand: string, target: string, optimize: string)
     const grid = tableView.grid;
   
     const gridCol = grid.columns.byName('Score');
+    grid.sort(['Score'], [false]);
+
     if (gridCol) {
       gridCol.isTextColorCoded = true;
-      gridCol.column?.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
+      gridCol.column?.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
     }
-  
-    grid.sort(['Score'], [false]);
+
     await Promise.all([lineagePromise, ...lineagePromises]);
   })();  
 }
