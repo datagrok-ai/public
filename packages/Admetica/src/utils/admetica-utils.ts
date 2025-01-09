@@ -481,6 +481,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
+  gridCol!.renderer = await grok.functions.call('PowerGrid:piechartCellRenderer');;
 
   return DG.GridCellWidget.fromGridCell(gridCell).root;
 }
