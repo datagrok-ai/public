@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.60 (2025-01-09)
+
+### Features
+
+* Updated console output for cases "Tests not found"
+
 ## 4.13.59 (2025-01-09)
 
 ### Features
