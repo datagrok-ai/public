@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import '../../../../css/tutorial.css';
+
 /** Max waiting time */
 const MAX_TIME = 60000;
 
@@ -72,21 +74,29 @@ export async function getView(name: string) {
 /** Describe viewers and return the Done button */
 export function describeElements(roots: HTMLElement[], description: string[]): HTMLButtonElement {
   if (roots.length !== description.length)
-    throw new Error('Non-equal size of viewer roots and descritions');
+    throw new Error('Non-equal size of viewer roots and descriptions');
 
   let idx = 0;
-  let hint: HTMLElement;
+  let closeIcn: HTMLElement;
   let msg: HTMLDivElement;
   let popup: HTMLDivElement;
-  const nextBtn = ui.button('next', () => hint.click(), 'Go to the next viewer');
+
+  const nextBtn = ui.button('next', () => {
+    popup.remove();
+    ++idx;
+    step();
+  }, 'Go to the next viewer');
+
   const prevBtn = ui.button('prev', () => {
-    idx -= 2;
-    hint.click();
+    idx -= 1;    
+    popup.remove();
+    step();
   }, 'Go to the previous viewer');
-  const doneBtn = ui.button('done', () => hint.click(), 'Go to the next step');
+
+  const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
+
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
-  btnsDiv.style.marginLeft = 'auto';
-  btnsDiv.style.marginRight = '0';
+  btnsDiv.classList.add('tutorials-sci-comp-btns-div');
 
   const step = () => {
     if (idx < roots.length) {
@@ -95,12 +105,9 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
       doneBtn.hidden = (idx < roots.length - 1);
       nextBtn.hidden = (idx === roots.length - 1);
       prevBtn.hidden = (idx < 1);
-      hint = ui.hints.addHintIndicator(popup, undefined, 4000);
-      hint.onclick = () => {
-        popup.remove();
-        ++idx;
-        step();
-      };
+      
+      closeIcn = popup.querySelector('i') as HTMLElement;
+      closeIcn.onclick = () => doneBtn.click();
     }
   };
 
@@ -110,20 +117,18 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 }
 
 /** Description of a single element */
-export function singleDescription(root: HTMLElement, description: string, tooltip: string, position: ui.hints.POSITION = ui.hints.POSITION.LEFT): HTMLButtonElement {
-  const clearBtn = ui.button('ok', () => hint.click(), tooltip);
+export function singleDescription(root: HTMLElement, description: string, tooltip: string, position: ui.hints.POSITION = ui.hints.POSITION.LEFT) {
+  const clearBtn = ui.button('ok', () => closeIcn.click(), tooltip);
   const btnDiv = ui.divH([clearBtn]);
   const msg = ui.divV([
     ui.markdown(description),
     btnDiv,
   ]);
   const popup = ui.hints.addHint(root, msg, position);
-  btnDiv.style.marginLeft = 'auto';
-  btnDiv.style.marginRight = '0';
-  const hint = ui.hints.addHintIndicator(popup, undefined, 4000);
-  hint.onclick = () => popup.remove();
+  const closeIcn = popup.querySelector('i') as HTMLElement;
+  btnDiv.classList.add('tutorials-sci-comp-btns-div');
 
-  return clearBtn;
+  return closeIcn;
 }
 
 /** Close windows */

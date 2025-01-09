@@ -347,3 +347,8 @@ progress[value]::-webkit-progress-value::after {
 .tutorials-copy-icon {  
   margin-left: 15px;
 }
+
+.tutorials-sci-comp-btns-div {  
+  margin-left: auto;
+  margin-right: 0px;
+}
