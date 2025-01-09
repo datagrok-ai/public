@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
@@ -483,8 +482,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
 
-  const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
-  return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
+  return DG.GridCellWidget.fromGridCell(gridCell).root;
 }
 
 export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {
