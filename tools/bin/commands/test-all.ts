@@ -6,7 +6,7 @@ import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
 import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToBrowserOrder } from '../utils/order-functions';
-import { BrowserOptions, loadTestsList, saveCsvResults, printBrowsersResult, runBrowser, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
+import { BrowserOptions, loadTestsList, saveCsvResults, printBrowsersResult, runBrowser, ResultObject, Test, OrganizedTests, addColumnToCsv } from '../utils/test-utils';
 import * as Papa from 'papaparse';
 
 enum order {
@@ -32,9 +32,9 @@ function getEnumOrder(orderStr: string): order {
       return order.packageRandom;
       break;
     case "packagealphabetical":
-      case "packageatoz":
-        return order.packageAlphabetical;
-        break;
+    case "packageatoz":
+      return order.packageAlphabetical;
+      break;
     case "testtobrowser":
       return order.testToBrowser;
       break;
@@ -70,6 +70,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
 
   let testsResults = await runTests(browsersOrder, {
     benchmark: args.benchmark ?? false,
+    stressTest: args['stress-test'] ?? false,
     catchUnhandled: args.catchUnhandled ?? false,
     gui: args.gui ?? false,
     record: args.record ?? false,
@@ -91,7 +92,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
 }
 
 async function filterTests(tests: Test[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<Test[]> {
-  let filteredTests: Test [] = [];
+  let filteredTests: Test[] = [];
   let stressTestValue: boolean = tags.includes("stress-test") || stressTest;
   let benchmarkValue: boolean = benchmark;
 
@@ -146,30 +147,11 @@ async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions)
   }
   let resultObjects = await Promise.all(browsersPromises);
   for (let i = 0; i < resultObjects.length; i++) {
-    resultObjects[i].csv = await addBrowserColumn(resultObjects[i].csv, i);
+    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "browser", i);
+    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
+    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
   }
   return resultObjects;
-}
-
-async function addBrowserColumn(csv: string, workerNumber: number) : Promise<string> {
-  let result = "";
-  Papa.parse(csv, {
-    header: true,
-    skipEmptyLines: true, 
-    complete: function (results) {
-        const dataWithDefaultColumn = results.data.map((row: any) => {
-            row["browser"] = workerNumber;
-            return row;
-        });
-
-        result = Papa.unparse(dataWithDefaultColumn, {
-            header: true
-        });
- 
-    }
-});
-
-  return result;
 }
 
 interface TestArgs {

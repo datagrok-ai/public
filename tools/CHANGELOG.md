@@ -1,5 +1,13 @@
 # Datagrok-tools changelog
 
+## 4.13.59 (2025-01-09)
+
+### Features
+
+* Benchmark testing fix
+* Updated csv output result(it saves benchmark and stress data now)
+
+
 ## 4.13.58 (2025-01-09)
 
 ### Features

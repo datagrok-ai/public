@@ -2,13 +2,13 @@
 import { exec } from 'child_process';
 import fs from 'fs';
 import os from 'os';
-import path from 'path'; 
+import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
-import { BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout } from '../utils/test-utils';
+import { BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv } from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
@@ -72,7 +72,18 @@ function isArgsValid(args: TestArgs): boolean {
 
 async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
-  const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
+  const loadedTests = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
+  let testsObj: testUtils.Test[] = [];
+  if (args['stress-test'] || args.benchmark) {
+    for (let element of loadedTests) {
+      if ((args.benchmark && !element.options.benchmark) || (args['stress-test'] && !element.options.stressTest))
+        continue;
+      testsObj.push(element);
+    }
+  }
+  else
+    testsObj = loadedTests
+
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
   if (parsed.length == 0)
     return {
@@ -107,7 +118,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     }
     organized = filtered;
   }
-  if (args.verbose){
+  if (args.verbose) {
     console.log(filtered);
     console.log(`Tests total: ${filtered.length}`);
   }
@@ -119,6 +130,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     do {
       r = await runBrowser(organized, {
         benchmark: args.benchmark ?? false,
+        stressTest: args['stress-test'] ?? false,
         catchUnhandled: args.catchUnhandled ?? false,
         gui: args.gui ?? false,
         record: args.record ?? false,
@@ -130,10 +142,10 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       let testsLeft: OrganizedTest[] = [];
       let testsToReproduce: OrganizedTest[] = [];
       for (let testData of organized) {
-        if (!r.verbosePassed.includes(`${testData.params.category}: ${testData.params.test}`) && 
-        !r.verboseSkipped.includes(`${testData.params.category}: ${testData.params.test}`) && 
-        !r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test}`) && 
-        !new RegExp(`${testData.params.category.trim()}[^\\n]*: (before|after)`).test(r.verboseFailed))
+        if (!r.verbosePassed.includes(`${testData.params.category}: ${testData.params.test}`) &&
+          !r.verboseSkipped.includes(`${testData.params.category}: ${testData.params.test}`) &&
+          !r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test}`) &&
+          !new RegExp(`${testData.params.category.trim()}[^\\n]*: (before|after)`).test(r.verboseFailed))
           testsLeft.push(testData);
         if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
           testsToReproduce.push(testData);
@@ -147,9 +159,13 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
             r = await updateResultsByReproduced(r, reproducedTest, test)
         }
       }
+      r.csv = await addColumnToCsv(r.csv, "stress_test", args['stress-test'] ?? false);
+      r.csv = await addColumnToCsv(r.csv, "benchmark", args.benchmark ?? false);
       testsResults.push(r);
       organized = testsLeft;
       browserId++;
+      if (r.verboseFailed === 'Tests execution failed')
+        break;
     }
     while (r.failed);
   }, testInvocationTimeout)

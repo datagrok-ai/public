@@ -9,6 +9,7 @@ import { spaceToCamelCase } from '../utils/utils';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
+import Papa from 'papaparse';
  
 const fetch = require('node-fetch');
 
@@ -156,7 +157,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
         packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
     }
   }
-  
+
   for (let dirName of fs.readdirSync(packagesDir)) {
     let packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
@@ -462,4 +463,23 @@ export type OrganizedTests = {
       report: boolean | undefined
     }
   }
+}
+
+export async function addColumnToCsv(csv: string, columnName: string, defaultValue: string | number | boolean): Promise<string> {
+  let result = csv;
+  Papa.parse(csv, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function (results) {
+      const dataWithDefaultColumn = results.data.map((row: any) => {
+        row[columnName] = defaultValue;
+        return row;
+      });
+
+      result = Papa.unparse(dataWithDefaultColumn, {
+        header: true
+      });
+    }
+  });
+  return result;
 }
