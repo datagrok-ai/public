@@ -32,7 +32,7 @@ import $ from 'cash-dom';
 import {__obs} from './src/events';
 import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
-import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
+import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -707,11 +707,6 @@ export function tree(): TreeViewGroup {
 export namespace input {
   interface IIndexable {
     [key: string]: any;
-  }
-
-  interface Size {
-    height: number;
-    width: number;
   }
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {

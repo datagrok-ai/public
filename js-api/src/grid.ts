@@ -2,7 +2,7 @@ import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
-import {_identityInt32, _toIterable, MapProxy} from './utils';
+import {_identityInt32, _isDartium, _toIterable, MapProxy} from './utils';
 import {Observable} from 'rxjs';
 import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
@@ -20,6 +20,11 @@ export type ColorType = number | string;
 export interface IPoint {
   x: number;
   y: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
 }
 
 /** Represents a point. */
@@ -609,6 +614,38 @@ export class GridCell {
 
   /** Sets the grid cell value and fires onCellValueEdited if notify is true */
   setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
+}
+
+/** Renders the content of the specified [gridCell], and provides interactivity as well. */
+export class GridCellWidget {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static fromGridCell(gridCell: GridCell, canvasSize: Size = {width: 300, height: 150}): GridCellWidget {
+    const gridCellWidget = toJs(api.grok_GridCellWidget());
+    gridCellWidget.gridCell = gridCell;
+    gridCellWidget.root.style.removeProperty('height');
+    gridCellWidget.root.style.aspectRatio = `${canvasSize.width / canvasSize.height}`;
+    gridCellWidget.canvas.width = canvasSize.width;
+    gridCellWidget.canvas.height = canvasSize.height;
+    if (_isDartium())
+      gridCellWidget.root.style.height = `${canvasSize.height}px`;
+    return gridCellWidget;
+  }
+
+  get canvas(): HTMLCanvasElement { return api.grok_GridCellWidget_Get_Canvas(this.dart); }
+
+  get root(): HTMLDivElement { return api.grok_GridCellWidget_Get_Root(this.dart); }
+
+  get gridCell(): GridCell { return new GridCell(api.grok_GridCellWidget_Get_GridCell(this.dart)); }
+  set gridCell(x: GridCell) { api.grok_GridCellWidget_Set_GridCell(this.dart, x.dart); }
+
+  get bounds(): Rect { return Rect.fromDart(api.grok_GridCellWidget_Get_Bounds(this.dart)); }
+
+  render(): void { api.grok_GridCellWidget_Render(this.dart); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
