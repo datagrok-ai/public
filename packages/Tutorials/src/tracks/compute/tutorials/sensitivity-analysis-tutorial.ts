@@ -209,16 +209,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     // 8. Run sens.analysis
     const runIcnRoot = document.querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
     const runBtnRoot = children[children.length - 1].querySelector('button.ui-btn') as HTMLButtonElement;
-
-    let resolve: (value: void | PromiseLike<void>) => void;
-    let runSensAnPromise = new Promise<void>((res, rej) => resolve = res);
-
-    runIcnRoot.addEventListener('click', (e) => resolve());
-    runBtnRoot.addEventListener('click', (e) => resolve());
+    if (runBtnRoot !== null)
+      runBtnRoot.hidden = true;
 
     await this.action(
       'Run sensitivity analysis',
-      runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
       runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
     );    
@@ -305,10 +301,9 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     );
 
     // 14. Run sens.analysis
-    runSensAnPromise = new Promise<void>((res, rej) => resolve = res);
     await this.action(
       'Run sensitivity analysis',
-      runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
       runIcnRoot,
     );
 
