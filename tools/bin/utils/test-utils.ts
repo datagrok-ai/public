@@ -156,15 +156,15 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
         packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
     }
   }
-
+  
   for (let dirName of fs.readdirSync(packagesDir)) {
     let packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
 
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
-        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "");
-
+        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "") ?? packagesToRun.get(dirName);
+      
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
             process.stdout.write(`Building and publishing ${dirName}...`);
