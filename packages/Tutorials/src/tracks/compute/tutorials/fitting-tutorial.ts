@@ -162,7 +162,7 @@ export class FittingTutorial extends Tutorial {
     this.describe('Let\'s find the initial velocity and angle.');
 
     await this.action(
-      'Switch on "Velocity"',
+      'Toggle the "Velocity" parameter',
       fromEvent(velocitySwitcher, 'click'),
       velocitySwitcher,
     );
@@ -172,7 +172,7 @@ export class FittingTutorial extends Tutorial {
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
-      'Switch on "Angle"',
+      'Toggle the "Angle" parameter',
       fromEvent(angleSwitcher, 'click'),
       angleSwitcher,
     );
@@ -235,7 +235,7 @@ export class FittingTutorial extends Tutorial {
     const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
-      'Switch off "Max distance"',
+      'Disable "Max distance"',
       fromEvent(maxDistSwitcher, 'click'),
       maxDistSwitcher,
     );
@@ -245,7 +245,7 @@ export class FittingTutorial extends Tutorial {
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
-      'Switch on "Trajectory"',
+      'Toggle "Trajectory"',
       fromEvent(trajectorySwitcher, 'click'),
       trajectorySwitcher,
     );

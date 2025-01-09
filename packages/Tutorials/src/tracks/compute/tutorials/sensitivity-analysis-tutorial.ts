@@ -201,7 +201,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
-      'Switch on "Angle"',
+      'Toggle the "Angle" parameter',
       fromEvent(angleSwitcher, 'click'),
       angleSwitcher,
     );
@@ -295,7 +295,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const velocitySwitcher = velocityFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
-      'Switch on "Velocity"',
+      'Toggle the "Velocity" parameter',
       fromEvent(velocitySwitcher, 'click'),
       velocitySwitcher,
     );

@@ -80,20 +80,19 @@ const editorInfo = [
   * the grid step`,
   `# Annotation
   
-  Diff Studio automatically generates user interface. To improve usability, specify in braces \`{}\`:
+  Diff Studio automatically generates the user interface. To enhance usability, specify these annotations inside braces \`{}\` after each argument or parameter:
 
-  * \`min\` and \`max\` to get sliders for the rapid model exploration
-  * \`caption\` to get the desired input caption
-  * \`category\` to group inputs by their categories`,
+  * \`min\` and \`max\`: Creates a slider control with defined range for quick model adjustments
+  * \`caption\`: Adds a descriptive label
+  * \`category\`: Groups related arguments together
+  
+  Additionally, you can add tooltips inside brackets \`[]\`.`,
   `# Inits
   
   Define initial values here.`,
   `# Parameters
   
   If your model has parameters, specify them here.`,
-  `# Annotation
-  
-  To improve usability, specify tooltips in brackets \`[]\`.`,
   `# Output
 
   The computation output is a dataframe. Customize its columns here.`,
@@ -105,7 +104,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     return 'Differential equations';
   }
   get description() {
-    return 'Learn how to model processes defined by differential equations with Diff Studio';
+    return 'Learn how to model processes defined by ordinary differential equations with Diff Studio';
   }
   get steps() {return 14;}
 
@@ -114,7 +113,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Diff Studio enables the simulation of processes defined by ordinary differential equations.');
+    this.describe('Diff Studio lets you create models declaratively using a simple, intuitive syntax.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Models definition review');
     this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', LINKS.LOTKA_VOLT).outerHTML}.`);
@@ -204,7 +203,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const editToggle = ribbonPanels[DS_CONSTS.EDIT_RIBBON_IDX][DS_CONSTS.EDIT_TOGGLE_IDX];
     await this.action(
       'Open equations editor',
-      fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
+      interval(100).pipe(filter(() => dsViewRoot.querySelector('div.cm-line') != null)),
       editToggle,
       'Turn on the <b>Edit</b> toggle',
     );
@@ -221,7 +220,6 @@ export class DifferentialEquationsTutorial extends Tutorial {
       lineRoots[5],
       lineRoots[9],
       lineRoots[13],
-      lineRoots[14],
       lineRoots[20],
     ], editorInfo);
 
@@ -315,7 +313,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     await this.action(
       'Close equations editor',
-      fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
+      interval(100).pipe(filter(() => dsViewRoot.querySelector('div.cm-line') == null)),
+      //fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
       editToggle,
       'Turn off the <b>Edit</b> toggle',
     );
