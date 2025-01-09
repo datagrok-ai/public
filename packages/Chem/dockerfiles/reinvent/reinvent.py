@@ -89,7 +89,7 @@ def run_reinvent():
         sample_strategy = "multinomial"
         smiles_file = "/{current_directory}/{smiles_filename}"
 
-        batch_size = 1
+        batch_size = 5
 
         use_checkpoint = false
         use_cuda = false
@@ -134,7 +134,7 @@ def run_reinvent():
         [[stage]]
         
         max_score = 1.0
-        max_steps = 1
+        max_steps = 2
         chkpt_file = 'stage1.chkpt'
         
         [stage.scoring]

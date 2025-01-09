@@ -122,6 +122,7 @@ export let _properties: any;
 
 export const TARGET_PATH = 'System:AppData/Chem/targets';
 export const ADME_CONFIG_PATH = 'System:AppData/Chem/adme_configs';
+export const BOLTZ_CONFIG_PATH = 'System:AppData/Chem/boltz';
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
@@ -2109,7 +2110,7 @@ export async function reinvent(ligand: string, target: string, optimize: string)
   
     /** Lineage setup */
     const schemas = await grok.dapi.stickyMeta.getSchemas();
-    const lineageSchema = schemas.find((s) => s.name === 'Chem-Reinvent-8o7bc')!;
+    const lineageSchema = schemas.find((s) => s.name === 'Lineage')!;
     const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
     molCol.semType = DG.SEMTYPE.MOLECULE;
   
@@ -2153,4 +2154,51 @@ function generateStickyDf(role: string): DG.DataFrame {
   const dateCol = lineageDf.columns.addNewString('Date');
   dateCol.set(0, new Date().toLocaleString());
   return lineageDf;
+}
+
+//name: runBoltz
+//meta.cache: all
+//meta.cache.invalidateOn: 0 * * * *
+//input: string config {choices: Chem: getBoltzConfigFolders}
+//output: string s
+export async function runBoltz(config: string) {
+  const container = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+  const yaml = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
+  const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
+  
+  const body = {
+    yaml: await grok.dapi.files.readAsText(yaml.fullPath),
+    ...(msa && { msa: await grok.dapi.files.readAsText(msa.fullPath) }),
+  };
+
+  const url = 'http://127.0.0.1:8001/predict';
+  const response = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const json = await response.json();
+  const pdb = json['pdb'];
+  return pdb;
+}
+
+//name: boltz
+//input: string config {choices: Chem: getBoltzConfigFolders}
+export async function boltz(config: string) {
+  const pdb = await grok.functions.call('Chem:runBoltz', {config: config});
+  const df = DG.DataFrame.create(1);
+  const pdbCol = df.columns.addNewString('pdb');
+  pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
+  pdbCol.set(0, pdb);
+  grok.shell.addTableView(df);
+}
+
+//name: getBoltzConfigFolders
+//output: list<string> configFolders
+export async function getBoltzConfigFolders(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(BOLTZ_CONFIG_PATH, true);
+  return targetsFiles
+    .filter(folder => folder.isDirectory)
+    .map(folder => folder.name);
 }
