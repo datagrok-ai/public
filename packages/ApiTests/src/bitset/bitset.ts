@@ -95,4 +95,4 @@ category('BitSet', () => {
     const t3 = DG.BitSet.fromString('11111');
     expect(t2.xor(t3).toBinaryString(), '00000');
   });
-}, {clear: false});
+}, {clear: false, owner: 'aparamonov@datagrok.ai'});

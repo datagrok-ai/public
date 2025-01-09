@@ -15,5 +15,5 @@ category('Shell', () => {
     expect(grok.shell.v != v, true);
     expect(grok.shell.table(demog.name), demog);
     grok.shell.closeTable(v.dataFrame);
-  });
+  }, {owner: 'aparamonov@datagrok.ai'});
 });

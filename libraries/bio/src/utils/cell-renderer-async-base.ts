@@ -468,19 +468,9 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       gCtx.resetTransform();
 
       if (this.gridCol) {
-        const grid = this.gridCol.grid;
-        const vertScrollMin: number = Math.floor(grid.vertScroll.min);
-        // Correction for vert scrolling happened between task and render, calculate bd.y directly
-        bd.y = ((gCell.gridRow - vertScrollMin) * grid.props.rowHeight +
-          grid.colHeaderHeight) * dpr;
-
-        // Correction for horz scrolling happened between task and render, calculate bd.x directly
-        let left: number = 0;
-        for (let colI = 0; colI < this.gridCol.idx; colI++) {
-          const col: DG.GridColumn = grid.columns.byIndex(colI)!;
-          left += col.visible ? col.width : 0;
-        }
-        bd.x = (left - grid.horzScroll.min) * dpr;
+        // Use gCell bounds directly to avoid dependency on scroll values
+        bd.y = gCell.bounds.y * dpr;
+        bd.x = gCell.bounds.x * dpr;
       }
 
       /** Clip rect*/ const cr = new DG.Rect(bd.x + dpr, bd.y + dpr, (bd.width - 1) * dpr, (bd.height - 1) * dpr);

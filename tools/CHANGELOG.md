@@ -1,5 +1,38 @@
 # Datagrok-tools changelog
 
+## 4.13.57 (2025-01-08)
+
+### Features
+
+* Test failed results fix
+
+## 4.13.56 (2025-01-06)
+
+### Features
+
+* Worker to browser in test all 
+
+## 4.13.55 (2025-01-06)
+
+### Features
+
+* Removed unnecessary outputs in grok check
+
+
+## 4.13.54 (2025-01-06)
+
+### Features
+
+* Grok check regex update
+
+
+## 4.13.53 (2025-01-06)
+
+### Features
+
+* Updated csv output for test all(added workes id)
+
+
 ## 4.13.52 (2024-12-30)
 
 ### Features

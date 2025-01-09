@@ -9,8 +9,8 @@ export class FitConstants {
 
     static CELL_DEFAULT_WIDTH = 230;
     static CELL_DEFAULT_HEIGHT = 160;
-    static MIN_CELL_RENDERER_PX_WIDTH = 20;
-    static MIN_CELL_RENDERER_PX_HEIGHT = 10;
+    static MIN_CELL_RENDERER_PX_WIDTH = 10;
+    static MIN_CELL_RENDERER_PX_HEIGHT = 5;
     static MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH = 70;
     static MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT = 45;
     static MIN_AXES_CELL_PX_WIDTH = 100;
@@ -40,6 +40,7 @@ export class FitConstants {
     static CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
     static CANDLESTICK_OUTLIER_PX_SIZE = 6;
     static INFLATE_SIZE = -12 / 2;
+    static MIN_INFLATE_SIZE = -4 / 2;
     static LEGEND_RECORD_PX_HEIGHT = 18;
     static LEGEND_RECORD_LINE_PX_WIDTH = 20;
     static LEGEND_RECORD_LINE_RIGHT_PX_MARGIN = 5;

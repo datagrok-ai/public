@@ -163,4 +163,4 @@ category('Viewers: Histogram', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

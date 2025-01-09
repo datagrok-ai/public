@@ -36,7 +36,7 @@ category('Dapi: functions annotations', async () => {
     await testAnnotation('ApiTests:testOutputWithoutAction');
   });
 
-});
+}, { owner: 'aparamonov@datagrok.ai' });
 
 async function testAnnotation(functionName: string, colName?: string): Promise<void> {
     var df = DG.DataFrame.fromCsv(`x, y, val

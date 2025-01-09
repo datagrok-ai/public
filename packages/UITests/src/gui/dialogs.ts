@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, awaitCheck, category, test, delay, expect} from '@datagrok-libraries/utils/src/test';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
-  setDialogInputValue, checkDialog, checkViewer} from './gui-utils';
+import { before, awaitCheck, category, test, delay, expect } from '@datagrok-libraries/utils/src/test';
+import {
+  isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
+  setDialogInputValue, checkDialog, checkViewer
+} from './gui-utils';
 import { wait } from 'datagrok-api/ui';
 
 
@@ -100,8 +102,8 @@ category('GUI: Dialogs', () => {
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 1', 1000);
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
-      okButton.click();
-    await awaitCheck(() => !checkDialog('PCA'),'PCA dialog didnt close', 10000);
+    okButton.click();
+    await awaitCheck(() => !checkDialog('PCA'), 'PCA dialog didnt close', 10000);
     await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
       'Failed'), 'cannot find error balloon', 1000);
     grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
@@ -173,4 +175,4 @@ category('GUI: Dialogs', () => {
     expect(grok.shell.t.rowCount, 1000);
     grok.shell.v.close();
   });
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

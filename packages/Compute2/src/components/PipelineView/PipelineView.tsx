@@ -87,7 +87,7 @@ export const PipelineView = Vue.defineComponent({
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.35}
+              dock-spawn-dock-ratio={0.7}
               dock-spawn-title='History'
               dock-spawn-panel-icon='history'
               ref={historyRef}
@@ -97,7 +97,7 @@ export const PipelineView = Vue.defineComponent({
             class={'grok-gallery-grid'}
             dock-spawn-title='Steps to add'
             dock-spawn-dock-type='right'
-            dock-spawn-dock-ratio={0.35}
+            dock-spawn-dock-ratio={0.7}
             ref={functionsRef}
           >
             { state.value.stepTypes
@@ -107,7 +107,7 @@ export const PipelineView = Vue.defineComponent({
                 const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
 
                 return <div
-                  class='p-2 border-solid border-1 border-[#dbdcdf] m-4'
+                  class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
                   style={{width: '208px'}}
                   onMouseover={() => hoveredFunc.value = func}
                   onMouseleave={() => hoveredFunc.value = null}

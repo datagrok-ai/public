@@ -16,22 +16,54 @@ import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
-export function findTreeNode(uuid: string, state: PipelineState): PipelineState | undefined {
-  const notVisitedStates = [state];
+type NodeWithPath = {
+  state: PipelineState,
+  pathSegments: number[],
+}
 
-  while (notVisitedStates.length > 0) {
-    const currentState = notVisitedStates.pop()!;
+function hasSteps(state: PipelineState) {
+  return isParallelPipelineState(state) ||
+  isSequentialPipelineState(state) ||
+  isStaticPipelineState(state);
+}
 
-    if (currentState.uuid === uuid)
-      return currentState;
+function _findTreeNodeWithPath(uuid: string, steps: PipelineState[], pathSegments: number[]): NodeWithPath | undefined {
+  for (const [idx, stepState] of steps.entries()) {
+    if (stepState.uuid === uuid)
+      return {state: stepState, pathSegments: [...pathSegments, idx]};
 
-    if (
-      isParallelPipelineState(currentState) ||
-        isSequentialPipelineState(currentState) ||
-        isStaticPipelineState(currentState)
-    )
-      notVisitedStates.push(...currentState.steps);
+    if (hasSteps(stepState)) {
+      pathSegments.push(idx);
+
+      const t = _findTreeNodeWithPath(uuid, stepState.steps, pathSegments);
+      if (t)
+        return t;
+      else
+        pathSegments.pop();
+    }
   }
+}
+
+export function findNodeWithPathByUuid(uuid: string, state: PipelineState): NodeWithPath | undefined {
+  const pathSegments = [] as number[];
+
+  return _findTreeNodeWithPath(uuid, [state], pathSegments);
+};
+
+export function findTreeNodeByPath(pathSegments: number[], state: PipelineState): NodeWithPath | undefined {
+  const node = pathSegments.slice(1).reduce((acc, segment) => {
+    if (acc && hasSteps(acc)) {
+      acc = acc.steps[segment];
+
+      return acc;
+    }
+    return undefined;
+  }, state as PipelineState | undefined);
+
+  return node ? {
+    state: node,
+    pathSegments,
+  }: undefined;
 };
 
 export function findTreeNodeParrent(uuid: string, state: PipelineState): PipelineState | undefined {

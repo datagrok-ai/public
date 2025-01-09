@@ -154,6 +154,7 @@ export class FitChartData implements IFitChartData {
 
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
+  [key: string]: any;                   // allows getting data by key
   name?: string;                        // controls the series name
   fitFunction?: string | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
@@ -342,12 +343,12 @@ export const fitFunctions: {[index: string]: FitFunction} = {
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
 export const statisticsProperties: DG.Property[] = [
   DG.Property.js('rSquared', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('auc', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('auc', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'AUC'}),
   DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Max Y'}),
+  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Min Y'}),
 ];
 
 /** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
@@ -764,9 +765,9 @@ function getSigmasForCombinedErrorModel(sigmaA: number, sigmaB: number, residues
     const sigmaACombined = sigmaA * proportion;
     const sigmaBCombined = sigmaA * (1 - proportion);
     const sigmaSqICombined: number[] = [];
-    for (let i = 0; i < residuesSquares.length; i++) {
-      sigmaSqICombined[i] = Math.pow(sigmaACombined + sigmaBCombined * pred[i], 2);
-      likelihoodCombinedLocal += residuesSquares[i] / sigmaSqICombined[i] + Math.log(2 * Math.PI * sigmaSqICombined[i]);
+    for (let j = 0; j < residuesSquares.length; j++) {
+      sigmaSqICombined[j] = Math.pow(sigmaACombined + sigmaBCombined * pred[j], 2);
+      likelihoodCombinedLocal += residuesSquares[j] / sigmaSqICombined[j] + Math.log(2 * Math.PI * sigmaSqICombined[j]);
     }
     if (likelihoodCombinedLocal < likelihoodCombined) {
       likelihoodCombined = likelihoodCombinedLocal;

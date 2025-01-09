@@ -175,11 +175,21 @@ public abstract class JdbcDataProvider extends DataProvider {
                     else if (param.propertyType.equals(Types.BIG_INT) && param.value != null)
                         statement.setLong(n + i + 1, Long.parseLong(param.value.toString()));
                     else {
-//                        if (param.value == null) {
-//                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-//                        }
-//                        else
-                        statement.setObject(n + i + 1, param.value);
+                        if (param.value == null) {
+                            switch (param.propertyType) {
+                                case Types.INT:
+                                case Types.FLOAT:
+                                    statement.setNull(n + i + 1, java.sql.Types.NUMERIC);
+                                    break;
+                                case Types.BIG_INT:
+                                    statement.setNull(n + i + 1, java.sql.Types.BIGINT);
+                                default:
+                                    statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+                                    break;
+                            }
+                        }
+                        else
+                            statement.setObject(n + i + 1, param.value);
                     }
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");

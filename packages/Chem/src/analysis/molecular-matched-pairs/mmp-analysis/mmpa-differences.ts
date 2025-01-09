@@ -24,9 +24,9 @@ function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInf
   const toFrag = new Array<string>(allSize);
   const occasions = new Int32Array(allSize);
   for (let i = 0; i < allSize; i++) {
-    const fromFragment = mmpr.smilesFrags[mmpr.rules[i].smilesRule1];
+    const fromFragment = mmpr.smilesFrags[mmpr.rules[i].sr1];
     fromFrag[i] = frags.idToName[fromFragment];
-    toFrag[i] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule2]];
+    toFrag[i] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].sr2]];
     occasions[i] = mmpr.rules[i].pairs.length;
     const fragIdxInSortingInfo = fragSortingInfo.fragmentIdxs.indexOf(fromFragment);
     if (fragIdxInSortingInfo === -1) {
@@ -87,8 +87,8 @@ function calculateActivityDiffs(
   for (let i = 0; i < allSize; i++) {
     const mean = new Float32Array(variates);
     for (let j = 0; j < occasions[i]; j++) {
-      const idx1 = mmpr.rules[i].pairs[j].firstStructure;
-      const idx2 = mmpr.rules[i].pairs[j].secondStructure;
+      const idx1 = mmpr.rules[i].pairs[j].fs;
+      const idx2 = mmpr.rules[i].pairs[j].ss;
 
       molFrom[pairIdx] = molecules[idx1];
       molTo[pairIdx] = molecules[idx2];
@@ -111,8 +111,8 @@ function calculateActivityDiffs(
       molNumFrom[pairIdx] = idx1;
       molNumTo[pairIdx] = idx2;
       pairNum[pairIdx] = pairIdx;
-      pairsFromSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule1]];
-      pairsToSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule2]];
+      pairsFromSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].sr1]];
+      pairsToSmiles[pairIdx] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].sr2]];
       ruleNum[pairIdx] = i;
 
       pairIdx++;

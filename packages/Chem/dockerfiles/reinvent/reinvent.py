@@ -63,6 +63,7 @@ def run_reinvent():
         
         files = [f for f in os.listdir(current_directory) if os.path.isfile(os.path.join(current_directory, f))]
         pt_files = [f for f in files if f.endswith('.pt')]
+        logging.info("Pytorch models: %s", ', '.join(pt_files))
         for pt_file in pt_files:
             folder_name = os.path.splitext(pt_file)[0]
             folder_path = os.path.join(current_directory, folder_name)

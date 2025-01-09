@@ -321,7 +321,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.delete(funcCall);
     expect(await grok.dapi.functions.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
   }, {owner: zakievAufar});
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: functions', async () => {
   test('Load package function with package', async () => {
@@ -367,4 +367,4 @@ category('Dapi: functions', async () => {
     await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(fc.id);
   }, {owner: zakievAufar});
-});
+}, {owner: 'aparamonov@datagrok.ai'});

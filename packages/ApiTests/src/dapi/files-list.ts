@@ -39,5 +39,5 @@ category('Dapi: files: list', () => {
     const fiList = await grok.dapi.files.list(filePath, false, fn);
     expect(fiList.length, 0);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 

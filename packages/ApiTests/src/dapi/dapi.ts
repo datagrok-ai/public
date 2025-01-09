@@ -19,7 +19,7 @@ category('Dapi', () => {
     await grok.dapi.scripts.first();
     await grok.dapi.projects.first();
     await grok.dapi.environments.first();
-  }, {skipReason: 'GROK-11670'});
+  }, {skipReason: 'GROK-11670',  owner: 'aparamonov@datagrok.ai'});
 
   test('logging', async () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
@@ -28,5 +28,5 @@ category('Dapi', () => {
     expect((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name, jsApiTestType);
     //TODO: find log
     // console.log(await grok.dapi.log.list({filter: 'jsApiTest1 = "jsApiTest2"'}));
-  }, {skipReason: 'GROK-11670'});
+  }, {skipReason: 'GROK-11670',  owner: 'aparamonov@datagrok.ai'});
 });

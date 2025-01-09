@@ -27,8 +27,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 
 import {runKNNImputer} from './missing-values-imputation/ui';
 import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
-import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
-import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
+import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
+import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
 import {PlsModel} from './pls/pls-ml';
@@ -215,7 +215,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 
 
 //top-menu: ML | Cluster | MCL...
-//name: MCL
+//name: MCLClustering
 //description: Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
 //input: dataframe df
 //input: list<column> cols
@@ -230,11 +230,11 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: double inflate = 2
 //input: int minClusterSize = 5
 //editor: EDA: GetMCLEditor
-export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
+export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false, inflate: number = 0,
   minClusterSize: number = 5,
-): Promise< DG.ScatterPlotViewer | undefined> {
+): Promise<MCLViewer> {
   const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
   const serializedOptions: string = JSON.stringify({
     cols: cols.map((col) => col.name),
@@ -249,29 +249,18 @@ export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMet
     inflate: inflate,
     minClusterSize: minClusterSize ?? 5,
   } satisfies MCLSerializableOptions);
-  df.setTag(MCL_OPTIONS_TAG, serializedOptions);
+  //df.setTag(MCL_OPTIONS_TAG, serializedOptions);
 
-  const sc = tv.addViewer(DG.VIEWER.SCATTER_PLOT, {title: 'MCL', initializationFunction: 'EDA:MCLInitializationFunction'}) as DG.ScatterPlotViewer;
-  return sc;
+  const viewer = tv.addViewer('MCL', {mclProps: serializedOptions}) as MCLViewer;
+  return viewer;
 }
 
-//name: MCLInitializationFunction
-//input: viewer sc
-export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
-  const df = sc.dataFrame;
-  if (df === null)
-    throw new Error('Data frame of the scatter plot is null');
-  const mclTag = df.getTag(MCL_OPTIONS_TAG);
-  if (!mclTag)
-    throw new Error('MCL options tag on the dataFrame is not found');
-  const options: MCLSerializableOptions = JSON.parse(mclTag);
-  const cols = options.cols.map((colName) => df.columns.byName(colName));
-  const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
-
-  const res = await markovCluster(df, cols, options.metrics, options.weights,
-    options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
-    options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc);
-  return res?.sc;
+//name: MCL
+//description: Markov clustering viewer
+//tags: viewer
+//output: viewer result
+export function markovClusteringViewer(): MCLViewer {
+  return new MCLViewer();
 }
 
 //name: PLS

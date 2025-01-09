@@ -30,7 +30,7 @@ category('Grid: Color Coding', () => {
     v = grok.shell.addTableView(demog);
     v.loadLayout(layout);
     testTags(' after layout');
-  });
+  }, {owner: 'dkovalyov@datagrok.ai'});
 
   function testTags(after: string = '') {
     const ageCol = demog.col('age')!;

@@ -11,4 +11,4 @@ category('Dapi: users', () => {
   test('current session', async () => {
     await grok.dapi.users.currentSession();
   }, {stressTest: true});
-});
+}, {owner: 'aparamonov@datagrok.ai'});

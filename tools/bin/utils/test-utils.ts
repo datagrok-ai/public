@@ -383,7 +383,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     if (mergedResult.csv === browsersResult.csv)
       continue;
 
-    mergedResult.failed = mergedResult.failed && browsersResult.failed;
+    mergedResult.failed = mergedResult.failed || browsersResult.failed;
     mergedResult.verbosePassed = `${mergedResult.verbosePassed.trim()}\n${browsersResult.verbosePassed.trim()}`;
     mergedResult.verboseFailed = `${mergedResult.verboseFailed.trim()}\n${browsersResult.verboseFailed.trim()}`;
     mergedResult.verboseSkipped = `${mergedResult.verboseSkipped.trim()}\n${browsersResult.verboseSkipped.trim()}`;

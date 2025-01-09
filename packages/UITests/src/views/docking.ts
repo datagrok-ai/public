@@ -20,4 +20,4 @@ category('View: Docking', () => {
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
     expect(wu(tv.viewers).find((v: DG.Viewer) => v.tags['test'])?.tags['test'], 'true');
   });
-});
+}, { owner: 'aparamonov@datagrok.ai' });

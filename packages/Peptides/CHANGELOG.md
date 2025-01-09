@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.21.0 (2025-01-06)
+
+Enable Project saving for SAR analysis
+
 ## 1.19.1 (2024-12-10)
 
 Fix JS-API related changes

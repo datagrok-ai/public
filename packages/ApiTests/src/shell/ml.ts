@@ -19,4 +19,4 @@ category('ML', () => {
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA0'), true);
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA1'), true);
   });
-});
+}, {owner: 'kamelichev@datagrok.ai'});

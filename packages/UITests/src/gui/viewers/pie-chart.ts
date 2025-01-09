@@ -90,4 +90,4 @@ category('Viewers: Pie Chart', () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Pie Chart').first());
   }); 
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
-import {getChartData, mergeProperties} from './fit-renderer';
+import {getOrCreateParsedChartData, mergeProperties} from './fit-renderer';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
@@ -99,7 +99,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
         const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
         if (gridCell.cell.value === '')
           continue;
-        const cellCurves = getChartData(gridCell);
+        const cellCurves = getOrCreateParsedChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
         const currentChartOptions = cellCurves.chartOptions;
         if (currentChartOptions !== undefined && currentChartOptions !== null)
@@ -180,6 +180,6 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       return;
     }
     this._removeErrorMessage();
-    this.renderer.renderCurves(g, new DG.Rect(0, 0, this.canvas.width, this.canvas.height).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), this.data);
+    this.renderer.renderCurves(g, FitChartCellRenderer.inflateScreenBounds(new DG.Rect(0, 0, this.canvas.width, this.canvas.height)), this.data);
   }
 }

@@ -38,4 +38,4 @@ id1,1,23,CGTA
     tgtDf1.join(srcDf2, ['id'], ['id'], [], ['seq'], DG.JOIN_TYPE.LEFT, true);
     expectArray(tgtDf1.columns.names(), [...tgtDf1ColList, 'seq']);
   }, {});
-});
+}, { owner: 'aparamonov@datagrok.ai' });

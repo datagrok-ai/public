@@ -49,4 +49,4 @@ category('Modeling: H20', () => {
     okButtonInSelectColumn.click(); await delay(500);
     features.dispatchEvent(new Event('input')); await delay(500);
   });
-});
+}, { owner: 'kamelichev@datagrok.ai' });

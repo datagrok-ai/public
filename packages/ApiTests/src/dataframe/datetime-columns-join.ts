@@ -28,5 +28,5 @@ category('DataFrame', () => {
     ]).join(df1, ['AA'], ['A'], ['AA', 'BB', 'CC'], ['B', 'C', 'D'], 'inner', false);
 
     expect(result != null, true);
-  });
+  }, {owner: 'aparamonov@datagrok.ai'});
 });

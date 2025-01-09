@@ -15,9 +15,9 @@ export enum MMP_ERRORS {
 
 export type MmpRules = {
   rules: {
-    smilesRule1: number,
-    smilesRule2: number,
-    pairs: {firstStructure: number, secondStructure: number, core: number}[]
+    sr1: number,
+    sr2: number,
+    pairs: {fs: number, ss: number, core: number}[]
   } [],
   smilesFrags: number[]
 };

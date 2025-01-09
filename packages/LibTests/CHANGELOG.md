@@ -1,5 +1,9 @@
 # LibTests changelog
 
+## 1.4.2 (2025-01-07)
+
+- Updated tests for synchronouy RFV
+
 ## 1.4.1 (2024-12-25)
 
 - Release for 1.23.0

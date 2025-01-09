@@ -138,6 +138,7 @@
                         {
                           "width": 71.55215219976218,
                           "columnName": "owner",
+                          "cellType": "User",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -145,6 +146,23 @@
                           "settings": {
                             "isPinned": false,
                             "idxPinned": -1
+                          }
+                        },
+                        {
+                          "width": 120,
+                          "columnName": "jira",
+                          "cellType": "JIRA Ticket",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 71,
+                          "columnName": "severity",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
                           }
                         },
                         {
@@ -560,7 +578,8 @@
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
                       "minTextHeight": 14,
-                      "legendVisibility": "Never"
+                      "legendVisibility": "Never",
+                      "legendPosition": "Right"
                     },
                     "title": "Bar chart"
                   }
@@ -955,6 +974,25 @@
                           "width": 30,
                           "columnName": "needs_attention",
                           "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "jira",
+                          "cellType": "JIRA Ticket",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "severity",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"

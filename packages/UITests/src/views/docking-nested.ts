@@ -264,7 +264,7 @@ category('View: DockingNested', () => {
       );
     }, 'LEFT OF FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 1000);
   });
-});
+}, { owner: 'aparamonov@datagrok.ai' });
 
 function isLeftOf(tgt: Element, ref: Element): boolean {
   const tgtRect = tgt.getBoundingClientRect();

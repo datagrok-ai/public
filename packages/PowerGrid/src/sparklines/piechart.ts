@@ -141,7 +141,7 @@ function renderSubsector(
     g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
     g.lineWidth = 0.6;
     g.stroke();
-    g.fillStyle = value ? hexToRgbA(sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
+    g.fillStyle = hexToRgbA(sectorColor, 0.6);
     g.fill();
   }
   return currentAngle + subsectorAngle;
@@ -297,27 +297,20 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const sectorWeight = calculateSectorWeight(sector);
         const normalizedSectorWeight = sectorWeight / totalSectorWeight;
         const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
-
-        // Render sector
+        const radiusFactor = Math.min(box.width, box.height) / 2;
+        const arcEnd = currentAngle + sectorAngle;
+        
+        // Render inner circle representing the range
         g.beginPath();
-        g.moveTo(box.midX, box.midY);
-        g.arc(box.midX, box.midY, Math.min(box.width, box.height) / 2, currentAngle, currentAngle + sectorAngle);
-        g.closePath();
-        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
+        g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
+        g.arc(box.midX, box.midY, upperBound * radiusFactor, arcEnd, currentAngle, true);
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.2);
         g.fill();
 
         // Render subsectors
         let subsectorCurrentAngle = currentAngle;
         for (const subsector of sector.subsectors)
           subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, row, sectorWeight);
-
-        // Render inner circle representing the range
-        g.beginPath();
-        g.arc(box.midX, box.midY, lowerBound * (Math.min(box.width, box.height) / 2), currentAngle, currentAngle + sectorAngle);
-        g.arc(box.midX, box.midY, upperBound * (Math.min(box.width, box.height) / 2), currentAngle + sectorAngle, currentAngle, true);
-        g.closePath();
-        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
-        g.fill();
 
         currentAngle += sectorAngle;
       }

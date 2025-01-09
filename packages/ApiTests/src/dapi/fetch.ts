@@ -30,4 +30,4 @@ category('Dapi: fetch', () => {
 
     DG.DataFrame.fromCsv(resText);
   }, {stressTest: true});
-});
+}, {owner: 'aparamonov@datagrok.ai'});

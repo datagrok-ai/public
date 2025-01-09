@@ -20,7 +20,6 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
-
 ## 2024-12-20 Datagrok 1.23.0 release
 
 The Datagrok 1.23.0 release includes stability and data access improvements
@@ -34,7 +33,6 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 #### Browse
 
 * Galleries: Enabled keyboard navigation and selection in brief and card mode
-
 
 <!-- #### [Scripting](https://datagrok.ai/help/compute/scripting/)
 
@@ -67,9 +65,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
   * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category box plot is not compatible with older layouts that have only single category
   *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
 
-
 #### [Grid](../../visualize/viewers/grid.md)
-
 
 * [#2968](https://github.com/datagrok-ai/public/issues/2968): Added multi-column style editing 
 * Fixed:
@@ -113,7 +109,6 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 
 * Added ability to edit campaign stages once the campaign starts
 
-
 ## 2024-12-20 1.22.3
 
 ### Improvements and fixes:
@@ -130,7 +125,6 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 * [#3174](https://github.com/datagrok-ai/public/issues/3176): Table header tooltip overlaps menus
 * [#3168](https://github.com/datagrok-ai/public/issues/3168): Horizontal scroll bar in table disappears on double-click
 
-
 ## 2024-11-25 1.22.2
 
 ### Improvements and fixes:
@@ -141,7 +135,6 @@ The Datagrok 1.23.0 release includes stability and data access improvements
     * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown
   * [PC Plot](../../visualize/viewers/pc-plot.md): Transformation doesn't work
   * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category Box plot is not compatible with older layouts that have only single category
-
 
 ## 2024-11-04 1.22.1
 

@@ -120,7 +120,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
 
-    this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: false});
+    this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: true});
   }
 
   onPropertyChangedDebounced() {

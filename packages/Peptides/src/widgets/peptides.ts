@@ -263,20 +263,28 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
 
   // Prepare new DF
-  const newDf = DG.DataFrame.create(sourceDf.rowCount);
-  newDf.name = 'Peptides analysis';
-  const newDfCols = newDf.columns;
-  newDfCols.add(scaledCol);
-  for (const col of sourceDf.columns) {
-    if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-      if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
-        col.name = sourceDf.columns.getUnusedName(col.name);
+  // const newDf = DG.DataFrame.create(sourceDf.rowCount);
+  // newDf.name = 'Peptides analysis';
+  // const newDfCols = newDf.columns;
+  // newDfCols.add(scaledCol);
+  // for (const col of sourceDf.columns) {
+  //   if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+  //     if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
+  //       col.name = sourceDf.columns.getUnusedName(col.name);
+  //     newDfCols.add(col);
+  //   }
+  // }
 
+  //make sure the data sync is turned off for the dataframe:
+  sourceDf.tags.delete && sourceDf.tags.delete('.script');
 
-      newDfCols.add(col);
-    }
-  }
-
+  const sourceCols = sourceDf.columns;
+  const oldActivityCol = sourceDf.col(scaledCol.name);
+  if (oldActivityCol)
+    oldActivityCol.name = sourceCols.getUnusedName(oldActivityCol.name);
+  const scaleColRawData = scaledCol.getRawData();
+  sourceDf.columns.addNew(scaledCol.name, scaledCol.type).init((i) => scaleColRawData[i]);
+  sourceCols.setOrder([scaledCol.name, peptidesCol.name, ...sourceCols.names().filter((name) => name !== peptidesCol.name && name !== scaledCol.name)]);
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
     columns: {}, showDendrogram: false, showSequenceSpace: false,
@@ -285,18 +293,18 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   };
 
   if (clustersColumn) {
-    const clusterCol = newDf.getCol(clustersColumn.name);
+    const clusterCol = sourceDf.getCol(clustersColumn.name);
     if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
-      newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+      sourceCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
   }
-  newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
+  sourceDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
-  const bitset = DG.BitSet.create(sourceDf.rowCount,
-    (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
+  // const bitset = DG.BitSet.create(sourceDf.rowCount,
+  //   (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
 
   // Cloning dataframe with applied filter. If filter is not applied, cloning is
   // needed anyway to allow filtering on the original dataframe
-  model = PeptidesModel.getInstance(newDf.clone(bitset));
+  model = PeptidesModel.getInstance(sourceDf);
   model.init(settings);
   if (clustersColumn) {
     const lstProps: ILogoSummaryTable = {

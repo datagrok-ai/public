@@ -40,4 +40,4 @@ category('FilesView', () => {
     expect(v.showPreview, false);
     expect(v.showSearch, false);
   });
-});
+}, { owner: 'aparamonov@datagrok.ai' });

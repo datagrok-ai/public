@@ -32,6 +32,7 @@ function generateCommonValueFormula(operation, suffix, value) {
 
 pivot.columns.byName('owner').semType = 'User';
 pivot.columns.byName('owner').setTag('cell.renderer', 'User');
+pivot.columns.byName('test').semType = 'test';
 
 // await pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
 // await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
