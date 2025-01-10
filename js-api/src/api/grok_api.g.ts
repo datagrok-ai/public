@@ -730,6 +730,13 @@ export interface IDartApi {
   grok_GridCellRenderArgs_Get_G(args: any): any;
   grok_GridCellRenderArgs_Get_Cell(args: any): any;
   grok_GridCellRenderArgs_Get_Bounds(args: any): any;
+  grok_GridCellWidget(): any;
+  grok_GridCellWidget_Get_Canvas(gcw: any): any;
+  grok_GridCellWidget_Get_Root(gcw: any): any;
+  grok_GridCellWidget_Get_GridCell(gcw: any): any;
+  grok_GridCellWidget_Set_GridCell(gcw: any, gc: any): any;
+  grok_GridCellWidget_Get_Bounds(gcw: any): any;
+  grok_GridCellWidget_Render(gcw: any): any;
   grok_GridColumn_Get_Grid(gc: any): any;
   grok_GridColumn_Get_Column(gc: any): any;
   grok_GridColumn_Get_ContentCellStyle(gc: any): any;

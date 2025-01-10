@@ -19,6 +19,7 @@ import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 interface FitRenderOptions {
     viewport: Viewport;
+    screenBounds?: DG.Rect;
     ratio?: number;
 }
 
@@ -57,6 +58,7 @@ interface FitStatisticsRenderOptions {
     fitFunc: FitFunction;
     logOptions: LogOptions;
     dataBox: DG.Rect;
+    screenBounds?: DG.Rect;
     dataPoints?: {x: number[], y: number[]};
 }
 
@@ -116,7 +118,10 @@ export function renderConnectDots(g: CanvasRenderingContext2D, series: IFitSerie
 }
 
 export function renderPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: FitRenderOptions) {
-    if (series.showPoints ?? 'points') {
+    const screenBounds = options.screenBounds!;
+    const showPoints = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
+      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? '' : series.showPoints ?? 'points';
+    if (showPoints) {
         g.strokeStyle = series.pointColor!;
         if ((series.connectDots && series.showPoints !== '') || series.showPoints === 'points')
             drawPoints(g, series, options);
@@ -363,16 +368,18 @@ function drawDropline(g: CanvasRenderingContext2D, renderOptions: FitDroplineRen
 }
 
 export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitStatisticsRenderOptions): void {
-    if ((series.showFitLine ?? true) && renderOptions.statistics && renderOptions.statistics.length > 0) {
+    const screenBounds = renderOptions.screenBounds!;
+    const statistics = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
+      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? [] : renderOptions.statistics;
+    if ((series.showFitLine ?? true) && statistics && statistics.length > 0) {
         const dataBox = renderOptions.dataBox;
-        const stats = renderOptions.statistics;
         const dataPoints = renderOptions.dataPoints;
-        const statistics = getSeriesStatistics(series, renderOptions.fitFunc, dataPoints, renderOptions.logOptions);
-        for (let i = 0; i < stats.length; i++) {
-            const statName = stats[i];
+        const seriesStatistics = getSeriesStatistics(series, renderOptions.fitFunc, dataPoints, renderOptions.logOptions);
+        for (let i = 0; i < statistics.length; i++) {
+            const statName = statistics[i];
             const prop = statisticsProperties.find((p) => p.name === statName);
             if (prop) {
-                const s = StringUtils.formatNumber(prop.get(statistics));
+                const s = StringUtils.formatNumber(prop.get(seriesStatistics));
                 g.fillStyle = series.fitLineColor!;
                 g.textAlign = 'left';
                 g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);

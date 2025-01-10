@@ -31,6 +31,7 @@ def run_reinvent():
         config_string = json_data.get('config', " ")
         receptor_file_content = json_data.get('receptor', " ")
         adme_config = json_data.get('admeConfig', " ")
+        steps = json_data.get('steps', 5)
 
         output_csv = "stage1_1.csv"
 
@@ -134,7 +135,7 @@ def run_reinvent():
         [[stage]]
         
         max_score = 1.0
-        max_steps = 1
+        max_steps = {steps}
         chkpt_file = 'stage1.chkpt'
         
         [stage.scoring]

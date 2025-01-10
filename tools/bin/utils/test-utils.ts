@@ -9,6 +9,7 @@ import { spaceToCamelCase } from '../utils/utils';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
+import Papa from 'papaparse';
  
 const fetch = require('node-fetch');
 
@@ -163,8 +164,8 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
-        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "");
-
+        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "") ?? packagesToRun.get(dirName);
+      
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
             process.stdout.write(`Building and publishing ${dirName}...`);
@@ -285,7 +286,10 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
   console.log("Failed amount:  " + browserResult?.failedAmount);
 
   if (browserResult.failed) {
-    color.fail('Tests failed.');
+    if (browserResult.verboseFailed === 'Package not found')
+      color.fail('Tests not found');
+    else
+      color.fail('Tests failed.');
   } else {
     color.success('Tests passed.');
   }
@@ -462,4 +466,23 @@ export type OrganizedTests = {
       report: boolean | undefined
     }
   }
+}
+
+export async function addColumnToCsv(csv: string, columnName: string, defaultValue: string | number | boolean): Promise<string> {
+  let result = csv;
+  Papa.parse(csv, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function (results) {
+      const dataWithDefaultColumn = results.data.map((row: any) => {
+        row[columnName] = defaultValue;
+        return row;
+      });
+
+      result = Papa.unparse(dataWithDefaultColumn, {
+        header: true
+      });
+    }
+  });
+  return result;
 }

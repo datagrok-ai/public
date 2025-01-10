@@ -3,19 +3,24 @@
     right: 10px;
 }
 
+.scatter_plot_root {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
 .cliffs_grid {
-    top: 10px;
+   margin: 0!important;
 }
 
 .show_only_cliffs {
-    top: 30px;
+    padding-right: 100px;
 }
 
 .ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings {
     font-size: 18px;
     position: absolute;
     height: 28px;
-    
 }
 
 .ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings:not(.ml-dim-reduction-column-editor-input-root i) {

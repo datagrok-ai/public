@@ -16,7 +16,7 @@ import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
 import {_package} from '../package';
-import {LruCache} from "datagrok-api/dg";
+import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {
   renderer = '.renderer.pdb',
@@ -44,22 +44,22 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
   protected override storeAux(_gridCell: DG.GridCell, _aux: NglGlAux): void {}
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
-    this.createViewer(gridCell).then(async ({ tview, viewer }) => {
+    this.createViewer(gridCell).then(async ({tview, viewer}) => {
       if (tview && viewer) {
         const currentViewer = wu(tview.viewers).find((v) => {
           return v.type === 'Biostructure' || v.type === 'NGL';
         }) as DG.Viewer & IBiostructureViewer;
 
-        if (!currentViewer) {
+        if (!currentViewer)
           tview.dockManager.dock(viewer.root, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
-        } else {
+        else {
           // Update existing viewer
           await new Promise<void>((resolve) => {
             testEvent(viewer!.onRendered, () => {
               this._onClicked.next();
               resolve();
             }, () => {
-              currentViewer.setOptions({ pdb: gridCell.cell.value });
+              currentViewer.setOptions({pdb: gridCell.cell.value});
               currentViewer.invalidate('onClick()'); // To trigger viewer.onRendered
             }, 10000);
           });
@@ -72,7 +72,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     const df: DG.DataFrame = gridCell.grid.dataFrame;
     const tableCol: DG.Column | null = gridCell.tableColumn;
     if (!tableCol)
-      return { tview: undefined, viewer: null };
+      return {tview: undefined, viewer: null};
 
     const dockingRole: string = tableCol.getTag(DockingTags.dockingRole);
     const value: string = gridCell.cell.value;
@@ -81,31 +81,31 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
       .find((tv) => tv.dataFrame.id === df.id);
 
     if (!tview)
-      return { tview: undefined, viewer: null };
+      return {tview: undefined, viewer: null};
 
     let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
 
     switch (dockingRole) {
-      case DockingRole.ligand: {
-        // Biostructure, NGL viewers track current, selected rows to display ligands
-        break;
-      }
-
-      case DockingRole.target:
-      default: {
-        viewer = await df.plot.fromType('Biostructure', { pdb: value }) as DG.Viewer & IBiostructureViewer;
-        await new Promise<void>((resolve) => {
-          testEvent(viewer!.onRendered, () => {
-            this._onClicked.next();
-            resolve();
-          }, () => {
-            viewer!.invalidate('onClick()'); // To trigger viewer.onRendered
-          }, 10000);
-        });
-      }
+    case DockingRole.ligand: {
+      // Biostructure, NGL viewers track current, selected rows to display ligands
+      break;
     }
 
-    return { tview, viewer };
+    case DockingRole.target:
+    default: {
+      viewer = await df.plot.fromType('Biostructure', {pdb: value}) as DG.Viewer & IBiostructureViewer;
+      await new Promise<void>((resolve) => {
+        testEvent(viewer!.onRendered, () => {
+          this._onClicked.next();
+          resolve();
+        }, () => {
+            viewer!.invalidate('onClick()'); // To trigger viewer.onRendered
+        }, 10000);
+      });
+    }
+    }
+
+    return {tview, viewer};
   }
 
   static getOrCreate(gridCell: DG.GridCell): PdbGridCellRendererBack {
@@ -169,8 +169,8 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
   imageCache: LruCache = new LruCache<string, any>();
 
-  get defaultWidth() { return 50; }
-  get defaultHeight() { return 50; }
+  get defaultWidth() { return 100; }
+  get defaultHeight() { return 100; }
   get name(): string { return 'PDB_ID'; }
   get cellType(): string { return 'PDB_ID'; }
 
@@ -178,26 +178,24 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    if (h < 40 || gridCell.cell.valueString.length < 4)
+    if (h < 40 || gridCell.cell.valueString.length < 4 || w < 40)
       DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
     else {
       const pdb = gridCell.cell.valueString.toLowerCase();
       const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
-      let cache = this.imageCache;
+      const cache = this.imageCache;
 
       if (this.imageCache.has(url)) {
         const img = this.imageCache.get(url);
         if (img) {
           const fit = new DG.Rect(x, y, w, h).fit(img.width, img.height);
           g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
-          DG.GridCellRenderer.byName('string')?.render(g, x, y, 40, 25, gridCell, cellStyle);
+          DG.GridCellRenderer.byName('string')?.render(g, x, y, w, 25, gridCell, cellStyle);
         }
-      }
-      else {
-        DG.GridCellRenderer.byName('string')?.render(g, x, y, 40, 25, gridCell, cellStyle);
+      } else {
+        DG.GridCellRenderer.byName('string')?.render(g, x, y, w, 25, gridCell, cellStyle);
 
         fetch(url).then(async (response) => {
-
           if (!response.ok) {
             g.fillStyle = 'red';
             g.fillRect(x + w - 5, y, 5, 5);
@@ -207,12 +205,12 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
           const blob = await response.blob();
           const img = new Image();
           img.src = URL.createObjectURL(blob);
-          img.onload = function () {
+          img.onload = () => {
             cache.set(url, img);
-            gridCell.render();
+            this.render(g, x, y, w, h, gridCell, cellStyle);
             URL.revokeObjectURL(img.src);
           };
-        }).catch((_) => { })
+        }).catch((_) => { });
       }
     }
   }

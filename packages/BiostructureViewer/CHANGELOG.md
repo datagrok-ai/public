@@ -1,5 +1,9 @@
 # BiostructureViewer changelog
 
+## 1.3.1 (2025-01-09)
+
+Support PDB-ID renderer in tooltips
+
 ## 1.2.4 (2024-11-29)
 
 ### Features

@@ -15,7 +15,7 @@ Commands:
     link      Link \`datagrok-api\` and libraries for local development
     publish   Upload a package
     test      Run package tests
-    testAll      Run packages tests
+    testall      Run packages tests
 
 To get help on a particular command, use:
     grok <command> --help

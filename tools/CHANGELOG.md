@@ -1,5 +1,26 @@
 # Datagrok-tools changelog
 
+## 4.13.60 (2025-01-09)
+
+### Features
+
+* Updated console output for cases "Tests not found"
+
+## 4.13.59 (2025-01-09)
+
+### Features
+
+* Benchmark testing fix
+* Updated csv output result(it saves benchmark and stress data now)
+
+
+## 4.13.58 (2025-01-09)
+
+### Features
+
+* Test failed results fix
+
+
 ## 4.13.57 (2025-01-08)
 
 ### Features
