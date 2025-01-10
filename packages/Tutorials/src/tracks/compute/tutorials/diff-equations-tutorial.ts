@@ -241,7 +241,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let equation = 'dx/dt = alpha * x - beta * x * y';
     let rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
-      ui.label('Complete the first equation to'),
+      ui.label('Update the first equation to obtain'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
@@ -264,7 +264,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
-      ui.label('Complete the second equation to'),
+      ui.label('Update the second equation to obtain'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
