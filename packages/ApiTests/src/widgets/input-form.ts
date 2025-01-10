@@ -45,7 +45,7 @@ category('Widgets: ValueLookup with with nullables', () => {
   test('lookup items', async () => {
     const {inputs} = await createForm(true);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
-      ['', 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
+      [null, 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
 
   test('initial values', async () => {
