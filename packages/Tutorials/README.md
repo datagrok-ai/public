@@ -11,6 +11,7 @@ Presentation: <https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s>
 - [Data Access](src/tracks/data-access/README.md)
 - [Exploratory Data Analysis](src/tracks/eda/README.md)
 - [Machine Learning](src/tracks/ml/README.md)
+- [Scientific Computing](src/tracks/compute/README.md)
 
 ## Properties
 
