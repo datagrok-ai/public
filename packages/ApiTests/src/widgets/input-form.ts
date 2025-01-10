@@ -6,32 +6,37 @@ import {before, category, expect, test, after, assure, expectArray, expectTable}
 import {take} from 'rxjs/operators';
 
 const zakievAufar = 'aufar.zakiev@softwarecountry.com';
+const createForm = async (withNullable: boolean = false) => {
+  const funcCall: DG.FuncCall = (await grok.functions.eval(`ApiTests:ValueLookup${withNullable ? 'WithNullable' : ''}`))
+    .prepare();
+  const form: DG.InputForm = await DG.InputForm.forFuncCall(funcCall);
+  const inputs: Record<string, DG.InputBase> = {
+    'model': form.getInput('model') ?? null,
+    'mpg': form.getInput('mpg') ?? null,
+    'cyl': form.getInput('cyl') ?? null,
+    'disp': form.getInput('disp') ?? null,
+  };
+  return {form, inputs};
+};
 
 category('Widgets: ValueLookup with no nullables', () => {
-  let inputs = {} as Record<string, DG.InputBase>;
-  let funcCall: DG.FuncCall;
-  let form: DG.InputForm;
-
-  before(async () => {
-    funcCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare();
-    form = await DG.InputForm.forFuncCall(funcCall);
-    inputs = {
-      'model': form.getInput('model') ?? null,
-      'mpg': form.getInput('mpg') ?? null,
-      'cyl': form.getInput('cyl') ?? null,
-      'disp': form.getInput('disp') ?? null,
-    };
-  });
   test('inputform created', async () => {
-    assure.notNull(form);
+    assure.notNull(await createForm());
   });
 
   test('lookup items', async () => {
+    const {inputs} = await createForm();
+    console.log(inputs);
+    console.log(inputs['model']);
+    const input = inputs['model'] as DG.ChoiceInput<string>;
+    console.log(input);
+    console.log(input.items);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
 
   test('initial values', async () => {
+    const {inputs} = await createForm();
     expect(inputs['model'].value, 'Mazda RX4');
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
@@ -40,32 +45,18 @@ category('Widgets: ValueLookup with no nullables', () => {
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: ValueLookup with with nullables', () => {
-  let inputs = {} as Record<string, DG.InputBase>;
-  let funcCall: DG.FuncCall;
-  let form: DG.InputForm;
-
-  before(async () => {
-    funcCall = (await grok.functions.eval('ApiTests:ValueLookupWithNullable')).prepare();
-
-    form = await DG.InputForm.forFuncCall(funcCall);
-    inputs = {
-      'model': form.getInput('model') ?? null,
-      'mpg': form.getInput('mpg') ?? null,
-      'cyl': form.getInput('cyl') ?? null,
-      'disp': form.getInput('disp') ?? null,
-    };
-  });
-
   test('inputform created', async () => {
-    assure.notNull(form);
+    assure.notNull(await createForm(true));
   });
 
   test('lookup items', async () => {
+    const {inputs} = await createForm(true);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['', 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
 
   test('initial values', async () => {
+    const {inputs} = await createForm(true);
     expect(inputs['model'].value, null);
     expect(inputs['mpg'].value, null);
     expect(inputs['cyl'].value, null);
@@ -74,37 +65,12 @@ category('Widgets: ValueLookup with with nullables', () => {
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm fc replacement edge cases', () => {
-  let inputs = {} as Record<string, DG.InputBase>;
-  let funcCall: DG.FuncCall;
-  let form: DG.InputForm;
-
-  function updateInputs(): void {
-    inputs = {
-      'model': form.getInput('model') ?? null,
-      'mpg': form.getInput('mpg') ?? null,
-      'cyl': form.getInput('cyl') ?? null,
-      'disp': form.getInput('disp') ?? null,
-    };
-  }
-
-  before(async () => {
-    funcCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare();
-
-    form = await DG.InputForm.forFuncCall(funcCall);
-    
-    inputs = {
-      'model': form.getInput('model') ?? null,
-      'mpg': form.getInput('mpg') ?? null,
-      'cyl': form.getInput('cyl') ?? null,
-      'disp': form.getInput('disp') ?? null,
-    };
-  });
-
   test('inputform created', async () => {
-    assure.notNull(form);
+    assure.notNull(await createForm());
   });
 
   test('initial values', async () => {
+    const {inputs} = await createForm();
     expect(inputs['model'].value, 'Mazda RX4');
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
@@ -112,12 +78,18 @@ category('Widgets: InputForm fc replacement edge cases', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: zakievAufar});
 
   test('source replace w/o value lookup run', async () => {
+    let {form, inputs} = await createForm();
     const newFuncCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare({
       model: 'Mazda RX4',
       with_choices: '0',
     });
     form.source = newFuncCall;
-    updateInputs();
+    inputs = {
+      'model': form.getInput('model') ?? null,
+      'mpg': form.getInput('mpg') ?? null,
+      'cyl': form.getInput('cyl') ?? null,
+      'disp': form.getInput('disp') ?? null,
+    };
     expect(inputs['model'].value, 'Mazda RX4');
     expect(inputs['mpg'].value, null);
     expect(inputs['cyl'].value, null);
