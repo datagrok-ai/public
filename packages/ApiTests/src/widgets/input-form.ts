@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {before, category, expect, test, after, assure, expectArray, expectTable} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, assure, expectArray, expectTable} from '@datagrok-libraries/utils/src/test';
 import {take} from 'rxjs/operators';
 
 const zakievAufar = 'aufar.zakiev@softwarecountry.com';
@@ -26,11 +24,6 @@ category('Widgets: ValueLookup with no nullables', () => {
 
   test('lookup items', async () => {
     const {inputs} = await createForm();
-    console.log(inputs);
-    console.log(inputs['model']);
-    const input = inputs['model'] as DG.ChoiceInput<string>;
-    console.log(input);
-    console.log(input.items);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
