@@ -187,6 +187,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  sp.root.classList.add('scatter_plot_root');
   sp.root.append(listCliffsLink);
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
@@ -439,6 +440,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  sp.root.classList.add('scatter_plot_root');
   sp.root.append(listCliffsLink);
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
