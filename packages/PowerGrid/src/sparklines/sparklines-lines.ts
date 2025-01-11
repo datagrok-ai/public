@@ -188,4 +188,9 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
     return ui.inputs([normalizeInput, ...createBaseInputs(gridColumn, settings)]);
   }
+
+  hasContextValue(gridCell: DG.GridCell): boolean { return true; }
+  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+    return DG.GridCellWidget.fromGridCell(gridCell).root;
+  }
 }
