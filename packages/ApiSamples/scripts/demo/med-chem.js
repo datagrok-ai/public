@@ -47,9 +47,13 @@ for (let name of boolNames)
   t.columns.addNewBool(name).init((i) => rnd(3) === 1);
 
 
-const warnings = ['Mutagenicity', 'Tumorigenicity', 'Irritative effects', 'Reproductive effects'];
-const warningsCol = t.columns.getOrCreate('Toxicity', 'string').init((i) => warnings.filter((i, j) => rnd(3) === 1).join(','));
-warningsCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
+const toxicityRisks = ['Mutagenicity', 'Tumorigenicity', 'Irritative effects', 'Reproductive effects'];
+for (const risk of toxicityRisks)
+  t.columns.addNewBool(risk).init((i) => rnd(3) === 1);
+
+// const warnings = ['Mutagenicity', 'Tumorigenicity', 'Irritative effects', 'Reproductive effects'];
+// const warningsCol = t.columns.getOrCreate('Toxicity', 'string').init((i) => warnings.filter((i, j) => rnd(3) === 1).join(','));
+// warningsCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 
 t.columns.addNewString('Idea name').init((i) => 'GRK-' + rnd(10000));
 addCatColumn('Idea status', ['Created', 'Approved', 'Synthesized']);
@@ -69,8 +73,9 @@ if (!t.col('Affinity'))
 if (!t.col('JIRA'))
   t.columns.addNewString('JIRA').init((i) => Math.random() > 0.3 ? '' : 'GROK-' + rnd1(15000));
 
-addCatColumn('Plate file', ['file://System:DemoFiles/hts/plate-96-1.csv', 'file://System:DemoFiles/hts/plate-96-2.csv', 'file://System:DemoFiles/hts/plate-96-3.csv']);
-addCatColumn('Plate folder', ['file://System:DemoFiles/hts/']);
+const plateFiles = ['file://System:DemoFiles/hts/plate-96-1.csv', 'file://System:DemoFiles/hts/plate-96-2.csv', 'file://System:DemoFiles/hts/plate-96-3.csv'];
+addCatColumn('Plate file', plateFiles).tags['cell.renderer'] = 'File';
+addCatColumn('Plate folder', ['file://System:DemoFiles/hts/']).tags['cell.renderer'] = 'File';
 
 const groups = {
   'Docking': { columns: ['PDB_ID', 'Pose', 'Affinity'] },
@@ -78,9 +83,9 @@ const groups = {
   'Distribution': { color: '#9d05c5', columns:  ['PPBR', 'VDss']},
   'Metabolism': { color: '#03a14f', columns: ['CYP1A2-Inhibitor', 'CYP2C19-Inhibitor', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate', 'CYP2D6-Inhibitor', 'CYP2D6-Substrate']},
   'Excretion': { color: '#b47b4a', columns:  ['CL-Hepa', 'CL-Micro', 'Half-Life']},
-  'Toxicity': { color: '#ba0f0f', columns:  ['hERG', 'LD50']},
+  'Toxicity': { color: '#ba0f0f', columns:  ['hERG', 'LD50', 'Toxicity']},
   'Chemspace': { columns: ['Chemspace id', 'Vendor', 'Pack, mg', 'Price, USD', 'Lead time, days']},
-  'DRC': { columns: ['DRC', 'DRC R2', 'DRC AUC'] },
+  'DRC': { columns: ['DRC', 'DRC R2', 'DRC AUC', 'Plate', 'Plate file', 'Plate folder'] },
   'R-Groups': { columns: ['Core', 'R1', 'R2', 'R3'] },
   'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] },
   'Ideation': { columns: ['Idea status', 'Idea author', 'Idea created', 'Idea approved', 'Idea synthesized']},
@@ -89,6 +94,7 @@ const groups = {
 // settings virtual columns
 const tv = grok.shell.getTableView('Med Chem');
 if (tv) {
+  tv.grid.columns.add({gridColumnName: 'Toxicity risks', cellType: 'Tags'}).settings = { columns: toxicityRisks };
   tv.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
     .onPrepareValueScript = 'return grok.data.demo.wells(96); ';
 }
