@@ -1251,6 +1251,9 @@ export class GridCellRenderer extends CanvasRenderer {
     return api.grok_GridCellRenderer_ByName(rendererName);
   }
 
+  hasContextValue(gridCell: GridCell): boolean { return false; }
+  async getContextValue (gridCell: GridCell): Promise<any> { return null; }
+
   onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
   onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
 
