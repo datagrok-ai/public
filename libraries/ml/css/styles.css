@@ -1,20 +1,15 @@
 .scatter_plot_link {
-    position: absolute!important;
     right: 10px;
 }
 
-.scatter_plot_root {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
+.cliffs_div {
+    flex-grow: initial!important;
+    justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .cliffs_grid {
    margin: 0!important;
-}
-
-.show_only_cliffs {
-    padding-right: 100px;
 }
 
 .ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings {

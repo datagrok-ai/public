@@ -187,8 +187,6 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
-  sp.root.classList.add('scatter_plot_root');
-  sp.root.append(listCliffsLink);
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
@@ -204,8 +202,11 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       filterCliffsSubj.next('');
     }
   }});
-  filterCliffsButton.root.classList.add('scatter_plot_link', 'show_only_cliffs');
-  sp.root.append(filterCliffsButton.root);
+
+  sp.root.prepend(ui.divH([
+    listCliffsLink,
+    filterCliffsButton.root
+  ], 'cliffs_div'));
 
   filterCliffsSubj.subscribe((s: string) => {
     filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
@@ -440,8 +441,6 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
-  sp.root.classList.add('scatter_plot_root');
-  sp.root.append(listCliffsLink);
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
@@ -457,8 +456,11 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       filterCliffsSubj.next('');
     }
   }});
-  filterCliffsButton.root.classList.add('scatter_plot_link', 'show_only_cliffs');
-  sp.root.append(filterCliffsButton.root);
+
+  sp.root.prepend(ui.divH([
+    listCliffsLink,
+    filterCliffsButton.root
+  ], 'cliffs_div'));
 
   filterCliffsSubj.subscribe((s: string) => {
     filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
