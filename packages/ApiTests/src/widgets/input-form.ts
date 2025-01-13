@@ -26,7 +26,7 @@ category('Widgets: ValueLookup with no nullables', () => {
     const {inputs} = await createForm();
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
+  });
 
   test('initial values', async () => {
     const {inputs} = await createForm();
@@ -34,7 +34,7 @@ category('Widgets: ValueLookup with no nullables', () => {
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
+  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: ValueLookup with with nullables', () => {
@@ -46,7 +46,7 @@ category('Widgets: ValueLookup with with nullables', () => {
     const {inputs} = await createForm(true);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       [null, 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
+  });
 
   test('initial values', async () => {
     const {inputs} = await createForm(true);
@@ -54,7 +54,7 @@ category('Widgets: ValueLookup with with nullables', () => {
     expect(inputs['mpg'].value, null);
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
+  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm fc replacement edge cases', () => {
@@ -68,7 +68,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: zakievAufar});
+  }, {owner: zakievAufar});
 
   test('source replace w/o value lookup run', async () => {
     let {form, inputs} = await createForm();
