@@ -7,6 +7,7 @@ import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
 import { FormStateGenerator } from './admetica-form';
 import '../css/admetica.css';
+import { CellRenderViewer } from '../viewers/cell-render-viewer';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -481,9 +482,9 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
-  gridCol!.renderer = await grok.functions.call('PowerGrid:piechartCellRenderer');;
-
-  return DG.GridCellWidget.fromGridCell(gridCell).root;
+  
+  const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
+  return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
 export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {

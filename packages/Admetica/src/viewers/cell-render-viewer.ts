@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-
-/** @deprecated Use {@link DG.GridCellWidget} instead */
 export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCellRenderer> extends DG.JsViewer {
   canvas: HTMLCanvasElement = ui.canvas();
   renderer: TRenderer;
