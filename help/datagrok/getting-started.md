@@ -27,6 +27,8 @@ your areas of interest. Click on the plugin to see its detailed information on t
 You definitely want **Chem** if you deal with small molecules, and **Bio** if you work with biological
 structures.
 
+![Install plugins](./img/install_package.png)
+
 # Make a project and share with others
 
 Let's see how easy it is to load any data, visualize it in a rich way (Datagrok will automatically 
@@ -38,6 +40,8 @@ have a CSV file around
 * Click on molecules, see what can be inferred from them on the context panel (later on we will write our own panels)
 * Save, and share with someone. Your colleague will get an email (assuming the email server was set up),
   and will be able to view or edit the project (depending on the privileges you've given when sharing)
+
+![Make a project](./img/drag-csv-save-project.gif)
 
 # Connect to data
 
@@ -55,7 +59,7 @@ to your proprietary systems and expose the data to your colleagues in a manageab
 
 # Make dynamic dashboards
 
-Using the data connections we've created previously, let's create a dynamic dashboard.
+Using the data conections we've created previnously, let's create a dynamic dashboard.
 Once a query is saved, you can run it by entering parameters via the automatically built UI,
 visualize it any way you want, and share with others. 
 In the [query editor](../access/databases/databases.md#query-editor), do the following:
@@ -66,6 +70,19 @@ In the [query editor](../access/databases/databases.md#query-editor), do the fol
 * Add results to workplace by clicking "+"
 
 You've just created the first dynamic dashboard! Note that you can share results as a URL as well.
+
+# Bio/Chem specific functions
+
+If you are working with biological or chemical data, you will see Bio/Chem menus in the top bar.
+These menus contain functions specific to these domains, like different analysis (r-groups, SAR, MMP, dimentionality reduction, clustering), different conversion/calculation methods, and different visualizations.
+You can read more about these solutions in [Bio](./solutions/domains/bio/bio.md) and [Chem](./solutions/domains/chem/chem.md) help pages.
+
+* Drag-and-drop a file with molecules or sequences (you can also use the sample data, which you can find in *Files/App Data/Bio* or *Files/App Data/Chem* folders)
+* Explore different Bio/Chem functions through top menu items.
+* Calculate Molecular properties, descriptors, toxisity risks, etc.. using **Top menu | Chem | Calculate**
+* Analyse your data using MMP, SAR, R-groups decomposition, etc.. using **Top menu | Chem | Analyze**
+* Analyse biological sequences using methods like SAR, Clustering, Activity cliffs, MSA, ets.. using **Top menu | Bio | Analyze**
+
 
 
 
