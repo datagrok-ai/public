@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, expectTable} from '@datagrok-libraries/utils/src/test';
 
-const zakievAufar = 'aufar.zakiev@softwarecountry.com';
+const andreySharapov = 'andrey.sharapov@softwarecountry.com';
 
 category('Dapi: functions calls', async () => {
   const xValue = 1.5;
@@ -14,7 +14,7 @@ category('Dapi: functions calls', async () => {
     const clonedFunccall = funcCall.clone();
     expectTable(funcCall.inputs['table'], clonedFunccall.inputs['table'].dataFrame);
     expectTable(funcCall.outputs['tableOut'], clonedFunccall.outputs['tableOut'].dataFrame);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('save', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -22,7 +22,7 @@ category('Dapi: functions calls', async () => {
     funcCall.newId();
     const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
-  }, {stressTest: true, owner: zakievAufar});
+  }, {stressTest: true, owner: andreySharapov});
 
   test('save & get author', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -48,7 +48,7 @@ category('Dapi: functions calls', async () => {
 
     expectTable(funcCall.inputs['table'], await grok.dapi.tables.getTable(loadedInputTableId));
     expectTable(funcCall.outputs['tableOut'], await grok.dapi.tables.getTable(loadedOutputTableId));
-  }, {stressTest: true, owner: zakievAufar});
+  }, {stressTest: true, owner: andreySharapov});
 
   test('save with fileInfo', async () => {
     const func = await grok.functions.eval('ApiTests:FileFuncTest');
@@ -62,7 +62,7 @@ category('Dapi: functions calls', async () => {
     expect(savedParam.property.propertyType, DG.TYPE.FILE);
     expect(savedParam.value /* id of fileInfo */, fileInfo.id /* id is added during grok.dapi.files.write */);
     expect(await grok.dapi.files.readAsText(savedParam.value)/* read by id */, 'Hello world!');
-  }, {stressTest: true, owner: zakievAufar});
+  }, {stressTest: true, owner: andreySharapov});
 
   test('save options', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -71,7 +71,7 @@ category('Dapi: functions calls', async () => {
     funcCall.options['testName'] = 'testValue';
     const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
     expect(savedFuncCall.options['testName'], 'testValue');
-  }, {stressTest: true, owner: zakievAufar});
+  }, {stressTest: true, owner: andreySharapov});
 
   test('load package function call', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -81,7 +81,7 @@ category('Dapi: functions calls', async () => {
 
     // expect no-throw
     await grok.dapi.functions.calls.find(funcCall.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load script call', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -91,7 +91,7 @@ category('Dapi: functions calls', async () => {
 
     // expect no-throw
     await grok.dapi.functions.calls.find(funcCall.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load script call author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -101,7 +101,7 @@ category('Dapi: functions calls', async () => {
 
     const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
     expect(loadedCall.author.id, grok.shell.user.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load package function author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -111,7 +111,7 @@ category('Dapi: functions calls', async () => {
 
     const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
     expect(loadedCall.author.id, grok.shell.user.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load package function with func and package', async () => {
     const packFunc = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -120,7 +120,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedCall = await grok.dapi.functions.calls.include('func.package').find(funcCall.id);
     expect(loadedCall.func.package.name, 'ApiTests');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load script with func and package', async () => {
     const packFunc = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -129,7 +129,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedCall = await grok.dapi.functions.calls.include('func.package').find(funcCall.id);
     expect(loadedCall.func.package.name, 'ApiTests');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load script call inputs & outputs', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -141,7 +141,7 @@ category('Dapi: functions calls', async () => {
     expect(loadedCall.inputs['a'], 1);
     expect(loadedCall.inputs['b'], 2);
     expect(loadedCall.outputs['c'], 3);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load package function call inputs & outputs', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -153,7 +153,7 @@ category('Dapi: functions calls', async () => {
     expect(loadedCall.inputs['a'], 1);
     expect(loadedCall.inputs['b'], 2);
     expect(loadedCall.outputs['c'], 3);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load package funccall with func\'s valid nqName', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -163,7 +163,7 @@ category('Dapi: functions calls', async () => {
     const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageFunction');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('load script funccall with func\'s valid nqName', async () => {
     const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -173,7 +173,7 @@ category('Dapi: functions calls', async () => {
     const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package funccall with func\'s valid nqName', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -186,7 +186,7 @@ category('Dapi: functions calls', async () => {
       .list({pageSize: 10});
 
     expect(loadedWithFuncs[0].func.nqName, 'ApiTests:dummyPackageFunction');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list script funccall with func\'s valid nqName', async () => {
     const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -199,7 +199,7 @@ category('Dapi: functions calls', async () => {
       .list({pageSize: 10});
 
     expect(loadedWithFuncs[0].func.nqName, 'ApiTests:DummyPackageScript');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -208,7 +208,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedFuncCalls = await grok.dapi.functions.calls.filter(`id="${funcCall.id}"`).list({pageSize: 5});
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list script calls with author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -219,7 +219,7 @@ category('Dapi: functions calls', async () => {
     const loadedCalls =
       await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package function with params', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -230,7 +230,7 @@ category('Dapi: functions calls', async () => {
     const loadedCall =
       await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}" and func.name="dummyPackageScript"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package functions with author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -241,7 +241,7 @@ category('Dapi: functions calls', async () => {
     const loadedCalls =
       await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package function with params', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -252,7 +252,7 @@ category('Dapi: functions calls', async () => {
     const loadedCall =
       await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package script funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
@@ -260,7 +260,7 @@ category('Dapi: functions calls', async () => {
       .include('func,func.package').filter(`func.name="dummyPackageScript"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('list package function funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
@@ -268,21 +268,21 @@ category('Dapi: functions calls', async () => {
       .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('filter script funcCalls by nqName', async () => {
     // expect no-throw
     await grok.dapi.functions.calls
       .allPackageVersions()
       .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
-  }, {skipReason: 'GROK-16229', owner: zakievAufar});
+  }, {skipReason: 'GROK-16229', owner: andreySharapov});
 
   test('filter package function funcCalls by nqName', async () => {
     // expect no-throw
     await grok.dapi.functions.calls
       .allPackageVersions()
       .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
-  }, {skipReason: 'GROK-16229', owner: zakievAufar});
+  }, {skipReason: 'GROK-16229', owner: andreySharapov});
 
   test('find', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -291,7 +291,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedFuncCall = await grok.dapi.functions.calls.find(funcCall.id);
     expect(loadedFuncCall.inputs['x'], xValue);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('find options', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -301,7 +301,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedFuncCall = await grok.dapi.functions.calls.include('options').find(funcCall.id);
     expect(loadedFuncCall.options['testName'], 'testValue');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('find func with params', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -310,7 +310,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedFuncCall = await grok.dapi.functions.calls.include('func.params').find(funcCall.id);
     expect(loadedFuncCall.func.inputs[0].name, 'x');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('delete', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
@@ -320,7 +320,7 @@ category('Dapi: functions calls', async () => {
     expect(await grok.dapi.functions.calls.find(funcCall.id) !== undefined, true, 'funcCall was not saved');
     await grok.dapi.functions.calls.delete(funcCall);
     expect(await grok.dapi.functions.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: functions', async () => {
@@ -329,14 +329,14 @@ category('Dapi: functions', async () => {
     const loadedFunc = await grok.dapi.functions.include('package').find(func!.id);
 
     expect(loadedFunc.package.name, 'ApiTests');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('Load script function with package', async () => {
     const func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const loadedFunc = await grok.dapi.functions.include('package').find(func!.id);
 
     expect(loadedFunc.package.name, 'ApiTests');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('Filter functions by nqName (script)', async () => {
     const loadedFuncCalls = await grok.dapi.functions.filter(`nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
@@ -366,5 +366,5 @@ category('Dapi: functions', async () => {
     await grok.dapi.functions.calls.allPackageVersions().save(fc);
     await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(fc.id);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 }, {owner: 'aparamonov@datagrok.ai'});

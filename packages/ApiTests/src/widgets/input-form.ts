@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {before, category, expect, test, after, assure, expectArray, expectTable} from '@datagrok-libraries/utils/src/test';
 import {take} from 'rxjs/operators';
 
-const zakievAufar = 'aufar.zakiev@softwarecountry.com';
+const andreySharapov = 'andrey.sharapov@softwarecountry.com';
 
 category('Widgets: ValueLookup with no nullables', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -63,14 +63,14 @@ category('Widgets: ValueLookup with with nullables', () => {
   test('lookup items', async () => {
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['', 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: andreySharapov});
 
   test('initial values', async () => {
     expect(inputs['model'].value, null);
     expect(inputs['mpg'].value, null);
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: andreySharapov});
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm fc replacement edge cases', () => {
@@ -109,7 +109,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: andreySharapov});
 
   test('source replace w/o value lookup run', async () => {
     const newFuncCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare({
@@ -123,7 +123,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
     expect(inputs['with_choices'].value, '0');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: andreySharapov});
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm API', () => {
@@ -173,7 +173,7 @@ category('Widgets: InputForm API', () => {
     expect(funcCall.inputs['boolInput'], false);
     expect(funcCall.inputs['choiceInput'], '2');
     expectTable(funcCall.inputs['tableInput'], demog);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('funcall to form bind', async () => {
     const geo = grok.data.demo.geo(10);
@@ -191,7 +191,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['boolInput'].value, false);
     expect(inputs['choiceInput'].value, '2');
     expectTable(inputs['tableInput'].value, geo);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('form on input change observable', async () => {
     const changedInputPropNames = [] as string[];
@@ -210,7 +210,7 @@ category('Widgets: InputForm API', () => {
       changedInputPropNames,
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('source funccall replacement', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({'stringInput': 'test2'});
@@ -218,7 +218,7 @@ category('Widgets: InputForm API', () => {
     updateInputs();
 
     expect(inputs['stringInput'].value, 'test2');
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('form to funccall bind after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -238,7 +238,7 @@ category('Widgets: InputForm API', () => {
     expect(newFuncCall.inputs['boolInput'], false);
     expect(newFuncCall.inputs['choiceInput'], '2');
     expectTable(newFuncCall.inputs['tableInput'], demog);
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 
   test('funccall to form bind after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -260,7 +260,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['boolInput'].value, true);
     expect(inputs['choiceInput'].value, '1');
     expectTable(inputs['tableInput'].value, geo);
-  }, {skipReason: 'GROK-16408', owner: zakievAufar});
+  }, {skipReason: 'GROK-16408', owner: andreySharapov});
 
   test('form on input change observable after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -283,7 +283,7 @@ category('Widgets: InputForm API', () => {
       changedInputPropNames,
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
-  }, {owner: zakievAufar});
+  }, {owner: andreySharapov});
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 
@@ -328,20 +328,20 @@ category('Widgets: InputForm w/ custom input', () => {
     expect(inputs['stringInput'].value, 'test');
     expect(funcCall.inputs['stringInput'], 'test');
     expect(inputs['stringInput'].root.style.backgroundColor, 'aqua');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('form to funccall bind', async () => {
     inputs['stringInput'].value = 'test2';
 
     expect(inputs['stringInput'].value, 'test2');
     expect(funcCall.inputs['stringInput'], 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('funcall to form bind', async () => {
     funcCall.inputs['stringInput'] = 'test2';
 
     expect(inputs['stringInput'].value, 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('form on input change observable', async () => {
     const changedInputPropNames = [] as string[];
@@ -356,7 +356,7 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
     changeSub.unsubscribe();
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('form to funccall bind after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -366,7 +366,7 @@ category('Widgets: InputForm w/ custom input', () => {
     inputs['stringInput'].value = 'test2';
 
     expect(newFuncCall.inputs['stringInput'], 'test2');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('funccall to form bind after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -376,7 +376,7 @@ category('Widgets: InputForm w/ custom input', () => {
     newFuncCall.inputs['stringInput'] = 'test';
 
     expect(inputs['stringInput'].value, 'test');
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 
   test('form on input change observable after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -394,5 +394,5 @@ category('Widgets: InputForm w/ custom input', () => {
       changedInputPropNames,
       ['stringInput'],
     );
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: andreySharapov});
 }, {owner: 'dkovalyov@datagrok.ai'});
