@@ -683,6 +683,7 @@ export interface IDartApi {
   grok_Cell_Get_Value(c: any): any;
   grok_Cell_Set_Value(c: any, value: any): any;
   grok_GridCell_Get_CellType(gc: any): any;
+  grok_GridCell_Set_CellType(gc: any, x: String): any;
   grok_GridCell_Get_IsRowHeader(gc: any): any;
   grok_GridCell_Get_IsColHeader(gc: any): any;
   grok_GridCell_Get_Grid(gc: any): any;

@@ -18,6 +18,7 @@ import {
 } from './fit-renderer';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from './const';
+import {ColorType, getSeriesColor} from './render-utils';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -326,8 +327,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           const series = chartData.series![i];
           const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, gridCell);
   
-          const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
-            series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+          const color = getSeriesColor(series, i, ColorType.FIT_LINE);
           host.appendChild(ui.panel([
             ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
             ui.input.form(seriesStatistics, statisticsProperties, {

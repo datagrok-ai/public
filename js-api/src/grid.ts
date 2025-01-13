@@ -515,6 +515,11 @@ export class GridCell {
     return api.grok_GridCell_Get_CellType(this.dart);
   }
 
+  /** Allows to set cell type (needed when rendering single grid cell) */
+  set cellType(x: string) {
+    api.grok_GridCell_Set_CellType(this.dart, x);
+  }
+
   /** @returns {boolean} Whether this is a table (data) cell (as opposed to special cells like row headers). */
   get isTableCell(): boolean {
     return api.grok_GridCell_Get_IsTableCell(this.dart);

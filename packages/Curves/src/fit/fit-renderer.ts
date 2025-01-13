@@ -24,7 +24,7 @@ import {convertXMLToIFitChartData} from './fit-parser';
 import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 import {FitConstants} from './const';
 import {
-  assignSeriesColors, renderAxesLabels,
+  renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
   renderDroplines,
   renderFitLine, renderLegend,
@@ -150,10 +150,11 @@ function getChartData(gridCell: DG.GridCell): IFitChartData {
   let cellValue = gridCell.cell.value as string;
   if (cellValue.includes('|'))
     cellValue = cellValue.replaceAll('|', '');
-  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
-    (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-    convertXMLToIFitChartData(cellValue) :
-    JSON.parse(cellValue ?? '{}') ?? {}) : createDefaultChartData();
+  const column = gridCell.cell.column;
+  const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
+    (column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+      convertXMLToIFitChartData(cellValue) : JSON.parse(cellValue ?? '{}') ?? {}) :
+    createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
 
   const columnChartOptions = gridCell.cell.column ? getColumnChartOptions(gridCell.cell.column) : {};
   const dfChartOptions = gridCell.cell.column ? getDataFrameChartOptions(gridCell.cell.dataFrame) : {};
@@ -427,11 +428,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
 
-      assignSeriesColors(series, i);
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
-        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!});
-      renderConnectDots(g, series, {viewport, ratio});
-      renderPoints(g, series, {viewport, ratio, screenBounds});
+        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
+      renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
+      renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, gridCell)});
@@ -439,7 +439,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
-        logOptions: chartLogOptions, dataBox, screenBounds});
+        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
@@ -472,7 +472,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
     }
 
-    data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+    if (gridCell.cell.column?.name)
+      data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
     if (data.chartOptions?.mergeSeries)
       data.series = [mergeSeries(data.series!)!];
 
@@ -503,7 +504,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     // TODO: add caching
-    const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX
+    const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getOrCreateParsedChartData(gridCell);
 
