@@ -1410,7 +1410,7 @@ export interface IDartApi {
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
-  grok_Package_Get_Author(p: any): any;
+  grok_Package_Get_Package_Author(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;

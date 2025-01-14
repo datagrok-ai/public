@@ -419,6 +419,7 @@ function resetConsole(): void {
 
 export async function runTests(options?: TestExecutionOptions) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
+  const packageOwner = (package_.packageOwner.match(new RegExp('[^<]*<([^>]*)>'))?? ['', ''])[1];
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
@@ -490,7 +491,7 @@ export async function runTests(options?: TestExecutionOptions) {
             }
             let test = t[i];
             if (test?.options) {
-              test.options.owner = t[i].options?.owner ?? value?.owner;
+              test.options.owner = t[i].options?.owner ?? value?.owner ?? packageOwner ?? '';
             } 
             let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
             if (testRun)
@@ -502,7 +503,7 @@ export async function runTests(options?: TestExecutionOptions) {
           for (let i = 0; i < t.length; i++) {
             let test = t[i];
             if (test?.options) {
-              test.options.owner = t[i].options?.owner ?? value?.owner;
+              test.options.owner = t[i].options?.owner ?? value?.owner ?? packageOwner ?? '';
             } 
             let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
             if (testRun)
@@ -535,7 +536,8 @@ export async function runTests(options?: TestExecutionOptions) {
         category: 'Unhandled exceptions',
         name: 'Exception',
         result: error ?? '', success: !error, ms: 0, skipped: false, 
-        'flaking': DG.Test.isReproducing && !error
+        'flaking': DG.Test.isReproducing && !error,
+        owner: packageOwner ?? ''
       };
       results.push(params);
       (<any>params).package = package_.name;
