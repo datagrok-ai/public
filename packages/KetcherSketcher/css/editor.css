@@ -1,13 +1,13 @@
-.Ketcher-root, .Dialog-module_dialog__IafFQ.Open-module_open__m8V9g {
+.Ketcher-root, [class*="Dialog-module_dialog__"][class*="Open-module_open__"] {
     min-width: 500px;
     overflow: hidden;
 }
 
-.StructEditor-module_intermediateCanvas__fR3ws {
+[class^="StructEditor-module_intermediateCanvas__"] {
     overflow: hidden;
 }
 
-.App-module_top__SBeSV, .BottomToolbar-module_root__kjkSm {
+[class*="App-module_top__"], [class*="BottomToolbar-module_root__"] {
     width: fit-content;
     background: white;
 }
@@ -26,8 +26,8 @@ button[title="About"], button[title="Help (?)"] {
     width: 100%!important;
 }
 
-.Settings-module_settings__Z5btc {
-    height: 50vh!important;
+[class*="Settings-module_settings__"] {
+    height: 40vh!important;
 }
 
 body > div.MuiPopover-root.MuiMenu-root {
