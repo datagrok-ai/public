@@ -14,7 +14,8 @@ import { TestAnalysisManager } from './test-analysis/test-analysis-manager';
 import { getDate } from './utils';
 import dayjs from "dayjs";
 import {ServiceLogsApp} from "./service_logs/service_logs";
-import { TestGridCellHandler } from './test-grid-cell-handler';
+import { TestGridCellHandler } from './handlers/test-grid-cell-handler';
+import { StackTraceHandler } from './handlers/stack-trace-handler';
 import { initTestStickyMeta } from './test-analysis/sticky-meta-initialization';
 
 export const _package = new DG.Package();
@@ -23,6 +24,7 @@ export const _package = new DG.Package();
 //tags: init
 export function _initUA(): void {
   DG.ObjectHandler.register(new TestGridCellHandler());
+  DG.ObjectHandler.register(new StackTraceHandler());
   initTestStickyMeta();
 }
 
