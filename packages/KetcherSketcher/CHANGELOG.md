@@ -1,5 +1,9 @@
 # KetcherSketcher changelog
 
+## 2.2.2 (2025-01-14)
+
+* Fixed styles of selectors
+
 ## 2.2.1 (2024-11-05)
 
 * Fixed styles

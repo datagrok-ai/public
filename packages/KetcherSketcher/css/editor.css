@@ -29,3 +29,7 @@ button[title="About"], button[title="Help (?)"] {
 .Settings-module_settings__Z5btc {
     height: 50vh!important;
 }
+
+body > div.MuiPopover-root.MuiMenu-root {
+    z-index: 20000;
+}
