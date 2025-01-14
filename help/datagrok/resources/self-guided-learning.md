@@ -48,6 +48,7 @@ To get you started, we've prepared the following resources:
 * [Data access](../../access/access.md)
 * [Databases](../../access/databases/databases.md)
 * [Function annotations](../concepts/functions/func-params-annotation.md)
+* [Developers: Register identifier patterns](../../develop/how-to/register-identifiers.md)
 
 <h5>Watch</h5>
 
@@ -129,7 +130,7 @@ Planned:
 
 <h5>Watch</h5>
 
-* [Using formulas in calculated columns (~ 5 mins)](https://www.youtube.com/watch?v=-yTTaS_WOU4)
+* [Calculated columns (~ 11 mins)](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=1708s)
 * [Aggregation (~3 mins)](https://www.youtube.com/watch?v=1EI1w2HECrM)
 
 <h5>Complete tutorials</h5>
@@ -152,6 +153,7 @@ Planned:
 <h5>Watch</h5>
 
 * [Cheminformatics overview (~25 mins)](https://www.youtube.com/watch?v=k1NVdTRpYOM&list=PLIRnAn2pMh3nHUxed6p-uw7If24nGENDa&index=2&t=18s)
+* [Dimensionality reduction (~15 mins)](https://www.youtube.com/watch?v=RS163zKe7s8&t=2648s)
 
 <h5>Experience in Demo app</h5>
 
@@ -182,9 +184,18 @@ Planned
 <h5>Read</h5>
 
 * [Multivariate analysis based on partial least squares regression](../../explore/multivariate-analysis/pls.md)
+* [Parameter optimization](../../compute/function-analysis.md#parameter-optimization)
+* [Sensitivity analysis](../../compute/function-analysis.md#sensitivity-analysis)
+* [Diff Studio](../../compute/diff-studio.md)
+
+<h5>Watch</h5>
+
+* [Diff Studio](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
 
 <h5>Complete tutorials</h5>
 
 * [Multivariate analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/MultivariateAnalysis)
-
+* [Parameter optimization](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Parameteroptimization)
+* [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)
+* [Differential equations](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 
