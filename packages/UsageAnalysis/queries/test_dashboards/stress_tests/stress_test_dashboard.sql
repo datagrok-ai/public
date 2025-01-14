@@ -25,6 +25,7 @@ select
   r.date_time,
   r.params ->> 'totalWorkers' as total_workers,
   r.params ->> 'worker' as worker,
+  r.params ->> 'browser' as browser,
   r.batch_name,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   r.result,
