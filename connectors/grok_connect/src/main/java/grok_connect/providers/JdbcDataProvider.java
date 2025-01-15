@@ -183,6 +183,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                                     break;
                                 case Types.BIG_INT:
                                     statement.setNull(n + i + 1, java.sql.Types.BIGINT);
+                                case Types.BOOL:
+                                    statement.setNull(n + i + 1, java.sql.Types.BOOLEAN);
                                 default:
                                     statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
                                     break;
