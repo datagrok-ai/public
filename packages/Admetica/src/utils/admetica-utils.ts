@@ -362,8 +362,11 @@ export function addResultColumns(
   const tableView = getTableView(viewTable);
   const {grid} = tableView;
   models.forEach((model: Model) => {
-    const col = grid.col(model.name);
-    if (col) updateColumnProperties(col, model);
+    const columnName = updatedModelNames.find((name) => name.includes(model.name));
+    if (!columnName) return;
+
+    const column = grid.col(columnName);
+    if (column) updateColumnProperties(column, model);
   });
 
   if (addPiechart)
