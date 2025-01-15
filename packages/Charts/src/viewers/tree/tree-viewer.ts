@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
@@ -59,10 +60,6 @@ export class TreeViewer extends EChartViewer {
     this.fontSize = this.int('fontSize', 12);
 
     this.option = {
-      tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove',
-      },
       series: [
         {
           type: 'tree',
@@ -105,6 +102,15 @@ export class TreeViewer extends EChartViewer {
         return isMatch;
       }
     }, params.event!.event, true));
+    this.chart.on('mouseover', (params: any) => {
+      const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.'); 
+      const div = ui.divV([
+        ui.divText(ancestors), 
+        ui.divText(params.value, { style: { fontWeight: 'bold' } })
+      ]);
+      ui.tooltip.show(div, params.event.event.x, params.event.event.y);
+    });
+    this.chart.on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
