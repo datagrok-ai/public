@@ -35,6 +35,7 @@ export class TreeViewer extends EChartViewer {
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   applySizeAggr: boolean = false;
   applyColorAggr: boolean = false;
+  fontSize: number;
 
   constructor() {
     super();
@@ -55,6 +56,7 @@ export class TreeViewer extends EChartViewer {
     this.colorColumnName = this.string('colorColumnName');
     this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.fontSize = this.int('fontSize', 12);
 
     this.option = {
       tooltip: {
@@ -69,7 +71,7 @@ export class TreeViewer extends EChartViewer {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
-            fontSize: 9,
+            fontSize: this.fontSize,
           },
 
           leaves: {
@@ -134,13 +136,15 @@ export class TreeViewer extends EChartViewer {
       this.render();
     }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' || p?.name === 'fontSize') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
         this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
       if (p?.name === 'sizeColumnName' || p?.name === 'sizeAggrType')
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
+      if (p?.name === 'fontSize')
+        this.option.series[0].label.fontSize = p.get(this);
       this.render();
     } else
       super.onPropertyChanged(p, render);
