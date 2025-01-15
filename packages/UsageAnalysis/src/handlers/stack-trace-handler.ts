@@ -13,17 +13,21 @@ export class StackTraceHandler extends DG.ObjectHandler {
         return x instanceof DG.SemanticValue && x.semType === 'stackTrace';
     }
 
-    renderTooltip(semValue: DG.SemanticValue<string>, context: any = null): HTMLElement {
-        let lines: string[] = semValue.value.split('\\n');
-        lines = lines.slice(0, Math.min(lines.length, 2));
-        return ui.span([lines.join('\\n')]);
-    }
+    // renderTooltip(semValue: DG.SemanticValue<string>, context: any = null): HTMLElement {
+    //     let lines: string[] = semValue.value.split('\n');
+    //     lines = lines.slice(0, Math.min(lines.length, 2));
+    //     let d = ui.div([], {classes: 'div-textarea,ui-report-textarea,ui-log-textarea'});
+    //     for (var i = 0; i < lines.length; i++)
+    //         d.appendChild(ui.divText(lines[i]));
+    //     return d;
+    // }
 
     renderProperties(semValue: DG.SemanticValue, context: any = null): HTMLElement {
+        // TODO: reuse renderer for error reports 
         let d = ui.div([], {classes: 'div-textarea,ui-report-textarea,ui-log-textarea'});
-        let lines: string[] = semValue.value.split('\\n');
+        let lines: string[] = semValue.value.split('\n');
         for (var i = 0; i < lines.length; i++)
-            d.appendChild(ui.span([lines[i], "br"]));
+            d.appendChild(ui.divText(lines[i]));
         return d;
     }
 }
