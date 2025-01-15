@@ -468,15 +468,16 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  const { cell } = semValue;
+  const { cell, units } = semValue;
   const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
 
   const view = getTableView(dataFrame);
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
+  const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const query = `smiles\n${value}`;
+  const query = `smiles\n${parsedValue}`;
   const result = await runAdmetica(query, params, 'false');
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
