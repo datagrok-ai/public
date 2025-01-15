@@ -7,6 +7,7 @@ import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PAS
 import { _package } from '../package';
 import { testViewer } from '@datagrok-libraries/utils/src/test';
 import { Subscription } from 'rxjs';
+import { testSchema } from '../test-analysis/sticky-meta-initialization';
 
 const NEW_TESTING = 'New Testing';
 const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
@@ -864,11 +865,24 @@ export class TestTrack extends DG.ViewBase {
     value.fullReason = reason?.trim();
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
+      package: 'Test Track',
       category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
       severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
-    if (reportData)
+    if (reportData) {
       grok.shell.reportTest('manual', params);
+      if ((reason?.search(/GROK-\d{1,6}/) ?? -1) != -1) {
+        let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
+        nameColumn.semType = 'test';
+        grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
+          let tickets: string = df.col('tickets')?.get(0) ?? '';
+          if (tickets.split(',').includes(reason!))
+            return;
+          grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
+            DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [tickets + ',' + reason])]));
+        });
+      }
+    }
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
     let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
     grok.dapi.users.find(params['uid']).then((user) => {
@@ -904,6 +918,7 @@ export class TestTrack extends DG.ViewBase {
     node.value.fullReason = reason;
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
+      package: 'Test Track',
       category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
       severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
@@ -920,8 +935,20 @@ export class TestTrack extends DG.ViewBase {
       map['Reason'] = reasonTooltipValue;
       ui.tooltip.bind(node.value.icon, () => ui.tableFromMap(map));
     });
-    if (reportData)
+    if (reportData) {
       grok.shell.reportTest('manual', params);
+      if ((reason?.search(/GROK-\d{1,6}/) ?? -1) != -1) {
+        let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
+        nameColumn.semType = 'test';
+        grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
+          let tickets: string = df.col('tickets')?.get(0) ?? '';
+          if (tickets.split(',').includes(reason!))
+            return;
+          grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
+            DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [tickets + ',' + reason])]));
+        });
+      }
+    }
     this.updateReportData(node);
   }
   async showAddNewTestingDialog(): Promise<void> {

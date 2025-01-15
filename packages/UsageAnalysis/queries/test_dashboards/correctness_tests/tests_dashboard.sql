@@ -40,7 +40,6 @@ left join published_packages p on p.name = t.package and p.is_current
 where 1=1
 and t.name not like '%Unhandled exceptions: Exception'
 and (not t.name = ': : ')
-and t.name not like 'Unknown:%'
 and (@showNotRun or not r.passed is null)
 and r.benchmark = @showBenchmarks
 and (@packageFilter is null or @packageFilter = p.name)
