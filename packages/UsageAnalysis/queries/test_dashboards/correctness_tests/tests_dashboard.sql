@@ -2,9 +2,12 @@
 --friendlyName: UA | Tests | Tests
 --connection: System:Datagrok
 --input: int lastBuildsNum = 5
+--input: string packageFilter {nullable: true}
 --input: bool showNotRun = false {optional: true}
 --input: bool showBenchmarks = false {optional: true}
 --input: bool showNotCiCd = false {optional: true}
+--input: string versionFilter {nullable: true}
+
 WITH last_builds AS (
     select name, build_date
     from builds b
@@ -40,8 +43,8 @@ and (not t.name = ': : ')
 and t.name not like 'Unknown:%'
 and (@showNotRun or not r.passed is null)
 and r.benchmark = @showBenchmarks
---and (@packageFilter is null or @packageFilter = p.name)
---and (@versionFilter is null or @versionFilter = b.name)
+and (@packageFilter is null or @packageFilter = p.name)
+and (@versionFilter is null or @versionFilter = b.name)
 
 order by b.name, t.name
 --end
