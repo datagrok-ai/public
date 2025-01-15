@@ -69,6 +69,7 @@ export class TreeViewer extends EChartViewer {
             verticalAlign: 'middle',
             align: 'right',
             fontSize: this.fontSize,
+            formatter: '{b}: {c}'
           },
 
           leaves: {
