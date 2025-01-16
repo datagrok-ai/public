@@ -25,6 +25,7 @@ select
   r.date_time,
   r.params ->> 'totalWorkers' as total_workers,
   r.params ->> 'worker' as worker,
+  r.params ->> 'browser' as browser,
   r.batch_name,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   r.result,
@@ -33,6 +34,6 @@ select
 from tests t full join last_builds_indexed b on 1=1
 inner join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null) and r.stress_test and (@showNotCiCd or r.ci_cd) and r.params ->>'worker' is not null
 left join published_packages p on p.name = t.package and p.is_current
-where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and t.name not like 'Unknown:%' and (@showNotRun or not r.passed is null)
+where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and (@showNotRun or not r.passed is null)
 order by b.name, t.name
 --end

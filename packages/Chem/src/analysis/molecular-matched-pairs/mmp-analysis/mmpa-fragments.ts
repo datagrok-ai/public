@@ -180,9 +180,10 @@ function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRul
     for (let j = i + 1; j < dim; j++) {
       const dimSecondMolecule = fragsOut.fragCodes[j].length;
       const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, fragsOut);
-      if (fragsOut.idToName[core] === '' ||
+      if (!core || fragsOut.idToName[core] === '' ||
         fragsOut.sizes[firstR] / fragsOut.sizes[core] > fragmentCutoff ||
-        fragsOut.sizes[secondR] / fragsOut.sizes[core] > fragmentCutoff) {/*idx++;*/ continue;}
+        fragsOut.sizes[secondR] / fragsOut.sizes[core] > fragmentCutoff)
+        continue;
 
       pairs.push({first: i, second: j, core, firstR, secondR});
     }

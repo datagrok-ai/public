@@ -734,6 +734,8 @@ export namespace input {
     const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
     if (!options.property)
       options.property = Property.fromOptions({name: input.caption, inputType: inputType as string});
+    if (specificOptions.nullable !== undefined)
+      optionsMap['nullable'](input, specificOptions.nullable);
     for (let key of Object.keys(specificOptions)) {
       if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key))
         (options.property as IIndexable)[key] = (specificOptions as IIndexable)[key];
@@ -742,7 +744,7 @@ export namespace input {
         inputType === d4.InputType.Column ? setColumnInputTable(input, (specificOptions as IIndexable)[key], filter) :
           setColumnsInputTable(input, (specificOptions as IIndexable)[key], filter);
       }
-      if (optionsMap[key] !== undefined)
+      if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);

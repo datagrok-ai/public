@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.4.1 (2025-14-01)
+
+Testing output info minor update
+
 ## 4.3.9 (2024-13-07)
 
 Added ability to set test owner in core tests 

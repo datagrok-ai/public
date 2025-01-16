@@ -7,16 +7,16 @@ import {funcTypeNames, HitDesignMolColName, ViDColFormat} from '../consts';
 import {joinQueryResults} from '../utils';
 import {_package} from '../../package';
 
-export async function calculateSingleCellValues(
-  value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
+export async function calculateCellValues(
+  values: string[], descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
   queries: HitTriageTemplateScript[] = [],
 ): Promise<DG.DataFrame> {
   const pg = DG.TaskBarProgressIndicator.create('Calculating ...');
   // TODO: this converts value to canonical one. We need to do it in a better way
-  const canonicalSmiles = _package.convertToSmiles(value);
-  const col = DG.Column.fromStrings(HitDesignMolColName, [canonicalSmiles]);
+  const canonicalSmiles = values.map((v) => _package.convertToSmiles(v));
+  const col = DG.Column.fromStrings(HitDesignMolColName, canonicalSmiles);
   const table = DG.DataFrame.fromColumns([col]);
-  table.name = 'HD Single cell values';
+  table.name = 'HD cell values';
   await table.meta.detectSemanticTypes();
 
   try {
@@ -83,6 +83,11 @@ export async function calculateSingleCellValues(
     }
   }
   pg.close();
+  const molCol = table.col(HitDesignMolColName)!;
+  for (let i = 0; i < molCol.length; i++) {
+    // restore previous values
+    molCol.set(i, values[i], false);
+  }
   return table;
 };
 
@@ -110,7 +115,7 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
     throw new Error('There is no molecule column in dataframe');
 
   const molSmilesColName = `~${molColName}.canonicalSmiles`; // chem package might have already created that, but we update it just in any case
-  const molSmilesCol = dataFrame.columns.getOrCreate(molSmilesColName, DG.TYPE.STRING, dataFrame.rowCount);
+  const molSmilesCol = dataFrame.columns.getOrCreate(molSmilesColName, DG.TYPE.STRING);
   // we don't want to overwrite existing values, as they can contain important conformation information
   molSmilesCol.semType = DG.SEMTYPE.MOLECULE;
 

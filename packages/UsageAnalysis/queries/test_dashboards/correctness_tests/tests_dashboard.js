@@ -45,6 +45,9 @@ for (var i = 1; i <= builds.length; i++) {
   var buildName = buildNames[i - 1];
   replaceColumn(i, ' concat unique(status)', i, '');
   replaceColumn(i, ' concat unique(result)', buildName, ' result');
+  var colResult = pivot.columns.byName(i + ' concat unique(result)');
+  if (colResult !== null)
+    colResult.semType = 'stackTrace';
   replaceColumn(i, ' avg(build_date)', buildName, ' build_date');
   replaceColumn(i, ' avg(duration)', buildName, ' duration');
 }

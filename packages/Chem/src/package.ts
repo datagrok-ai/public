@@ -1515,6 +1515,32 @@ export function copyAsMolfileV2000(value: DG.SemanticValue): void {
   grok.shell.info('Molfile V2000 copied to clipboard');
 }
 
+//name: Copy as IMAGE
+//description: Copies structure as Image
+//tags: exclude-actions-panel
+//meta.action: Copy as Image
+//input: semantic_value value { semType: Molecule }
+export function copyAsImage(value: DG.SemanticValue): void {
+  if (!value?.value || !value?.gridCell?.bounds || !value?.gridCell?.renderer)
+    return;
+  const gridCellBounds = value.gridCell.bounds;
+  const w = 600;
+  const heightMultiplier = w / gridCellBounds.width;
+  const h = gridCellBounds.height * heightMultiplier;
+
+  const renderer = value.gridCell.renderer;
+
+  const canvas = ui.canvas(w * window.devicePixelRatio, h * window.devicePixelRatio);
+  renderer.render(canvas.getContext('2d')!, 0, 0, w, h, value.gridCell, value.gridCell.style);
+  canvas.toBlob((blob) => {
+    if (!blob)
+      return;
+    navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
+      grok.shell.info('Image copied to clipboard');
+    });
+  });
+}
+
 
 //name: Copy as MOLFILE V3000
 //description: Copies structure as molfile V3000
@@ -2048,10 +2074,10 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 export async function getConfigFiles(): Promise<string[]> {
   const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
   const directoriesWithJson = await Promise.all(
-    targetsFiles.filter(file => file.isDirectory).map(async dir => {
+    targetsFiles.filter((file) => file.isDirectory).map(async (dir) => {
       const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
-      return filesInDir.some(file => file.path.endsWith('.json')) ? dir.name : null;
-    })
+      return filesInDir.some((file) => file.path.endsWith('.json')) ? dir.name : null;
+    }),
   );
   return directoriesWithJson.filter((dir): dir is string => Boolean(dir));
 }
@@ -2061,18 +2087,19 @@ export async function getConfigFiles(): Promise<string[]> {
 export async function getAdmeConfigFiles(): Promise<string[]> {
   const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(ADME_CONFIG_PATH, true);
   return targetsFiles
-    .filter(file => file.isFile && file.path.endsWith('.json'))
-    .map(file => file.name.split('.')[0]);
+    .filter((file) => file.isFile && file.path.endsWith('.json'))
+    .map((file) => file.name.split('.')[0]);
 }
 
 //name: runReinvent
 //meta.cache: all
 //meta.cache.invalidateOn: 0 * * * *
-//input: string ligand {semType: Molecule} [Small molecules to dock]
-//input: string target {choices: Chem: getConfigFiles} [Folder with config and macromolecule]
-//input: string optimize {choices: Chem: getAdmeConfigFiles} [ADME models names]
+//input: string ligand {semType: Molecule}
+//input: string target {choices: Chem: getConfigFiles}
+//input: string optimize {choices: Chem: getAdmeConfigFiles}
+//input: int steps
 //output: dataframe result
-export async function runReinvent(ligand: string, target: string, optimize: string): Promise<DG.DataFrame> {
+export async function runReinvent(ligand: string, target: string, optimize: string, steps: number): Promise<DG.DataFrame> {
   const container = await grok.dapi.docker.dockerContainers.filter('reinvent').first();
   const isConfigFile = (file: DG.FileInfo): boolean => file.extension === 'json';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isConfigFile)!;
@@ -2082,7 +2109,8 @@ export async function runReinvent(ligand: string, target: string, optimize: stri
     smiles: [ligand],
     config: await grok.dapi.files.readAsText(configFile.fullPath),
     receptor: await grok.dapi.files.readAsText(receptor.fullPath),
-    admeConfig: await grok.dapi.files.readAsText(`${ADME_CONFIG_PATH}/${optimize}.json`)
+    admeConfig: await grok.dapi.files.readAsText(`${ADME_CONFIG_PATH}/${optimize}.json`),
+    steps: steps,
   };
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/run_reinvent', {
@@ -2100,47 +2128,49 @@ export async function runReinvent(ligand: string, target: string, optimize: stri
 //input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
 //input: string target {choices: Chem: getConfigFiles; caption: Dock into} [Folder with config files and macromolecule for docking]
 //input: string optimize {choices: Chem: getAdmeConfigFiles; caption: Optimize} [Optimization criteria for ADME properties]
-export async function reinvent(ligand: string, target: string, optimize: string): Promise<void> {
+//input: int steps = 5 [Number of steps]
+export async function reinvent(ligand: string, target: string, optimize: string, steps: number): Promise<void> {
   (async () => {
     const resultDfPromise = grok.functions.call('Chem:runReinvent', {
       ligand: ligand,
       target: target,
-      optimize: optimize
+      optimize: optimize,
+      steps: steps,
     });
-  
+
     /** Lineage setup */
     const schemas = await grok.dapi.stickyMeta.getSchemas();
     const lineageSchema = schemas.find((s) => s.name === 'Lineage')!;
     const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
     molCol.semType = DG.SEMTYPE.MOLECULE;
-  
+
     const seedDf = generateStickyDf('seed ligand');
     const generatedDf = generateStickyDf('generated');
-  
+
     const lineagePromise = grok.dapi.stickyMeta.setAllValues(lineageSchema, molCol, seedDf);
     const resultDf: DG.DataFrame = await resultDfPromise;
-  
+
     const resultMolCol = resultDf.columns.byName('SMILES');
     const lineagePromises = resultMolCol.toList().map((smiles: string) => {
       const col = DG.Column.fromStrings('smiles', [smiles]);
       col.semType = DG.SEMTYPE.MOLECULE;
       return grok.dapi.stickyMeta.setAllValues(lineageSchema, col, generatedDf);
     });
-  
+
     grok.shell.addTableView(resultDf);
     const tableView = grok.shell.getTableView(resultDf.name);
     const grid = tableView.grid;
-  
+
     const gridCol = grid.columns.byName('Score');
     grid.sort(['Score'], [false]);
 
     if (gridCol) {
       gridCol.isTextColorCoded = true;
-      gridCol.column?.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
+      gridCol.column?.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
     }
 
     await Promise.all([lineagePromise, ...lineagePromises]);
-  })();  
+  })();
 }
 
 function generateStickyDf(role: string): DG.DataFrame {

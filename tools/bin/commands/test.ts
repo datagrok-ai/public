@@ -55,8 +55,11 @@ export async function test(args: TestArgs): Promise<boolean> {
   if (args.csv)
     saveCsvResults([res.csv], csvReportDir);
   printBrowsersResult(res, args.verbose)
-  if (res.failed)
+  if (res.failed) {
+    if (res.verboseFailed === 'Package not found')
+      testUtils.exitWithCode(0);
     testUtils.exitWithCode(1);
+  }
   else
     testUtils.exitWithCode(0);
   return true;

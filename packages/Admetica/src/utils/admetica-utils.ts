@@ -2,12 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
 import { FormStateGenerator } from './admetica-form';
 import '../css/admetica.css';
+import { CellRenderViewer } from '../viewers/cell-render-viewer';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -362,8 +362,11 @@ export function addResultColumns(
   const tableView = getTableView(viewTable);
   const {grid} = tableView;
   models.forEach((model: Model) => {
-    const col = grid.col(model.name);
-    if (col) updateColumnProperties(col, model);
+    const columnName = updatedModelNames.find((name) => name.includes(model.name));
+    if (!columnName) return;
+
+    const column = grid.col(columnName);
+    if (column) updateColumnProperties(column, model);
   });
 
   if (addPiechart)
@@ -425,11 +428,22 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       addColorCoding(table, queryParams, true, props);
 
       const map: { [_: string]: any } = {};
-      for (const model of queryParams) {
-        const column = table.getCol(model);
-        map[model] = ui.divText(column.get(0).toFixed(3), {
-          style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
-        });
+      for (const param of queryParams) {
+        const column = table.getCol(param);
+        const firstValue = column.get(0);
+        const color = column.meta.colors.getColor(0);
+        
+        const model: Model | undefined = properties.subgroup
+          .flatMap((subg: Subgroup) => subg.models)
+          .find((model: Model) => param.includes(model.name));
+        
+        if (model) {
+          const units = model.units && model.units !== '-' ? model.units : '';
+          const value = `${firstValue.toFixed(3)} ${units}`;
+          map[param] = ui.divText(value, {
+            style: { color: color ? DG.Color.toHtml(color) : 'black' }
+          });
+        }
       }
       result.appendChild(ui.tableFromMap(map));
     } catch (e) {
@@ -468,21 +482,22 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  const { cell } = semValue;
+  const { cell, units } = semValue;
   const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
 
   const view = getTableView(dataFrame);
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
+  const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const query = `smiles\n${value}`;
+  const query = `smiles\n${parsedValue}`;
   const result = await runAdmetica(query, params, 'false');
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
-
+  
   const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }

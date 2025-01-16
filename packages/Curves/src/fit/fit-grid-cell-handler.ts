@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {
-  fitSeries,
   getSeriesStatistics,
   getSeriesFitFunction,
   LogOptions,
@@ -10,17 +9,16 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
-  FitChartCellRenderer,
   getOrCreateParsedChartData,
   getColumnChartOptions,
   getDataFrameChartOptions,
   isColorValid,
   mergeProperties,
-  substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints
+  substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, FitChartCellRenderer
 } from './fit-renderer';
-import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from './const';
+import {ColorType, getSeriesColor} from './render-utils';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -329,8 +327,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           const series = chartData.series![i];
           const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, gridCell);
   
-          const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
-            series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+          const color = getSeriesColor(series, i, ColorType.FIT_LINE);
           host.appendChild(ui.panel([
             ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
             ui.input.form(seriesStatistics, statisticsProperties, {
@@ -358,11 +355,13 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       return host;
     }
 
-    acc.addPane('Fit', () => {
-      return createFitPane();
-    });
+    const chartPane = acc.addPane('Chart', () => DG.GridCellWidget.fromGridCell(gridCell).root);
+    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
+    if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
+      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT)
+      chartPane.expanded = true;
 
-    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell, new FitChartCellRenderer()).root);
+    acc.addPane('Fit', () => createFitPane());
 
     return acc.root;
   }

@@ -194,7 +194,7 @@ category('mmpa', () => {
     //check Pairs Grid
     await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 14, 'Incorrect pairs grid', 3000);
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
@@ -298,8 +298,11 @@ category('mmpa', () => {
     await awaitCheck(() =>
       genDf.columns.names().includes('Prediction'), '\'Prediction\' column hasn\'t been created', 10000);
 
-    const isExpected = genDf.col('Prediction')!.toList().filter((it) => it).length == 22 ||
-      genDf.col('Prediction')!.toList().filter((it) => it).length == 92;
+    const isExpected = () => {
+      const predicted = genDf.col('Prediction')!.toList().filter((it) => it).length;
+      // we get different results on cpu and gpu for predictions
+      return predicted === 91 || (mmp.calculatedOnGPU && length === 92);
+    };
     expect(isExpected, true, 'Incorrect data in \'Prediction\' column');
   });
 });

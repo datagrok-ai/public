@@ -15,7 +15,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
 ): Promise<IChemFunctionsDialogResult> {
   // if compute is in dialog form, we need to show all the functions
 
-  const computeFunctions = await app.computeFunctions;
+  const computeFunctions = app.computeFunctions;
 
   const allFunctions: {func: DG.Func | DG.Script | DG.DataQuery, args: IFunctionArgs}[] = [];
   computeFunctions.functions

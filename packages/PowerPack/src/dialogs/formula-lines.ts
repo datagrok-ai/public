@@ -780,13 +780,14 @@ class CreationControl {
   _loadHistory(): DG.FormulaLine[] {return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];}
 
   saveHistory() {
-    /** Remove duplicates from just created items (formula comparison) */
+    const compareItems = (a: DG.FormulaLine, b: DG.FormulaLine) => JSON.stringify(a) === JSON.stringify(b);
+    /** Remove duplicates from just created items (object comparison via JSON.stringify) */
     this._justCreatedItems = this._justCreatedItems.filter((val, ind, arr) =>
-      arr.findIndex((t) => (t.formula === val.formula) ) === ind);
+      arr.findIndex((t) => compareItems(t, val)) === ind);
 
     /** Remove identical older items from history */
     this._historyItems = this._historyItems.filter((arr) =>
-      !this._justCreatedItems.find((val) => (val.formula === arr.formula)));
+      !this._justCreatedItems.find((val) => compareItems(val, arr)));
 
     const newHistoryItems = this._justCreatedItems.concat(this._historyItems);
     newHistoryItems.splice(HISTORY_LENGTH);

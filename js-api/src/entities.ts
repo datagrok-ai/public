@@ -1222,6 +1222,10 @@ export class Package extends Entity {
     this._webRoot = x;
   }
 
+  get packageOwner(): string {
+    return api.grok_Package_Get_Package_Author(this.dart);
+  }
+
   get version(): string {
     if (this.dart != null)
       return api.grok_Package_Get_Version(this.dart);

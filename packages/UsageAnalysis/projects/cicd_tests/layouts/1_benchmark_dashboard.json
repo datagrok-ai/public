@@ -14,10 +14,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 171,
+          "width": 195,
           "height": 927,
           "element": {
-            "id": "b446e430-c210-11ef-e020-83e57d376450",
+            "id": "21bdefd0-c210-11ef-954f-4d790ee1b10d",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -79,25 +79,25 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 896,
+          "width": 872,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 896,
-              "height": 553,
+              "width": 872,
+              "height": 602,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 896,
-                  "height": 553,
+                  "width": 872,
+                  "height": 602,
                   "element": {
-                    "id": "b4473250-c210-11ef-b87d-89b6a436c0d5",
+                    "id": "21be3df0-c210-11ef-b365-b3a90e87fd79",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -105,7 +105,13 @@
                       "addNewRowOnLastRowEdit": true,
                       "showColumnLabels": false,
                       "colHeaderHeight": 69,
-                      "rowHeight": 129,
+                      "rowHeight": 42,
+                      "sortByColumnNames": [
+                        "has_suspicious"
+                      ],
+                      "sortTypes": [
+                        false
+                      ],
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
                       "colLabelsOrientation": "Vert",
@@ -135,6 +141,7 @@
                         {
                           "width": 71.55215219976218,
                           "columnName": "owner",
+                          "cellType": "User",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -284,7 +291,7 @@
                           }
                         },
                         {
-                          "width": 80,
+                          "width": 77.64651162790692,
                           "customName": "sparkline",
                           "cellType": "sparkline",
                           "headerCellStyle": {
@@ -511,17 +518,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 896,
-              "height": 373
+              "width": 872,
+              "height": 324
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 339,
-                  "height": 373,
+                  "width": 728,
+                  "height": 324,
                   "element": {
-                    "id": "b4475960-c210-11ef-a919-cb78648ba929",
+                    "id": "21be6500-c210-11ef-a020-4f13162946ea",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -536,7 +543,8 @@
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
                       "minTextHeight": 14,
-                      "legendVisibility": "Never"
+                      "legendVisibility": "Never",
+                      "legendPosition": "Right"
                     },
                     "title": "Bar chart"
                   }
@@ -546,10 +554,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 556,
-                  "height": 373,
+                  "width": 143,
+                  "height": 324,
                   "element": {
-                    "id": "b4478070-c210-11ef-84e7-2bb09f86f516",
+                    "id": "21beb320-c210-11ef-b1b1-8d895067a28c",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -564,9 +572,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        121,
+                        108,
                         0,
-                        121
+                        108
                       ],
                       "colorScheme": [
                         4292072403,
@@ -597,6 +605,7 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "owner",
+                          "cellType": "User",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -936,12 +945,12 @@
     ],
     "floating": [],
     "tableId": "94e609e4-b5b7-437e-b91f-01da1ff73b17",
-    "tableName": "Benchmark_ Dashboard"
+    "tableName": "1_ Benchmark_ Dashboard"
   },
   "userData": {
     "TABLE_ROW_HEIGHT_KEY": null
   },
-  "id": "552022cd-3534-5faf-88d7-0888b63d29e5",
+  "id": "a48f3baf-ce4a-5588-86f9-16cfd84f9845",
   "name": "BenchmarkDashboard",
   "friendlyName": "1. Benchmark Dashboard"
 }

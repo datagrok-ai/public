@@ -3,7 +3,7 @@
 --connection: Chembl
 --input: string sub
 --tags: unit-test
-select distinct compound_name from compound_structures
+select distinct compound_name from compound_records
 where compound_name ilike '%' || @sub || '%'
 limit 50
 --end

@@ -286,7 +286,10 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
   console.log("Failed amount:  " + browserResult?.failedAmount);
 
   if (browserResult.failed) {
-    color.fail('Tests failed.');
+    if (browserResult.verboseFailed === 'Package not found')
+      color.fail('Tests not found');
+    else
+      color.fail('Tests failed.');
   } else {
     color.success('Tests passed.');
   }

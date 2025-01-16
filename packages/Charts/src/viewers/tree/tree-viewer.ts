@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
@@ -35,6 +36,8 @@ export class TreeViewer extends EChartViewer {
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   applySizeAggr: boolean = false;
   applyColorAggr: boolean = false;
+  fontSize: number;
+  showCounts: boolean;
 
   constructor() {
     super();
@@ -55,12 +58,10 @@ export class TreeViewer extends EChartViewer {
     this.colorColumnName = this.string('colorColumnName');
     this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.fontSize = this.int('fontSize', 12);
+    this.showCounts = this.bool('showCounts', false);
 
     this.option = {
-      tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove',
-      },
       series: [
         {
           type: 'tree',
@@ -69,7 +70,7 @@ export class TreeViewer extends EChartViewer {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
-            fontSize: 9,
+            fontSize: this.fontSize
           },
 
           leaves: {
@@ -103,6 +104,15 @@ export class TreeViewer extends EChartViewer {
         return isMatch;
       }
     }, params.event!.event, true));
+    this.chart.on('mouseover', (params: any) => {
+      const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.'); 
+      const div = ui.divV([
+        ui.divText(ancestors), 
+        ui.divText(params.value, { style: { fontWeight: 'bold' } })
+      ]);
+      ui.tooltip.show(div, params.event.event.x, params.event.event.y);
+    });
+    this.chart.on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
@@ -134,13 +144,18 @@ export class TreeViewer extends EChartViewer {
       this.render();
     }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
+        p?.name === 'fontSize' || p?.name === 'showCounts') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
         this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
       if (p?.name === 'sizeColumnName' || p?.name === 'sizeAggrType')
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
+      if (p?.name === 'fontSize')
+        this.option.series[0].label.fontSize = p.get(this);
+      if (p?.name === 'showCounts')
+        this.option.series[0].label.formatter = p.get(this) ? '{b}: {c}' : '{b}';
       this.render();
     } else
       super.onPropertyChanged(p, render);

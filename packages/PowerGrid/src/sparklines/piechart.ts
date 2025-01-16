@@ -363,4 +363,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     return ui.divV([inputs, elementsDiv]);
   }
+
+  hasContextValue(gridCell: DG.GridCell): boolean { return true; }
+  async getContextValue (gridCell: DG.GridCell): Promise<any> { return DG.GridCellWidget.fromGridCell(gridCell).root; }
 }

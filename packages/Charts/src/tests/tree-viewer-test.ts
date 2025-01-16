@@ -28,9 +28,7 @@ category('TreeViewer', () => {
       rowSource: 'Filtered',
       filter: '',
       top: '5px',
-      left: '5px',
       bottom: '5px',
-      right: '5px',
       animationDuration: 750,
       animationDurationUpdate: 750,
       animation: true,
@@ -46,6 +44,8 @@ category('TreeViewer', () => {
       colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
+      fontSize: 12,
+      showCounts: false
     };
 
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));

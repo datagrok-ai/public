@@ -602,7 +602,16 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     grid.props.rowHeight = 55;
 
     const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
-    // @ts-ignore TODO: fix after api update
+    const webLogoPromiseCache = new Map<number, boolean>();// this map will keep the promises for weblogo creation
+
+    let invalidateTimeout: any = null;
+
+    const debouncedInvalidate = (): void => {
+      if (invalidateTimeout)
+        clearTimeout(invalidateTimeout);
+      invalidateTimeout = setTimeout(() => grid.invalidate(), 200);
+    };
+
     const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramSettings>>();
     const maxSequenceLen = this.positionColumns.length;
     const webLogoGridCol = grid.columns.byName(C.LST_COLUMN_NAMES.WEB_LOGO)!;
@@ -611,7 +620,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const activityCol = this.getScaledActivityColumn(isDfFiltered);
     const pepCol: DG.Column<string> = filteredDf.getCol(this.sequenceColumnName);
 
-    grid.onCellRender.subscribe(async (gridCellArgs) => {
+    grid.onCellRender.subscribe((gridCellArgs) => {
       const gridCell = gridCellArgs.cell;
       const currentRowIdx = gridCell.tableRowIndex;
       if (!gridCell.isTableCell || currentRowIdx == null || currentRowIdx === -1)
@@ -633,9 +642,14 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
           CR.renderLogoSummaryCell(canvasContext, gridCell.cell.value, this.clusterSelection, bound);
           gridCellArgs.preventDefault();
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
+          // if current weblogo is being created, prevent the creation of another one
+          if (webLogoPromiseCache.get(currentRowIdx) === true) {
+            gridCellArgs.preventDefault();
+            return;
+          }
           const positionWidth = Math.floor((gridCell.bounds.width - 2 - (4 * (maxSequenceLen - 1))) / maxSequenceLen);
 
-          let viewer = webLogoCache.get(currentRowIdx);
+          const viewer = webLogoCache.get(currentRowIdx);
           if (viewer !== undefined) {
             const viewerProps = viewer.getProperties();
 
@@ -649,9 +663,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             }
             const viewerRoot = $(viewer.root).css('height', `${height}px`);//;
             viewerRoot.children().first().css('overflow-y', 'hidden !important');
+            viewer.root.style.height = `${height}px`;
+            gridCell.element = viewer.root;
+            gridCellArgs.preventDefault();
           } else {
             const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
-            viewer = await webLogoTable.plot
+            webLogoPromiseCache.set(currentRowIdx, true);
+            webLogoTable.plot
               .fromType('WebLogo', {
                 positionHeight: this.webLogoMode,
                 horizontalAlignment: HorizontalAlignments.LEFT,
@@ -659,12 +677,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
                 minHeight: height,
                 positionWidth: positionWidth,
                 showPositionLabels: false,
+              }).then((v) => {
+                webLogoCache.set(currentRowIdx, v);
+                webLogoPromiseCache.delete(currentRowIdx);
+                debouncedInvalidate();
               });
-            webLogoCache.set(currentRowIdx, viewer);
+            gridCellArgs.preventDefault();
           }
-          viewer.root.style.height = `${height}px`;
-          gridCell.element = viewer.root;
-          gridCellArgs.preventDefault();
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
           let viewer = distCache.get(currentRowIdx);
           if (viewer === undefined) {

@@ -21,11 +21,10 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
-import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 import {FitConstants} from './const';
 import {
-  assignSeriesColors, renderAxesLabels,
+  renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
   renderDroplines,
   renderFitLine, renderLegend,
@@ -151,10 +150,11 @@ function getChartData(gridCell: DG.GridCell): IFitChartData {
   let cellValue = gridCell.cell.value as string;
   if (cellValue.includes('|'))
     cellValue = cellValue.replaceAll('|', '');
-  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
-    (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-    convertXMLToIFitChartData(cellValue) :
-    JSON.parse(cellValue ?? '{}') ?? {}) : createDefaultChartData();
+  const column = gridCell.cell.column;
+  const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
+    (column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+      convertXMLToIFitChartData(cellValue) : JSON.parse(cellValue ?? '{}') ?? {}) :
+    createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
 
   const columnChartOptions = gridCell.cell.column ? getColumnChartOptions(gridCell.cell.column) : {};
   const dfChartOptions = gridCell.cell.column ? getDataFrameChartOptions(gridCell.cell.dataFrame) : {};
@@ -339,26 +339,17 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    const cellRenderViewer = CellRenderViewer.fromGridCell(gridCell, new FitChartCellRenderer());
-    const dlg = ui.dialog({title: 'Edit chart'})
-      .add(cellRenderViewer.root)
-      .show({resizable: true});
+    const gridCellWidget = DG.GridCellWidget.fromGridCell(gridCell);
+    gridCellWidget.root.style.removeProperty('aspectRatio');
+    gridCellWidget.root.style.height = '100%';
+    gridCellWidget.canvas.style.removeProperty('height');
+    gridCellWidget.canvas.style.removeProperty('width');
+    gridCellWidget.canvas.style.left = '18px';
+    gridCellWidget.canvas.style.top = '18px';
 
-    // canvas is created as (300, 150), so we change its size to the dialog contents box size
-    const dlgContentsBox = dlg.root.getElementsByClassName('d4-dialog-contents dlg-edit-chart')[0].firstChild as HTMLElement;
-    cellRenderViewer.canvas.width = dlgContentsBox.clientWidth;
-    cellRenderViewer.canvas.height = dlgContentsBox.clientHeight;
-    cellRenderViewer.render();
-
-    // contents ui-box isn't resizable by default
-    dlgContentsBox.style.width = '100%';
-    dlgContentsBox.style.height = '100%';
-
-    ui.tools.handleResize(dlgContentsBox, (w: number, h: number) => {
-      cellRenderViewer.canvas.width = w;
-      cellRenderViewer.canvas.height = h;
-      cellRenderViewer.render();
-    });
+    ui.dialog({title: 'Edit chart'})
+      .add(gridCellWidget.root)
+      .show({resizable: true, width: 350, height: 300});
   }
 
   areAxesShown(screenBounds: DG.Rect): boolean {
@@ -415,12 +406,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const series = data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
-      if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
-        screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
-        series.showPoints = '';
-        if (data.chartOptions)
-          data.chartOptions.showStatistics = [];
-      }
       series.points.sort((a, b) => a.x - b.x);
 
       let userParamsFlag = true;
@@ -443,11 +428,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
 
-      assignSeriesColors(series, i);
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
-        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!});
-      renderConnectDots(g, series, {viewport, ratio});
-      renderPoints(g, series, {viewport, ratio});
+        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
+      renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
+      renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, gridCell)});
@@ -455,7 +439,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
-        logOptions: chartLogOptions, dataBox});
+        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
@@ -488,7 +472,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
     }
 
-    data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+    if (gridCell.cell.column?.name)
+      data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
     if (data.chartOptions?.mergeSeries)
       data.series = [mergeSeries(data.series!)!];
 
@@ -519,7 +504,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     // TODO: add caching
-    const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX
+    const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getOrCreateParsedChartData(gridCell);
 

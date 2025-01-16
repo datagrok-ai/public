@@ -247,7 +247,6 @@ export class AdmeticaBaseEditor {
       subgroup.models.forEach((model: Model) => {
         const modelNode = groupNode.item(model.name);
         modelNode.checked = model.checked;
-        modelNode.enableCheckBox(model.checked);
       });
     });
   }
