@@ -1,0 +1,15 @@
+name: myenv
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python=3.10
+  - flask
+  - flask_cors
+  - cuda-version=11.8
+  - cudatoolkit=11.8
+  - pytorch>=1.8.1
+  - pip
+  - pip:
+    - boltz
