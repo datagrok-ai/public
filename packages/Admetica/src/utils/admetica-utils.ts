@@ -428,11 +428,22 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       addColorCoding(table, queryParams, true, props);
 
       const map: { [_: string]: any } = {};
-      for (const model of queryParams) {
-        const column = table.getCol(model);
-        map[model] = ui.divText(column.get(0).toFixed(3), {
-          style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
-        });
+      for (const param of queryParams) {
+        const column = table.getCol(param);
+        const firstValue = column.get(0);
+        const color = column.meta.colors.getColor(0);
+        
+        const model: Model | undefined = properties.subgroup
+          .flatMap((subg: Subgroup) => subg.models)
+          .find((model: Model) => param.includes(model.name));
+        
+        if (model) {
+          const units = model.units && model.units !== '-' ? model.units : '';
+          const value = `${firstValue.toFixed(3)} ${units}`;
+          map[param] = ui.divText(value, {
+            style: { color: color ? DG.Color.toHtml(color) : 'black' }
+          });
+        }
       }
       result.appendChild(ui.tableFromMap(map));
     } catch (e) {
