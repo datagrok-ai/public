@@ -107,4 +107,9 @@ for (var i = 0; i < ticketColumns; i++) {
 //   jsonColumn.set(i, JSON.stringify(chartData));
 // }
 
+pivot.name = '0. Tests Dashboard';
+setTimeout(() => {
+  grok.functions.call('UsageAnalysis:testDashboard');
+}, 200);
+
 out = pivot;
