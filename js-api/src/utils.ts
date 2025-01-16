@@ -5,7 +5,7 @@ import {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
-import {DataFrame} from './dataframe';
+import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
 
 declare let DG: any;
@@ -318,6 +318,18 @@ export class Utils {
       csv: csv
       // df: resultDF?.toJson()
     };
+  }
+  
+  /**
+   * Detects natural hierarchy in the list of categorical columns based on their values.
+   * Mind that the function can be n^2 in the worst case scenario, although in most cases, it is quite fast
+   * as it exits early if missmatch is found.
+   * @param columns - List of columns to detect hierarchy in.
+   * @param maxDepth - Maximum depth of the hierarchy to detect.
+   * @returns 
+   */
+  static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
+    return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
   }
 }
 

@@ -336,6 +336,7 @@ export interface IDartApi {
   grok_Utils_FormatNumber(x: Num, format: String): any;
   grok_Utils_SelectRowsWhere(mask: any, check: any, ctrlKey: Bool, shiftKey: Bool, metaKey: Bool, modifiedSelectOnly: Bool): any;
   grok_Utils_GetUniqueName(name: String, existing: any, auto: Bool, idx: Num, render: any, choices: any): any;
+  grok_Utils_DetectColumnHierarchy(columns: any, maxDepth: Num): any;
   grok_Viewer_FromType(viewerType: String, table: any, json: String): any;
   grok_Viewer_FromType_Async(viewerType: String, table: any, json: String): Promise<any>;
   grok_Viewer_FromJsViewer(jsViewer: any): any;
