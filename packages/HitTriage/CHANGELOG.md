@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.4.0 (2025-01-16)
+
+* Support adding tables to hit design campaigns
+* Support molecular generation functions such as reinvent
+
 ## 1.3.11 (2024-12-11)
 
 * Add loader to campaigns app view
