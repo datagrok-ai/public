@@ -45,6 +45,7 @@ category('TreeViewer', () => {
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
       fontSize: 12,
+      showCounts: false
     };
 
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));

@@ -37,6 +37,7 @@ export class TreeViewer extends EChartViewer {
   applySizeAggr: boolean = false;
   applyColorAggr: boolean = false;
   fontSize: number;
+  showCounts: boolean;
 
   constructor() {
     super();
@@ -58,6 +59,7 @@ export class TreeViewer extends EChartViewer {
     this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.fontSize = this.int('fontSize', 12);
+    this.showCounts = this.bool('showCounts', false);
 
     this.option = {
       series: [
@@ -68,8 +70,7 @@ export class TreeViewer extends EChartViewer {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
-            fontSize: this.fontSize,
-            formatter: '{b}: {c}'
+            fontSize: this.fontSize
           },
 
           leaves: {
@@ -143,7 +144,8 @@ export class TreeViewer extends EChartViewer {
       this.render();
     }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' || p?.name === 'fontSize') {
+        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
+        p?.name === 'fontSize' || p?.name === 'showCounts') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
@@ -152,6 +154,8 @@ export class TreeViewer extends EChartViewer {
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
       if (p?.name === 'fontSize')
         this.option.series[0].label.fontSize = p.get(this);
+      if (p?.name === 'showCounts')
+        this.option.series[0].label.formatter = p.get(this) ? '{b}: {c}' : '{b}';
       this.render();
     } else
       super.onPropertyChanged(p, render);
