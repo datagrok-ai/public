@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {expect, expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 import dayjs from "dayjs";
 
+export const _package = new DG.Package();
+
 //name: getTable
 //input: string name
 //input: string path {optional: true}

@@ -7,6 +7,7 @@ import {
   intToRgba, intToRgb,
   htmlToInt, htmlToIntA,
 } from '@datagrok-libraries/utils/src/color';
+import * as DG from 'datagrok-api/dg';
 
 category('Utils: color', () => {
   const data: { [testName: string]: { src: any, tgt: any, to: (src: any) => any } } = {
@@ -24,4 +25,9 @@ category('Utils: color', () => {
       expect(testCfg.tgt, res);
     });
   }
+  
+  test('DG.toHtml', async () => {
+    const res = DG.Color.toHtml(10);
+    expect("#00000a", res);
+  });
 });

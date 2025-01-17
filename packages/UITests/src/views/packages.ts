@@ -1,6 +1,7 @@
-import {after, before, category} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 // import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 
 let v: DG.View;
@@ -18,11 +19,11 @@ category('Packages', async () => {
   //       console.log(d);
   //       const e = d.ownerDocument.createEvent('MouseEvents');
   //       e.initMouseEvent('contextmenu', true, true,
-  //         element.ownerDocument.defaultView, 1, 0, 0, 0, 0, false,
+  //         e.ownerDocument.defaultView, 1, 0, 0, 0, 0, false,
   //         false, false, false,2, null);
 
 
-  //       return !element.dispatchEvent(e);
+  //        return !e.dispatchEvent(e);
   //     }
   //   });
   // });
