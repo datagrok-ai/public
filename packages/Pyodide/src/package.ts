@@ -47,7 +47,7 @@ export async function initPyodide() {
       onSuccess(result);
     }
   };
-  /* supportsArrow = DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0; */
+  supportsArrow = DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0;
 }
 
 function makeCodeHeader(scriptCall: DG.FuncCall): string {
@@ -137,10 +137,10 @@ function prepareOutputs(scriptCall: DG.FuncCall, outputs: string[]): string {
     switch (type) {
       case DG.TYPE.DATA_FRAME:
         if (supportsArrow) {
-          code += `batch__${paramName} = pa.record_batch(${paramName})\n`;
+          code += `arrow_table__${paramName} = pa.Table.from_pandas(${paramName})\n`;
           code += `sink__${paramName} = pa.BufferOutputStream()\n`;
-          code += `with pa.ipc.new_stream(sink__${paramName}, batch__${paramName}.schema) as writer:\n`;
-          code += `\twriter.write_batch(batch__${paramName})\n`;
+          code += `with pa.ipc.new_stream(sink__${paramName}, arrow_table__${paramName}.schema) as writer__${paramName}:\n`;
+          code += `\twriter__${paramName}.write_table(arrow_table__${paramName})\n`;
           code += `${paramName} = sink__${paramName}.getvalue()\n`;
         }
         else
@@ -202,8 +202,11 @@ async function setOutputs(scriptCall: DG.FuncCall, response: WorkerResponse): Pr
       if (value !== undefined && value !== null) {
         switch (type) {
           case DG.TYPE.DATA_FRAME:
-            if (supportsArrow)
-              scriptCall.setParamValue(paramName, await grok.functions.call('Arrow:fromFeather', {'bytes': value}));
+            if (supportsArrow) {
+              const df: DG.DataFrame = await grok.functions.call('Arrow:fromFeather', {'bytes': new Uint8Array(value.buffer)});
+              df.name = paramName;
+              scriptCall.setParamValue(paramName, df);
+            }
             else
               scriptCall.setParamValue(paramName, DG.DataFrame.fromCsv(value.trim()));
             break;

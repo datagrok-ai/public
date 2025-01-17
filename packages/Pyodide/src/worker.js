@@ -1,13 +1,13 @@
 // worker.js
 
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js");
+importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.1/full/pyodide.js");
 
 let pyodide;
 
 async function init() {
     pyodide = await loadPyodide();
     pyodide.setDebug(false);
-    await pyodide.loadPackage(["numpy", "pandas", "matplotlib", /* "pyarrow" */]);
+    await pyodide.loadPackage(["numpy", "pandas", "matplotlib", "pyarrow"]);
 }
 
 let initCompleted = init();
