@@ -58,6 +58,11 @@ Datagrok integrates with your LDAP or Active Directory server enabling the smoot
 8. Set LDAP User DN. It should look like `CN=USER-DATAGROK,OU=users,DC=datagrok,DC=ai`
 9. Set LDAP User password
 
+>Note: To ensure only domain-managed users can access the platform:
+>
+>1. Disable 'Signup Allowed' to prevent unauthorized users from registering directly on Datagrok.
+>2. Enable 'Signup Enabled' in _'Domain Authentication'_ to allow new users already registered in the organization's LDAP or Active Directory (AD) system to log in.
+
 ## Oauth authentication
 
 Datagrok supports Google, Facebook and GitHub OAUTH authentication.
