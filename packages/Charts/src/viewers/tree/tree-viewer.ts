@@ -241,7 +241,10 @@ export class TreeViewer extends EChartViewer {
     const min = data['color-meta']['min'];
     const max = data['color-meta']['max'];
     const setItemStyle = (data: TreeDataType) => {
-      const nodeColor = DG.Color.toRgb(DG.Color.scaleColor(data.color, min, max));
+      const safeMin = isFinite(min) && !isNaN(min) ? min : 0;
+      const safeMax = isFinite(max) && !isNaN(max) ? max : 0;
+
+      const nodeColor = DG.Color.toRgb(DG.Color.scaleColor(data.color, safeMin, safeMax));
       data.itemStyle = data.itemStyle ?? {};
       data.itemStyle.color = data.itemStyle.color === this.selectionColor ? this.selectionColor : nodeColor;
       if (data.children)

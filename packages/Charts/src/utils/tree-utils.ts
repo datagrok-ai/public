@@ -101,8 +101,11 @@ export class TreeUtils {
             node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
-          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
-          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, node[prop]);
+          
+          const value = node[prop];
+          if (!value) continue;
+          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, value);
+          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, value);
         }
         node.children?.forEach(updatePropMeta);
       }
