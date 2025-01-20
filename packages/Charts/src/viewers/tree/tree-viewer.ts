@@ -6,7 +6,6 @@ import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
-import { category } from '@datagrok-libraries/utils/src/test';
 
 type onClickOptions = 'Select' | 'Filter';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -173,7 +172,7 @@ export class TreeViewer extends EChartViewer {
       if (layout === 'orthogonal')
         this.option.series[0].label.rotate = 0;
       else {
-        this.option.series[0].label.rotate = null;
+        delete this.option.series[0].label.rotate;
         const es = this.getProperty('edgeShape');
         if (es?.get(this) !== 'curve') {
           es?.set(this, 'curve');
@@ -316,8 +315,10 @@ export class TreeViewer extends EChartViewer {
 
     Object.assign(this.option.series[0], {
       data,
-      label: { formatter: (params: any) => this.formatLabel(params) },
-    });
+      label: Object.assign({}, this.option.series[0].label, {
+        formatter: (params: any) => this.formatLabel(params),
+      }),
+    });    
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
