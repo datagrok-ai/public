@@ -28,7 +28,6 @@ export class TreeViewer extends EChartViewer {
   symbol: symbolType;
   symbolSize: number;
   hierarchyColumnNames: string[];
-  animation: boolean;
   initialTreeDepth: number;
   sizeColumnName: string;
   sizeAggrType: DG.AggregationType;
@@ -48,8 +47,6 @@ export class TreeViewer extends EChartViewer {
   constructor() {
     super();
 
-    this.initCommonProperties();
-    this.animation = this.bool('animation', true);
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
     this.expandAndCollapse = this.bool('expandAndCollapse', true);
@@ -70,6 +67,8 @@ export class TreeViewer extends EChartViewer {
     this.includeNulls = this.bool('includeNulls', true);
 
     this.option = {
+      animation: false,
+      silent: false,
       series: [
         {
           type: 'tree',
@@ -91,7 +90,6 @@ export class TreeViewer extends EChartViewer {
         },
       ],
     };
-    this.animationDuration = 750;
 
     this.onPropertyChanged(null);
   }
