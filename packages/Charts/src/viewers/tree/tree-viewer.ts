@@ -7,7 +7,11 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 
-
+type onClickOptions = 'Select' | 'Filter';
+const rowSourceMap: Record<onClickOptions, string> = {
+  Select: 'Filtered',
+  Filter: 'All'
+};
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 @grok.decorators.viewer({
   name: 'Tree',
@@ -38,6 +42,7 @@ export class TreeViewer extends EChartViewer {
   applyColorAggr: boolean = false;
   fontSize: number;
   showCounts: boolean;
+  onClick: onClickOptions;
 
   constructor() {
     super();
@@ -60,6 +65,7 @@ export class TreeViewer extends EChartViewer {
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.fontSize = this.int('fontSize', 12);
     this.showCounts = this.bool('showCounts', false);
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
 
     this.option = {
       series: [
@@ -88,22 +94,56 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  initChartEventListeners() {
-    this.chart.on('click', (params: {[key: string]: any}) => this.dataFrame.selection.handleClick((i) => {
-      if (params.componentType !== 'series')
+  handleDataframeSelection(path: string[], event: any) {
+    this.dataFrame.selection.handleClick((index: number) => {
+      if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
-      if (params.data.path === null)
-        return true;
-      else {
-        const categories: string[] = params.data.path.split(' | ');
-        let isMatch = true;
-        categories.forEach((category, idx) => {
-          const col = this.dataFrame.col(this.hierarchyColumnNames[idx]);
-          isMatch = isMatch && category === (col!.type === DG.COLUMN_TYPE.BOOL ? col!.get(i).toString() : col!.get(i));
-        });
-        return isMatch;
+
+      return path.every((segment, j) => {
+        const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
+        return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
+      });
+    }, event);
+  }
+
+  handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
+    const filterFunction = this.buildFilterFunction(path);
+    dataFrame.rows.filter(filterFunction);
+  }
+
+  buildFilterFunction(path: string[]): (row: any) => boolean {
+    return (row) => {
+      return path.every((expectedValue, i) => {
+        const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
+        const columnValue = row.get(this.hierarchyColumnNames[i]);
+        const formattedValue = columnValue ?
+          (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
+        return formattedValue === expectedValue;
+      });
+    };
+  }
+
+  initChartEventListeners() {
+    let selectedSectors: string[] = [];
+    const handleChartClick = (params: any) => {
+      const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
+      const pathString = path.join('|');
+      const isSectorSelected = selectedSectors.includes(pathString);
+      if (this.onClick === 'Filter') {
+        this.handleDataframeFiltering(path, this.dataFrame);
+        return;
       }
-    }, params.event!.event, true));
+
+      const event = params.event.event;
+      const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
+      const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
+      if (isMultiSelect && !isSectorSelected)
+        selectedSectors.push(pathString);
+      else if (isMultiDeselect && isSectorSelected)
+        selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
+      this.handleDataframeSelection(path, event);
+    };
+    
     this.chart.on('mouseover', (params: any) => {
       const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.'); 
       const div = ui.divV([
@@ -113,6 +153,7 @@ export class TreeViewer extends EChartViewer {
       ui.tooltip.show(div, params.event.event.x, params.event.event.y);
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.on('click', handleChartClick);
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
@@ -143,6 +184,8 @@ export class TreeViewer extends EChartViewer {
       this.onTableAttached();
       this.render();
     }
+    if (p?.name === 'onClick')
+      this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
         p?.name === 'fontSize' || p?.name === 'showCounts') {
