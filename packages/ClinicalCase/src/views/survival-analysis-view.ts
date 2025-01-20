@@ -219,7 +219,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   private updatePlotCovariatesChoices(){
-    this.plotCovariatesChoices = ui.divH([], {style: {'margin-left': '20px'}});
+    this.plotCovariatesChoices = ui.divH([], {style: {marginLeft: '20px'}});
     this.covariates.forEach(it => {
       let covariateCheckbox = ui.input.bool(`${it}`, {value: false});
       this.plotCovariatesChoices.append(covariateCheckbox.root);

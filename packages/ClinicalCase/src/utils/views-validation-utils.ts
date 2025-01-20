@@ -8,8 +8,9 @@ import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FI
 import { updateDivInnerHTML } from "./utils";
 
 export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerName: string) {
-    if (columns.filter(it => !df.columns.names().includes(it)).length) {
-      return `The following columns are required for ${viwerName} viewer: ${columns.join(',')}`;
+    const missingCols = columns.filter(it => !df.columns.names().includes(it));
+    if (missingCols.length) {
+      return `The following columns are required for ${viwerName} viewer: ${columns.join(',')}. Missing ${missingCols.join(',')}`;
     }
     return null;
   }
