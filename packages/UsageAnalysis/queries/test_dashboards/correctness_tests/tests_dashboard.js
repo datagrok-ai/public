@@ -108,8 +108,8 @@ for (var i = 0; i < ticketColumns; i++) {
 // }
 
 pivot.name = '0. Tests Dashboard';
-setTimeout(() => {
-  grok.functions.call('UsageAnalysis:testDashboard');
-}, 200);
+// setTimeout(() => {
+//   grok.functions.call('UsageAnalysis:testDashboard');
+// }, 2000);
 
 out = pivot;

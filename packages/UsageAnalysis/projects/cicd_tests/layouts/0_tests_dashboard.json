@@ -14,10 +14,26 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 314,
+          "width": 240,
           "height": 927,
           "element": {
-            "id": "39a9e630-c210-11ef-bef6-579e381f2062",
+            "id": "868f4d20-c210-11ef-b9ea-573a97ea5d45",
+            "type": "testDashboardsViewer",
+            "look": {
+              "#type": "JsViewerHostLook"
+            },
+            "title": "testDashboardsViewer"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 240,
+          "height": 927,
+          "element": {
+            "id": "868f7430-c210-11ef-d76a-417796c3ce12",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -76,14 +92,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 753,
+          "width": 586,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 753,
+              "width": 586,
               "height": 553,
               "documentManager": true
             },
@@ -91,10 +107,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 753,
+                  "width": 586,
                   "height": 553,
                   "element": {
-                    "id": "39aa5b60-c210-11ef-9385-e3108463e285",
+                    "id": "86901070-c210-11ef-b289-edc116a8746b",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -149,7 +165,7 @@
                           }
                         },
                         {
-                          "width": 140,
+                          "width": 160,
                           "columnName": "jira",
                           "cellType": "JIRA Ticket",
                           "headerCellStyle": {
@@ -553,17 +569,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 753,
+              "width": 586,
               "height": 373
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 617,
+                  "width": 479,
                   "height": 373,
                   "element": {
-                    "id": "39aa8270-c210-11ef-acbc-ef8e5c384565",
+                    "id": "86905e90-c210-11ef-d0e1-650675979481",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -589,10 +605,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 135,
+                  "width": 106,
                   "height": 373,
                   "element": {
-                    "id": "39ab93e0-c210-11ef-d1f5-6da0cb54215a",
+                    "id": "8690d3c0-c210-11ef-cf92-8fb36661f020",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -607,9 +623,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        4517,
+                        4474,
                         0,
-                        4517
+                        4474
                       ],
                       "colorScheme": [
                         4292072403,
