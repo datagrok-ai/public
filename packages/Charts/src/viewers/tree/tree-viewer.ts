@@ -6,6 +6,7 @@ import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
+import { category } from '@datagrok-libraries/utils/src/test';
 
 type onClickOptions = 'Select' | 'Filter';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -24,47 +25,50 @@ export class TreeViewer extends EChartViewer {
   layout: layoutType;
   orient: orientation;
   expandAndCollapse: boolean;
+  initialTreeDepth: number;
+  symbolSizeRange: [number, number] = [5, 20];
   edgeShape: edgeShape;
   symbol: symbolType;
   symbolSize: number;
+  fontSize: number;
+  showCounts: boolean;
+  sizeColumnName: string = '';
+  sizeAggrType: DG.AggregationType = 'avg';
+  colorColumnName: string = '';
+  colorAggrType: DG.AggregationType = 'avg';
   hierarchyColumnNames: string[];
-  initialTreeDepth: number;
-  sizeColumnName: string;
-  sizeAggrType: DG.AggregationType;
-  symbolSizeRange: [number, number] = [5, 20];
   aggregations: string[] = Object.values(DG.AGG).filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
   aggregationsStr: string[] = Object.values({...DG.STR_AGG, ...DG.STAT_COUNTS});
-  colorColumnName: string;
-  colorAggrType: DG.AggregationType;
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   applySizeAggr: boolean = false;
   applyColorAggr: boolean = false;
-  fontSize: number;
-  showCounts: boolean;
   onClick: onClickOptions;
   includeNulls: boolean;
 
   constructor() {
     super();
 
-    this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
-    this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
-    this.expandAndCollapse = this.bool('expandAndCollapse', true);
-    this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: -1, max: 5 });
-    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
+    this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
+    this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
+    this.expandAndCollapse = this.bool('expandAndCollapse', true, {category: 'Style'});
+    this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: -1, max: 5, category: 'Style'});
+    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
-    ] });
-    this.symbolSize = this.int('symbolSize', 7);
-    this.sizeColumnName = this.string('sizeColumnName');
-    this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations });
-    this.colorColumnName = this.string('colorColumnName');
-    this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
-    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
-    this.fontSize = this.int('fontSize', 12);
-    this.showCounts = this.bool('showCounts', false);
+    ], category: 'Style' });
+    this.symbolSize = this.int('symbolSize', 7, {category: 'Style'});
+    this.fontSize = this.int('fontSize', 12, {category: 'Style'});
+    this.showCounts = this.bool('showCounts', false, {category: 'Style'});
+
+    this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
+    this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Size' });
+    
+    this.colorColumnName = this.string('colorColumnName', '', {category: 'Color'});
+    this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Color' });
+
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {category: 'Data', columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
-    this.includeNulls = this.bool('includeNulls', true);
+    this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
       animation: false,
@@ -197,8 +201,6 @@ export class TreeViewer extends EChartViewer {
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
       if (p?.name === 'fontSize')
         this.option.series[0].label.fontSize = p.get(this);
-      if (p?.name === 'showCounts')
-        this.option.series[0].label.formatter = p.get(this) ? '{b}: {c}' : '{b}';
       this.render();
     } else
       super.onPropertyChanged(p, render);
@@ -289,6 +291,10 @@ export class TreeViewer extends EChartViewer {
       const minImageHeight = 80;
       this.renderMolecule(params, minImageWidth, minImageHeight);
       return ' ';
+    } else {
+      if (this.showCounts)
+        return `${params.name}: ${params.value}`;
+      return `${params.name}`;
     }
   }
 
