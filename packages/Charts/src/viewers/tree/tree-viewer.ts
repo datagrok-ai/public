@@ -263,6 +263,32 @@ export class TreeViewer extends EChartViewer {
     return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls)];
   }
 
+  async renderMolecule(params: any, width: number, height: number) {
+    const image = await TreeUtils.getMoleculeImage(params.name, width, height);
+    const img = new Image();
+    img.src = image!.toDataURL('image/png');
+    params.data.label = {
+      show: true,
+      formatter: '{b}',
+      color: 'rgba(0,0,0,0)',
+      height: height.toString(),
+      width: width.toString(),
+      backgroundColor: {
+        image: img.src,
+      },
+    }
+  }
+
+  formatLabel(params: any) {
+    // need to add heuristic to render only in case there is enough place for this
+    if (params.data.semType === 'Molecule') {
+      const minImageWidth = 70;
+      const minImageHeight = 80;
+      this.renderMolecule(params, minImageWidth, minImageHeight);
+      return ' ';
+    }
+  }
+
   render(): void {
     this.renderQueue = this.renderQueue
       .then(() => this._render());
@@ -277,7 +303,12 @@ export class TreeViewer extends EChartViewer {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
-    this.option.series[0].data = await this.getSeriesData();
+    const data = await this.getSeriesData();
+
+    Object.assign(this.option.series[0], {
+      data,
+      label: { formatter: (params: any) => this.formatLabel(params) },
+    });
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
