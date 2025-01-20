@@ -43,6 +43,7 @@ export class TreeViewer extends EChartViewer {
   fontSize: number;
   showCounts: boolean;
   onClick: onClickOptions;
+  includeNulls: boolean;
 
   constructor() {
     super();
@@ -66,6 +67,7 @@ export class TreeViewer extends EChartViewer {
     this.fontSize = this.int('fontSize', 12);
     this.showCounts = this.bool('showCounts', false);
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
+    this.includeNulls = this.bool('includeNulls', true);
 
     this.option = {
       series: [
@@ -188,7 +190,7 @@ export class TreeViewer extends EChartViewer {
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
-        p?.name === 'fontSize' || p?.name === 'showCounts') {
+        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
@@ -260,8 +262,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
-
-    return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
+    return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls)];
   }
 
   render(): void {

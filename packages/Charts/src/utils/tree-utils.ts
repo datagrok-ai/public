@@ -7,7 +7,7 @@ export class TreeUtils {
 
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
-      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): Promise<TreeDataType> {
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean, includeNulls?: boolean): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
       value: 0,
@@ -27,7 +27,14 @@ export class TreeUtils {
       builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
     }
 
-    const aggregated = builder.aggregate();
+    let aggregated = builder.aggregate();
+    if (!includeNulls) {
+      const colList: DG.Column[] = aggregated.columns.toList().filter((col) => splitByColumnNames.includes(col.name));
+      const filter = DG.BitSet.create(aggregated.rowCount, (rowI: number) => {
+        return colList.every((col) => !col.isNone(rowI));
+      });
+      aggregated = aggregated.clone(filter);
+    }
 
     if (linkSelection) {
       grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
