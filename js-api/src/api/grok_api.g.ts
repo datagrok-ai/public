@@ -336,6 +336,7 @@ export interface IDartApi {
   grok_Utils_FormatNumber(x: Num, format: String): any;
   grok_Utils_SelectRowsWhere(mask: any, check: any, ctrlKey: Bool, shiftKey: Bool, metaKey: Bool, modifiedSelectOnly: Bool): any;
   grok_Utils_GetUniqueName(name: String, existing: any, auto: Bool, idx: Num, render: any, choices: any): any;
+  grok_Utils_DetectColumnHierarchy(columns: any, maxDepth: Num): any;
   grok_Viewer_FromType(viewerType: String, table: any, json: String): any;
   grok_Viewer_FromType_Async(viewerType: String, table: any, json: String): Promise<any>;
   grok_Viewer_FromJsViewer(jsViewer: any): any;
@@ -683,6 +684,7 @@ export interface IDartApi {
   grok_Cell_Get_Value(c: any): any;
   grok_Cell_Set_Value(c: any, value: any): any;
   grok_GridCell_Get_CellType(gc: any): any;
+  grok_GridCell_Set_CellType(gc: any, x: String): any;
   grok_GridCell_Get_IsRowHeader(gc: any): any;
   grok_GridCell_Get_IsColHeader(gc: any): any;
   grok_GridCell_Get_Grid(gc: any): any;
@@ -1409,7 +1411,7 @@ export interface IDartApi {
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
-  grok_Package_Get_Author(p: any): any;
+  grok_Package_Get_Package_Author(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;

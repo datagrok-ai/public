@@ -17,10 +17,18 @@ import {BoxPlotStatistics, calculateBoxPlotStatistics} from "@datagrok-libraries
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 
+export enum ColorType {
+  POINT = 'pointColor',
+  OUTLIER = 'outlierColor',
+  FIT_LINE = 'fitLineColor',
+}
+export type SeriesColorType = `${ColorType}` | string;
+
 interface FitRenderOptions {
     viewport: Viewport;
     screenBounds?: DG.Rect;
     ratio?: number;
+    seriesIdx?: number;
 }
 
 interface FitPointRenderOptions extends FitRenderOptions {
@@ -60,6 +68,7 @@ interface FitStatisticsRenderOptions {
     dataBox: DG.Rect;
     screenBounds?: DG.Rect;
     dataPoints?: {x: number[], y: number[]};
+    seriesIdx?: number;
 }
 
 interface FitTitleRenderOptions {
@@ -85,22 +94,19 @@ interface FitLegendColumnlabelSeriesRenderOptions extends FitLegendRenderOptions
     columnIdx: number;
     drawnCurvesInLegend: number;
     showColumnLabel?: boolean;
+    seriesIdx?: number;
 }
 
 
-export function assignSeriesColors(series: IFitSeries, seriesIdx: number): void {
-    series.pointColor = series.pointColor ? DG.Color.fromHtml(series.pointColor) ? series.pointColor :
-      DG.Color.toHtml(DG.Color.getCategoricalColor(seriesIdx)) : DG.Color.toHtml(DG.Color.getCategoricalColor(seriesIdx));;
-    series.outlierColor = series.outlierColor ? DG.Color.fromHtml(series.outlierColor) ?
-      series.outlierColor : DG.Color.toHtml(DG.Color.red) : DG.Color.toHtml(DG.Color.red);
-    series.fitLineColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ? series.fitLineColor :
-      DG.Color.toHtml(DG.Color.getCategoricalColor(seriesIdx)) : DG.Color.toHtml(DG.Color.getCategoricalColor(seriesIdx));
+export function getSeriesColor(series: IFitSeries, seriesIdx: number, colorType: SeriesColorType): string {
+  const color = DG.Color.toHtml(colorType === 'outlierColor' ? DG.Color.red : DG.Color.getCategoricalColor(seriesIdx));
+  return series[colorType] ? DG.Color.fromHtml(series[colorType]) ? series[colorType] : color : color;
 }
 
 export function renderConnectDots(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitRenderOptions): void {
     if (series.connectDots ?? false) {
         const viewport = renderOptions.viewport;
-        g.strokeStyle = series.pointColor!;
+        g.strokeStyle = getSeriesColor(series, renderOptions.seriesIdx!, 'pointColor');
         g.lineWidth = 2 * renderOptions.ratio!;
         g.beginPath();
         for (let i = 0; i < series.points.length; i++) {
@@ -122,7 +128,7 @@ export function renderPoints(g: CanvasRenderingContext2D, series: IFitSeries, op
     const showPoints = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
       screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? '' : series.showPoints ?? 'points';
     if (showPoints) {
-        g.strokeStyle = series.pointColor!;
+        g.strokeStyle = getSeriesColor(series, options.seriesIdx!, ColorType.POINT);
         if ((series.connectDots && series.showPoints !== '') || series.showPoints === 'points')
             drawPoints(g, series, options);
         else if (['candlesticks', 'both'].includes(series.showPoints!))
@@ -136,8 +142,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
     const defaultSize = FitConstants.POINT_PX_SIZE * ratio;
     const viewport = options.viewport;
     const connectDots = series.connectDots;
-    const pointColor = series.pointColor!;
-    const outlierColor = series.outlierColor!;
+    const pointColor = getSeriesColor(series, options.seriesIdx!, ColorType.POINT);
+    const outlierColor = getSeriesColor(series, options.seriesIdx!, ColorType.OUTLIER);
 
     for (let i = 0; i < series.points.length!; i++) {
         const p = series.points[i];
@@ -166,6 +172,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
 function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries, options: FitRenderOptions) : void {
     const ratio = options.ratio!;
     const viewport = options.viewport;
+    const pointColor = getSeriesColor(series, options.seriesIdx!, ColorType.POINT);
     for (let i = 0, candleStart = null; i < series.points.length!; i++) {
         const p = series.points[i];
         if (p.outlier)
@@ -180,16 +187,14 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries, options: F
             const boxPlotStats = calculateBoxPlotStatistics(values);
 
             g.beginPath();
-            drawCandlestick(g, {viewport: viewport, ratio: ratio, x: p.x,
-              boxPlotStats: boxPlotStats, color: series.pointColor!});
+            drawCandlestick(g, {viewport: viewport, ratio: ratio, x: p.x, boxPlotStats: boxPlotStats, color: pointColor});
             g.stroke();
 
             if (series.showPoints === 'both') {
                 for (let ind = 0; ind < values.length; ind++) {
                     if (values[ind] < boxPlotStats.lowerAdjacentValue || values[ind] > boxPlotStats.upperAdjacentValue) {
-                        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER,
-                          viewport.xToScreen(p.x), viewport.yToScreen(values[ind]),
-                          series.pointColor!, FitConstants.CANDLESTICK_OUTLIER_PX_SIZE * ratio);
+                        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, viewport.xToScreen(p.x),
+                          viewport.yToScreen(values[ind]), pointColor, FitConstants.CANDLESTICK_OUTLIER_PX_SIZE * ratio);
                     }
                 }
             }
@@ -239,7 +244,7 @@ function getRenderingVariables(renderOptions: FitConfidenceIntervalRenderOptions
 export function renderFitLine(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitLineRenderOptions): void {
     if (series.showFitLine ?? true) {
         g.save();
-        g.strokeStyle = series.fitLineColor!;
+        g.strokeStyle = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
         g.lineWidth = 2 * renderOptions.ratio!;
         g.beginPath();
         if (series.lineStyle)
@@ -375,12 +380,13 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
         const dataBox = renderOptions.dataBox;
         const dataPoints = renderOptions.dataPoints;
         const seriesStatistics = getSeriesStatistics(series, renderOptions.fitFunc, dataPoints, renderOptions.logOptions);
+        const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
         for (let i = 0; i < statistics.length; i++) {
             const statName = statistics[i];
             const prop = statisticsProperties.find((p) => p.name === statName);
             if (prop) {
                 const s = StringUtils.formatNumber(prop.get(seriesStatistics));
-                g.fillStyle = series.fitLineColor!;
+                g.fillStyle = color;
                 g.textAlign = 'left';
                 g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);
             }
@@ -432,7 +438,7 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, r
                 if (currentSeries.name === '' || currentSeries.name === null || currentSeries.name === undefined)
                     continue;
                 renderLegendSeries(g, currentSeries, {dataBox: dataBox, ratio: ratio,
-                  columnIdx: i, drawnCurvesInLegend, showColumnLabel: data.chartOptions?.showColumnLabel});
+                  columnIdx: i, drawnCurvesInLegend, showColumnLabel: data.chartOptions?.showColumnLabel, seriesIdx: j});
                 drawnCurvesInLegend++;
             }
         }
@@ -455,8 +461,10 @@ function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, ren
     const ratio = renderOptions.ratio!;
     const showColumnLabel = renderOptions.showColumnLabel;
     const drawnCurvesInLegend = renderOptions.drawnCurvesInLegend;
+    const pointColor = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.POINT);
+    const fitLineColor = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
     g.beginPath();
-    g.strokeStyle = series.fitLineColor!;
+    g.strokeStyle = fitLineColor;
     g.lineWidth = 2 * ratio;
     const textWidth = g.measureText(series.name!).width;
     g.moveTo(dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
@@ -472,8 +480,8 @@ function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, ren
       - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH / 2, dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN -
       FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN + (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT
       * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend,
-      series.pointColor!, FitConstants.POINT_PX_SIZE * ratio);
-    g.fillStyle = series.fitLineColor!;
+      pointColor, FitConstants.POINT_PX_SIZE * ratio);
+    g.fillStyle = fitLineColor;
     g.fillText(series.name!, dataBox.maxX - textWidth,
       dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN + (showColumnLabel ?
       FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);

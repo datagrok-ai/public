@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 0.3.1 (2025-01-16)
+
+- Preparing 1.23.0 release
+
 ## 0.1.1-rc (2024-09-06)
 
 - Preparing 1.21.1 release

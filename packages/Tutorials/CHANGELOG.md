@@ -1,5 +1,13 @@
 # Tutorials changelog
 
+## 1.7.3 (2025-01-10)
+
+Added scientific computing tutorials:
+
+* Differential equations
+* Sensitivity analysis
+* Parameters optimization
+
 ## 1.3.27 (2024-07-19)
 
 ### Bug fixes

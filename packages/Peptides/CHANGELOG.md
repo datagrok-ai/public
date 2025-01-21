@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.21.1 (2025-01-10)
+
+LST: Fix flickering and incorrect rendering in some cases
+
 ## 1.21.0 (2025-01-06)
 
 Enable Project saving for SAR analysis

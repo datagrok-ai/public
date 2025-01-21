@@ -322,3 +322,14 @@ export function editableTableField(field: HTMLElement, options?: EditableFieldOp
   editIcon.style.marginLeft = '5px';
   return container;
 }
+
+
+// //name: Demo Design with reinvent
+// //input: int numberOfMolecules
+// //tags: HitDesignerFunction
+// //output: dataframe result
+// export async function demoDesignWithReinvent(numberOfMolecules: number): Promise<DG.DataFrame> {
+//   const df = grok.data.demo.molecules(numberOfMolecules);
+//   df.name = 'Reinvent Design';
+//   return df;
+// }

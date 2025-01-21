@@ -179,7 +179,7 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
-  get onFileImportRequest(): rxjs.Observable<FileImportArgs> { return __obs('d4-file-import-request'); }
+  get onFileImportRequest(): rxjs.Observable<EventData<FileImportArgs>> { return __obs('d4-file-import-request'); }
 
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
 

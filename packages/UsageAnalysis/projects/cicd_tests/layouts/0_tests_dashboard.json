@@ -14,10 +14,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 173,
+          "width": 314,
           "height": 927,
           "element": {
-            "id": "ae428110-c210-11ef-ea42-814deab14879",
+            "id": "39a9e630-c210-11ef-bef6-579e381f2062",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -41,12 +41,6 @@
                   "boolInput": null
                 },
                 {
-                  "type": "categorical",
-                  "column": "owner",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
                   "type": "bool-columns",
                   "column": null,
                   "active": true,
@@ -65,6 +59,12 @@
                   ],
                   "columnless-filter-identifier": "needs_attention,stable,failing,flaking",
                   "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "owner",
+                  "active": true,
+                  "boolInput": null
                 }
               ]
             },
@@ -76,14 +76,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 894,
+          "width": 753,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 894,
+              "width": 753,
               "height": 553,
               "documentManager": true
             },
@@ -91,10 +91,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 894,
+                  "width": 753,
                   "height": 553,
                   "element": {
-                    "id": "ae431d50-c210-11ef-f800-2bfa115ac530",
+                    "id": "39aa5b60-c210-11ef-9385-e3108463e285",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -102,19 +102,19 @@
                       "addNewRowOnLastRowEdit": true,
                       "showColumnLabels": false,
                       "colHeaderHeight": 69,
-                      "rowHeight": 34,
+                      "rowHeight": 39,
                       "sortByColumnNames": [
-                        "test"
+                        "needs_attention"
                       ],
                       "sortTypes": [
-                        true
+                        false
                       ],
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
                       "colLabelsOrientation": "Vert",
                       "columns": [
                         {
-                          "width": 20.21593341260405,
+                          "width": 41.215933412604045,
                           "backgroundColor": 4294440951,
                           "customName": "",
                           "cellType": "row header",
@@ -149,7 +149,7 @@
                           }
                         },
                         {
-                          "width": 120,
+                          "width": 140,
                           "columnName": "jira",
                           "cellType": "JIRA Ticket",
                           "headerCellStyle": {
@@ -326,7 +326,7 @@
                           }
                         },
                         {
-                          "width": 80,
+                          "width": 91.76470588235293,
                           "customName": "sparkline",
                           "cellType": "sparkline",
                           "headerCellStyle": {
@@ -553,17 +553,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 894,
+              "width": 753,
               "height": 373
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 339,
+                  "width": 617,
                   "height": 373,
                   "element": {
-                    "id": "ae434460-c210-11ef-b114-b936ef7235f0",
+                    "id": "39aa8270-c210-11ef-acbc-ef8e5c384565",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -589,10 +589,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 554,
+                  "width": 135,
                   "height": 373,
                   "element": {
-                    "id": "ae43b990-c210-11ef-85f0-3b04cbc32b61",
+                    "id": "39ab93e0-c210-11ef-d1f5-6da0cb54215a",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -607,9 +607,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        4612,
+                        4517,
                         0,
-                        4612
+                        4517
                       ],
                       "colorScheme": [
                         4292072403,
@@ -1013,12 +1013,12 @@
     ],
     "floating": [],
     "tableId": "2d897490-9b00-11ef-bb56-cf322fcdda84",
-    "tableName": "result"
+    "tableName": "0_ Tests_ Dashboard"
   },
   "userData": {
     "TABLE_ROW_HEIGHT_KEY": null
   },
-  "id": "2d89e9c0-9b00-11ef-a0c2-854368becc02",
-  "name": "Tests Dashboard",
+  "id": "e15d8be7-95db-5eaa-98df-6475c96255ff",
+  "name": "TestsDashboard",
   "friendlyName": "0. Tests Dashboard"
 }

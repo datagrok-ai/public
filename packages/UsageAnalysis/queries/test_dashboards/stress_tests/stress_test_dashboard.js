@@ -12,6 +12,7 @@ let pivot = result
   .groupBy(['test','owner'])
   .pivot('build_index')
   .pivot('worker')
+  .pivot('browser')
   .avg('build_date')
   .add(DG.STR_AGG.CONCAT_UNIQUE, 'status')
   .aggregate();
@@ -49,16 +50,45 @@ function replaceColumn(prefix, type, buildName, newType) {
 var groups = {};
 for (var i = 1; i <= builds.length; i++) {
   var columns = [];
- for (var j = 0; j < 5; j++) {
-   var buildName = buildNames[i - 1];
-   replaceColumn(i, ' ' + j + ' concat unique(status)', buildName + ':' + j, '');
-   replaceColumn(i, ' ' + j + ' avg(build_date)', buildName, ' build_date');	 
-   columns.push('{' + i + ' ' + j + ' concat unique(status)');
- }
- groups[buildNames[i - 1]] = {
-  columns: columns
- };
+  var dateColumn = null;
+  for (var j = 0; j < 5; j++) {
+    for (var l = 0; l < 5; l++) {
+      var buildName = buildNames[i - 1];
+      replaceColumn(i, ' ' + j + ' ' + l + ' concat unique(status)', buildName + ':' + j, '');
+      if (dateColumn == null) {
+        dateColumn = pivot.columns.byName(i +  ' ' + j + ' ' + l + ' avg(build_date)');
+      } else {
+        var col = pivot.columns.byName(i +  ' ' + j + ' ' + l + ' avg(build_date)');
+        if (col != null)
+          pivot.columns.remove(i +  ' ' + j + ' ' + l + ' avg(build_date)');
+      }
+      columns.push('{' + i + ' ' + j + ' ' + l + ' concat unique(status)');
+      var col = pivot.columns.byName('{' + i + ' ' + j + ' ' + l + ' concat unique(status)');
+      if (col !== null) {
+        for (var k = 0; k < col.length; k++) {
+          if (col.get(k) == 'failed') {
+            var failedCol = pivot.columns.getOrCreate(i + ': failed', DG.TYPE.INT);
+            var old = failedCol.isNone(k) ? 0 : failedCol.get(k);
+            failedCol.set(k, old + 1);
+          }
+          if (col.get(k) == 'passed') {
+            var successCol = pivot.columns.getOrCreate(i + ': success', DG.TYPE.INT);
+            var old = successCol.isNone(k) ? 0 : successCol.get(k);
+            successCol.set(k, old + 1);
+          }
+        }
+      }
+    }
+    if (dateColumn != null) {
+      dateColumn.name = i + ': date'; 
+      dateColumn.setTag('friendlyName', buildName + ': date');
+    }
+  }
+  groups[buildNames[i - 1]] = {
+    columns: columns
+  };
 }
+
 
 pivot.meta.setGroups(groups);
 var sortedNames = pivot.columns.names().sort();
@@ -83,9 +113,6 @@ pivot.columns.setOrder(sortedNames);
 // }
 
 
-//for (var i = 0; i < builds.length; i++) {
-//  if (builds[i] =
-//}
 
 
 out = pivot;

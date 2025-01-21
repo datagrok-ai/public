@@ -8,9 +8,7 @@ export class EChartViewer extends DG.JsViewer {
   option: any;
 
   top?: string;
-  left?: string;
   bottom?: string;
-  right?: string;
   animationDuration?: number;
   animationDurationUpdate?: number;
   tableName?: string;
@@ -47,10 +45,12 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   initCommonProperties() {
+    /**
+     * Removed the 'right' and 'left' properties from the configuration
+     * as they disrupt the layout and cause visualization issues in the ECharts viewer.
+     */
     this.top = this.string('top', '5px');
-    this.left = this.string('left', '5px');
     this.bottom = this.string('bottom', '5px');
-    this.right = this.string('right', '5px');
 
     this.animationDuration = this.int('animationDuration', 500);
     this.animationDurationUpdate = this.int('animationDurationUpdate', 750);
