@@ -147,8 +147,6 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   private createDataset() {
     this.refreshDataframe();
-    this.filterChanged = true;
-    this.updateChartsAfterFiltering();
     this.survivalDataframe.onFilterChanged.subscribe((_) => {
       this.filterChanged = true;
     });
@@ -176,7 +174,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     ui.setUpdateIndicator(this.survivalPlotDiv, true);
     grok.functions.call(
       "Clinicalcase:survivalPlot", {
-      "survivalDf": this.survivalDataframe,
+      "survivalDf": this.survivalDataframe.clone(this.survivalDataframe.filter),
       "inputStrata": this.strata,
       "confInt": this.confInterval.toString()
     }).then((result) => {
@@ -191,7 +189,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     ui.setUpdateIndicator(this.covariatesPlotDiv, true);
     grok.functions.call(
       "Clinicalcase:covariates", {
-      "covariatesDf": this.survivalDataframe,
+      "covariatesDf": this.survivalDataframe.clone(this.survivalDataframe.filter),
       "coVariates": this.plotCovariates.join(' + ')
     }).then((result) => {
       ui.setUpdateIndicator(this.covariatesPlotDiv, false);
