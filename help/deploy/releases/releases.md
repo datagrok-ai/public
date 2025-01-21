@@ -9,6 +9,39 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.23 || 2024-Dec
+
+### New tools and apps
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Pyodide**:<br/><br/> Run Python in the browser | <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=1470" width="512" height="288" frameborder="0" allowfullscreen></iframe>  |
+| **Admetica**:<br/><br/> Predict, visualize, and analyze 20+ ADMET properties using Datagrok's open-source ADMET predictor<br/><br/>[Learn more](https://github.com/datagrok-ai/admetica)| <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=2100" width="512" height="288" frameborder="0" allowfullscreen></iframe>|
+
+
+### Data access and management
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| New **Visual Query Builder**:<br/><br/>Seamlessly join tables, aggregate, and pivot from one user interface| <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=87" width="512" height="288" frameborder="0" allowfullscreen></iframe> |
+
+### Visualization and analysis
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Grid**:<br/><br/>Group multiple columns together and apply style for multiple columns at once| ![Grid grouped columns](../../visualize/viewers/img/grid-grouped-columns.gif)   |
+| **Scatterplot**:<br/><br/><li>Interactively explore tens of millions of data points</li><li>Customize how labels appear and behave</li><li>Define columns for scatterplot whiskers to highlight data distribution</li> | <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=3370" width="512" height="288" frameborder="0" allowfullscreen></iframe>|
+
+
+### Developer updates
+
+**JS API changes**:
+
+* New features:
+  * Classes: 1
+  * Functions: 0
+* [Breaking changes](https://datagrok.ai/help/deploy/releases/compatibility/?from=1.22.0&to=1.23.0&breakingchanges=true)
+
 ## 1.22 || 2024-Nov
 
 ### Data access and management
