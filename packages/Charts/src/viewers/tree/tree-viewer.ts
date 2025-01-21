@@ -56,7 +56,7 @@ export class TreeViewer extends EChartViewer {
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ], category: 'Style' });
     this.symbolSize = this.int('symbolSize', 7, {category: 'Style'});
-    this.fontSize = this.int('fontSize', 12, {category: 'Style'});
+    this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
@@ -70,17 +70,16 @@ export class TreeViewer extends EChartViewer {
     this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
-      animation: false,
-      silent: false,
       series: [
         {
           type: 'tree',
-
+          expandAndCollapse: false,
+          animation: false,
           label: {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
-            fontSize: this.fontSize
+            fontSize: this.fontSize,
           },
 
           leaves: {
@@ -129,6 +128,8 @@ export class TreeViewer extends EChartViewer {
   initChartEventListeners() {
     let selectedSectors: string[] = [];
     const handleChartClick = (params: any) => {
+      console.log('click params');
+      console.log(params);
       const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
@@ -147,12 +148,20 @@ export class TreeViewer extends EChartViewer {
       this.handleDataframeSelection(path, event);
     };
     
-    this.chart.on('mouseover', (params: any) => {
-      const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.'); 
-      const div = ui.divV([
-        ui.divText(ancestors), 
-        ui.divText(params.value, { style: { fontWeight: 'bold' } })
-      ]);
+    this.chart.on('mouseover', async (params: any) => {
+      const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.');
+      let div = ui.divV([]);
+      if (params.data.semType === DG.SEMTYPE.MOLECULE) {
+        const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
+        const { width, height } = image;
+        if (width && height) {
+          const pixels = image!.getContext('2d')!.getImageData(0, 0, width, height).data;
+          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0))
+            div.appendChild(image);
+        }
+      }
+      div.appendChild( ui.divText(ancestors));
+      div.appendChild(ui.divText(params.value, { style: { fontWeight: 'bold' } }));
       ui.tooltip.show(div, params.event.event.x, params.event.event.y);
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
@@ -191,7 +200,7 @@ export class TreeViewer extends EChartViewer {
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
-        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls') {
+        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls' || p?.name === 'orient') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
@@ -200,10 +209,107 @@ export class TreeViewer extends EChartViewer {
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
       if (p?.name === 'fontSize')
         this.option.series[0].label.fontSize = p.get(this);
+      if (p?.name === 'orient') {
+        this.option.series[0].orient = p.get(this);
+        this.updateOrient(p.get(this));
+      }
+      if (p?.name === 'includeNulls')
+        this.chart.clear();
       this.render();
     } else
       super.onPropertyChanged(p, render);
   }
+
+  updateOrient(orient: string) {
+    // Default option structure
+    let labelOptions = {
+      position: 'left',
+      verticalAlign: 'middle',
+      align: 'right',
+      rotate: 0,
+      fontSize: this.fontSize,
+    };
+  
+    let leavesLabelOptions = {
+      position: 'right',
+      verticalAlign: 'middle',
+      rotate: 0,
+      align: 'left',
+    };
+  
+    // Update label options based on orientation
+    switch (orient) {
+      case 'LR':
+        labelOptions = {
+          position: 'left',
+          verticalAlign: 'middle',
+          align: 'right',
+          rotate: 0,
+          fontSize: this.fontSize,
+        };
+        leavesLabelOptions = {
+          position: 'right',
+          verticalAlign: 'middle',
+          rotate: 0,
+          align: 'left',
+        };
+        break;
+  
+      case 'RL':
+        labelOptions = {
+          position: 'right',
+          verticalAlign: 'middle',
+          align: 'left',
+          rotate: 0,
+          fontSize: this.fontSize
+        };
+        leavesLabelOptions = {
+          position: 'left',
+          verticalAlign: 'middle',
+          rotate: 0,
+          align: 'right',
+        };
+        break;
+  
+      case 'BT':
+        labelOptions = {
+          position: 'bottom',
+          rotate: 90,
+          verticalAlign: 'middle',
+          align: 'right',
+          fontSize: this.fontSize
+        };
+        leavesLabelOptions = {
+          position: 'top',
+          rotate: 90,
+          verticalAlign: 'middle',
+          align: 'left',
+        };
+        break;
+  
+      case 'TB':
+        labelOptions = {
+          position: 'top',
+          rotate: -90,
+          verticalAlign: 'middle',
+          align: 'right',
+          fontSize: this.fontSize
+        };
+        leavesLabelOptions = {
+          position: 'bottom',
+          rotate: -90,
+          verticalAlign: 'middle',
+          align: 'left',
+        };
+        break;
+
+      default:
+        break;
+    }
+  
+    this.option.series[0].label = labelOptions;
+    this.option.series[0].leaves.label = leavesLabelOptions;
+  }  
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
     const numericalColumns = this.dataFrame.columns.byName(columnName);
@@ -284,17 +390,84 @@ export class TreeViewer extends EChartViewer {
   }
 
   formatLabel(params: any) {
-    // need to add heuristic to render only in case there is enough place for this
+    //@ts-ignore
+    const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+    const getCurrentItemIndex = params.dataIndex - 1;
+    const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => getCurrentItemIndex === index);
+
+    const { x, y } = ItemLayoutInfo;
+    const isVerticalOrientation = this.isVerticalOrientation();
+
+    const sortedItems = [...ItemAreaInfoArray]
+      .filter((item: any) => item && (item.x !== undefined && item.y !== undefined))
+      .sort((a: any, b: any) => isVerticalOrientation ? a.y - b.y : a.x - b.x);
+
+    let positions: number[];
+    let distances: number[];
+
+    if (isVerticalOrientation) {
+      positions = sortedItems.map((item: any) => item.y);
+      distances = positions.slice(1).map((y: number, index: number) => y - positions[index]);
+    } else {
+      positions = sortedItems.map((item: any) => item.x);
+      distances = positions.slice(1).map((x: number, index: number) => x - positions[index]);
+    }
+
+    const averageDistance = distances.length ? distances.reduce((acc, val) => acc + val, 0) / distances.length : 0;
+    const chartSize = isVerticalOrientation ? this.chart.getHeight() : this.chart.getWidth();
+    const tolerance = Math.max(20, Math.min(averageDistance, chartSize * 0.05));
+
+    const sortedPositions = [...new Set(positions)];
+    const nodesAtLevel = sortedItems.filter((item: any) => Math.abs(isVerticalOrientation ? item.y - y : item.x - x) <= tolerance);
+
+    const index = sortedPositions.indexOf(isVerticalOrientation ? y : x);
+    const availableSpace = (index === 0)
+      ? (sortedPositions[1] - sortedPositions[0])
+      : (index === sortedPositions.length - 1)
+      ? (chartSize - sortedPositions[index])
+      : (sortedPositions[index + 1] - sortedPositions[index - 1]) / 2;
+
+    const averageCharWidth = this.fontSize;
+    const maxWidthChars = Math.floor(availableSpace / averageCharWidth);
+    
+    let labelText = this.showCounts ? `${params.name}: ${params.value}` : `${params.name}`;
+    if (labelText.length > maxWidthChars) {
+      labelText = labelText.slice(0, maxWidthChars - 3) + '...';
+    }
+
+    const labelHeight = Math.floor(chartSize / nodesAtLevel.length);
+    const maxHeightChars = Math.floor(labelHeight / this.fontSize);
+
     if (params.data.semType === 'Molecule') {
       const minImageWidth = 70;
       const minImageHeight = 80;
-      this.renderMolecule(params, minImageWidth, minImageHeight);
+
+      if (availableSpace >= minImageWidth && labelHeight >= minImageHeight) {
+        this.renderMolecule(params, minImageWidth, minImageHeight);
+        return ' ';
+      }
       return ' ';
-    } else {
-      if (this.showCounts)
-        return `${params.name}: ${params.value}`;
-      return `${params.name}`;
     }
+
+    const lines = labelText.split(' ');
+    let result = '';
+    let remainingHeight = maxHeightChars;
+
+    for (const line of lines) {
+      if (remainingHeight <= 0) break;
+      result += line + ' ';
+      remainingHeight--;
+    }
+
+    if (result.trim() === '...') {
+      result = '';
+    }
+
+    return result.trim();
+  }
+
+  isVerticalOrientation() {
+    return this.orient === 'BT' || this.orient === 'TB';
   }
 
   render(): void {
