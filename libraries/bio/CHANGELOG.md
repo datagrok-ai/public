@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.48.0 (2025-01-21)
+
+Async grid renderer support for other places than grid
+
 ## 5.47.2 (2024-01-07)
 
 Use gCell bounds to remove scroll dependency in CellRendererAsyncBase

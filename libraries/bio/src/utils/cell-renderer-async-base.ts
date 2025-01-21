@@ -373,7 +373,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
               }
 
               const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
-              this.renderOnGrid(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
+              this.renderCellImageData(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
 
               if (this.cacheEnabled)
                 this.imageCache.set(rowIdx, cellCanvasData);
@@ -393,7 +393,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
         this.consumerId = service.render(this.consumerId, task, rowIdx);
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
-        this.renderOnGrid(g, bd, gridCell, cellImageData);
+        this.renderCellImageData(g, bd, gridCell, cellImageData);
       }
 
       if (!this.consumerId || !service.isBusy(this.consumerId)) {
@@ -467,7 +467,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     try {
       gCtx.resetTransform();
 
-      if (this.gridCol) {
+      if (this.gridCol && this.gridCol.grid && this.gridCol.grid.canvas === gCtx.canvas) {
         // Use gCell bounds directly to avoid dependency on scroll values
         bd.y = gCell.bounds.y * dpr;
         bd.x = gCell.bounds.x * dpr;
@@ -481,7 +481,6 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       gCtx.beginPath();
       gCtx.rect(cr.x, cr.y, cr.width, cr.height);
       gCtx.clip();
-
       //gCtx.drawImage(cellImageData, cr.x, cr.y, cr.width, cr.height);
       gCtx.putImageData(cellImageData, bd.x + dpr, bd.y + dpr); // does not respect clip
     } finally {
