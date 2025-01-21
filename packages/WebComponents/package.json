@@ -3,8 +3,8 @@
   "friendlyName": "WebComponents",
   "version": "1.0.0",
   "author": {
-    "name": "Aufar Zakiev",
-    "email": "aufar.zakiev@softwarecountry.com"
+    "name": "Andrey Sharapov",
+    "email": "andrey.sharapov@softwarecountry.com"
   },
   "description": "WebComponents runtime code",
   "dependencies": {
