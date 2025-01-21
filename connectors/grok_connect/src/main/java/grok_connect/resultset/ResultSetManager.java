@@ -36,5 +36,5 @@ public interface ResultSetManager {
     /**
      * Empty all columns for reuse without the need to init ResultSetManager again
      */
-    void empty();
+    void empty(int newColSize);
 }
