@@ -322,7 +322,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     const dpr = window.devicePixelRatio;
     let rowIdx: number = gridCell.tableRowIndex;
     this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
-    const cellValue = gridCell?.cell?.value ?? gridCell?.value ?? '';
+    const cellValue = gridCell?.cell?.value ?? '';
     if (!cellValue)
       return;
     g.save();
