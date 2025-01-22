@@ -118,6 +118,7 @@ public class TableQuery extends DataQuery {
 
         if (!orderBy.isEmpty()) {
             List<String> orders = new ArrayList<>();
+            sql.append(System.lineSeparator());
             sql.append("ORDER BY");
             sql.append(System.lineSeparator());
             for (FieldOrder order: orderBy) {
@@ -172,11 +173,6 @@ public class TableQuery extends DataQuery {
             if (!aggregation.aggType.equals(Stats.KEY))
                 aggrs.add(aggregation);
         return aggrs;
-    }
-
-    private List<String> pad(List<String> strings) {
-        strings.replaceAll(s -> "  " + s);
-        return strings;
     }
 
     private String preparePredicate(FieldPredicate clause, StringBuilder sqlHeader, JdbcDataProvider provider) {
