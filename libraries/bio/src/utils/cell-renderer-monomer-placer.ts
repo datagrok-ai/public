@@ -166,11 +166,23 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const res: number[] = sh.isMsa() ? this.getCellMonomerLengthsForSeqMsa() :
       this.getCellMonomerLengthsForSeq(rowIdx);
 
+    return [res, this.getSummedMonomerLengths(res)];
+  }
+
+  private getSummedMonomerLengths(res: number[]): number[] {
     const resSum: number[] = new Array<number>(res.length + 1);
     resSum[0] = 5; // padding
     for (let pos: number = 1; pos < resSum.length; pos++)
       resSum[pos] = resSum[pos - 1] + res[pos - 1];
-    return [res, resSum];
+    // due to implementation specifics and performance, resSum can have NaN s at the end for stuff that is not visible
+    let lastNumValue = resSum[0];
+    for (let pos = 1; pos < resSum.length; pos++) {
+      if (!resSum[pos])// 0 values will def not be here, so ! check is good enaugh
+        resSum[pos] = lastNumValue;
+      else
+        lastNumValue = resSum[pos];
+    }
+    return resSum;
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
@@ -200,6 +212,26 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         seqWidth += seqMonWidth;
         if (seqWidth > this.colWidth) break;
       }
+    }
+    return res;
+  }
+
+  private getCellMonomerLengthsForSeqValue(value: string, width: number): number[] {
+    const sh = this.seqHelper.getSeqHandler(this.tableCol);
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
+    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth);
+    const seqSS: ISeqSplitted = sh.splitter(value);
+    const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
+    const res = new Array<number>(visibleSeqLength);
+    let seqWidth: number = 0;
+    for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+      const seqMonLabel = seqSS.getOriginal(seqMonI);
+      const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
+      const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
+      const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
+      res[seqMonI] = seqMonWidth;
+      seqWidth += seqMonWidth;
+      if (seqWidth > width) break;
     }
     return res;
   }
@@ -283,6 +315,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
   ) {
+    // for cases when we render it on somewhere other than grid, gridRow might be null or incorrect (set to 0).
+    //for this case we can just recalculate split sequence without caching
+    const isRenderedOnGrid = gridCell.grid?.canvas === g.canvas;
     if (!this.seqHelper) return;
     const gridCol = this.gridCol;
     const tableCol = this.tableCol;
@@ -320,7 +355,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
       }
 
-      const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
+      let [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
         this.getCellMonomerLengths(gridCell.tableRowIndex!, w);
       const _maxIndex = maxLengthWords.length;
 
@@ -328,7 +363,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const rowIdx = gridCell.cell.rowIndex;
       const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
-      w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
+      if (isRenderedOnGrid)
+        w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
       g.beginPath();
       g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
@@ -357,7 +393,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
       })();
 
-      const subParts: ISeqSplitted = sh.getSplitted(rowIdx);
+      const subParts: ISeqSplitted = isRenderedOnGrid ? sh.getSplitted(rowIdx) : sh.splitter(value);
+      if (!isRenderedOnGrid)
+        maxLengthWordsSum = this.getSummedMonomerLengths(this.getCellMonomerLengthsForSeqValue(value, w));
+
       let drawStyle = DrawStyle.classic;
 
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)

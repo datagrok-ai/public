@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.48.1 (2025-01-22)
+
+Improve cell renderer in non grid places
+
 ## 5.48.0 (2025-01-21)
 
 Async grid renderer support for other places than grid
