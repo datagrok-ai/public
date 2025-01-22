@@ -6,6 +6,7 @@ import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
+import * as echarts from 'echarts';
 
 type onClickOptions = 'Select' | 'Filter';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -75,6 +76,8 @@ export class TreeViewer extends EChartViewer {
       series: [
         {
           type: 'tree',
+          animation: false,
+          roam: true,
           label: {
             position: 'left',
             verticalAlign: 'middle',
@@ -165,8 +168,86 @@ export class TreeViewer extends EChartViewer {
       ui.tooltip.show(div, params.event.event.x, params.event.event.y);
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
-    this.chart.on('click', handleChartClick);
+    //this.chart.on('click', handleChartClick);
+    this.chart.on('click', this.handleTreeClick.bind(this));
   }
+
+  private handleTreeClick(event: any): void {
+    const nodeName = event.name;
+  
+    // Clear previous highlights
+    this.cleanTree();
+  
+    // Highlight children of the selected node
+    this.paintBranch(nodeName);
+  }
+  
+  private paintBranch(nodeName: string): void {
+    const hoverStyle = { lineStyle: { color: 'orange' } };
+    const nodesForPaint: string[] = [];
+  
+    // Traverse only the immediate children of the node
+    this.traverseFrom({
+      nodeName,
+      callback: (node: { path: string }) => nodesForPaint.push(node.path),
+      childrenOnly: true,
+    });
+  
+    const newSeries = this.buildSeriesConfig(nodesForPaint, hoverStyle);
+  
+    if (newSeries) {
+      const updatedOption = { ...this.option, series: [{ ...this.option.series[0], data: [newSeries] }] };
+      this.chart.setOption(updatedOption, false);
+    }
+  }
+  
+  private traverseFrom(options: { nodeName: string; callback: Function; childrenOnly?: boolean }) {
+    const { nodeName, callback, childrenOnly } = options;
+    const startNode = this.chart!.getOption()!.series![0].data![0];
+  
+    const findNode = (node: any): any => {
+      if (node.name === nodeName) return node;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = findNode(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+  
+    const targetNode = findNode(startNode);
+    console.log('target node');
+    console.log(targetNode);
+  
+    if (targetNode && targetNode.children) {
+      for (const child of targetNode.children) {
+        callback(child);
+        if (!childrenOnly && child.children) {
+          this.traverseFrom({ nodeName: child.name, callback });
+        }
+      }
+    }
+  }
+  
+  private buildSeriesConfig(nodesForPaint: string[], hoverStyle: any): any {
+    const tree = this.chart!.getOption()!.series![0].data![0];
+    const cloneTree = echarts.util.clone(tree);
+  
+    const traverse = (node: any) => {
+      if (nodesForPaint.includes(node.path)) Object.assign(node, hoverStyle);
+      if (node.children) node.children.forEach(traverse);
+    };
+  
+    traverse(cloneTree);
+    return cloneTree;
+  }
+  
+  private cleanTree(): void {
+    const clonedData = echarts.util.clone(this.option.series[0].data[0]);
+    const updatedOption = { ...this.option, series: [{ ...this.option.series[0], data: [clonedData] }] };
+    this.chart.setOption(updatedOption, false);
+  }  
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (p?.name === 'edgeShape') {
@@ -484,9 +565,9 @@ export class TreeViewer extends EChartViewer {
 
     Object.assign(this.option.series[0], {
       data,
-      label: Object.assign({}, this.option.series[0].label, {
+      /*label: Object.assign({}, this.option.series[0].label, {
         formatter: (params: any) => this.formatLabel(params),
-      }),
+      }),*/
     });    
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
