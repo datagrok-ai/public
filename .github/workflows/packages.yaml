@@ -506,7 +506,8 @@ jobs:
         timeout-minutes: 30
         id: test-package
         run: |
-          sudo apt-get install chromium-browser
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          
           npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
 
         working-directory: packages/${{ matrix.package }}
