@@ -112,21 +112,19 @@ public class TableQuery extends DataQuery {
             sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
             for (FieldPredicate clause: having)
-                clauses.add(String.format("\t(%s)",  preparePredicate(clause, sqlHeader, provider)));
+                clauses.add(String.format("\t(%s)", preparePredicate(clause, sqlHeader, provider)));
             sql.append(String.join(String.format(" %s%s", havingOp, System.lineSeparator()), clauses));
         }
 
         if (!orderBy.isEmpty()) {
-            sql.append(System.lineSeparator());
             List<String> orders = new ArrayList<>();
             sql.append("ORDER BY");
             sql.append(System.lineSeparator());
             for (FieldOrder order: orderBy) {
-                String orderField = connection.dataSource.equals("Access") ?
-                        String.format("[%s]", order.field) : String.format("\"%s\"", order.field);
+                String orderField = provider.addBrackets(order.field);
                 orders.add(String.format("%s%s", orderField, order.asc ? " asc" : " desc"));
             }
-            sql.append(String.join(", ", pad(orders)));
+            sql.append(String.join(", ", orders));
         }
         String result;
         if (limit != null && provider.descriptor.limitAtEnd) {
