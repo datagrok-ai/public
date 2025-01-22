@@ -133,7 +133,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     g.lineWidth = 1;
 
     const row = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
 
     const getPosConstants: getPosConstants = {
       b: b,
