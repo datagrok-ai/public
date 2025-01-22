@@ -160,7 +160,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell?.value || !this._auxList) return;
+    if (!gridCell.cell?.value || !this._auxList || !!e.buttons) return;
     const aux = this._auxList.get(gridCell.cell.value);
     if (!aux) return;
 
@@ -194,8 +194,11 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       // Tooltip for missing monomers
       ui.tooltip.hide();
     }
-
     execMonomerHoverLinks(gridCell, seqMonomer);
+
+    e.preventDefault();
+    e.stopPropagation();
+
   }
 
   onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -239,9 +242,6 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
-    } finally {
-      e.preventDefault();
-      e.stopPropagation();
     }
   }
 
