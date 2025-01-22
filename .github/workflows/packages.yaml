@@ -233,7 +233,7 @@ jobs:
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: chromium-browser install
-        run: sudo xapt-get install chromium-browser
+        run: sudo apt-get install chromium-browser
       - name: npm version
         run: npm version
       - name: unpublished dependencies in package-lock.json
