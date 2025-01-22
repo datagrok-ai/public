@@ -282,7 +282,7 @@ jobs:
         timeout-minutes: 15
         id: test-ApiTests
         run: |
-          test_result=$(npm run test -- --record --csv --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
+          test_result=$(npm run test -- --record --csv --core --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
           if [ -z "$test_result" ]; then
             echo "All tests finished successfully"
           else
