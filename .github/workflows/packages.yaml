@@ -233,7 +233,7 @@ jobs:
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: chromium-browser install
-        run: sudo apt-get install chromium-browser
+        run: sudo xapt-get install chromium-browser
       - name: npm version
         run: npm version
       - name: unpublished dependencies in package-lock.json
@@ -505,7 +505,10 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
         timeout-minutes: 30
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+        run: |
+          sudo apt-get install chromium-browser
+          npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
