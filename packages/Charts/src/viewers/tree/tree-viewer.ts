@@ -73,8 +73,6 @@ export class TreeViewer extends EChartViewer {
       series: [
         {
           type: 'tree',
-          expandAndCollapse: false,
-          animation: false,
           label: {
             position: 'left',
             verticalAlign: 'middle',
@@ -128,8 +126,6 @@ export class TreeViewer extends EChartViewer {
   initChartEventListeners() {
     let selectedSectors: string[] = [];
     const handleChartClick = (params: any) => {
-      console.log('click params');
-      console.log(params);
       const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
@@ -160,7 +156,7 @@ export class TreeViewer extends EChartViewer {
             div.appendChild(image);
         }
       }
-      div.appendChild( ui.divText(ancestors));
+      div.appendChild(ui.divText(ancestors));
       div.appendChild(ui.divText(params.value, { style: { fontWeight: 'bold' } }));
       ui.tooltip.show(div, params.event.event.x, params.event.event.y);
     });
@@ -274,14 +270,14 @@ export class TreeViewer extends EChartViewer {
       case 'BT':
         labelOptions = {
           position: 'bottom',
-          rotate: 90,
+          rotate: 45,
           verticalAlign: 'middle',
           align: 'right',
           fontSize: this.fontSize
         };
         leavesLabelOptions = {
           position: 'top',
-          rotate: 90,
+          rotate: 45,
           verticalAlign: 'middle',
           align: 'left',
         };
@@ -290,14 +286,14 @@ export class TreeViewer extends EChartViewer {
       case 'TB':
         labelOptions = {
           position: 'top',
-          rotate: -90,
+          rotate: -45,
           verticalAlign: 'middle',
           align: 'right',
           fontSize: this.fontSize
         };
         leavesLabelOptions = {
           position: 'bottom',
-          rotate: -90,
+          rotate: -45,
           verticalAlign: 'middle',
           align: 'left',
         };
