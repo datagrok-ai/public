@@ -232,6 +232,8 @@ jobs:
             packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
+      - name: chromium-browser install
+        run: apt-get install chromium-browser
       - name: npm version
         run: npm version
       - name: unpublished dependencies in package-lock.json
