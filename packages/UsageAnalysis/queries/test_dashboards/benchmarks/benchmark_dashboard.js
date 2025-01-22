@@ -1,6 +1,6 @@
 //language: javascript
 //input: dataframe result
-//output: dataframe out  
+//output: dataframe out
 
 let builds = result.col('build_index').categories;
 let buildNames = result.col('build').categories.sort().reverse();
@@ -30,7 +30,7 @@ function generateCommonValueFormula(operation, suffix, value) {
 function generateColumnListFormula(suffix) {
   var result = '';
   if (builds.length == 1)
-    return '${' + builds[0] + suffix + value;
+    return '${' + builds[0] + suffix + '}';
   for (var i = 0; i < builds.length; i++) {
     if (i) result += ',';
     result += '${' + builds[i] + suffix + '}';
@@ -83,5 +83,7 @@ for (var i = 1; i <= builds.length; i++) {
 //   };
 //   jsonColumn.set(i, JSON.stringify(chartData));
 // }
+pivot.name = '1. Benchmark Dashboard';
 
 out = pivot;
+console.log(out);

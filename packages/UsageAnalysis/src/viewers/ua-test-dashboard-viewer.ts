@@ -58,15 +58,36 @@ export class TestDashboardWidget extends DG.JsViewer {
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.appendChild(ui.wait(async () => {
+      let tableNames: RegExp[] = [/Benchmark.*Dashboard/, /Test.*Track.*Dashboard/];
+      let promises: Promise<void>[] = tableNames.map((name) => new Promise((resolve, reject) => {
+        const checkCondition = () => {
+          try {
+            if (grok.shell.tables.find((df) => df.name.match(name) != null)) {
+              resolve();
+            } else {
+              setTimeout(checkCondition, 1000);
+            }
+          } catch (error) {
+            reject(error);
+          }
+        };
+        checkCondition();
+      }));
+      await Promise.all(promises);
       let d = ui.div();
       let verdicts: Verdict[] = [];
       verdicts.push(...this.verdictsOnCorrectness(dataFrame));
+      verdicts.push(...this.verdictsOnPerformance());
+      verdicts.push(...this.verdictsOnTestTrack());
       verdicts.push(...(await this.unaddressedTests(dataFrame)));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
         d.append(ui.h1('Release is not okay to publish ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
       else
         d.append(ui.h1('Green light! 🚀🚀🚀', { style: { color: DG.Color.toRgb(DG.Color.darkGreen) } }));
+      
+      verdicts.sort((a, b) => Priority.codeMapping[b.priority] - Priority.codeMapping[a.priority]);
+
       let list = ui.list(verdicts.map((verdict) => {
         return ui.div([getIconForVerdict(verdict.priority), verdict.widget]);
       }));
@@ -80,6 +101,22 @@ export class TestDashboardWidget extends DG.JsViewer {
     let verdicts: Verdict[] = [];
     verdicts.push(...this.jiraTickets(df));
     verdicts.push(...this.majorPackages(df));
+    return verdicts;
+  }
+  verdictsOnPerformance(): Verdict[] {
+    let verdicts: Verdict[] = [];
+    let df = grok.shell.tables.find((df) => df.name.match(/Benchmark.*Dashboard/));
+    if (df == null)
+      return verdicts;
+    verdicts.push(...this.performanceDowngrades(df));
+    return verdicts;
+  }
+  verdictsOnTestTrack(): Verdict[] {
+    let verdicts: Verdict[] = [];
+    let df = grok.shell.tables.find((df) => df.name.match(/Test.*Track.*Dashboard/));
+    if (df == null)
+      return verdicts;
+    verdicts.push(...this.testTrackDowngrades(df));
     return verdicts;
   }
   jiraTickets(df: DG.DataFrame): Verdict[] {
@@ -165,7 +202,28 @@ export class TestDashboardWidget extends DG.JsViewer {
         })
       ])));
     }
-
+    return verdicts;
+  }
+  performanceDowngrades(df: DG.DataFrame): Verdict[] {
+    let verdicts: Verdict[] = [];
+    for (let i = 0; i < df.rowCount; i++) {
+      if (df.col('has_suspicious')!.get(i)) {
+        let lastDuration: number = df.col('1 avg(duration)')!.get(i) ?? 0;
+        let minDuration: number = df.col('min')!.get(i) ?? 0;
+        let maxDuration: number = df.col('max')!.get(i) ?? 0;
+        if (lastDuration - minDuration > maxDuration - lastDuration)
+          verdicts.push(new Verdict(Priority.ERROR, ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
+      }
+    }
+    return verdicts;
+  }
+  testTrackDowngrades(df: DG.DataFrame): Verdict[] {
+    let verdicts: Verdict[] = [];
+    for (let i = 0; i < df.rowCount; i++) {
+      if ((df.col('1')?.getString(i) ?? 'passed') != 'passed') {
+        verdicts.push(new Verdict(Priority.ERROR, ui.span([df.col('test')!.getString(i) + ` is failed`])));
+      }
+    }
     return verdicts;
   }
   close(): void {

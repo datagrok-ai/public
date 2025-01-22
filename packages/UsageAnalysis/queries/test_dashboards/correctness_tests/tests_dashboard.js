@@ -1,6 +1,6 @@
 //language: javascript
 //input: dataframe result
-//output: dataframe out  
+//output: dataframe out
 
 let builds = result.col('build_index').categories;
 let buildNames = result.col('build').categories.sort().reverse();

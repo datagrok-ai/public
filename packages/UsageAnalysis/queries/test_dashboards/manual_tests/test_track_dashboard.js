@@ -1,6 +1,6 @@
 //language: javascript
 //input: dataframe result
-//output: dataframe out  
+//output: dataframe out
 
 let builds = result.col('build_index').categories;
 let buildNames = result.col('build').categories.sort().reverse();
@@ -13,7 +13,9 @@ let pivot = result
   // .add(DG.STR_AGG.CONCAT_UNIQUE, 'result')
   .aggregate();
 
-pivot.name = 'test track dashboard';
+
+await pivot.columns.addNewCalculated('tmp', 'Abs(2)', 'int');
+pivot.columns.remove('tmp');
 
 function replaceColumn(prefix, type, buildName, newType) {
   var col = pivot.columns.byName(prefix + type);
@@ -42,7 +44,7 @@ pivot.columns.add(attachedTickets);
 var ticketColumns = 0;
 for (var i = 0; i < pivot.rowCount; i++) {
   var tickets = attachedTickets.get(i)?.split(',') ?? [];
-  for (var j = 0; j < tickets.length; j++) {
+  for (var j = 0; j < tickets.length; j++)   {
     pivot.columns.getOrCreate('ticket ' + j, DG.TYPE.STRING).set(i, tickets[j]);
     ticketColumns = Math.max(ticketColumns, j + 1);
   }
@@ -67,6 +69,8 @@ for (var i = 0; i < ticketColumns; i++) {
   pivot.columns.remove('severity ' + i);
   pivot.columns.remove('ticket ' + i);
 }
+// console.log(pivot);
+
 
 // const jsonColumn = pivot.columns.addNewString('duration');
 // jsonColumn.semType = FIT_SEM_TYPE;
@@ -85,5 +89,6 @@ for (var i = 0; i < ticketColumns; i++) {
 //   };
 //   jsonColumn.set(i, JSON.stringify(chartData));
 // }
+pivot.name = 'test track dashboard';
 
 out = pivot;

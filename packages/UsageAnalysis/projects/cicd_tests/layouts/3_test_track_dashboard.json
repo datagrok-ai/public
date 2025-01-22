@@ -1,5 +1,9 @@
 {
-  "#type": "ViewLayout",
+  "#type": "ViewInfo",
+  "table": {
+    "id": "32a0d3c9-7b4b-420e-b06d-b05d021b8247"
+  },
+  "type": "TableView",
   "viewStateMap": {
     "containerType": "fill",
     "state": {
@@ -1558,6 +1562,7 @@
   "userData": {
     "TABLE_ROW_HEIGHT_KEY": null
   },
-  "name": "TestTrackDashboard",
+  "id": "d2f28bd6-03dc-4e3b-9a93-ad40f8e16a64",
+  "name": "Test_Track_Dashboard",
   "friendlyName": "3. Test Track Dashboard"
 }

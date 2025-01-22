@@ -1,6 +1,6 @@
 //language: javascript
 //input: dataframe result
-//output: dataframe out  
+//output: dataframe out
 
 let builds = result.col('build_index').categories;
 let buildNames = result.col('build').categories.sort().reverse();
@@ -35,7 +35,6 @@ pivot.columns.byName('owner').semType = 'User';
 pivot.columns.byName('owner').setTag('cell.renderer', 'User');
 pivot.columns.byName('test').semType = 'test';
 
-// await pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
 // await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
 // await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
 // await pivot.columns.addNewCalculated('needs_attention', "Or(${flaking},${failing})", 'bool');
@@ -89,6 +88,8 @@ for (var i = 1; i <= builds.length; i++) {
   };
 }
 
+await pivot.columns.addNewCalculated('1', 'Abs(2)', 'int');
+pivot.columns.remove('1');
 
 pivot.meta.setGroups(groups);
 var sortedNames = pivot.columns.names().sort();
@@ -113,6 +114,6 @@ pivot.columns.setOrder(sortedNames);
 // }
 
 
-
+pivot.name = 'stress test dashboard';
 
 out = pivot;
