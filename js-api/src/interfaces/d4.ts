@@ -660,6 +660,10 @@ export interface IBoxPlotSettings {
 
   axisType: keyof typeof AxisType;
 
+  valueMin: number;
+
+  valueMax: number;
+
   invertYAxis: boolean;
 
   showValueAxis: boolean;
