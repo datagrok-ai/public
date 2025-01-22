@@ -43,6 +43,7 @@ export class TreeViewer extends EChartViewer {
   applyColorAggr: boolean = false;
   onClick: onClickOptions;
   includeNulls: boolean;
+  labelRotate: number;
 
   constructor() {
     super();
@@ -57,6 +58,7 @@ export class TreeViewer extends EChartViewer {
     ], category: 'Style' });
     this.symbolSize = this.int('symbolSize', 7, {category: 'Style'});
     this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
+    this.labelRotate = this.int('labelRotate', 45, {category: 'Style', max: 360});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
@@ -77,6 +79,7 @@ export class TreeViewer extends EChartViewer {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
+            rotate: this.labelRotate,
             fontSize: this.fontSize,
           },
 
@@ -85,6 +88,7 @@ export class TreeViewer extends EChartViewer {
               position: 'right',
               verticalAlign: 'middle',
               align: 'left',
+              rotate: this.labelRotate,
             },
           },
         },
@@ -168,21 +172,17 @@ export class TreeViewer extends EChartViewer {
     if (p?.name === 'edgeShape') {
       this.getProperty('layout')?.set(this, 'orthogonal');
       this.option.series[0].layout = 'orthogonal';
-      this.option.series[0].label.rotate = 0;
+      //this.option.series[0].label.rotate = 0;
       this.chart.clear();
     }
     if (p?.name === 'layout') {
       const layout: layoutType = p.get(this);
       this.option.series[0].layout = layout;
-      if (layout === 'orthogonal')
-        this.option.series[0].label.rotate = 0;
-      else {
-        delete this.option.series[0].label.rotate;
-        const es = this.getProperty('edgeShape');
-        if (es?.get(this) !== 'curve') {
-          es?.set(this, 'curve');
-          this.option.series[0].edgeShape = 'curve';
-        }
+      
+      const es = this.getProperty('edgeShape');
+      if (es?.get(this) !== 'curve') {
+        es?.set(this, 'curve');
+        this.option.series[0].edgeShape = 'curve';
       }
       this.render();
       return;
@@ -196,7 +196,7 @@ export class TreeViewer extends EChartViewer {
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
-        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls' || p?.name === 'orient') {
+        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls' || p?.name === 'orient' || p?.name === 'labelRotate') {
       if (p?.name === 'hierarchyColumnNames')
         this.chart.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
@@ -205,9 +205,10 @@ export class TreeViewer extends EChartViewer {
         this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
       if (p?.name === 'fontSize')
         this.option.series[0].label.fontSize = p.get(this);
-      if (p?.name === 'orient') {
-        this.option.series[0].orient = p.get(this);
-        this.updateOrient(p.get(this));
+      if (p?.name === 'orient' || p?.name === 'labelRotate') {
+        if (p?.name === 'orient')
+          this.option.series[0].orient = p.get(this);
+        this.updateOrient();
       }
       if (p?.name === 'includeNulls')
         this.chart.clear();
@@ -216,37 +217,37 @@ export class TreeViewer extends EChartViewer {
       super.onPropertyChanged(p, render);
   }
 
-  updateOrient(orient: string) {
+  updateOrient() {
     // Default option structure
     let labelOptions = {
       position: 'left',
       verticalAlign: 'middle',
       align: 'right',
-      rotate: 0,
+      rotate: this.labelRotate,
       fontSize: this.fontSize,
     };
   
     let leavesLabelOptions = {
       position: 'right',
       verticalAlign: 'middle',
-      rotate: 0,
+      rotate: this.labelRotate,
       align: 'left',
     };
   
     // Update label options based on orientation
-    switch (orient) {
+    switch (this.orient) {
       case 'LR':
         labelOptions = {
           position: 'left',
           verticalAlign: 'middle',
           align: 'right',
-          rotate: 0,
+          rotate: this.labelRotate,
           fontSize: this.fontSize,
         };
         leavesLabelOptions = {
           position: 'right',
           verticalAlign: 'middle',
-          rotate: 0,
+          rotate: this.labelRotate,
           align: 'left',
         };
         break;
@@ -256,13 +257,13 @@ export class TreeViewer extends EChartViewer {
           position: 'right',
           verticalAlign: 'middle',
           align: 'left',
-          rotate: 0,
+          rotate: this.labelRotate,
           fontSize: this.fontSize
         };
         leavesLabelOptions = {
           position: 'left',
           verticalAlign: 'middle',
-          rotate: 0,
+          rotate: this.labelRotate,
           align: 'right',
         };
         break;
@@ -270,14 +271,14 @@ export class TreeViewer extends EChartViewer {
       case 'BT':
         labelOptions = {
           position: 'bottom',
-          rotate: 45,
+          rotate: this.labelRotate,
           verticalAlign: 'middle',
           align: 'right',
           fontSize: this.fontSize
         };
         leavesLabelOptions = {
           position: 'top',
-          rotate: 45,
+          rotate: this.labelRotate,
           verticalAlign: 'middle',
           align: 'left',
         };
@@ -286,14 +287,14 @@ export class TreeViewer extends EChartViewer {
       case 'TB':
         labelOptions = {
           position: 'top',
-          rotate: -45,
+          rotate: -(this.labelRotate),
           verticalAlign: 'middle',
           align: 'right',
           fontSize: this.fontSize
         };
         leavesLabelOptions = {
           position: 'bottom',
-          rotate: -45,
+          rotate: -(this.labelRotate),
           verticalAlign: 'middle',
           align: 'left',
         };
@@ -496,6 +497,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
 
+    console.log(this.option);
     this.chart.setOption(this.option);
   }
 }
