@@ -233,7 +233,9 @@ jobs:
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: chromium-browser install
-        run: sudo apt-get install chromium-browser
+        run: |
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
       - name: npm version
         run: npm version
       - name: unpublished dependencies in package-lock.json
@@ -506,9 +508,6 @@ jobs:
         timeout-minutes: 30
         id: test-package
         run: |
-          
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-          sudo sysctl -w kernel.unprivileged_userns_clone=1
           npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
 
         working-directory: packages/${{ matrix.package }}
