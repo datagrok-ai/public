@@ -509,7 +509,7 @@ jobs:
           
           sudo apt-get install -y chromium-browser chromium-chromedriver
           sudo sysctl -w kernel.unprivileged_userns_clone=1
-          npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+          npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
 
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
