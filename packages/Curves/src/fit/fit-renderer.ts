@@ -265,6 +265,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return FitConstants.FIT_CELL_TYPE; }
 
+  get defaultHeight() { return FitConstants.CELL_DEFAULT_HEIGHT; }
+
+  get defaultWidth() { return FitConstants.CELL_DEFAULT_WIDTH; }
+
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
   }
