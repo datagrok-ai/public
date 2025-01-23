@@ -135,9 +135,9 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
 }
 
 /** Returns either cached or constructed chart data for the specified grid cell. */
-export function getOrCreateParsedChartData(gridCell: DG.GridCell): IFitChartData {
+export function getOrCreateParsedChartData(gridCell: DG.GridCell, useCache = true): IFitChartData {
   const column = gridCell?.cell?.column;
-  return (column && gridCell?.cell) ?
+  return (useCache && column && gridCell?.cell) ?
     FitChartCellRenderer.parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
       return getChartData(gridCell);
     }) : getChartData(gridCell);
@@ -176,11 +176,11 @@ function getChartData(gridCell: DG.GridCell): IFitChartData {
 
 /** Returns existing, or fits curve for the specified grid cell and series. */
 export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction,
-  chartLogOptions: LogOptions, gridCell?: DG.GridCell): FitCurve {
-  const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, gridCell);
+  chartLogOptions: LogOptions, gridCell?: DG.GridCell, useCache = true): FitCurve {
+  const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, gridCell, useCache);
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
   const column = gridCell?.cell?.column;
-  return (column && gridCell?.cell) ?
+  return (useCache && column && gridCell?.cell) ?
     FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
       return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
     }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
@@ -188,9 +188,9 @@ export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number,
 
 /** Returns existing, or maps new data points for the specified series. */
 export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: number, logOptions?: LogOptions,
-  userParamsFlag?: boolean, gridCell?: DG.GridCell): {x: number[], y: number[]} {
+  userParamsFlag?: boolean, gridCell?: DG.GridCell, useCache = true): {x: number[], y: number[]} {
   const column = gridCell?.cell?.column;
-  return (column && gridCell?.cell) ?
+  return (useCache && column && gridCell?.cell) ?
     FitChartCellRenderer.curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
       return getDataPoints(series, logOptions, userParamsFlag);
     }) : getDataPoints(series, logOptions, userParamsFlag);
@@ -384,6 +384,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     g.clip();
 
+    const isRenderedOnGrid = g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
       data.series?.some((series) => series.points.some((p) => p.x === 0)))
       substituteZeroes(data);
@@ -424,7 +426,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           curve = getCurve(series, fitFunc);
         }
         else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, gridCell);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, gridCell, isRenderedOnGrid);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters]
           series.parameters = params;
@@ -438,7 +440,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
-        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, gridCell)});
+        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, gridCell, isRenderedOnGrid)});
       if (series.parameters)
         renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
@@ -465,8 +467,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (w < FitConstants.MIN_CELL_RENDERER_PX_WIDTH || h < FitConstants.MIN_CELL_RENDERER_PX_HEIGHT)
       return;
 
+    const isRenderedOnGrid = g.canvas === gridCell.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
     const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
+      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell, isRenderedOnGrid);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
