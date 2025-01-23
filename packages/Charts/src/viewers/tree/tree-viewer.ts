@@ -77,6 +77,7 @@ export class TreeViewer extends EChartViewer {
         {
           type: 'tree',
           animation: false,
+          nodeClick: false,
           roam: true,
           label: {
             position: 'left',
@@ -132,8 +133,8 @@ export class TreeViewer extends EChartViewer {
 
   initChartEventListeners() {
     let selectedSectors: string[] = [];
-    const handleChartClick = (params: any) => {
-      const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
+    const handleChartClick = (path: string[], event: any) => {
+      //const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
       if (this.onClick === 'Filter') {
@@ -141,7 +142,6 @@ export class TreeViewer extends EChartViewer {
         return;
       }
 
-      const event = params.event.event;
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
       const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
       if (isMultiSelect && !isSectorSelected)
@@ -169,31 +169,79 @@ export class TreeViewer extends EChartViewer {
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
     //this.chart.on('click', handleChartClick);
-    this.chart.on('click', this.handleTreeClick.bind(this));
+    //this.chart.on('click', this.handleTreeClick.bind(this));
+    this.chart.getZr().on('click', (params) => {
+      //@ts-ignore
+      const sortedChildren = params.target.parent._children.sort((a, b) => a.id - b.id);
+      const targetIndex = sortedChildren.findIndex((child: { id: number; }) => child.id === params.target.id);
+      const nextElement = sortedChildren[targetIndex - 1] || null;
+
+      //@ts-ignore
+      const ItemAreaGraphic = this.chart.getModel().getSeriesByIndex(0).getData()._graphicEls.slice(1);
+      const idx = ItemAreaGraphic.findIndex((item: any) => item.id === nextElement.id);
+      //@ts-ignore
+      const name = this.chart.getModel().getSeriesByIndex(0).getData()._idList.slice(1)[idx];
+      if (name) {
+        const seriesData = this.chart!.getOption()!.series![0].data!;
+        const targetPath = this.findByPathOccurrenceUsingStrings(seriesData, name);
+        //handleChartClick(targetPath.split(' | '), params);
+        this.handleTreeClick(targetPath!);
+      } else {
+        console.error('No matching property found');
+      }
+      //@ts-ignore
+      console.log(this.chart.getModel().getSeriesByIndex(0).getData());
+      console.log(this.chart.getOption());
+    });
   }
 
-  private handleTreeClick(event: any): void {
-    const nodeName = event.name;
+  findByPathOccurrenceUsingStrings(arr: any, targetOccurrence: string): string | undefined {
+    const pathOccurrences: string[] = [];
   
-    // Clear previous highlights
+    const flatten = (arr: any[]) => {
+      for (const item of arr) {
+        if (item.path) {
+          pathOccurrences.push(item.path);
+        }
+        if (item.children && item.children.length > 0) {
+          flatten(item.children);
+        }
+      }
+    };
+  
+    flatten(arr);
+
+    const occurrenceRegex = /^(.*?)(?:__ec__(\d+))?$/;
+    const match = targetOccurrence.match(occurrenceRegex);
+  
+    if (!match) {
+      throw new Error(`Invalid targetOccurrence format: ${targetOccurrence}`);
+    }
+  
+    const basePath = match[1];
+    const targetIndex = match[2] ? parseInt(match[2], 10) : 1;
+    let currentCount = 0;
+  
+    for (const path of pathOccurrences) {
+      if (path.endsWith(basePath)) {
+        currentCount++;
+        if (currentCount === targetIndex) {
+          return path;
+        }
+      }
+    }
+    return undefined;
+  }  
+
+  private handleTreeClick(pathString: string): void {  
     this.cleanTree();
-  
-    // Highlight children of the selected node
-    this.paintBranch(nodeName);
+    this.paintBranchByPath(pathString);
   }
   
-  private paintBranch(nodeName: string): void {
+  private paintBranchByPath(path: string): void {
     const hoverStyle = { lineStyle: { color: 'orange' } };
-    const nodesForPaint: string[] = [];
   
-    // Traverse only the immediate children of the node
-    this.traverseFrom({
-      nodeName,
-      callback: (node: { path: string }) => nodesForPaint.push(node.path),
-      childrenOnly: true,
-    });
-  
-    const newSeries = this.buildSeriesConfig(nodesForPaint, hoverStyle);
+    const newSeries = this.buildSeriesConfig(path, hoverStyle);
   
     if (newSeries) {
       const updatedOption = { ...this.option, series: [{ ...this.option.series[0], data: [newSeries] }] };
@@ -201,47 +249,31 @@ export class TreeViewer extends EChartViewer {
     }
   }
   
-  private traverseFrom(options: { nodeName: string; callback: Function; childrenOnly?: boolean }) {
-    const { nodeName, callback, childrenOnly } = options;
-    const startNode = this.chart!.getOption()!.series![0].data![0];
-  
-    const findNode = (node: any): any => {
-      if (node.name === nodeName) return node;
-      if (node.children) {
-        for (const child of node.children) {
-          const found = findNode(child);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-  
-    const targetNode = findNode(startNode);
-    console.log('target node');
-    console.log(targetNode);
-  
-    if (targetNode && targetNode.children) {
-      for (const child of targetNode.children) {
-        callback(child);
-        if (!childrenOnly && child.children) {
-          this.traverseFrom({ nodeName: child.name, callback });
-        }
-      }
-    }
-  }
-  
-  private buildSeriesConfig(nodesForPaint: string[], hoverStyle: any): any {
+  private buildSeriesConfig(path: string, hoverStyle: any): any {
     const tree = this.chart!.getOption()!.series![0].data![0];
     const cloneTree = echarts.util.clone(tree);
   
     const traverse = (node: any) => {
-      if (nodesForPaint.includes(node.path)) Object.assign(node, hoverStyle);
+      if (!node.path) {
+        if (node.children) node.children.forEach(traverse);
+        return;
+      }
+  
+      const nodePathParts = node.path.split('|').map((p: string) => p.trim());
+      const pathParts = path.split('|').map((p: string) => p.trim());
+      
+      const isMatch = nodePathParts.every(
+        (part: any, index: any) => pathParts[index] === part
+      );
+  
+      if (isMatch) Object.assign(node, hoverStyle);
+  
       if (node.children) node.children.forEach(traverse);
     };
   
     traverse(cloneTree);
     return cloneTree;
-  }
+  }  
   
   private cleanTree(): void {
     const clonedData = echarts.util.clone(this.option.series[0].data[0]);
