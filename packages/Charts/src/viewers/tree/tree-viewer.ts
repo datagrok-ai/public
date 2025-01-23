@@ -76,8 +76,6 @@ export class TreeViewer extends EChartViewer {
       series: [
         {
           type: 'tree',
-          animation: false,
-          nodeClick: false,
           roam: true,
           label: {
             position: 'left',
@@ -133,293 +131,284 @@ export class TreeViewer extends EChartViewer {
 
   initChartEventListeners() {
     let selectedSectors: string[] = [];
+  
     const handleChartClick = (path: string[], event: any) => {
-      //const path = params.treeAncestors.slice(2).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
+  
       if (this.onClick === 'Filter') {
         this.handleDataframeFiltering(path, this.dataFrame);
         return;
       }
 
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
-      const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
-      if (isMultiSelect && !isSectorSelected)
-        selectedSectors.push(pathString);
-      else if (isMultiDeselect && isSectorSelected)
-        selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
+      if (isMultiSelect) {
+        if (isSectorSelected) {
+          selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
+        } else {
+          selectedSectors.push(pathString);
+        }
+      }
+  
       this.handleDataframeSelection(path, event);
     };
-    
-    this.chart.on('mouseover', async (params: any) => {
-      const ancestors = params.treeAncestors.filter((item: any) => item.name).map((item: any) => item.name).join('.');
-      let div = ui.divV([]);
+  
+    const showTooltip = async (params: any) => {
+      const ancestors = params.treeAncestors
+        .filter((item: any) => item.name)
+        .map((item: any) => item.name)
+        .join('.');
+  
+      const div = ui.divV([]);
       if (params.data.semType === DG.SEMTYPE.MOLECULE) {
         const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
-        const { width, height } = image;
-        if (width && height) {
-          const pixels = image!.getContext('2d')!.getImageData(0, 0, width, height).data;
-          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0))
+        if (image) {
+          const { width, height } = image;
+          const pixels = image.getContext('2d')!.getImageData(0, 0, width, height).data;
+          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
             div.appendChild(image);
+          }
         }
       }
-      div.appendChild(ui.divText(ancestors));
-      div.appendChild(ui.divText(params.value, { style: { fontWeight: 'bold' } }));
+  
+      div.append(ui.divText(ancestors), ui.divText(params.value, { style: { fontWeight: 'bold' } }));
       ui.tooltip.show(div, params.event.event.x, params.event.event.y);
-    });
-    this.chart.on('mouseout', () => ui.tooltip.hide());
-    //this.chart.on('click', handleChartClick);
-    //this.chart.on('click', this.handleTreeClick.bind(this));
-    this.chart.getZr().on('click', (params) => {
+    };
+  
+    const handleZrClick = (params: any) => {
+      if (!params.target) return;
+  
       //@ts-ignore
       const sortedChildren = params.target.parent._children.sort((a, b) => a.id - b.id);
-      const targetIndex = sortedChildren.findIndex((child: { id: number; }) => child.id === params.target.id);
-      const nextElement = sortedChildren[targetIndex - 1] || null;
-
-      //@ts-ignore
-      const ItemAreaGraphic = this.chart.getModel().getSeriesByIndex(0).getData()._graphicEls.slice(1);
-      const idx = ItemAreaGraphic.findIndex((item: any) => item.id === nextElement.id);
-      //@ts-ignore
-      const name = this.chart.getModel().getSeriesByIndex(0).getData()._idList.slice(1)[idx];
-      if (name) {
-        const seriesData = this.chart!.getOption()!.series![0].data!;
-        const targetPath = this.findByPathOccurrenceUsingStrings(seriesData, name);
-        //handleChartClick(targetPath.split(' | '), params);
-        this.handleTreeClick(targetPath!);
-      } else {
-        console.error('No matching property found');
-      }
-      //@ts-ignore
-      console.log(this.chart.getModel().getSeriesByIndex(0).getData());
-      console.log(this.chart.getOption());
-    });
-  }
-
-  findByPathOccurrenceUsingStrings(arr: any, targetOccurrence: string): string | undefined {
-    const pathOccurrences: string[] = [];
+      const targetIndex = sortedChildren.findIndex((child: { id: number }) => child && child.id === params.target.id);
+      const nextElement = sortedChildren[targetIndex - 1];
   
-    const flatten = (arr: any[]) => {
-      for (const item of arr) {
-        if (item.path) {
-          pathOccurrences.push(item.path);
-        }
-        if (item.children && item.children.length > 0) {
-          flatten(item.children);
+      if (!nextElement) return;
+  
+      //@ts-ignore
+      const seriesModel = this.chart.getModel().getSeriesByIndex(0);
+      const itemGraphics = seriesModel.getData()._graphicEls.slice(1);
+      const itemIds = seriesModel.getData()._idList.slice(1);
+  
+      const idx = itemGraphics.findIndex((item: any) => item && nextElement && item.id === nextElement.id);
+      const name = itemIds[idx];
+  
+      if (name) {
+        const seriesData = this.chart.getOption()?.series?.[0]?.data ?? [];
+        const targetPath = this.findByPathOccurrenceUsingStrings(seriesData, name);
+  
+        if (targetPath) {
+          handleChartClick(targetPath.split(' | '), params);
+          this.handleTreeClick(targetPath);
         }
       }
     };
   
-    flatten(arr);
+    this.chart.on('mouseover', showTooltip);
+    this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.getZr().on('click', handleZrClick);
+  }
 
+  findByPathOccurrenceUsingStrings(arr: any[], targetOccurrence: string): string | undefined {
+    const pathOccurrences: string[] = [];
+  
+    const flattenTree = (nodes: any[]) => {
+      for (const node of nodes) {
+        if (node.path) pathOccurrences.push(node.path);
+        if (node.children?.length) flattenTree(node.children);
+      }
+    };
+  
+    flattenTree(arr);
+  
     const occurrenceRegex = /^(.*?)(?:__ec__(\d+))?$/;
     const match = targetOccurrence.match(occurrenceRegex);
   
-    if (!match) {
-      throw new Error(`Invalid targetOccurrence format: ${targetOccurrence}`);
-    }
+    if (!match) return undefined;
   
-    const basePath = match[1];
-    const targetIndex = match[2] ? parseInt(match[2], 10) : 1;
+    const [_, basePath, occurrenceStr] = match;
+    const targetIndex = occurrenceStr ? parseInt(occurrenceStr, 10) : 1;
     let currentCount = 0;
   
     for (const path of pathOccurrences) {
       if (path.endsWith(basePath)) {
         currentCount++;
-        if (currentCount === targetIndex) {
-          return path;
-        }
+        if (currentCount === targetIndex) return path;
       }
     }
     return undefined;
-  }  
-
-  private handleTreeClick(pathString: string): void {  
+  }
+  
+  handleTreeClick(pathString: string): void {
     this.cleanTree();
     this.paintBranchByPath(pathString);
   }
   
-  private paintBranchByPath(path: string): void {
-    const hoverStyle = { lineStyle: { color: 'orange' } };
+  paintBranchByPath(path: string): void {
+    const hoverStyle = {
+      lineStyle: { color: 'orange' },
+      itemStyle: { color: 'orange' },
+    };
   
-    const newSeries = this.buildSeriesConfig(path, hoverStyle);
-  
-    if (newSeries) {
-      const updatedOption = { ...this.option, series: [{ ...this.option.series[0], data: [newSeries] }] };
+    const updatedSeries = this.buildSeriesConfig(path, hoverStyle);
+    if (updatedSeries) {
+      const updatedOption = { 
+        ...this.option, 
+        series: [{ ...this.option.series[0], data: [updatedSeries] }] 
+      };
       this.chart.setOption(updatedOption, false);
     }
   }
   
-  private buildSeriesConfig(path: string, hoverStyle: any): any {
-    const tree = this.chart!.getOption()!.series![0].data![0];
-    const cloneTree = echarts.util.clone(tree);
+  buildSeriesConfig(path: string, hoverStyle: any): any {
+    const originalTree = this.chart!.getOption()?.series?.[0]?.data?.[0];
+    if (!originalTree) return undefined;
   
-    const traverse = (node: any) => {
-      if (!node.path) {
-        if (node.children) node.children.forEach(traverse);
-        return;
+    const cloneTree = echarts.util.clone(originalTree);
+  
+    const applyHoverStyle = (node: any) => {
+      if (node.path) {
+        const nodePathParts = node.path.split('|').map((p: string) => p.trim());
+        const pathParts = path.split('|').map((p: string) => p.trim());
+        const isMatch = nodePathParts.every((part: string, index: number) => pathParts[index] === part) || node.path.includes(path);
+  
+        if (isMatch) Object.assign(node, hoverStyle);
       }
   
-      const nodePathParts = node.path.split('|').map((p: string) => p.trim());
-      const pathParts = path.split('|').map((p: string) => p.trim());
-      
-      const isMatch = nodePathParts.every(
-        (part: any, index: any) => pathParts[index] === part
-      );
-  
-      if (isMatch) Object.assign(node, hoverStyle);
-  
-      if (node.children) node.children.forEach(traverse);
+      if (node.children) node.children.forEach(applyHoverStyle);
     };
   
-    traverse(cloneTree);
+    applyHoverStyle(cloneTree);
     return cloneTree;
-  }  
+  }
   
-  private cleanTree(): void {
-    const clonedData = echarts.util.clone(this.option.series[0].data[0]);
-    const updatedOption = { ...this.option, series: [{ ...this.option.series[0], data: [clonedData] }] };
+  cleanTree(): void {
+    const originalTree = this.option.series?.[0]?.data?.[0];
+    if (!originalTree) return;
+  
+    const clonedTree = echarts.util.clone(originalTree);
+    const updatedOption = { 
+      ...this.option, 
+      series: [{ ...this.option.series[0], data: [clonedTree] }] 
+    };
     this.chart.setOption(updatedOption, false);
-  }  
-
-  onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    if (p?.name === 'edgeShape') {
-      this.getProperty('layout')?.set(this, 'orthogonal');
-      this.option.series[0].layout = 'orthogonal';
-      //this.option.series[0].label.rotate = 0;
-      this.chart.clear();
-    }
-    if (p?.name === 'layout') {
-      const layout: layoutType = p.get(this);
-      this.option.series[0].layout = layout;
-      
-      const es = this.getProperty('edgeShape');
-      if (es?.get(this) !== 'curve') {
-        es?.set(this, 'curve');
-        this.option.series[0].edgeShape = 'curve';
-      }
-      this.render();
-      return;
-    }
-    if (p?.name === 'table') {
-      this.updateTable();
-      this.onTableAttached();
-      this.render();
-    }
-    if (p?.name === 'onClick')
-      this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
-    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
-        p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType' ||
-        p?.name === 'fontSize' || p?.name === 'showCounts' || p?.name === 'includeNulls' || p?.name === 'orient' || p?.name === 'labelRotate') {
-      if (p?.name === 'hierarchyColumnNames')
-        this.chart.clear();
-      if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
-        this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
-      if (p?.name === 'sizeColumnName' || p?.name === 'sizeAggrType')
-        this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
-      if (p?.name === 'fontSize')
-        this.option.series[0].label.fontSize = p.get(this);
-      if (p?.name === 'orient' || p?.name === 'labelRotate') {
-        if (p?.name === 'orient')
-          this.option.series[0].orient = p.get(this);
-        this.updateOrient();
-      }
-      if (p?.name === 'includeNulls')
-        this.chart.clear();
-      this.render();
-    } else
-      super.onPropertyChanged(p, render);
   }
 
-  updateOrient() {
-    // Default option structure
-    let labelOptions = {
-      position: 'left',
-      verticalAlign: 'middle',
-      align: 'right',
-      rotate: this.labelRotate,
-      fontSize: this.fontSize,
-    };
+  onPropertyChanged(p: DG.Property | null, render: boolean = true) {
+    if (!p) return;
   
-    let leavesLabelOptions = {
-      position: 'right',
-      verticalAlign: 'middle',
-      rotate: this.labelRotate,
-      align: 'left',
-    };
+    const { name } = p;
   
-    // Update label options based on orientation
-    switch (this.orient) {
-      case 'LR':
-        labelOptions = {
-          position: 'left',
-          verticalAlign: 'middle',
-          align: 'right',
-          rotate: this.labelRotate,
-          fontSize: this.fontSize,
-        };
-        leavesLabelOptions = {
-          position: 'right',
-          verticalAlign: 'middle',
-          rotate: this.labelRotate,
-          align: 'left',
-        };
+    switch (name) {
+      case 'edgeShape':
+        this.getProperty('layout')?.set(this, 'orthogonal');
+        this.option.series[0].layout = 'orthogonal';
+        this.chart.clear();
         break;
   
-      case 'RL':
-        labelOptions = {
-          position: 'right',
-          verticalAlign: 'middle',
-          align: 'left',
-          rotate: this.labelRotate,
-          fontSize: this.fontSize
-        };
-        leavesLabelOptions = {
-          position: 'left',
-          verticalAlign: 'middle',
-          rotate: this.labelRotate,
-          align: 'right',
-        };
+      case 'layout':
+        const layout: layoutType = p.get(this);
+        this.option.series[0].layout = layout;
+  
+        if (layout === 'orthogonal') {
+          this.option.series[0].label.rotate = this.labelRotate;
+        } else {
+          delete this.option.series[0].label.rotate;
+          const es = this.getProperty('edgeShape');
+          if (es?.get(this) !== 'curve') {
+            es?.set(this, 'curve');
+            this.option.series[0].edgeShape = 'curve';
+          }
+        }
+        this.render();
+        return;
+  
+      case 'table':
+        this.updateTable();
+        this.onTableAttached();
+        this.render();
         break;
   
-      case 'BT':
-        labelOptions = {
-          position: 'bottom',
-          rotate: this.labelRotate,
-          verticalAlign: 'middle',
-          align: 'right',
-          fontSize: this.fontSize
-        };
-        leavesLabelOptions = {
-          position: 'top',
-          rotate: this.labelRotate,
-          verticalAlign: 'middle',
-          align: 'left',
-        };
+      case 'onClick':
+        this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
         break;
   
-      case 'TB':
-        labelOptions = {
-          position: 'top',
-          rotate: -(this.labelRotate),
-          verticalAlign: 'middle',
-          align: 'right',
-          fontSize: this.fontSize
-        };
-        leavesLabelOptions = {
-          position: 'bottom',
-          rotate: -(this.labelRotate),
-          verticalAlign: 'middle',
-          align: 'left',
-        };
+      case 'hierarchyColumnNames':
+        this.chart.clear();
+        this.render();
         break;
-
+  
+      case 'colorColumnName':
+      case 'colorAggrType':
+        this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
+        this.render();
+        break;
+  
+      case 'sizeColumnName':
+      case 'sizeAggrType':
+        this.applySizeAggr = this.shouldApplyAggregation(this.sizeColumnName, this.sizeAggrType);
+        this.render();
+        break;
+  
+      case 'fontSize':
+        this.option.series[0].label.fontSize = p.get(this);
+        this.render();
+        break;
+  
+      case 'orient':
+      case 'labelRotate':
+        if (name === 'orient') {
+          this.option.series[0].orient = p.get(this);
+        }
+        this.updateOrient();
+        this.render();
+        break;
+  
+      case 'showCounts':
+      case 'includeNulls':
+        this.render();
+        break;
+  
       default:
+        super.onPropertyChanged(p, render);
         break;
     }
-  
-    this.option.series[0].label = labelOptions;
-    this.option.series[0].leaves.label = leavesLabelOptions;
   }  
+
+  updateOrient() {
+    const defaultLabelOptions = (position: string, align: string, rotate: number) => ({
+      position,
+      verticalAlign: 'middle',
+      align,
+      rotate,
+      fontSize: this.fontSize,
+    });
+  
+    const orientations = {
+      LR: {
+        label: defaultLabelOptions('left', 'right', this.labelRotate),
+        leavesLabel: defaultLabelOptions('right', 'left', this.labelRotate),
+      },
+      RL: {
+        label: defaultLabelOptions('right', 'left', this.labelRotate),
+        leavesLabel: defaultLabelOptions('left', 'right', this.labelRotate),
+      },
+      BT: {
+        label: defaultLabelOptions('bottom', 'right', this.labelRotate),
+        leavesLabel: defaultLabelOptions('top', 'left', this.labelRotate),
+      },
+      TB: {
+        label: defaultLabelOptions('top', 'right', -this.labelRotate),
+        leavesLabel: defaultLabelOptions('bottom', 'left', -this.labelRotate),
+      },
+    };
+  
+    const { label, leavesLabel } = orientations[this.orient] || {};
+    if (label && leavesLabel) {
+      this.option.series[0].label = label;
+      this.option.series[0].leaves.label = leavesLabel;
+    }
+  }    
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
     const numericalColumns = this.dataFrame.columns.byName(columnName);
@@ -499,55 +488,45 @@ export class TreeViewer extends EChartViewer {
   }
 
   formatLabel(params: any) {
-    //@ts-ignore
-    const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
-    const getCurrentItemIndex = params.dataIndex - 1;
-    const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => getCurrentItemIndex === index);
-
-    const { x, y } = ItemLayoutInfo;
-    const isVerticalOrientation = this.isVerticalOrientation();
-
-    const sortedItems = [...ItemAreaInfoArray]
-      .filter((item: any) => item && (item.x !== undefined && item.y !== undefined))
-      .sort((a: any, b: any) => isVerticalOrientation ? a.y - b.y : a.x - b.x);
-
-    let positions: number[];
-    let distances: number[];
-
-    if (isVerticalOrientation) {
-      positions = sortedItems.map((item: any) => item.y);
-      distances = positions.slice(1).map((y: number, index: number) => y - positions[index]);
-    } else {
-      positions = sortedItems.map((item: any) => item.x);
-      distances = positions.slice(1).map((x: number, index: number) => x - positions[index]);
-    }
-
-    const averageDistance = distances.length ? distances.reduce((acc, val) => acc + val, 0) / distances.length : 0;
-    const chartSize = isVerticalOrientation ? this.chart.getHeight() : this.chart.getWidth();
-    const tolerance = Math.max(20, Math.min(averageDistance, chartSize * 0.05));
-
-    const sortedPositions = [...new Set(positions)];
-    const nodesAtLevel = sortedItems.filter((item: any) => Math.abs(isVerticalOrientation ? item.y - y : item.x - x) <= tolerance);
-
-    const index = sortedPositions.indexOf(isVerticalOrientation ? y : x);
-    const availableSpace = (index === 0)
-      ? (sortedPositions[1] - sortedPositions[0])
-      : (index === sortedPositions.length - 1)
-      ? (chartSize - sortedPositions[index])
-      : (sortedPositions[index + 1] - sortedPositions[index - 1]) / 2;
-
-    const averageCharWidth = this.fontSize;
-    const maxWidthChars = Math.floor(availableSpace / averageCharWidth);
-    
-    let labelText = this.showCounts ? `${params.name}: ${params.value}` : `${params.name}`;
-    if (labelText.length > maxWidthChars) {
-      labelText = labelText.slice(0, maxWidthChars - 3) + '...';
-    }
-
-    const labelHeight = Math.floor(chartSize / nodesAtLevel.length);
-    const maxHeightChars = Math.floor(labelHeight / this.fontSize);
-
     if (params.data.semType === 'Molecule') {
+      //@ts-ignore
+      const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+      const getCurrentItemIndex = params.dataIndex - 1;
+      const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => getCurrentItemIndex === index);
+      
+      const { x, y } = ItemLayoutInfo;
+      const isVerticalOrientation = this.isVerticalOrientation();
+      
+      const sortedItems = [...ItemAreaInfoArray]
+        .filter((item: any) => item && (item.x !== undefined && item.y !== undefined))
+        .sort((a: any, b: any) => isVerticalOrientation ? a.y - b.y : a.x - b.x);
+        
+      let positions: number[];
+      let distances: number[];
+      
+      if (isVerticalOrientation) {
+        positions = sortedItems.map((item: any) => item.y);
+        distances = positions.slice(1).map((y: number, index: number) => y - positions[index]);
+      } else {
+        positions = sortedItems.map((item: any) => item.x);
+        distances = positions.slice(1).map((x: number, index: number) => x - positions[index]);
+      }
+      
+      const averageDistance = distances.length ? distances.reduce((acc, val) => acc + val, 0) / distances.length : 0;
+      const chartSize = isVerticalOrientation ? this.chart.getHeight() : this.chart.getWidth();
+      const tolerance = Math.max(20, Math.min(averageDistance, chartSize * 0.05));
+      
+      const sortedPositions = [...new Set(positions)];
+      const nodesAtLevel = sortedItems.filter((item: any) => Math.abs(isVerticalOrientation ? item.y - y : item.x - x) <= tolerance);
+      
+      const index = sortedPositions.indexOf(isVerticalOrientation ? y : x);
+      const availableSpace = (index === 0)
+        ? (sortedPositions[1] - sortedPositions[0])
+        : (index === sortedPositions.length - 1)
+        ? (chartSize - sortedPositions[index])
+        : (sortedPositions[index + 1] - sortedPositions[index - 1]) / 2;
+        
+      const labelHeight = Math.floor(chartSize / nodesAtLevel.length);
       const minImageWidth = 70;
       const minImageHeight = 80;
 
@@ -557,22 +536,8 @@ export class TreeViewer extends EChartViewer {
       }
       return ' ';
     }
-
-    const lines = labelText.split(' ');
-    let result = '';
-    let remainingHeight = maxHeightChars;
-
-    for (const line of lines) {
-      if (remainingHeight <= 0) break;
-      result += line + ' ';
-      remainingHeight--;
-    }
-
-    if (result.trim() === '...') {
-      result = '';
-    }
-
-    return result.trim();
+    let labelText = this.showCounts ? `${params.name}: ${params.value}` : `${params.name}`;
+    return labelText;
   }
 
   isVerticalOrientation() {
@@ -596,11 +561,10 @@ export class TreeViewer extends EChartViewer {
     const data = await this.getSeriesData();
 
     Object.assign(this.option.series[0], {
-      data,
-      /*label: Object.assign({}, this.option.series[0].label, {
-        formatter: (params: any) => this.formatLabel(params),
-      }),*/
-    });    
+      data
+    });  
+    
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
@@ -609,7 +573,6 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
 
-    console.log(this.option);
     this.chart.setOption(this.option);
   }
 }
