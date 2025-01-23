@@ -198,7 +198,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
 
-    const root = Vue.ref(null as HTMLElement | null);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.shallowRef(null as HTMLElement | null);
@@ -264,8 +263,15 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     let intelligentLayout = true;
+
+    const layoutLoaded = Vue.ref(false);
+
     const loadPersonalLayout = async () => {
       const personalState = await getSavedPersonalState(currentCall.value);
+
+      if (!personalState)
+        layoutLoaded.value = true;
+
       if (!dockRef.value || !personalState || !dockInited.value) return;
 
       intelligentLayout = false;
@@ -280,6 +286,7 @@ export const RichFunctionView = Vue.defineComponent({
       await dockRef.value.useLayout(personalState.layout);
 
       intelligentLayout = true;
+      layoutLoaded.value = true;
     };
 
     const loadDefaultLayout = async () => {
@@ -312,6 +319,7 @@ export const RichFunctionView = Vue.defineComponent({
     const helpText = Vue.ref(null as null | string);
 
     Vue.watch(currentCall, async (_, oldCall) => {
+      layoutLoaded.value = false;
       Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
         helpText.value = loadedHelp ?? null;
       });
@@ -395,7 +403,7 @@ export const RichFunctionView = Vue.defineComponent({
       };
 
       return (
-        <div class='w-full h-full flex' ref={root}>
+        <div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels'>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -484,6 +492,7 @@ export const RichFunctionView = Vue.defineComponent({
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
+            class={{ 'pseudo_hidden': !layoutLoaded.value }}
           >
             { !historyHidden.value &&
               <History

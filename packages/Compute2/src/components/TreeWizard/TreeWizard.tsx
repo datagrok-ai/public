@@ -127,6 +127,8 @@ export const TreeWizard = Vue.defineComponent({
 
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
+    const isLoading = Vue.ref(false);
+
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
       if (prevPanel === 'Steps') return;
 
@@ -135,9 +137,11 @@ export const TreeWizard = Vue.defineComponent({
 
 
       if (newPanel === 'Step review') {
+        isLoading.value = true;
         await Vue.nextTick();
         setTimeout(() => {
           rfvRef.value?.loadPersonalLayout();
+          isLoading.value = false;
         }, 50);
       }
     };
@@ -543,7 +547,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
-                class='overflow-hidden'
+                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value }}
                 funcCall={chosenStepState.value.funcCall!}
                 uuid={chosenStepUuid.value!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}

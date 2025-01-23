@@ -56,8 +56,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 
 
 //name: Tree Wizard
-//tags: test, vue, model
-//sidebar: @compute
+//tags: test, vue
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
   return DG.Func.byName('Compute2:TreeWizardEditor')

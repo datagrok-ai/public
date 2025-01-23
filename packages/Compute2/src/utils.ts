@@ -103,7 +103,7 @@ export const hasSubtreeInconsistencies = (
   data: PipelineState,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
 ) => {
-  return isSubtree(data) && data.steps.some((step) =>
+  return isSubtree(data) && (data.steps ?? []).some((step) =>
     isFuncCallState(step) ?
       hasInconsistencies(consistencyStates[step.uuid]):
       step.steps.some((nestedStep) => hasInconsistencies(consistencyStates[nestedStep.uuid])),
