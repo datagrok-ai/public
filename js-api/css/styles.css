@@ -59,3 +59,18 @@
 .ui-input-root.ui-input-textarea.ui-input-code > .d4-editor {
   border: 1px solid var(--grey-2);
 }
+
+.markdown-input-root {
+  flex: 1;
+  flex-direction: column!important;
+  min-height: 200px;
+}
+
+.markdown-input {
+  width: 100%;
+  flex: 1;
+}
+
+.ql-toolbar {
+  width: 100%;
+}
