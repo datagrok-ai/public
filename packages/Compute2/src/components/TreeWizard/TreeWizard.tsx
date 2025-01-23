@@ -19,6 +19,7 @@ import {PipelineView} from '../PipelineView/PipelineView';
 import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
+  findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeInconsistencies,
   reportStep,
@@ -124,6 +125,14 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
+
+    const goNextStep = () => {
+      if (chosenStepUuid.value == null || treeState.value == null)
+        return;
+      const nextData = findNextStep(chosenStepUuid.value, treeState.value);
+      if (nextData)
+        chosenStepUuid.value = nextData.state.uuid;
+    }
 
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
@@ -418,8 +427,27 @@ export const TreeWizard = Vue.defineComponent({
       dialog.show({center: true, width: 500});
     };
 
+    const onPipelineProceed = () => {
+      if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
+        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+        if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
+        if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
+      }
+    }
+
+    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
+      if (isRootChoosen.value)
+        loadPipeline(newCall.id);
+      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+        const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
+        if (parent && !isFuncCallState(parent)) {
+          const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
+          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+        }
+      }
+    }
+
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
-    const nextStepId = Vue.computed(() => treeState.value);
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -531,7 +559,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={hasSubtreeInconsistencies(stat.data, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeInconsistencies(stat.data, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
@@ -562,7 +590,7 @@ export const TreeWizard = Vue.defineComponent({
                 showStepNavigation={true}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
-                onNextClicked={() => grok.shell.info('Next step!')}
+                onNextClicked={goNextStep}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
@@ -580,26 +608,8 @@ export const TreeWizard = Vue.defineComponent({
               buttonActions={buttonActions.value}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
-              onProceedClicked={() => {
-                if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-                  chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
-                  if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
-                  if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
-                }
-              }}
-              onUpdate:funcCall={
-                (newCall) => {
-                  if (isRootChoosen.value)
-                    loadPipeline(newCall.id);
-                  else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
-                    const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
-                    if (parent && !isFuncCallState(parent)) {
-                      const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
-                      loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
-                    }
-                  }
-                }
-              }
+              onProceedClicked={onPipelineProceed}
+              onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
                 addStep(chosenStepState.value!.uuid, itemId, position);
               }}

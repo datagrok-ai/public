@@ -9,7 +9,8 @@ import {OpenIcon} from '@he-tree/vue';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, isSubtree, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -229,7 +230,7 @@ export const TreeNode = Vue.defineComponent({
                 class='d4-ribbon-item'
               />]: [],
             ]: [] }
-            { props.hasInconsistentSubsteps && <IconFA
+            { props.hasInconsistentSubsteps && !isFuncCallState(props.stat.data) && <IconFA
               name='sync'
               class='d4-ribbon-item'
               tooltip='Rerun substeps with consistent values'
