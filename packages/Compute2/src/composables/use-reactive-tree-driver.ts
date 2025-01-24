@@ -118,8 +118,8 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     driver.sendCommand({event: 'runStep', uuid});
   };
 
-  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) => {
-    driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, endUuid});
+  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) => {
+    driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested});
   };
 
   const runAction = (actionUuid: string) => {

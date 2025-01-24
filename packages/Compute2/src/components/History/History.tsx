@@ -52,7 +52,7 @@ export const History = Vue.defineComponent({
     const isLoading = Vue.ref(true);
 
     const showFilters = Vue.ref(false);
-    const showInputs = Vue.ref(true);
+    const showInputs = Vue.ref(false);
     const showMetadata = Vue.ref(true);
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);

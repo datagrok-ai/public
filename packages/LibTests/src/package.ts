@@ -14,6 +14,12 @@ import {
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 
 export const _package = new DG.Package();
+
+//tags: init
+export async function init() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
+}
+
 //
 // Validators manual testing
 //

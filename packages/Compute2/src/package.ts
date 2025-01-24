@@ -5,11 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {filter, take} from 'rxjs/operators';
 
-import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
-import {FormApp as FormAppInstance} from './apps/FormApp';
-import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
+import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
+import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
+import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
-import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import {RFVApp} from './apps/RFVApp';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import './tailwind.css';
@@ -55,10 +54,10 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 }
 
 
-//name: Tree Wizard
+//name: Tree Wizard Test
 //tags: test, vue
 //meta.icon: icons/tree-wizard.png
-export async function TreeWizardApp() {
+export async function TreeWizardTestApp() {
   return DG.Func.byName('Compute2:TreeWizardEditor')
     .prepare({call: DG.Func.byName('Compute2:MockProvider2').prepare()}).call();
 }
@@ -95,44 +94,32 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 }
 
 //tags: test, vue
-export async function ViewerApp() {
+export async function ViewerTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(ViewerAppInstance);
   app.mount(view.root);
-  view.name = 'ViewerApp';
+  view.name = 'ViewerTestApp';
   grok.shell.addView(view);
 }
 
 //tags: test, vue
-export async function FormApp() {
+export async function FormTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(FormAppInstance);
   app.mount(view.root);
-  view.name = 'FormApp';
+  view.name = 'FormTestApp';
   grok.shell.addView(view);
 }
 
 //tags: test, vue
-export async function HistoryApp() {
+export async function HistoryTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(HistoryAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
-  view.name = 'HistoryApp';
+  view.name = 'HistoryTestApp';
   grok.shell.addView(view);
 }
-
-//tags: test, vue
-export async function SimpleDriverApp() {
-  // TODO: close view handling
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(SimpleDriverAppInstance);
-  view.root.classList.remove('ui-panel');
-  app.mount(view.root);
-  view.name = 'SimpleDriverApp';
-  grok.shell.addView(view);
-}
-
 
 //name: MockWrapper1
 export async function MockWrapper1() {}
@@ -152,10 +139,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'Compute2:LongScript',
       },
-      // {
-      //   id: 'step2',
-      //   nqName: 'Compute2:LongFailingScript',
-      // },
+      {
+        id: 'step2',
+        nqName: 'Compute2:LongFailingScript',
+      },
     ],
     links: [{
       id: 'link1',
@@ -182,7 +169,7 @@ export async function MockProvider2(params: any) {
     type: 'sequential',
     stepTypes: [{
       id: 'cooling',
-      nqName: 'Compute:ObjectCooling',
+      nqName: 'Compute2:ObjectCooling2',
       friendlyName: 'cooling',
       actions: [{
         id: 'action1',

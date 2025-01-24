@@ -140,7 +140,7 @@ export const TreeNode = Vue.defineComponent({
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     toggleNode: () => {},
-    runSubtree: (startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) => {},
+    runSubtree: (startUuid: string, rerunWithConsistent?: boolean) => {},
     runStep: (uuid: string) => {},
     saveStep: (uuid: string) => {},
   },
@@ -236,11 +236,7 @@ export const TreeNode = Vue.defineComponent({
               tooltip='Rerun substeps with consistent values'
               animation={props.callState?.isRunning ? 'spin': null}
               onClick={() => {
-                const subtreeData = props.stat.data as PipelineWithAdd;
-                const firstSubstep = subtreeData.steps.at(0);
-                const lastSubstep = subtreeData.steps.at(-1);
-                if (firstSubstep && lastSubstep)
-                  emit('runSubtree', firstSubstep.uuid, true, lastSubstep.uuid);
+                emit('runSubtree', props.stat.data.uuid, true);
               }}
             /> }
             {
@@ -250,7 +246,7 @@ export const TreeNode = Vue.defineComponent({
                   tooltip={'Rerun this step with consistent inputs'}
                   style={{'padding-right': '3px'}}
                   onClick={(e) => {
-                    emit('runSubtree', props.stat.data.uuid, true, props.stat.data.uuid);
+                    emit('runSubtree', props.stat.data.uuid, true);
                     e.stopPropagation();
                   }}
                   class='d4-ribbon-item'

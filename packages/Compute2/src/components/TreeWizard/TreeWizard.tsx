@@ -114,14 +114,11 @@ export const TreeWizard = Vue.defineComponent({
         runAction(uuid);
     };
 
-    const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) => {
-      if (startUuid !== endUuid) {
-        ui.dialog(`Rerun confirmation`)
-          .add(ui.markdown(`Do you want to update input values to consistent ones and run all substeps? You will lose inconsistent values.`))
-          .onOK(() => runSequence(startUuid, rerunWithConsistent, endUuid))
-          .show({center: true, modal: true});
-      } else
-        runSequence(startUuid, rerunWithConsistent, endUuid);
+    const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
+      ui.dialog(`Rerun confirmation`)
+        .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
+        .onOK(() => runSequence(startUuid, rerunWithConsistent))
+        .show({center: true, modal: true});
     };
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
@@ -469,7 +466,7 @@ export const TreeWizard = Vue.defineComponent({
                 name='sync'
                 tooltip={'Rerun tree with consistent values'}
                 style={{'padding-right': '3px'}}
-                onClick={() => runSequence(treeState.value!.uuid, true)}
+                onClick={() => runSubtreeWithConfirm(treeState.value!.uuid, true)}
               />:
               <IconFA
                 name='forward'
@@ -563,7 +560,7 @@ export const TreeWizard = Vue.defineComponent({
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
-                        onRunSubtree={(startUuid, rerunWithConsistent, endUuid) => runSubtreeWithConfirm(startUuid, rerunWithConsistent, endUuid)}
+                        onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
                         onRunStep={(uuid) => runStep(uuid)}
                         onSaveStep={(uuid) => saveSubTreeState(uuid)}
                       />

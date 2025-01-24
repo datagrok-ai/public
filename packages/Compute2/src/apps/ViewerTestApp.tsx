@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {Viewer} from '@datagrok-libraries/webcomponents-vue';
 import * as Vue from 'vue';
 
-export const ViewerApp = Vue.defineComponent({
-  name: 'ViewerApp',
+export const ViewerTestApp = Vue.defineComponent({
+  name: 'ViewerTestApp',
   setup() {
     const df = Vue.shallowRef<DG.DataFrame | undefined>(undefined);
     const type = Vue.ref<string | undefined>(undefined);
@@ -30,7 +30,7 @@ export const ViewerApp = Vue.defineComponent({
       <div style={{width: '100%', height: '100%'}}>
         <button onClick={changeData}>change data</button>
         <button onClick={changeType}>change type</button>
-        <Viewer type={type.value} dataFrame={df.value} onViewerChanged={(v) => viewer.value = v}></Viewer>
+        <Viewer type={type.value} dataFrame={df.value} style={{width: '100%', height: '100%'}} onViewerChanged={(v) => viewer.value = v}></Viewer>
       </div>
     );
   },
