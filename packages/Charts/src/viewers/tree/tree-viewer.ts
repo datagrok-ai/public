@@ -53,7 +53,7 @@ export class TreeViewer extends EChartViewer {
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
     this.expandAndCollapse = this.bool('expandAndCollapse', true, {category: 'Style'});
-    this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: -1, max: 5, category: 'Style'});
+    this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
     this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
@@ -124,7 +124,7 @@ export class TreeViewer extends EChartViewer {
       return path.every((expectedValue, i) => {
         const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
         const columnValue = row.get(this.hierarchyColumnNames[i]);
-        const formattedValue = columnValue ?
+        const formattedValue = columnValue !== null ?
           (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
         return formattedValue === expectedValue;
       });
