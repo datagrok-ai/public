@@ -24,7 +24,6 @@ export class TreeViewer extends EChartViewer {
   private renderQueue: Promise<void> = Promise.resolve();
   layout: layoutType;
   orient: orientation;
-  expandAndCollapse: boolean;
   initialTreeDepth: number;
   symbolSizeRange: [number, number] = [5, 20];
   edgeShape: edgeShape;
@@ -52,7 +51,6 @@ export class TreeViewer extends EChartViewer {
 
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
-    this.expandAndCollapse = this.bool('expandAndCollapse', true, {category: 'Style'});
     this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
     this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
