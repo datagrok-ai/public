@@ -46,6 +46,7 @@ export class TreeViewer extends EChartViewer {
   includeNulls: boolean;
   labelRotate: number;
 
+  private moleculeRenderQueue: Promise<void> = Promise.resolve();
   constructor() {
     super();
 
@@ -91,6 +92,7 @@ export class TreeViewer extends EChartViewer {
               verticalAlign: 'middle',
               align: 'left',
               rotate: this.labelRotate,
+              fontSize: this.fontSize,
             },
           },
         },
@@ -107,7 +109,7 @@ export class TreeViewer extends EChartViewer {
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
-        return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
+        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
       });
     }, event);
   }
@@ -156,24 +158,39 @@ export class TreeViewer extends EChartViewer {
     const showTooltip = async (params: any) => {
       const ancestors = params.treeAncestors
         .filter((item: any) => item.name)
-        .map((item: any) => item.name)
-        .join('.');
-  
-      const div = ui.divV([]);
-      if (params.data.semType === DG.SEMTYPE.MOLECULE) {
-        const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
-        if (image) {
-          const { width, height } = image;
-          const pixels = image.getContext('2d')!.getImageData(0, 0, width, height).data;
-          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
-            div.appendChild(image);
+        .map((item: any) => item.name);
+    
+      const div = ui.divH([]);
+      let firstAncestor = true;
+    
+      for (let i = 0; i < ancestors.length; i++) {
+        const ancestor = ancestors[i];
+        const [isSmiles, isMolBlock, isSmarts] = await Promise.all([
+          grok.chem.checkSmiles(ancestor),
+          grok.chem.isMolBlock(ancestor),
+          grok.chem.isSmarts(ancestor),
+        ]);
+        const isStructure = isSmiles || isMolBlock || isSmarts;
+        if (isStructure) {
+          const image = await TreeUtils.getMoleculeImage(ancestor, 150, 100);
+          if (image) {
+            const { width, height } = image;
+            const pixels = image.getContext('2d')!.getImageData(0, 0, width, height).data;
+            if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
+              div.appendChild(image);
+            }
           }
+        } else {
+          if (!firstAncestor) {
+            div.append(ui.divText('.'));
+          }
+          div.append(ui.divText(ancestor));
+          firstAncestor = false;
         }
       }
-  
-      div.append(ui.divText(ancestors), ui.divText(params.value, { style: { fontWeight: 'bold' } }));
-      ui.tooltip.show(div, params.event.event.x, params.event.event.y);
-    };
+      const resultDiv = ui.divV([div, ui.divText(params.value, { style: { fontWeight: 'bold' } })]);
+      ui.tooltip.show(resultDiv, params.event.event.x, params.event.event.y);
+    };    
   
     const handleZrClick = (params: any) => {
       if (!params.target) return;
@@ -191,7 +208,8 @@ export class TreeViewer extends EChartViewer {
       const itemIds = seriesModel.getData()._idList.slice(1);
   
       const idx = itemGraphics.findIndex((item: any) => item && nextElement && item.id === nextElement.id);
-      const name = itemIds[idx];
+      let name = itemIds[idx];
+      if (name === "") name = " ";
   
       if (name) {
         const seriesData = this.chart.getOption()?.series?.[0]?.data ?? [];
@@ -226,7 +244,8 @@ export class TreeViewer extends EChartViewer {
   
     if (!match) return undefined;
   
-    const [_, basePath, occurrenceStr] = match;
+    let [_, basePath, occurrenceStr] = match;
+    if (basePath === "") basePath = " ";
     const targetIndex = occurrenceStr ? parseInt(occurrenceStr, 10) : 1;
     let currentCount = 0;
   
@@ -267,7 +286,7 @@ export class TreeViewer extends EChartViewer {
     const cloneTree = echarts.util.clone(originalTree);
   
     const applyHoverStyle = (node: any) => {
-      if (node.path) {
+      if (node.path !== null) {
         const nodePathParts = node.path.split('|').map((p: string) => p.trim());
         const pathParts = path.split('|').map((p: string) => p.trim());
         const isMatch = nodePathParts.every((part: string, index: number) => pathParts[index] === part) || node.path.includes(path);
@@ -301,9 +320,13 @@ export class TreeViewer extends EChartViewer {
   
     switch (name) {
       case 'edgeShape':
-        this.getProperty('layout')?.set(this, 'orthogonal');
-        this.option.series[0].layout = 'orthogonal';
+        if (p.get(this) === 'polyline') {
+          this.getProperty('layout')?.set(this, 'orthogonal');
+          this.option.series[0].layout = 'orthogonal';
+        }
+        this.option.series[0].edgeShape = p.get(this);
         this.chart.clear();
+        this.render();
         break;
   
       case 'layout':
@@ -352,17 +375,16 @@ export class TreeViewer extends EChartViewer {
   
       case 'fontSize':
         this.option.series[0].label.fontSize = p.get(this);
+        this.option.series[0].leaves.label.fontSize = p.get(this);
         this.render();
         break;
   
       case 'orient':
       case 'labelRotate':
-        if (name === 'orient') {
-          this.option.series[0].orient = p.get(this);
-        }
+        if (name === 'orient') this.option.series[0].orient = p.get(this);
         this.updateOrient();
         this.render();
-        break;
+        break;  
   
       case 'showCounts':
       case 'includeNulls':
@@ -487,6 +509,13 @@ export class TreeViewer extends EChartViewer {
     }
   }
 
+  async renderMoleculeQueued(params: any, width: number, height: number) {
+    this.moleculeRenderQueue = this.moleculeRenderQueue.then(() => 
+      this.renderMolecule(params, width, height)
+    );
+    await this.moleculeRenderQueue;
+  }
+
   formatLabel(params: any) {
     if (params.data.semType === 'Molecule') {
       //@ts-ignore
@@ -531,7 +560,7 @@ export class TreeViewer extends EChartViewer {
       const minImageHeight = 80;
 
       if (availableSpace >= minImageWidth && labelHeight >= minImageHeight) {
-        this.renderMolecule(params, minImageWidth, minImageHeight);
+        this.renderMoleculeQueued(params, minImageWidth, minImageHeight);
         return ' ';
       }
       return ' ';
@@ -562,9 +591,7 @@ export class TreeViewer extends EChartViewer {
 
     Object.assign(this.option.series[0], {
       data
-    });  
-    
-    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    });
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
@@ -573,7 +600,8 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
 
-    this.chart.setOption(this.option);
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    this.chart.setOption(this.option, false, true);
   }
 }
 
