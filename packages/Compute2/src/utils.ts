@@ -112,20 +112,22 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
 
 export const couldBeSaved = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data) && !!data.provider;
 
-export const hasSubtreeInconsistencies = (
+export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
 ) => {
   return _findTreeNode(
     [data],
-    (state: PipelineState) => isFuncCallState(state) ? !!hasInconsistencies(consistencyStates[state.uuid]) : false
+    (state: PipelineState) => isFuncCallState(state) ?
+      hasInconsistencies(consistencyStates[state.uuid]) && !state.isReadonly :
+      false
   );
 };
 
 export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(
     (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
-  return firstInconsistency;
+  return !!firstInconsistency;
 };
 
 export async function reportStep(treeState?: PipelineState) {

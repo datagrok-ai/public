@@ -21,7 +21,7 @@ import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
-  findTreeNodeParrent, hasSubtreeInconsistencies,
+  findTreeNodeParrent, hasSubtreeFixableInconsistencies,
   reportStep,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -461,7 +461,7 @@ export const TreeWizard = Vue.defineComponent({
           /> }
           {isTreeReady.value &&
             treeState.value &&
-            (hasSubtreeInconsistencies(treeState.value, states.consistency) ?
+            (hasSubtreeFixableInconsistencies(treeState.value, states.consistency) ?
               <IconFA
                 name='sync'
                 tooltip={'Rerun tree with consistent values'}
@@ -556,7 +556,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeInconsistencies(stat.data, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
