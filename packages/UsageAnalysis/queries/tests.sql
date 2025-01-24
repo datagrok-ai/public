@@ -41,7 +41,7 @@ Select * from (
   r.params::json->>'start' as start
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' and t.name =  concat('Unknown: ', @path) 
+where t.type = 'manual' and (t.name =  concat('Test Track: ', @path) or t.name = concat('Unknown: ', @path))
 and NOT (r.params::json->>'batchName') =  @batchToExclude   and not r.passed is null
 order by   (r.params::json->>'batchName'), r.date_time desc 
 limit 5 ) as testsData
