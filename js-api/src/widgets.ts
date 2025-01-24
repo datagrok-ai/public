@@ -2356,6 +2356,14 @@ export class MarkdownInput extends JsInputBase<string> {
 
   get dataType(): string { return `${DG.TYPE.STRING}`; }
 
+  get attachedImages(): string[] {
+    const ops: { [key:string]: any; }[] = this.editor?.getContents()['ops'] ?? [];
+    return ops
+        .filter((op) => op['insert']?.constructor === Object
+            && (op['insert']['image']?.startsWith('data:image') ?? false))
+        .map((op) => op['insert']['image']);
+  }
+
   getStringValue(): string {
     return this.editor?.getText() ?? '';
   }
