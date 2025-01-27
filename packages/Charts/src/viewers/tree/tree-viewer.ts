@@ -13,6 +13,33 @@ const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All'
 };
+const aggregationMap = new Map<string, string[]>([
+  // Aggregation for numeric columns: int, bigint, float, qnum
+  ['int', Object.values(DG.AGG)],
+  ['bigint', Object.values(DG.AGG)],
+  ['float', Object.values(DG.AGG)],
+  ['qnum', Object.values(DG.AGG)],
+
+  // Aggregation for string columns
+  ['string', [
+    ...Object.values(DG.STR_AGG),
+    ...Object.values(DG.STAT_COUNTS)
+  ]],
+
+  // Aggregation for datetime columns
+  ['datetime', [
+    ...Object.values(DG.STAT_COUNTS), 
+    DG.AGG.MIN, 
+    DG.AGG.MAX, 
+    DG.AGG.AVG
+  ]],
+
+  // Aggregation for virtual columns
+  ['virtual', [
+    DG.AGG.TOTAL_COUNT, 
+    DG.AGG.MISSING_VALUE_COUNT
+  ]]
+]);
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 @grok.decorators.viewer({
   name: 'Tree',
@@ -36,7 +63,11 @@ export class TreeViewer extends EChartViewer {
   colorColumnName: string = '';
   colorAggrType: DG.AggregationType = 'avg';
   hierarchyColumnNames: string[];
-  aggregations: string[] = Object.values(DG.AGG).filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
+  aggregations: string[] = [
+    ...Object.values(DG.AGG),
+    ...Object.values(DG.STR_AGG),
+    ...Object.values(DG.STAT_COUNTS)
+  ].filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
   aggregationsStr: string[] = Object.values({...DG.STR_AGG, ...DG.STAT_COUNTS});
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   applySizeAggr: boolean = false;
@@ -76,6 +107,7 @@ export class TreeViewer extends EChartViewer {
         {
           type: 'tree',
           roam: true,
+          initialTreeDepth: this.initialTreeDepth,
           label: {
             position: 'left',
             verticalAlign: 'middle',
@@ -215,7 +247,7 @@ export class TreeViewer extends EChartViewer {
   
         if (targetPath) {
           handleChartClick(targetPath.split(' | '), params);
-          this.handleTreeClick(targetPath);
+          this.paintBranchByPath(targetPath);
         }
       }
     };
@@ -256,24 +288,24 @@ export class TreeViewer extends EChartViewer {
     return undefined;
   }
   
-  handleTreeClick(pathString: string): void {
-    this.cleanTree();
-    this.paintBranchByPath(pathString);
-  }
-  
   paintBranchByPath(path: string): void {
     const hoverStyle = {
       lineStyle: { color: 'orange' },
       itemStyle: { color: 'orange' },
     };
   
-    const updatedSeries = this.buildSeriesConfig(path, hoverStyle);
-    if (updatedSeries) {
+    const updatedData = this.buildSeriesConfig(path, hoverStyle);
+    if (updatedData) {
       const updatedOption = { 
         ...this.option, 
-        series: [{ ...this.option.series[0], data: [updatedSeries] }] 
+        series: [
+          {
+            ...this.option.series[0], 
+            data: [updatedData],
+          },
+        ],
       };
-      this.chart.setOption(updatedOption, false);
+      this.chart.setOption(updatedOption, false, true);
     }
   }
   
@@ -298,24 +330,12 @@ export class TreeViewer extends EChartViewer {
     applyHoverStyle(cloneTree);
     return cloneTree;
   }
-  
-  cleanTree(): void {
-    const originalTree = this.option.series?.[0]?.data?.[0];
-    if (!originalTree) return;
-  
-    const clonedTree = echarts.util.clone(originalTree);
-    const updatedOption = { 
-      ...this.option, 
-      series: [{ ...this.option.series[0], data: [clonedTree] }] 
-    };
-    this.chart.setOption(updatedOption, false);
-  }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (!p) return;
   
     const { name } = p;
-  
+
     switch (name) {
       case 'edgeShape':
         if (p.get(this) === 'polyline') {
@@ -384,6 +404,10 @@ export class TreeViewer extends EChartViewer {
         this.render();
         break;  
   
+      case 'initialTreeDepth':
+        this.option.series[0].initialTreeDepth = p.get(this);
+        this.render();
+
       case 'showCounts':
       case 'includeNulls':
         this.render();
@@ -431,10 +455,8 @@ export class TreeViewer extends EChartViewer {
   }    
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
-    const numericalColumns = this.dataFrame.columns.byName(columnName);
-    const isColumnNumerical = numericalColumns ? numericalColumns.matches('numerical') : false;
-    const isAggregationApplicable = this.aggregationsStr.includes(aggrType);
-    return isColumnNumerical || (!isColumnNumerical && isAggregationApplicable);
+    const column = this.dataFrame.getCol(columnName);
+    return aggregationMap.get(column.type)?.includes(aggrType)!;
   }
 
   _testColumns() {
