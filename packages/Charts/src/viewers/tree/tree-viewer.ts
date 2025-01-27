@@ -406,6 +406,7 @@ export class TreeViewer extends EChartViewer {
   
       case 'initialTreeDepth':
         this.option.series[0].initialTreeDepth = p.get(this);
+        if (this.edgeShape === 'polyline') this.chart.clear();
         this.render();
 
       case 'symbolSize':
