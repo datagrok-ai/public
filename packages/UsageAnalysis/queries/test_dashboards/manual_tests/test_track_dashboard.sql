@@ -7,7 +7,7 @@ WITH last_builds AS (
     from builds b
     -- todo: filter builds with cicd not-stresstest runs
     -- todo: filter only success builds
-    where EXISTS((SELECT 1 from test_runs r where r.build_name = b.name and not r.stress_test))
+    where EXISTS((SELECT 1 from test_runs r join tests t on t.name = r.test_name where r.build_name = b.name and t.type = 'manual'))
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
   select name, ROW_NUMBER() OVER (ORDER BY build_date DESC) AS build_index,

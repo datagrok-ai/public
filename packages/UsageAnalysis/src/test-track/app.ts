@@ -225,7 +225,7 @@ export class TestTrack extends DG.ViewBase {
 
 
     for (const row of history.rows) {
-      const path = (row.get('test') || '').replace('Unknown: ', '');
+      const path = (row.get('test') || '').replace('Unknown: ', '').replace('Test Track: ', '');
       if (path.length === 0)
         continue;
 
@@ -1194,7 +1194,7 @@ export class TestTrack extends DG.ViewBase {
         status = severity;
       }
 
-      const path = (row.get('test') || '').replace('Unknown: ', '');
+      const path = (row.get('test') || '').replace('Unknown: ', '').replace('Test Track: ', '');
       if (path.length === 0)
         continue;
 

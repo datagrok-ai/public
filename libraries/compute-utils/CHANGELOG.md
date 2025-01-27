@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.40.2 (2025-01-27)
+
+- Build fix
+
 ## 1.40.1 (2024-12-25)
 
 - History fixes and removing obsolete API calls

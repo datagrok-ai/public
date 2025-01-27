@@ -319,7 +319,6 @@ export const RichFunctionView = Vue.defineComponent({
     const helpText = Vue.ref(null as null | string);
 
     Vue.watch(currentCall, async (_, oldCall) => {
-      layoutLoaded.value = false;
       Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
         helpText.value = loadedHelp ?? null;
       });
@@ -335,6 +334,7 @@ export const RichFunctionView = Vue.defineComponent({
     }, {flush: 'post'});
 
     const handleDockInit = async () => {
+      layoutLoaded.value = false;
       dockInited.value = true;
       triggerSaveDefault.value = !triggerSaveDefault.value;
     };

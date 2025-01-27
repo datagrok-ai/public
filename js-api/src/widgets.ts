@@ -2311,29 +2311,25 @@ export class TagsInput extends InputBase {
   }
 }
 
-export class MarkdownInput extends InputBase {
-  editor: any; // Quill.js instance - loaded from the core .min.js file
-  private _onValueChanged: Subject<string> = new Subject<string>();
+export class MarkdownInput extends JsInputBase<string> {
+  // Quill.js instance - loaded from the core .min.js file
+  private editor: any;
+  private readonly _editorRoot: HTMLDivElement = ui.div([], 'markdown-input');
 
-  constructor(name: string) {
-    super(ui.input.textArea(name).dart);
+  private constructor(caption?: string) {
+    super();
+    this.root.classList.add('markdown-input-root');
+    this.addCaption(caption ?? '');
   }
 
-  static async create(name: string): Promise<MarkdownInput> {
-    const input = new MarkdownInput(name);
-    input.input.style.display = 'none';
-
-    const editorDiv = ui.div();
-    const editorParentDiv = ui.div([editorDiv]);
-    editorParentDiv.style.minHeight = '200px';
-    input.root.append(editorParentDiv);
-
+  static async create(caption?: string): Promise<MarkdownInput> {
+    const input = new MarkdownInput(caption);
     await DG.Utils.loadJsCss([
       '/js/common/quill/quill.min.js',
       '/js/common/quill/quill.snow.css',
-    ])
+    ]);
     //@ts-ignore
-    input.editor = new Quill(editorDiv, {
+    input.editor = new Quill(input._editorRoot, {
       modules: {
         toolbar: [
           [{ header: [1, 2, false] }],
@@ -2344,14 +2340,45 @@ export class MarkdownInput extends InputBase {
       },
       theme: 'snow', // or 'bubble'
     });
-    input.editor.on('text-change', () => input._onValueChanged.next(input.value));
+    input.editor.on('text-change', (_: any, __: any, source: string) => {
+      if (source === 'api')
+        input.fireChanged();
+      else if (source === 'user')
+        input.fireInput();
+    });
+
     return input;
   }
 
-  get value(): string { return this.editor.getText(); }
-  set value(x: string) { this.editor.setText(x); }
+  getInput(): HTMLElement { return this._editorRoot; }
 
-  get onValueChanged(): Observable<string> { return this._onValueChanged; }
+  get inputType(): string { return 'markdown'; }
+
+  get dataType(): string { return `${DG.TYPE.STRING}`; }
+
+  get attachedImages(): string[] {
+    const ops: { [key:string]: any; }[] = this.editor?.getContents()['ops'] ?? [];
+    return ops
+        .filter((op) => op['insert']?.constructor === Object
+            && (op['insert']['image']?.startsWith('data:image') ?? false))
+        .map((op) => op['insert']['image']);
+  }
+
+  getStringValue(): string {
+    return this.editor?.getText() ?? '';
+  }
+
+  getValue(): string {
+    return this.editor?.root?.innerHTML;
+  }
+
+  setStringValue(value: string): void {
+    this.editor?.setText(value);
+  }
+
+  setValue(value: any): void {
+    this.editor?.setText(value);
+  }
 }
 
 export class CodeInput extends InputBase {

@@ -1,5 +1,11 @@
 # DevTools changelog
 
+## 1.5.1 (2025-27-01)
+
+### Bug fixes
+
+* Build fix
+
 ## 1.3.47 (2024-09-02)
 
 ### Features

@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {InputForm} from '@datagrok-libraries/webcomponents-vue';
 import * as Vue from 'vue';
 
-export const FormApp = Vue.defineComponent({
-  name: 'FormApp',
+export const FormTestApp = Vue.defineComponent({
+  name: 'FormTestApp',
   setup() {
     const fc = Vue.shallowRef<DG.FuncCall | undefined>(undefined);
 
@@ -15,9 +15,9 @@ export const FormApp = Vue.defineComponent({
     };
 
     const changeFuncCall = () => {
-      const nfc = fc.value?.func.nqName === 'LibTests:SimpleInputs' ?
-        DG.Func.byName('Compute:ObjectCooling').prepare():
-        DG.Func.byName('LibTests:SimpleInputs').prepare();
+      const nfc = fc.value?.func.nqName === 'Compute2:SimpleInputs2' ?
+        DG.Func.byName('Compute2:ObjectCooling2').prepare():
+        DG.Func.byName('Compute2:SimpleInputs2').prepare();
       fc.value = nfc;
       Vue.triggerRef(fc);
     };

@@ -60,7 +60,7 @@ export interface RunSequence {
   event: 'runSequence';
   startUuid: string;
   rerunWithConsistent?: boolean;
-  endUuid?: string;
+  includeNonNested?: boolean;
 }
 
 export interface SavePipeline extends ItemMetadata {

@@ -581,7 +581,7 @@
                       "#type": "BarChartLook",
                       "rowSource": "All",
                       "onClick": "Filter",
-                      "valueColumnName": "1 avg(duration)",
+                      "valueColumnName": "test",
                       "valueAggrType": "count",
                       "barSortType": "by value",
                       "barSortOrder": "desc",

@@ -56,7 +56,7 @@ export async function TestsListJoined(): Promise<DG.DataFrame| undefined> {
   });
   const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
-    return { 'type':  "manual ", 'test': 'Unknown: ' + elem };
+    return { 'type':  "manual ", 'test': 'Test Track: ' + elem };
   });
   const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
