@@ -7,11 +7,13 @@ class Priority {
   static BLOCKER: string = 'BLOCKER';
   static INFO: string = 'INFO';
   static ERROR: string = 'ERROR';
+  static RESOLVED: string = 'RESOLVED';
 
   static codeMapping: { [key: string]: number } = {
     [Priority.BLOCKER]: 3,
     [Priority.ERROR]: 2,
-    [Priority.INFO]: 1
+    [Priority.INFO]: 1,
+    [Priority.RESOLVED]: 0,
   };
 
   static getMaxPriority(priorities: string[]): string {
@@ -43,9 +45,12 @@ function getIconForVerdict(priority: string): HTMLElement {
   } else if (priority == Priority.ERROR) {
     icon = ui.iconFA('exclamation-circle');
     icon.style.color = DG.Color.toRgb(DG.Color.red);
-  } else {
+  } else if (priority == Priority.INFO) {
     icon = ui.iconFA('info-circle');
     icon.style.color = DG.Color.toRgb(DG.Color.blue);
+  } if (priority == Priority.RESOLVED) {
+    icon = ui.iconFA('info-circle');
+    icon.style.color = DG.Color.toRgb(DG.Color.green);
   }
   return icon!;
 }
@@ -55,6 +60,8 @@ export class TestDashboardWidget extends DG.JsViewer {
   constructor() {
     super();
   }
+
+  tickets: Set<string> = new Set();
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.appendChild(ui.wait(async () => {
@@ -80,6 +87,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       verdicts.push(...this.verdictsOnPerformance());
       verdicts.push(...this.verdictsOnTestTrack());
       verdicts.push(...(await this.unaddressedTests(dataFrame)));
+      verdicts.push(...(await this.verdictsForTickets()));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
         d.append(ui.h1('Release is not okay to publish ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
@@ -99,7 +107,8 @@ export class TestDashboardWidget extends DG.JsViewer {
 
   verdictsOnCorrectness(df: DG.DataFrame): Verdict[] {
     let verdicts: Verdict[] = [];
-    verdicts.push(...this.jiraTickets(df));
+    if (df.col('jira') != null)
+      this.jiraTickets(df.col('jira')!);
     verdicts.push(...this.majorPackages(df));
     return verdicts;
   }
@@ -116,21 +125,23 @@ export class TestDashboardWidget extends DG.JsViewer {
     let df = grok.shell.tables.find((df) => df.name.match(/Test.*Track.*Dashboard/));
     if (df == null)
       return verdicts;
+    if (df.col('jira') != null)
+      this.jiraTickets(df.col('jira')!);
     verdicts.push(...this.testTrackDowngrades(df));
     return verdicts;
   }
-  jiraTickets(df: DG.DataFrame): Verdict[] {
+  jiraTickets(jiraCol: DG.Column<string>): Verdict[] {
     try {
-      let verdicts: Verdict[] = [];
-      let tickets: Set<string> = new Set();
-      let jiraCol: DG.Column<string> = df.col('jira')!;
-      let severityCol: DG.Column<string> = df.col('severity')!;
-      for (var i = 0; i < df.rowCount; i++)
-        if ((severityCol.getString(i).length ?? 0) > 0)
-          jiraCol.getString(i).split(',').forEach((ticket, _) => tickets.add(ticket));
-      for (const ticket of tickets)
-        verdicts.push(new Verdict(Priority.INFO, ui.link(ticket, 'https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/' + ticket)));
-      return verdicts;
+      for (var i = 0; i < jiraCol.length; i++)
+        if ((jiraCol.getString(i)?.length ?? 0) > 0)
+          jiraCol.getString(i).split(',').forEach((ticket, _) => {
+            let match = ticket.match(/GROK\-\d+/);
+            console.log(ticket);
+            console.log(match);
+            if (match != null)
+              this.tickets.add(match[0]);
+          });
+      return [];
     } catch (x) {
       return [new Verdict(Priority.ERROR, ui.div([
         ui.span(['Failed to check jira tickets']),
@@ -257,6 +268,45 @@ export class TestDashboardWidget extends DG.JsViewer {
     } catch (x) {
       return [new Verdict(Priority.ERROR, ui.div([
         ui.span(['Failed to gather test track downgrades']),
+        ui.span([x])
+      ]))];
+    }
+  }
+  async verdictsForTickets(): Promise<Verdict[]> {
+    try {
+      let verdicts: Verdict[] = [];
+      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...this.tickets]);
+      let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'priority:name'
+      });
+      let statusCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'status:name'
+      });
+      let issueTypeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'issueType:name'
+      });
+      for (var i = 0; i < jiraCol.length; i++) {
+        let priority: string = Priority.INFO;
+        if (severityCol.getString(i).startsWith('High'))
+          priority = Priority.BLOCKER;
+        else if (statusCol.getString(i) == 'Done')
+          priority = Priority.RESOLVED;
+        else if (issueTypeCol.getString(i) == 'Bug') {
+          if (severityCol.getString(i).startsWith('Low'))
+            priority = Priority.INFO;
+          else
+            priority = Priority.ERROR;
+        }
+        let ticket: string = jiraCol.getString(i);
+        verdicts.push(new Verdict(priority, ui.renderCard(DG.SemanticValue.fromValueType(ticket, 'JIRA Ticket'))));//., false)));
+      }
+      return verdicts;
+    } catch (x) {
+      return [new Verdict(Priority.ERROR, ui.div([
+        ui.span(['Failed to gather jira tickets info']),
         ui.span([x])
       ]))];
     }
