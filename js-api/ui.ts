@@ -310,7 +310,9 @@ export function render(x: any, options?: ElementOptions): HTMLElement {
 /** Renders object to html card.
  * @param {object} x
  * @returns {HTMLElement}. */
-export function renderCard(x: object): HTMLElement {
+export function renderCard(x: object, inGallery: boolean = true): HTMLElement {
+  if (inGallery)
+    return api.grok_UI_RenderCardInGallery(x);
   return api.grok_UI_RenderCard(x);
 }
 

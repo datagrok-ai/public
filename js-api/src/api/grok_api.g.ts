@@ -1368,6 +1368,7 @@ export interface IDartApi {
   grok_UI_SetUpdateIndicator(e: any, u: Bool, m: String): any;
   grok_UI_Render(x: any): any;
   grok_UI_RenderCard(x: any): any;
+  grok_UI_RenderCardInGallery(x: any): any;
   grok_UI_Div(elements: any, className: String): any;
   grok_UI_DivV(elements: any, className: String): any;
   grok_UI_DivH(elements: any, className: String): any;
