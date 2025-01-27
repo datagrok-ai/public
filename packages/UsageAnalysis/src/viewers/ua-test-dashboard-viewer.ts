@@ -30,26 +30,28 @@ class Priority {
 
 class Verdict {
   priority: string;
+  category: string;
   widget: HTMLElement;
-  constructor(priority: string, widget: HTMLElement) {
+  constructor(priority: string, category: string, widget: HTMLElement) {
     this.priority = priority;
     this.widget = widget;
+    this.category = category;
   }
 }
 
 function getIconForVerdict(priority: string): HTMLElement {
   let icon: HTMLElement | undefined;
   if (priority == Priority.BLOCKER) {
-    icon = ui.iconFA('exclamation-triangle');
+    icon = ui.iconFA('exclamation-triangle', null, 'Is considered a blocker for the release');
     icon.style.color = DG.Color.toRgb(DG.Color.red);
   } else if (priority == Priority.ERROR) {
-    icon = ui.iconFA('exclamation-circle');
+    icon = ui.iconFA('exclamation-circle', null, 'Errors to fix');
     icon.style.color = DG.Color.toRgb(DG.Color.red);
   } else if (priority == Priority.INFO) {
-    icon = ui.iconFA('info-circle');
+    icon = ui.iconFA('info-circle', null, 'Good to know, doesn\'t require immediate action');
     icon.style.color = DG.Color.toRgb(DG.Color.blue);
   } if (priority == Priority.RESOLVED) {
-    icon = ui.iconFA('info-circle');
+    icon = ui.iconFA('info-circle', null, 'Already resolved');
     icon.style.color = DG.Color.toRgb(DG.Color.green);
   }
   return icon!;
@@ -90,17 +92,22 @@ export class TestDashboardWidget extends DG.JsViewer {
       verdicts.push(...(await this.verdictsForTickets()));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
-        d.append(ui.h1('Release is not okay to publish ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
+        d.append(ui.h1('Platform not in release-ready state ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
       else
         d.append(ui.h1('Green light! 🚀🚀🚀', { style: { color: DG.Color.toRgb(DG.Color.darkGreen) } }));
       
-      verdicts.sort((a, b) => Priority.codeMapping[b.priority] - Priority.codeMapping[a.priority]);
+      verdicts.sort((a, b) => {
+        let priorityA = Priority.codeMapping[a.priority];
+        let priorityB = Priority.codeMapping[b.priority];
+        if (priorityA != priorityB)
+          return priorityB - priorityA;
+        return a.category == b.category ? 0 :
+              (a.category < b.category ? 1 : -1);
+      });
 
-      let list = ui.list(verdicts.map((verdict) => {
-        return ui.div([getIconForVerdict(verdict.priority), verdict.widget]);
-      }));
+      let list: HTMLElement = this.composeResultList(verdicts);
       d.append(list);
-      d.style.maxWidth = '300px';
+      // d.style.maxWidth = '300px';
       return d;
     }));
   }
@@ -109,6 +116,8 @@ export class TestDashboardWidget extends DG.JsViewer {
     let verdicts: Verdict[] = [];
     if (df.col('jira') != null)
       this.jiraTickets(df.col('jira')!);
+    if (df.col('ignore?') != null)
+      verdicts.push(...this.ignoredTests(df));
     verdicts.push(...this.majorPackages(df));
     return verdicts;
   }
@@ -136,14 +145,12 @@ export class TestDashboardWidget extends DG.JsViewer {
         if ((jiraCol.getString(i)?.length ?? 0) > 0)
           jiraCol.getString(i).split(',').forEach((ticket, _) => {
             let match = ticket.match(/GROK\-\d+/);
-            console.log(ticket);
-            console.log(match);
-            if (match != null)
+            if (match != null && match[0] != undefined)
               this.tickets.add(match[0]);
           });
       return [];
     } catch (x) {
-      return [new Verdict(Priority.ERROR, ui.div([
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
         ui.span(['Failed to check jira tickets']),
         ui.span([x])
       ]))];
@@ -153,7 +160,7 @@ export class TestDashboardWidget extends DG.JsViewer {
     try {
       let packageList = ['datlas', 'ddt', 'ddtx', 'dinq', 'ApiTests', 'ApiSamples', 'Bio', 'Chem']
       let testColumn: DG.Column = df.col('test')!;
-      let failingColumn: DG.Column<boolean> = df.col('failing')!;
+      let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let brokenPackages: Map<string, string[]> = new Map();
       for (var i = 0; i < packageList.length; i++)
         for (var row = 0; row < testColumn.length; row++)
@@ -165,11 +172,18 @@ export class TestDashboardWidget extends DG.JsViewer {
             }
 
       let verdicts: Verdict[] = [];
-      for (const packageName of brokenPackages.keys())
-        verdicts.push(new Verdict(Priority.BLOCKER, ui.span(['package ' + packageName + ' has broken tests'])));
+      for (const packageName of brokenPackages.keys()) {
+        let widget: DG.Widget = DG.Widget.fromRoot(ui.span(['package ' + packageName + ' has broken tests']));
+        widget.root.onclick = (ev: MouseEvent) => {
+          df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
+          df.selection.init((row) => testColumn.getString(row)?.startsWith(packageName) && (failingColumn.get(row) ?? false));
+        };
+        ui.tooltip.bind(widget.root, 'Click to filter');
+        verdicts.push(new Verdict(Priority.BLOCKER, 'Critical package failure', widget.root));
+      }
       return verdicts;
     } catch (x) {
-      return [new Verdict(Priority.BLOCKER, ui.div([
+      return [new Verdict(Priority.BLOCKER, 'Unhandled exception', ui.div([
         ui.span(['Failed to verify major packages']),
         ui.span([x])
       ]))];
@@ -178,7 +192,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   async unaddressedTests(df: DG.DataFrame): Promise<Verdict[]> {
     try {
       let verdicts: Verdict[] = [];
-      let failingColumn: DG.Column<boolean> = df.col('failing')!;
+      let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let jiraCol = df.col('jira')!;
       let testColumn: DG.Column = df.col('test')!;
       let ownerColumn: DG.Column = df.col('owner')!;
@@ -200,7 +214,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       if (Object.keys(unaddressedTests).length > 0) {
         let summary = ui.div([ui.span(['Owners with failing tests:\n'])]);
         for (const [owner, tests] of Object.entries(unaddressedTests)) {
-          const login = owner.match(/\w+@datagrok.ai/) ? owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner
+          const login: string = owner.match(/\w+@datagrok.ai/) ? owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0]! : owner
           let userIcon : HTMLElement | undefined;
           if (login == null) {
             userIcon = ui.span([owner]);
@@ -211,9 +225,15 @@ export class TestDashboardWidget extends DG.JsViewer {
             else
               userIcon = ui.render(user.toMarkup());
           }
-          summary.appendChild(ui.div([userIcon, ui.span([`: ${tests.length} tests`])]));
+          let widget: DG.Widget = DG.Widget.fromRoot(ui.div([userIcon, ui.span([`: ${tests.length} tests`])]));
+          widget.root.onclick = (ev: MouseEvent) => {
+            df.filter.init((row) => ownerColumn.getString(row)?.includes(login));
+            df.selection.init((row) => ownerColumn.getString(row)?.includes(login) && (failingColumn.get(row) ?? false));
+          };
+          ui.tooltip.bind(widget.root, 'Click to filter');
+          summary.appendChild(widget.root);
         }
-        verdicts.push(new Verdict(Priority.INFO, ui.div([
+        verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
           ui.span([summary]),
           ui.button('Copy to Clipboard', () => {
             let slackMessage = '';
@@ -230,11 +250,26 @@ export class TestDashboardWidget extends DG.JsViewer {
       }
       return verdicts;
     } catch (x) {
-      return [new Verdict(Priority.ERROR, ui.div([
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
         ui.span(['Failed to gather unaddressed tests']),
         ui.span([x])
       ]))];
     }
+  }
+  ignoredTests(df: DG.DataFrame): Verdict[] {
+    let verdicts: Verdict[] = [];
+    let testColumn: DG.Column = df.col('test')!;
+    let ignoreColumn: DG.Column = df.col('ignore?')!;
+    let ignoreReasonColumn: DG.Column = df.col('ignoreReason')!;
+    let widgets: DG.Widget[] = [];
+    for (var i = 0; i < df.rowCount; i++) {
+      if (ignoreColumn.get(i)) {
+        widgets.push(DG.Widget.fromRoot(ui.span([testColumn.getString(i), ': ', ignoreReasonColumn.getString(i)])));
+      }
+    }
+    for (var i = 0; i < widgets.length; i++)
+      verdicts.push(new Verdict(Priority.INFO, `Ignored tests - ${widgets.length} items`, widgets[i].root));
+    return verdicts;
   }
   performanceDowngrades(df: DG.DataFrame): Verdict[] {
     try {
@@ -245,28 +280,33 @@ export class TestDashboardWidget extends DG.JsViewer {
           let minDuration: number = df.col('min')!.get(i) ?? 0;
           let maxDuration: number = df.col('max')!.get(i) ?? 0;
           if (lastDuration - minDuration > maxDuration - lastDuration)
-            verdicts.push(new Verdict(Priority.ERROR, ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
+            verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
         }
       }
       return verdicts;
     } catch (x) {
-      return [new Verdict(Priority.ERROR, ui.div([
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
         ui.span(['Failed to gather performance downgrades']),
         ui.span([x])
       ]))];
     }
   }
+  
   testTrackDowngrades(df: DG.DataFrame): Verdict[] {
     try {
       let verdicts: Verdict[] = [];
+      let widgets: DG.Widget[] = [];
       for (let i = 0; i < df.rowCount; i++) {
         if ((df.col('1')?.getString(i) ?? 'passed') != 'passed') {
-          verdicts.push(new Verdict(Priority.ERROR, ui.span([df.col('test')!.getString(i) + ` is failed`])));
+          widgets.push(DG.Widget.fromRoot(ui.span([df.col('test')!.getString(i) + ` is failed`])));
         }
       }
+      for (let i = 0; i < widgets.length; i++)
+        verdicts.push(new Verdict(Priority.ERROR, `Test Track failures - ${widgets.length} items`, widgets[i].root));
+
       return verdicts;
     } catch (x) {
-      return [new Verdict(Priority.ERROR, ui.div([
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
         ui.span(['Failed to gather test track downgrades']),
         ui.span([x])
       ]))];
@@ -275,6 +315,13 @@ export class TestDashboardWidget extends DG.JsViewer {
   async verdictsForTickets(): Promise<Verdict[]> {
     try {
       let verdicts: Verdict[] = [];
+      const priorityRows: Map<string, number[]> = new Map([
+        [Priority.BLOCKER, []],
+        [Priority.ERROR, []],
+        [Priority.INFO, []],
+        [Priority.RESOLVED, []]
+      ]);
+    
       let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...this.tickets]);
       let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
         ticketColumn: jiraCol,
@@ -286,7 +333,15 @@ export class TestDashboardWidget extends DG.JsViewer {
       });
       let issueTypeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
         ticketColumn: jiraCol,
-        field: 'issueType:name'
+        field: 'issuetype:name'
+      });
+      let summaryCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'summary'
+      });
+      let assigneeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'assignee:displayName'
       });
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
@@ -300,17 +355,55 @@ export class TestDashboardWidget extends DG.JsViewer {
           else
             priority = Priority.ERROR;
         }
-        let ticket: string = jiraCol.getString(i);
-        verdicts.push(new Verdict(priority, ui.renderCard(DG.SemanticValue.fromValueType(ticket, 'JIRA Ticket'))));//., false)));
+        priorityRows.get(priority)?.push(i);
+      }
+
+      for (const [priority, rowIndices] of priorityRows) {
+        if (rowIndices.length > 0) {
+            const filteredColumns = [
+                summaryCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                statusCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                severityCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                issueTypeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                jiraCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                assigneeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx)))
+            ];
+    
+            const grid = DG.Grid.create(DG.DataFrame.fromColumns(filteredColumns));
+            
+            verdicts.push(new Verdict(
+                priority,
+                `JIRA tickets [${priority}] - ${rowIndices.length} items`,
+                grid.root
+            ));
+        }
       }
       return verdicts;
     } catch (x) {
-      return [new Verdict(Priority.ERROR, ui.div([
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
         ui.span(['Failed to gather jira tickets info']),
         ui.span([x])
       ]))];
     }
   }
+
+  composeResultList(verdicts: Verdict[]): HTMLElement {
+    let res: DG.Accordion = ui.accordion('');
+    let lastAccordion: HTMLDivElement | null;
+    for (var i = 0; i < verdicts.length; i++) {
+      if (i == 0 || verdicts[i - 1].priority != verdicts[i].priority || verdicts[i - 1].category != verdicts[i].category) {
+        let accordionToShow = ui.div([]);
+        let pane = res.addPane(verdicts[i].category, () => accordionToShow);
+        let icon = getIconForVerdict(verdicts[i].priority);
+        icon.style.marginRight = '4px';
+        pane.root.firstChild!.insertBefore(icon, pane.root.firstChild!.firstChild!);
+        lastAccordion = accordionToShow;
+      }
+      lastAccordion!.appendChild(ui.div([verdicts[i].widget]));
+    }
+    return res.root;
+  }
+
   close(): void {
     TestDashboardWidget.isOpen = false;
     super.close();
