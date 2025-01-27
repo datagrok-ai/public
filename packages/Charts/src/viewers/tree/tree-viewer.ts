@@ -258,7 +258,7 @@ export class TreeViewer extends EChartViewer {
   
     const flattenTree = (nodes: any[]) => {
       for (const node of nodes) {
-        if (node.path) pathOccurrences.push(node.path);
+        if (node.path !== null) pathOccurrences.push(node.path === "" ? " " : node.path);
         if (node.children?.length) flattenTree(node.children);
       }
     };
@@ -330,9 +330,11 @@ export class TreeViewer extends EChartViewer {
   
     const applyHoverStyle = (node: any) => {
       if (node.path !== null) {
-        const nodePathParts = node.path.split('|').map((p: string) => p.trim());
-        const pathParts = path.split('|').map((p: string) => p.trim());
-        const isMatch = nodePathParts.every((part: string, index: number) => pathParts[index] === part) || node.path.includes(path);
+        const nodePath = `All | ${node.path}`;
+        const updatedPath = `All | ${path}`;
+        const nodePathParts = nodePath.split('|').map((p: string) => p.trim());
+        const pathParts = updatedPath.split('|').map((p: string) => p.trim());
+        const isMatch = nodePathParts.every((part: string, index: number) => pathParts[index] === part) || nodePath.includes(updatedPath);
   
         if (isMatch) Object.assign(node, hoverStyle);
       }
