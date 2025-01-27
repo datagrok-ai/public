@@ -196,12 +196,7 @@ export class TreeViewer extends EChartViewer {
     
       for (let i = 0; i < ancestors.length; i++) {
         const ancestor = ancestors[i];
-        const [isSmiles, isMolBlock, isSmarts] = await Promise.all([
-          grok.chem.checkSmiles(ancestor),
-          grok.chem.isMolBlock(ancestor),
-          grok.chem.isSmarts(ancestor),
-        ]);
-        const isStructure = isSmiles || isMolBlock || isSmarts;
+        const isStructure = this.dataFrame.col(this.hierarchyColumnNames[i - 1])?.semType === DG.SEMTYPE.MOLECULE;
         if (isStructure) {
           const image = await TreeUtils.getMoleculeImage(ancestor, 150, 100);
           if (image) {
@@ -248,7 +243,7 @@ export class TreeViewer extends EChartViewer {
   
         if (targetPath) {
           handleChartClick(targetPath.split(' | '), params);
-          this.paintBranchByPath(targetPath);
+          this.handleTreeClick(targetPath);
         }
       }
     };
@@ -288,6 +283,11 @@ export class TreeViewer extends EChartViewer {
     }
     return undefined;
   }
+
+  handleTreeClick(pathString: string): void {
+    this.cleanTree();
+    this.paintBranchByPath(pathString);
+  }
   
   paintBranchByPath(path: string): void {
     const hoverStyle = {
@@ -308,6 +308,18 @@ export class TreeViewer extends EChartViewer {
       };
       this.chart.setOption(updatedOption, false, true);
     }
+  }
+
+  cleanTree(): void {
+    const originalTree = this.option.series?.[0]?.data?.[0];
+    if (!originalTree) return;
+  
+    const clonedTree = echarts.util.clone(originalTree);
+    const updatedOption = { 
+      ...this.option, 
+      series: [{ ...this.option.series[0], data: [clonedTree] }] 
+    };
+    this.chart.setOption(updatedOption, false);
   }
   
   buildSeriesConfig(path: string, hoverStyle: any): any {
