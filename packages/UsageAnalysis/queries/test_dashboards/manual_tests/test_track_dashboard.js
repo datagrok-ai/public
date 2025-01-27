@@ -15,8 +15,6 @@ async function postprocess() {
     .aggregate();
 
 
-  await pivot.columns.addNewCalculated('tmp', 'Abs(2)', 'int');
-  pivot.columns.remove('tmp');
 
   function replaceColumn(prefix, type, buildName, newType) {
     var col = pivot.columns.byName(prefix + type);
@@ -100,8 +98,6 @@ if (result.rowCount == 0)  {
     DG.Column.fromType('string', 'test', 1),
     DG.Column.fromType('string', 'owner', 1)
   ]);
-  await out.columns.addNewCalculated('1', 'Abs(2)', 'int');
-  out.columns.remove('1');
 }
 else
   await postprocess();

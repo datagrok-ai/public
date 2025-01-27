@@ -90,9 +90,6 @@ async function postprocess() {
     };
   }
 
-  await pivot.columns.addNewCalculated('1', 'Abs(2)', 'int');
-  pivot.columns.remove('1');
-
   pivot.meta.setGroups(groups);
   var sortedNames = pivot.columns.names().sort();
   pivot.columns.setOrder(sortedNames);

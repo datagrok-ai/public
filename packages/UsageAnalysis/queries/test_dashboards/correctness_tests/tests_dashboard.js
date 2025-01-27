@@ -125,8 +125,6 @@ if (result.rowCount == 0)  {
     DG.Column.fromType('string', 'test', 1),
     DG.Column.fromType('string', 'owner', 1)
   ]);
-  await out.columns.addNewCalculated('1', 'Abs(2)', 'int');
-  out.columns.remove('1');
 }
 else
   await postprocess();
