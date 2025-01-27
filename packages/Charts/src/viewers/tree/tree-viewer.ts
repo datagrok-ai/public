@@ -485,6 +485,18 @@ export class TreeViewer extends EChartViewer {
     return this.dataFrame.columns.length >= 1;
   }
 
+  addSubs() {
+    if (!this.dataFrame) return;
+    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
+      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
+      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
+      this.render();
+    }));
+    this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
+      requestAnimationFrame(() => this.chart?.resize());
+    }));
+  }
+
   onTableAttached() {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
@@ -497,11 +509,7 @@ export class TreeViewer extends EChartViewer {
     this.colorColumnName = '';
 
     super.onTableAttached();
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
-      this.render();
-    }));
+    this.addSubs();
     this.initChartEventListeners();
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/tree';
   }
@@ -615,6 +623,12 @@ export class TreeViewer extends EChartViewer {
     return this.orient === 'BT' || this.orient === 'TB';
   }
 
+  detach() {
+    for (const sub of this.subs)
+      sub.unsubscribe();
+    super.detach();
+  }
+
   render(): void {
     this.renderQueue = this.renderQueue
       .then(() => this._render());
@@ -641,6 +655,17 @@ export class TreeViewer extends EChartViewer {
         this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
+
+    if (this.chart) {
+      this.chart.clear();
+      this.chart.dispose();
+      this.detach();
+      this.chart = null;
+    }
+    
+    this.chart = echarts.init(this.root);
+    this.initChartEventListeners();
+    this.addSubs();
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
