@@ -64,11 +64,12 @@ export class TreeViewer extends EChartViewer {
   colorAggrType: DG.AggregationType = 'avg';
   hierarchyColumnNames: string[];
   aggregations: string[] = [
-    ...Object.values(DG.AGG),
-    ...Object.values(DG.STR_AGG),
-    ...Object.values(DG.STAT_COUNTS)
-  ].filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
-  aggregationsStr: string[] = Object.values({...DG.STR_AGG, ...DG.STAT_COUNTS});
+    ...new Set([
+      ...Object.values(DG.AGG),
+      ...Object.values(DG.STR_AGG),
+      ...Object.values(DG.STAT_COUNTS)
+    ].filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT))
+  ];  
   selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
   applySizeAggr: boolean = false;
   applyColorAggr: boolean = false;
