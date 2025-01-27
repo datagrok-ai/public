@@ -408,6 +408,11 @@ export class TreeViewer extends EChartViewer {
         this.option.series[0].initialTreeDepth = p.get(this);
         this.render();
 
+      case 'symbolSize':
+        this.option.series[0].symbolSize = p.get(this);
+        this.render();
+        break;
+
       case 'showCounts':
       case 'includeNulls':
         this.render();
@@ -455,7 +460,8 @@ export class TreeViewer extends EChartViewer {
   }    
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
-    const column = this.dataFrame.getCol(columnName);
+    const column = this.dataFrame.col(columnName);
+    if (!column) return false;
     return aggregationMap.get(column.type)?.includes(aggrType)!;
   }
 
