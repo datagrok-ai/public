@@ -21,15 +21,20 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
   filterChanged = false;
 
   load(): void {
-    this.validator = new ValidationHelper(getRequiredColumnsByView()[this.name]);
-    if (this.validator.validate()) {
-      this.optDomainsWithMissingCols = Object.keys(this.validator.missingColumnsInOptDomains)
-        .filter(it => this.validator.missingColumnsInOptDomains[it].length);
-      this.createView();
-      this.loaded = true;
-    } else {
-      updateDivInnerHTML(this.root, createValidationErrorsDiv(this.validator.missingDomains, this.validator.missingColumnsInReqDomains, this.validator.missingColumnsInOptDomains));
-    }
+    ui.setUpdateIndicator(this.root, true, `Loading ${this.name} view`);
+    // need timeout here to make update indicator visible
+    setTimeout(()=> {
+      this.validator = new ValidationHelper(getRequiredColumnsByView()[this.name]);
+      if (this.validator.validate()) {
+        this.optDomainsWithMissingCols = Object.keys(this.validator.missingColumnsInOptDomains)
+          .filter(it => this.validator.missingColumnsInOptDomains[it].length);
+        this.createView();
+        this.loaded = true;
+        ui.setUpdateIndicator(this.root, false);
+      } else {
+        updateDivInnerHTML(this.root, createValidationErrorsDiv(this.validator.missingDomains, this.validator.missingColumnsInReqDomains, this.validator.missingColumnsInOptDomains));
+      }
+    }, 50);
   }
 
   createView() { }

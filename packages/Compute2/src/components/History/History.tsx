@@ -51,7 +51,7 @@ export const History = Vue.defineComponent({
     const isLoading = Vue.ref(true);
 
     const showFilters = Vue.ref(false);
-    const showInputs = Vue.ref(true);
+    const showInputs = Vue.ref(false);
     const showMetadata = Vue.ref(true);
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
@@ -363,7 +363,7 @@ export const History = Vue.defineComponent({
         }}
       />;
 
-      return Vue.withDirectives(<div style={{overflow: 'hidden'}}>
+      return Vue.withDirectives(<div style={{overflow: 'hidden', height: '100%'}}>
         { historicalRuns.value.size === 0 ?
           fallbackText:
           <div style={{

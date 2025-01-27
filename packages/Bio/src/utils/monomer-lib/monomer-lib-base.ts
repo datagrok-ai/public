@@ -25,6 +25,12 @@ const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
 const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 
+const drawMoleculeCall = (s: string) => {
+  const canvas = ui.canvas(250, 250);
+  grok.chem.canvasMol(0, 0, 250, 250, canvas, s);
+  return canvas;
+};
+
 export type MonomerLibDataType = { [polymerType: string]: { [monomerSymbol: string]: Monomer } };
 
 const whiteColorV = new Vector([255.0, 255.0, 255.0]);
@@ -189,10 +195,10 @@ export class MonomerLibBase implements IMonomerLibBase {
       const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       let structureEl: HTMLElement;
       if (monomer.molfile)
-        structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
+        structureEl = drawMoleculeCall(monomer.molfile);
       else if (monomer.smiles) {
         structureEl = ui.divV([
-          grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
+          drawMoleculeCall(monomer.smiles),
           ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
         ]);
       } else {
@@ -271,13 +277,12 @@ export class MonomerLibBase implements IMonomerLibBase {
       }
 
       const naSymbol: string | undefined = monomer[OPT.NATURAL_ANALOG];
-      if (!res && naSymbol) {
+      if (!res && naSymbol)
         return this.getMonomerColors(biotype, naSymbol);
-      }
     }
 
     if (!res)
-      res = {textColor: "#202020", lineColor: "#202020", backgroundColor: "#A0A0A0"};
+      res = {textColor: '#202020', lineColor: '#202020', backgroundColor: '#A0A0A0'};
 
     return {
       textcolor: res.text ?? res.textColor,

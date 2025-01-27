@@ -8,7 +8,7 @@ public abstract class Column<T> {
     public String name;
     public int length = 0;
     public Map<String, String> tags = new HashMap<>();
-    protected int initColumnSize = 100;
+    public int initColumnSize = 100;
 
     public Column() {
     }

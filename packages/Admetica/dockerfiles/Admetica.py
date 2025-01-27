@@ -12,7 +12,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from constants import mean_vectors
 from chemprop import data, featurizers, models
 from lightning import pytorch as pl
@@ -165,20 +165,51 @@ def predict(data, models, add_probability, batch_size=1000):
   final_df = pd.concat(result_dfs, axis=1).loc[:, ~pd.concat(result_dfs, axis=1).columns.duplicated()]
   return final_df.to_csv(index=False)
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+  logging.error(f"Unhandled Exception: {str(e)}")
+  response = {
+    "success": False,
+    "error": str(e),
+    "result": None
+  }
+  return jsonify(response), 500
+
 @app.route('/predict', methods=['POST'])
 def admetica_predict():
-  raw_data = request.data
+  try:
+    raw_data = request.data
+    
+    models = request.args.get('models')
+    add_probability = request.args.get('probability', 'false') == 'true'
+    start = time()
+    response_data = predict(raw_data, models, add_probability)
+    logging.debug(f'Time required: {time() - start}')
+    
+    return jsonify({
+      "success": True,
+      "error": None,
+      "result": response_data
+    }), 200
 
-  models = request.args.get('models')
-  add_probability = request.args.get('probability', 'false') == 'true'
-  start = time()
-  response = predict(raw_data, models, add_probability)
-  logging.debug(f'Time required: {time() - start}')
-  return response
+  except Exception as e:
+    logging.error(f"Error in prediction: {str(e)}")
+    return jsonify({
+      "success": False,
+      "error": str(e),
+      "result": None
+    }), 500
 
 @app.route('/health_check', methods=['GET'])
 def health_check():
-    return jsonify({"success": True}), 200
+  try:
+    return jsonify({"success": True, "error": None, "result": "Service is up and running"}), 200
+  except Exception as e:
+    return jsonify({
+      "success": False,
+      "error": str(e),
+      "result": None
+    }), 500
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=6678, debug=False)

@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.18.2 (2025-01-22)
+
+Improve grid cell renderer
+
 ## 2.18.1 (2024-12-30)
 
 * Removed dependency from Helm package

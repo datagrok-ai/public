@@ -111,8 +111,11 @@ public class DefaultResultSetManager implements ResultSetManager {
     }
 
     @Override
-    public void empty() {
-        Arrays.asList(columns).forEach(Column::empty);
+    public void empty(int newColSize) {
+        for (Column<?> col : columns) {
+            col.initColumnSize = newColSize;
+            col.empty();
+        }
     }
 
     @Override

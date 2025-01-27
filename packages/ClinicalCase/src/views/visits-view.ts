@@ -72,6 +72,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     this.createTotalVisits();
     this.visitsGrid = this.pivotedSv.plot.grid();
     this.renderVisitCell();
+    this.styleVisitsGrid();
     this.heatMap = DG.Viewer.fromType(DG.VIEWER.HEAT_MAP, this.createHeatMapDf(), {
       'colorCoding': 'All',
     });
@@ -378,6 +379,13 @@ export class VisitsView extends ClinicalCaseViewBase {
         args.preventDefault();
       }
     });
+  }
+
+  private styleVisitsGrid() {
+    const columnsToStyle = this.visitsGrid.dataFrame.columns.names()
+      .filter((it) => it !== SUBJECT_ID && it !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+    for (const colName of columnsToStyle)
+      this.visitsGrid.col(colName)!.width = 150;
   }
 
   async studyVisitPanel() {

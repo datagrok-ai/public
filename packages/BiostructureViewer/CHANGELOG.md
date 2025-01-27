@@ -1,5 +1,9 @@
 # BiostructureViewer changelog
 
+## 1.3.2 (2025-01-21)
+
+Fix for renderers in non-grid views
+
 ## 1.3.1 (2025-01-09)
 
 Support PDB-ID renderer in tooltips

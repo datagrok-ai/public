@@ -33,8 +33,10 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
 
     const img = ImageCellRenderer.images.getOrCreate(url, (_: any) => {
       const image = new Image();
-      image.src = url;
+
       image.onload = () => gridCell.grid.invalidate();
+      image.crossOrigin = 'anonymous';
+      image.src = url;
       return image;
     });
 

@@ -9,7 +9,8 @@ import {OpenIcon} from '@he-tree/vue';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, isSubtree, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -139,7 +140,7 @@ export const TreeNode = Vue.defineComponent({
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     toggleNode: () => {},
-    runSubtree: (startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) => {},
+    runSubtree: (startUuid: string, rerunWithConsistent?: boolean) => {},
     runStep: (uuid: string) => {},
     saveStep: (uuid: string) => {},
   },
@@ -229,17 +230,13 @@ export const TreeNode = Vue.defineComponent({
                 class='d4-ribbon-item'
               />]: [],
             ]: [] }
-            { props.hasInconsistentSubsteps && <IconFA
+            { props.hasInconsistentSubsteps && !isFuncCallState(props.stat.data) && <IconFA
               name='sync'
               class='d4-ribbon-item'
               tooltip='Rerun substeps with consistent values'
               animation={props.callState?.isRunning ? 'spin': null}
               onClick={() => {
-                const subtreeData = props.stat.data as PipelineWithAdd;
-                const firstSubstep = subtreeData.steps.at(0);
-                const lastSubstep = subtreeData.steps.at(-1);
-                if (firstSubstep && lastSubstep)
-                  emit('runSubtree', firstSubstep.uuid, true, lastSubstep.uuid);
+                emit('runSubtree', props.stat.data.uuid, true);
               }}
             /> }
             {
@@ -249,7 +246,7 @@ export const TreeNode = Vue.defineComponent({
                   tooltip={'Rerun this step with consistent inputs'}
                   style={{'padding-right': '3px'}}
                   onClick={(e) => {
-                    emit('runSubtree', props.stat.data.uuid, true, props.stat.data.uuid);
+                    emit('runSubtree', props.stat.data.uuid, true);
                     e.stopPropagation();
                   }}
                   class='d4-ribbon-item'

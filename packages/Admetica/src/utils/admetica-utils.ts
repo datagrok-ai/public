@@ -4,10 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary, AdmeticaResponse } from './constants';
 import { FormStateGenerator } from './admetica-form';
 import '../css/admetica.css';
 import { CellRenderViewer } from '../viewers/cell-render-viewer';
+import { _package } from '../package-test';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -18,10 +19,10 @@ async function getAdmeticaContainer() {
   return admeticaContainer;
 }
 
-async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<string | null> {
+async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
   try {
     const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
-    return response;
+    return JSON.parse(response!);
   } catch (error) {
     //grok.log.error(error);
     return null;
@@ -34,8 +35,8 @@ export async function healthCheck() {
   const params: RequestInit = {
     method: 'GET',
   }
-  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  if (!response)
+  const response: AdmeticaResponse | null = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  if (!response?.success)
     throw new Error('Health check failed.');
 }
 
@@ -51,8 +52,13 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   };
 
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
-  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+  const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
+  if (!response?.success) {
+    grok.shell.error('Prediction attempt failed.');
+    _package.logger.error(response?.error);
+    return null;
+  }
+  return await convertLD50(response.result!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {

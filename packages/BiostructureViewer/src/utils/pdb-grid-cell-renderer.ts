@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -167,7 +168,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
-  imageCache: LruCache = new LruCache<string, any>();
+  imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
 
   get defaultWidth() { return 100; }
   get defaultHeight() { return 100; }
@@ -178,10 +179,13 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    if (h < 40 || gridCell.cell.valueString.length < 4 || w < 40)
+    const renderedOnGrid = gridCell.gridColumn && gridCell.grid?.canvas === g.canvas;
+    const cellValue = (renderedOnGrid ? gridCell.cell.valueString : (gridCell.cell?.value ?? '').toString()).toLowerCase();
+
+    if (h < 40 || cellValue.length < 4 || w < 40)
       DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
     else {
-      const pdb = gridCell.cell.valueString.toLowerCase();
+      const pdb = cellValue;
       const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
       const cache = this.imageCache;
 
@@ -207,7 +211,10 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
           img.src = URL.createObjectURL(blob);
           img.onload = () => {
             cache.set(url, img);
-            this.render(g, x, y, w, h, gridCell, cellStyle);
+            if (renderedOnGrid)
+              gridCell.render();
+            else
+              this.render(g, x, y, w, h, gridCell, cellStyle);
             URL.revokeObjectURL(img.src);
           };
         }).catch((_) => { });

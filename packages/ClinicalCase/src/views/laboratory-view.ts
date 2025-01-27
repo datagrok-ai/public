@@ -138,6 +138,10 @@ export class LaboratoryView extends ClinicalCaseViewBase {
         [SUBJECT_ID], [SUBJECT_ID],
         [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     }
+    if (!baselineEndpointDataframe.rowCount) {
+      updateDivInnerHTML(this.baselineEndpointDiv, ui.info(`No data found for ${this.selectedLabBlEp} and selected visits`));
+      return;
+    }
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, VIEWS_CONFIG[this.name][TRT_ARM_FIELD],
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
