@@ -194,12 +194,14 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderPreview(x: DG.Func): DG.View {
-    const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
+    const editorName: string = x.options.editor ?? 'Compute:RichFunctionViewEditor';
+
     //@ts-ignore
     return DG.View.fromViewAsync(async () => {
       const editor = await grok.functions.find(editorName);
       if (editor !== null && editor instanceof DG.Func) {
-        const viewCall = editor.prepare({'call': x.prepare()});
+        const args = editor.inputs.find(input => input.name === 'addView') ? {addView: false} : {};
+        const viewCall = editor.prepare({'call': x.prepare(args)});
         await viewCall.call(false, undefined, {processed: true});
         const view = viewCall.getOutputParamValue();
         //@ts-ignore

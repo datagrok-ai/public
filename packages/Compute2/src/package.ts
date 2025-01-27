@@ -24,24 +24,29 @@ export async function init() {
 //name: RichFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
-export async function RichFunctionViewEditor(call: DG.FuncCall) {
+//input: bool addView = true
+//output: view result
+export async function RichFunctionViewEditor(call: DG.FuncCall, addView: boolean) {
   const thisCall = grok.functions.getCurrentCall();
 
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
   const app = Vue.createApp(RFVApp, {funcCall: call});
-  grok.shell.add(view);
-  app.mount(view.root);
-  view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
 
-  view.name = call.func.friendlyName;
-  view.parentCall = thisCall;
-  view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${call.func.name}`;
+
+  if (addView) {
+    view.name = call.func.friendlyName;
+    view.parentCall = thisCall;
+    view.parentView = thisCall.parentCall?.aux['view'];
+    view.basePath = `/${call.func.name}`;
+    grok.shell.add(view);
+  }
+
+  app.mount(view.root);
 
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
@@ -51,36 +56,45 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+
+  return view;
 }
 
 
 //name: Tree Wizard Test
 //tags: test, vue
 //meta.icon: icons/tree-wizard.png
-export async function TreeWizardTestApp() {
-  return DG.Func.byName('Compute2:TreeWizardEditor')
-    .prepare({call: DG.Func.byName('Compute2:MockProvider2').prepare()}).call();
-}
+//meta.provider: Compute2:MockProvider2
+//editor: Compute2:TreeWizardEditor
+export async function TreeWizardTestApp() {}
+
 
 //name: Tree Wizard Editor
 //tags: editor
 //input: funccall call
-export async function TreeWizardEditor(call: DG.FuncCall) {
+//input: bool addView = true
+//output: view result
+export async function TreeWizardEditor(call: DG.FuncCall, addView: boolean) {
   const thisCall = grok.functions.getCurrentCall();
 
   await customElements.whenDefined('dg-markdown');
 
+  if (!call.func.options.provider)
+    throw new Error(`Model ${call.name} has no provider`);
+
   const view = new DG.ViewBase();
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
 
-  view.name = call.func.friendlyName;
-  view.parentCall = thisCall;
-  view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${thisCall.func.name}`;
+  if (addView) {
+    view.name = call.func.friendlyName;
+    view.parentCall = thisCall;
+    view.parentView = thisCall.parentCall?.aux['view'];
+    view.basePath = `/${thisCall.func.name}`;
+    grok.shell.add(view);
+  }
 
-  grok.shell.add(view);
   app.mount(view.root);
 
   grok.events.onViewRemoved.pipe(
@@ -91,6 +105,8 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+
+  return view;
 }
 
 //tags: test, vue
