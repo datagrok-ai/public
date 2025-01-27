@@ -8,8 +8,6 @@ import { RootLayout } from 'react-science/ui';
 import events from './events';
 import { useLoadSpectra } from './hooks/useLoadSpectra';
 import { usePreferences } from './hooks/usePreferences';
-import { useWhiteList } from './hooks/useWhiteList';
-import AboutUsModal from './modal/AboutUsModal';
 
 
 
@@ -40,27 +38,25 @@ const styles: Record<'container' | 'loadingContainer', CSSProperties> = {
 };
 
 
-export function getNMRiumComponent(nmriumHost: HTMLDivElement) {
-  const props = {};
+export function getNMRiumComponent(nmriumHost: HTMLElement, id: string) {
+  const props = {id: id};
   const component = React.createElement(NmriumRouted, props, null);
   const root = ReactDOM.createRoot(nmriumHost);
   root.render(component);
   return nmriumHost;
 }
 
-export function NmriumRouted() {
+export function NmriumRouted(props: { id: string }) {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<NMRiumWrapper />} />
+        <Route path="/" element={<NMRiumWrapper id={props.id}/>} />
       </Routes>
     </Router>
   )
 }
 
-export default function NMRiumWrapper() {
-  const id = `nmrium-wrapper-${Math.floor(Math.random() * 100000)}`;
-  const { allowedOrigins, isFetchAllowedOriginsPending } = useWhiteList();
+export default function NMRiumWrapper(props: { id: string }) {
   const nmriumRef = useRef<NMRiumRefAPI>(null);
   const [data, setDate] = useState<NMRiumData>();
 
@@ -103,12 +99,12 @@ export default function NMRiumWrapper() {
           }
         }
       },
-      { allowedOrigins },
+      { allowedOrigins: [] },
     );
     const clearLoadListener = events.on(
       'load',
       (loadData) => {
-        if(loadData.wrapper !== id)
+        if(loadData.wrapper && loadData.wrapper !== props.id)
           return;
         switch (loadData.type) {
           case 'nmrium':
@@ -131,7 +127,7 @@ export default function NMRiumWrapper() {
           }
         }
       },
-      { allowedOrigins },
+      { allowedOrigins: [] },
     );
 
     return () => {
@@ -141,14 +137,9 @@ export default function NMRiumWrapper() {
   });
 
   return (
-    <div id={id} style={styles.container}>
+    <div id={props.id} style={styles.container}>
     <RootLayout style={styles.container}>
       {' '}
-      {isFetchAllowedOriginsPending && (
-        <div style={styles.loadingContainer}>
-          <span>Loading .... </span>
-        </div>
-      )}
       <NMRium
         ref={nmriumRef}
         data={data}
@@ -161,7 +152,6 @@ export default function NMRiumWrapper() {
         }}
         customWorkspaces={customWorkspaces}
       />
-      <AboutUsModal />
     </RootLayout>
     </div>
   );
