@@ -364,7 +364,7 @@ export const History = Vue.defineComponent({
         }}
       />;
 
-      return Vue.withDirectives(<div style={{overflow: 'hidden'}}>
+      return Vue.withDirectives(<div style={{overflow: 'hidden', height: '100%'}}>
         { historicalRuns.value.size === 0 ?
           fallbackText:
           <div style={{
