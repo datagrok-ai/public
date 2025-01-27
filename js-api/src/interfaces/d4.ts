@@ -425,7 +425,7 @@ export interface IScatterPlotSettings {
 
   markerType: string;
 
-  // -1 default - automatic sizing based on current dataframe
+  // By default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
