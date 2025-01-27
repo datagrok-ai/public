@@ -13,15 +13,18 @@ type LoadData =
       data: string[];
       activeTab?: string;
       type: 'url';
+      wrapper?: any;
     }
   | {
       data: File[];
       activeTab?: string;
       type: 'file';
+      wrapper?: any;
     }
   | {
       data: NMRiumData;
       type: 'nmrium';
+      wrapper?: any;
     };
 
 interface ActionRequest {

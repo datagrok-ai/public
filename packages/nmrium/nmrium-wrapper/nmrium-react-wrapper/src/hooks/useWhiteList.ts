@@ -1,13 +1,11 @@
 import { useEffect, useState, useTransition } from 'react';
 
 async function readAllowedOrigins() {
-  return fetch(
-    'https://raw.githubusercontent.com/NFDI4Chem/nmrium-react-wrapper/main/src/allowed-origins.json',
-  ).then((response) => response.json());
+  return [];
 }
 
 export function useWhiteList() {
-  const [allowedOrigins, setAllowedOrigins] = useState([]);
+  const [allowedOrigins, setAllowedOrigins] = useState<Array<string>>([]);
   const [isFetchAllowedOriginsPending, startTransition] = useTransition();
 
   useEffect(() => {

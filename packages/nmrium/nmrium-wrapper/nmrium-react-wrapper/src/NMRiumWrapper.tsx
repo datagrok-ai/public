@@ -12,6 +12,7 @@ import { useWhiteList } from './hooks/useWhiteList';
 import AboutUsModal from './modal/AboutUsModal';
 
 
+
 export const NMRiumEvents = {trigger: events.trigger, on: events.on};
 
 const styles: Record<'container' | 'loadingContainer', CSSProperties> = {
@@ -58,6 +59,7 @@ export function NmriumRouted() {
 }
 
 export default function NMRiumWrapper() {
+  const id = `nmrium-wrapper-${Math.floor(Math.random() * 100000)}`;
   const { allowedOrigins, isFetchAllowedOriginsPending } = useWhiteList();
   const nmriumRef = useRef<NMRiumRefAPI>(null);
   const [data, setDate] = useState<NMRiumData>();
@@ -106,6 +108,8 @@ export default function NMRiumWrapper() {
     const clearLoadListener = events.on(
       'load',
       (loadData) => {
+        if(loadData.wrapper !== id)
+          return;
         switch (loadData.type) {
           case 'nmrium':
             setDate(loadData.data);
@@ -137,6 +141,7 @@ export default function NMRiumWrapper() {
   });
 
   return (
+    <div id={id} style={styles.container}>
     <RootLayout style={styles.container}>
       {' '}
       {isFetchAllowedOriginsPending && (
@@ -158,6 +163,7 @@ export default function NMRiumWrapper() {
       />
       <AboutUsModal />
     </RootLayout>
+    </div>
   );
 }
 

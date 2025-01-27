@@ -5,7 +5,7 @@
 ## to build and run:
 
 1. install the local dependency in nmrium wrapper folder:
-   CD into the nmrium-wrapper folder, npm install
+   CD into the nmrium-react-wrapper folder, npm install
 
 2. npm install in nmrium package
 
