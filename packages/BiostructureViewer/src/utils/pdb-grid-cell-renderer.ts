@@ -168,7 +168,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
-  imageCache: LruCache = new LruCache<string, any>();
+  imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
 
   get defaultWidth() { return 100; }
   get defaultHeight() { return 100; }
@@ -211,7 +211,10 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
           img.src = URL.createObjectURL(blob);
           img.onload = () => {
             cache.set(url, img);
-            this.render(g, x, y, w, h, gridCell, cellStyle);
+            if (renderedOnGrid)
+              gridCell.render();
+            else
+              this.render(g, x, y, w, h, gridCell, cellStyle);
             URL.revokeObjectURL(img.src);
           };
         }).catch((_) => { });
