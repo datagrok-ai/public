@@ -10,7 +10,7 @@ WITH last_builds AS (
     from builds b
     -- todo: filter builds with cicd not-stresstest runs
     -- todo: filter only success builds
-    where EXISTS((SELECT 1 from test_runs r where r.build_name = b.name and not r.stress_test and r.benchmark))
+    where (SELECT count(*) from test_runs r where r.build_name = b.name and not r.stress_test and r.benchmark) > 10
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
   select name, ROW_NUMBER() OVER (ORDER BY build_date DESC) AS build_index,

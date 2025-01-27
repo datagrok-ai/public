@@ -1014,6 +1014,24 @@
                             "vertAlign": "bottom",
                             "textWrap": "words"
                           }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "ignore?",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "ignoreReason",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
                         }
                       ]
                     },
