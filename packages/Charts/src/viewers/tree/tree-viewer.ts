@@ -95,7 +95,7 @@ export class TreeViewer extends EChartViewer {
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ], category: 'Style' });
-    this.symbolSize = this.int('symbolSize', 7, {category: 'Style'});
+    this.symbolSize = this.int('symbolSize', 7, {category: 'Style', description: 'Used unless an aggregation function is specified'});
     this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
     this.labelRotate = this.int('labelRotate', 45, {category: 'Style', max: 360});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
@@ -244,8 +244,8 @@ export class TreeViewer extends EChartViewer {
       const targetPath = this.getTargetPath(params);
 
       if (targetPath && targetPath !== this.clickedPath) {
-        this.hoveredPath = targetPath; // Save hovered path
-        this.paintBranchByPath(targetPath, this.mouseOverLineColor); // Apply hover style
+        this.hoveredPath = targetPath;
+        this.paintBranchByPath(targetPath, this.mouseOverLineColor);
       }
     };
 
@@ -487,8 +487,8 @@ export class TreeViewer extends EChartViewer {
         this.render();
         break;
 
-      case 'showMouseOverRow':
-      case 'mouseOverRowColor':
+      case 'showMouseOverLine':
+      case 'mouseOverLineColor':
         break;
 
       case 'selectedRowsColor':
