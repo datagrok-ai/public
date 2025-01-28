@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.40.4 (2025-01-28)
+
+- ModelHandler: help disable sync
+
 ## 1.40.3 (2024-12-28)
 
 - ModelHandler: help fix
