@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.40.3 (2025-01-28)
+
+- ModelHandler: help fix
+
 ## 1.40.2 (2025-01-27)
 
 - Build fix
