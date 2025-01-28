@@ -234,7 +234,7 @@ export class TreeViewer extends EChartViewer {
 
       if (targetPath) {
         this.clickedPath = targetPath;
-        handleChartClick(targetPath.split(' | '), params);
+        handleChartClick(targetPath.split(' ||| '), params);
         this.handleTreeClick(targetPath, this.selectedRowsColor);
       }
     };
@@ -380,13 +380,16 @@ export class TreeViewer extends EChartViewer {
     
     const applyHoverStyle = (node: any) => {
       if (node.path !== null) {
-        const nodePath = `All | ${node.path}`;
-        const pathsSet = new Set(paths.map((path) => `All | ${path}`));
-        const nodePathParts = nodePath.split('|').map((p: string) => p.trim());
+        const nodePath = `All ||| ${node.path}`;
+        const pathsSet = new Set(paths.map((path) => `All ||| ${path}`));
+        const nodePathParts = nodePath.split('|||').map((p: string) => p.trim());
         
         const isMatch = Array.from(pathsSet).some((path) => {
-          const pathParts = path.split('|').map((p: string) => p.trim());
-          return nodePathParts.every((part, index) => pathParts[index] === part) || nodePath.includes(path);
+          const pathParts = path.split('|||').map((p: string) => p.trim());
+          return (
+            nodePathParts.every((part, index) => pathParts[index] === part) ||
+            pathParts.every((part, index) => nodePathParts[index] === part)
+          );          
         });
         
         if (isMatch) Object.assign(node, hoverStyle);
