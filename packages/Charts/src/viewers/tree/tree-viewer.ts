@@ -79,8 +79,8 @@ export class TreeViewer extends EChartViewer {
   includeNulls: boolean;
   labelRotate: number;
   selectedRowsColor: number;
-  mouseOverRowColor: number;
-  showMouseOverRow: boolean;
+  mouseOverLineColor: number;
+  showMouseOverLine: boolean;
 
   private clickedPath: string | null = null;
   private hoveredPath: string | null = null;
@@ -99,10 +99,10 @@ export class TreeViewer extends EChartViewer {
     this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
     this.labelRotate = this.int('labelRotate', 45, {category: 'Style', max: 360});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
-    this.mouseOverRowColor = this.int('mouseOverRowColor', 0xADD8E6, {category: 'Style'});
+    this.mouseOverLineColor = this.int('mouseOverLineColor', 0x6C5E5E, {category: 'Style'});
     this.selectedRowsColor = this.int('selectedRowsColor', 0xFF8C00, {category: 'Style'});
 
-    this.showMouseOverRow = this.bool('showMouseOverRow', false, {category: 'Selection'});
+    this.showMouseOverLine = this.bool('showMouseOverLine', false, {category: 'Selection'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
     this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Size' });
@@ -240,12 +240,12 @@ export class TreeViewer extends EChartViewer {
     };
 
     const handleZrHover = (params: any) => {
-      if (!this.showMouseOverRow) return;
+      if (!this.showMouseOverLine) return;
       const targetPath = this.getTargetPath(params);
 
       if (targetPath && targetPath !== this.clickedPath) {
         this.hoveredPath = targetPath; // Save hovered path
-        this.paintBranchByPath(targetPath, this.mouseOverRowColor); // Apply hover style
+        this.paintBranchByPath(targetPath, this.mouseOverLineColor); // Apply hover style
       }
     };
 
