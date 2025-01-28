@@ -72,14 +72,17 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   static async openHelp(func: DG.Func) {
-    if (func.options['readme'] != null) {
-      grok.shell.windows.showHelp = true;
-      await new Promise((r) => setTimeout(r, 100));
-      const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-      grok.dapi.files.readAsText(path).then((readmeText) => {
-        grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-      });
-    }
+    if (!func.options['readme']) return;
+
+    const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
+    const readmeExists = await grok.dapi.files.exists(path);
+
+    if (!readmeExists) return;
+
+    grok.shell.windows.help.visible = true;
+    const readmeText = await grok.dapi.files.readAsText(path);
+    await new Promise((r) => setTimeout(r, 1000));
+    grok.shell.windows.help.showHelp(ui.markdown(readmeText));
   }
 
   static openModel(x: DG.Func) {
