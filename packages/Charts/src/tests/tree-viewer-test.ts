@@ -33,21 +33,23 @@ category('TreeViewer', () => {
       edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,
+      fontSize: 12,
+      labelRotate: 45,
+      showCounts: false,
+      mouseOverLineColor: 7102046,
+      selectedRowsColor: 16747520,
+      showMouseOverLine: false,
       sizeColumnName: '',
       sizeAggrType: DG.AGG.AVG,
       colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
-      fontSize: 12,
-      labelRotate: 45,
-      showCounts: false,
-      mouseOverLineColor: 7102046,
-      selectedRowsColor:16747520,
-      showMouseOverLine:false,
       onClick:'Select',
       includeNulls: true
     };
 
+    console.log(standardOptions);
+    console.log(await getOptions(viewer));
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
 
     viewer.setOptions({
