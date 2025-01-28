@@ -678,7 +678,14 @@ export class TreeViewer extends EChartViewer {
       const minImageHeight = 80;
 
       if (availableSpace >= minImageWidth && labelHeight >= minImageHeight) {
-        this.renderMoleculeQueued(params, minImageWidth, minImageHeight);
+        const scaleByWidth = availableSpace / minImageWidth;
+        const scaleByHeight = labelHeight / minImageHeight;
+        const scale = Math.min(scaleByWidth, scaleByHeight);
+
+        const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
+        const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
+
+        this.renderMoleculeQueued(params, renderWidth, renderHeight);
         return ' ';
       }
       return ' ';
