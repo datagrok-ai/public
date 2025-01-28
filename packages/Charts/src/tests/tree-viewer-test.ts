@@ -27,14 +27,8 @@ category('TreeViewer', () => {
     const standardOptions = {
       rowSource: 'Filtered',
       filter: '',
-      top: '5px',
-      bottom: '5px',
-      animationDuration: 750,
-      animationDurationUpdate: 750,
-      animation: true,
       layout: 'orthogonal',
       orient: 'LR',
-      expandAndCollapse: true,
       initialTreeDepth: 3,
       edgeShape: 'curve',
       symbol: 'emptyCircle',
@@ -45,7 +39,13 @@ category('TreeViewer', () => {
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
       fontSize: 12,
-      showCounts: false
+      labelRotate: 45,
+      showCounts: false,
+      mouseOverLineColor: 7102046,
+      selectedRowsColor:16747520,
+      showMouseOverLine:false,
+      onClick:'Select',
+      includeNulls: true
     };
 
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
