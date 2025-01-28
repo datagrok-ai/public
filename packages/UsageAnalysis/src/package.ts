@@ -15,7 +15,6 @@ import { getDate } from './utils';
 import dayjs from "dayjs";
 import {ServiceLogsApp} from "./service_logs/service_logs";
 import { TestGridCellHandler } from './handlers/test-grid-cell-handler';
-import { StackTraceHandler } from './handlers/stack-trace-handler';
 import { initTestStickyMeta } from './test-analysis/sticky-meta-initialization';
 import { TestDashboardWidget } from './viewers/ua-test-dashboard-viewer';
 
@@ -27,7 +26,6 @@ export let _properties: any;
 export function _initUA(): void {
   _properties = _package.settings;
   DG.ObjectHandler.register(new TestGridCellHandler());
-  DG.ObjectHandler.register(new StackTraceHandler());
   initTestStickyMeta();
 }
 
