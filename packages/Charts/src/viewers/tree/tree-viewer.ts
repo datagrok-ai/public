@@ -40,6 +40,7 @@ const aggregationMap = new Map<string, string[]>([
     DG.AGG.MISSING_VALUE_COUNT
   ]]
 ]);
+const CATEGORIES_NUMBER = 500;
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 @grok.decorators.viewer({
   name: 'Tree',
@@ -63,6 +64,7 @@ export class TreeViewer extends EChartViewer {
   colorColumnName: string = '';
   colorAggrType: DG.AggregationType = 'avg';
   hierarchyColumnNames: string[];
+  eligibleHierarchyNames!: string[];
   aggregations: string[] = [
     ...new Set([
       ...Object.values(DG.AGG),
@@ -76,7 +78,12 @@ export class TreeViewer extends EChartViewer {
   onClick: onClickOptions;
   includeNulls: boolean;
   labelRotate: number;
+  selectedRowsColor: number;
+  mouseOverRowColor: number;
+  showMouseOverRow: boolean;
 
+  private clickedPath: string | null = null;
+  private hoveredPath: string | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   constructor() {
     super();
@@ -84,7 +91,7 @@ export class TreeViewer extends EChartViewer {
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
     this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
-    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'], category: 'Style' });
+    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve'/*, 'polyline'*/], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ], category: 'Style' });
@@ -92,6 +99,10 @@ export class TreeViewer extends EChartViewer {
     this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
     this.labelRotate = this.int('labelRotate', 45, {category: 'Style', max: 360});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
+    this.mouseOverRowColor = this.int('mouseOverRowColor', 0xADD8E6, {category: 'Style'});
+    this.selectedRowsColor = this.int('selectedRowsColor', 0xFF8C00, {category: 'Style'});
+
+    this.showMouseOverRow = this.bool('showMouseOverRow', false, {category: 'Selection'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
     this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Size' });
@@ -139,10 +150,10 @@ export class TreeViewer extends EChartViewer {
         return false;
 
       return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
+        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
         return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
       });
-    }, event);
+    }, event.event);
   }
 
   handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
@@ -153,8 +164,8 @@ export class TreeViewer extends EChartViewer {
   buildFilterFunction(path: string[]): (row: any) => boolean {
     return (row) => {
       return path.every((expectedValue, i) => {
-        const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
-        const columnValue = row.get(this.hierarchyColumnNames[i]);
+        const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
+        const columnValue = row.get(this.eligibleHierarchyNames[i]);
         const formattedValue = columnValue !== null ?
           (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
         return formattedValue === expectedValue;
@@ -174,7 +185,7 @@ export class TreeViewer extends EChartViewer {
         return;
       }
 
-      const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
+      const isMultiSelect = event.event.shiftKey || event.event.ctrlKey || event.event.metaKey;
       if (isMultiSelect) {
         if (isSectorSelected) {
           selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
@@ -219,39 +230,66 @@ export class TreeViewer extends EChartViewer {
     };    
   
     const handleZrClick = (params: any) => {
-      if (!params.target) return;
-  
-      //@ts-ignore
-      const sortedChildren = params.target.parent._children.sort((a, b) => a.id - b.id);
-      const targetIndex = sortedChildren.findIndex((child: { id: number }) => child && child.id === params.target.id);
-      const nextElement = sortedChildren[targetIndex - 1];
-  
-      if (!nextElement) return;
-  
-      //@ts-ignore
-      const seriesModel = this.chart.getModel().getSeriesByIndex(0);
-      const itemGraphics = seriesModel.getData()._graphicEls.slice(1);
-      const itemIds = seriesModel.getData()._idList.slice(1);
-  
-      const idx = itemGraphics.findIndex((item: any) => item && nextElement && item.id === nextElement.id);
-      let name = itemIds[idx];
-      if (name === "") name = " ";
-  
-      if (name) {
-        const seriesData = this.chart.getOption()?.series?.[0]?.data ?? [];
-        const targetPath = this.findByPathOccurrenceUsingStrings(seriesData, name);
-  
-        if (targetPath) {
-          handleChartClick(targetPath.split(' | '), params);
-          this.handleTreeClick(targetPath);
-        }
+      const targetPath = this.getTargetPath(params);
+
+      if (targetPath) {
+        this.clickedPath = targetPath;
+        handleChartClick(targetPath.split(' | '), params);
+        this.handleTreeClick(targetPath, this.selectedRowsColor);
+      }
+    };
+
+    const handleZrHover = (params: any) => {
+      if (!this.showMouseOverRow) return;
+      const targetPath = this.getTargetPath(params);
+
+      if (targetPath && targetPath !== this.clickedPath) {
+        this.hoveredPath = targetPath; // Save hovered path
+        this.paintBranchByPath(targetPath, this.mouseOverRowColor); // Apply hover style
+      }
+    };
+
+    const handleZrMouseOut = () => {
+      if (this.hoveredPath) {
+        this.hoveredPath = null;
+        this.cleanTree();
       }
     };
   
     this.chart.on('mouseover', showTooltip);
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getZr().on('click', handleZrClick);
+    this.chart.getZr().on('mouseover', handleZrHover);
+    this.chart.getZr().on('mouseout', handleZrMouseOut);
   }
+
+  private getTargetPath(params: any): string | undefined {
+    if (!params.target) return;
+  
+    //@ts-ignore
+    const sortedChildren = params.target.parent._children.sort((a, b) => a.id - b.id);
+    const targetIndex = sortedChildren.findIndex((child: { id: number }) => child && child.id === params.target.id);
+    const nextElement = sortedChildren[targetIndex - 1];
+  
+    if (!nextElement) return;
+  
+    //@ts-ignore
+    const seriesModel = this.chart.getModel().getSeriesByIndex(0);
+    const itemGraphics = seriesModel.getData()._graphicEls.slice(1);
+    const itemIds = seriesModel.getData()._idList.slice(1);
+  
+    const idx = itemGraphics.findIndex((item: any) => item && nextElement && item.id === nextElement.id);
+    let name = itemIds[idx];
+    if (name === "") name = " ";
+  
+    if (name) {
+      const seriesData = this.chart.getOption()?.series?.[0]?.data ?? [];
+      const targetPath = this.findByPathOccurrenceUsingStrings(seriesData, name);
+      return targetPath;
+    }
+  
+    return undefined;
+  }  
 
   findByPathOccurrenceUsingStrings(arr: any[], targetOccurrence: string): string | undefined {
     const pathOccurrences: string[] = [];
@@ -284,67 +322,82 @@ export class TreeViewer extends EChartViewer {
     return undefined;
   }
 
-  handleTreeClick(pathString: string): void {
+  handleTreeClick(pathString: string, color?: number): void {
     this.cleanTree();
-    this.paintBranchByPath(pathString);
+    this.paintBranchByPath(pathString, color);
   }
   
-  paintBranchByPath(path: string): void {
+  paintBranchByPath(paths: string | string[], color?: number): void {
     const hoverStyle = {
-      lineStyle: { color: 'orange' },
-      itemStyle: { color: 'orange' },
+      lineStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
+      itemStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
     };
+
+    const pathsArray = Array.isArray(paths) ? paths : [paths];
   
-    const updatedData = this.buildSeriesConfig(path, hoverStyle);
+    const updatedData = this.buildSeriesConfig(pathsArray, hoverStyle);
     if (updatedData) {
-      const updatedOption = { 
-        ...this.option, 
+      const updatedOption = {
+        ...this.option,
         series: [
           {
-            ...this.option.series[0], 
+            ...this.option.series[0],
             data: [updatedData],
           },
         ],
       };
       this.chart.setOption(updatedOption, false, true);
     }
-  }
+  }  
 
   cleanTree(): void {
     const originalTree = this.option.series?.[0]?.data?.[0];
     if (!originalTree) return;
-  
+
     const clonedTree = echarts.util.clone(originalTree);
-    const updatedOption = { 
-      ...this.option, 
-      series: [{ ...this.option.series[0], data: [clonedTree] }] 
+    let updatedData;
+
+    if (this.clickedPath) {
+      const clickStyle = {
+        lineStyle: { color: DG.Color.toHtml(this.selectedRowsColor) },
+        itemStyle: { color: DG.Color.toHtml(this.selectedRowsColor) },
+      };
+      updatedData = this.buildSeriesConfig([this.clickedPath], clickStyle, clonedTree);
+    }
+
+    const updatedOption = {
+      ...this.option,
+      series: [{ ...this.option.series[0], data: [updatedData ?? clonedTree] }],
     };
     this.chart.setOption(updatedOption, false);
   }
   
-  buildSeriesConfig(path: string, hoverStyle: any): any {
-    const originalTree = this.chart!.getOption()?.series?.[0]?.data?.[0];
+  buildSeriesConfig(paths: string[], hoverStyle: any, option?: any): any {
+    const originalTree = option ?? this.chart!.getOption()?.series?.[0]?.data?.[0];
     if (!originalTree) return undefined;
-  
+    
     const cloneTree = echarts.util.clone(originalTree);
-  
+    
     const applyHoverStyle = (node: any) => {
       if (node.path !== null) {
         const nodePath = `All | ${node.path}`;
-        const updatedPath = `All | ${path}`;
+        const pathsSet = new Set(paths.map((path) => `All | ${path}`));
         const nodePathParts = nodePath.split('|').map((p: string) => p.trim());
-        const pathParts = updatedPath.split('|').map((p: string) => p.trim());
-        const isMatch = nodePathParts.every((part: string, index: number) => pathParts[index] === part) || nodePath.includes(updatedPath);
-  
+        
+        const isMatch = Array.from(pathsSet).some((path) => {
+          const pathParts = path.split('|').map((p: string) => p.trim());
+          return nodePathParts.every((part, index) => pathParts[index] === part) || nodePath.includes(path);
+        });
+        
         if (isMatch) Object.assign(node, hoverStyle);
       }
-  
+      
       if (node.children) node.children.forEach(applyHoverStyle);
     };
-  
+    
     applyHoverStyle(cloneTree);
     return cloneTree;
-  }
+}
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (!p) return;
@@ -432,6 +485,15 @@ export class TreeViewer extends EChartViewer {
       case 'showCounts':
       case 'includeNulls':
         this.render();
+        break;
+
+      case 'showMouseOverRow':
+      case 'mouseOverRowColor':
+        break;
+
+      case 'selectedRowsColor':
+        if (this.clickedPath)
+          this.paintBranchByPath(this.clickedPath, this.selectedRowsColor);
         break;
   
       default:
@@ -540,7 +602,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
-    return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls)];
+    return [await TreeUtils.toTree(this.dataFrame, this.eligibleHierarchyNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls)];
   }
 
   async renderMolecule(params: any, width: number, height: number) {
@@ -638,9 +700,15 @@ export class TreeViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (this.filter.trueCount >= CATEGORIES_NUMBER) {
+      this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+      );
+    } else {
+      this.eligibleHierarchyNames = this.hierarchyColumnNames;
+    }
+
+    if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0)
       return;
 
     const data = await this.getSeriesData();
@@ -669,6 +737,9 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
+
+    if (this.clickedPath)
+      this.paintBranchByPath(this.clickedPath, this.selectedRowsColor);
   }
 }
 
