@@ -75,7 +75,7 @@ async function postprocess() {
     }
   }
   for (var i = 0; i < ticketColumns; i++)
-    await pivot.columns.addNewCalculated('severity ' + i, 'JiraConnect:getJiraField(${ticket ' + i + '}, "priority:name")', DG.TYPE.STRING);
+    await pivot.columns.addNewCalculated(`severity ${i}`, `JiraConnect:getJiraField(RegExpExtract(\${ticket ${i}}, \'GROK-\d+\'), "priority:name")`, DG.TYPE.STRING);
   priorityOrders = ['Highest', 'High', 'Medium', 'Low', 'Lowest', '']
   for (var i = 0; i < pivot.rowCount; i++) {
     var maxPriority = 5;

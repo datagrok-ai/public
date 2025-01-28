@@ -7,17 +7,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1068,
+      "width": 1292,
       "height": 927
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 240,
+          "width": 371,
           "height": 927,
           "element": {
-            "id": "868f4d20-c210-11ef-b9ea-573a97ea5d45",
+            "id": "b7dffb70-c210-11ef-a9b4-b3ea2a0a71cc",
             "type": "testDashboardsViewer",
             "look": {
               "#type": "JsViewerHostLook"
@@ -30,10 +30,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 240,
+          "width": 214,
           "height": 927,
           "element": {
-            "id": "868f7430-c210-11ef-d76a-417796c3ce12",
+            "id": "b7dffb70-c210-11ef-efa3-e19075a61f53",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -92,25 +92,25 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 586,
+          "width": 705,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 586,
-              "height": 553,
+              "width": 705,
+              "height": 737,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 586,
-                  "height": 553,
+                  "width": 705,
+                  "height": 737,
                   "element": {
-                    "id": "86901070-c210-11ef-b289-edc116a8746b",
+                    "id": "b7e02280-c210-11ef-e7f3-8b8b3f986402",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -118,7 +118,7 @@
                       "addNewRowOnLastRowEdit": true,
                       "showColumnLabels": false,
                       "colHeaderHeight": 69,
-                      "rowHeight": 39,
+                      "rowHeight": 19,
                       "sortByColumnNames": [
                         "needs_attention"
                       ],
@@ -130,7 +130,7 @@
                       "colLabelsOrientation": "Vert",
                       "columns": [
                         {
-                          "width": 41.215933412604045,
+                          "width": 43.20330640862683,
                           "backgroundColor": 4294440951,
                           "customName": "",
                           "cellType": "row header",
@@ -140,7 +140,7 @@
                           }
                         },
                         {
-                          "width": 259.2062623860487,
+                          "width": 374.258695313461,
                           "columnName": "test",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -152,7 +152,7 @@
                           }
                         },
                         {
-                          "width": 71.55215219976218,
+                          "width": 75.75372985088903,
                           "columnName": "owner",
                           "cellType": "User",
                           "headerCellStyle": {
@@ -165,7 +165,7 @@
                           }
                         },
                         {
-                          "width": 160,
+                          "width": 99.96084918665555,
                           "columnName": "jira",
                           "cellType": "JIRA Ticket",
                           "headerCellStyle": {
@@ -174,7 +174,7 @@
                           }
                         },
                         {
-                          "width": 71,
+                          "width": 61.149425287356294,
                           "columnName": "severity",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -182,7 +182,7 @@
                           }
                         },
                         {
-                          "width": 85.86119698771306,
+                          "width": 52.503628502831404,
                           "columnName": "needs_attention",
                           "cellType": "bool",
                           "headerCellStyle": {
@@ -191,7 +191,7 @@
                           }
                         },
                         {
-                          "width": 38.502893380895756,
+                          "width": 23.5442980214213,
                           "columnName": "stable",
                           "cellType": "bool",
                           "headerCellStyle": {
@@ -204,7 +204,7 @@
                           }
                         },
                         {
-                          "width": 48.47958779231076,
+                          "width": 29.64498931667736,
                           "columnName": "failing",
                           "cellType": "bool",
                           "colorCodingCategorical": {
@@ -221,7 +221,7 @@
                           }
                         },
                         {
-                          "width": 46.45580657946889,
+                          "width": 28.407458735951074,
                           "columnName": "flaking",
                           "cellType": "bool",
                           "headerCellStyle": {
@@ -479,7 +479,7 @@
                           }
                         },
                         {
-                          "width": 183.781212841855,
+                          "width": 112.38115543892732,
                           "columnName": "4 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -547,10 +547,8 @@
                           }
                         },
                         {
-                          "visible": false,
-                          "width": 77.9028141101863,
-                          "columnName": "5 first(flaking)",
-                          "cellType": "bool",
+                          "width": 400,
+                          "columnName": "ignoreReason",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -569,17 +567,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 586,
-              "height": 373
+              "width": 705,
+              "height": 189
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 479,
-                  "height": 373,
+                  "width": 660,
+                  "height": 189,
                   "element": {
-                    "id": "86905e90-c210-11ef-d0e1-650675979481",
+                    "id": "b7e04990-c210-11ef-e6d9-a308e92f2e6c",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -590,12 +588,16 @@
                       "barSortType": "by value",
                       "barSortOrder": "desc",
                       "splitColumnName": "~test_0",
+                      "showCategoryValues": false,
+                      "showCategorySelector": false,
                       "stackColumnName": "failing",
+                      "showStackSelector": false,
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
                       "minTextHeight": 14,
                       "legendVisibility": "Never",
-                      "legendPosition": "Right"
+                      "legendPosition": "Right",
+                      "showLabels": "never"
                     },
                     "title": "Bar chart"
                   }
@@ -605,10 +607,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 106,
-                  "height": 373,
+                  "width": 44,
+                  "height": 189,
                   "element": {
-                    "id": "8690d3c0-c210-11ef-cf92-8fb36661f020",
+                    "id": "b7e04990-c210-11ef-a844-11c8c46bc26d",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -618,14 +620,14 @@
                       "allowColumnMenu": true,
                       "colorCoding": "None",
                       "heatmapHorzScroll": [
-                        150,
+                        30,
                         0,
-                        150
+                        30
                       ],
                       "heatmapVertScroll": [
-                        4474,
+                        3848,
                         0,
-                        4474
+                        3848
                       ],
                       "colorScheme": [
                         4292072403,
@@ -1019,6 +1021,7 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "ignore?",
+                          "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"

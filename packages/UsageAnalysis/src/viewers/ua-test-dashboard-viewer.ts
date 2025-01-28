@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import { IndexPredicate } from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import { _properties } from '../package';
 
 class Priority {
   static BLOCKER: string = 'BLOCKER';
@@ -92,7 +93,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       verdicts.push(...(await this.verdictsForTickets()));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
-        d.append(ui.h1('Platform not in release-ready state ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
+        d.append(ui.h1('Platform is not release-ready ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
       else
         d.append(ui.h1('Green light! 🚀🚀🚀', { style: { color: DG.Color.toRgb(DG.Color.darkGreen) } }));
       
@@ -343,9 +344,13 @@ export class TestDashboardWidget extends DG.JsViewer {
         ticketColumn: jiraCol,
         field: 'assignee:displayName'
       });
+      let fixVersionsCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
+        ticketColumn: jiraCol,
+        field: 'fixVersions:0:name'
+      });
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
-        if (severityCol.getString(i).startsWith('High'))
+        if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
           priority = Priority.BLOCKER;
         else if (statusCol.getString(i) == 'Done')
           priority = Priority.RESOLVED;
@@ -362,6 +367,7 @@ export class TestDashboardWidget extends DG.JsViewer {
         if (rowIndices.length > 0) {
             const filteredColumns = [
                 summaryCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
+                fixVersionsCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 statusCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 severityCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 issueTypeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
