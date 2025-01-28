@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.40.3 (2024-12-28)
+
+- ModelHandler: help fix
+
 ## 1.40.1 (2024-12-25)
 
 - History fixes and removing obsolete API calls
