@@ -33,7 +33,12 @@ async function postprocess() {
   await pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
   await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
   await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
-  await pivot.columns.addNewCalculated('needs_attention', "Or(${flaking},${failing})", 'bool');
+  let schemas = await grok.dapi.stickyMeta.getSchemas();
+  let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
+  var meta = await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'));
+  pivot.columns.add(meta.col('ignore?'));
+  pivot.columns.add(meta.col('ignoreReason'));
+  await pivot.columns.addNewCalculated('needs_attention', "And(Or(${flaking},${failing}), Not(${ignore?}))", 'bool');
 
   function replaceColumn(prefix, type, buildName, newType) {
     var col = pivot.columns.byName(prefix + type);
@@ -55,10 +60,8 @@ async function postprocess() {
     replaceColumn(i, ' avg(duration)', buildName, ' duration');
   }
 
-  let schemas = await grok.dapi.stickyMeta.getSchemas();
-  let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
 
-  var attachedTickets = (await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'))).col('tickets');
+  var attachedTickets = meta.col('tickets');
   attachedTickets.name = 'jira';
   pivot.columns.add(attachedTickets);
 
