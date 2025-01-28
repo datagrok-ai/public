@@ -79,10 +79,13 @@ export class ModelHandler extends DG.ObjectHandler {
 
     if (!readmeExists) return;
 
+    grok.shell.windows.help.syncCurrentObject = false;
     grok.shell.windows.help.visible = true;
     const readmeText = await grok.dapi.files.readAsText(path);
-    await new Promise((r) => setTimeout(r, 1000));
     grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+    setTimeout(() => {
+      grok.shell.windows.help.syncCurrentObject = true;
+    }, 1000);
   }
 
   static openModel(x: DG.Func) {
@@ -203,7 +206,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return DG.View.fromViewAsync(async () => {
       const editor = await grok.functions.find(editorName);
       if (editor !== null && editor instanceof DG.Func) {
-        const args = editor.inputs.find(input => input.name === 'addView') ? {addView: false} : {};
+        const args = editor.inputs.find((input) => input.name === 'addView') ? {addView: false} : {};
         const viewCall = editor.prepare({'call': x.prepare(args)});
         await viewCall.call(false, undefined, {processed: true});
         const view = viewCall.getOutputParamValue();
