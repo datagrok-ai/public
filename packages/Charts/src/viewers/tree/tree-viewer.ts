@@ -91,6 +91,7 @@ export class TreeViewer extends EChartViewer {
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
     this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
+    /** Since polyline has poor support, there is no need to specify it right now */
     this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve'/*, 'polyline'*/], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
@@ -608,7 +609,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
-    return [await TreeUtils.toTree(this.dataFrame, this.eligibleHierarchyNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls)];
+    return [await TreeUtils.toTree(this.dataFrame, this.eligibleHierarchyNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls, false)];
   }
 
   async renderMolecule(params: any, width: number, height: number) {

@@ -7,7 +7,8 @@ export class TreeUtils {
 
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
-      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean, includeNulls?: boolean): Promise<TreeDataType> {
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean,
+      includeNulls?: boolean, markSelected: boolean = true): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
       value: 0,
@@ -174,7 +175,7 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    //markSelectedNodes(data);
+    if (markSelected) markSelectedNodes(data);
 
     return data;
   }
