@@ -9,7 +9,7 @@ import { NMRiumEvents } from "../nmrium-wrapper/nmrium-react-wrapper/src/NMRiumW
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 export function getNMRiumView() {
-    const root = ui.div();
+    const root = ui.div([], {classes:'d4-nmrium-wrapper'});
     root.style.width = '100%';
     root.style.height = '100%';
     const v = DG.View.fromRoot(root);

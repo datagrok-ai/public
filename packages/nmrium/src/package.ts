@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom/client';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import '@blueprintjs/core/lib/css/blueprint.css';
+import './bp.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import { getNMRiumView, loadNMRiumData } from './utils';
 
