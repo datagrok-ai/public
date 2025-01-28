@@ -226,7 +226,9 @@ export class TreeViewer extends EChartViewer {
         }
       }
       const resultDiv = ui.divV([div, ui.divText(params.value, { style: { fontWeight: 'bold' } })]);
-      ui.tooltip.show(resultDiv, params.event.event.x, params.event.event.y);
+      const {x, y} = params.event.event;
+      if (x && y)
+        ui.tooltip.show(resultDiv, x, y);
     };    
   
     const handleZrClick = (params: any) => {
