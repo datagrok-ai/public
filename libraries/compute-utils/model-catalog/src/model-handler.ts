@@ -71,6 +71,16 @@ export class ModelHandler extends DG.ObjectHandler {
     return await this.getById(x.id);
   }
 
+  static async getHelp(func: DG.Func) {
+    if (!func.options['readme']) return;
+
+    const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
+    const readmeExists = await grok.dapi.files.exists(path);
+
+    if (!readmeExists) return;
+    return await grok.dapi.files.readAsText(path);
+  }
+
   static async openHelp(func: DG.Func) {
     if (!func.options['readme']) return;
 
@@ -200,22 +210,30 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderPreview(x: DG.Func): DG.View {
-    const editorName: string = x.options.editor ?? 'Compute:RichFunctionViewEditor';
-
+    const v = super.renderPreview(x);
     //@ts-ignore
     return DG.View.fromViewAsync(async () => {
-      const editor = await grok.functions.find(editorName);
-      if (editor !== null && editor instanceof DG.Func) {
-        const args = editor.inputs.find((input) => input.name === 'addView') ? {addView: false} : {};
-        const viewCall = editor.prepare({'call': x.prepare(args)});
-        await viewCall.call(false, undefined, {processed: true});
-        const view = viewCall.getOutputParamValue();
-        //@ts-ignore
-        if (view instanceof DG.View || view instanceof DG.ViewBase)
-          //@ts-ignore
-          return view;
-      }
-      return super.renderPreview(x);
+      const help = await ModelHandler.getHelp(x);
+      v.append(
+        ui.div(
+          [
+            ui.h1(x.friendlyName ?? x.name),
+            ui.divText(x.description ?? x.name, { style: { marginBottom: '10px' }}),
+            ui.div([ui.bigButton('Launch', () => x.prepare().edit())]),
+            ui.div([], { style: { padding: '20px '}}),
+            ui.markdown(help ?? ''),
+          ],
+          {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              padding: '20px',
+              overflow: 'auto',
+            }
+          })
+      );
+      return v;
     });
   }
 

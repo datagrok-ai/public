@@ -24,11 +24,8 @@ export async function init() {
 //name: RichFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
-//input: bool addView = true
 //output: view result
-export async function RichFunctionViewEditor(call: DG.FuncCall, addView: boolean) {
-  const thisCall = grok.functions.getCurrentCall();
-
+export async function RichFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
@@ -36,15 +33,6 @@ export async function RichFunctionViewEditor(call: DG.FuncCall, addView: boolean
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
-
-
-  if (addView) {
-    view.name = call.func.friendlyName;
-    view.parentCall = thisCall;
-    view.parentView = thisCall.parentCall?.aux['view'];
-    view.basePath = `/${call.func.name}`;
-    grok.shell.add(view);
-  }
 
   app.mount(view.root);
 
@@ -72,11 +60,8 @@ export async function TreeWizardTestApp() {}
 //name: Tree Wizard Editor
 //tags: editor
 //input: funccall call
-//input: bool addView = true
 //output: view result
-export async function TreeWizardEditor(call: DG.FuncCall, addView: boolean) {
-  const thisCall = grok.functions.getCurrentCall();
-
+export async function TreeWizardEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   if (!call.func.options.provider)
@@ -86,14 +71,6 @@ export async function TreeWizardEditor(call: DG.FuncCall, addView: boolean) {
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
-
-  if (addView) {
-    view.name = call.func.friendlyName;
-    view.parentCall = thisCall;
-    view.parentView = thisCall.parentCall?.aux['view'];
-    view.basePath = `/${thisCall.func.name}`;
-    grok.shell.add(view);
-  }
 
   app.mount(view.root);
 
