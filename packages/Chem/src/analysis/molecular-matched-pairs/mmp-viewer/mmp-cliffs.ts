@@ -79,24 +79,24 @@ export function getMoleculePairImages(molecules: string[], substruct: (ISubstruc
   return molHosts;
 }
 
-export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, activityNum: number,
-  pairsDf: DG.DataFrame, diffs: Array<Float32Array>, parentTable: DG.DataFrame,
-  rdkitModule: RDModule, molColName: string, propPanelViewer?: boolean):
+export function fillPairInfo(mmpa: MMPA, pairIdx: number, pairsDf: DG.DataFrame,
+  parentTable: DG.DataFrame, rdkitModule: RDModule, molColName: string, activityNum?: number,
+  diffs?: Array<Float32Array>):
   HTMLDivElement {
-  const pairIdx = linesIdxs[line];
   const moleculeFrom = pairsDf.get(MMP_NAMES.FROM, pairIdx);
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
 
-  const div = propPanelViewer ? ui.divH([]) : ui.divV([]);
+  const div = activityNum == undefined ? ui.divH([]) : ui.divV([]);
   let moleculesDiv: HTMLDivElement | null = null;
   let contextPaneMolDivs: HTMLDivElement[] | null = null;
-  if (propPanelViewer) {
+  if (activityNum == undefined) {
     contextPaneMolDivs = [ui.div(ui.divText(`Loading...`)), ui.div(ui.divText(`Loading...`))];
     const headers = ui.divV([], 'chem-mmp-context-pane-headers');
     const mol1Div = ui.divV([]);
     const mol2Div = ui.divV([]);
+    const grid = grok.shell.tableView(parentTable.name)?.grid;
     const propertiesColumnsNames = parentTable!.columns.names()
       .filter((name) => !name.startsWith('~'));
     for (const colName of propertiesColumnsNames) {
@@ -108,9 +108,12 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
         mol1Div.append(contextPaneMolDivs[0]);
         mol2Div.append(contextPaneMolDivs[1]);
       } else {
-        headers.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
-        mol1Div.append(ui.div(ui.divText(parentTable.get(colName, fromIdx), 'chem-mmp-context-pane-item')));
-        mol2Div.append(ui.div(ui.divText(parentTable.get(colName, toIdx), 'chem-mmp-context-pane-item')));
+        if (grid) {
+          headers.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
+          setContextPanelValue(colName, fromIdx, parentTable, grid, mol1Div);
+          setContextPanelValue(colName, toIdx, parentTable, grid, mol2Div);
+        } else
+          grok.shell.error('Parent grid not found');
       }
     }
     div.append(headers, mol1Div, mol2Div);
@@ -118,7 +121,7 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
     $(div).css({'width': '100%', 'height': '100%'});
     moleculesDiv = ui.divH([]);
     div.append(moleculesDiv);
-    const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[activityNum][pairIdx], 4)});
+    const diff = ui.tableFromMap({'Diff': getSigFigs(diffs![activityNum][pairIdx], 4)});
     diff.style.maxWidth = '150px';
     div.append(diff);
     moleculesDiv.append(ui.divText(`Loading...`));
@@ -129,7 +132,7 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
       [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
       const {inverse1, inverse2, fromAligned, toAligned} = res;
 
-      if (!propPanelViewer && moleculesDiv) //tooptip
+      if (activityNum != undefined && moleculesDiv) //tooptip
         drawMolPairTooltop([fromAligned[0], toAligned[0]], [inverse1[0], inverse2[0]], moleculesDiv);
       else { //context panel
         if (contextPaneMolDivs) {
@@ -142,6 +145,14 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
   div.classList.add(MMP_CONTEXT_PANE_CLASS);
   return div;
 };
+
+function setContextPanelValue(colName: string, idx: number, parentTable: DG.DataFrame,
+  grid: DG.Grid, div: HTMLDivElement) {
+  let val = parentTable.get(colName, idx);
+  if (typeof val === 'number')
+    val = DG.format(val, grid.col(colName)?.format);
+  div.append(ui.div(ui.divText(val, 'chem-mmp-context-pane-item')));
+}
 
 export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
@@ -159,8 +170,8 @@ export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      fillPairInfo(mmpa, event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, mmpa.allCasesBased.diffs, parentTable, rdkitModule, molCol.name),
+      fillPairInfo(mmpa, linesIdxs[event.id], pairsDf, parentTable, rdkitModule, molCol.name,
+        linesActivityCorrespondance[event.id], mmpa.allCasesBased.diffs),
       event.x, event.y);
   });
 
