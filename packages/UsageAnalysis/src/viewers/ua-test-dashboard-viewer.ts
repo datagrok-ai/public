@@ -350,10 +350,10 @@ export class TestDashboardWidget extends DG.JsViewer {
       });
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
-        if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
-          priority = Priority.BLOCKER;
-        else if (statusCol.getString(i) == 'Done')
+        if (statusCol.getString(i) == 'Done')
           priority = Priority.RESOLVED;
+        else if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
+          priority = Priority.BLOCKER;
         else if (issueTypeCol.getString(i) == 'Bug') {
           if (severityCol.getString(i).startsWith('Low'))
             priority = Priority.INFO;
