@@ -297,3 +297,41 @@ export function getCategoryWidget(category: string, inputs: DG.InputBase[]) {
     'diff-studio-inputs-category',
   );
 }
+
+/** Return max number of graphs in FacetGrid row */
+export function getMaxGraphsInFacetGridRow(funcsCount: number) {
+  switch (funcsCount) {
+  case 4:
+    return 2;
+
+  case 5:
+  case 9:
+  case 10:
+  case 13:
+  case 14:
+  case 15:
+  case 19:
+  case 20:
+    return 5;
+
+  case 6:
+    return 3;
+
+  case 17:
+  case 18:
+    return 6;
+
+  default:
+    return 4;
+  }
+}
+
+/** RGB color to number */
+export function rgbToNum(rgbString: string) {
+  const components = rgbString.slice(rgbString.indexOf('(') + 1,
+    rgbString.indexOf(')')).split(',').map((str) => Number(str));
+
+  const hex = (1 << 24 | components[0] << 16 | components[1] << 8 | components[2]).toString(16).slice(1);
+
+  return parseInt(hex, 16);
+}

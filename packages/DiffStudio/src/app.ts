@@ -14,15 +14,21 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
+
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF} from './ui-constants';
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT, LINE_COLORS} from './ui-constants';
+
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
+
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
+
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
-  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
+  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
+  getMaxGraphsInFacetGridRow,
+  rgbToNum} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -441,6 +447,10 @@ export class DiffStudio {
   private refreshWgt = this.getRefreshWgt();
   private sensAnWgt = this.getSensAnWgt();
   private fittingWgt = this.getFitWgt();
+
+  private facetGridDiv: HTMLDivElement | null = null;
+  private facetGridNode: DG.DockNode | null = null;
+  private facetPlots: DG.Viewer[] = [];
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
@@ -950,10 +960,12 @@ export class DiffStudio {
       if (!this.solutionViewer) {
         this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
           getLineChartOptions(this.solutionTable.columns.names()));
+
         this.viewerDockNode = grok.shell.dockManager.dock(
           this.solutionViewer,
           DG.DOCK_TYPE.TOP,
           this.solverView.dockManager.findNode(this.solverView.grid.root),
+          TITLE.MULTI_AXIS,
         );
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
@@ -969,6 +981,23 @@ export class DiffStudio {
           this.toChangeSolutionViewerProps = false;
         }
       }
+
+      if (this.solutionTable.columns.length > MAX_LINE_CHART) {
+        if (!this.facetGridDiv && this.solutionViewer) {
+          this.facetGridDiv = this.getFacetPlot();
+
+          setTimeout( () => {
+            this.facetGridNode = grok.shell.dockManager.dock(
+              this.facetGridDiv,
+              DG.DOCK_TYPE.FILL,
+              this.viewerDockNode,
+              TITLE.FACET,
+            );
+          }, 100);
+        } else
+          this.facetPlots.forEach((plot) => plot.dataFrame = this.solutionTable);
+      } else
+        this.removeFacetGrid();
 
       this.isSolvingSuccess = true;
       this.solvePane.header.hidden = false;
@@ -1078,6 +1107,7 @@ export class DiffStudio {
     }
 
     if (this.solutionViewer && this.viewerDockNode) {
+      this.removeFacetGrid();
       grok.shell.dockManager.close(this.viewerDockNode);
       this.solutionViewer = null;
       this.solverView.path = PATH.EMPTY;
@@ -2029,4 +2059,80 @@ export class DiffStudio {
     this.updateRefreshWidget(false);
     this.updateExportToJsWidget(false);
   }
+
+  /** Remove FacetGrid visualization */
+  private removeFacetGrid() {
+    if (this.facetGridNode && this.facetGridDiv) {
+      grok.shell.dockManager.close(this.facetGridNode);
+      this.facetGridDiv = null;
+    }
+  }
+
+  /** */
+  private getFacetPlot() {
+    const cols = this.solutionTable.columns;
+    const colNames = cols.names();
+
+    const toShowSegments = colNames.includes(STAGE_COL_NAME);
+
+    const colsCount= cols.length - (toShowSegments ? 1 : 0);
+    const colsToShowCount = Math.min(MAX_FACET_GRAPHS_COUNT, colsCount - 1);
+    const maxInRow = getMaxGraphsInFacetGridRow(colsToShowCount);
+
+    const facetColumnPlots = new Array<DG.Viewer[]>(maxInRow);
+
+    this.facetPlots = [];
+
+    for (let i = 0; i < maxInRow; ++i)
+      facetColumnPlots[i] = [];
+
+    let idx = 0;
+    let color = 0;
+
+    for (let i = 1; i <= colsToShowCount; ++i) {
+      color = rgbToNum(LINE_COLORS[i - 1]);
+
+      const plot = DG.Viewer.lineChart(this.solutionTable, {
+        xColumnName: colNames[0],
+        yColumnNames: [colNames[i]],
+        autoLayout: false,
+        showXAxis: true,
+        showYAxis: true,
+        showXSelector: false,
+        showSplitSelector: false,
+        lineWidth: 2,
+        segmentColumnName: toShowSegments ? STAGE_COL_NAME : undefined,
+        lineColoringType: 'Custom',
+        lineColor: color,
+        markerColor: color,
+
+      });
+
+      this.facetPlots.push(plot);
+
+      facetColumnPlots[idx].push(plot);
+
+      ++idx;
+
+      if (idx === maxInRow)
+        idx = 0;
+    }
+
+    facetColumnPlots.forEach((col) => col[col.length - 1].setOptions({showXSelector: true}));
+
+    const rowsCount = facetColumnPlots[0].length;
+
+    const col2Roots = (col: DG.Viewer[]) => {
+      const roots = col.map((plot) => plot.root);
+      if (col.length < rowsCount)
+        roots.push(ui.div(''));
+
+      return roots;
+    };
+
+    const splitCols = facetColumnPlots.map((col) => ui.splitV(col2Roots(col)));
+    const facet = ui.splitH(splitCols);
+
+    return facet;
+  } // getFacetPlot
 };
