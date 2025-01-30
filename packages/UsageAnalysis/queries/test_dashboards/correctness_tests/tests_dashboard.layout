@@ -593,7 +593,7 @@
                       "minTextHeight": 14,
                       "legendVisibility": "Never",
                       "legendPosition": "Right",
-                      "showLabels": "never"
+                      "showLabels": "auto"
                     },
                     "title": "Bar chart"
                   }
