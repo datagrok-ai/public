@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH} from './ui-constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME} from './ui-constants';
 import {CONTROL_EXPR} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 
@@ -305,7 +305,6 @@ export function getMaxGraphsInFacetGridRow(funcsCount: number) {
     return 2;
 
   case 5:
-  case 9:
   case 10:
   case 13:
   case 14:
@@ -315,6 +314,7 @@ export function getMaxGraphsInFacetGridRow(funcsCount: number) {
     return 5;
 
   case 6:
+  case 9:
     return 3;
 
   case 17:
@@ -334,4 +334,13 @@ export function rgbToNum(rgbString: string) {
   const hex = (1 << 24 | components[0] << 16 | components[1] << 8 | components[2]).toString(16).slice(1);
 
   return parseInt(hex, 16);
+}
+
+/** Remove title of dock node*/
+export function removeTitle(node: DG.DockNode) {
+  setTimeout(() => {
+    const head = node.container.containerElement.querySelector('div[class="panel-titlebar-text"]');
+    if (head)
+      head.textContent = '';
+  }, UI_TIME.TITLE_REMOVING);
 }

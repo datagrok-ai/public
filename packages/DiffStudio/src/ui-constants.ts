@@ -87,7 +87,7 @@ export enum TITLE {
   IS_CUST = 'Custom model',
   MY_MODELS = 'My Models',
   NO_MODELS = 'None',
-  MULTI_AXIS = 'MultiAxis',
+  MULTI_AXIS = 'Multiaxis',
   FACET = 'Facet',
 }; // TITLE
 
@@ -289,6 +289,8 @@ export enum UI_TIME {
   BROWSING = APP_RUN_SOLVING + 500,
   SWITCH_TO_FOLDER = 1,
   WGT_CLICK = 10,
+  FACET_DOCKING = 50,
+  TITLE_REMOVING = 500,
 };
 
 /** Numerical methods names */

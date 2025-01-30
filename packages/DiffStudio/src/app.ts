@@ -28,7 +28,8 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
   getMaxGraphsInFacetGridRow,
-  rgbToNum} from './utils';
+  rgbToNum,
+  removeTitle} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -957,6 +958,7 @@ export class DiffStudio {
           .filter((name) => name !== STAGE_COL_NAME));
       }
 
+      // Update the main graph
       if (!this.solutionViewer) {
         this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
           getLineChartOptions(this.solutionTable.columns.names()));
@@ -967,6 +969,8 @@ export class DiffStudio {
           this.solverView.dockManager.findNode(this.solverView.grid.root),
           TITLE.MULTI_AXIS,
         );
+
+        removeTitle(this.viewerDockNode);
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
 
@@ -982,6 +986,7 @@ export class DiffStudio {
         }
       }
 
+      // Update the facet grid plot
       if (this.solutionTable.columns.length > MAX_LINE_CHART) {
         if (!this.facetGridDiv && this.solutionViewer) {
           this.facetGridDiv = this.getFacetPlot();
@@ -993,7 +998,9 @@ export class DiffStudio {
               this.viewerDockNode,
               TITLE.FACET,
             );
-          }, 100);
+
+            removeTitle(this.facetGridNode);
+          }, UI_TIME.FACET_DOCKING);
         } else
           this.facetPlots.forEach((plot) => plot.dataFrame = this.solutionTable);
       } else
@@ -1069,6 +1076,7 @@ export class DiffStudio {
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      this.removeFacetGrid();
       await this.generateInputs(ivp);
 
       if (this.isSolvingSuccess) {
@@ -2068,7 +2076,7 @@ export class DiffStudio {
     }
   }
 
-  /** */
+  /** Return div with facet grid plot */
   private getFacetPlot() {
     const cols = this.solutionTable.columns;
     const colNames = cols.names();
