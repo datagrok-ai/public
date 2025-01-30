@@ -1162,7 +1162,7 @@ export interface IDartApi {
   grok_CodeEditor_Set_Value(editor: any, x: String): any;
   grok_CodeEditor_OnValueChanged(editor: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
-  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool): Promise<any>;
+  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
   grok_InputForm_Get_IsValid(form: any): any;
@@ -1368,6 +1368,7 @@ export interface IDartApi {
   grok_UI_SetUpdateIndicator(e: any, u: Bool, m: String): any;
   grok_UI_Render(x: any): any;
   grok_UI_RenderCard(x: any): any;
+  grok_UI_RenderCardInGallery(x: any): any;
   grok_UI_Div(elements: any, className: String): any;
   grok_UI_DivV(elements: any, className: String): any;
   grok_UI_DivH(elements: any, className: String): any;
@@ -1601,10 +1602,13 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4\lib\src\common\common.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4\lib\src\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
+  grok_InputType_Create(): any;
+
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1654,7 +1658,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1669,7 +1673,4 @@ export interface IDartApi {
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
-
-  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
-  grok_InputType_Create(): any;
 }

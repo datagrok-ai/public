@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/dev-tools",
   "friendlyName": "DevTools",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-api": "^0.3.1",
+    "@datagrok-libraries/compute-api": "^0.3.2",
     "@datagrok-libraries/utils": "^4.4.0",
     "codemirror": "^5.65.15",
     "datagrok-api": "^1.23.0",

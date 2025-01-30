@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.48.2 (2025-01-22)
+
+Async renderer caching improvement
+
 ## 5.48.1 (2025-01-22)
 
 Improve cell renderer in non grid places

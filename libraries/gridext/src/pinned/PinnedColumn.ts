@@ -912,8 +912,9 @@ export class PinnedColumn {
           return false;
         }
 
-        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
+        const nPinnedRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
           {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
+        const nRow = grid.getRowOrder()[nPinnedRow];
         const b = isColMolBlock(column);
         const dialog = ui.dialog({title: 'Edit Structure'});
         const sketcher = new DG.chem.Sketcher();
@@ -936,8 +937,9 @@ export class PinnedColumn {
         const grid = this.m_colGrid.grid;
         const nHColHead = GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight);
         const nHRows = GridUtils.getGridRowHeight(grid, this.rowHeight);
-        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
+        const nPinnedRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
           {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
+        const nRow = grid.getRowOrder()[nPinnedRow];
         const arRowsMinMax = [-1, -1];
         GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
         const nRowMin = arRowsMinMax[0];
@@ -950,7 +952,7 @@ export class PinnedColumn {
         input.classList.add('d4-value-editor-text');
         input.style.position = 'absolute';
         input.style.left = this.m_root.offsetLeft + 'px';
-        input.style.top = (nHColHead + (nRow - nRowMin) * nHRows) + 'px';
+        input.style.top = (nHColHead + (nPinnedRow - nRowMin) * nHRows) + 'px';
         input.style.width = this.m_root.offsetWidth + 'px';
         input.style.height = nHRows + 'px';
         input.style.textAlign = 'right';

@@ -2,7 +2,7 @@ import { DataFrame, Script } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
-import {categoryOwners}  from './tests/owners';
+import { categoryOwners } from './tests/owners';
 export const _package = new DG.Package();
 export { tests };
 
@@ -41,7 +41,7 @@ const skip = [
 const scriptViewer = [
   'parameter-validation',
   'parameter-expressions',
-  'docking', 
+  'docking',
   'input-api',
   'helm-input-ui',
   'output-layouts'
@@ -61,18 +61,19 @@ interface ScriptObject {
   [key: string]: () => Promise<void>;
 }
 
-let beforeArr : ScriptObject= {
-  ['Scripts:ui:inputs'] : async () => {
-    await grok.functions.call("Helm:getHelmHelper");}
+let beforeArr: ScriptObject = {
+  ['Scripts:ui:inputs']: async () => {
+    await grok.functions.call("Helm:getHelmHelper");
+  }
 }
 
-let beforeArrAdded : string[]  = [];
+let beforeArrAdded: string[] = [];
 
-let initStarted:boolean = false;
+let initStarted: boolean = false;
 //tags: init
 export async function initTests() {
 
-  if(initStarted)
+  if (initStarted)
     return;
   initStarted = true;
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
@@ -84,18 +85,17 @@ export async function initTests() {
       if (fullCatName.startsWith(category))
         owner = categoryOwners[category];
     category(catName, () => {
-      if(!beforeArrAdded.includes(catName) && beforeArr[catName.replaceAll(' ', '')]){
-        before(async ()=>{
+      if (!beforeArrAdded.includes(catName) && beforeArr[catName.replaceAll(' ', '')]) {
+        before(async () => {
           await beforeArr[catName.replaceAll(' ', '')]();
         })
         beforeArrAdded.push(catName);
       }
-      
+
       _test(script.friendlyName, async () => {
 
         const annotation = `//name: ${script.friendlyName} 
-        //language: javascript
-        `;
+//language: javascript`;
         debugger
         if (scriptViewer.includes(script.friendlyName))
           await runScriptViewer(script);
@@ -103,8 +103,8 @@ export async function initTests() {
           await evaluateScript(script);
         grok.shell.closeAll();
 
-        async function runScriptViewer(script: Script) { 
-          const scriptResult = new Promise<boolean>(async (resolve) => { 
+        async function runScriptViewer(script: Script) {
+          const scriptResult = new Promise<boolean>(async (resolve) => {
             script.script = `${annotation}\n${script.script}`;
             const scriptView = DG.ScriptView.create(script);
             grok.shell.addView(scriptView);
@@ -113,27 +113,38 @@ export async function initTests() {
               if ((funcCall.func as any).script === script.script.replaceAll('\r', '')) {
                 if (timeout)
                   clearTimeout(timeout);
+                if (formInterval)
+                  clearInterval(formInterval);
                 subscription.unsubscribe();
                 scriptView.close();
                 resolve(true);
               }
             });
             await delay(1000);
+            let formInterval = setInterval(() => {
+              //@ts-ignore
+              let buttonOk : HTMLElement= Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
+              .find((el) => el.textContent === 'OK') as HTMLElement;
+              if (buttonOk)
+                buttonOk.click();
+            }, 1000);
             timeout = setTimeout(() => {
               subscription.unsubscribe();
               scriptView.close();
+              if (formInterval)
+                clearInterval(formInterval);
               resolve(false);
             }, 10000);
             (document.getElementsByClassName("fa-play")[0] as any).click();
             await delay(1000);
-           
+
           })
 
           if (!(await scriptResult))
             throw new Error(`Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
         }
 
-        async function evaluateScript(script: Script) { 
+        async function evaluateScript(script: Script) {
           await script.apply();
           await delay(300);
         }

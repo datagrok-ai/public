@@ -425,7 +425,7 @@ export interface IScatterPlotSettings {
 
   markerType: string;
 
-  // -1 default - automatic sizing based on current dataframe
+  // By default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
@@ -534,15 +534,15 @@ export interface IScatterPlotSettings {
 
   gridLineColor: number;
 
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
   regressionLineColor: number;
 
   whiskerColor: number;
 
   regressionLineTransparency: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
 
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
   /// set for the corresponding column.
@@ -660,6 +660,10 @@ export interface IBoxPlotSettings {
 
   axisType: keyof typeof AxisType;
 
+  valueMin: number;
+
+  valueMax: number;
+
   invertYAxis: boolean;
 
   showValueAxis: boolean;
@@ -769,6 +773,10 @@ export interface IBoxPlotSettings {
   missingValueColor: number;
 
   defaultBoxColor: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
 
   /// Controls box plot tooltip visibility
   showTooltip: string;

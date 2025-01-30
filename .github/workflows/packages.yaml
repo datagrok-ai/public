@@ -6,7 +6,6 @@ on:
         description: 'Packages separated by spaces'
         required: true
         type: string
-        default: BiostructureViewer
   push:
     paths:
       - 'packages/**'

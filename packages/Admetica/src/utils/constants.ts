@@ -5,6 +5,12 @@ export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
 export let DEFAULT_TABLE_NAME = 'table';
 
+export interface AdmeticaResponse {
+  success: boolean;
+  error: string | null;
+  result: string | null;
+}
+
 export interface ModelProperty {
   name: string;
   description: string;

@@ -310,7 +310,9 @@ export function render(x: any, options?: ElementOptions): HTMLElement {
 /** Renders object to html card.
  * @param {object} x
  * @returns {HTMLElement}. */
-export function renderCard(x: object): HTMLElement {
+export function renderCard(x: object, inGallery: boolean = true): HTMLElement {
+  if (inGallery)
+    return api.grok_UI_RenderCardInGallery(x);
   return api.grok_UI_RenderCard(x);
 }
 
@@ -950,8 +952,8 @@ export namespace input {
     return _create(d4.InputType.Image, name, options);
   }
 
-  export async function markdown(name: string): Promise<MarkdownInput> {
-    return (await MarkdownInput.create(name));
+  export async function markdown(caption?: string): Promise<MarkdownInput> {
+    return (await MarkdownInput.create(caption));
   }
 
   export function code(name: string, options?: CodeConfig): CodeInput {

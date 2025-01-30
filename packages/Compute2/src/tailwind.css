@@ -16,3 +16,7 @@
 .ui-input-disabled.ui-input-root .ui-input-options:has(i.rfv2-validation-icon) {
     filter: none;
 }
+
+.pseudo_hidden {
+  opacity: 0.001;
+}

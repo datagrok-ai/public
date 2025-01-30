@@ -71,21 +71,21 @@ public class MsSqlTableQueryTest extends TableQueryTest {
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithoutDot() {
-        return new String[] {"--input: string source0", "--input: string source1", "--input: string source2", "SELECT", "top 50", "[id],", "[friendly_name],", "[name],", "[source],",
+        return new String[] {"--input: int sumSource", "SELECT", "top 50", "[id],", "[friendly_name],", "[name],", "[source],",
                 "[status],", "[description],", "[error_message],", "[error_stack_trace],",
                 "[event_type_id],", "count([session_id]) as [count(session_id)]", "FROM", "[public].[events]", "GROUP BY", "[id], [friendly_name], [name], [source], " +
                 "[status], [description], [error_message], [error_stack_trace], [event_type_id]",
-                "HAVING", "\t(([source] in (@source0,@source1,@source2)))"};
+                "HAVING", "\t((sum([source]) > @sumSource))"};
     }
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithDot() {
-        return new String[] {"--input: string eventsSource0", "--input: string eventsSource1", "--input: string eventsSource2", "SELECT", "top 50", "[events].[id],", "[events].[friendly_name],", "[events].[name],", "[events].[source],",
+        return new String[] {"--input: int sumEventsSource", "SELECT", "top 50", "[events].[id],", "[events].[friendly_name],", "[events].[name],", "[events].[source],",
                 "[events].[status],", "[events].[description],", "[events].[error_message],",
                 "[events].[error_stack_trace],", "[events].[event_type_id],", "count([events].[session_id]) as [count(events.session_id)]",
                 "FROM", "[public].[events]", "GROUP BY", "[events].[id], [events].[friendly_name], [events].[name], [events].[source], " +
                 "[events].[status], [events].[description], [events].[error_message], [events].[error_stack_trace], [events].[event_type_id]",
-                "HAVING", "\t(([events].[source] in (@eventsSource0,@eventsSource1,@eventsSource2)))"};
+                "HAVING", "\t((sum([events].[source]) > @sumEventsSource))"};
     }
 
     @Override

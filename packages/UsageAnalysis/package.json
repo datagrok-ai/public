@@ -64,5 +64,13 @@
   "meta": {
     "url": "/usage",
     "dartium": false
-  }
+  },
+  "properties": [
+    {
+      "name": "Platform version",
+      "propertyType": "string",
+      "defaultValue": "1.24.0",
+      "nullable": false
+    }
+  ]
 }
