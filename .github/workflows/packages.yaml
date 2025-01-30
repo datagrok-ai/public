@@ -500,6 +500,8 @@ jobs:
 #              done
 #            fi
 #          fi
+      - name: Check pupetter
+        run: ls ~/.cache/puppeteer/chrome/
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
