@@ -30,7 +30,6 @@ category('TreeViewer', () => {
       layout: 'orthogonal',
       orient: 'LR',
       initialTreeDepth: 3,
-      edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,
       fontSize: 12,
