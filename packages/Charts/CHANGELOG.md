@@ -1,5 +1,26 @@
 # Charts changelog
 
+## 1.4.3 (2024-01-30)
+
+### Features
+
+* [#3221](https://github.com/datagrok-ai/public/issues/3221): Tree: Improvements:
+  * Display row counts for each branch
+  * Allow selection of sets in each branch to be either filtered or selected in the grid
+  * Enable font size customization
+  * Fix issue where the last-level categories are not readable in horizontal view
+  * Add a setting to hide null values
+  * Support structure rendering
+  * Use standard tooltips
+
+### Bug Fixes
+
+* GROK-17376: Charts | Tree: "NaN.floor()" error while changing Color in properties
+* GROK-17405: Charts | Tree: Changing Size in properties caused errors
+* GROK-17414: Charts | Tree: Dragging down the three causes errors
+* GROK-17420: Charts | Tree: Prevent view reset when changing Symbol size, Label rotation, or Font size
+* GROK-17424: Charts | Tree: Flickering structures when ShowMouseOverLine is enabled
+
 ## 1.4.2 (2024-12-19)
 
 ### Bug Fixes
