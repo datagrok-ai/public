@@ -7,6 +7,7 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
+import $ from 'cash-dom';
 
 type onClickOptions = 'Select' | 'Filter';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -81,6 +82,7 @@ export class TreeViewer extends EChartViewer {
   selectedRowsColor: number;
   mouseOverLineColor: number;
   showMouseOverLine: boolean;
+  initChartOption: boolean = false;
 
   private clickedPath: string | null = null;
   private hoveredPath: string | null = null;
@@ -349,30 +351,34 @@ export class TreeViewer extends EChartViewer {
           },
         ],
       };
+
       this.chart.setOption(updatedOption, false, true);
     }
   }  
 
   cleanTree(): void {
-    const originalTree = this.option.series?.[0]?.data?.[0];
+    const originalTree = this.chart!.getOption()?.series?.[0]?.data?.[0];
     if (!originalTree) return;
 
     const clonedTree = echarts.util.clone(originalTree);
-    let updatedData;
-
-    if (this.clickedPath) {
-      const clickStyle = {
-        lineStyle: { color: DG.Color.toHtml(this.selectedRowsColor) },
-        itemStyle: { color: DG.Color.toHtml(this.selectedRowsColor) },
-      };
-      updatedData = this.buildSeriesConfig([this.clickedPath], clickStyle, clonedTree);
-    }
-
-    const updatedOption = {
-      ...this.option,
-      series: [{ ...this.option.series[0], data: [updatedData ?? clonedTree] }],
+  
+    const removeStyles = (node: any) => {
+      if (node.path !== this.clickedPath) {
+        delete node.lineStyle;
+        delete node.itemStyle;
+      }
+      node.children?.forEach(removeStyles);
     };
-    this.chart.setOption(updatedOption, false);
+  
+    removeStyles(clonedTree);
+  
+    const updatedOption = {
+      ...this.chart!.getOption(),
+      series: [{ ...this.chart!.getOption()?.series?.[0], data: [clonedTree] }],
+    };
+
+    //@ts-ignore
+    this.chart.setOption(updatedOption, false, true);
   }
   
   buildSeriesConfig(paths: string[], hoverStyle: any, option?: any): any {
@@ -403,11 +409,18 @@ export class TreeViewer extends EChartViewer {
     
     applyHoverStyle(cloneTree);
     return cloneTree;
-}
+  }
+
+  setChartOption() {
+    if (!this.initChartOption)
+      this.option = this.chart.getOption();
+  }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (!p) return;
   
+    this.setChartOption();
+
     const { name } = p;
 
     switch (name) {
@@ -558,9 +571,13 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
+      this.setChartOption();
       this.render();
     }));
-    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
+      this.setChartOption();
+      this.render()
+    }));
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
@@ -725,6 +742,17 @@ export class TreeViewer extends EChartViewer {
     if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0)
       return;
 
+    if (this.chart) {
+      this.chart.clear();
+      this.chart.dispose();
+      this.detach();
+      this.chart = null;
+    }
+    
+    this.chart = echarts.init(this.root);
+    this.initChartEventListeners();
+    this.addSubs();
+
     const data = await this.getSeriesData();
 
     Object.assign(this.option.series[0], {
@@ -737,17 +765,6 @@ export class TreeViewer extends EChartViewer {
         this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
-
-    if (this.chart) {
-      this.chart.clear();
-      this.chart.dispose();
-      this.detach();
-      this.chart = null;
-    }
-    
-    this.chart = echarts.init(this.root);
-    this.initChartEventListeners();
-    this.addSubs();
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
