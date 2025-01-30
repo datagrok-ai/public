@@ -326,7 +326,6 @@ jobs:
       - id: datagrok-tools
         run: |
           npm install -g datagrok-tools@latest
-          npm list -g --depth=0 --json
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
