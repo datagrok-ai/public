@@ -55,7 +55,6 @@ export class TreeViewer extends EChartViewer {
   orient: orientation;
   initialTreeDepth: number;
   symbolSizeRange: [number, number] = [5, 20];
-  edgeShape: edgeShape;
   symbol: symbolType;
   symbolSize: number;
   fontSize: number;
@@ -92,8 +91,6 @@ export class TreeViewer extends EChartViewer {
     this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
     this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
     this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
-    /** Since polyline has poor support, there is no need to specify it right now */
-    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve'/*, 'polyline'*/], category: 'Style' });
     this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ], category: 'Style' });
@@ -422,16 +419,6 @@ export class TreeViewer extends EChartViewer {
     const { name } = p;
 
     switch (name) {
-      case 'edgeShape':
-        if (p.get(this) === 'polyline') {
-          this.getProperty('layout')?.set(this, 'orthogonal');
-          this.option.series[0].layout = 'orthogonal';
-        }
-        this.option.series[0].edgeShape = p.get(this);
-        this.chart.clear();
-        this.render();
-        break;
-  
       case 'layout':
         const layout: layoutType = p.get(this);
         this.option.series[0].layout = layout;
@@ -440,11 +427,6 @@ export class TreeViewer extends EChartViewer {
           this.option.series[0].label.rotate = this.labelRotate;
         } else {
           delete this.option.series[0].label.rotate;
-          const es = this.getProperty('edgeShape');
-          if (es?.get(this) !== 'curve') {
-            es?.set(this, 'curve');
-            this.option.series[0].edgeShape = 'curve';
-          }
         }
         this.render();
         return;
@@ -491,7 +473,6 @@ export class TreeViewer extends EChartViewer {
   
       case 'initialTreeDepth':
         this.option.series[0].initialTreeDepth = p.get(this);
-        if (this.edgeShape === 'polyline') this.chart.clear();
         this.render();
 
       case 'symbolSize':
@@ -775,5 +756,4 @@ export class TreeViewer extends EChartViewer {
 
 type layoutType = 'orthogonal' | 'radial';
 type orientation = 'LR' | 'RL' | 'TB' | 'BT';
-type edgeShape = 'curve' | 'polyline';
 type symbolType = 'circle' | 'emptyCircle' | 'rect' | 'roundRect' | 'triangle' | 'diamond' | 'pin' | 'arrow' | 'none';
