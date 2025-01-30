@@ -27,6 +27,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useLayoutDb} from '../../composables/use-layout-db';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -159,19 +160,7 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
-    const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
-        blocked: () => {
-          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`);
-        },
-        upgrade: (db, oldVersion) => {
-          if (oldVersion === 0)
-            db.createObjectStore(STORE_NAME);
-        },
-      });
-
-      return db;
-    }, null);
+    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
 
