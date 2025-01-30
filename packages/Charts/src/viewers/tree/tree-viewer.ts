@@ -82,8 +82,7 @@ export class TreeViewer extends EChartViewer {
   selectedRowsColor: number;
   mouseOverLineColor: number;
   showMouseOverLine: boolean;
-  initChartOption: boolean = false;
-
+  
   private clickedPath: string | null = null;
   private hoveredPath: string | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
@@ -238,9 +237,9 @@ export class TreeViewer extends EChartViewer {
       const targetPath = this.getTargetPath(params);
 
       if (targetPath) {
-        this.clickedPath = targetPath;
         handleChartClick(targetPath.split(' ||| '), params);
         this.handleTreeClick(targetPath, this.selectedRowsColor);
+        this.clickedPath = targetPath;
       }
     };
 
@@ -256,8 +255,11 @@ export class TreeViewer extends EChartViewer {
 
     const handleZrMouseOut = () => {
       if (this.hoveredPath) {
+        this.cleanTree([this.hoveredPath]);
         this.hoveredPath = null;
-        this.cleanTree();
+
+        if (this.clickedPath)
+          this.paintBranchByPath(this.clickedPath);
       }
     };
   
@@ -308,7 +310,7 @@ export class TreeViewer extends EChartViewer {
   
     flattenTree(arr);
   
-    const occurrenceRegex = /^(.*?)(?:__ec__(\d+))?$/;
+    const occurrenceRegex = /^(.*?)(?:__ec__(\d+))?$/s;
     const match = targetOccurrence.match(occurrenceRegex);
   
     if (!match) return undefined;
@@ -328,7 +330,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   handleTreeClick(pathString: string, color?: number): void {
-    this.cleanTree();
+    this.cleanTree([this.clickedPath!]);
     this.paintBranchByPath(pathString, color);
   }
   
@@ -343,10 +345,10 @@ export class TreeViewer extends EChartViewer {
     const updatedData = this.buildSeriesConfig(pathsArray, hoverStyle);
     if (updatedData) {
       const updatedOption = {
-        ...this.option,
+        ...this.chart.getOption(),
         series: [
           {
-            ...this.option.series[0],
+            ...this.chart.getOption()?.series![0],
             data: [updatedData],
           },
         ],
@@ -356,25 +358,19 @@ export class TreeViewer extends EChartViewer {
     }
   }  
 
-  cleanTree(): void {
+  cleanTree(path: string[]): void {
     const originalTree = this.chart!.getOption()?.series?.[0]?.data?.[0];
     if (!originalTree) return;
 
-    const clonedTree = echarts.util.clone(originalTree);
-  
-    const removeStyles = (node: any) => {
-      if (node.path !== this.clickedPath) {
-        delete node.lineStyle;
-        delete node.itemStyle;
-      }
-      node.children?.forEach(removeStyles);
+    const hoverStyle = {
+      lineStyle: {},
+      itemStyle: {},
     };
-  
-    removeStyles(clonedTree);
-  
+
+    const updatedTree = this.buildSeriesConfig(path, hoverStyle, originalTree);
     const updatedOption = {
       ...this.chart!.getOption(),
-      series: [{ ...this.chart!.getOption()?.series?.[0], data: [clonedTree] }],
+      series: [{ ...this.chart!.getOption()?.series?.[0], data: [updatedTree] }],
     };
 
     //@ts-ignore
@@ -412,9 +408,11 @@ export class TreeViewer extends EChartViewer {
   }
 
   setChartOption() {
-    if (!this.initChartOption)
-      this.option = this.chart.getOption();
-  }
+    const chartOption = this.chart.getOption();
+    if (chartOption && chartOption.series && chartOption.series[0]) {
+      this.option = chartOption;
+    }
+  }  
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (!p) return;
@@ -635,6 +633,7 @@ export class TreeViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
+      fontSize: 0,
       formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
@@ -742,17 +741,6 @@ export class TreeViewer extends EChartViewer {
     if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0)
       return;
 
-    if (this.chart) {
-      this.chart.clear();
-      this.chart.dispose();
-      this.detach();
-      this.chart = null;
-    }
-    
-    this.chart = echarts.init(this.root);
-    this.initChartEventListeners();
-    this.addSubs();
-
     const data = await this.getSeriesData();
 
     Object.assign(this.option.series[0], {
@@ -765,6 +753,17 @@ export class TreeViewer extends EChartViewer {
         this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
+
+    if (this.chart) {
+      this.chart.clear();
+      this.chart.dispose();
+      this.detach();
+      this.chart = null;
+    }
+    
+    this.chart = echarts.init(this.root);
+    this.initChartEventListeners();
+    this.addSubs();
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
