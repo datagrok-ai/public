@@ -1347,3 +1347,8 @@ export class SemanticValue<T = any> {
   get viewer(): Viewer { return api.grok_SemanticValue_Get_Viewer(this.dart); }
   set viewer(x: Viewer) { api.grok_SemanticValue_Set_Viewer(this.dart, toDart(x)); }
 }
+
+// TODO: implement column grid main methods
+export class ColumnGrid {
+  constructor(public readonly dart: any) {}
+}

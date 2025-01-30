@@ -304,7 +304,13 @@ export interface IDartApi {
   grok_Menu_Clear(m: any): any;
   grok_Menu_Remove(m: any, id: String): any;
   grok_MenuItem_ToString(mi: any): any;
+  grok_Menu_Get_CloseOnClick(m: any): any;
+  grok_Menu_Set_CloseOnClick(m: any, closeOnClick: Bool): any;
   grok_Menu_Items(m: any, items: any, onClick: any, isValid: any, isChecked: any, toString: any, describe: any, onMouseEnter: any, radioGroup: String): any;
+  grok_Menu_ColorPalette(m: any, colors: any, getInitial: any, onSelect: any, onPreview: any, asGroup: String, visible: Bool, categorical: Bool, resetColorMs: Num): any;
+  grok_Menu_SingleColumSelector(m: any, dataFrame: any, initialValue: String, onChange: any, asGroup: String, nullable: Bool, visible: Bool, editable: Bool, closeOnClick: Bool, changeOnHover: Bool, columnFilter: any): any;
+  grok_Menu_MultiColumSelector(m: any, dataFrame: any, initialValue: any, onChange: any, asGroup: String, visible: Bool, editable: Bool, columnFilter: any): any;
+  grok_Menu_Header(m: any, text: String, onClick: any, hasHoverEffect: Bool, getDescription: any): any;
   grok_Dialog(title: String, helpUrl: String, showHeader: Bool, showFooter: Bool): any;
   grok_Dialog_Get_Root(d: any): any;
   grok_Dialog_Get_Title(d: any): any;
@@ -1353,6 +1359,8 @@ export interface IDartApi {
   grok_RegisterParamFunc(name: any, type: any, run: any, check: any, desc: any): any;
   grok_RegisterViewer(name: String, description: String, createViewer: any): any;
   grok_Color_CategoricalPalette(): any;
+  grok_Color_CategoricalSchemes(): any;
+  grok_Color_ContinuousSchemes(): any;
   grok_Color_GetCategoricalPalettes(): any;
   grok_Color_GetContrastColor(color: Num): any;
   grok_Color_ToHtml(color: Num): any;
