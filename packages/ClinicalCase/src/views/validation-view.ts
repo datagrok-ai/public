@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {study} from '../clinical-study';
 import {validationRulesList, _package} from '../package';
 import {pinnacleRuleIdColumnName, validationResultRuleIdColumn} from '../sdtm-validation/constants';
 import {createRulesDataFrame} from '../sdtm-validation/validation-utils';
 import {getUniqueValues} from '../data-preparation/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
+import {studies} from '../clinical-study';
 
 export class ValidationView extends ClinicalCaseViewBase {
   resultsDataframe: DG.DataFrame;
@@ -16,11 +16,11 @@ export class ValidationView extends ClinicalCaseViewBase {
   errorsByDomain = {};
   domains: any;
 
-  constructor(errorsMap: any, name) {
-    super({});
+  constructor(errorsMap: any, name: string, studyId: string) {
+    super(name, studyId);
     this.name = name;
     if (!errorsMap) {
-      const validationSummary = study.validationResults.groupBy(['Domain']).count().aggregate();
+      const validationSummary = studies[this.studyId].validationResults.groupBy(['Domain']).count().aggregate();
       for (let i = 0; i < validationSummary.rowCount; ++i)
         this.errorsByDomain [validationSummary.get('Domain', i)] = validationSummary.get('count', i);
     } else
@@ -30,10 +30,11 @@ export class ValidationView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.resultsDataframe = study.validationResults;
-    this.domains = study.domains;
+    this.resultsDataframe = studies[this.studyId].validationResults;
+    this.domains = studies[this.studyId].domains;
 
-    const uniqueViolatedRuleIds = Array.from(getUniqueValues(study.validationResults, validationResultRuleIdColumn));
+    const uniqueViolatedRuleIds = Array.from(getUniqueValues(studies[this.studyId].validationResults,
+      validationResultRuleIdColumn));
     this.rulesDataframe = this.getViolatedRulesDataframe(validationRulesList, uniqueViolatedRuleIds);
 
     this.rulesGrid = this.rulesDataframe.plot.grid();
