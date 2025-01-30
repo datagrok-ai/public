@@ -503,7 +503,7 @@ jobs:
       - name: Check pupetter
         run: |
           cd ~/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/
-          sudo chown $USER:$USER chrome_sandbox
+          sudo chown root:root chrome_sandbox
           sudo chmod 4755 chrome_sandbox
           # copy sandbox executable to a shared location
           sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
