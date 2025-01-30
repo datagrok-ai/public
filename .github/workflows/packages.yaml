@@ -501,14 +501,20 @@ jobs:
 #            fi
 #          fi
       - name: Check pupetter
-        run: ls ~/.cache/puppeteer/chrome/linux-127.0.6533.88
+        run: |
+          cd ~/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/
+          sudo chown $USER:$USER chrome_sandbox
+          sudo chmod 4755 chrome_sandbox
+          # copy sandbox executable to a shared location
+          sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
+          # export CHROME_DEVEL_SANDBOX env variable
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
         timeout-minutes: 30
         id: test-package
         env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+          CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
         run: npm run test -- --skip-build --skip-publish --record --core --csv --host dev --verbose
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
