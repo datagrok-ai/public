@@ -500,14 +500,13 @@ jobs:
 #              done
 #            fi
 #          fi
-      - name: Check pupetter
+      - name: Configuration setuid sandbox
         run: |
-          cd ~/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/
+          linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)        
+          cd ~/.cache/puppeteer/chrome/$linux_version/chrome-linux64/
           sudo chown root:root chrome_sandbox
           sudo chmod 4755 chrome_sandbox
-          # copy sandbox executable to a shared location
           sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
-          # export CHROME_DEVEL_SANDBOX env variable
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
