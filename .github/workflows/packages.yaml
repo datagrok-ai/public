@@ -324,7 +324,9 @@ jobs:
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - id: datagrok-tools
-        run: npm install -g datagrok-tools
+        run: |
+          npm install -g datagrok-tools
+          npm list -g --depth=0 --json
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
