@@ -886,7 +886,6 @@ export interface IMenuColorPaletteOptions {
   */
   onSelect?: (list: number[]) => void;
 
-
   /** Called when color is hovered or reset.
    * @param {number[]} list - A sequence of selected color palette.
   */
@@ -1094,7 +1093,7 @@ export class Menu {
       options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200));
   }
 
-  /** Adds single column selector to menu.
+  /** Adds single-column selector to menu.
    * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
    * @param options - Optional params and functions, see {@link IMenuSingleColumnSelectorOptions}.
    * @returns {Menu} `this` menu itself. */
@@ -1105,7 +1104,7 @@ export class Menu {
       options?.changeOnHover ?? true, (c: any) => options?.columnFilter?.(toJs(c)) ?? true));
   }
 
-  /** Adds multi column selector to menu.
+  /** Adds multi-column selector to menu.
    * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
    * @param options - Optional params and functions, see {@link IMenuMultiColumnSelectorOptions}.
    * @returns {Menu} `this` menu itself. */
