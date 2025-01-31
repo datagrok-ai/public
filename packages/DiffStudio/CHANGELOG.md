@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.2.1 (2025-02-10)
+
+Added facet grid plot
+
 ## 1.2.0 (2024-12-01)
 
 UI/UX updates:
