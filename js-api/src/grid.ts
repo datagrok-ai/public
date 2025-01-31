@@ -1369,8 +1369,8 @@ export class ColumnGrid {
   }
 
   /** Creates a new column reorder manager grid. */
-  static columnReorderManagerDialog(dfSource: DataFrame, title: string, options?: {
-    dfSource?: DataFrame;
+  static columnReorderManagerDialog(df: DataFrame, title: string, options?: {
+    dfSource?: Grid;
     filter?: (c: Column) => boolean;
     order?: Column[];
     checks?: (colName: string) => boolean;
@@ -1381,7 +1381,7 @@ export class ColumnGrid {
     gridOptions?: { [key: string]: any };
     addServiceColumns: boolean;
   }) : ColumnGrid {
-    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnReorderManagerDialog(dfSource.dart, title,
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnReorderManagerDialog(df.dart, title,
       toJs(options?.dfSource), options?.filter, options?.order?.map(c => c.dart), options?.checks, options?.addAdditionalChecks,
       options?.additionalChecksName, options?.applyOrder ? (cg: any) => options?.applyOrder?.(toJs(cg)) : null,
       options?.applyVisibility ? (cg: any) => options?.applyVisibility?.(toJs(cg)) : null,
