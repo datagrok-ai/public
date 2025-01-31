@@ -6,6 +6,8 @@ import os
 import logging
 import tempfile
 import re
+import json
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -52,10 +54,10 @@ def predict():
 
     if torch.cuda.is_available():
       accelerator = "gpu"
-      logger.info("GPU is available. Using GPU for acceleration.")
+      logging.info("GPU is available. Using GPU for acceleration.")
     else:
       accelerator = "cpu"
-      logger.info("No GPU available. Falling back to CPU.")
+      logging.info("No GPU available. Falling back to CPU.")
     
     command = [
       "boltz",
@@ -83,27 +85,45 @@ def predict():
 
     process.wait()
 
-    #os.remove(yaml_file_path)
-    #if msa_content:
-      #os.remove(msa_file_path)
+    os.remove(yaml_file_path)
+    if msa_content:
+      os.remove(msa_file_path)
 
     if process.returncode == 0:
       yaml_file_name = os.path.splitext(os.path.basename(yaml_file_path))[0]
-      # Locate the results folder containing the predictions
       for root, dirs, files in os.walk("."):
         if "results" in root:
           predictions_folder = os.path.join(root, "predictions", yaml_file_name)
           if os.path.exists(predictions_folder):
             pdb_files = [f for f in os.listdir(predictions_folder) if f.endswith(".pdb")]
+            confidence_file_name = f"confidence_{yaml_file_name}_model_0.json"
+            confidence_file_path = os.path.join(predictions_folder, confidence_file_name)
             if pdb_files:
               pdb_file_path = os.path.join(predictions_folder, pdb_files[0])
               with open(pdb_file_path, 'r') as pdb_file:
                 pdb_content = pdb_file.read()
 
+              confidence_score = None
+              if os.path.exists(confidence_file_path):
+                with open(confidence_file_path, 'r') as confidence_file:
+                  confidence_data = json.load(confidence_file)
+                  confidence_score = confidence_data.get("confidence_score", None)
+              
+              remark_lines = [
+                f"REMARK   1 {key:<20} {value:.3f}\n"
+                for key, value in confidence_data.items()
+                if isinstance(value, (int, float))
+              ]
+              
+              pdb_content_str = "\n".join(remark_lines) + pdb_content
+              
+              df = pd.DataFrame([{"pdb": pdb_content_str, "confidence_score": confidence_score}])
+              csv_string = df.to_csv(index=False)
+
               return jsonify({
                 "success": True,
                 "message": "Prediction completed successfully.",
-                "pdb": pdb_content
+                "result": csv_string
               }), 200
 
       return jsonify({"success": False, "error": "PDB file not found in predictions folder."}), 500

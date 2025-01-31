@@ -82,6 +82,9 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
+import $ from 'cash-dom';
+import { BoltzBaseEditor } from './utils/boltz-editor';
+
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
   OpenChemLib: 'OpenChemLib',
@@ -189,6 +192,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
+        //@ts-ignore
         col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
@@ -335,6 +339,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?
+      //@ts-ignore
         DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
@@ -350,6 +355,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
+  //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
 
@@ -419,6 +425,7 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
+    //@ts-ignore
     const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
     return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
@@ -1629,6 +1636,7 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
+  //@ts-ignore
   return await chemDiversitySearch(col, similarityMetric[metricName], limit,
     fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
@@ -2209,19 +2217,46 @@ export async function runBoltz(config: string) {
   });
 
   const json = await response.json();
-  const pdb = json['pdb'];
-  return pdb;
+  const result = json['result'];
+  return result;
+}
+
+//name: BoltzEditor
+//tags: editor
+//input: funccall call
+export function boltzEditor(call: DG.FuncCall): void {
+  const funcEditor = new BoltzBaseEditor();
+  ui.dialog({title: 'Boltz-1'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        config: params.config
+      }).call(true);
+    }).show();
 }
 
 //name: boltz
 //input: string config {choices: Chem: getBoltzConfigFolders}
-export async function boltz(config: string) {
-  const pdb = await grok.functions.call('Chem:runBoltz', {config: config});
-  const df = DG.DataFrame.create(1);
-  const pdbCol = df.columns.addNewString('pdb');
+//editor: Chem: BoltzEditor
+//output: dataframe result
+export async function boltz(config: string): Promise<DG.DataFrame> {
+  const result = await grok.functions.call('Chem:runBoltz', {config: config});
+  const df = DG.DataFrame.fromCsv(result);
+  const pdbCol = df.columns.byName('pdb');
   pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
-  pdbCol.set(0, pdb);
+  const confidenceCol = df.columns.byName('confidence_score');
+  confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
+  confidenceCol.meta.format = '0.000';
   grok.shell.addTableView(df);
+  return df;
+}
+
+//name: Boltz-1
+//tags: app
+export async function boltz1() {
+  const func = DG.Func.find({name: 'boltz'})[0];
+  func.prepare().edit();
 }
 
 //name: getBoltzConfigFolders
@@ -2231,4 +2266,78 @@ export async function getBoltzConfigFolders(): Promise<string[]> {
   return targetsFiles
     .filter(folder => folder.isDirectory)
     .map(folder => folder.name);
+}
+
+//name: Boltz-1
+//tags: panel, chem, widgets
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+export async function boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+  const value = molecule.value;
+
+  const boltzResults: DG.DataFrame = getFromPdbs(molecule);
+  const widget = new DG.Widget(ui.div([]));
+
+  const targetViewer = await molecule.cell.dataFrame.plot.fromType('Biostructure', {
+    pdb: value,
+    zoom: true,
+  });
+  targetViewer.root.classList.add('bsv-container-info-panel');
+  widget.root.append(targetViewer.root);
+
+  const result = ui.div();
+  const map: { [_: string]: any } = {};
+  for (let i = 0; i < boltzResults!.columns.length; ++i) {
+    const columnName = boltzResults!.columns.names()[i];
+    const propertyCol = boltzResults!.col(columnName);
+    map[columnName] = prop(molecule, propertyCol!, result);
+  }
+  result.appendChild(ui.tableFromMap(map));
+  widget.root.append(result);
+
+  return widget;
+}
+
+export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
+  const addColumnIcon = ui.iconFA('plus', () => {
+    const df = molecule.cell.dataFrame;
+    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
+    // Will need to add description
+    //propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
+    df.columns.add(propertyCol);
+  }, `Calculate ${propertyCol.name} for the whole table`);
+
+  ui.tools.setHoverVisibility(host, [addColumnIcon]);
+  $(addColumnIcon)
+    .css('color', '#2083d5')
+    .css('position', 'absolute')
+    .css('top', '2px')
+    .css('left', '-12px')
+    .css('margin-right', '5px');
+  
+  const idx = molecule.cell.rowIndex;
+  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
+}
+
+export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
+  const col = pdb.cell.column;
+  const resultDf = DG.DataFrame.create(col.length);
+  
+  for (let idx = 0; idx < col.length; idx++) {
+    const pdbValue = col.get(idx);
+    const remarkRegex = /REMARK\s+\d+\s+([^\d]+?)\s+([-\d.]+)/g;
+    let match;
+  
+    while ((match = remarkRegex.exec(pdbValue)) !== null) {
+      const colName = match[1].trim();
+      const value = parseFloat(match[2].trim());
+        
+      let resultCol = resultDf.columns.byName(colName);
+      if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
+        
+      resultDf.set(colName, idx, value);
+    }
+  }
+
+  return resultDf;
 }
