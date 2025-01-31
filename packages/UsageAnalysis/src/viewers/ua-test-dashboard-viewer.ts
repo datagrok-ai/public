@@ -67,6 +67,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   tickets: Set<string> = new Set();
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
+    this.root.childNodes.forEach((node, _idx, _parent) => node.remove());
     this.root.appendChild(ui.wait(async () => {
       let tableNames: RegExp[] = [/Benchmark.*Dashboard/, /Test.*Track.*Dashboard/];
       let promises: Promise<void>[] = tableNames.map((name) => new Promise((resolve, reject) => {

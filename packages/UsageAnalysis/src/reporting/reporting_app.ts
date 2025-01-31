@@ -82,6 +82,15 @@ export class ReportingApp {
       table.getCol('first_occurrence').setTag('friendlyName', 'first');
       table.getCol('description').semType = 'Text';
       table.getCol('error_stack_trace').semType = 'Text';
+
+      // table.getCol('reporter').semType = 'User';
+      // table.getCol('reporter').setTag('cell.renderer', 'User');
+      //
+      // table.getCol('assignee').semType = 'User';
+      // table.getCol('assignee').setTag('cell.renderer', 'User');
+      table.getCol('jira').semType = 'JIRA Ticket';
+      table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
+
       this.applyStyle(grid);
       grid.onCellPrepare(async (gc) => {
         if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -95,17 +104,17 @@ export class ReportingApp {
             });
           }
         }
-        if (gc.gridColumn.name === 'jira' && gc.cell.value) {
-          const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.open(link.href, '_blank');
-          });
-          link.style.position = 'absolute';
-          link.style.top = 'calc(50% - 8px)';
-          link.style.left = '3px';
-          gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
-        }
+        // if (gc.gridColumn.name === 'jira' && gc.cell.value) {
+        //   const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+        //   link.addEventListener('click', (e) => {
+        //     e.preventDefault();
+        //     window.open(link.href, '_blank');
+        //   });
+        //   link.style.position = 'absolute';
+        //   link.style.top = 'calc(50% - 8px)';
+        //   link.style.left = '3px';
+        //   gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+        // }
       });
       table.getCol('labels').meta.multiValueSeparator = ',';
       this.view!.subs.push(

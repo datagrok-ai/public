@@ -7,7 +7,8 @@ export class TreeUtils {
 
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
-      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): Promise<TreeDataType> {
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean,
+      includeNulls?: boolean, markSelected: boolean = true): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
       value: 0,
@@ -27,7 +28,14 @@ export class TreeUtils {
       builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
     }
 
-    const aggregated = builder.aggregate();
+    let aggregated = builder.aggregate();
+    if (!includeNulls) {
+      const colList: DG.Column[] = aggregated.columns.toList().filter((col) => splitByColumnNames.includes(col.name));
+      const filter = DG.BitSet.create(aggregated.rowCount, (rowI: number) => {
+        return colList.every((col) => !col.isNone(rowI));
+      });
+      aggregated = aggregated.clone(filter);
+    }
 
     if (linkSelection) {
       grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
@@ -46,6 +54,7 @@ export class TreeUtils {
     const markSelectedNodes = (node: TreeDataType): boolean => {
       if (selectedPaths.includes(node.path!)) {
         node.itemStyle = selectedNodeStyle;
+        node.lineStyle = selectedNodeStyle;
         return true;
       }
       if (node.children && node.children.length > 0) {
@@ -55,6 +64,7 @@ export class TreeUtils {
 
         if (parentSelected) {
           node.itemStyle = selectedNodeStyle;
+          node.lineStyle = selectedNodeStyle;
           return true;
         }
       }
@@ -78,7 +88,7 @@ export class TreeUtils {
             if (propNames.includes(column.name))
               props[column.name] = column.get(i);
             else
-              path = (path ? path + ' | ' : '') + column.getString(i);
+              path = (path ? path + ' ||| ' : '') + column.getString(i);
           }
           paths[path] = props;
         }
@@ -94,8 +104,11 @@ export class TreeUtils {
             node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
-          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
-          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, node[prop]);
+          
+          const value = node[prop];
+          if (!value) continue;
+          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, value);
+          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, value);
         }
         node.children?.forEach(updatePropMeta);
       }
@@ -112,16 +125,20 @@ export class TreeUtils {
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
 
       if (aggregated.selection.get(i) && !selection)
-        selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
+        selectedPaths.push(columns.map((col) => col.getString(i)).join(' ||| '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const value = columns[colIdx].get(i);
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        const name = value ? value.toString() : '';
+        const name = value == null ? ' ' : value.toString();
+        /**
+         * ' ||| ' is used as a temporary separator because a single '|' fails 
+         * to handle certain edge cases in the tree viewer.
+         */
         const node: TreeDataType = {
           semType: columns[colIdx].semType,
           name: name,
-          path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
+          path: parentNode?.path == null ? name : parentNode.path + ' ||| ' + name,
           value: 0,
         };
 
@@ -158,7 +175,7 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    markSelectedNodes(data);
+    if (markSelected) markSelectedNodes(data);
 
     return data;
   }
@@ -202,7 +219,7 @@ export class TreeUtils {
    * @param {String} path - pipe-separated values
    */
   static pathToPattern(columnNames: string[], path: string): {[key: string]: string} {
-    const values = path.split(' | ');
+    const values = path.split(' ||| ');
     const pattern: {[key: string]: string} = {};
     for (let i = 0; i < columnNames.length; i++)
       pattern[columnNames[i]] = values[i];

@@ -27,6 +27,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useLayoutDb} from '../../composables/use-layout-db';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -159,19 +160,7 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
-    const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
-        blocked: () => {
-          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`);
-        },
-        upgrade: (db, oldVersion) => {
-          if (oldVersion === 0)
-            db.createObjectStore(STORE_NAME);
-        },
-      });
-
-      return db;
-    }, null);
+    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
 
@@ -402,6 +391,11 @@ export const RichFunctionView = Vue.defineComponent({
         return scalarCardCount < 3 ? 'right': 'down';
       };
 
+      const getDf = (name: string) => {
+        const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
+        return val ? Vue.markRaw(val) : val;
+      }
+
       return (
         <div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels'>
@@ -574,7 +568,7 @@ export const RichFunctionView = Vue.defineComponent({
                         Vue.withDirectives(<Viewer
                           type={options['type'] as string}
                           options={options}
-                          dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                          dataFrame={getDf(dfProp.name)}
                           class='w-full'
                           onViewerChanged={(v) => setViewerRef(v, dfProp.name, options['type'] as string)}
                         />, [[ifOverlapping, isRunning.value, 'Recalculating...']])

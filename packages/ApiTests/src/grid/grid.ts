@@ -107,8 +107,11 @@ category('Grid', () => {
     for (const col of demog.columns.numerical)
       expect(grid.col(col.name)?.renderer.cellType, 'number');
 
-    for (const col of demog.columns.categorical)
+    for (const col of demog.columns.categorical) {
+      if (col.type !== DG.TYPE.STRING)
+        continue; // skip bool columns
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
+    }
   });
 
   test('getOptions', async () => {

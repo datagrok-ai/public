@@ -823,6 +823,30 @@ export class TestTrack extends DG.ViewBase {
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
+  reportJiraTickets(reason: string, oldReason: string, params: any) {
+    const newTickets: string[] = (reason ?? '').match(/GROK-\d{1,6}/g) || [];
+    const oldTickets: string[] = oldReason.match(/GROK-\d{1,6}/g) || [];
+    const combinedTickets = new Set([...newTickets, ...oldTickets]);
+    const finalTickets = newTickets.some((ticket) => oldTickets.includes(ticket)) ||
+                         newTickets.every((ticket) => oldTickets.includes(ticket))
+                                   ? newTickets : Array.from(combinedTickets);
+    let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
+    nameColumn.semType = 'test';
+    grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
+      let tickets: string = df.col('tickets')?.get(0) ?? '';
+      const ticketSet = new Set(tickets.split(','));
+      for (const ticket of ticketSet) {
+        if (!finalTickets.includes(ticket)) {
+          if (!combinedTickets.has(ticket))
+            finalTickets.push(ticket);
+        }
+      }
+      const ticketsToSave = Array.from(new Set(finalTickets.filter((ticket: string) => ticket !== '')));
+      grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
+        DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [ticketsToSave.join(',')])]));
+    });
+  }
+
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {
     if(!node)
       return;
@@ -833,6 +857,7 @@ export class TestTrack extends DG.ViewBase {
     }
     value.status = status;
     value.icon.innerHTML = '';
+    const oldReason: string = value.reason?.innerText ?? '';
     value.reason.innerHTML = '';
     const icon = getStatusIcon(status);
     value.icon.append(icon);
@@ -871,17 +896,7 @@ export class TestTrack extends DG.ViewBase {
     };
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      if ((reason?.search(/GROK-\d{1,6}/) ?? -1) != -1) {
-        let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
-        nameColumn.semType = 'test';
-        grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
-          let tickets: string = df.col('tickets')?.get(0) ?? '';
-          if (tickets.split(',').includes(reason!))
-            return;
-          grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
-            DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [tickets + ',' + reason])]));
-        });
-      }
+      this.reportJiraTickets(reason ?? '', oldReason, params);
     }
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
     let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
@@ -904,7 +919,8 @@ export class TestTrack extends DG.ViewBase {
       this.changeNodeStatus(node, status, reason, uid, reportData);
       return;
     }
-    if (reason === node?.value?.reason?.innerText) return;
+    const oldReason: string = node?.value?.reason?.innerText ?? '';
+    if (reason === oldReason) return;
     node.value.reason.innerHTML = '';
     let severityLevel = null;
     if (errorSeverityLevels.includes(status) || status === SKIPPED) {
@@ -937,17 +953,7 @@ export class TestTrack extends DG.ViewBase {
     });
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      if ((reason?.search(/GROK-\d{1,6}/) ?? -1) != -1) {
-        let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
-        nameColumn.semType = 'test';
-        grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
-          let tickets: string = df.col('tickets')?.get(0) ?? '';
-          if (tickets.split(',').includes(reason!))
-            return;
-          grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
-            DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [tickets + ',' + reason])]));
-        });
-      }
+      this.reportJiraTickets(reason ?? '', oldReason, params);
     }
     this.updateReportData(node);
   }
