@@ -255,8 +255,12 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
     DG.JOIN_TYPE.OUTER, false);
 
 
-  joinedFinal.getCol(`${activeArm.join(',')}.${aeTermCol}`).name = `${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`;
-  joinedFinal.getCol(`${placeboArm.join(',')}.${aeTermCol}`).name = `${aeTermCol}_${PLACEBO_ARM_POSTTFIX}`;
+  const aeTermActCol = joinedFinal.col(`${activeArm.join(',')}.${aeTermCol}`);
+  joinedFinal.col(aeTermActCol ? `${activeArm.join(',')}.${aeTermCol}` : aeTermCol).name =
+    `${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`;
+  const aeTermPlaceboCol = joinedFinal.col(`${placeboArm.join(',')}.${aeTermCol}`);
+  joinedFinal.col(aeTermPlaceboCol ? `${placeboArm.join(',')}.${aeTermCol}`: aeTermCol).name =
+    `${aeTermCol}_${PLACEBO_ARM_POSTTFIX}`;
 
 
   const removeNulls = (rowCount, colToCheck, colWithWalue, percentCol, totalSubjWithAECol) => {

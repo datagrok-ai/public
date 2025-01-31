@@ -10,6 +10,19 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
 import {updateDivInnerHTML} from './utils';
 
+
+export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key: string]: number} {
+  const errorsMapWithCount: {[key: string]: number} = {};
+  if (validationResults.rowCount) {
+    const validationSummary = validationResults.groupBy(['Domain']).count().aggregate();
+    for (let i = 0; i < validationSummary.rowCount; ++i)
+      errorsMapWithCount[validationSummary.get('Domain', i)] = validationSummary.get('count', i);
+    return errorsMapWithCount;
+  }
+  return null;
+}
+
+
 export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerName: string) {
   const missingCols = columns.filter((it) => !df.columns.names().includes(it));
   if (missingCols.length)

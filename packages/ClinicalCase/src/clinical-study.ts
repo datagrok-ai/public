@@ -7,6 +7,7 @@ import {createValidationDataFrame} from './sdtm-validation/validation-utils';
 import {SITE_ID, STUDY_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters} from './utils/utils';
+import { createErrorsByDomainMap } from './utils/views-validation-utils';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -76,6 +77,7 @@ export class ClinicalStudy {
   subjectsCount: number;
   sitesCount: number;
   validationResults: DG.DataFrame;
+  errorsByDomain: {[key: string]: number};
   dmFilters: DG.Viewer;
   studyId: string;
   validated = false;
@@ -154,6 +156,8 @@ export class ClinicalStudy {
 
     if (this.domains.dm != null)
       vaidateDMDomain(this.domains.dm, this.validationResults);
+
+    this.errorsByDomain = createErrorsByDomainMap(this.validationResults);
     this.validated = true;
   }
 }

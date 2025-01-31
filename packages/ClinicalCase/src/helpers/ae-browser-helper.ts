@@ -30,7 +30,7 @@ export class AEBrowserHelper {
     this.studyId = studyId;
     this.aeToSelect = dataFrame;
     studies[studyId].domains.all().forEach((it) => {
-      if (!this.domainsToExclude.includes(it.name)) {
+      if (it.name && !this.domainsToExclude.includes(it.name)) {
         this[it.name] = studies[studyId].domains[it.name].clone();
         presentDomains.push(it.name);
         if (!this.domains.includes(it.name))
@@ -47,6 +47,8 @@ export class AEBrowserHelper {
 
   updateDomains() {
     this.domains.concat(this.selectedAdditionalDomains).forEach((domain) => {
+      if (!this.currentSubjId)
+        return;
       const condition = this.domainsWithoutVisitDays.includes(domain) ?
         `${SUBJECT_ID} = ${this.currentSubjId}` :
         this.dyDomains.includes(domain) ?

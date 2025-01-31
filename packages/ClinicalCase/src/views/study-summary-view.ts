@@ -5,7 +5,7 @@ import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
 import {_package} from '../package';
-import {AGE, RACE, SEX, STUDY_ID, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
+import {AGE, RACE, SEX, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
@@ -34,22 +34,20 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     },
   };
   test: any;
+  validationErrorLinkHandler;
 
-  constructor(name, studyId) {
+  constructor(name: string, studyId: string, errorLinkHandler?: () => void) {
     super(name, studyId);
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/summary.md`;
     this.path = '/summary';
+    if (errorLinkHandler)
+      this.validationErrorLinkHandler = errorLinkHandler;
   }
 
   createView() {
-    //this.studyId = studies[this.studyId].domains.dm.get(STUDY_ID, 0);
-    const errorsMap = this.createErrorsMap();
-    if (errorsMap) {
-      this.errorsByDomain = errorsMap.withCount;
-      this.errorsByDomainWithLinks = errorsMap.withLinks;
-    }
-
+    this.errorsByDomain = studies[this.studyId].errorsByDomain;
+    this.errorsByDomainWithLinks = this.createErrorsMapWithLinks();
     this.buildView();
   }
 
@@ -171,23 +169,22 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     }
   }
 
-  private createErrorsMap() {
-    const errorsMap = {};
-    const errorsMapWithCount = {};
-    if (studies[this.studyId].validationResults.rowCount) {
-      const validationSummary = studies[this.studyId].validationResults.groupBy(['Domain']).count().aggregate();
-      for (let i = 0; i < validationSummary.rowCount; ++i) {
-        const domain = validationSummary.get('Domain', i);
-        const errorsCount = validationSummary.get('count', i);
-        const link = ui.link(errorsCount, {}, '', {id: domain});
+  private createErrorsMapWithLinks(): {[key: string]: HTMLAnchorElement} {
+    const errorsByDomain = studies[this.studyId].errorsByDomain;
+    if (errorsByDomain) {
+      const errorsByDomainWithLinks: {[key: string]: HTMLAnchorElement} = {};
+      Object.keys(errorsByDomain).forEach((domain) => {
+        const link = ui.link(errorsByDomain[domain].toString(), {}, '', {id: domain});
         link.addEventListener('click', (event) => {
-          grok.shell.v = this.validationView;
+          if (this.validationErrorLinkHandler)
+            this.validationErrorLinkHandler();
+          else
+            grok.shell.v = this.validationView;
           event.stopPropagation();
         });
-        errorsMap[domain] = link;
-        errorsMapWithCount[domain] = errorsCount;
-      }
-      return {withCount: errorsMapWithCount, withLinks: errorsMap};
+        errorsByDomainWithLinks[domain] = link;
+      });
+      return errorsByDomainWithLinks;
     }
     return null;
   }

@@ -24,11 +24,11 @@ import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_
   PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
   SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
   VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
-import {addView, createTableView, getTableViewsParams} from './utils/views-creation-utils';
+import {addView, createTableView, TABLE_VIEWS} from './utils/views-creation-utils';
 import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
-import {ClinStudyConfig} from './utils/types';
-import {demoStudyId, domainsToValidate, ERRORS_MAPS, StudyJsonName} from './constants/constants';
+import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
+import {demoStudyId, domainsToValidate, StudyJsonName} from './constants/constants';
 import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 
@@ -55,6 +55,8 @@ export async function clinicalCaseApp(): Promise<DG.ViewBase> {
 //input: view browseView
 export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup,
   browseView: DG.BrowseView) {// TODO: DG.BrowseView
+  if (!validationRulesList)
+    validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   await clinicalCaseAppTB(treeNode, browseView);
 }
 
@@ -72,7 +74,7 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.Brow
     }
 
     node.onSelected.subscribe(async (_) => {
-      let summaryView = !VIEWS[study.name] ? null : VIEWS[study.name][SUMMARY_VIEW_NAME];
+      const summaryView = !VIEWS[study.name] ? null : VIEWS[study.name][SUMMARY_VIEW_NAME];
       if (!summaryView) {
         const dataRead = await readClinicalData(study, domainsToValidate);
         if (!dataRead)
@@ -80,45 +82,71 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.Brow
         //validation results are required for summary view
         studies[study.name].validate();
         studies[study.name].processSitesAndSubjectCount();
-        summaryView = new StudySummaryView(SUMMARY_VIEW_NAME, study.name);
-        VIEWS[study.name][SUMMARY_VIEW_NAME] = summaryView;
-        ERRORS_MAPS[study.name] = (summaryView as StudySummaryView).errorsByDomain;
       }
-      browseView.preview = VIEWS[study.name][SUMMARY_VIEW_NAME] as DG.View;
-      if (!(summaryView as ClinicalCaseViewBase).loaded)
-        (summaryView as ClinicalCaseViewBase).load();
+      loadView(SUMMARY_VIEW_NAME, node);
     });
 
-    const loadView = async (viewName: string) => {
+    const loadView = async (viewName: string, parentNode: DG.TreeViewGroup) => {
       let view = VIEWS[study.name][viewName];
+      let helper: any;
       if (!view) {
-        view = viewName === VALIDATION_VIEW_NAME ?
-          VIEW_CREATE_FUNC[viewName](study.name,
-            (VIEWS[study.name][SUMMARY_VIEW_NAME] as StudySummaryView).errorsByDomain) :
-          VIEW_CREATE_FUNC[viewName](study.name);
+        if (Object.keys(TABLE_VIEWS).includes(viewName)) { //load table view
+          const clinCaseTableView = VIEW_CREATE_FUNC[viewName](study.name, viewName) as ClinCaseTableView;
+          view = clinCaseTableView.view;
+          helper = clinCaseTableView.helper;
+        } else { // load view
+          if (viewName === SUMMARY_VIEW_NAME) {
+            const errorLinkHandler = () => {
+              parentNode.expanded = true;
+              parentNode.currentItem = validationNode;
+            };
+            view = VIEW_CREATE_FUNC[viewName](study.name, errorLinkHandler) as DG.ViewBase;
+          } else
+            view = VIEW_CREATE_FUNC[viewName](study.name) as DG.ViewBase;
+        }
       }
       browseView.preview = view as DG.View;
       if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
         (view as ClinicalCaseViewBase).load();
+      else
+        helper?.propertyPanel();
     };
 
+    let validationNode: DG.TreeViewNode = null;
     node.onNodeExpanding.subscribe(async (_) => {
       for (const viewName of Object.keys(VIEW_CREATE_FUNC)) {
         const viewNode = node.item(viewName);
-
+        if (viewName === VALIDATION_VIEW_NAME)
+          validationNode = viewNode;
         viewNode.onSelected.subscribe(() => {
-          loadView(viewName);
+          loadView(viewName, node);
         });
       }
-      if (!studies[study.name].initCompleted) {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.name}`);
-        await readClinicalData(study);
-        studies[study.name].init();
-        progressBar.close();
-      }
+      await initClinicalStudy(study);
     });
   }
   loaderItem.remove();
+}
+
+export function createClinCaseTableView(studyId: string, viewName: string): ClinCaseTableView {
+  const tableView = createTableView(
+    studyId,
+    TABLE_VIEWS[viewName].domainsAndColsToCheck,
+    viewName,
+    TABLE_VIEWS[viewName].helpUrl,
+    TABLE_VIEWS[viewName].createViewHelper,
+    TABLE_VIEWS[viewName].paramsForHelper,
+  );
+  return {view: tableView.view, helper: tableView.helper};
+}
+
+export async function initClinicalStudy(study: ClinStudyConfig) {
+  if (!studies[study.name].initCompleted) {
+    const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.name}`);
+    await readClinicalData(study);
+    studies[study.name].init();
+    progressBar.close();
+  }
 }
 
 export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad?: string[]): Promise<boolean> {
@@ -155,7 +183,7 @@ export async function loadStudies(deletedCampaigns: string[]): Promise<{[name: s
 }
 
 //input: string studyId {optional: true}
-export async function createclinicalCaseViews(studyId?: string): Promise<any> {
+export async function createClinicalCaseViews(studyId?: string): Promise<any> {
   c = grok.functions.getCurrentCall();
   if (!validationRulesList)
     validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
@@ -177,7 +205,7 @@ export async function createclinicalCaseViews(studyId?: string): Promise<any> {
 
   VIEWS[studyId][SUMMARY_VIEW_NAME] = <StudySummaryView>addView(new StudySummaryView(SUMMARY_VIEW_NAME, studyId));
   VIEWS[studyId][VISITS_VIEW_NAME] = <VisitsView>addView(new VisitsView(VISITS_VIEW_NAME, studyId));
-  VIEWS[studyId][COHORT_VIEW_NAME] = <CohortView>addView(new CohortView(COHORT_VIEW_NAME, studyId));
+  //VIEWS[studyId][COHORT_VIEW_NAME] = <CohortView>addView(new CohortView(COHORT_VIEW_NAME, studyId));
   VIEWS[studyId][TIMELINES_VIEW_NAME] = <TimelinesView>addView(new TimelinesView(TIMELINES_VIEW_NAME, studyId));
   VIEWS[studyId][PATIENT_PROFILE_VIEW_NAME] =
   <PatientProfileView>addView(new PatientProfileView(PATIENT_PROFILE_VIEW_NAME, studyId));
@@ -199,15 +227,14 @@ export async function createclinicalCaseViews(studyId?: string): Promise<any> {
   <QuestionnaiesView>addView(new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId));
 
   const tableViewHelpers = {};
-  const tableViewsParams = getTableViewsParams();
 
-  Object.keys(tableViewsParams).forEach((it) => {
+  Object.keys(TABLE_VIEWS).forEach((it) => {
     const tableView = createTableView(
-      tableViewsParams[it].domainsAndColsToCheck,
+      TABLE_VIEWS[it].domainsAndColsToCheck,
       it,
-      tableViewsParams[it].helpUrl,
-      tableViewsParams[it].createViewHelper,
-      tableViewsParams[it].paramsForHelper,
+      TABLE_VIEWS[it].helpUrl,
+      TABLE_VIEWS[it].createViewHelper,
+      TABLE_VIEWS[it].paramsForHelper,
     );
     VIEWS[studyId][it] = addView(tableView.view);
     tableViewHelpers[it] = tableView.helper;
@@ -217,7 +244,7 @@ export async function createclinicalCaseViews(studyId?: string): Promise<any> {
 
   const summary = VIEWS[studyId][SUMMARY_VIEW_NAME] as StudySummaryView;
   summary.load();
-  const valView = addView(new ValidationView(summary.errorsByDomain, VALIDATION_VIEW_NAME, studyId));
+  const valView = addView(new ValidationView(VALIDATION_VIEW_NAME, studyId));
   summary.validationView = valView;
   VIEWS[studyId][VALIDATION_VIEW_NAME] = valView;
 
@@ -321,9 +348,10 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
 }
 
 
-export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase} = {
+export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
 
-  [SUMMARY_VIEW_NAME]: (studyId) => new StudySummaryView(SUMMARY_VIEW_NAME, studyId),
+  [SUMMARY_VIEW_NAME]:
+    (studyId, errorLinkHandler?: () => void) => new StudySummaryView(SUMMARY_VIEW_NAME, studyId, errorLinkHandler),
   [TIMELINES_VIEW_NAME]: (studyId) => new TimelinesView(TIMELINES_VIEW_NAME, studyId),
   [LABORATORY_VIEW_NAME]: (studyId) => new LaboratoryView(LABORATORY_VIEW_NAME, studyId),
   [PATIENT_PROFILE_VIEW_NAME]: (studyId) => new PatientProfileView(PATIENT_PROFILE_VIEW_NAME, studyId),
@@ -337,9 +365,10 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [MEDICAL_HISTORY_VIEW_NAME]: (studyId) => new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME, studyId),
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId) => new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId),
-  [VALIDATION_VIEW_NAME]: (studyId, errorMap) => new ValidationView(errorMap, VALIDATION_VIEW_NAME, studyId),
-  [COHORT_VIEW_NAME]: (studyId) => new StudySummaryView(CohortView, studyId),
+  [VALIDATION_VIEW_NAME]: (studyId) => new ValidationView(VALIDATION_VIEW_NAME, studyId),
+  //[COHORT_VIEW_NAME]: (studyId) => new StudySummaryView(COHORT_VIEW_NAME, studyId),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
+  [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
 };
 
 

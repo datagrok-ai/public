@@ -54,5 +54,3 @@ export const StudyJsonName = 'study.json';
 export const demoStudyId = 'CDISCPILOT01';
 
 export const domainsToValidate = ['dm', 'ae'];
-
-export const ERRORS_MAPS: {[key: string]: any} = {};

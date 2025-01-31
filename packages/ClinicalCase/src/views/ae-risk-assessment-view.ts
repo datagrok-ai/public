@@ -19,7 +19,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   placeboArm: string[];
   activeArm: string[];
   treatmentArmOptions: string[];
-  riskAssessmentDiv = ui.box();
+  riskAssessmentDiv = ui.box(null, {style: {width: '100%'}});
   initialGuide: any;
   sizeOptions = {'AE percent': AE_PERCENT};
   volcanoPlot: any;

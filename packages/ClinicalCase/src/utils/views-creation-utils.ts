@@ -39,18 +39,18 @@ export function createTableView(
   domainsAndColsToCheck: any,
   viewName: string,
   helpUrl: string,
-  createViewHelper: (params: any) => any,
+  createViewHelper: (studyId: string, params: any) => any,
   paramsForHelper?: any) {
   let tableView: DG.TableView | DG.View;
   let viewHelper;
   const validator = new ValidationHelper(domainsAndColsToCheck, studyId);
   if (validator.validate()) {
-    const {helper, df} = createViewHelper(paramsForHelper);
+    const {helper, df} = createViewHelper(studyId, paramsForHelper);
     tableView = DG.TableView.create(df, false);
     viewHelper = helper;
   } else {
     tableView = DG.View.create();
-    updateDivInnerHTML(tableView.root,createValidationErrorsDiv(validator.missingDomains,
+    updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains,
       validator.missingColumnsInReqDomains, validator.missingColumnsInOptDomains));
   }
   tableView.name = viewName;
@@ -60,23 +60,20 @@ export function createTableView(
   return {helper: viewHelper, view: tableView};
 }
 
-
-export function getTableViewsParams() {
-  return {
-    [AE_BROWSER_VIEW_NAME]: {
-      domainsAndColsToCheck: {
-        'req_domains': {
-          'ae': {
-            'req': [
-              VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
-              VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
-              VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
-            ],
-          },
+export const TABLE_VIEWS = {
+  [AE_BROWSER_VIEW_NAME]: {
+    domainsAndColsToCheck: {
+      'req_domains': {
+        'ae': {
+          'req': [
+            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
+            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
+          ],
         },
       },
-      helpUrl: 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md',
-      createViewHelper: createAEBrowserHelper,
     },
-  };
-}
+    helpUrl: 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md',
+    createViewHelper: createAEBrowserHelper,
+  },
+};

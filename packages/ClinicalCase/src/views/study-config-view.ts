@@ -10,7 +10,7 @@ import {ACT_TRT_ARM, AE_DECOD_TERM, AE_END_DAY, AE_END_DAY_CALCULATED, AE_START_
   INV_DRUG_ID, INV_DRUG_NAME, INV_DRUG_START_DAY, INV_DRUG_START_DAY_CALCULATED, MH_DECOD_TERM,
   MH_TERM, PLANNED_TRT_ARM} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
-import {addView, createTableView, getTableViewsParams} from '../utils/views-creation-utils';
+import {addView, createTableView, TABLE_VIEWS} from '../utils/views-creation-utils';
 import {VIEWS} from '../package';
 
 export class StudyConfigurationView extends ClinicalCaseViewBase {
@@ -65,15 +65,14 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
                 updateDivInnerHTML(obj.root, '');
                 obj.loaded = false;
               } else {
-                const tableViewsParams = getTableViewsParams();
-                if (tableViewsParams[view]) {
+                if (TABLE_VIEWS[view]) {
                   obj.close();
                   const tableView = createTableView(
-                    tableViewsParams[view].domainsAndColsToCheck,
+                    TABLE_VIEWS[view].domainsAndColsToCheck,
                     view,
-                    tableViewsParams[view].helpUrl,
-                    tableViewsParams[view].createViewHelper,
-                    tableViewsParams[view].paramsForHelper,
+                    TABLE_VIEWS[view].helpUrl,
+                    TABLE_VIEWS[view].createViewHelper,
+                    TABLE_VIEWS[view].paramsForHelper,
                   );
                   VIEWS[this.studyId][view] = addView(tableView.view);
                   VIEWS[this.studyId][view].name = view;
