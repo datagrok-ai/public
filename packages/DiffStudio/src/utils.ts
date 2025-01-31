@@ -326,16 +326,6 @@ export function getMaxGraphsInFacetGridRow(funcsCount: number) {
   }
 }
 
-/** RGB color to number */
-export function rgbToNum(rgbString: string) {
-  const components = rgbString.slice(rgbString.indexOf('(') + 1,
-    rgbString.indexOf(')')).split(',').map((str) => Number(str));
-
-  const hex = (1 << 24 | components[0] << 16 | components[1] << 8 | components[2]).toString(16).slice(1);
-
-  return parseInt(hex, 16);
-}
-
 /** Remove title of dock node*/
 export function removeTitle(node: DG.DockNode) {
   setTimeout(() => {

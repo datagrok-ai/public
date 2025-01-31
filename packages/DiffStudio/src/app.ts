@@ -17,7 +17,7 @@ import {USE_CASES} from './use-cases';
 
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT, LINE_COLORS} from './ui-constants';
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT} from './ui-constants';
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
@@ -27,15 +27,16 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow,
-  rgbToNum,
-  removeTitle} from './utils';
+  getMaxGraphsInFacetGridRow, removeTitle} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
 import '../css/app-styles.css';
 
 import {_package} from './package';
+
+const COLORS = DG.Color.categoricalPalette;
+const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -2077,7 +2078,7 @@ export class DiffStudio {
   }
 
   /** Return div with facet grid plot */
-  private getFacetPlot() {
+  private getFacetPlot(): HTMLDivElement {
     const cols = this.solutionTable.columns;
     const colNames = cols.names();
 
@@ -2098,7 +2099,7 @@ export class DiffStudio {
     let color = 0;
 
     for (let i = 1; i <= colsToShowCount; ++i) {
-      color = rgbToNum(LINE_COLORS[i - 1]);
+      color = COLORS[(i - 1) % COLORS_COUNT];
 
       const plot = DG.Viewer.lineChart(this.solutionTable, {
         xColumnName: colNames[0],
