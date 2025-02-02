@@ -4,7 +4,7 @@ import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
 import {_identityInt32, _isDartium, _toIterable, MapProxy} from './utils';
 import {Observable} from 'rxjs';
-import {Color, RangeSlider} from './widgets';
+import {Color, RangeSlider, Widget} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
@@ -1350,8 +1350,10 @@ export class SemanticValue<T = any> {
 
 
 /** Proxy class for the Dart-based column grid. */
-export class ColumnGrid {
-  constructor(public readonly dart: any) {}
+export class ColumnGrid extends Widget {
+  constructor(public readonly dart: any) {
+    super(api.grok_Widget_Get_Root(dart));
+  }
 
   /** Creates a new grid. */
   static create(options?: {
@@ -1383,7 +1385,7 @@ export class ColumnGrid {
   }) : ColumnGrid {
     return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnReorderManagerDialog(df.dart, title,
       toJs(options?.dfSource), options?.filter, options?.order?.map(c => c.dart), options?.checks, options?.addAdditionalChecks,
-      options?.additionalChecksName, options?.applyOrder ? (cg: any) => options?.applyOrder?.(toJs(cg)) : null,
+      options?.additionalChecksName ?? null, options?.applyOrder ? (cg: any) => options?.applyOrder?.(toJs(cg)) : null,
       options?.applyVisibility ? (cg: any) => options?.applyVisibility?.(toJs(cg)) : null,
       options?.gridOptions, options?.addServiceColumns));
   }
@@ -1391,13 +1393,13 @@ export class ColumnGrid {
   /** Creates a new popup grid. */
   static popup(dfSource: DataFrame, options?: {
     filter?: (c: Column) => boolean;
-    addEmpty: boolean;
-    widgetMode: boolean;
-    grayedOutColsMode: boolean;
-    serviceColsTagName: string;
+    addEmpty?: boolean;
+    widgetMode?: boolean;
+    grayedOutColsMode?: boolean;
+    serviceColsTagName?: string;
   }): ColumnGrid {
     return new ColumnGrid(api.grok_ColumnGrid_Create_Popup(dfSource.dart, options?.filter, options?.addEmpty ?? false,
-      options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName));
+      options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName ?? null));
     }
 
   /** Creates a new column selector grid. */
@@ -1422,7 +1424,7 @@ export class ColumnGrid {
   addCheckedSelect(): void { api.grok_ColumnGrid_AddCheckedSelect(this.dart); }
   filterColumns(): void { api.grok_ColumnGrid_FilterColumns(this.dart); }
   shouldShowColumnTooltip(col: Column): boolean { return api.grok_ColumnGrid_ShouldShowColumnTooltip(this.dart, col.dart); }
-  passesFilter(col: Column, columnName?: string): boolean { return api.grok_ColumnGrid_PassesFilter(this.dart, col.dart, columnName); }
+  passesFilter(col: Column, columnName?: string): boolean { return api.grok_ColumnGrid_PassesFilter(this.dart, col.dart, columnName ?? null); }
   refreshStats(): void { api.grok_ColumnGrid_RefreshStats(this.dart); }
 
   get showSearch(): boolean { return api.grok_ColumnGrid_Get_ShowSearch(this.dart); }
@@ -1474,6 +1476,6 @@ export class ColumnGrid {
   addColumnStats(aggType: string): Column { return toJs(api.grok_ColumnGrid_AddColumnStats(this.dart, aggType)); }
   addColumnProperty(p: Property): Column { return toJs(api.grok_ColumnGrid_AddColumnProperty(this.dart, p.dart)); }
   columnsToDataFrame(columnsOrder?: Column[], addServiceColumns?: boolean, serviceColsTagName?: string): void {
-    api.grok_ColumnGrid_ColumnsToDataFrame(this.dart, columnsOrder?.map(c => c.dart), addServiceColumns ?? false, serviceColsTagName);
+    api.grok_ColumnGrid_ColumnsToDataFrame(this.dart, columnsOrder?.map(c => c.dart), addServiceColumns ?? false, serviceColsTagName ?? null);
   }
 }
