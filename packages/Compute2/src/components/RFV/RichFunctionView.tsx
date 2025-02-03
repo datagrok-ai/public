@@ -27,6 +27,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useLayoutDb} from '../../composables/use-layout-db';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -159,19 +160,7 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
-    const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
-        blocked: () => {
-          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`);
-        },
-        upgrade: (db, oldVersion) => {
-          if (oldVersion === 0)
-            db.createObjectStore(STORE_NAME);
-        },
-      });
-
-      return db;
-    }, null);
+    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
 
@@ -198,7 +187,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
 
-    const root = Vue.ref(null as HTMLElement | null);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.shallowRef(null as HTMLElement | null);
@@ -264,8 +252,15 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     let intelligentLayout = true;
+
+    const layoutLoaded = Vue.ref(false);
+
     const loadPersonalLayout = async () => {
       const personalState = await getSavedPersonalState(currentCall.value);
+
+      if (!personalState)
+        layoutLoaded.value = true;
+
       if (!dockRef.value || !personalState || !dockInited.value) return;
 
       intelligentLayout = false;
@@ -280,6 +275,7 @@ export const RichFunctionView = Vue.defineComponent({
       await dockRef.value.useLayout(personalState.layout);
 
       intelligentLayout = true;
+      layoutLoaded.value = true;
     };
 
     const loadDefaultLayout = async () => {
@@ -327,6 +323,7 @@ export const RichFunctionView = Vue.defineComponent({
     }, {flush: 'post'});
 
     const handleDockInit = async () => {
+      layoutLoaded.value = false;
       dockInited.value = true;
       triggerSaveDefault.value = !triggerSaveDefault.value;
     };
@@ -394,8 +391,13 @@ export const RichFunctionView = Vue.defineComponent({
         return scalarCardCount < 3 ? 'right': 'down';
       };
 
+      const getDf = (name: string) => {
+        const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
+        return val ? Vue.markRaw(val) : val;
+      }
+
       return (
-        <div class='w-full h-full flex' ref={root}>
+        <div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels'>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -484,6 +486,7 @@ export const RichFunctionView = Vue.defineComponent({
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
+            class={{ 'pseudo_hidden': !layoutLoaded.value }}
           >
             { !historyHidden.value &&
               <History
@@ -565,7 +568,7 @@ export const RichFunctionView = Vue.defineComponent({
                         Vue.withDirectives(<Viewer
                           type={options['type'] as string}
                           options={options}
-                          dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                          dataFrame={getDf(dfProp.name)}
                           class='w-full'
                           onViewerChanged={(v) => setViewerRef(v, dfProp.name, options['type'] as string)}
                         />, [[ifOverlapping, isRunning.value, 'Recalculating...']])

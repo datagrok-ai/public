@@ -530,7 +530,7 @@
                       "#type": "BarChartLook",
                       "rowSource": "All",
                       "onClick": "Filter",
-                      "valueColumnName": "1 avg(duration)",
+                      "valueColumnName": "test",
                       "valueAggrType": "count",
                       "barSortType": "by value",
                       "barSortOrder": "desc",
@@ -941,7 +941,7 @@
     ],
     "floating": [],
     "tableId": "94e609e4-b5b7-437e-b91f-01da1ff73b17",
-    "tableName": "1_ Benchmark_ Dashboard"
+    "tableName": "1. Benchmark. Dashboard"
   },
   "name": "BenchmarkDashboard",
   "friendlyName": "1. Benchmark Dashboard"

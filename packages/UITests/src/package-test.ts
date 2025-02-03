@@ -32,6 +32,7 @@ import './viewers/viewers';
 import './viewers/filters';
 import './gui/viewers/scatter-plot';
 import './shell/windows';
+import './gui/balloon';
 
 // import './gui/apps';
 

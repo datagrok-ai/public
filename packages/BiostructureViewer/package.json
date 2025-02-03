@@ -5,7 +5,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
     "vendor/pviz-bundle.min.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.47.2",
+    "@datagrok-libraries/bio": "^5.48.2",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.4.0",

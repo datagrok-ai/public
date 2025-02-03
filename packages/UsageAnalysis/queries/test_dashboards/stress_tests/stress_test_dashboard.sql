@@ -24,15 +24,15 @@ select
   t.type, 
   r.date_time,
   r.params ->> 'totalWorkers' as total_workers,
-  r.params ->> 'worker' as worker,
-  r.params ->> 'browser' as browser,
+  coalesce(r.params ->> 'worker', '0') as worker,
+  coalesce(r.params ->> 'browser', '0') as browser,
   r.batch_name,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   r.result,
   r.duration,
   coalesce(nullif(t.owner, ''), p.package_author, '') as owner
 from tests t full join last_builds_indexed b on 1=1
-inner join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null) and r.stress_test and (@showNotCiCd or r.ci_cd) and r.params ->>'worker' is not null
+inner join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null) and r.stress_test and (@showNotCiCd or r.ci_cd)
 left join published_packages p on p.name = t.package and p.is_current
 where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and (@showNotRun or not r.passed is null)
 order by b.name, t.name

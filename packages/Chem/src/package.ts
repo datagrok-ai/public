@@ -2133,22 +2133,30 @@ export async function runReinvent(ligand: string, target: string, optimize: stri
 
 //top-menu: Chem | Generate molecules...
 //name: Reinvent
+//tags: HitDesignerFunction
 //input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
 //input: string target {choices: Chem: getConfigFiles; caption: Dock into} [Folder with config files and macromolecule for docking]
 //input: string optimize {choices: Chem: getAdmeConfigFiles; caption: Optimize} [Optimization criteria for ADME properties]
 //input: int steps = 5 [Number of steps]
-export async function reinvent(ligand: string, target: string, optimize: string, steps: number): Promise<void> {
-  (async () => {
-    const resultDfPromise = grok.functions.call('Chem:runReinvent', {
-      ligand: ligand,
-      target: target,
-      optimize: optimize,
-      steps: steps,
-    });
+//output: dataframe result
+export async function reinvent(
+  ligand: string,
+  target: string,
+  optimize: string,
+  steps: number
+): Promise<DG.DataFrame> {
+  const resultDfPromise = grok.functions.call('Chem:runReinvent', {
+    ligand: ligand,
+    target: target,
+    optimize: optimize,
+    steps: steps,
+  });
+  const schemas = await grok.dapi.stickyMeta.getSchemas();
+  const lineageSchema = schemas.find((s) => s.name === 'Lineage');
 
-    /** Lineage setup */
-    const schemas = await grok.dapi.stickyMeta.getSchemas();
-    const lineageSchema = schemas.find((s) => s.name === 'Lineage')!;
+  const resultDf: DG.DataFrame = await resultDfPromise;
+
+  if (lineageSchema) {
     const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
     molCol.semType = DG.SEMTYPE.MOLECULE;
 
@@ -2156,29 +2164,29 @@ export async function reinvent(ligand: string, target: string, optimize: string,
     const generatedDf = generateStickyDf('generated');
 
     const lineagePromise = grok.dapi.stickyMeta.setAllValues(lineageSchema, molCol, seedDf);
-    const resultDf: DG.DataFrame = await resultDfPromise;
 
     const resultMolCol = resultDf.columns.byName('SMILES');
-    const lineagePromises = resultMolCol.toList().map((smiles: string) => {
-      const col = DG.Column.fromStrings('smiles', [smiles]);
-      col.semType = DG.SEMTYPE.MOLECULE;
-      return grok.dapi.stickyMeta.setAllValues(lineageSchema, col, generatedDf);
-    });
+    const initialMolCol = resultDf.columns.byName('Input_SMILES');
+    resultMolCol.semType = DG.SEMTYPE.MOLECULE;
+    initialMolCol.semType = DG.SEMTYPE.MOLECULE;
+    await grok.data.detectSemanticTypes(resultDf);
 
-    grok.shell.addTableView(resultDf);
-    const tableView = grok.shell.getTableView(resultDf.name);
-    const grid = tableView.grid;
+    if (resultMolCol) {
+      const lineagePromises = resultMolCol.toList().map((smiles: string) => {
+        const col = DG.Column.fromStrings('smiles', [smiles]);
+        col.semType = DG.SEMTYPE.MOLECULE;
+        return grok.dapi.stickyMeta.setAllValues(lineageSchema, col, generatedDf);
+      });
 
-    const gridCol = grid.columns.byName('Score');
-    grid.sort(['Score'], [false]);
-
-    if (gridCol) {
-      gridCol.isTextColorCoded = true;
-      gridCol.column?.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
+      await Promise.all([lineagePromise, ...lineagePromises]);
     }
+  }
 
-    await Promise.all([lineagePromise, ...lineagePromises]);
-  })();
+  const scoreColumn = resultDf.col('Score');
+  if (scoreColumn)
+    scoreColumn.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
+
+  return resultDf;
 }
 
 function generateStickyDf(role: string): DG.DataFrame {

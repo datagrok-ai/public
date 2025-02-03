@@ -5,15 +5,17 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {filter, take} from 'rxjs/operators';
 
-import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
-import {FormApp as FormAppInstance} from './apps/FormApp';
-import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
+import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
+import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
+import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
-import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import {RFVApp} from './apps/RFVApp';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import './tailwind.css';
 import {makeAdvice, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
+import {HistoryApp} from './apps/HistoryApp';
+import {Subject} from 'rxjs';
 
 export const _package = new DG.Package();
 
@@ -22,27 +24,54 @@ export async function init() {
   await DG.Func.byName('WebComponents:init').prepare().call();
 }
 
+//name: CustomFunctionViewEditor
+//tags: editor, vue
+//input: funccall call
+//output: view result
+export async function CustomFunctionViewEditor(call: DG.FuncCall) {
+  await customElements.whenDefined('dg-markdown');
+
+  const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
+  await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+  const updateFCBus = new Subject<DG.FuncCall>();
+
+  const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus});
+
+  const sub = updateFCBus.subscribe(fc => {
+    view.linkFunccall(fc);
+    view.onAfterLoadRun(fc)
+  });
+
+  app.mount(view.historyRoot);
+
+  grok.events.onViewRemoved.pipe(
+    filter((closedView) => {
+      return closedView === (view as any);
+    }),
+    take(1),
+  ).subscribe(() => {
+    sub.unsubscribe();
+    app.unmount();
+  });
+
+  return view;
+}
+
+
 //name: RichFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
+//output: view result
 export async function RichFunctionViewEditor(call: DG.FuncCall) {
-  const thisCall = grok.functions.getCurrentCall();
-
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
   const app = Vue.createApp(RFVApp, {funcCall: call});
-  grok.shell.add(view);
-  app.mount(view.root);
-  view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
 
-  view.name = call.func.friendlyName;
-  view.parentCall = thisCall;
-  view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${call.func.name}`;
+  app.mount(view.root);
 
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
@@ -52,37 +81,34 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+
+  return view;
 }
 
 
-//name: Tree Wizard
-//tags: test, vue, model
-//sidebar: @compute
+//name: Tree Wizard Test
+//tags: test, vue
 //meta.icon: icons/tree-wizard.png
-export async function TreeWizardApp() {
-  return DG.Func.byName('Compute2:TreeWizardEditor')
-    .prepare({call: DG.Func.byName('Compute2:MockProvider2').prepare()}).call();
-}
+//meta.provider: Compute2:MockProvider2
+//editor: Compute2:TreeWizardEditor
+export async function TreeWizardTestApp() {}
+
 
 //name: Tree Wizard Editor
 //tags: editor
 //input: funccall call
+//output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
-  const thisCall = grok.functions.getCurrentCall();
-
   await customElements.whenDefined('dg-markdown');
 
+  if (!call.func.options.provider)
+    throw new Error(`Model ${call.name} has no provider`);
+
   const view = new DG.ViewBase();
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
 
-  view.name = call.func.friendlyName;
-  view.parentCall = thisCall;
-  view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${thisCall.func.name}`;
-
-  grok.shell.add(view);
   app.mount(view.root);
 
   grok.events.onViewRemoved.pipe(
@@ -93,47 +119,37 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+
+  return view;
 }
 
 //tags: test, vue
-export async function ViewerApp() {
+export async function ViewerTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(ViewerAppInstance);
   app.mount(view.root);
-  view.name = 'ViewerApp';
+  view.name = 'ViewerTestApp';
   grok.shell.addView(view);
 }
 
 //tags: test, vue
-export async function FormApp() {
+export async function FormTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(FormAppInstance);
   app.mount(view.root);
-  view.name = 'FormApp';
+  view.name = 'FormTestApp';
   grok.shell.addView(view);
 }
 
 //tags: test, vue
-export async function HistoryApp() {
+export async function HistoryTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(HistoryAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
-  view.name = 'HistoryApp';
+  view.name = 'HistoryTestApp';
   grok.shell.addView(view);
 }
-
-//tags: test, vue
-export async function SimpleDriverApp() {
-  // TODO: close view handling
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(SimpleDriverAppInstance);
-  view.root.classList.remove('ui-panel');
-  app.mount(view.root);
-  view.name = 'SimpleDriverApp';
-  grok.shell.addView(view);
-}
-
 
 //name: MockWrapper1
 export async function MockWrapper1() {}
@@ -153,10 +169,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'Compute2:LongScript',
       },
-      // {
-      //   id: 'step2',
-      //   nqName: 'Compute2:LongFailingScript',
-      // },
+      {
+        id: 'step2',
+        nqName: 'Compute2:LongFailingScript',
+      },
     ],
     links: [{
       id: 'link1',
@@ -183,7 +199,7 @@ export async function MockProvider2(params: any) {
     type: 'sequential',
     stepTypes: [{
       id: 'cooling',
-      nqName: 'Compute:ObjectCooling',
+      nqName: 'Compute2:ObjectCooling2',
       friendlyName: 'cooling',
       actions: [{
         id: 'action1',
@@ -318,7 +334,6 @@ export async function TestAdd2(a: number, b: number) {
   return a + b;
 }
 
-
 //name: TestMul2
 //input: double a
 //input: double b
@@ -345,4 +360,47 @@ export async function TestDiv2(a: number, b: number) {
 //output: dataframe res
 export async function TestDF1(df: DG.DataFrame) {
   return df;
+}
+
+class MyView extends CustomFunctionView {
+  private aIn?: DG.InputBase;
+  private bIn?: DG.InputBase;
+  private res?: DG.InputBase;
+
+  constructor() {
+    super('Compute2:TestAdd2');
+    this.box = true;
+  }
+
+  override buildIO() {
+    this.aIn = ui.input.float('a', { onValueChanged:(val) => this.funcCall!.inputs.a = val });
+    this.bIn = ui.input.float('b', { onValueChanged:(val) => this.funcCall!.inputs.b = val });
+    this.res = ui.input.float('res');
+    this.res.enabled = false;
+    return ui.div([
+      this.aIn,
+      this.bIn,
+      ui.div([ui.bigButton('Run', async () => {
+        await this.funcCall!.call();
+        await this.saveRun(this.funcCall!);
+        this.res!.value = this.funcCall?.outputs.res;
+      })]),
+      this.res,
+    ]);
+  }
+
+  override async onAfterLoadRun(loadedRun: DG.FuncCall) {
+    console.log(`Loaded run ${loadedRun.id}`);
+    this.aIn!.value = this.funcCall!.inputs.a;
+    this.bIn!.value = this.funcCall!.inputs.b;
+    this.res!.value = this.funcCall?.outputs.res;
+  }
+}
+
+//name: Test Custom View
+//editor: Compute2:CustomFunctionViewEditor
+//output: view result
+export async function TestCustomView() {
+  const view = new MyView();
+  return view;
 }

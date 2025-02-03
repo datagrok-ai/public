@@ -16,9 +16,9 @@
     "@datagrok-libraries/statistics": "^0.1.7",
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok/charts": "^1.4.0",
-    "@datagrok/multiplot": "^0.0.4",
+    "@datagrok/multiplot": "^0.0.5",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "^1.22.0",
     "jstat": "^1.9.5",
     "moment": "^2.29.1"
   },

@@ -27,27 +27,29 @@ function hasSteps(state: PipelineState) {
   isStaticPipelineState(state);
 }
 
-function _findTreeNodeWithPath(uuid: string, steps: PipelineState[], pathSegments: number[]): NodeWithPath | undefined {
+function _findTreeNode(
+  steps: PipelineState[],
+  pred: (state: PipelineState) => boolean,
+  pathSegments: number[] = [],
+): NodeWithPath | undefined {
   for (const [idx, stepState] of steps.entries()) {
-    if (stepState.uuid === uuid)
+    if (pred(stepState))
       return {state: stepState, pathSegments: [...pathSegments, idx]};
 
     if (hasSteps(stepState)) {
       pathSegments.push(idx);
 
-      const t = _findTreeNodeWithPath(uuid, stepState.steps, pathSegments);
+      const t = _findTreeNode(stepState.steps, pred, pathSegments);
       if (t)
         return t;
       else
         pathSegments.pop();
     }
   }
-}
+};
 
 export function findNodeWithPathByUuid(uuid: string, state: PipelineState): NodeWithPath | undefined {
-  const pathSegments = [] as number[];
-
-  return _findTreeNodeWithPath(uuid, [state], pathSegments);
+  return _findTreeNode([state], (state: PipelineState) => state.uuid === uuid);
 };
 
 export function findTreeNodeByPath(pathSegments: number[], state: PipelineState): NodeWithPath | undefined {
@@ -86,6 +88,19 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
   }
 };
 
+export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
+  let prevUuid = '';
+  const pred = (state: PipelineState) => {
+    if (!isFuncCallState(state))
+      return false;
+    if (prevUuid === uuid)
+      return true;
+    prevUuid = state.uuid;
+    return false;
+  }
+  return _findTreeNode([state], pred);
+}
+
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
 PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
 
@@ -97,17 +112,22 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
 
 export const couldBeSaved = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data) && !!data.provider;
 
-export const isSubtree = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data);
-
-export const hasSubtreeInconsistencies = (
+export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
 ) => {
-  return isSubtree(data) && data.steps.some((step) =>
-    isFuncCallState(step) ?
-      hasInconsistencies(consistencyStates[step.uuid]):
-      step.steps.some((nestedStep) => hasInconsistencies(consistencyStates[nestedStep.uuid])),
+  return _findTreeNode(
+    [data],
+    (state: PipelineState) => isFuncCallState(state) ?
+      hasInconsistencies(consistencyStates[state.uuid]) && !state.isReadonly :
+      false
   );
+};
+
+export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
+  const firstInconsistency = Object.values(consistencyStates || {}).find(
+    (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
+  return !!firstInconsistency;
 };
 
 export async function reportStep(treeState?: PipelineState) {
@@ -157,9 +177,3 @@ export async function reportStep(treeState?: PipelineState) {
     );
   }
 }
-
-export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
-  return firstInconsistency;
-};

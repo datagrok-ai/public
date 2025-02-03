@@ -54,18 +54,19 @@ export function makeValidationResult(payload?: ValidationPayload): ValidationRes
   };
 }
 
-export async function makeModel(provider: string) {
-  return DG.Func.byName('Compute2:TreeWizardEditor')
-    .prepare({call: DG.Func.byName(provider).prepare()}).call();
-}
+export function pathToUUID(
+  rnode: TreeNode<StateTreeNode>,
+  path: readonly NodeAddressSegment[] | readonly NodePathSegment[],
+): string[] {
+  let acc = {node: rnode, uuids: [rnode.getItem().uuid]};
 
-export function pathToUUID(rnode: TreeNode<StateTreeNode>, path: readonly NodeAddressSegment[] | readonly NodePathSegment[]): string[] {
-  const {uuids} = path.reduce((acc, {idx}) => {
+  path.forEach(({idx}) => {
     const nnode = acc.node.getChild({idx});
     const {uuid} = nnode.getItem();
-    return {node: nnode, uuids: [...acc.uuids, uuid]};
-  }, {node: rnode, uuids: [rnode.getItem().uuid]});
-  return uuids;
+
+    acc = {node: nnode, uuids: [...acc.uuids, uuid]};
+  });
+  return acc.uuids;
 }
 
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {

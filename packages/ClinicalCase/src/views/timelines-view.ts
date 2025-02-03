@@ -6,12 +6,17 @@ import {updateDivInnerHTML} from '../utils/utils';
 import $ from 'cash-dom';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {_package} from '../package';
-import {AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_ROUTE, SUBJECT_ID} from '../constants/columns-constants';
+import {AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE,
+  DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS,
+  INV_DRUG_ROUTE, SUBJECT_ID} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {addDataFromDmDomain, getNullOrValue} from '../data-preparation/utils';
-import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD,
+  CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD,
+  VIEWS_CONFIG} from '../views-config';
 import {TIMELINES_VIEW_NAME} from '../constants/view-names-constants';
 import {TIMELINES_VIEWER} from '../constants/constants';
+import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 const multichoiceTableDict = {'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex'};
 
@@ -50,9 +55,11 @@ export class TimelinesView extends ClinicalCaseViewBase {
       .filter((it) => !this.optDomainsWithMissingCols.includes(it.name))
       .map((it) => it.name);
     this.filters = this.getFilterFields();
-    Object.keys(this.filters).forEach((domain) => this.filterColumns = this.filterColumns.concat(Object.keys(this.filters[domain])));
+    Object.keys(this.filters)
+      .forEach((domain) => this.filterColumns = this.filterColumns.concat(Object.keys(this.filters[domain])));
     this.multichoiceTableOptions = {};
-    this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k, v]) => existingTables.includes(v)));
+    this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict)
+      .filter(([k, v]) => existingTables.includes(v)));
     this.selectedOptions = [Object.keys(this.multichoiceTableOptions)[0]];
     this.selectedDataframes = [Object.values(this.multichoiceTableOptions)[0]];
     const multiChoiceOptions = ui.input.multiChoice('', {value: [this.selectedOptions[0]] as any,
@@ -119,7 +126,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
     const info = this.links[domain.name];
     const df = study.domains[domain.name];
     const t = df.clone(null, Object.keys(info).map((e) => info[e]));
-    const filterCols = Object.keys(this.filters[domain.name]).filter((it) => df.columns.names().includes(this.filters[domain.name][it]));
+    const filterCols = Object.keys(this.filters[domain.name])
+      .filter((it) => df.columns.names().includes(this.filters[domain.name][it]));
     filterCols.forEach((key) => {t.columns.addNewString(key).init((i) => df.get(this.filters[domain.name][key], i));});
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
     t.columns.addNewFloat('rowNum').init((i) => i);
@@ -142,21 +150,18 @@ export class TimelinesView extends ClinicalCaseViewBase {
   private updateTimelinesPlot() {
     this.updateTimelinesTables();
     if (this.resultTables) {
-      this.resultTables.plot.fromType(TIMELINES_VIEWER, {
-        paramOptions: JSON.stringify(this.options),
-      }).then((v: any) => {
-        v.setOptions({
-          splitByColumnName: 'key',
-          startColumnName: 'start',
-          endColumnName: 'end',
-          colorByColumnName: 'domain',
-          eventColumnName: 'event',
-          showEventInTooltip: true,
-        });
-        $(v.root).css('position', 'relative');
-        v.zoomState = [[0, 10], [0, 10], [90, 100], [90, 100]];
-        v.render();
-        this.updateTimelinesDivs(v.root, this.getFilters());
+      this.resultTables.plot.fromType(TIMELINES_VIEWER).then((v: any) => {
+        try {
+          $(v.root).css('position', 'relative');
+          v.root.style.visibility = 'hidden';
+          this.updateTimelinesDivs(v.root, this.getFilters());
+          setTimeout(() => {
+            v.setOptions(this.options);
+            v.root.style.visibility = 'visible';
+          }, 100);
+        } catch (e) {
+          _package.logger.debug(e.message ?? e);
+        }
       });
     } else
       this.updateTimelinesDivs('', '');
@@ -186,24 +191,29 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   override async propertyPanel() {
     const selectedInd = this.resultTables.selection.getSelectedIndexes();
-
+    //in case no events are selected on timelines plot and ae domain is checked - show most frequent AEs
     if (!selectedInd.length) {
       if (this.selectedDataframes.includes('ae')) {
-        const aeWithArm = addDataFromDmDomain(this.resultTables.clone(), study.domains.dm, this.resultTables.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], 'key');
-        const aeNumberByArm = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]).where(`${DOMAIN} = ae`).count().aggregate();
-        const subjNumberByArm = study.domains.dm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]).uniqueCount(SUBJECT_ID).aggregate();
+        const aeWithArm = addDataFromDmDomain(this.resultTables.clone(), study.domains.dm,
+          this.resultTables.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], 'key');
+        const aeNumberByArm = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]])
+          .where(`${DOMAIN} = ae`).count().aggregate();
+        const subjNumberByArm = study.domains.dm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]])
+          .uniqueCount(SUBJECT_ID).aggregate();
         const aeNumByArmDict = {};
         for (let i = 0; i < aeNumberByArm.rowCount; i++) {
           aeNumByArmDict[aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)] = aeNumberByArm.get('count', i) /
             subjNumberByArm.
               groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], `unique(${SUBJECT_ID})`])
-              .where({[VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]: `${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}`})
+              .where({[VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]:
+                `${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}`})
               .aggregate()
               .get(`unique(${SUBJECT_ID})`, 0);
         }
 
         const aeTop5Dict = {};
-        const aeTop5 = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event']).where(`${DOMAIN} = ae`).count().aggregate();
+        const aeTop5 = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event'])
+          .where(`${DOMAIN} = ae`).count().aggregate();
         const order = aeTop5.getSortedOrder([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event'] as any);
         order.forEach((item) => {
           const arm = aeTop5.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], item);
@@ -243,7 +253,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
       const domainAdditionalFields = {
         ae: {fields: [AE_SEVERITY], pos: 'before'},
         cm: {fields: [CON_MED_DOSE, CON_MED_DOSE_UNITS, CON_MED_DOSE_FREQ, CON_MED_ROUTE], pos: 'after'},
-        ex: {fields: [INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE], pos: 'after'},
+        ex: {fields: [INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_DOSE_FORM,
+          INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE], pos: 'after'},
       };
 
       const switchToAEBrowserPanel = (aeRowNum) => {
@@ -252,7 +263,7 @@ export class TimelinesView extends ClinicalCaseViewBase {
           return null;
         } else {
           //@ts-ignore
-          this.aeBrowserHelper.aeToSelect.currentRow = aeRowNum;
+          this.aeBrowserHelper.aeToSelect.currentRowIdx = aeRowNum;
         }
       };
 
@@ -270,7 +281,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
               addInfoString += `${study.domains[domain].get(it, index)} `;
           });
           const eventName = String(getNullOrValue(this.resultTables, 'event', item)).toLowerCase();
-          const fullEventName = addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
+          const fullEventName =
+            addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
           const eventStart = getNullOrValue(this.resultTables, 'start', item);
           const eventEnd = getNullOrValue(this.resultTables, 'end', item);
           eventArray.push({
@@ -297,9 +309,9 @@ export class TimelinesView extends ClinicalCaseViewBase {
               switchToAEBrowserPanel(parseInt(eventElement.id));
               event.stopPropagation();
             });
-            gc.style.element = ui.div(eventElement, {style: {'white-space': 'nowrap'}});
+            gc.style.element = ui.div(eventElement, {style: {whiteSpace: 'nowrap'}});
           } else
-            gc.style.element = ui.divText(gc.cell.value, {style: {'white-space': 'nowrap'}});
+            gc.style.element = ui.divText(gc.cell.value, {style: {whiteSpace: 'nowrap'}});
 
           gc.style.element.style.paddingTop = '7px';
           gc.style.element.style.paddingLeft = '7px';
@@ -309,7 +321,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
         acc2.addPane('Events', () => {
           return ui.div(eventGrid.root);
         });
-        const accPane = acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
+        const accPane =
+          acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
         accPane.style.margin = '0px';
         accPane.style.paddingLeft = '0px';
 

@@ -2,37 +2,40 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as meta from './sdtm-meta';
-import {study} from "./clinical-study";
-import {StudySummaryView} from "./views/study-summary-view";
-import {TimelinesView} from "./views/timelines-view";
-import {PatientProfileView} from "./views/patient-profile-view";
-import {AdverseEventsView} from "./views/adverse-events-view";
+import {ClinicalDomains, study} from './clinical-study';
+import {StudySummaryView} from './views/study-summary-view';
+import {TimelinesView} from './views/timelines-view';
+import {PatientProfileView} from './views/patient-profile-view';
+import {AdverseEventsView} from './views/adverse-events-view';
 import {ValidationView} from './views/validation-view';
 import {AdverseEventHandler} from './panels/adverse-event-handler';
 import {LaboratoryView} from './views/laboratory-view';
 import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
-import { BoxPlotsView } from './views/boxplots-view';
-import { MatrixesView } from './views/matrixes-view';
-import { TimeProfileView } from './views/time-profile-view';
-import { STUDY_ID } from './constants/columns-constants';
-import { TreeMapView } from './views/tree-map-view';
-import { MedicalHistoryView } from './views/medical-history-view';
-import { VisitsView } from './views/visits-view';
-import { StudyConfigurationView } from './views/study-config-view';
-import { ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './constants/view-names-constants';
-import { addView, createTableView, getTableViewsParams } from './utils/views-creation-utils';
-import { CohortView } from './views/cohort-view';
-import { QuestionnaiesView } from './views/questionnaires-view';
+import {BoxPlotsView} from './views/boxplots-view';
+import {MatrixesView} from './views/matrixes-view';
+import {TimeProfileView} from './views/time-profile-view';
+import {STUDY_ID} from './constants/columns-constants';
+import {TreeMapView} from './views/tree-map-view';
+import {MedicalHistoryView} from './views/medical-history-view';
+import {VisitsView} from './views/visits-view';
+import {StudyConfigurationView} from './views/study-config-view';
+import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME,
+  CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
+  PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
+  SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME,
+  VISITS_VIEW_NAME} from './constants/view-names-constants';
+import {addView, createTableView, getTableViewsParams} from './utils/views-creation-utils';
+import {CohortView} from './views/cohort-view';
+import {QuestionnaiesView} from './views/questionnaires-view';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
 export let validationRulesList = null;
 
 export const VIEWS = [];
 
-let domains = Object.keys(study.domains).map(it => `${it.toLocaleLowerCase()}.csv`);
+const domains = Object.keys(study.domains).map((it) => `${it.toLocaleLowerCase()}.csv`);
 export let c: DG.FuncCall;
 
 
@@ -44,12 +47,11 @@ export async function clinicalCaseApp(): Promise<any> {
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
   if (Object.keys(study.domains).every((name) => grok.shell.table(name) == null)) {
-    let demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
-    if (demoFiles.length) {
+    const demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
+    if (demoFiles.length)
       await (await grok.dapi.projects.find(demoFiles[0].id)).open();
-    } else {
+    else
       grok.shell.warning('Please load SDTM data or demo files');
-    }
   }
 
   study.initFromWorkspace();
@@ -73,7 +75,7 @@ export async function clinicalCaseApp(): Promise<any> {
   const tableViewHelpers = {};
   const tableViewsParams = getTableViewsParams();
 
-  Object.keys(tableViewsParams).forEach(it => {
+  Object.keys(tableViewsParams).forEach((it) => {
     const tableView = createTableView(
       tableViewsParams[it].domainsAndColsToCheck,
       it,
@@ -87,9 +89,9 @@ export async function clinicalCaseApp(): Promise<any> {
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
-  let summary = VIEWS.find(it => it.name === SUMMARY_VIEW_NAME);
+  const summary = VIEWS.find((it) => it.name === SUMMARY_VIEW_NAME);
   summary.load();
-  let valView = addView(new ValidationView(summary.errorsByDomain, VALIDATION_VIEW_NAME));
+  const valView = addView(new ValidationView(summary.errorsByDomain, VALIDATION_VIEW_NAME));
   summary.validationView = valView;
   VIEWS.push(valView);
 
@@ -97,53 +99,66 @@ export async function clinicalCaseApp(): Promise<any> {
 
   setTimeout(() => {
     grok.shell.v = summary;
-  }, 1000);
+  }, 2000);
 
-  let setObj = async (obj) => {
+  const setObj = async (obj) => {
     grok.shell.o = await obj.propertyPanel();
-  }
+  };
 
   const viewChangeSub = grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
-      if (!VIEWS || VIEWS.length === 1 && VIEWS[0].name === AE_BROWSER_VIEW_NAME) {
+      if (!VIEWS.length || VIEWS.length === 1 && VIEWS[0].name === AE_BROWSER_VIEW_NAME) {
         viewChangeSub.unsubscribe();
         return;
       }
-      let obj = VIEWS.find(it => it.name === grok.shell.v.name);
+      const obj = VIEWS.find((it) => it.name === grok.shell.v.name);
       if (obj) {
-        if (obj.hasOwnProperty('loaded') && !obj.loaded) {
-          obj.load();
-        }
+        if (obj.hasOwnProperty('loaded')) {
+          if (!obj.loaded)
+            obj.load();
+        } else if (obj.type === DG.TYPE.TABLE_VIEW && obj.dataFrame.name === study.domains.ae.name)
+          tableViewHelpers[AE_BROWSER_VIEW_NAME].propertyPanel();
+
+
         if (obj.loaded) {
           setObj(obj);
           if (obj.filterChanged) {
             obj.updateGlobalFilter();
-            this.filterChanged = false;
+            obj.filterChanged = false;
           }
         }
       }
-    }, 100)
+    }, 100);
+  });
+
+  const viewClosedSub = grok.events.onViewRemoved.subscribe((v) => {
+    const index = VIEWS.findIndex((it) => it.name === v.name);
+    if (index > -1)
+      VIEWS.splice(index, 1);
+    if (!VIEWS.length) {
+      viewClosedSub.unsubscribe();
+      return;
+    }
   });
 
   if (study.domains.dm) {
     const updateFilterProperty = (obj) => {
-      if (obj.name === grok.shell.v.name){
+      if (obj.name === grok.shell.v.name) {
         setTimeout(() => {
           obj.updateGlobalFilter();
-        })
+        });
       }
       obj.filterChanged = true;
-    }
+    };
     study.domains.dm.onFilterChanged.subscribe(()=> {
-      VIEWS.forEach(it => {
-        if (it.hasOwnProperty('filterChanged')) {
+      VIEWS.forEach((it) => {
+        if (it.hasOwnProperty('filterChanged'))
           updateFilterProperty(it);
-        } else {
-          if (tableViewHelpers[it.name].updateGlobalFilter !== undefined) {
+        else {
+          if (tableViewHelpers[it.name].updateGlobalFilter !== undefined)
             updateFilterProperty(tableViewHelpers[it.name]);
-          }
         }
-      })
+      });
     });
   }
 }
@@ -153,24 +168,25 @@ export async function clinicalCaseApp(): Promise<any> {
 //input: file folder
 //input: list<file> files
 //output: widget res
-export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]):
+  Promise<DG.Widget | undefined> {
   if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
-    let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
-    let table = DG.DataFrame.fromCsv(res);
-    let studyId = table.columns.names().includes(STUDY_ID) ? table.get(STUDY_ID, 0) : 'undefined';
+    const res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
+    const table = DG.DataFrame.fromCsv(res);
+    const studyId = table.columns.names().includes(STUDY_ID) ? table.get(STUDY_ID, 0) : 'undefined';
     return DG.Widget.fromRoot(ui.div([
       ui.panel([
         ui.divText('Folder contains SDTM data'),
         ui.divText(`Study ID: ${studyId}`)]),
       ui.button('Run ClinicalCase', async () => {
         await Promise.all(files.map(async (file) => {
-          if(domains.includes(file.fileName.toLowerCase())){
+          if (domains.includes(file.fileName.toLowerCase())) {
             const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
             grok.shell.addTableView(df);
           }
         }));
-        grok.functions.call("Clinicalcase:clinicalCaseApp");
-      })
+        grok.functions.call('Clinicalcase:clinicalCaseApp');
+      }),
     ]));
   }
 }

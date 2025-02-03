@@ -320,14 +320,16 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) {
+  public runSequence(startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) {
     return this.withTreeLock(() => {
-      const nodesSeq = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
+      const startNode = includeNonNested ? this.nodeTree.root : this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
+      if (startNode == null)
+        return of(undefined);
+      const nodesSeq = this.nodeTree.traverse(startNode, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
       const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
-      const endIdx = nodesSeq.findIndex((node) => node.uuid === endUuid);
       if (startIdx < 0)
         return of(undefined);
-      return from(nodesSeq.slice(startIdx, endIdx >=0 ? endIdx + 1: undefined)).pipe(
+      return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
             !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))

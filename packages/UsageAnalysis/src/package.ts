@@ -15,16 +15,17 @@ import { getDate } from './utils';
 import dayjs from "dayjs";
 import {ServiceLogsApp} from "./service_logs/service_logs";
 import { TestGridCellHandler } from './handlers/test-grid-cell-handler';
-import { StackTraceHandler } from './handlers/stack-trace-handler';
 import { initTestStickyMeta } from './test-analysis/sticky-meta-initialization';
+import { TestDashboardWidget } from './viewers/ua-test-dashboard-viewer';
 
 export const _package = new DG.Package();
+export let _properties: any;
 
 
 //tags: init
 export function _initUA(): void {
+  _properties = _package.settings;
   DG.ObjectHandler.register(new TestGridCellHandler());
-  DG.ObjectHandler.register(new StackTraceHandler());
   initTestStickyMeta();
 }
 
@@ -55,7 +56,7 @@ export async function TestsListJoined(): Promise<DG.DataFrame| undefined> {
   });
   const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
-    return { 'type':  "manual ", 'test': 'Unknown: ' + elem };
+    return { 'type':  "manual ", 'test': 'Test Track: ' + elem };
   });
   const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
@@ -171,6 +172,13 @@ export function reportsWidget(): DG.Widget {
 //output: widget result
 export function packageUsageWidget(pack: DG.Package): DG.Widget {
   return new PackageUsageWidget(pack);
+}
+
+//name: testDashboardsViewer
+//tags: viewer
+//output: viewer result
+export function testDashboardsViewer(): TestDashboardWidget {
+  return new TestDashboardWidget();
 }
 
 //tags: autostart

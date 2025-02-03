@@ -139,10 +139,6 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public ResultSet executeQuery(String query, FuncCall queryRun,
                                   Connection connection, int timeout, Logger queryLogger, int fetchSize) throws SQLException {
-        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
-        if (supportsTransactions)
-            connection.setAutoCommit(false);
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
@@ -367,6 +363,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
             } else {
+                boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+                queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
+                if (supportsTransactions)
+                    connection.setAutoCommit(false);
                 queryLogger.debug("Executing batch mode...");
                 String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n|\n--batch\n", commentStart));
                 for (String currentQuery : queries)
@@ -617,7 +617,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (funcInfo != null) {
             String brackets = descriptor.nameBrackets;
             String sql = GrokConnectUtil.isNotEmpty(aggr.colName) ? funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName)) : funcInfo.dbFunctionName;
-            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1): addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
+            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName)
+                    ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1)
+                    : brackets.charAt(0) + funcInfo.functionName + "(" + aggr.colName + ")" + brackets.charAt(brackets.length() - 1));
         }
         else
             return null;

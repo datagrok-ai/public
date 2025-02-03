@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import { before, category, expect, test } from '@datagrok-libraries/utils/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -31,6 +31,22 @@ category('Grid', () => {
     expect(secondCol?.name, 'age');
   });
 
+  test('getRowOrder', async () => {
+    const bitset = DG.BitSet.create(grid.dataFrame.rowCount, (_) => true);
+    bitset.setAll(true);
+    grid.dataFrame.filter.copyFrom(bitset);
+    expect(grid.getRowOrder().length, grid.dataFrame.rowCount);
+    bitset.setAll(true);
+    bitset.set(1, false);
+    grid.dataFrame.filter.copyFrom(bitset);
+    let order = grid.getRowOrder();
+    expect(order[0], 0);
+    expect(order[1], 2);
+    
+    bitset.setAll(true);
+    grid.dataFrame.filter.copyFrom(bitset);
+  });
+
   test('resizeColumn', async () => {
     grid.columns.byName('age')!.width = 200;
     expect(grid.columns.byName('age')!.width, 200);
@@ -49,7 +65,7 @@ category('Grid', () => {
       'Other': 0XFFE4DD47,
     };
 
-    demog.col('height')?.meta.colors.setConditional({'20-170': '#00FF00', '170-190': '#220505'});
+    demog.col('height')?.meta.colors.setConditional({ '20-170': '#00FF00', '170-190': '#220505' });
     demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
 
     //categorical RACE column check
@@ -91,8 +107,11 @@ category('Grid', () => {
     for (const col of demog.columns.numerical)
       expect(grid.col(col.name)?.renderer.cellType, 'number');
 
-    for (const col of demog.columns.categorical)
+    for (const col of demog.columns.categorical) {
+      if (col.type !== DG.TYPE.STRING)
+        continue; // skip bool columns
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
+    }
   });
 
   test('getOptions', async () => {
@@ -100,7 +119,7 @@ category('Grid', () => {
   });
 
   test('setOptions', async () => {
-    grid.setOptions({allowEdit: false, showColumnLabels: false, colHeaderHeight: 100});
+    grid.setOptions({ allowEdit: false, showColumnLabels: false, colHeaderHeight: 100 });
     expect(Object.keys(grid.getOptions().look).length, 5);
   });
-}, {owner: 'dkovalyov@datagrok.ai'});
+}, { owner: 'dkovalyov@datagrok.ai' });

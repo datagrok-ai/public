@@ -90,7 +90,7 @@ viewer updates the current row in all other viewers, including grid.
 
 To further aid with data exploration, the **Context Panel** dynamically updates
 to show [info panes](../../datagrok/navigation/panels/info-panels.md) specific to
-the current molecule.
+the current object, e.g., a molecule.
 
 ![](img/grid-rows-interactivity.gif)
 
@@ -186,6 +186,14 @@ to see column details, invoke commands, color-code, change style, explore statis
 and visualize the content.
 
 You can also [resize selected columns](#resizing-columns) by mouse-dragging column border in the header.
+
+:::tip
+
+Select multiple colors and apply colors and styles at once for quick formatting. Assign groups for quick filtering, selection, and navigation 
+
+![img](img/grid-grouped-columns.gif)
+
+:::
 
 ### Hiding and unhiding columns
 
@@ -380,7 +388,7 @@ visualizations, including SVG:
 
 ![](img/grid-custom-html-form.gif)
 
-::note fun fact
+:::note fun fact
 
 The EEG recording in the video above was recorded from Andrew Skalkin's head while he was helping build 
 [JAKE](https://pubmed.ncbi.nlm.nih.gov/30872988/#&gid=article-figures&pid=figure-3-uid-2) 
@@ -389,7 +397,7 @@ sometime around 2016, back at Johnson & Johnson. Fun times! :)
 Datagrok is one of the very few web application capable of interactively working with sensor data - you can open
 datasets with up to a billion data points OR a million columns (not at the same time, of course).
 
-::
+:::
 
 ### Adaptive number formatting
 

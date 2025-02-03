@@ -22,6 +22,8 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--disable-dev-shm-usage',
     '--disable-features=site-per-process',
     '--window-size=1920,1080',
+    '--no-sandbox', 
+    '--disable-setuid-sandbox'
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
@@ -72,7 +74,7 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defa
   const token = await getToken(url, key);
   url = await getWebUrl(url, token);
   console.log(`Using web root: ${url}`);
-
+  
   const browser = await puppeteer.launch(params);
 
   const page = await browser.newPage();

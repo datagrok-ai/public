@@ -355,9 +355,11 @@ category('DataFrame: Column', () => {
     expectFloat(col.get(0) ?? 0, 1.1);
   });
   
-  // test('fromBitSet', async () => {
-    
-  // });
+  test('fromBitSet', async () => {
+    const bitset = DG.BitSet.create(COL1.length, (_) => true);
+    bitset.set(0, false);
+    expectArray(DG.Column.fromBitSet('a', bitset).toList(), [false, true, true, true]);
+  });
   
   test('fromFloat32Array', async () => {
     const col = DG.Column.fromFloat32Array('col', Float32Array.from([1.23, 4.45, 3.34]), 3);
@@ -393,6 +395,17 @@ category('DataFrame: Column', () => {
   test('qnum', async () => {
     const col = DG.Column.qnum('col', 3, [1, 2, 3]);
     expectFloat(col.get(0) ?? 0, 1);
+
+    let value = 10.111;
+    let exact = DG.Qnum.create(value, DG.QNUM_EXACT);
+    let greater = DG.Qnum.create(value, DG.QNUM_GREATER);
+    let less = DG.Qnum.create(value, DG.QNUM_LESS);
+    expect(value.toFixed(2), DG.Qnum.getValue(exact).toFixed(2));
+    expect(value.toFixed(2), DG.Qnum.getValue(greater).toFixed(2));
+    expect(value.toFixed(2), DG.Qnum.getValue(less).toFixed(2));
+    expect(DG.QNUM_EXACT, DG.Qnum.getQ(exact));
+    expect(DG.QNUM_GREATER, DG.Qnum.getQ(greater));
+    expect(DG.QNUM_LESS, DG.Qnum.getQ(less));
   });
 
   test('string', async () => {
@@ -655,18 +668,21 @@ category('DataFrame: RowList', () => {
     const df = createDf2();
     df.rows.removeAt(1, 2);
     expect(df.rowCount, 2);
+    expect(df.rows.table.rowCount, 2);
   });
 
   test('removeWhere', async () => {
     const df = createDf2();
     df.rows.removeWhere((r) => r.get('population') < 3);
     expect(df.rowCount, 2);
+    expect(df.rows.table.rowCount, 2);
   });
 
   test('removeWhereIdx', async () => {
     const df = createDf2();
     df.rows.removeWhereIdx((i) => i > 1);
     expect(df.rowCount, 2);
+    expect(df.rows.table.rowCount, 2);
   });
 
   test('requestFilter', async () => {

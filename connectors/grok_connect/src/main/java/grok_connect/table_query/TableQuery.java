@@ -2,6 +2,7 @@ package grok_connect.table_query;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataQuery;
@@ -20,7 +21,7 @@ public class TableQuery extends DataQuery {
 
     public List<GroupAggregation> aggregations = new ArrayList<>();
     public List<String> groupByFields = new ArrayList<>();
-    public List<FieldPredicate> having = new ArrayList<>();
+    public List<HavingPredicate> having = new ArrayList<>();
     public List<FieldOrder> orderBy = new ArrayList<>();
     List<TableJoin> joins = new ArrayList<>();
     public String tableName;
@@ -96,7 +97,14 @@ public class TableQuery extends DataQuery {
             sql.append("GROUP BY");
             sql.append(System.lineSeparator());
             sql.append(
-                    groupByFields.stream().map(provider::addBrackets).collect(Collectors.joining(", ")));
+                    Stream.concat(
+                            groupByFields.stream().map(provider::addBrackets),
+                            !having.isEmpty() ? having.stream()
+                                    .filter((predicate) -> GrokConnectUtil.isEmpty(predicate.aggType) && !groupByFields.contains(predicate.field))
+                                    .map((predicate -> provider.addBrackets(predicate.field))) : Stream.empty()
+                            )
+                            .collect(Collectors.joining(", "))
+            );
         }
 
         if (!pivots.isEmpty()) {
@@ -112,21 +120,20 @@ public class TableQuery extends DataQuery {
             sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
             for (FieldPredicate clause: having)
-                clauses.add(String.format("\t(%s)",  preparePredicate(clause, sqlHeader, provider)));
+                clauses.add(String.format("\t(%s)", preparePredicate(clause, sqlHeader, provider)));
             sql.append(String.join(String.format(" %s%s", havingOp, System.lineSeparator()), clauses));
         }
 
         if (!orderBy.isEmpty()) {
-            sql.append(System.lineSeparator());
             List<String> orders = new ArrayList<>();
+            sql.append(System.lineSeparator());
             sql.append("ORDER BY");
             sql.append(System.lineSeparator());
             for (FieldOrder order: orderBy) {
-                String orderField = connection.dataSource.equals("Access") ?
-                        String.format("[%s]", order.field) : String.format("\"%s\"", order.field);
+                String orderField = provider.addBrackets(order.field);
                 orders.add(String.format("%s%s", orderField, order.asc ? " asc" : " desc"));
             }
-            sql.append(String.join(", ", pad(orders)));
+            sql.append(String.join(", ", orders));
         }
         String result;
         if (limit != null && provider.descriptor.limitAtEnd) {
@@ -176,14 +183,16 @@ public class TableQuery extends DataQuery {
         return aggrs;
     }
 
-    private List<String> pad(List<String> strings) {
-        strings.replaceAll(s -> "  " + s);
-        return strings;
-    }
-
     private String preparePredicate(FieldPredicate clause, StringBuilder sqlHeader, JdbcDataProvider provider) {
         String paramName = clause.getParamName();
         clause.matcher.colName = provider.addBrackets(clause.field);
+        if (clause instanceof HavingPredicate && GrokConnectUtil.isNotEmpty(((HavingPredicate) clause).aggType)) {
+            provider.descriptor.aggregations.stream()
+                    .filter((a) -> a.functionName.equals(((HavingPredicate) clause).aggType))
+                    .findFirst()
+                    .ifPresent(info -> clause.matcher.colName = info.dbFunctionName
+                            .replaceAll("#", clause.matcher.colName));
+        }
         PatternMatcherResult result;
         switch (clause.dataType) {
             case Types.NUM:

@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.7.2 (2025-01-21)
+
+Support for async rendering in non-grid views
+
 ## 2.7.1 (2024-12-30)
 
 Moved some tests from Bio package to Helm package (for Bio not to depend on Helm)

@@ -40,13 +40,13 @@ export function createAEBrowserHelper(): any {
     helpUrl: string,
     createViewHelper: (params: any) => any,
     paramsForHelper?: any) {
-    let tableView;
+    let tableView: DG.TableView | DG.View;
     let viewHelper;
     let validator = new ValidationHelper(domainsAndColsToCheck);
     if (validator.validate()) {
       let { helper, df } = createViewHelper(paramsForHelper);
       tableView = DG.TableView.create(df, false);
-      viewHelper = helper
+      viewHelper = helper;
     } else {
       tableView = DG.View.create();
       updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains, validator.missingColumnsInReqDomains, validator.missingColumnsInOptDomains));

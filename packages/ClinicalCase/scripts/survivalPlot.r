@@ -1,7 +1,7 @@
 #name: survivalPlot
 #language: r
 #input: string inputStrata = '1'
-#input: string confInt = 0.95
+#input: string confInt = '0.95'
 #input: dataframe survivalDf
 #output: graphics plot
 #output: dataframe diagnostics

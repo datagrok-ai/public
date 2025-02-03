@@ -27,8 +27,11 @@ public class ConnectionPool {
             HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
-            if (connectionPool.containsKey(key))
-                connectionPool.remove(key).close();
+            if (connectionPool.containsKey(key)) {
+                HikariDataSource pool = connectionPool.remove(key);
+                if (pool != null)
+                    pool.close();
+            }
             Throwable cause = e.getCause();
             throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {
@@ -62,7 +65,6 @@ public class ConnectionPool {
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setInitializationFailTimeout(0);
-        config.setConnectionTimeout(3000);
         config.setLeakDetectionThreshold(60 * 1000);
         return new HikariDataSource(config);
     }

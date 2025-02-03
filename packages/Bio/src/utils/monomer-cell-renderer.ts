@@ -15,8 +15,6 @@ const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
 }();
 
-const svgMolOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-
 export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase {
   constructor(gridCol: DG.GridColumn | null, tableCol: DG.Column) {
     super(gridCol, tableCol);

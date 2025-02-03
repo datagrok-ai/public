@@ -419,7 +419,7 @@ function resetConsole(): void {
 
 export async function runTests(options?: TestExecutionOptions) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
-  const packageOwner = (package_.packageOwner.match(new RegExp('[^<]*<([^>]*)>'))?? ['', ''])[1];
+  const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>'))?? ['', ''])[1];
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,

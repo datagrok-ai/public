@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.61 (2025-01-27)
+
+### Features
+
+* No Sandbox mode for puppeteer added
+
 ## 4.13.60 (2025-01-09)
 
 ### Features
