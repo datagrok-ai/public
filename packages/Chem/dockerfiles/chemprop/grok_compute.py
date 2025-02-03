@@ -1,7 +1,7 @@
 import io
 from io import StringIO
 import zipfile
-from flask import Blueprint, Flask, request, Response
+from flask import Blueprint, Flask, request, Response, jsonify
 import logging
 import sys
 import json
@@ -122,6 +122,10 @@ def modeling_model(id, command):
 def modeling_models():
     # All models status
     return _make_response(None)
+
+@bp.route('/modeling/health_check', methods=['GET'])
+def health_check():
+    return jsonify({"success": True, "error": None, "result": "Service is up and running"}), 200
 
 def _make_response(data, headers=None):
     response = Response(data)

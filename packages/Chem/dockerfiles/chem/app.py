@@ -1,4 +1,4 @@
-from flask import Blueprint, Flask, request, Response
+from flask import Blueprint, Flask, request, Response, jsonify
 from chem import *
 import logging
 import sys
@@ -77,6 +77,9 @@ def chem_inchi_to_smiles():
     result = parallelize(inchi_to_smiles, [inchi], [inchi], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
+@bp.route('/chem/health_check', methods=['GET'])
+def health_check():
+    return jsonify({"success": True, "error": None, "result": "Service is up and running"}), 200
 
 def _make_response(data, headers=None):
     response = Response(data)

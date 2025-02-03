@@ -5,6 +5,8 @@ import {category, before, after, expect, test, delay, awaitCheck} from '@datagro
 import {isColumnPresent, returnDialog, setDialogInputValue} from './gui-utils';
 import {readDataframe} from './utils';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
+import {awaitStatus} from '@datagrok-libraries/utils/src/docker';
+import { _package } from '../package';
 
 
 category('UI top menu', () => {
@@ -14,6 +16,27 @@ category('UI top menu', () => {
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = true;
+
+    const [chempropContainer, chemContainer] = await Promise.all([
+      grok.dapi.docker.dockerContainers.filter('chemprop').first(),
+      grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
+    ]);
+
+    await Promise.all([
+      ...(chemContainer.status !== 'started'
+        ? [
+            grok.dapi.docker.dockerContainers.fetchProxy(chemContainer.id, '/chem/health_check', { method: 'GET' }),
+            awaitStatus(chemContainer.id, 'started', 90000, _package.logger)
+          ]
+        : []),
+  
+      ...(chempropContainer.status !== 'started'
+        ? [
+            grok.dapi.docker.dockerContainers.fetchProxy(chempropContainer.id, '/modeling/health_check', { method: 'GET' }),
+            awaitStatus(chempropContainer.id, 'started', 90000, _package.logger)
+          ]
+        : [])
+    ]);
   });
 
   test('similarity search', async () => {
