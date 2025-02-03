@@ -9,6 +9,7 @@ import {c} from '../package';
 import {createValidationErrorsDiv} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
 import {studies} from '../clinical-study';
+import {ClinCaseTableView} from './types';
 
 export function createAEBrowserHelper(studyId: string): any {
   const aeBrowserDf = studies[studyId].domains.ae.clone();
@@ -32,6 +33,18 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
   view.path = '/' + view.name;
   grok.shell.addView(view);
   return view;
+}
+
+export function createClinCaseTableView(studyId: string, viewName: string): ClinCaseTableView {
+  const tableView = createTableView(
+    studyId,
+    TABLE_VIEWS[viewName].domainsAndColsToCheck,
+    viewName,
+    TABLE_VIEWS[viewName].helpUrl,
+    TABLE_VIEWS[viewName].createViewHelper,
+    TABLE_VIEWS[viewName].paramsForHelper,
+  );
+  return {view: tableView.view, helper: tableView.helper};
 }
 
 export function createTableView(

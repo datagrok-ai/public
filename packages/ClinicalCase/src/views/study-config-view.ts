@@ -10,7 +10,7 @@ import {ACT_TRT_ARM, AE_DECOD_TERM, AE_END_DAY, AE_END_DAY_CALCULATED, AE_START_
   INV_DRUG_ID, INV_DRUG_NAME, INV_DRUG_START_DAY, INV_DRUG_START_DAY_CALCULATED, MH_DECOD_TERM,
   MH_TERM, PLANNED_TRT_ARM} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
-import {addView, createTableView, TABLE_VIEWS} from '../utils/views-creation-utils';
+import {addView, createClinCaseTableView, TABLE_VIEWS} from '../utils/views-creation-utils';
 import {VIEWS} from '../package';
 
 export class StudyConfigurationView extends ClinicalCaseViewBase {
@@ -42,9 +42,13 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
     [MH_TERM_FIELD]: MH_TERM,
   };
 
-  constructor(name, studyId) {
+  addTableViewAsView = false;
+
+  constructor(name, studyId, addTableViewasView?: boolean) {
     super(name, studyId);
     this.name = name;
+    if (addTableViewasView != undefined)
+      this.addTableViewAsView = addTableViewasView;
   }
 
   createView(): void {
@@ -67,15 +71,11 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
               } else {
                 if (TABLE_VIEWS[view]) {
                   obj.close();
-                  const tableView = createTableView(
-                    TABLE_VIEWS[view].domainsAndColsToCheck,
-                    view,
-                    TABLE_VIEWS[view].helpUrl,
-                    TABLE_VIEWS[view].createViewHelper,
-                    TABLE_VIEWS[view].paramsForHelper,
-                  );
-                  VIEWS[this.studyId][view] = addView(tableView.view);
-                  VIEWS[this.studyId][view].name = view;
+                  const tableView = createClinCaseTableView(this.studyId, view);
+                  if (this.addTableViewAsView) {
+                    VIEWS[this.studyId][view] = addView(tableView.view);
+                    VIEWS[this.studyId][view].name = view;
+                  }
                 }
               }
             }
