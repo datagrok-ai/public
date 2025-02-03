@@ -24,6 +24,18 @@ export async function init() {
   await DG.Func.byName('WebComponents:init').prepare().call();
 }
 
+function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
+  view.parentCall = call.parentCall;
+
+  if (view.parentCall?.aux?.view)
+    view.parentView = view.parentCall.aux.view;
+
+  if (call?.func?.name)
+    view.basePath = `/${call.func.name}`;
+
+  console.log(view);
+}
+
 //name: CustomFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
@@ -32,6 +44,8 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
+  setViewHierarchyData(call, view);
+
   await view.isReady.pipe(filter(x => x), take(1)).toPromise();
   const updateFCBus = new Subject<DG.FuncCall>();
 
@@ -66,6 +80,8 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
+  setViewHierarchyData(call, view);
+
   const app = Vue.createApp(RFVApp, {funcCall: call});
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
@@ -99,12 +115,15 @@ export async function TreeWizardTestApp() {}
 //input: funccall call
 //output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
+  const view = new DG.ViewBase();
+  setViewHierarchyData(call, view);
+
   await customElements.whenDefined('dg-markdown');
 
   if (!call.func.options.provider)
     throw new Error(`Model ${call.name} has no provider`);
 
-  const view = new DG.ViewBase();
+
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
