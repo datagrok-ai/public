@@ -123,10 +123,6 @@ def modeling_models():
     # All models status
     return _make_response(None)
 
-@bp.route('/modeling/health_check', methods=['GET'])
-def health_check():
-    return jsonify({"success": True, "error": None, "result": "Service is up and running"}), 200
-
 def _make_response(data, headers=None):
     response = Response(data)
     response.headers = {

@@ -19,14 +19,8 @@ category('Admetica', () => {
     if (!admeticaContainer)
       admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
 
-    const healthCheckPromise = admeticaContainer.status !== 'started'
-      ? [
-        grok.dapi.docker.dockerContainers.fetchProxy(admeticaContainer.id, '/health_check', { method: 'GET' }),
-        awaitStatus(admeticaContainer.id, 'started', 90000, _package.logger)
-      ]
-      : [];
-    
-    await Promise.all([...healthCheckPromise]);
+    if (!admeticaContainer.status.startsWith('started'))
+      await grok.dapi.docker.dockerContainers.run(admeticaContainer.id, true);
     await setProperties();
   });
 

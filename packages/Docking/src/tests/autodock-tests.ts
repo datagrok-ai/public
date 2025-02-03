@@ -20,14 +20,10 @@ category('AutoDock', () => {
       // Initialize the service if not already initialized
       if (!adSvc)
         adSvc = await getAutoDockService();
-      
-      // Perform a health check to start the container (starts on request) if not ready
-      if (!adSvc.ready) {
-        await Promise.all([
-          fetchWrapper(() => adSvc!.healthCheck()),
-          adSvc.awaitStatus('started', 90000),
-        ]);
-      } 
+   
+      const dockingContainer = await grok.dapi.docker.dockerContainers.filter('docking').first();
+      if (!dockingContainer.status.startsWith('started'))
+        await grok.dapi.docker.dockerContainers.run(dockingContainer.id, true); 
     } catch (err: unknown) {
       // Log any errors during initialization
       const [errMsg, errStack] = errInfo(err);
