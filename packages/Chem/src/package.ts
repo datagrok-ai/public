@@ -2146,7 +2146,6 @@ export async function reinvent(
   const lineageSchema = schemas.find((s) => s.name === 'Lineage');
 
   const resultDf: DG.DataFrame = await resultDfPromise;
-  resultDf.columns.remove('Input_SMILES');
 
   if (lineageSchema) {
     const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
@@ -2158,6 +2157,11 @@ export async function reinvent(
     const lineagePromise = grok.dapi.stickyMeta.setAllValues(lineageSchema, molCol, seedDf);
 
     const resultMolCol = resultDf.columns.byName('SMILES');
+    const initialMolCol = resultDf.columns.byName('Input_SMILES');
+    resultMolCol.semType = DG.SEMTYPE.MOLECULE;
+    initialMolCol.semType = DG.SEMTYPE.MOLECULE;
+    await grok.data.detectSemanticTypes(resultDf);
+
     if (resultMolCol) {
       const lineagePromises = resultMolCol.toList().map((smiles: string) => {
         const col = DG.Column.fromStrings('smiles', [smiles]);
