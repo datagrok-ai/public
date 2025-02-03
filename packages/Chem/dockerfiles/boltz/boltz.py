@@ -8,6 +8,7 @@ import tempfile
 import re
 import json
 import pandas as pd
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -116,12 +117,13 @@ def predict():
               df = pd.DataFrame([{"pdb": pdb_content_str, "confidence_score": confidence_score}])
               csv_string = df.to_csv(index=False)
 
+              shutil.rmtree(f"boltz_results_{yaml_file_name}")
+
               return jsonify({
                 "success": True,
                 "message": "Prediction completed successfully.",
                 "result": csv_string
               }), 200
-
       return jsonify({"success": False, "error": "PDB file not found in predictions folder."}), 500
     else:
       return jsonify({"success": False, "error": "Prediction failed."}), 500
