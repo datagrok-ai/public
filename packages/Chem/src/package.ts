@@ -2196,7 +2196,7 @@ function generateStickyDf(role: string): DG.DataFrame {
 
 //name: runBoltz
 //meta.cache: all
-//meta.cache.invalidateOn: 0 * * * *
+//meta.cache.invalidateOn: 0 0 1 * *
 //input: string config {choices: Chem: getBoltzConfigFolders}
 //output: string s
 export async function runBoltz(config: string) {
@@ -2248,7 +2248,14 @@ export async function boltz(config: string): Promise<DG.DataFrame> {
   const confidenceCol = df.columns.byName('confidence_score');
   confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
   confidenceCol.meta.format = '0.000';
-  grok.shell.addTableView(df);
+  confidenceCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS['confidence_score']);
+  const tv = grok.shell.addTableView(df);
+  const {grid} = tv;
+  grid.onCellRender.subscribe((args: any) => {
+    grid.setOptions({ 'rowHeight': 150 });
+    grid.col('pdb')!.width = 200;
+    grid.col('confidence_score')!.width = 100;
+  });
   return df;
 }
 
@@ -2302,8 +2309,7 @@ export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: H
   const addColumnIcon = ui.iconFA('plus', () => {
     const df = molecule.cell.dataFrame;
     propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    // Will need to add description
-    //propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
+    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
     df.columns.add(propertyCol);
   }, `Calculate ${propertyCol.name} for the whole table`);
 
@@ -2341,3 +2347,17 @@ export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
 
   return resultDf;
 }
+
+export const PROPERTY_DESCRIPTIONS: { [colName: string]: string } = {
+  'confidence_score': 'Overall prediction quality score',
+  'ptm': 'Global fold similarity measure',
+  'iptm': 'Accuracy of chain interactions',
+  'ligand_iptm': 'Confidence in ligand binding',
+  'protein_iptm': 'Confidence in protein interactions',
+  'complex_plddt': 'Average per-residue confidence score',
+  'complex_iplddt': 'Confidence in chain interfaces',
+  'complex_pde': 'Uncertainty in chain positioning',
+  'complex_ipde': 'Uncertainty in interface docking',
+  'chains_ptm': 'Confidence per individual chain',
+  'pair_chains_iptm': 'Interaction accuracy between chains'
+};
