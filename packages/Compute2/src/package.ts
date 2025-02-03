@@ -17,6 +17,10 @@ import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-vie
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 
+declare global {
+  var initialURLHandled: boolean;
+}
+
 export const _package = new DG.Package();
 
 //tags: init
@@ -32,8 +36,6 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
 
   if (call?.func?.name)
     view.basePath = `/${call.func.name}`;
-
-  console.log(view);
 }
 
 //name: CustomFunctionViewEditor

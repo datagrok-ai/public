@@ -44,6 +44,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   requestFeature: (() => Promise<void>) | null = null;
 
+  // TODO: initial URL id handling
   public async init() {
     const func = DG.Func.byName(this.funcNqName);
     this.linkFunccall(func.prepare({}));
@@ -53,6 +54,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
+    if (funcCall.id)
+      this.path = `?id=${funcCall.id}`;
+    else
+      this.path = ``;
   }
 
   public async onFuncCallReady() {

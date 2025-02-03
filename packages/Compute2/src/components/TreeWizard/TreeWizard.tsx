@@ -115,6 +115,19 @@ export const TreeWizard = Vue.defineComponent({
 
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
+    Vue.watch(searchParams, (params) => {
+      console.log(params);
+      let paramsRaw = [];
+      if (params.currentStep)
+        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
+      if (params.id)
+        paramsRaw.push(`id=${params.id}`);
+      if (paramsRaw.length)
+        grok.shell.v.path = `?${paramsRaw.join('&')}`;
+      else
+        grok.shell.v.path = ''
+    });
+
     const isLoading = Vue.ref(false);
 
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
@@ -122,7 +135,6 @@ export const TreeWizard = Vue.defineComponent({
 
       if (prevPanel === 'Step review')
         rfvRef.value?.savePersonalState();
-
 
       if (newPanel === 'Step review') {
         isLoading.value = true;
@@ -235,16 +247,15 @@ export const TreeWizard = Vue.defineComponent({
       else grok.shell.v.name = providerFuncName.value;
     });
 
-    let alreadyLoaded = false;
     Vue.watch(treeState, () => {
-      if (!treeState.value || alreadyLoaded) return;
+      if (!treeState.value || globalThis.initialURLHandled) return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
       if (loadingId) {
         loadPipeline(loadingId);
-        alreadyLoaded = true;
+        globalThis.initialURLHandled = true;
       }
     });
 
