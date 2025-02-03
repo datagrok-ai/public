@@ -25,8 +25,8 @@ category('Admetica', () => {
         awaitStatus(admeticaContainer.id, 'started', 90000, _package.logger)
       ]
       : [];
-
-await Promise.all([...healthCheckPromise]);
+    
+    await Promise.all([...healthCheckPromise]);
     await setProperties();
   });
 
