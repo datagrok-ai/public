@@ -5,9 +5,8 @@
 
 async function postprocess() {
 
-  let builds = result.col('build_index').categories;
-  let buildNames = result.col('build').categories.sort().reverse();
-
+  let builds = result.col('build_index').categories.map((x) => parseInt(x));
+  let buildNames = result.col('build').categories.sort();
   let pivot = result
     .groupBy(['test', 'owner'])
     .pivot('build_index')
@@ -47,17 +46,17 @@ async function postprocess() {
 
   pivot.columns.byName('owner').semType = 'User';
   pivot.columns.byName('owner').setTag('cell.renderer', 'User');
-  pivot.columns.byName('test').semType = 'test';
+  pivot.columns.byName('test').semType = 'autotest';
 
   for (var i = 1; i <= builds.length; i++) {
     var buildName = buildNames[i - 1];
-    replaceColumn(i, ' concat unique(status)', i, '');
-    replaceColumn(i, ' concat unique(result)', buildName, ' result');
+    replaceColumn(builds[i-1], ' concat unique(status)', i, '');
+    replaceColumn(builds[i-1], ' concat unique(result)', buildName, ' result');
     var colResult = pivot.columns.byName(i + ' concat unique(result)');
     if (colResult !== null)
       colResult.semType = 'stackTrace';
-    replaceColumn(i, ' avg(build_date)', buildName, ' build_date');
-    replaceColumn(i, ' avg(duration)', buildName, ' duration');
+    replaceColumn(builds[i-1], ' avg(build_date)', buildName, ' build_date');
+    replaceColumn(builds[i-1], ' avg(duration)', buildName, ' duration');
   }
 
 
