@@ -16,7 +16,7 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {computedAsync, useUrlSearchParams} from '@vueuse/core';
+import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
@@ -27,7 +27,8 @@ import {
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
-import {DBSchema, openDB} from 'idb';
+import {DBSchema} from 'idb';
+import {useLayoutDb} from '../../composables/use-layout-db';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -53,31 +54,12 @@ export const TreeWizard = Vue.defineComponent({
     providerFunc: {type: String, required: true},
   },
   setup(props) {
-    const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
-        blocked: () => {
-          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`);
-        },
-        upgrade: (db, oldVersion) => {
-          if (oldVersion === 0) {
-            db.createObjectStore(STORE_NAME);
-            return;
-          }
-
-          const hasStore = db.objectStoreNames.contains(STORE_NAME);
-          if (!hasStore)
-            db.createObjectStore(STORE_NAME);
-        },
-      });
-
-      return db;
-    }, null);
+    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     Vue.onBeforeUnmount(() => {
       savePersonalState(providerFunc.value);
     });
 
-    // TODO: handle providerFunc changes, not necessary as of now
     const {
       treeMutationsLocked,
       isGlobalLocked,

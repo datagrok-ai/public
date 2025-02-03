@@ -37,10 +37,10 @@ async function postprocess() {
 
   var attachedTickets = (await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'))).col('tickets');
   attachedTickets.name = 'jira';
-  pivot.columns.add(attachedTickets);
+  // pivot.columns.add(attachedTickets);
 
 
-  var ticketColumns = 0;
+  var ticketColumns = 5;
   for (var i = 0; i < pivot.rowCount; i++) {
     var tickets = attachedTickets.get(i)?.split(',') ?? [];
     for (var j = 0; j < tickets.length; j++)   {
@@ -49,7 +49,7 @@ async function postprocess() {
     }
   }
   for (var i = 0; i < ticketColumns; i++)
-    await pivot.columns.addNewCalculated('severity ' + i, 'JiraConnect:getJiraField(${ticket ' + i + '}, "priority:name")', DG.TYPE.STRING);
+    await pivot.columns.addNewCalculated(`severity ${i}`, `JiraConnect:getJiraField(RegExpExtract(\${ticket ${i}}, \'GROK-\d+\'), "priority:name")`, DG.TYPE.STRING);
   priorityOrders = ['Highest', 'High', 'Medium', 'Low', 'Lowest', '']
   for (var i = 0; i < pivot.rowCount; i++) {
     var maxPriority = 5;
@@ -66,7 +66,7 @@ async function postprocess() {
 
   for (var i = 0; i < ticketColumns; i++) {
     pivot.columns.remove('severity ' + i);
-    pivot.columns.remove('ticket ' + i);
+    // pivot.columns.remove('ticket ' + i);
   }
   // console.log(pivot);
 

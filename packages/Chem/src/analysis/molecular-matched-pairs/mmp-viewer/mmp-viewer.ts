@@ -91,7 +91,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   rdkitModule: RDModule | null = null;
   currentTab = '';
-  lastSelectedPair: number | null = null;
   mmpFilters: MmpFilters | null = null;
 
   calculatedOnGPU: boolean | null = null;
@@ -111,6 +110,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   spCorrDiv = ui.div();
   showFragmentsChoice: DG.InputBase | null = null;
+  lastCurrentRowOnCliffsTab = - 1;
 
   constructor() {
     super();
@@ -252,12 +252,16 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.refilterCliffs(this.mmpFilters!.activitySliderInputs.map((si) => si.value),
           this.mmpFilters!.activityActiveInputs.map((ai) => ai.value), refilter);
         refilter = false;
-        if (this.lastSelectedPair) {
+        if (this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx !== this.lastCurrentRowOnCliffsTab) {
+          this.lastCurrentRowOnCliffsTab = this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx;
+          this.setCurrentArrow(this.lastCurrentRowOnCliffsTab);
+        }
+        if (this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx !== -1) {
           setTimeout(() => {
             grok.shell.windows.showContextPanel = true;
-            grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
-              this.linesActivityCorrespondance![this.lastSelectedPair!], this.pairedGrids!.mmpGridTrans.dataFrame,
-              this.diffs!, this.parentTable!, this.rdkitModule!, this.moleculesCol!.name);
+            grok.shell.o = fillPairInfo(this.mmpa!, this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx,
+              this.pairedGrids!.mmpGridTrans.dataFrame, this.parentTable!, this.rdkitModule!,
+              this.moleculesCol!.name);
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
@@ -438,13 +442,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       if (event.id !== -1) {
         const pairId = this.linesIdxs![event.id];
         this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx = pairId;
-        setTimeout(() => {
-          grok.shell.windows.showContextPanel = true;
-          grok.shell.o = fillPairInfo(this.mmpa!, event.id, this.linesIdxs!, linesActivityCorrespondance[event.id],
-            this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!,
-            this.moleculesCol!.name, true);
-          this.lastSelectedPair = event.id;
-        }, 500);
       }
     });
 
@@ -458,31 +455,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.pairedGrids!.pairsGridCliffsTab.dataFrame.onCurrentRowChanged.subscribe(() => {
       const currentRowIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx;
       if (currentRowIdx !== -1 && this.currentTab === MMP_NAMES.TAB_CLIFFS) {
-        const fromIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_FROM, currentRowIdx);
-        const toIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_TO, currentRowIdx);
-        //this.lineIdxs contain idxs if pairs from pairs dataset
-        let currentLineIdx: number | null = null;
-        for (let i = 0; i < this.linesIdxs!.length; i++) {
-          if (this.linesIdxs![i] === currentRowIdx && this.linesRenderer!.visibility?.getBit(i)) {
-            currentLineIdx = i;
-            break;
-          }
-        }
-        if (currentLineIdx) {
-          this.linesRenderer!.currentLineId = currentLineIdx;
-          const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
-              this.sp!.viewport.width,
-              this.sp!.viewport.height,
-              this.sp!.dataFrame.get(this.spAxesNames[0], fromIdx),
-              this.sp!.dataFrame.get(this.spAxesNames[1], fromIdx),
-              this.sp!.dataFrame.get(this.spAxesNames[0], toIdx),
-              this.sp!.dataFrame.get(this.spAxesNames[1], toIdx),
-          );
-            this.sp!.zoom(zoomLeft,
-              zoomTop,
-              zoomRight,
-              zoomBottom);
-        }
+        this.lastCurrentRowOnCliffsTab = currentRowIdx;
+        this.setCurrentArrow(this.lastCurrentRowOnCliffsTab);
       }
     });
 
@@ -511,6 +485,34 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       spDiv,
       mmPairsRoot3,
     ], {style: {width: '100%', height: '100%'}}, true);
+  }
+
+  setCurrentArrow(currentRowIdx: number) {
+    const fromIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_FROM, currentRowIdx);
+    const toIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_TO, currentRowIdx);
+    //this.lineIdxs contain idxs if pairs from pairs dataset
+    let currentLineIdx: number | null = null;
+    for (let i = 0; i < this.linesIdxs!.length; i++) {
+      if (this.linesIdxs![i] === currentRowIdx && this.linesRenderer!.visibility?.getBit(i)) {
+        currentLineIdx = i;
+        break;
+      }
+    }
+    if (currentLineIdx) {
+      this.linesRenderer!.currentLineId = currentLineIdx;
+      const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
+          this.sp!.viewport.width,
+          this.sp!.viewport.height,
+          this.sp!.dataFrame.get(this.spAxesNames[0], fromIdx),
+          this.sp!.dataFrame.get(this.spAxesNames[1], fromIdx),
+          this.sp!.dataFrame.get(this.spAxesNames[0], toIdx),
+          this.sp!.dataFrame.get(this.spAxesNames[1], toIdx),
+      );
+        this.sp!.zoom(zoomLeft,
+          zoomTop,
+          zoomRight,
+          zoomBottom);
+    }
   }
 
   //cliffs filters on scatter plot

@@ -2,6 +2,7 @@ package grok_connect.table_query;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataQuery;
@@ -20,7 +21,7 @@ public class TableQuery extends DataQuery {
 
     public List<GroupAggregation> aggregations = new ArrayList<>();
     public List<String> groupByFields = new ArrayList<>();
-    public List<FieldPredicate> having = new ArrayList<>();
+    public List<HavingPredicate> having = new ArrayList<>();
     public List<FieldOrder> orderBy = new ArrayList<>();
     List<TableJoin> joins = new ArrayList<>();
     public String tableName;
@@ -96,7 +97,14 @@ public class TableQuery extends DataQuery {
             sql.append("GROUP BY");
             sql.append(System.lineSeparator());
             sql.append(
-                    groupByFields.stream().map(provider::addBrackets).collect(Collectors.joining(", ")));
+                    Stream.concat(
+                            groupByFields.stream().map(provider::addBrackets),
+                            !having.isEmpty() ? having.stream()
+                                    .filter((predicate) -> GrokConnectUtil.isEmpty(predicate.aggType) && !groupByFields.contains(predicate.field))
+                                    .map((predicate -> provider.addBrackets(predicate.field))) : Stream.empty()
+                            )
+                            .collect(Collectors.joining(", "))
+            );
         }
 
         if (!pivots.isEmpty()) {
@@ -178,6 +186,13 @@ public class TableQuery extends DataQuery {
     private String preparePredicate(FieldPredicate clause, StringBuilder sqlHeader, JdbcDataProvider provider) {
         String paramName = clause.getParamName();
         clause.matcher.colName = provider.addBrackets(clause.field);
+        if (clause instanceof HavingPredicate && GrokConnectUtil.isNotEmpty(((HavingPredicate) clause).aggType)) {
+            provider.descriptor.aggregations.stream()
+                    .filter((a) -> a.functionName.equals(((HavingPredicate) clause).aggType))
+                    .findFirst()
+                    .ifPresent(info -> clause.matcher.colName = info.dbFunctionName
+                            .replaceAll("#", clause.matcher.colName));
+        }
         PatternMatcherResult result;
         switch (clause.dataType) {
             case Types.NUM:

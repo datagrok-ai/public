@@ -30,12 +30,15 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const gmin = settings.normalization === SparklinesNormalizationType.Global ? Math.min(...cols.map((c: DG.Column) => c.min)) :
-    settings.normalization === SparklinesNormalizationType.Row ? Math.min(...cols.map((c: DG.Column) => c.getNumber(row))) : 0;
-  const gmax = settings.normalization === SparklinesNormalizationType.Global ? Math.max(...cols.map((c: DG.Column) => c.max)) :
-    settings.normalization === SparklinesNormalizationType.Row ? Math.max(...cols.map((c: DG.Column) => c.getNumber(row))) : 0;
+  const colMins: number[] = cols.map((c: DG.Column) => c?.min).filter((c) => c !== null) as number[];
+  const colMaxs: number[] = cols.map((c: DG.Column) => c?.max).filter((c) => c !== null) as number[];
+  const colNumbers: number[] = cols.map((c: DG.Column) => c?.getNumber(row)).filter((c) => c !== null) as number[];
+  const gmin = settings.normalization === SparklinesNormalizationType.Global ? Math.min(...colMins) :
+    settings.normalization === SparklinesNormalizationType.Row ? Math.min(...colNumbers) : 0;
+  const gmax = settings.normalization === SparklinesNormalizationType.Global ? Math.max(...colMaxs) :
+    settings.normalization === SparklinesNormalizationType.Row ? Math.max(...colNumbers) : 0;
   const r: number = [SparklinesNormalizationType.Row, SparklinesNormalizationType.Global].includes(settings.normalization) ?
-    (gmax === gmin ? 0 : (cols[col].getNumber(row) - gmin) / (gmax - gmin)) : cols[col].scale(row);
+    (gmax === gmin ? 0 : cols[col] ? (cols[col].getNumber(row) - gmin) / (gmax - gmin) : 0) : cols[col].scale(row);
 
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),

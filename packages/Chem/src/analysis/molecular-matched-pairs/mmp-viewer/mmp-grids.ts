@@ -13,9 +13,11 @@ import {Subject, Subscription} from 'rxjs';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
 import {MMPSubstructProvider} from './mmp-substruct-provider';
 import {addSubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
+import {fillPairInfo} from './mmp-cliffs';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
+  molColName: string;
   mmpa: MMPA;
   //fp for fragment pairs
   fpGrid: DG.Grid; //transformations tab specific to molecules and fragments tab the whole
@@ -55,6 +57,7 @@ export class MmpPairedGrids {
     this.rdkit = getRdKitModule();
     this.mmpa = mmpa;
     this.parentTable = mmpInput.table;
+    this.molColName = mmpInput.molecules.name;
     this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa);
     this.fpCatsFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).categories;
     this.fpCatsTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).categories;
@@ -141,8 +144,14 @@ export class MmpPairedGrids {
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
-      if (this.mmpGridTrans.table.currentRowIdx !== -1)
+      if (this.mmpGridTrans.table.currentRowIdx !== -1) {
         this.pinMatchedPair(this.mmpGridTrans.table.currentRowIdx, this.mmpGridTrans);
+        setTimeout(() => {
+          grok.shell.windows.showContextPanel = true;
+          grok.shell.o = fillPairInfo(this.mmpa!, this.mmpGridTrans.table.currentRowIdx,
+            this.mmpGridTrans.table, this.parentTable!, this.rdkit, this.molColName);
+        }, 500);
+      }
     });
 
     this.mmpGridTrans.table.onSelectionChanged.subscribe(() => {
@@ -156,7 +165,7 @@ export class MmpPairedGrids {
     this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS, true);
     this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS);
 
-    this.mmpMaskTrans.setAll(false);
+    this.mmpMaskTrans.setAll(true);
   }
 
   createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, mean?: boolean) {
