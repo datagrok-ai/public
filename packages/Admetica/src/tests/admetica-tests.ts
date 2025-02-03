@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties, healthCheck } from '../utils/admetica-utils';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {awaitStatus} from '@datagrok-libraries/utils/src/docker';
+import { _package } from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -16,8 +18,15 @@ category('Admetica', () => {
     grok.shell.windows.showProperties = false;
     if (!admeticaContainer)
       admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-    if (admeticaContainer.status !== 'started')
-      await fetchWrapper(() => healthCheck());
+
+    const healthCheckPromise = admeticaContainer.status !== 'started'
+      ? [
+        grok.dapi.docker.dockerContainers.fetchProxy(admeticaContainer.id, '/health_check', { method: 'GET' }),
+        awaitStatus(admeticaContainer.id, 'started', 90000, _package.logger)
+      ]
+      : [];
+
+await Promise.all([...healthCheckPromise]);
     await setProperties();
   });
 
