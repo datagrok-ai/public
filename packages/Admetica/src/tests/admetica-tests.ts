@@ -4,8 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties, healthCheck } from '../utils/admetica-utils';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
-import {awaitStatus} from '@datagrok-libraries/utils/src/docker';
-import { _package } from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
