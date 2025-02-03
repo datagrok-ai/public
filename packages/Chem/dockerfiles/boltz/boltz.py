@@ -65,6 +65,7 @@ def predict():
       yaml_file_path,
       "--accelerator", accelerator,
       "--output_format", "pdb",
+      "--num_workers", "0",
       "--override",
     ]
         
@@ -84,10 +85,6 @@ def predict():
       logging.info(line.strip())
 
     process.wait()
-
-    os.remove(yaml_file_path)
-    if msa_content:
-      os.remove(msa_file_path)
 
     if process.returncode == 0:
       yaml_file_name = os.path.splitext(os.path.basename(yaml_file_path))[0]

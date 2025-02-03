@@ -83,7 +83,7 @@ import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
 import $ from 'cash-dom';
-import { BoltzBaseEditor } from './utils/boltz-editor';
+import { BoltzBaseEditor, getFromPdbs, prop, PROPERTY_DESCRIPTIONS } from './utils/boltz-editor';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2205,7 +2205,7 @@ function generateStickyDf(role: string): DG.DataFrame {
 //name: runBoltz
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-//input: string config {choices: Chem: getBoltzConfigFolders}
+//input: string config
 //output: string s
 export async function runBoltz(config: string) {
   const container = await grok.dapi.docker.dockerContainers.filter('boltz').first();
@@ -2245,18 +2245,21 @@ export function boltzEditor(call: DG.FuncCall): void {
 }
 
 //name: boltz
-//input: string config {choices: Chem: getBoltzConfigFolders}
+//input: string config
 //editor: Chem: BoltzEditor
 //output: dataframe result
 export async function boltz(config: string): Promise<DG.DataFrame> {
   const result = await grok.functions.call('Chem:runBoltz', {config: config});
   const df = DG.DataFrame.fromCsv(result);
+
   const pdbCol = df.columns.byName('pdb');
-  pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
   const confidenceCol = df.columns.byName('confidence_score');
+  
+  pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
   confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
   confidenceCol.meta.format = '0.000';
   confidenceCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS['confidence_score']);
+
   const tv = grok.shell.addTableView(df);
   const {grid} = tv;
   grid.onCellRender.subscribe((args: any) => {
@@ -2272,15 +2275,6 @@ export async function boltz(config: string): Promise<DG.DataFrame> {
 export async function boltz1() {
   const func = DG.Func.find({name: 'boltz'})[0];
   func.prepare().edit();
-}
-
-//name: getBoltzConfigFolders
-//output: list<string> configFolders
-export async function getBoltzConfigFolders(): Promise<string[]> {
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(BOLTZ_CONFIG_PATH, true);
-  return targetsFiles
-    .filter(folder => folder.isDirectory)
-    .map(folder => folder.name);
 }
 
 //name: Boltz-1
@@ -2312,60 +2306,3 @@ export async function boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget
 
   return widget;
 }
-
-export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
-  const addColumnIcon = ui.iconFA('plus', () => {
-    const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
-    df.columns.add(propertyCol);
-  }, `Calculate ${propertyCol.name} for the whole table`);
-
-  ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-  
-  const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
-}
-
-export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
-  const col = pdb.cell.column;
-  const resultDf = DG.DataFrame.create(col.length);
-  
-  for (let idx = 0; idx < col.length; idx++) {
-    const pdbValue = col.get(idx);
-    const remarkRegex = /REMARK\s+\d+\s+([^\d]+?)\s+([-\d.]+)/g;
-    let match;
-  
-    while ((match = remarkRegex.exec(pdbValue)) !== null) {
-      const colName = match[1].trim();
-      const value = parseFloat(match[2].trim());
-        
-      let resultCol = resultDf.columns.byName(colName);
-      if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
-        
-      resultDf.set(colName, idx, value);
-    }
-  }
-
-  return resultDf;
-}
-
-export const PROPERTY_DESCRIPTIONS: { [colName: string]: string } = {
-  'confidence_score': 'Overall prediction quality score',
-  'ptm': 'Global fold similarity measure',
-  'iptm': 'Accuracy of chain interactions',
-  'ligand_iptm': 'Confidence in ligand binding',
-  'protein_iptm': 'Confidence in protein interactions',
-  'complex_plddt': 'Average per-residue confidence score',
-  'complex_iplddt': 'Confidence in chain interfaces',
-  'complex_pde': 'Uncertainty in chain positioning',
-  'complex_ipde': 'Uncertainty in interface docking',
-  'chains_ptm': 'Confidence per individual chain',
-  'pair_chains_iptm': 'Interaction accuracy between chains'
-};
