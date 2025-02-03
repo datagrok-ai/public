@@ -14,68 +14,6 @@ export class UsageType {
   static USER_REPORT_POSTED = 'user report posted';
 
 }
-export class InputType {
-  static Int = 'Int';
-
-  static BigInt = 'BigInt';
-
-  static Float = 'Float';
-
-  static QNum = 'QNum';
-
-  static Slider = 'Slider';
-
-  static Bool = 'Bool';
-
-  static Switch = 'Switch';
-
-  static Text = 'Text';
-
-  static TextArea = 'TextArea';
-
-  static Markdown = 'Markdown';
-
-  static Code = 'Code';
-
-  static Search = 'Search';
-
-  static Date = 'Date';
-
-  static Map = 'Map';
-
-  static File = 'File';
-
-  static List = 'List';
-
-  static Color = 'Color';
-
-  static Column = 'Column';
-
-  static Columns = 'Columns';
-
-  static ColumnsMap = 'ColumnsMap';
-
-  static Radio = 'Radio';
-
-  static Choice = 'Choice';
-
-  static MultiChoice = 'MultiChoice';
-
-  static Table = 'Table';
-
-  static Molecule = 'Molecule';
-
-  static User = 'User';
-
-  static UserGroups = 'UserGroups';
-
-  static Dynamic = 'Dynamic';
-
-  static Image = 'Image';
-
-  static JsInputProxy = 'JsInputProxy';
-
-}
 export class GridCellStyleEx {
   public dart: any;
   constructor(dart: any) {
@@ -187,5 +125,67 @@ export class ViewerEvent {
   get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
   set mouseEvent(x: any) {api.grok_ViewerEvent_Set_mouseEvent(this.dart, toDart(x)); }
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
+
+}
+export class InputType {
+  static Int = 'Int';
+
+  static BigInt = 'BigInt';
+
+  static Float = 'Float';
+
+  static QNum = 'QNum';
+
+  static Slider = 'Slider';
+
+  static Bool = 'Bool';
+
+  static Switch = 'Switch';
+
+  static Text = 'Text';
+
+  static TextArea = 'TextArea';
+
+  static Markdown = 'Markdown';
+
+  static Code = 'Code';
+
+  static Search = 'Search';
+
+  static Date = 'Date';
+
+  static Map = 'Map';
+
+  static File = 'File';
+
+  static List = 'List';
+
+  static Color = 'Color';
+
+  static Column = 'Column';
+
+  static Columns = 'Columns';
+
+  static ColumnsMap = 'ColumnsMap';
+
+  static Radio = 'Radio';
+
+  static Choice = 'Choice';
+
+  static MultiChoice = 'MultiChoice';
+
+  static Table = 'Table';
+
+  static Molecule = 'Molecule';
+
+  static User = 'User';
+
+  static UserGroups = 'UserGroups';
+
+  static Dynamic = 'Dynamic';
+
+  static Image = 'Image';
+
+  static JsInputProxy = 'JsInputProxy';
 
 }
