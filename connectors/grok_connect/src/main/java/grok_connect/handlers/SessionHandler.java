@@ -21,7 +21,7 @@ import serialization.DataFrame;
 public class SessionHandler {
     private static final String COMPLETED_OK = "COMPLETED_OK";
     private static final String MESSAGE_START = "QUERY";
-    private static final String OK_RESPONSE = "DATAFRAME PART OK";
+    private static final String OK_RESPONSE = "PART OK";
     private static final String END_MESSAGE = "EOF";
     private static final String SIZE_RECEIVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
     private final Session session;

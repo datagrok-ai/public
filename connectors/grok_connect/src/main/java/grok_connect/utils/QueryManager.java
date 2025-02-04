@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.mysql.cj.xdevapi.Table;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
