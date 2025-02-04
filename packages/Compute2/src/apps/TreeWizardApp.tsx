@@ -9,11 +9,19 @@ import {TreeWizard} from '../components/TreeWizard/TreeWizard';
 export const TreeWizardApp = Vue.defineComponent({
   name: 'TreeWizardApp',
   props: {
-    providerFunc: {type: String, required: true},
+    providerFunc: {
+      type: String,
+      required: true
+    },
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    }
   },
   setup(props) {
+    const currentView = Vue.shallowRef(props.view);
     return () => (
-      <TreeWizard providerFunc={props.providerFunc}/>
+      <TreeWizard providerFunc={props.providerFunc} view={currentView.value}/>
     );
   },
 });

@@ -84,7 +84,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   const view = new DG.ViewBase();
   setViewHierarchyData(call, view);
 
-  const app = Vue.createApp(RFVApp, {funcCall: call});
+  const app = Vue.createApp(RFVApp, {funcCall: call, view});
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
@@ -126,7 +126,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
     throw new Error(`Model ${call.name} has no provider`);
 
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider, view});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
 
@@ -419,6 +419,7 @@ class MyView extends CustomFunctionView {
 }
 
 //name: Test Custom View
+//tags: model
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
 export async function TestCustomView() {

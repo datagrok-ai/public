@@ -51,7 +51,14 @@ interface ComputeSchema extends DBSchema {
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
   props: {
-    providerFunc: {type: String, required: true},
+    providerFunc: {
+      type: String,
+      required: true
+    },
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    }
   },
   setup(props) {
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
@@ -113,19 +120,27 @@ export const TreeWizard = Vue.defineComponent({
         chosenStepUuid.value = nextData.state.uuid;
     }
 
+    const currentView = Vue.shallowRef(props.view);
+
+    const setViewName = (name: string = '') => {
+      if (props.view)
+        props.view.name = name;
+    }
+
+    const setViewPath = (path: string = '') => {
+      if (props.view)
+        props.view.path = path;
+    }
+
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
     Vue.watch(searchParams, (params) => {
-      console.log(params);
       let paramsRaw = [];
       if (params.currentStep)
         paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
-      if (paramsRaw.length)
-        grok.shell.v.path = `?${paramsRaw.join('&')}`;
-      else
-        grok.shell.v.path = ''
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '');
     });
 
     const isLoading = Vue.ref(false);
@@ -236,15 +251,15 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
-        grok.shell.v.name = providerFuncName.value;
+        setViewName(providerFuncName.value);
         return;
       }
 
       const {id, title, started} = metadata;
       if (id) searchParams.id = id;
-      if (title) grok.shell.v.name = `${providerFuncName.value} - ${title}`;
-      else if (started) grok.shell.v.name = `${providerFuncName.value} - ${started}`;
-      else grok.shell.v.name = providerFuncName.value;
+      if (title) setViewName(`${providerFuncName.value} - ${title}`);
+      else if (started) setViewName(`${providerFuncName.value} - ${started}`);
+      else setViewName(providerFuncName.value);
     });
 
     Vue.watch(treeState, () => {
@@ -441,7 +456,7 @@ export const TreeWizard = Vue.defineComponent({
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
-        <RibbonPanel>
+        <RibbonPanel view={currentView.value}>
           <IconFA
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
@@ -585,6 +600,7 @@ export const TreeWizard = Vue.defineComponent({
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
+                view={currentView.value}
               />
           }
           {
@@ -604,6 +620,7 @@ export const TreeWizard = Vue.defineComponent({
                 addStep(chosenStepState.value!.uuid, itemId, position);
               }}
               ref={pipelineViewRef}
+              view={currentView.value}
             />
           }
         </DockManager> }

@@ -12,12 +12,17 @@ export const RFVApp = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    }
   },
   setup(props) {
     const currentFuncCall = Vue.shallowRef(props.funcCall);
     const currentCallState = Vue.ref(
       {isRunning: false, isOutputOutdated: false, isRunnable: true, runError: undefined, pendingDependencies: []},
     );
+    const currentView = Vue.shallowRef(props.view);
 
     const func = Vue.computed(() => currentFuncCall.value.func);
     const isRunningOnInput = Vue.computed(() => func.value.options['runOnInput'] === 'true');
@@ -40,6 +45,7 @@ export const RFVApp = Vue.defineComponent({
         onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
         onRunClicked={runFunc}
         historyEnabled={true}
+        view={currentView.value}
       />
     );
   },
