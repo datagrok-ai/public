@@ -3,15 +3,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {getOptions} from './utils';
+import { Subscription } from 'rxjs';
 
 
 category('TreeViewer', () => {
   const TYPE = 'Tree';
   let df: DG.DataFrame;
   let tv: DG.TableView;
+  const subs: Subscription[] = [];
 
   before(async () => {
-    grok.shell.closeAll();
     df = grok.data.demo.demog(20);
     tv = grok.shell.addTableView(df);
   });
@@ -23,7 +24,7 @@ category('TreeViewer', () => {
     expect(viewer.table.id, df.id);
   });
 
-  test('Properties', async () => {
+  test('Standard properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
       rowSource: 'Filtered',
@@ -54,14 +55,17 @@ category('TreeViewer', () => {
     console.log(JSON.stringify(await getOptions(viewer)));
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
 
-    viewer.setOptions({
+  });
+
+  test('Changed properties', async () => {
+    const changedViewer = DG.Viewer.fromType(TYPE, df, {
       symbolSize: 5,
       sizeColumnName: 'age',
       colorColumnName: 'weight',
       hierarchyColumnNames: ['disease', 'sex'],
     });
 
-    const options = await getOptions(viewer);
+    const options = await getOptions(changedViewer);
     expect(options.symbolSize, 5);
     expect(options.sizeColumnName, 'age');
     expect(options.colorColumnName, 'weight');
@@ -69,6 +73,7 @@ category('TreeViewer', () => {
   });
 
   after(async () => {
+    subs.forEach((sub) => sub.unsubscribe());
     tv.close();
     grok.shell.closeTable(df);
   });
