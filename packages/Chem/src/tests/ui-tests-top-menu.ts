@@ -22,11 +22,15 @@ category('UI top menu', () => {
       grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
     ]);
 
-    if (!chemContainer.status.startsWith('started'))
-      await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
-
-    if (!chemContainer.status.startsWith('started'))
-      await grok.dapi.docker.dockerContainers.run(chempropContainer.id, true);
+    await Promise.all([
+      !chemContainer.status.startsWith('started') 
+        ? grok.dapi.docker.dockerContainers.run(chemContainer.id, true) 
+        : Promise.resolve(),
+      
+      !chempropContainer.status.startsWith('started') 
+        ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
+        : Promise.resolve()
+    ]);    
   });
 
   test('similarity search', async () => {
