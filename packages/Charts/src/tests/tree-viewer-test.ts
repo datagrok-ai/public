@@ -54,7 +54,6 @@ category('TreeViewer', () => {
     console.log('options');
     console.log(JSON.stringify(await getOptions(viewer)));
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
-
   });
 
   test('Changed properties', async () => {
