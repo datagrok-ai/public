@@ -5,9 +5,6 @@ import {category, before, after, expect, test, delay, awaitCheck} from '@datagro
 import {isColumnPresent, returnDialog, setDialogInputValue} from './gui-utils';
 import {readDataframe} from './utils';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
-import {awaitStatus} from '@datagrok-libraries/utils/src/docker';
-import { _package } from '../package';
-
 
 category('UI top menu', () => {
   let v: DG.TableView;
