@@ -323,6 +323,19 @@ export function editableTableField(field: HTMLElement, options?: EditableFieldOp
   return container;
 }
 
+export async function checkFileExists(path: string) {
+  if (!path || path.trim() === '') {
+    grok.shell.error('Path can not be empty');
+    return false;
+  }
+  const exists = await grok.dapi.files.exists(path);
+  if (!exists) {
+    grok.shell.error('Given folder does not exist');
+    return false;
+  }
+  return true;
+}
+
 
 // //name: Demo Design with reinvent
 // //input: int numberOfMolecules

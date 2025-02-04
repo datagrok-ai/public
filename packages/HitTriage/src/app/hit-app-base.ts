@@ -78,10 +78,13 @@ export abstract class HitAppBase<T> {
   public async getNewCampaignName(folderName: string, templateKey: string) {
     const templateCampaigns = (await _package.files.list(folderName))
       .map((file) => file.name)
-      .filter((name) => name.startsWith(templateKey));
+      .filter((name) => name.startsWith(`${templateKey}-`) && !!parseInt(name.substring(templateKey.length + 1)));
     if (templateCampaigns.length === 0)
       return templateKey + '-1';
-    const postFixes = templateCampaigns.map((c) => c.split('-')[1]).filter(Boolean).map((c) => parseInt(c, 10)).sort();
+    const postFixes = templateCampaigns
+      .map((c) => c.substring(templateKey.length + 1))
+      .filter(Boolean).map((c) => parseInt(c, 10))
+      .sort((a, b) => a - b);// sort in ascending order
     return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
   }
 
