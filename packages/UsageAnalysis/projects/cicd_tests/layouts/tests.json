@@ -590,7 +590,7 @@
                       "splitColumnName": "~test_0",
                       "showCategoryValues": false,
                       "showCategorySelector": false,
-                      "stackColumnName": "failing",
+                      "stackColumnName": "needs_attention",
                       "showStackSelector": false,
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
@@ -1050,12 +1050,12 @@
     ],
     "floating": [],
     "tableId": "2d897490-9b00-11ef-bb56-cf322fcdda84",
-    "tableName": "0. Tests Dashboard"
+    "tableName": "Tests"
   },
   "userData": {
     "TABLE_ROW_HEIGHT_KEY": null
   },
   "id": "e15d8be7-95db-5eaa-98df-6475c96255ff",
-  "name": "TestsDashboard",
-  "friendlyName": "0. Tests Dashboard"
+  "name": "Tests",
+  "friendlyName": "Tests"
 }

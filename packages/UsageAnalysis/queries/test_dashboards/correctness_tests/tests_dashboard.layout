@@ -586,7 +586,7 @@
                       "splitColumnName": "~test_0",
                       "showCategoryValues": false,
                       "showCategorySelector": false,
-                      "stackColumnName": "failing",
+                      "stackColumnName": "needs_attention",
                       "showStackSelector": false,
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
@@ -1046,8 +1046,8 @@
     ],
     "floating": [],
     "tableId": "2d897490-9b00-11ef-bb56-cf322fcdda84",
-    "tableName": "0. Tests. Dashboard"
+    "tableName": "Tests"
   },
-  "name": "TestsDashboard",
-  "friendlyName": "0. Tests Dashboard"
+  "name": "Tests",
+  "friendlyName": "Tests"
 }

@@ -36,8 +36,9 @@ category('Widgets', () => {
       const packageName = 'ApiTests';
       const packageDir = 'datasets';
       const testFW = ui.fileBrowser({path: `${packageDataConnection.nqName}/${packageName}/${packageDir}`});
-      grok.shell.newView('' ,[testFW.root]);
-      await awaitCheck(()=> !testFW.root.querySelector('.grok-loader'), 'AppData timeout', 30000);
+      grok.shell.newView('', [testFW.root]);
+      await awaitCheck(()=> !testFW.root.querySelector('.grok-loader') &&
+        testFW.root.querySelector(`div[name="tree-App-Data---${packageName}---${packageDir}"]`) !== null, 'AppData timeout', 30000);
       
       const labels = $(testFW.root).find(labelSelector);
       expect(labels[0] != null, true, 'labels[0]');

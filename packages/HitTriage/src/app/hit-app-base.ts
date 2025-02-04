@@ -115,7 +115,9 @@ export abstract class HitAppBase<T> {
       const addedColNames: string[] = [];
       for (const col of df1.columns) {
         if (!df2.columns.contains(col.name)) {
-          df2.columns.addNew(col.name, col.type);
+          const addedCol = df2.columns.addNew(col.name, col.type);
+          if (col.semType)
+            addedCol.semType = col.semType;
           addedColNames.push(col.name);
         }
       }

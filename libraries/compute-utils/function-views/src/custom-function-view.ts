@@ -7,20 +7,25 @@ import {historyUtils} from '../../history-utils';
 
 export abstract class CustomFunctionView extends DG.ViewBase {
   public showHistory = new BehaviorSubject(false);
-  public isHistorical = new BehaviorSubject<boolean>(false);
   public isReady = new BehaviorSubject(false);
 
-  public historyRoot = ui.div();
+  public historyRoot = ui.div('', { style: { height: '100%' }});
 
   public funcCall?: DG.FuncCall;
 
-  constructor(private initValue: string) {
+  constructor(public funcNqName: string) {
     super();
     this.box = true;
     this.init();
   }
 
-  public abstract buildIO(): HTMLElement;
+  // mandatory
+  public abstract buildIO(): HTMLElement; // returns view content
+  public abstract onAfterLoadRun(funcCall: DG.FuncCall): Promise<void>; // replacing funccall
+
+  // optional hooks
+  public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
+  public async onAfterSaveRun(savedCall: DG.FuncCall) { }
 
   exportConfig: {
     export: ((format: string) => Promise<Blob>);
@@ -39,8 +44,9 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   requestFeature: (() => Promise<void>) | null = null;
 
+  // TODO: initial URL id handling
   public async init() {
-    const func = DG.Func.byName(this.initValue);
+    const func = DG.Func.byName(this.funcNqName);
     this.linkFunccall(func.prepare({}));
     await this.onFuncCallReady();
     this.isReady.next(true);
@@ -48,6 +54,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
+    if (funcCall.id)
+      this.path = `?id=${funcCall.id}`;
+    else
+      this.path = ``;
   }
 
   public async onFuncCallReady() {
@@ -55,9 +65,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     await this.getPackageData();
     this.build();
   }
-
-  public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
-  public async onAfterSaveRun(savedCall: DG.FuncCall) { }
 
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     const callCopy = deepCopy(callToSave);
@@ -69,22 +76,15 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const loadedCall = await historyUtils.loadRun(savedCall.id);
 
     this.linkFunccall(loadedCall);
-    this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
 
-  public async onBeforeLoadRun() {}
-  public async onAfterLoadRun(funcCall: DG.FuncCall) {}
-
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
-    await this.onBeforeLoadRun();
-
     const pulledRun = await historyUtils.loadRun(funcCallId);
 
     this.linkFunccall(pulledRun);
-    this.isHistorical.next(true);
 
     await this.onAfterLoadRun(pulledRun);
     return pulledRun;
@@ -188,5 +188,4 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   get func() {
     return this.funcCall?.func;
   }
-
 }

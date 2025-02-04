@@ -17,7 +17,6 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
@@ -391,6 +390,11 @@ export const RichFunctionView = Vue.defineComponent({
         return scalarCardCount < 3 ? 'right': 'down';
       };
 
+      const getDf = (name: string) => {
+        const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
+        return val ? Vue.markRaw(val) : val;
+      }
+
       return (
         <div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels'>
@@ -563,7 +567,7 @@ export const RichFunctionView = Vue.defineComponent({
                         Vue.withDirectives(<Viewer
                           type={options['type'] as string}
                           options={options}
-                          dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                          dataFrame={getDf(dfProp.name)}
                           class='w-full'
                           onViewerChanged={(v) => setViewerRef(v, dfProp.name, options['type'] as string)}
                         />, [[ifOverlapping, isRunning.value, 'Recalculating...']])

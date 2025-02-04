@@ -289,13 +289,13 @@ ${CONTROL_EXPR.DIF_EQ}:
   d(FKox)/dt = E61 - E62
 
   d(MEAthiol)/dt = 2 * (-E11 + E12 - E21 + E22 + E31 + E41 - E32 - E42 - E62 - ktox * E71 * E72)
-			            - (MEAthiol + MA) * (Fin + Fper) / VL
+                   - (MEAthiol + MA) * (Fin + Fper) / VL
 
-  d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR	- 0.5 * ktox * E71 * E72
-			
+  d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR - 0.5 * ktox * E71 * E72
+
   d(yO2P)/dt = -OTR * (VL / (VTV - VL)) * R * T * P + yO2in * qin - yO2P * qout
 
-  d(CYST)/dt = ktox * E71 * E72	- krcyst * CYST * E0 - (Fin + Fper) * CYST / VL
+  d(CYST)/dt = ktox * E71 * E72 - krcyst * CYST * E0 - (Fin + Fper) * CYST / VL
 
   d(VL)/dt = Fin - Fper
 
@@ -517,7 +517,7 @@ ${CONTROL_EXPR.EXPR}:
 ${CONTROL_EXPR.ARG}: t
   t0 = 0   {units: min; caption: Initial; category: Time; min: 0; max: 0.9} [Initial time of simulation]
   t1 = 60  {units: min; caption: Final; category: Time; min: 1; max: 100; step: 1} [Final time of simulation]
-  h = 0.01 {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simlulation]
+  h = 0.1  {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simlulation]
 
 
 ${CONTROL_EXPR.INITS}:
