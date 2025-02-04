@@ -566,10 +566,14 @@ export class TreeViewer extends EChartViewer {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
+    console.log('categorical columns');
+    console.log(categoricalColumns);
+    console.log(this.dataFrame.rowCount);
+
     if (categoricalColumns.length < 1)
       return;
     
-    this.hierarchyColumnNames = Array.from(this.dataFrame.columns.categorical).slice(0, 3).map((col) => col.name);
+    this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
     this.sizeColumnName = '';
     this.colorColumnName = '';
 
