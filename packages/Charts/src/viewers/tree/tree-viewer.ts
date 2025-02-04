@@ -569,7 +569,7 @@ export class TreeViewer extends EChartViewer {
     if (categoricalColumns.length < 1)
       return;
     
-    this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+    this.hierarchyColumnNames = Array.from(this.dataFrame.columns.categorical).slice(0, 3).map((col) => col.name);
     this.sizeColumnName = '';
     this.colorColumnName = '';
 
