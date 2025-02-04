@@ -1,4 +1,4 @@
-from flask import Blueprint, Flask, request, Response, jsonify
+from flask import Blueprint, Flask, request, Response
 from chem import *
 import logging
 import sys

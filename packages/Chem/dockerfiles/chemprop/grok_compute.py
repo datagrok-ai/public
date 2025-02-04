@@ -1,7 +1,7 @@
 import io
 from io import StringIO
 import zipfile
-from flask import Blueprint, Flask, request, Response, jsonify
+from flask import Blueprint, Flask, request, Response
 import logging
 import sys
 import json
