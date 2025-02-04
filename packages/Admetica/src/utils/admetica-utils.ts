@@ -524,6 +524,12 @@ export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: st
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
+
+  ui.onSizeChanged(form.root).subscribe(() => {
+    const containerWidth = form.root.clientWidth;
+    const updatedFormState = generator.generateFormState(containerWidth);
+    form.form.state = JSON.stringify(updatedFormState);
+  });
   return form;
 }
 
