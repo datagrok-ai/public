@@ -13,7 +13,7 @@ category('TreeViewer', () => {
   const subs: Subscription[] = [];
 
   before(async () => {
-    df = grok.data.demo.demog(20);
+    df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
   });
 
@@ -44,7 +44,7 @@ category('TreeViewer', () => {
       sizeAggrType: DG.AGG.AVG,
       colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
-      hierarchyColumnNames: ['sex', 'control', 'disease'],
+      hierarchyColumnNames: ['sex', 'disease', 'site'],
       onClick:'Select',
       includeNulls: true
     };
