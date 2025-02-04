@@ -1,7 +1,7 @@
 1. Open smiles. csv (Browse > Files > Demo Files/chem)
 2. Double-click a molecule.
 3. In the hamburger menu of the sketcher, click Favorites > Add to Favorites.
-4. In the sketcher, enter **C1CCCCC1** to molecular input field and press Enter.
+4. In the sketcher, enter **C1CCCCC1** to molecular input field
 5. In the hamburger menu, check the content in **Recent** and **Favorites**.
 6. In the hamburger menu, click **Copy as SMILES**.
 7. Change the molecule
