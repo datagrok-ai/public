@@ -53,12 +53,21 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
 
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
+  
+  if (!response && !admeticaContainer.status.startsWith('started')) {
+    throwError('Container failed to start.');
+  }
+  
   if (!response?.success) {
-    grok.shell.error('Prediction attempt failed.');
     _package.logger.error(response?.error);
-    return null;
+    throwError('Prediction attempt failed.');
   }
   return await convertLD50(response.result!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+}
+
+function throwError(message: string): never {
+  grok.shell.error(message);
+  throw new Error(message);
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
@@ -453,6 +462,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       }
       result.appendChild(ui.tableFromMap(map));
     } catch (e) {
+      ui.empty(result);
       result.appendChild(ui.divText('Couldn\'t analyze properties'));
       //console.log(e);
     }
