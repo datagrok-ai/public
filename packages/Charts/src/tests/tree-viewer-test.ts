@@ -11,6 +11,7 @@ category('TreeViewer', () => {
   let tv: DG.TableView;
 
   before(async () => {
+    grok.shell.closeAll();
     df = grok.data.demo.demog(20);
     tv = grok.shell.addTableView(df);
   });
