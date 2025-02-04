@@ -1508,7 +1508,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateBitset(node: DG.TreeViewNode): boolean {
-    return !(value(node).bitset?.length === this.dataFrame.rowCount);
+    return node ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
   }
 
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
