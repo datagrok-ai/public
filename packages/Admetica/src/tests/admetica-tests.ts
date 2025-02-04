@@ -16,8 +16,9 @@ category('Admetica', () => {
     grok.shell.windows.showProperties = false;
     if (!admeticaContainer)
       admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-    if (admeticaContainer.status !== 'started')
-      await fetchWrapper(() => healthCheck());
+
+    if (!admeticaContainer.status.startsWith('started'))
+      await grok.dapi.docker.dockerContainers.run(admeticaContainer.id, true);
     await setProperties();
   });
 
