@@ -47,6 +47,10 @@ category('TreeViewer', () => {
       includeNulls: true
     };
 
+    console.log('standard options');
+    console.log(JSON.stringify(standardOptions));
+    console.log('options');
+    console.log(JSON.stringify(await getOptions(viewer)));
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
 
     viewer.setOptions({
