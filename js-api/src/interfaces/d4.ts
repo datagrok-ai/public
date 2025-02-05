@@ -673,7 +673,7 @@ export interface IBoxPlotSettings {
   /// Include plots, which are empty or have null values.
   showEmptyCategories: boolean;
 
-  /// Column to color-code boxes (Q2-Q3 region).
+  /// Column to color-code boxes (Q2-Q3 region) or inner violin shapes.
   /// See also *Bin Color Aggr Type*.
   binColor: string;
   binColorColumnName: string;
@@ -687,6 +687,8 @@ export interface IBoxPlotSettings {
   /// Column to color-code markers.
   markerColor: string;
   markerColorColumnName: string;
+
+  invertColorScheme: boolean;
 
   markers: string;
   markersColumnName: string;
