@@ -55,6 +55,10 @@ export const TreeWizard = Vue.defineComponent({
       type: String,
       required: true,
     },
+    modelName: {
+      type: String,
+      required: true,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -247,19 +251,19 @@ export const TreeWizard = Vue.defineComponent({
       await dockRef.value.useLayout(defaultState.layout);
     };
 
-    const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1));
+    const modelName = Vue.computed(() => props.modelName);
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
-        setViewName(providerFuncName.value);
+        setViewName(modelName.value);
         return;
       }
 
       const {id, title, started} = metadata;
       if (id) searchParams.id = id;
-      if (title) setViewName(`${providerFuncName.value} - ${title}`);
-      else if (started) setViewName(`${providerFuncName.value} - ${started}`);
-      else setViewName(providerFuncName.value);
+      if (title) setViewName(`${modelName.value} - ${title}`);
+      else if (started) setViewName(`${modelName.value} - ${started}`);
+      else setViewName(modelName.value);
     });
 
     Vue.watch(treeState, () => {

@@ -117,16 +117,19 @@ export async function TreeWizardTestApp() {}
 //input: funccall call
 //output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
+  const providerFunc = call?.func?.options?.provider;
+  if (!providerFunc)
+    throw new Error(`Model ${call?.func?.name} has no provider`);
+
   const view = new DG.ViewBase();
   setViewHierarchyData(call, view);
 
   await customElements.whenDefined('dg-markdown');
 
-  if (!call.func.options.provider)
-    throw new Error(`Model ${call.name} has no provider`);
 
+  const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider, view});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, view});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
 
@@ -418,8 +421,8 @@ class MyView extends CustomFunctionView {
   }
 }
 
-//name: Test Custom View
-//tags: model
+//name: Custom View (Compute 2 Demo)
+//tags: model, demo, test
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
 export async function TestCustomView() {
