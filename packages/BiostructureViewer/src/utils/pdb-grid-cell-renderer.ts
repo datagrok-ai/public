@@ -87,11 +87,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
 
     switch (dockingRole) {
-    case DockingRole.ligand: {
-      // Biostructure, NGL viewers track current, selected rows to display ligands
-      break;
-    }
-
+    case DockingRole.ligand:
     case DockingRole.target:
     default: {
       viewer = await df.plot.fromType('Biostructure', {pdb: value}) as DG.Viewer & IBiostructureViewer;
