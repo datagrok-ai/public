@@ -15,7 +15,7 @@ export const RFVApp = Vue.defineComponent({
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   setup(props) {
     const currentFuncCall = Vue.shallowRef(props.funcCall);

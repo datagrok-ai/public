@@ -97,7 +97,7 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
       return true;
     prevUuid = state.uuid;
     return false;
-  }
+  };
   return _findTreeNode([state], pred);
 }
 
@@ -120,7 +120,7 @@ export const hasSubtreeFixableInconsistencies = (
     [data],
     (state: PipelineState) => isFuncCallState(state) ?
       hasInconsistencies(consistencyStates[state.uuid]) && !state.isReadonly :
-      false
+      false,
   );
 };
 

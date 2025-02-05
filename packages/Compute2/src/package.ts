@@ -48,14 +48,14 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) {
   const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
   setViewHierarchyData(call, view);
 
-  await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+  await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
   const updateFCBus = new Subject<DG.FuncCall>();
 
   const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus});
 
-  const sub = updateFCBus.subscribe(fc => {
+  const sub = updateFCBus.subscribe((fc) => {
     view.linkFunccall(fc);
-    view.onAfterLoadRun(fc)
+    view.onAfterLoadRun(fc);
   });
 
   app.mount(view.historyRoot);
@@ -394,8 +394,8 @@ class MyView extends CustomFunctionView {
   }
 
   override buildIO() {
-    this.aIn = ui.input.float('a', { onValueChanged:(val) => this.funcCall!.inputs.a = val });
-    this.bIn = ui.input.float('b', { onValueChanged:(val) => this.funcCall!.inputs.b = val });
+    this.aIn = ui.input.float('a', {onValueChanged: (val) => this.funcCall!.inputs.a = val});
+    this.bIn = ui.input.float('b', {onValueChanged: (val) => this.funcCall!.inputs.b = val});
     this.res = ui.input.float('res');
     this.res.enabled = false;
     return ui.div([

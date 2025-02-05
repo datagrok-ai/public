@@ -198,7 +198,7 @@ export function modelCatalog() {
     segment: 'Compute',
     viewName: 'Model Catalog',
     funcName: 'modelCatalog',
-    startUriLoaded
+    startUriLoaded,
   }, () => startUriLoaded = true);
 }
 

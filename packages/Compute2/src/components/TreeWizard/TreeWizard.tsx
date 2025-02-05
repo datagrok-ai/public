@@ -53,12 +53,12 @@ export const TreeWizard = Vue.defineComponent({
   props: {
     providerFunc: {
       type: String,
-      required: true
+      required: true,
     },
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   setup(props) {
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
@@ -118,24 +118,24 @@ export const TreeWizard = Vue.defineComponent({
       const nextData = findNextStep(chosenStepUuid.value, treeState.value);
       if (nextData)
         chosenStepUuid.value = nextData.state.uuid;
-    }
+    };
 
     const currentView = Vue.shallowRef(props.view);
 
     const setViewName = (name: string = '') => {
       if (props.view)
         props.view.name = name;
-    }
+    };
 
     const setViewPath = (path: string = '') => {
       if (props.view)
         props.view.path = path;
-    }
+    };
 
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
 
     Vue.watch(searchParams, (params) => {
-      let paramsRaw = [];
+      const paramsRaw = [];
       if (params.currentStep)
         paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
       if (params.id)
@@ -438,7 +438,7 @@ export const TreeWizard = Vue.defineComponent({
         if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
         if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
       }
-    }
+    };
 
     const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
       if (isRootChoosen.value)
@@ -450,7 +450,7 @@ export const TreeWizard = Vue.defineComponent({
           loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
         }
       }
-    }
+    };
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
@@ -580,7 +580,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
-                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value }}
+                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value}}
                 funcCall={chosenStepState.value.funcCall!}
                 uuid={chosenStepUuid.value!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}

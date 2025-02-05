@@ -11,12 +11,12 @@ export const TreeWizardApp = Vue.defineComponent({
   props: {
     providerFunc: {
       type: String,
-      required: true
+      required: true,
     },
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   setup(props) {
     const currentView = Vue.shallowRef(props.view);

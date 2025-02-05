@@ -150,7 +150,7 @@ export const RichFunctionView = Vue.defineComponent({
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
@@ -189,12 +189,12 @@ export const RichFunctionView = Vue.defineComponent({
     const setViewName = (name: string = '') => {
       if (props.view)
         props.view.name = name;
-    }
+    };
 
     const setViewPath = (path: string = '') => {
       if (props.view)
         props.view.path = path;
-    }
+    };
 
     // just initial value
     if (props.historyEnabled) {
@@ -209,14 +209,14 @@ export const RichFunctionView = Vue.defineComponent({
 
         if (!globalThis.initialURLHandled && loadingId) {
           globalThis.initialURLHandled = true;
-          const nfc = await historyUtils.loadRun(loadingId, false, false)
+          const nfc = await historyUtils.loadRun(loadingId, false, false);
           emit('update:funcCall', nfc);
           return;
         }
 
         setViewName(fc?.options?.['title'] ?? fc?.func?.friendlyName ?? fc?.func?.name);
         searchParams.id = fc.author ? fc.id : undefined;
-      }, { immediate: true });
+      }, {immediate: true});
     }
 
     const formHidden = Vue.ref(false);
@@ -432,7 +432,7 @@ export const RichFunctionView = Vue.defineComponent({
       const getDf = (name: string) => {
         const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
         return val ? Vue.markRaw(val) : val;
-      }
+      };
 
       return (
         <div class='w-full h-full flex'>
@@ -524,7 +524,7 @@ export const RichFunctionView = Vue.defineComponent({
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
-            class={{ 'pseudo_hidden': !layoutLoaded.value }}
+            class={{'pseudo_hidden': !layoutLoaded.value}}
           >
             { !historyHidden.value &&
               <History

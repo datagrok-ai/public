@@ -37,7 +37,7 @@ export const PipelineView = Vue.defineComponent({
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
