@@ -62,7 +62,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     _package.logger.error(response?.error);
     throwError('Prediction attempt failed.');
   }
-  return await convertLD50(response.result!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+  return await convertLD50(response.result!, DG.DataFrame.fromCsv(csvString));
 }
 
 function throwError(message: string): never {
@@ -70,8 +70,8 @@ function throwError(message: string): never {
   throw new Error(message);
 }
 
-export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
-  const df = DG.DataFrame.fromCsv(response);
+export async function convertLD50(response: string, df: DG.DataFrame): Promise<string> {
+  const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
