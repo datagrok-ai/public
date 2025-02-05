@@ -18,10 +18,10 @@ export interface ModelCatalogConfig {
 
 export function makeModelCatalog(options: ModelCatalogConfig, setStartUrlLoaded: Function) {
   const {
-    segment, viewName, funcName, startUriLoaded, _package, ViewClass, HandlerCass
+    segment, viewName, funcName, startUriLoaded, _package, ViewClass, HandlerCass,
   } = options;
 
-    // Separately process direct link access
+  // Separately process direct link access
   const startOptionalPart = grok.shell.startUri.indexOf('?');
   const startPathSegments = grok.shell.startUri
     .substring('https://'.length, startOptionalPart > 0 ? startOptionalPart: undefined)
@@ -145,5 +145,4 @@ export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup, browseVie
       }
     }
   }
-
 }

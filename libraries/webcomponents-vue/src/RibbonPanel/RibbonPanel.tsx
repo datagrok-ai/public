@@ -9,7 +9,7 @@ export const RibbonPanel = Vue.defineComponent({
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   slots: Object as Vue.SlotsType<{
     default?: any,
@@ -20,7 +20,6 @@ export const RibbonPanel = Vue.defineComponent({
     const currentView = Vue.shallowRef(props.view);
 
     Vue.watch(elements, () => {
-
       const elementsArray = [...elements.values()];
       const filteredPanels = currentView.value
         .getRibbonPanels()

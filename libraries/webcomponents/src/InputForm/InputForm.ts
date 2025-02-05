@@ -26,9 +26,9 @@ export class InputForm extends HTMLElement {
   }
 
   private async replaceFunc(funcCall?: DG.FuncCall) {
-    if (!funcCall) {
+    if (!funcCall)
       this.formInst = undefined;
-    } else {
+    else {
       this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: true} as any);
       this.appendChild(this.formInst.root);
     }

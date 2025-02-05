@@ -168,7 +168,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
       markup.append(label);
       if (hasMissingMandatoryGroups)
-        markup.append(ui.span([mandatoryGroupsIcon], { style: { paddingLeft: '10px' }}));
+        markup.append(ui.span([mandatoryGroupsIcon], {style: {paddingLeft: '10px'}}));
     });
 
 
@@ -210,9 +210,9 @@ export class ModelHandler extends DG.ObjectHandler {
         ui.div(
           [
             ui.h1(x.friendlyName ?? x.name),
-            ui.divText(x.description ?? x.name, { style: { marginBottom: '10px' }}),
+            ui.divText(x.description ?? x.name, {style: {marginBottom: '10px'}}),
             startBtnDiv,
-            ui.div([], { style: { padding: '20px '}}),
+            ui.div([], {style: {padding: '20px '}}),
             ui.markdown(help ?? ''),
           ],
           {
@@ -221,8 +221,8 @@ export class ModelHandler extends DG.ObjectHandler {
               flexDirection: 'column',
               height: '100%',
               overflow: 'auto',
-            }
-          })
+            },
+          }),
       );
       return v;
     });

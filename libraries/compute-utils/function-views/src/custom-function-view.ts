@@ -13,7 +13,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public showHistory = new BehaviorSubject(false);
   public isReady = new BehaviorSubject(false);
 
-  public historyRoot = ui.div('', { style: { height: '100%' }});
+  public historyRoot = ui.div('', {style: {height: '100%'}});
 
   public funcCall?: DG.FuncCall;
 

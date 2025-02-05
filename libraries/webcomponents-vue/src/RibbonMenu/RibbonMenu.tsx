@@ -13,7 +13,7 @@ export const RibbonMenu = Vue.defineComponent({
     view: {
       type: DG.ViewBase,
       required: true,
-    }
+    },
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
@@ -31,7 +31,7 @@ export const RibbonMenu = Vue.defineComponent({
 
       currentView.value.ribbonMenu
         .group(props.groupName).items(elementsArray, () => {});
-    }, { flush: 'post' });
+    }, {flush: 'post'});
 
     const addElement = (el: Element | null | any, idx: number) => {
       const content = el;
