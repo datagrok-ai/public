@@ -17,10 +17,9 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
-import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {historyUtils, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {ScalarsPanel} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -28,6 +27,7 @@ import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useLayoutDb} from '../../composables/use-layout-db';
+import {useUrlSearchParams} from '@vueuse/core';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -147,6 +147,10 @@ export const RichFunctionView = Vue.defineComponent({
     showStepNavigation: {
       type: Boolean,
     },
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
@@ -163,6 +167,7 @@ export const RichFunctionView = Vue.defineComponent({
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
+    const currentView = Vue.shallowRef(props.view);
 
     const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
 
@@ -180,6 +185,39 @@ export const RichFunctionView = Vue.defineComponent({
     const next = async () => {
       emit('nextClicked');
     };
+
+    const setViewName = (name: string = '') => {
+      if (props.view)
+        props.view.name = name;
+    };
+
+    const setViewPath = (path: string = '') => {
+      if (props.view)
+        props.view.path = path;
+    };
+
+    // just initial value
+    if (props.historyEnabled) {
+      const searchParams = useUrlSearchParams<{id?: string}>('history');
+      Vue.watch(searchParams, (params) => {
+        setViewPath(params.id ? `?id=${params.id}` : '?');
+      });
+
+      Vue.watch(currentCall, async (fc) => {
+        const startUrl = new URL(grok.shell.startUri);
+        const loadingId = startUrl.searchParams.get('id');
+
+        if (!globalThis.initialURLHandled && loadingId) {
+          globalThis.initialURLHandled = true;
+          const nfc = await historyUtils.loadRun(loadingId, false, false);
+          emit('update:funcCall', nfc);
+          return;
+        }
+
+        setViewName(fc?.options?.['title'] ?? fc?.func?.friendlyName ?? fc?.func?.name);
+        searchParams.id = fc.author ? fc.id : undefined;
+      }, {immediate: true});
+    }
 
     const formHidden = Vue.ref(false);
     const historyHidden = Vue.ref(true);
@@ -394,11 +432,11 @@ export const RichFunctionView = Vue.defineComponent({
       const getDf = (name: string) => {
         const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
         return val ? Vue.markRaw(val) : val;
-      }
+      };
 
       return (
         <div class='w-full h-full flex'>
-          <RibbonMenu groupName='Panels'>
+          <RibbonMenu groupName='Panels' view={currentView.value}>
             <span
               onClick={() => formHidden.value = !formHidden.value}
               class={'flex justify-between w-full'}
@@ -434,7 +472,7 @@ export const RichFunctionView = Vue.defineComponent({
             </span>
           </RibbonMenu>
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-            <RibbonMenu groupName={category}>
+            <RibbonMenu groupName={category} view={currentView.value}>
               {
                 actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
                   <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
@@ -442,7 +480,7 @@ export const RichFunctionView = Vue.defineComponent({
               }
             </RibbonMenu>)
           }
-          <RibbonPanel>
+          <RibbonPanel view={currentView.value}>
             { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}
@@ -486,7 +524,7 @@ export const RichFunctionView = Vue.defineComponent({
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
-            class={{ 'pseudo_hidden': !layoutLoaded.value }}
+            class={{'pseudo_hidden': !layoutLoaded.value}}
           >
             { !historyHidden.value &&
               <History
@@ -537,7 +575,7 @@ export const RichFunctionView = Vue.defineComponent({
                       isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                       onClick={run}
                     >
-                      { isOutputOutdated.value ? 'Run':'Rerun' }
+                      { isOutputOutdated.value ? 'Run': 'Rerun' }
                     </BigButton>
                   }
                   {

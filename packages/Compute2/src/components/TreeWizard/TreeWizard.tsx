@@ -51,7 +51,14 @@ interface ComputeSchema extends DBSchema {
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
   props: {
-    providerFunc: {type: String, required: true},
+    providerFunc: {
+      type: String,
+      required: true,
+    },
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    },
   },
   setup(props) {
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
@@ -111,9 +118,30 @@ export const TreeWizard = Vue.defineComponent({
       const nextData = findNextStep(chosenStepUuid.value, treeState.value);
       if (nextData)
         chosenStepUuid.value = nextData.state.uuid;
-    }
+    };
+
+    const currentView = Vue.shallowRef(props.view);
+
+    const setViewName = (name: string = '') => {
+      if (props.view)
+        props.view.name = name;
+    };
+
+    const setViewPath = (path: string = '') => {
+      if (props.view)
+        props.view.path = path;
+    };
 
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
+
+    Vue.watch(searchParams, (params) => {
+      const paramsRaw = [];
+      if (params.currentStep)
+        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
+      if (params.id)
+        paramsRaw.push(`id=${params.id}`);
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '');
+    });
 
     const isLoading = Vue.ref(false);
 
@@ -122,7 +150,6 @@ export const TreeWizard = Vue.defineComponent({
 
       if (prevPanel === 'Step review')
         rfvRef.value?.savePersonalState();
-
 
       if (newPanel === 'Step review') {
         isLoading.value = true;
@@ -224,27 +251,26 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
-        grok.shell.v.name = providerFuncName.value;
+        setViewName(providerFuncName.value);
         return;
       }
 
       const {id, title, started} = metadata;
       if (id) searchParams.id = id;
-      if (title) grok.shell.v.name = `${providerFuncName.value} - ${title}`;
-      else if (started) grok.shell.v.name = `${providerFuncName.value} - ${started}`;
-      else grok.shell.v.name = providerFuncName.value;
+      if (title) setViewName(`${providerFuncName.value} - ${title}`);
+      else if (started) setViewName(`${providerFuncName.value} - ${started}`);
+      else setViewName(providerFuncName.value);
     });
 
-    let alreadyLoaded = false;
     Vue.watch(treeState, () => {
-      if (!treeState.value || alreadyLoaded) return;
+      if (!treeState.value || globalThis.initialURLHandled) return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
       if (loadingId) {
         loadPipeline(loadingId);
-        alreadyLoaded = true;
+        globalThis.initialURLHandled = true;
       }
     });
 
@@ -412,7 +438,7 @@ export const TreeWizard = Vue.defineComponent({
         if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
         if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
       }
-    }
+    };
 
     const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
       if (isRootChoosen.value)
@@ -424,13 +450,13 @@ export const TreeWizard = Vue.defineComponent({
           loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
         }
       }
-    }
+    };
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
-        <RibbonPanel>
+        <RibbonPanel view={currentView.value}>
           <IconFA
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
@@ -554,7 +580,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
-                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value }}
+                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value}}
                 funcCall={chosenStepState.value.funcCall!}
                 uuid={chosenStepUuid.value!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
@@ -574,6 +600,7 @@ export const TreeWizard = Vue.defineComponent({
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
+                view={currentView.value}
               />
           }
           {
@@ -593,6 +620,7 @@ export const TreeWizard = Vue.defineComponent({
                 addStep(chosenStepState.value!.uuid, itemId, position);
               }}
               ref={pipelineViewRef}
+              view={currentView.value}
             />
           }
         </DockManager> }

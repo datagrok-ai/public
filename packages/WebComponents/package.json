@@ -18,6 +18,10 @@
     "style-loader": "^4.0.0"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
@@ -30,6 +34,8 @@
     "release-webcomponents": "webpack && grok publish --release",
     "build-webcomponents": "webpack",
     "build": "webpack",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
     "debug-webcomponents-dev": "webpack && grok publish dev",
     "release-webcomponents-dev": "webpack && grok publish dev --release",
     "debug-webcomponents-public": "webpack && grok publish public",

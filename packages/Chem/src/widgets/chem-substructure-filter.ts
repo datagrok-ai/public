@@ -242,10 +242,8 @@ export class SubstructureFilter extends DG.Filter {
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
-      {
-        this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
-        this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-      }
+      this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+      this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
     }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {

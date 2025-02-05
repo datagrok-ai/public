@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {History} from '../components/History/History';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {useObservable} from '@vueuse/rxjs'
+import {useObservable} from '@vueuse/rxjs';
 
 export const HistoryApp = Vue.defineComponent({
   props: {
@@ -20,7 +20,7 @@ export const HistoryApp = Vue.defineComponent({
     updateFCBus: {
       type: Subject<DG.FuncCall>,
       required: true,
-    }
+    },
   },
   setup(props) {
     const showHistory = useObservable(props.showHistory);

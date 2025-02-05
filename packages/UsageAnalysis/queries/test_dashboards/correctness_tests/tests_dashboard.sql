@@ -16,7 +16,7 @@ WITH last_builds AS (
     where (SELECT count(*) from test_runs r where r.build_name = b.name and not r.stress_test) >= 100
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
-  select name, ROW_NUMBER() OVER (ORDER BY build_date DESC) AS build_index,
+  select name, ROW_NUMBER() OVER (ORDER BY build_date) AS build_index,
          build_date
   from last_builds b
 )
@@ -46,5 +46,5 @@ and r.benchmark = @showBenchmarks
 and (@packageFilter is null or @packageFilter = p.name)
 and (@versionFilter is null or @versionFilter = b.name)
 
-order by b.name, t.name
+order by b.build_index, t.name
 --end

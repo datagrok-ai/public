@@ -1,7 +1,7 @@
 //name: ObjectCooling2
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
-//tags: simulation, demo, test
+//tags: simulation, demo, test, model
 //input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50 }
 //input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50 }
 //input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment }

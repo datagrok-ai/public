@@ -5,25 +5,29 @@ import * as Vue from 'vue';
 
 export const RibbonPanel = Vue.defineComponent({
   name: 'RibbonPanel',
+  props: {
+    view: {
+      type: DG.ViewBase,
+      required: true,
+    },
+  },
   slots: Object as Vue.SlotsType<{
     default?: any,
   }>,
-  setup(_, {slots}) {
+  setup(props, {slots}) {
     const elements = Vue.reactive(new Map<number, HTMLElement>);
 
-    Vue.watch(elements, async () => {
-      await Vue.nextTick();
+    const currentView = Vue.shallowRef(props.view);
 
-      const currentView = grok.shell.v;
-
+    Vue.watch(elements, () => {
       const elementsArray = [...elements.values()];
-      const filteredPanels = currentView
+      const filteredPanels = currentView.value
         .getRibbonPanels()
         .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
-      currentView.setRibbonPanels(filteredPanels);
+      currentView.value.setRibbonPanels(filteredPanels);
 
-      currentView.setRibbonPanels([
-        currentView.getRibbonPanels().flat(),
+      currentView.value.setRibbonPanels([
+        currentView.value.getRibbonPanels().flat(),
         elementsArray,
       ]);
 
@@ -45,14 +49,12 @@ export const RibbonPanel = Vue.defineComponent({
     };
 
     Vue.onUnmounted(() => {
-      const currentView = grok.shell.v;
-
       const elementsArray = [...elements.values()];
-      const filteredPanels = currentView
+      const filteredPanels = currentView.value
         .getRibbonPanels()
         .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
 
-      currentView.setRibbonPanels(filteredPanels);
+      currentView.value.setRibbonPanels(filteredPanels);
     });
 
     return () =>

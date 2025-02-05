@@ -17,11 +17,25 @@ import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-vie
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 
+declare global {
+  var initialURLHandled: boolean;
+}
+
 export const _package = new DG.Package();
 
 //tags: init
 export async function init() {
   await DG.Func.byName('WebComponents:init').prepare().call();
+}
+
+function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
+  view.parentCall = call.parentCall;
+
+  if (view.parentCall?.aux?.view)
+    view.parentView = view.parentCall.aux.view;
+
+  if (call?.func?.name)
+    view.basePath = `/${call.func.name}`;
 }
 
 //name: CustomFunctionViewEditor
@@ -32,14 +46,16 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
-  await view.isReady.pipe(filter(x => x), take(1)).toPromise();
+  setViewHierarchyData(call, view);
+
+  await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
   const updateFCBus = new Subject<DG.FuncCall>();
 
   const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus});
 
-  const sub = updateFCBus.subscribe(fc => {
+  const sub = updateFCBus.subscribe((fc) => {
     view.linkFunccall(fc);
-    view.onAfterLoadRun(fc)
+    view.onAfterLoadRun(fc);
   });
 
   app.mount(view.historyRoot);
@@ -66,7 +82,9 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
-  const app = Vue.createApp(RFVApp, {funcCall: call});
+  setViewHierarchyData(call, view);
+
+  const app = Vue.createApp(RFVApp, {funcCall: call, view});
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
@@ -99,13 +117,16 @@ export async function TreeWizardTestApp() {}
 //input: funccall call
 //output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
+  const view = new DG.ViewBase();
+  setViewHierarchyData(call, view);
+
   await customElements.whenDefined('dg-markdown');
 
   if (!call.func.options.provider)
     throw new Error(`Model ${call.name} has no provider`);
 
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider});
+
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.options.provider, view});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
 
@@ -373,8 +394,8 @@ class MyView extends CustomFunctionView {
   }
 
   override buildIO() {
-    this.aIn = ui.input.float('a', { onValueChanged:(val) => this.funcCall!.inputs.a = val });
-    this.bIn = ui.input.float('b', { onValueChanged:(val) => this.funcCall!.inputs.b = val });
+    this.aIn = ui.input.float('a', {onValueChanged: (val) => this.funcCall!.inputs.a = val});
+    this.bIn = ui.input.float('b', {onValueChanged: (val) => this.funcCall!.inputs.b = val});
     this.res = ui.input.float('res');
     this.res.enabled = false;
     return ui.div([
@@ -398,6 +419,7 @@ class MyView extends CustomFunctionView {
 }
 
 //name: Test Custom View
+//tags: model
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
 export async function TestCustomView() {

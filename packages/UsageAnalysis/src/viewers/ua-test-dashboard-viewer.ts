@@ -69,7 +69,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.childNodes.forEach((node, _idx, _parent) => node.remove());
     this.root.appendChild(ui.wait(async () => {
-      let tableNames: RegExp[] = [/Benchmark.*Dashboard/, /Test.*Track.*Dashboard/];
+      let tableNames: RegExp[] = [/Benchmark/, /Test.*Track/];
       let promises: Promise<void>[] = tableNames.map((name) => new Promise((resolve, reject) => {
         const checkCondition = () => {
           try {
@@ -125,7 +125,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   verdictsOnPerformance(): Verdict[] {
     let verdicts: Verdict[] = [];
-    let df = grok.shell.tables.find((df) => df.name.match(/Benchmark.*Dashboard/));
+    let df = grok.shell.tables.find((df) => df.name.match(/Benchmark/));
     if (df == null)
       return verdicts;
     verdicts.push(...this.performanceDowngrades(df));
@@ -133,11 +133,13 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   verdictsOnTestTrack(): Verdict[] {
     let verdicts: Verdict[] = [];
-    let df = grok.shell.tables.find((df) => df.name.match(/Test.*Track.*Dashboard/));
+    let df = grok.shell.tables.find((df) => df.name.match(/Test.*Track/));
     if (df == null)
       return verdicts;
-    if (df.col('jira') != null)
-      this.jiraTickets(df.col('jira')!);
+    for (let col of df.columns) {
+      if (col.name.startsWith('ticket'))
+        this.jiraTickets(col);
+    }
     verdicts.push(...this.testTrackDowngrades(df));
     return verdicts;
   }
@@ -160,7 +162,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
-      let packageList = ['datlas', 'ddt', 'ddtx', 'dinq', 'ApiTests', 'ApiSamples', 'Bio', 'Chem']
+      let packageList = ['datlas', 'ddt', 'ddtx', 'dinq', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
       let testColumn: DG.Column = df.col('test')!;
       let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let brokenPackages: Map<string, string[]> = new Map();
@@ -179,6 +181,7 @@ export class TestDashboardWidget extends DG.JsViewer {
         widget.root.onclick = (ev: MouseEvent) => {
           df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
           df.selection.init((row) => testColumn.getString(row)?.startsWith(packageName) && (failingColumn.get(row) ?? false));
+          grok.shell.tv.grid.sort(['needs_attention'], [false]);
         };
         ui.tooltip.bind(widget.root, 'Click to filter');
         verdicts.push(new Verdict(Priority.BLOCKER, 'Critical package failure', widget.root));

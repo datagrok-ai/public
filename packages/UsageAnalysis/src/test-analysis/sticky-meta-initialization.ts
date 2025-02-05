@@ -14,7 +14,7 @@ export async function initTestStickyMeta() {
     return;
   }
   testSchema = await grok.dapi.stickyMeta.createSchema('Autotests', [{
-      name: 'autotest', matchBy: 'semtype=test'
+      name: 'autotest', matchBy: 'semtype=autotest'
   }], [{
     name: 'tickets', type: DG.TYPE.STRING,  
   }, {
