@@ -21,7 +21,7 @@
       }, 
       {
         "path": "Test_Track.csv",
-        "creationScript": "Result = UsageAnalysis:ManualTests(100)",
+        "creationScript": "Result = UsageAnalysis:ManualTests(3)",
         "id": "32a0d3c9-7b4b-420e-b06d-b05d021b8247"
       }
     ]
