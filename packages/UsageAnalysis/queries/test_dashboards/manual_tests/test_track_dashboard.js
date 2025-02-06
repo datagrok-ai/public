@@ -17,8 +17,6 @@ async function postprocess() {
   function replaceColumn(prefix, type, batchName, newType) {
     var col = pivot.columns.byName(prefix + type);
     col?.setTag('friendlyName', batchName + newType);
-    if (col !== null) 
-      col.name = batchName;
   }
 
   pivot.columns.byName('test').semType = 'autotest';

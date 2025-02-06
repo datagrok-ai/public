@@ -380,7 +380,7 @@ export class TestDashboardWidget extends DG.JsViewer {
             ];
     
             const grid = DG.Grid.create(DG.DataFrame.fromColumns(filteredColumns));
-            
+            await grok.data.detectSemanticTypes(grid.dataFrame);
             verdicts.push(new Verdict(
                 priority,
                 `JIRA tickets [${priority}] - ${rowIndices.length} items`,

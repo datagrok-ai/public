@@ -45,7 +45,7 @@
                 {
                   "isColorCoded": true,
                   "width": 62,
-                  "columnName": "",
+                  "columnName": "1 concat unique(status)",
                   "colorCodingType": "Categorical",
                   "colorCodingCategorical": {
                     "failed": 4292224808,
@@ -59,7 +59,7 @@
                 {
                   "isColorCoded": true,
                   "width": 65,
-                  "columnName": "1.24.0",
+                  "columnName": "2 concat unique(status)",
                   "colorCodingType": "Categorical",
                   "colorCodingCategorical": {
                     "failed": 4292224808,
@@ -73,7 +73,7 @@
                 {
                   "isColorCoded": true,
                   "width": 76,
-                  "columnName": "1.24.0_1",
+                  "columnName": "3 concat unique(status)",
                   "colorCodingType": "Categorical",
                   "colorCodingCategorical": {
                     "failed": 4292224808,
@@ -86,7 +86,7 @@
                 },
                 {
                   "width": 310,
-                  "columnName": "",
+                  "columnName": "1 concat unique(result)",
                   "headerCellStyle": {
                     "vertAlign": "bottom",
                     "textWrap": "words"
@@ -94,7 +94,7 @@
                 },
                 {
                   "width": 310,
-                  "columnName": "1.24.0",
+                  "columnName": "2 concat unique(result)",
                   "headerCellStyle": {
                     "vertAlign": "bottom",
                     "textWrap": "words"
@@ -102,7 +102,7 @@
                 },
                 {
                   "width": 119,
-                  "columnName": "1.24.0_1",
+                  "columnName": "3 concat unique(result)",
                   "headerCellStyle": {
                     "vertAlign": "bottom",
                     "textWrap": "words"
