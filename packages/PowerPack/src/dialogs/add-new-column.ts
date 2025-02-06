@@ -164,6 +164,10 @@ export class AddNewColumnDialog {
 
 
     if (this.sourceDf) {
+      if (!this.sourceDf.rowCount) {
+        grok.shell.error('Column can not be added to empty dataframe');
+        return;
+      }
       this.columnNames = this.sourceDf.columns.names();
       this.columnNamesLowerCase = this.sourceDf.columns.names().map((it) => it.toLowerCase());
       this.hintDiv.append(ui.divText(DEFAULT_HINT));
