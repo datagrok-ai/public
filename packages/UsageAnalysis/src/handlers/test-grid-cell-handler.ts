@@ -3,14 +3,15 @@ import { delay, DockManager, GridCell } from "datagrok-api/dg";
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import { testSchema } from "../test-analysis/sticky-meta-initialization";
 
 export class TestGridCellHandler extends DG.ObjectHandler {
     get type(): string {
-        return 'test';
+        return 'autotest';
     }
 
     isApplicable(x: any): boolean {
-        return x instanceof DG.SemanticValue && x.semType === 'test';
+        return x instanceof DG.SemanticValue && x.semType === 'autotest';
     }
 
     renderProperties(semValue: DG.SemanticValue, context: any = null): HTMLElement {
@@ -49,9 +50,18 @@ export class TestGridCellHandler extends DG.ObjectHandler {
         buttonsData.classList.add('ui-btn-raised');
         buttonsData.classList.add('ui-btn-test-run');
 
+        const resolveButton = ui.button('Mark as resolved', async () => {
+          let keys = DG.Column.fromStrings('', [semValue.cell.value]);
+          let values = DG.Column.fromType(DG.TYPE.DATE_TIME, 'lastResolved', 1);
+          keys.semType = semValue.semType;
+          values.set(0, Date.now());
+          await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([values]));
+        });
+        resolveButton.classList.add('ui-btn-raised');
         const packageDiv = ui.divH([ui.p('package:'), ui.h3(testData[0])]);
         packageDiv.classList.add('ui-test-data');
         panel.addPane('Run Test', () => ui.divV([ui.h1(`${testData[1]}: ${testData[2]}`), packageDiv, buttonsData]));
+        panel.addPane('Resolve', () => resolveButton);
         return panel.root;
     }
 }

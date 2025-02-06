@@ -354,7 +354,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       });
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
-        if (statusCol.getString(i) == 'Done')
+        if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')
           priority = Priority.RESOLVED;
         else if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
           priority = Priority.BLOCKER;
