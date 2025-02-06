@@ -473,7 +473,7 @@ export const TreeWizard = Vue.defineComponent({
           /> }
           {isTreeReady.value &&
             treeState.value &&
-            (hasSubtreeFixableInconsistencies(treeState.value, states.consistency) ?
+            (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
               <IconFA
                 name='sync'
                 tooltip={'Rerun tree with consistent values'}
@@ -568,7 +568,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
