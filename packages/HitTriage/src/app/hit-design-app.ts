@@ -19,7 +19,7 @@ import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Observable, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
-import {getDefaultSharingSettings} from '../packageSettingsEditor';
+import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -267,7 +267,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       this._designView = undefined;
       campaignId = await this.getNewCampaignName(`${this.appName}/campaigns`, template.key);
       modifyUrl(HitDesignCampaignIdKey, campaignId);
-      this._filePath = `System.AppData/HitTriage/${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
+      let defaultFolderPath = await getDefaultCampaignStorageSettings();
+      if (!defaultFolderPath.endsWith('/'))
+        defaultFolderPath += '/';
+      this._filePath = `${defaultFolderPath}${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
     } else {
       const fileLoc = `System.AppData/HitTriage/${this.appName}/campaigns`;
       this._filePath = this.campaign?.savePath ?? `${fileLoc}/${campaignId}/${CampaignTableName}`;

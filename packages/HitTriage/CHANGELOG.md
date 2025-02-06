@@ -1,6 +1,11 @@
 # HitTriage changelog
 
-## 1.4.3 (2025-02-07)
+## 1.4.4 (2025-02-07)
+
+* Fix permission check for admin members
+* Add Default file storage for campaign files
+
+## 1.4.3 (2025-02-06)
 
 * Fix campaign auto-naming when creating new campaigns
 
