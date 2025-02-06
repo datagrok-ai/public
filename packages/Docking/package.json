@@ -10,7 +10,7 @@
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
   "dependencies": {
     "@datagrok-libraries/bio": "^5.48.3",
-    "@datagrok-libraries/utils": "^4.4.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/tutorials": "^1.5.2",
     "@datagrok-libraries/compute-utils": "^1.40.1",
     "datagrok-api": "^1.23.0",
