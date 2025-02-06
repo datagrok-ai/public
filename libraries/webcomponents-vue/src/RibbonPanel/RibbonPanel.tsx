@@ -48,13 +48,15 @@ export const RibbonPanel = Vue.defineComponent({
         elements.set(idx, content);
     };
 
-    Vue.onUnmounted(() => {
+    Vue.onUnmounted(async () => {
       const elementsArray = [...elements.values()];
       const filteredPanels = currentView.value
         .getRibbonPanels()
         .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
 
-      currentView.value.setRibbonPanels(filteredPanels);
+      await Vue.nextTick();
+      if (!currentView.value.closing)
+        currentView.value.setRibbonPanels(filteredPanels);
     });
 
     return () =>
