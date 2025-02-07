@@ -29,7 +29,6 @@ async function postprocess() {
     for (var j = 0; j < col.length; j++) {
       let tickets = col.getString(j);
       col.set(j, tickets.replaceAll('\n', ','));
-      console.log(col.get(j));
     }
   }
 
