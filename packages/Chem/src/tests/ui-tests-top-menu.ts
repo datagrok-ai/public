@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {isColumnPresent, returnDialog, setDialogInputValue} from './gui-utils';
-import {readDataframe} from './utils';
+import {ensureContainersRunning, readDataframe} from './utils';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 category('UI top menu', () => {
@@ -13,21 +13,7 @@ category('UI top menu', () => {
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = true;
-
-    const [chempropContainer, chemContainer] = await Promise.all([
-      grok.dapi.docker.dockerContainers.filter('chemprop').first(),
-      grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
-    ]);
-
-    await Promise.all([
-      !chemContainer.status.startsWith('started') 
-        ? grok.dapi.docker.dockerContainers.run(chemContainer.id, true) 
-        : Promise.resolve(),
-      
-      !chempropContainer.status.startsWith('started') 
-        ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
-        : Promise.resolve()
-    ]);    
+    await ensureContainersRunning();
   });
 
   test('similarity search', async () => {
