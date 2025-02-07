@@ -29,7 +29,7 @@ category('UI info panel', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const cp = await awaitPanel(pp, 'Chemistry');
     await delay(200);
-    (cp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (cp as HTMLElement)?.click();
     await awaitPanel(pp, 'Gasteiger Partial Charges');
     const gpc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Gasteiger Partial Charges') as HTMLElement;
@@ -47,9 +47,9 @@ category('UI info panel', () => {
       .getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
     applyBtn?.click();
     await delay(50);
-    gpc?.click();
+    gpc?.click(); //closing gasteiger panel
     v.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (cp as HTMLElement)?.click(); //closing chemistry panel
     grok.shell.o = ui.div();
   });
 
@@ -60,7 +60,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const sp = await awaitPanel(pp, 'Structure');
-    (sp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     await awaitPanel(pp, 'Identifiers', 2000);
     const ih = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Identifiers') as HTMLElement;
@@ -109,7 +109,7 @@ category('UI info panel', () => {
     }
     ih?.click(); await delay(10);
     v.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -120,7 +120,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const sp = await awaitPanel(pp, 'Structure', 3000);
-    (sp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     const s2d = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === '2D Structure') as HTMLElement;
     if (!s2d.classList.contains('expanded')) s2d?.click();
@@ -128,7 +128,7 @@ category('UI info panel', () => {
       'canvas with structure was not rendered in the panel', 3000);
     s2d?.click(); await delay(10);
     v.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -139,7 +139,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const sp = await awaitPanel(pp, 'Structure', 3000);
-    (sp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     await awaitPanel(pp, '3D Structure', 3000);
     const s3d = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === '3D Structure') as HTMLElement;
@@ -148,7 +148,7 @@ category('UI info panel', () => {
       'canvas with structure was not rendered in the panel', 10000);
     s3d?.click(); await delay(100);
     v?.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (sp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -159,7 +159,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const cp = await awaitPanel(pp, 'Chemistry');
-    (cp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (cp as HTMLElement)?.click();
     await awaitPanel(pp, 'Properties', 10000);
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
@@ -168,7 +168,7 @@ category('UI info panel', () => {
       'table with properties was not rendered in the panel', 3000);
     p?.click(); await delay(100);
     v?.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (cp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -179,7 +179,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const bp = await awaitPanel(pp, 'Biology');
-    (bp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     await awaitPanel(pp, 'Toxicity', 10000);
     const t = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Toxicity') as HTMLElement;
@@ -188,7 +188,7 @@ category('UI info panel', () => {
       'table with toxicity was not rendered in the panel', 3000);
     t?.click(); await delay(10);
     v.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -199,7 +199,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const bp = await awaitPanel(pp, 'Biology');
-    (bp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     await awaitPanel(pp, 'Drug Likeness', 3000);
     const dl = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Drug Likeness') as HTMLElement;
@@ -208,7 +208,7 @@ category('UI info panel', () => {
       'number of displayed canvases with molecules does not match the expected', 10000);
     dl?.click(); await delay(10);
     v?.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -221,7 +221,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const bp = await awaitPanel(pp, 'Biology');
-    (bp.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     await delay(1000);
     (bp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
     await awaitPanel(pp, 'Structural Alerts', 3000);
@@ -236,7 +236,7 @@ category('UI info panel', () => {
     'number of displayed canvases with molecules does not match the expected', 10000);
     sa?.click(); await delay(10);
     v?.close();
-    (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
+    (bp as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
 
@@ -247,7 +247,7 @@ category('UI info panel', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const cp = await awaitPanel(pp, 'Chemistry');
-    (cp.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    (cp as HTMLElement)?.click();
     await awaitPanel(pp, 'Descriptors', 3000);
     const desc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Descriptors') as HTMLElement;
@@ -255,6 +255,8 @@ category('UI info panel', () => {
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
       'descriptors table hasn\'t been created', 20000);
     desc?.click(); await delay(100);
+    (cp as HTMLElement)?.click();
+    grok.shell.o = ui.div();
   });
 
   after(async () => {

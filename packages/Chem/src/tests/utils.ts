@@ -73,12 +73,15 @@ export async function ensureContainersRunning() {
     grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
   ]);
 
+  _package.logger.debug(`*************** chempropContainer ${chempropContainer.status}`);
+  _package.logger.debug(`*************** chemContainer ${chemContainer.status}`);
+
   await Promise.all([
-    !chemContainer.status.startsWith('started') 
+    !(chemContainer.status.startsWith('started') || chemContainer.status.startsWith('checking')) 
       ? grok.dapi.docker.dockerContainers.run(chemContainer.id, true) 
       : Promise.resolve(),
 
-    !chempropContainer.status.startsWith('started') 
+    !(chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking'))
       ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
       : Promise.resolve()
   ]);
