@@ -24,8 +24,9 @@ category('Widgets', () => {
 
     if (testConnection) {
       const testFW = ui.fileBrowser({path: testConnection.nqName});
-      grok.shell.newView('' ,[testFW.root]);
-      await awaitCheck(() => !testFW.root.querySelector('.grok-loader'), 'Home timeout', 30000);
+      grok.shell.newView('', [testFW.root]);
+      await awaitCheck(()=> !testFW.root.querySelector('.grok-loader') &&
+        testFW.root.querySelector('div.d4-tree-view-tri-expanded[name="tree-expander-My-files"]') !== null, 'Home timeout', 30000);
     
       const label = $(testFW.root).find(labelSelector)[0];
       expect(label != null, true, 'label');
