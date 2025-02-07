@@ -212,14 +212,22 @@ export class AddNewColumnDialog {
     );
 
     this.codeMirror = this.initCodeMirror();
-    this.codeMirrorDiv.onkeydown = (e: KeyboardEvent) => {
+    this.codeMirrorDiv.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code === 'Enter' && this.autocompleteEnter) { //do not close the dialog when autocompleting using Enter button
-        e.stopImmediatePropagation();
+        e.stopPropagation();
         this.autocompleteEnter = false;
+      } else if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
+        e.stopPropagation();
+      else if (e.code === 'KeyA' && e.ctrlKey) {
+        e.stopPropagation();
+        this.codeMirror?.dispatch({
+          selection: {
+            anchor: 0,
+            head: this.codeMirror?.state.doc.length,
+          },
+        });
       }
-      if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
-        e.stopImmediatePropagation();
-    }
+    });
 
     this.prepareForSeleniumTests();
     if (!this.call.getParamValue('expression'))
