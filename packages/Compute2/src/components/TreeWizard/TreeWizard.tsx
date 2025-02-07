@@ -124,7 +124,7 @@ export const TreeWizard = Vue.defineComponent({
         chosenStepUuid.value = nextData.state.uuid;
     };
 
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     const setViewName = (name: string = '') => {
       if (props.view)

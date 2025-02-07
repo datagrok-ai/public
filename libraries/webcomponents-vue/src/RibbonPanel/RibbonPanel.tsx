@@ -16,23 +16,11 @@ export const RibbonPanel = Vue.defineComponent({
   }>,
   setup(props, {slots}) {
     const elements = Vue.reactive(new Map<number, HTMLElement>);
-
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     Vue.watch(elements, () => {
-      const elementsArray = [...elements.values()];
-      const filteredPanels = currentView.value
-        .getRibbonPanels()
-        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
-      currentView.value.setRibbonPanels(filteredPanels);
-
-      currentView.value.setRibbonPanels([
-        currentView.value.getRibbonPanels().flat(),
-        elementsArray,
-      ]);
-
       // Workaround for ui.comboPopup elements. It doesn't work if it is not a direct child of '.d4-ribbon-item'
-      elementsArray.forEach((elem) => {
+      elements.forEach((elem) => {
         const content = ((elem.firstChild?.nodeType !== Node.TEXT_NODE) ? elem.firstChild: elem.firstChild.nextSibling) as HTMLElement | null;
 
         if (content && content.tagName.toLowerCase().includes('dg-combo-popup')) {
@@ -40,6 +28,20 @@ export const RibbonPanel = Vue.defineComponent({
           elem.parentElement?.classList.remove('d4-ribbon-item');
         }
       });
+
+      const elementsArray = [...elements.values()];
+      const panels = currentView.value.getRibbonPanels();
+      const existingPanelIdx = panels.findIndex((panel) =>
+        panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
+
+      const panel = [...elements.values()];
+
+      if (existingPanelIdx >= 0)
+        panels.splice(existingPanelIdx, 1, panel);
+      else
+        panels.push(panel)
+
+      currentView.value.setRibbonPanels(panels);
     });
 
     const addElement = (el: Element | null | any, idx: number) => {

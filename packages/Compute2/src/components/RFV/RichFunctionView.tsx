@@ -137,15 +137,19 @@ export const RichFunctionView = Vue.defineComponent({
     isReadonly: {
       type: Boolean,
     },
+    autorun: {
+      type: Boolean,
+      default: false,
+    },
     historyEnabled: {
       type: Boolean,
       default: false,
     },
-    viewersHook: {
-      type: Function as Vue.PropType<ViewersHook>,
-    },
     showStepNavigation: {
       type: Boolean,
+    },
+    viewersHook: {
+      type: Function as Vue.PropType<ViewersHook>,
     },
     view: {
       type: DG.ViewBase,
@@ -167,7 +171,8 @@ export const RichFunctionView = Vue.defineComponent({
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const currentUuid = Vue.computed(() => props.uuid);
 
     const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
 
@@ -381,8 +386,10 @@ export const RichFunctionView = Vue.defineComponent({
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
+    const isReadonly = Vue.computed(() => props.isReadonly);
 
     const validationState = Vue.computed(() => props.validationStates);
+    const consistencyState = Vue.computed(() => props.consistencyStates);
 
     const currentFunc = Vue.computed(() => currentCall.value.func);
 
@@ -520,7 +527,7 @@ export const RichFunctionView = Vue.defineComponent({
             /> }
           </RibbonPanel>
           <DockManager
-            key={props.uuid}
+            key={currentUuid.value}
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
@@ -555,10 +562,12 @@ export const RichFunctionView = Vue.defineComponent({
                     funcCall={currentCall.value}
                     callMeta={callMeta.value}
                     validationStates={validationState.value}
-                    consistencyStates={props.consistencyStates}
+                    consistencyStates={consistencyState.value}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
                     onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
-                    isReadonly={props.isReadonly}
+                    onInputChanged={(ev) => console.log(ev)}
+                    onValidationChanged={(ev) => console.log(ev)}
+                    isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
