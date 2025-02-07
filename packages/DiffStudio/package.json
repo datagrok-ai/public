@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/diff-studio",
   "friendlyName": "Diff Studio",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "WebAutoSolver tools for solving ODEs in a browser.",
   "author": {
     "name": "Viktor Makarichev",
@@ -21,7 +21,8 @@
     "css-loader": "^6.10.0",
     "datagrok-api": "^1.23.0",
     "dayjs": "=1.11.10",
-    "style-loader": "^3.3.4"
+    "style-loader": "^3.3.4",
+    "@datagrok/diff-studio-tools": "../../../DiffStudioLib/ds-tools"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -53,9 +54,7 @@
   "canView": [
     "All users"
   ],
-  "sources": [
-    "wasm/matrix-operations.js"
-  ],
+  "sources": [],
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
