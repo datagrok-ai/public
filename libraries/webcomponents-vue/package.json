@@ -17,10 +17,12 @@
     "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
+    "uuid": "^11.0.5",
     "vue": "^3.4.38",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
