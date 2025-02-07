@@ -38,7 +38,7 @@ async function postprocess() {
   pivot.columns.add(meta.col('ignore?'));
   pivot.columns.add(meta.col('ignoreReason'));
   pivot.columns.add(meta.col('lastResolved'));  
-  await pivot.columns.addNewCalculated('needs_attention', "And(Or(${flaking},${failing}), Not(${ignore?}))", 'bool');
+  await pivot.columns.addNewCalculated('needs_attention', "And(${failing}, Not(${ignore?}))", 'bool');
 
   function replaceColumn(prefix, type, buildName, newType) {
     var col = pivot.columns.byName(prefix + type);

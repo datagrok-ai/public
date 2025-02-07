@@ -356,7 +356,7 @@ export class TestDashboardWidget extends DG.JsViewer {
         let priority: string = Priority.INFO;
         if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')
           priority = Priority.RESOLVED;
-        else if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
+        else if (severityCol.getString(i).startsWith('Blocker') /*fixVersionsCol.getString(i).startsWith(_properties['Platform version'])*/)
           priority = Priority.BLOCKER;
         else if (issueTypeCol.getString(i) == 'Bug') {
           if (severityCol.getString(i).startsWith('Low'))

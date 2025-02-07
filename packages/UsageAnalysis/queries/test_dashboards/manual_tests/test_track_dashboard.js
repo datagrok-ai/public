@@ -25,6 +25,12 @@ async function postprocess() {
     var batchName = batchNames[i];
     replaceColumn(batchIndices[i], ' concat unique(status)', batchName, '');
     replaceColumn(batchIndices[i], ' concat unique(result)', batchName, ' verdict');
+    let col = pivot.col(`${batchIndices[i]} concat unique(result)`);
+    for (var j = 0; j < col.length; j++) {
+      let tickets = col.getString(j);
+      col.set(j, tickets.replaceAll('\n', ','));
+      console.log(col.get(j));
+    }
   }
 
   let schemas = await grok.dapi.stickyMeta.getSchemas();
@@ -36,10 +42,19 @@ async function postprocess() {
   var ticketColumns = 5;
   for (var i = 0; i < pivot.rowCount; i++) {
     var tickets = attachedTickets.get(i)?.split(',') ?? [];
+    for (var j = 0; j < batchIndices.length; j++)
+      tickets.push(...pivot.col(`${batchIndices[j]} concat unique(result)`).get(i).split(','));
+
+    tickets = [...new Set(tickets)];
+    var ptr = 0;
     for (var j = 0; j < tickets.length; j++) {
-      pivot.columns.getOrCreate('ticket ' + j, DG.TYPE.STRING).set(i, tickets[j]);
-      ticketColumns = Math.max(ticketColumns, j + 1);
-    }
+      var ticketMatch = tickets[j].match(/GROK-\d+/);
+      if (ticketMatch) {
+          pivot.columns.getOrCreate('ticket ' + ptr, DG.TYPE.STRING).set(i, ticketMatch[0]);
+          ptr++;
+      }
+      ticketColumns = Math.max(ticketColumns, ptr + 1);
+  }
   }
 
   for (var i = 0; i < ticketColumns; i++)

@@ -22,7 +22,7 @@ export async function initTestStickyMeta() {
   }, {
     name: 'ignoreReason', type: DG.TYPE.STRING,
   }, {
-    name: 'lastResolved', type: DG.TYPE.STRING,
+    name: 'lastResolved', type: DG.TYPE.DATE_TIME,
   }
   ]);
 }
