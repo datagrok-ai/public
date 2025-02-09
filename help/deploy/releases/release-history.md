@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2025-02-09 1.23.2
+
+### Addressed Issues
+
+* GROK-17321: Tests: gather test results from *datagrok.ai instances on dev 
+
+
 ## 2025-01-20 1.23.1
 
 ### Addressed Issues
