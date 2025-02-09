@@ -1,6 +1,11 @@
 # Diff Studio changelog
 
-## 1.2.1 (2025-02-10)
+## 1.2.2 (2025-02-10)
+
+* Implemented the use of Diff Studio Lib solvers
+* Added correctness tests
+
+## 1.2.1 (2025-02-01)
 
 Added facet grid plot
 
