@@ -98,7 +98,7 @@ export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup,
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   let currentStudy = '';
   let currentViewName = '';
-  if (path) {
+  if (path && !path.startsWith('/browse')) {
     const pathSegments = path.split('/');
     currentStudy = pathSegments[1];
     currentViewName = pathSegments.length > 2 ? pathSegments[2] : SUMMARY_VIEW_NAME;
