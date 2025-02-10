@@ -126,7 +126,9 @@ export abstract class BaseViewApp {
       this.tableView!._onAdded();
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      (grok.shell.view(DG.VIEW_TYPE.BROWSE) as DG.BrowseView).preview = this.tableView!;
+      const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
+      if (inBrowseView)
+        (grok.shell.view(DG.VIEW_TYPE.BROWSE) as DG.BrowseView).preview = this.tableView!;
     }, 300);
   }
 

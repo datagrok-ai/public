@@ -99,7 +99,7 @@ function getTableView(tableName?: string): DG.TableView {
 }
 
 
-//top-menu: Chem | AutoDock...
+//top-menu: Chem | Docking | AutoDock...
 //name: Autodock
 //tags: HitTriageFunction
 //description: Autodock plugin UI

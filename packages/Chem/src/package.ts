@@ -2222,7 +2222,7 @@ export async function runBoltz(config: string) {
   return await BoltzService.runBoltz(config);
 }
 
-//top-menu: Bio | Boltz | Folding...
+//top-menu: Bio | Folding | Boltz...
 //name: Folding
 //input: dataframe df 
 //input: column sequences {semType: Macromolecule}
@@ -2231,7 +2231,7 @@ export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<D
   return await BoltzService.folding(df, sequences);
 }
 
-//top-menu: Chem | Boltz | Docking...
+//top-menu: Chem | Docking | Boltz...
 //name: Docking
 //input: dataframe df
 //input: column molecules {semType: Molecule}
