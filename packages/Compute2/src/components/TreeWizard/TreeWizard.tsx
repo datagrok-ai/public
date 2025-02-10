@@ -144,7 +144,7 @@ export const TreeWizard = Vue.defineComponent({
         paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
-      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '');
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
     const isLoading = Vue.ref(false);
@@ -273,12 +273,16 @@ export const TreeWizard = Vue.defineComponent({
         return;
 
       if (pendingStepPath) {
-        const state = findTreeNodeByPath(
+        const nodeWithPath = findTreeNodeByPath(
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
           treeState,
         );
         pendingStepPath = null;
-        chosenStepUuid.value = state?.state?.uuid;
+        if (nodeWithPath?.state) {
+          chosenStepUuid.value = nodeWithPath.state.uuid;
+          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
+          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
+        }
         return;
       }
 
