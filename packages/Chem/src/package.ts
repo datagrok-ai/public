@@ -1927,8 +1927,11 @@ export async function trainModelChemprop(table: string, predict: string, paramet
     headers: {'Content-Type': 'application/json'},
   });
 
-  if (response.status !== 201)
+  if (response.status !== 201) {
+    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+      throw new Error(`Failed to start container: ${container.friendlyName}`);
     throw new Error(`Error training model: ${response.statusText}`);
+  }
   return new Uint8Array(await response.arrayBuffer());
 }
 
@@ -1946,8 +1949,11 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
     headers: {'Content-Type': 'application/json'},
   });
 
-  if (response.status !== 201)
+  if (response.status !== 201) {
+    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+      throw new Error(`Failed to start container: ${container.friendlyName}`);
     throw new Error(`Error applying model: ${response.statusText}`);
+  }
 
   const data = await response.json();
   return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
@@ -1988,7 +1994,7 @@ export async function trainChemprop(
   data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number,
   message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number,
   warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean,
-): Promise<Uint8Array> {
+): Promise<Uint8Array | undefined> {
   const parameterValues = {
     'dataset_type': dataset_type,
     'metric': metric,
@@ -2015,12 +2021,16 @@ export async function trainChemprop(
     'warmup_epochs': warmup_epochs,
   };
   df.columns.add(predictColumn);
-  const modelBlob = await fetchWrapper(() => trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues));
-  const zip = new JSZip();
-  const archive = await zip.loadAsync(modelBlob);
-  const file = archive.file('blob.bin');
-  const binBlob = await file?.async('uint8array')!;
-  return binBlob;
+  try {
+    const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+    const zip = new JSZip();
+    const archive = await zip.loadAsync(modelBlob);
+    const file = archive.file('blob.bin');
+    const binBlob = await file?.async('uint8array')!;
+    return binBlob;
+  } catch (error: any) {
+    grok.shell.error(error);
+  }
 }
 
 //name: applyChemprop
@@ -2030,8 +2040,12 @@ export async function trainChemprop(
 //input: dynamic model
 //output: dataframe data_out
 export async function applyChemprop(df: DG.DataFrame, model: Uint8Array) {
-  const column = await fetchWrapper(() => applyModelChemprop(model, df.toCsv()));
-  return DG.DataFrame.fromColumns([column]);
+  try {
+    const column = await applyModelChemprop(model, df.toCsv());
+    return DG.DataFrame.fromColumns([column]);
+  } catch (error: any) {
+    grok.shell.error(error);
+  }
 }
 
 //name: isApplicableNN
