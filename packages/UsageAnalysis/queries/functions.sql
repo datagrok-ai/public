@@ -2,10 +2,11 @@
 --input: string date {pattern: datetime}
 --input: list<string> groups
 --input: list<string> packages
+--input: list<string> tags
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
---test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
+--test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'], ['any'])
 with recursive selected_groups as (
     select id from groups
     where id::varchar = any(@groups)
@@ -21,6 +22,7 @@ from events e
 inner join event_parameter_values evv on evv.event_id = e.id
 inner join funcs et on evv.value_uuid = et.id
 inner join entities en on et.id = en.id
+left join tags t on en.id = t.entity_id
 left join published_packages pp on en.package_id = pp.id
 left join project_relations pr ON pr.entity_id = en.id
 left join projects proj ON proj.id = pr.project_id
@@ -29,7 +31,7 @@ and proj.is_package = true
 left join packages p1 on proj.name = p1.name or proj.name = p1.friendly_name
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
-where @date(e.event_time)
+where @date(e.event_time) and (@tags = ARRAY['any']::varchar[] or t.tag = any(@tags))
 ),
 t1 AS (
   SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
@@ -73,7 +75,8 @@ with res AS (
     e.friendly_name as run, et.name as function, e.event_time as time, e.id as rid,
     coalesce(pp.package_id, p1.id, '00000000-0000-0000-0000-000000000000') as pid
     from events e
-    inner join event_types et on e.event_type_id = et.id
+    inner join event_parameter_values evv on evv.event_id = e.id
+    inner join funcs et on evv.value_uuid = et.id
     inner join entities en on et.id = en.id
     left join published_packages pp on en.package_id = pp.id
     left join project_relations pr ON pr.entity_id = en.id
@@ -101,11 +104,17 @@ with res as (
     select e.id, EXTRACT(EPOCH FROM (e.event_time_finished - e.event_time)) AS time, ep.name as input,
     ep.type as type, COALESCE(epv.value, epv.value_array::text, epv.data_frame_value_name, epv.value_string, epv.value_uuid::text) as value
     from events e
-    inner join event_types et on e.event_type_id = et.id
+    inner join event_parameter_values evv on evv.event_id = e.id
+    inner join funcs et on evv.value_uuid = et.id
     left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id
     and ep.is_input = true on epv.event_id = e.id
     where et.name = @function)
 select res.time, json_object_agg(res.input, res.value)::text as input
 from res
 GROUP BY res.time
+--end
+
+--name: EntitiesTags
+--connection: System:Datagrok
+select DISTINCT tag from tags
 --end
