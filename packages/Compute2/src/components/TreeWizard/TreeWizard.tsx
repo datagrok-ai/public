@@ -6,7 +6,6 @@ import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-librari
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
-  PipelineState,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -23,7 +22,6 @@ import {
   findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeFixableInconsistencies,
-  NodeWithPath,
   reportStep,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -301,10 +299,10 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value)
         return null;
 
-      return chosenStepUuid.value ?
-        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value):
-        {state: treeState.value, pathSegments: [0]};
+      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
     });
+
+    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
@@ -312,8 +310,6 @@ export const TreeWizard = Vue.defineComponent({
       else
         searchParams.currentStep = undefined;
     }, { immediate: true });
-
-    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -344,30 +340,11 @@ export const TreeWizard = Vue.defineComponent({
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
-    let oldClosed = new Set<string>();
-
-    Vue.watch(treeState, (_nextState, oldState) => {
-      if (oldState && treeInstance.value) {
-        const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
-        oldClosed = oldStats.reduce((acc, stat) => {
-          if (!stat.open)
-            acc.add(stat.data.uuid);
-          return acc;
-        }, new Set<string>());
-      }
-    }, {immediate: true});
-
     const isTreeReportable = Vue.computed(() => {
       return Object.values(states.calls)
         .map((state) => state?.isOutputOutdated)
         .every((isOutdated) => isOutdated === false);
     });
-
-    const restoreOpenedNodes = (stat: AugmentedStat) => {
-      if (oldClosed.has(stat.data.uuid))
-        stat.open = false;
-      return stat;
-    };
 
     const treeHidden = Vue.ref(false);
     const inspectorHidden = Vue.ref(true);
@@ -547,7 +524,6 @@ export const TreeWizard = Vue.defineComponent({
                 treeLine
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
-                statHandler={restoreOpenedNodes}
 
                 ref={treeInstance}
                 modelValue={[treeState.value]}
@@ -561,8 +537,6 @@ export const TreeWizard = Vue.defineComponent({
                   if (isFuncCallState(stat.data)) rfvHidden.value = false;
                   if (!isFuncCallState(stat.data)) pipelineViewHidden.value = false;
                 }}
-                onClose:node={(stat) => oldClosed.add(stat.data.uuid)}
-                onOpen:node={(stat) => oldClosed.delete(stat.data.uuid)}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
