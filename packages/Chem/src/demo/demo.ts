@@ -368,3 +368,12 @@ export async function _demoScaffoldTree(): Promise<void> {
     grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
 }
+
+export async function _demoBoltzFolding(): Promise<void> {
+  const tv: DG.TableView = await openMoleculeDataset('demo_files/boltz_folding_demo.csv');
+  const layoutString = await _package.files.readAsText('demo_files/boltz_folding_demo.layout');
+  const layout = DG.ViewLayout.fromJson(layoutString);
+  tv.loadLayout(layout);
+  tv.dataFrame.currentCell = tv.dataFrame.cell(0, 'pdb');
+  //showHelpPanel(ESMFOLD_HELP);
+}

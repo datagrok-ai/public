@@ -1,0 +1,98 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1094,
+      "height": 801,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1094,
+          "height": 801,
+          "element": {
+            "id": "329eb260-c210-11ef-eb88-fbf8e32dbe45",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "rowHeight": 300,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 28,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 119,
+                  "columnName": "Entry",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 230,
+                  "columnName": "Sequence",
+                  "cellType": "sequence",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 300,
+                  "columnName": "pdb",
+                  "cellType": "Molecule3D",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "isColorCoded": true,
+                  "width": 128,
+                  "columnName": "confidence_score",
+                  "cellType": "number",
+                  "format": "0.000",
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4278255360,
+                    4294901760
+                  ],
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                }
+              ]
+            },
+            "title": "Grid",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "16713730-c210-11ef-c889-a188887123b1",
+    "tableName": "FASTA (2)"
+  },
+  "name": "FASTA2",
+  "friendlyName": "FASTA (2)",
+  "author": {
+    "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
+  },
+  "createdOn": "2025-02-10T13:51:59.108Z"
+}

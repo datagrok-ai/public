@@ -62,7 +62,7 @@ import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {_demoActivityCliffs, _demoChemOverview, _demoMMPA,
+import {_demoActivityCliffs, _demoBoltzFolding, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -82,8 +82,7 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
-import $ from 'cash-dom';
-import { BoltzBaseEditor, getFromPdbs, prop, PROPERTY_DESCRIPTIONS } from './utils/boltz-editor';
+import { BoltzService } from './utils/boltz-service';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1869,6 +1868,12 @@ export async function demoScaffold(): Promise<void> {
   await _demoScaffoldTree();
 }
 
+//name: Demo Boltz Folding
+//description: tbd
+//meta.demoPath: Bioinformatics | Boltz Folding
+export async function demoBoltzFolding(): Promise<void> {
+  await _demoBoltzFolding();
+}
 
 //top-menu: Chem | Transform | Names To Smiles...
 //name: Names To Smiles
@@ -2202,107 +2207,52 @@ function generateStickyDf(role: string): DG.DataFrame {
   return lineageDf;
 }
 
+//name: getBoltzConfigFolders
+//output: list<string> configFiles
+export async function getBoltzConfigFolders(): Promise<string[]> {
+  return await BoltzService.getBoltzConfigFolders();
+}
+
 //name: runBoltz
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
 //input: string config
 //output: string s
 export async function runBoltz(config: string) {
-  const container = await grok.dapi.docker.dockerContainers.filter('boltz').first();
-  const yaml = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
-  const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
-  
-  const body = {
-    yaml: await grok.dapi.files.readAsText(yaml.fullPath),
-    ...(msa && { msa: await grok.dapi.files.readAsText(msa.fullPath) }),
-  };
-
-  const url = 'http://127.0.0.1:8001/predict';
-  const response = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {'Content-Type': 'application/json'},
-  });
-
-  const json = await response.json();
-  const result = json['result'];
-  return result;
+  return await BoltzService.runBoltz(config);
 }
 
-//name: BoltzEditor
-//tags: editor
-//input: funccall call
-export function boltzEditor(call: DG.FuncCall): void {
-  const funcEditor = new BoltzBaseEditor();
-  ui.dialog({title: 'Boltz-1'})
-    .add(funcEditor.getEditor())
-    .onOK(async () => {
-      const params = funcEditor.getParams();
-      call.func.prepare({
-        config: params.config
-      }).call(true);
-    }).show();
-}
-
-//name: boltz
-//input: string config
-//editor: Chem: BoltzEditor
+//top-menu: Bio | Boltz | Folding...
+//name: Folding
+//input: dataframe df 
+//input: column sequences {semType: Macromolecule}
 //output: dataframe result
-export async function boltz(config: string): Promise<DG.DataFrame> {
-  const result = await grok.functions.call('Chem:runBoltz', {config: config});
-  const df = DG.DataFrame.fromCsv(result);
-
-  const pdbCol = df.columns.byName('pdb');
-  const confidenceCol = df.columns.byName('confidence_score');
-  
-  pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
-  confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
-  confidenceCol.meta.format = '0.000';
-  confidenceCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS['confidence_score']);
-
-  const tv = grok.shell.addTableView(df);
-  const {grid} = tv;
-  grid.onCellRender.subscribe((args: any) => {
-    grid.setOptions({ 'rowHeight': 150 });
-    grid.col('pdb')!.width = 200;
-    grid.col('confidence_score')!.width = 100;
-  });
-  return df;
+export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
+  return await BoltzService.folding(df, sequences);
 }
 
-//name: Boltz-1
-//tags: app
-export async function boltz1() {
-  const func = DG.Func.find({name: 'boltz'})[0];
-  func.prepare().edit();
+//top-menu: Chem | Boltz | Docking...
+//name: Docking
+//input: dataframe df
+//input: column molecules {semType: Molecule}
+//input: string config {choices: Chem: getBoltzConfigFolders} [Folder with config files for docking]
+//output: dataframe result
+export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
+  return await BoltzService.docking(df, molecules, config);
 }
 
 //name: Boltz-1
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
+//condition: Chem:isApplicable(molecule)
 //output: widget result
 export async function boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  const value = molecule.value;
+  return await BoltzService.boltzWidget(molecule);
+}
 
-  const boltzResults: DG.DataFrame = getFromPdbs(molecule);
-  const widget = new DG.Widget(ui.div([]));
-
-  const targetViewer = await molecule.cell.dataFrame.plot.fromType('Biostructure', {
-    pdb: value,
-    zoom: true,
-  });
-  targetViewer.root.classList.add('bsv-container-info-panel');
-  widget.root.append(targetViewer.root);
-
-  const result = ui.div();
-  const map: { [_: string]: any } = {};
-  for (let i = 0; i < boltzResults!.columns.length; ++i) {
-    const columnName = boltzResults!.columns.names()[i];
-    const propertyCol = boltzResults!.col(columnName);
-    map[columnName] = prop(molecule, propertyCol!, result);
-  }
-  result.appendChild(ui.tableFromMap(map));
-  widget.root.append(result);
-
-  return widget;
+//name: isApplicable
+//input: string molecule
+//output: bool result
+export function isApplicable(molecule: string): boolean {
+  return molecule.includes('confidence_score');
 }
