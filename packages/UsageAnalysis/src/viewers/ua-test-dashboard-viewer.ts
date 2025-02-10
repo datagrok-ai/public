@@ -240,17 +240,17 @@ export class TestDashboardWidget extends DG.JsViewer {
         }
         verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
           ui.span([summary]),
-          ui.button('Copy to Clipboard', () => {
-            let slackMessage = '';
-            for (const [owner, tests] of Object.entries(unaddressedTests)) {
-              const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
-              slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
-            }
+          // ui.button('Copy to Clipboard', () => {
+          //   let slackMessage = '';
+          //   for (const [owner, tests] of Object.entries(unaddressedTests)) {
+          //     const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
+          //     slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
+          //   }
       
-            navigator.clipboard.writeText(slackMessage).then(() => {
-              grok.shell.info('Summary copied to clipboard');
-            });
-          })
+          //   navigator.clipboard.writeText(slackMessage).then(() => {
+          //     grok.shell.info('Summary copied to clipboard');
+          //   });
+          // })
         ])));
       }
       return verdicts;
@@ -338,8 +338,15 @@ export class TestDashboardWidget extends DG.JsViewer {
         [Priority.INFO, []],
         [Priority.RESOLVED, []]
       ]);
+
+      let tickets: string[] = [];
+      this.tickets.forEach((ticket, _v, _t) => {
+        let match = ticket.match(/GROK\-\d+/);
+        if (match != null && match[0] != undefined)
+          tickets.push(match[0]);
+      });
     
-      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...this.tickets]);
+      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...tickets]);
       let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
         ticketColumn: jiraCol,
         field: 'priority:name'
@@ -428,9 +435,13 @@ export class TestDashboardWidget extends DG.JsViewer {
       let dialog = ui.dialog('Watch ticket');
       let ticketInput = ui.input.textArea('name');
       dialog.add(ticketInput.root);
-      dialog.onOK(async () => 
-        await grok.functions.call('ManualTicketCreation', {'name': ticketInput.value})
-      );
+      dialog.onOK(async () => {
+        let match = ticketInput.value.match(/GROK\-\d+/);
+        if (match != null && match[0] != undefined)
+          await grok.functions.call('ManualTicketCreation', {'name': match[0]});
+        else
+          (new DG.Balloon()).warning('Cpuldn\'t recognize a ticket name in ' + ticketInput.value);
+      });
       dialog.show();
     }));
     return res.root;
