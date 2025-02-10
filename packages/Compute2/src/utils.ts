@@ -16,7 +16,7 @@ import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
-type NodeWithPath = {
+export type NodeWithPath = {
   state: PipelineState,
   pathSegments: number[],
 }

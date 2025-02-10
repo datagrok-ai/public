@@ -6,6 +6,7 @@ import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-librari
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
+  PipelineState,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -22,6 +23,7 @@ import {
   findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeFixableInconsistencies,
+  NodeWithPath,
   reportStep,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -114,7 +116,7 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const chosenStepUuid = Vue.ref<string | undefined>(undefined);
+    const chosenStepUuid = Vue.ref<string | undefined>();
 
     const goNextStep = () => {
       if (chosenStepUuid.value == null || treeState.value == null)
@@ -266,36 +268,50 @@ export const TreeWizard = Vue.defineComponent({
       else setViewName(modelName.value);
     });
 
-    Vue.watch(treeState, () => {
-      if (!treeState.value || globalThis.initialURLHandled) return;
+    let pendingStepPath: string | null = null;
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        const state = findTreeNodeByPath(
+          pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
+          treeState,
+        );
+        pendingStepPath = null;
+        chosenStepUuid.value = state?.state?.uuid;
+        return;
+      }
+
+      if (globalThis.initialURLHandled)
+        return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
       if (loadingId) {
-        loadPipeline(loadingId);
         globalThis.initialURLHandled = true;
+        pendingStepPath = startUrl.searchParams.get('currentStep');
+        loadPipeline(loadingId);
       }
-    });
+    }, { immediate: true });
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value) return null;
-
-      const node = chosenStepUuid.value ?
-        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value): undefined;
-      if (node) return node;
-
-      if (searchParams.currentStep) {
-        chosenStepUuid.value = findTreeNodeByPath(
-          searchParams.currentStep.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
-          treeState.value,
-        )?.state.uuid;
-
+      if (!treeState.value)
         return null;
-      }
 
-      return {state: treeState.value, pathSegments: [0]};
+      return chosenStepUuid.value ?
+        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value):
+        {state: treeState.value, pathSegments: [0]};
     });
+
+    Vue.watch(chosenStep, (newStep) => {
+      if (newStep)
+        searchParams.currentStep = newStep.pathSegments.join(' ');
+      else
+        searchParams.currentStep = undefined;
+    }, { immediate: true });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
@@ -325,10 +341,6 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-    Vue.watch(chosenStep, (newStep) => {
-      if (newStep)
-        searchParams.currentStep = newStep.pathSegments.join(' ');
-    });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
