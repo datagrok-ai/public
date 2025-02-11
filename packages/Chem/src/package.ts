@@ -120,8 +120,7 @@ export function getMolFileHandler(molString: string): MolfileHandlerBase {
 export const _package: DG.Package = new DG.Package();
 export let _properties: any;
 
-export const TARGET_PATH = 'System:AppData/Chem/targets';
-export const ADME_CONFIG_PATH = 'System:AppData/Chem/adme_configs';
+export const TARGET_PATH = 'System:AppData/Chem/reinvent';
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
@@ -2082,54 +2081,43 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   table.columns.add(col);
 }
 
-//name: getConfigFiles
-//output: list<string> configFiles
-export async function getConfigFiles(): Promise<string[]> {
+//name: getFolder
+//output: list<string> folders
+export async function getFolder(): Promise<string[]> {
   const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  const directoriesWithJson = await Promise.all(
-    targetsFiles.filter((file) => file.isDirectory).map(async (dir) => {
-      const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
-      return filesInDir.some((file) => file.path.endsWith('.json')) ? dir.name : null;
-    }),
-  );
-  return directoriesWithJson.filter((dir): dir is string => Boolean(dir));
+  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
 }
 
-//name: getAdmeConfigFiles
-//output: list<string> configFiles
-export async function getAdmeConfigFiles(): Promise<string[]> {
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(ADME_CONFIG_PATH, true);
-  return targetsFiles
-    .filter((file) => file.isFile && file.path.endsWith('.json'))
-    .map((file) => file.name.split('.')[0]);
+async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
+  const zip = new JSZip();
+  folder.forEach(file => {
+    zip.file(file.name, file.readAsBytes());
+  });
+
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  return zipBlob;
 }
 
 //name: runReinvent
 //meta.cache: all
 //meta.cache.invalidateOn: 0 * * * *
 //input: string ligand {semType: Molecule}
-//input: string target {choices: Chem: getConfigFiles}
-//input: string optimize {choices: Chem: getAdmeConfigFiles}
-//input: int steps
+//input: string optimize
 //output: dataframe result
-export async function runReinvent(ligand: string, target: string, optimize: string, steps: number): Promise<DG.DataFrame> {
+export async function runReinvent(ligand: string, optimize: string): Promise<DG.DataFrame> {
   const container = await grok.dapi.docker.dockerContainers.filter('reinvent').first();
-  const isConfigFile = (file: DG.FileInfo): boolean => file.extension === 'json';
-  const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isConfigFile)!;
-  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
+  const files = (await grok.dapi.files.list(`${TARGET_PATH}/${optimize}`));
 
-  const body = {
-    smiles: [ligand],
-    config: await grok.dapi.files.readAsText(configFile.fullPath),
-    receptor: await grok.dapi.files.readAsText(receptor.fullPath),
-    admeConfig: await grok.dapi.files.readAsText(`${ADME_CONFIG_PATH}/${optimize}.json`),
-    steps: steps,
-  };
+  const zipBlob = await zipFolder(files);
+  const formData = new FormData();
+  formData.append('folder', zipBlob, 'folder.zip');
+  [ligand].forEach(smiles => {
+    formData.append('smiles', smiles);
+  });
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/run_reinvent', {
     method: 'POST',
-    body: JSON.stringify(body),
-    headers: {'Content-Type': 'application/json'},
+    body: formData,
   });
 
   const resultDf = DG.DataFrame.fromJson(await response.text());
@@ -2140,21 +2128,14 @@ export async function runReinvent(ligand: string, target: string, optimize: stri
 //name: Reinvent
 //tags: HitDesignerFunction
 //input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
-//input: string target {choices: Chem: getConfigFiles; caption: Dock into} [Folder with config files and macromolecule for docking]
-//input: string optimize {choices: Chem: getAdmeConfigFiles; caption: Optimize} [Optimization criteria for ADME properties]
-//input: int steps = 5 [Number of steps]
+//input: string optimize {choices: Chem: getFolder} [Optimization criteria]
 //output: dataframe result
 export async function reinvent(
-  ligand: string,
-  target: string,
-  optimize: string,
-  steps: number
+  ligand: string, optimize: string
 ): Promise<DG.DataFrame> {
   const resultDfPromise = grok.functions.call('Chem:runReinvent', {
     ligand: ligand,
-    target: target,
-    optimize: optimize,
-    steps: steps,
+    optimize: optimize
   });
   const schemas = await grok.dapi.stickyMeta.getSchemas();
   const lineageSchema = schemas.find((s) => s.name === 'Lineage');
