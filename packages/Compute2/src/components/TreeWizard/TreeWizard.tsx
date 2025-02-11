@@ -344,6 +344,25 @@ export const TreeWizard = Vue.defineComponent({
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
+    let oldClosed = new Set<string>();
+
+    Vue.watch(treeState, (_nextState, oldState) => {
+      if (oldState && treeInstance.value) {
+        const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
+        oldClosed = oldStats.reduce((acc, stat) => {
+          if (!stat.open)
+            acc.add(stat.data.uuid);
+          return acc;
+        }, new Set<string>());
+      }
+    }, {immediate: true});
+
+    const restoreOpenedNodes = (stat: AugmentedStat) => {
+      if (oldClosed.has(stat.data.uuid))
+        stat.open = false;
+      return stat;
+    };
+
     const isTreeReportable = Vue.computed(() => {
       return Object.values(states.calls)
         .map((state) => state?.isOutputOutdated)
@@ -528,6 +547,7 @@ export const TreeWizard = Vue.defineComponent({
                 treeLine
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
+                statHandler={restoreOpenedNodes}
 
                 ref={treeInstance}
                 modelValue={[treeState.value]}
@@ -541,6 +561,8 @@ export const TreeWizard = Vue.defineComponent({
                   if (isFuncCallState(stat.data)) rfvHidden.value = false;
                   if (!isFuncCallState(stat.data)) pipelineViewHidden.value = false;
                 }}
+                onClose:node={(stat) => oldClosed.add(stat.data.uuid)}
+                onOpen:node={(stat) => oldClosed.delete(stat.data.uuid)}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
