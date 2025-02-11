@@ -1,5 +1,10 @@
 # Diff Studio changelog
 
+## 1.2.3 (2025-02-12)
+
+* Fixed the Open model menu
+* Updated performance info
+
 ## 1.2.2 (2025-02-10)
 
 * Implemented the use of Diff Studio Lib solvers

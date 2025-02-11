@@ -334,3 +334,8 @@ export function removeTitle(node: DG.DockNode) {
       head.textContent = '';
   }, UI_TIME.TITLE_REMOVING);
 }
+
+/** No models message */
+export function noModels(): void {
+  grok.shell.info(`No models`);
+}
