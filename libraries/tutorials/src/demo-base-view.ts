@@ -348,7 +348,12 @@ export abstract class BaseViewApp {
         if (splitter) splitter.style.width = '100%';
       })
     );
-  }  
+
+    this.subs.push(grok.events.onViewRemoved.subscribe((view) => {
+      if (view.id === this.tableView?.id)
+        this.subs.forEach((v) => v.unsubscribe());
+    }));
+  } 
 }
 
 async function openMoleculeDataset(name: string): Promise<DG.DataFrame> {
