@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/nmrium",
-  "friendlyName": "nmrium",
+  "friendlyName": "Nmrium",
   "version": "1.0.0",
-  "description": "",
+  "description": "Datagrok package for nmr data visualization",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
