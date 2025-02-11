@@ -32,6 +32,7 @@ import {demoStudyId, domainsToValidate, StudyJsonName} from './constants/constan
 import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
+import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -41,15 +42,23 @@ export const VIEWS: {[key: string]: {[key: string]: DG.ViewBase}} = {};
 
 const loadingStudyData: {[key: string]: boolean} = {};
 
+const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase';
+
+type CurrentStudyAndView = {
+  study: string;
+  viewName: string;
+}
 
 const domains = (studyId: string, exactDomains?: string[]) =>
   (exactDomains ?? Object.keys(studies[studyId].domains)).map((it) => `${it.toLocaleLowerCase()}.csv`);
 export let c: DG.FuncCall;
 
-//tags: app
+let cliniclaCaseLaunched = false;
+
 //name: Clinical Case
-//output: view v
+//tags: app
 //meta.browsePath: Clinical
+//output: view v
 export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
   const existingStudies = await loadStudies([]);
   const existingStudiesNames = Object.keys(existingStudies);
@@ -64,11 +73,13 @@ export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
   runButton.classList.add('clinical-case-run-app-button');
   const view = DG.View.create();
   view.name = 'Clinical Case';
+  view.path = CLINICAL_CASE_APP_PATH;
   view.root.append(ui.divV([
     ui.h1('Select study'),
     studyChoices,
     ui.divH([runButton]),
   ], {style: {width: '200px'}}));
+  cliniclaCaseLaunched = true;
   return view;
 }
 
@@ -78,14 +89,30 @@ export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup,
   browseView: DG.BrowseView) {// TODO: DG.BrowseView
   if (!validationRulesList)
     validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
-  await clinicalCaseAppTB(treeNode, browseView);
+  const url = new URL(window.location.href);
+  const currentStudyAndViewPath = url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``);
+  const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
+  await clinicalCaseAppTB(treeNode, browseView, studyAndView.study, studyAndView.viewName);
 }
 
-async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+function getCurrentStudyAndView(path: string): CurrentStudyAndView {
+  let currentStudy = '';
+  let currentViewName = '';
+  if (path && !path.startsWith('/browse')) {
+    const pathSegments = path.split('/');
+    currentStudy = pathSegments[1];
+    currentViewName = pathSegments.length > 2 ? pathSegments[2] : SUMMARY_VIEW_NAME;
+  }
+  return {study: currentStudy, viewName: currentViewName};
+}
+
+async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView,
+  currentStudy: string, currentViewName: string) {
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
   const loaderItem = treeNode.item(loaderDiv);
   const existingStudies = await loadStudies([]);
+  let initialViewSelected = false;
 
   for (const [_, study] of Object.entries(existingStudies)) {
     const node = treeNode.group(study.friendlyName ?? study.name, null, false);
@@ -135,6 +162,8 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.Brow
         (view as ClinicalCaseViewBase).load();
       else
         helper?.propertyPanel();
+      browseView.path =
+        `browse${CLINICAL_CASE_APP_PATH}/${study.name}/${viewName.replaceAll(' ', '')}`;
     };
 
     let validationNode: DG.TreeViewNode = null;
@@ -153,9 +182,28 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.Brow
         });
       }
       await initClinicalStudy(study);
+      if (initialViewSelected) {
+        //need to allow clinicalCaseApp to return view first not to reset selected view from URL
+        await awaitCheck(() => cliniclaCaseLaunched === true, `Clinical Case app hasn't been started`, 10000);
+        initialViewSelected = false;
+        const viewItem = node.items.find((node) => node.text === currentViewName)?.root;
+        viewItem?.click();
+      }
     });
   }
   loaderItem.remove();
+  if (currentStudy && !Object.keys(existingStudies).includes(currentStudy))
+    grok.shell.error(`Study ${currentStudy} doesn't exist`);
+  else if (currentStudy) {
+    const studyNode = treeNode.getOrCreateGroup(currentStudy);
+    if (currentViewName && !Object.keys(VIEW_CREATE_FUNC).includes(currentViewName)) {
+      grok.shell.warning(`${currentViewName} view doesn't exist, opening summary view`);
+      currentViewName = SUMMARY_VIEW_NAME;
+    } else if (!currentViewName)
+      currentViewName = SUMMARY_VIEW_NAME;
+    initialViewSelected = true;
+    studyNode.expanded = true;
+  }
 }
 
 export async function initClinicalStudy(study: ClinStudyConfig) {

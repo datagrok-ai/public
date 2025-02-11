@@ -121,8 +121,8 @@ async function postprocess() {
 
 if (result.rowCount == 0) 
   out = DG.DataFrame.fromColumns([
-    DG.Column.fromType('string', 'test'),
-    DG.Column.fromType('string', 'test')
+    DG.Column.fromType('string', 'test', 1),
+    DG.Column.fromType('string', 'owner', 1)
   ]);
 else
   await postprocess();

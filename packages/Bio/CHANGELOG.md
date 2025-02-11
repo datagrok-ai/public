@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.18.3 (2025-02-10)
+
+Correct molblock conversion in monomer library extraction
+
 ## 2.18.2 (2025-01-22)
 
 Improve grid cell renderer

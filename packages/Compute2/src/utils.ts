@@ -16,7 +16,7 @@ import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
-type NodeWithPath = {
+export type NodeWithPath = {
   state: PipelineState,
   pathSegments: number[],
 }
@@ -33,17 +33,14 @@ function _findTreeNode(
   pathSegments: number[] = [],
 ): NodeWithPath | undefined {
   for (const [idx, stepState] of steps.entries()) {
+    const currentPathSegments = [...pathSegments, idx];
     if (pred(stepState))
-      return {state: stepState, pathSegments: [...pathSegments, idx]};
+      return {state: stepState, pathSegments: currentPathSegments};
 
     if (hasSteps(stepState)) {
-      pathSegments.push(idx);
-
-      const t = _findTreeNode(stepState.steps, pred, pathSegments);
+      const t = _findTreeNode(stepState.steps, pred, currentPathSegments);
       if (t)
         return t;
-      else
-        pathSegments.pop();
     }
   }
 };

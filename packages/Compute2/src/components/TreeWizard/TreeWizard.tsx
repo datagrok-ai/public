@@ -114,7 +114,7 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const chosenStepUuid = Vue.ref<string | undefined>(undefined);
+    const chosenStepUuid = Vue.ref<string | undefined>();
 
     const goNextStep = () => {
       if (chosenStepUuid.value == null || treeState.value == null)
@@ -144,7 +144,7 @@ export const TreeWizard = Vue.defineComponent({
         paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
-      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '');
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
     const isLoading = Vue.ref(false);
@@ -266,38 +266,54 @@ export const TreeWizard = Vue.defineComponent({
       else setViewName(modelName.value);
     });
 
-    Vue.watch(treeState, () => {
-      if (!treeState.value || globalThis.initialURLHandled) return;
+    let pendingStepPath: string | null = null;
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        const nodeWithPath = findTreeNodeByPath(
+          pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
+          treeState,
+        );
+        pendingStepPath = null;
+        if (nodeWithPath?.state) {
+          chosenStepUuid.value = nodeWithPath.state.uuid;
+          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
+          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
+        }
+        return;
+      }
+
+      if (globalThis.initialURLHandled)
+        return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
       if (loadingId) {
-        loadPipeline(loadingId);
         globalThis.initialURLHandled = true;
+        pendingStepPath = startUrl.searchParams.get('currentStep');
+        loadPipeline(loadingId);
       }
-    });
+    }, { immediate: true });
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value) return null;
-
-      const node = chosenStepUuid.value ?
-        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value): undefined;
-      if (node) return node;
-
-      if (searchParams.currentStep) {
-        chosenStepUuid.value = findTreeNodeByPath(
-          searchParams.currentStep.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
-          treeState.value,
-        )?.state.uuid;
-
+      if (!treeState.value)
         return null;
-      }
 
-      return {state: treeState.value, pathSegments: [0]};
+      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    Vue.watch(chosenStep, (newStep) => {
+      if (newStep)
+        searchParams.currentStep = newStep.pathSegments.join(' ');
+      else
+        searchParams.currentStep = undefined;
+    }, { immediate: true });
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -325,10 +341,6 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-    Vue.watch(chosenStep, (newStep) => {
-      if (newStep)
-        searchParams.currentStep = newStep.pathSegments.join(' ');
-    });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
@@ -345,17 +357,17 @@ export const TreeWizard = Vue.defineComponent({
       }
     }, {immediate: true});
 
-    const isTreeReportable = Vue.computed(() => {
-      return Object.values(states.calls)
-        .map((state) => state?.isOutputOutdated)
-        .every((isOutdated) => isOutdated === false);
-    });
-
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.has(stat.data.uuid))
         stat.open = false;
       return stat;
     };
+
+    const isTreeReportable = Vue.computed(() => {
+      return Object.values(states.calls)
+        .map((state) => state?.isOutputOutdated)
+        .every((isOutdated) => isOutdated === false);
+    });
 
     const treeHidden = Vue.ref(false);
     const inspectorHidden = Vue.ref(true);

@@ -561,6 +561,7 @@ export class AddNewColumnDialog {
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
             //in case os syntax error we try to run expression to save string interpolation functionality
             this.updatePreviewEvent.next({expression: cmValue, changeName: false , error: !!this.error && this.error !== SYNTAX_ERROR});
+            this.uiDialog!.getButton('OK').disabled = !!this.error && this.error !== SYNTAX_ERROR;
           }),
         ],
       }),

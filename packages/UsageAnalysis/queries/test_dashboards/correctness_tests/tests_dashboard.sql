@@ -1,6 +1,7 @@
 --name: TestsDashboard
 --friendlyName: UA | Tests | Tests
 --connection: System:Datagrok
+--input: string instanceFilter {nullable: true}
 --input: int lastBuildsNum = 5
 --input: string packageFilter {nullable: true}
 --input: bool showNotRun = false {optional: true}
@@ -45,6 +46,7 @@ and (@showNotRun or not r.passed is null)
 and r.benchmark = @showBenchmarks
 and (@packageFilter is null or @packageFilter = p.name)
 and (@versionFilter is null or @versionFilter = b.name)
+and (@instanceFilter is null or r.instance like '%' || @instanceFilter || '%')
 
 order by b.build_index, t.name
 --end

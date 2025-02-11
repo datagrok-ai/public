@@ -167,6 +167,9 @@ async function getPolyToolEnumerateDialog(
         resDataRole = (resSeqValue.tags[PolyToolTags.dataRole] as PolyToolDataRole.template) ?? PolyToolDataRole.macromolecule;
       } else {
         const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [PT_HELM_EXAMPLE]);
+        seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+        const _tempDf = DG.DataFrame.fromColumns([seqCol]);
+        
         seqCol.meta.units = NOTATION.HELM;
         const sh = seqHelper.getSeqHandler(seqCol);
         resSeqValue = sh.getValue(0);

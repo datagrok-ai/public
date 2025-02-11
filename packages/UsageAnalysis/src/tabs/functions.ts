@@ -57,16 +57,14 @@ export class FunctionsView extends UaView {
           t.selection.setAll(false);
           const rowValues = Array.from(t.currentRow.cells).map((c) => c.value);
           const row = Object.fromEntries(t.columns.names().map((k, i) => [k, rowValues[i]]));
-          row.time_start = row.time_start.a;
-          row.time_end = row.time_end.a;
-          const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
+          const filter: Filter = {time_start: row.time_start.valueOf() / 1000, time_end: row.time_end.valueOf() / 1000,
             users: [row.uid], packages: [row.pid], functions: [row.function]};
           const cp = DG.Accordion.create();
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': row.pid === this.systemId ? ui.label('Core') : ui.render(`#{x.${row.pid}}`),
-              'From': getTime(new Date(row.time_start)),
-              'To': getTime(new Date(row.time_end))});
+              'From': row.time_start.format('DD/MM/YYYY HH:mm:ss'),
+              'To': row.time_end.format('DD/MM/YYYY HH:mm:ss')});
           }, true);
           this.getFunctionPane(cp, filter, true);
           grok.shell.o = cp.root;
