@@ -12,7 +12,6 @@ import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import {ID_COLUMN_NAME} from '../shared-components/src/history-input';
 import {delay, getStarted} from '../function-views/src/shared/utils';
-import cloneDeepWith from 'lodash.clonedeepwith';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -760,7 +759,7 @@ export const isIncomplete = (run: DG.FuncCall) => {
 
 export const getStartedOrNull = (run: DG.FuncCall) => {
   try {
-    return run.started;
+    return run.started as any;
   } catch {
     return null;
   }

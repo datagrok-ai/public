@@ -193,10 +193,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'Compute2:LongScript',
       },
-      {
-        id: 'step2',
-        nqName: 'Compute2:LongFailingScript',
-      },
+      // {
+      //   id: 'step2',
+      //   nqName: 'Compute2:LongFailingScript',
+      // },
     ],
     links: [{
       id: 'link1',
@@ -421,8 +421,8 @@ class MyView extends CustomFunctionView {
   }
 }
 
-//name: Custom View (Compute 2 Demo)
-//tags: model, demo, test
+//name: Custom View (Compute 2 Test)
+//tags: demo, test
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
 export async function TestCustomView() {
