@@ -2,10 +2,11 @@
 --input: string date {pattern: datetime}
 --input: list<string> groups
 --input: list<string> packages
+--input: list<string> packagesCategories
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
---test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
+--test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'], ['any'])
 with recursive selected_groups as (
   select id from groups
   where id::varchar = any(@groups)
@@ -15,27 +16,16 @@ with recursive selected_groups as (
 ),
 res AS (
 select DISTINCT e.id, e.event_time as time_old, u.friendly_name as user, u.id as uid, u.group_id as ugid,
-coalesce(pp.name, pp1.name, pp2.name, p1.name, 'Core') as package,
-coalesce(pp.package_id, pp1.package_id, pp2.package_id, p1.id) as pid
+coalesce(pp.name, p.name, 'Core') as package,
+coalesce(pp.package_id, p.id) as pid, p.category
 from events e
-inner join event_types et on e.event_type_id = et.id
-left join entities en on et.id = en.id
+inner join event_parameter_values evv on evv.event_id = e.id
+inner join entities en on evv.value_uuid = en.id
 left join published_packages pp on en.package_id = pp.id
-left join project_relations pr ON pr.entity_id = en.id
-left join projects proj ON proj.id = pr.project_id
-and proj.is_root = true
-and proj.is_package = true
-left join packages p1 on proj.name = p1.name or proj.name = p1.friendly_name
-left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
-on epv.event_id = e.id
-left join published_packages pp1 on pp1.id = epv.value_uuid
-left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
-inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
-on epv1.event_id = e.id
+left join packages p on p.id = pp.package_id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
-where @date(e.event_time)
+where @date(e.event_time) and (@packagesCategories = ARRAY['any']::varchar[] or p.category = any(@packagesCategories))
 ),
 t1 AS (
   SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
@@ -76,7 +66,8 @@ with res AS (
 select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package, en.id, et.name,
 coalesce(pp.package_id, p1.id, '00000000-0000-0000-0000-000000000000') as pid
 from events e
-inner join event_types et on e.event_type_id = et.id --and et.name is not null
+inner join event_parameter_values evv on evv.event_id = e.id
+inner join funcs et on evv.value_uuid = et.id
 inner join entities en on et.id = en.id
 left join published_packages pp on en.package_id = pp.id
 left join project_relations pr ON pr.entity_id = en.id
@@ -172,8 +163,13 @@ inner join event_types t on t.id = e.event_type_id and t.source = 'audit' and t.
 left join event_parameter_values v 
 inner join event_parameters p on p.id = v.parameter_id and p.name = 'ms' on v.event_id = e.id
 left join event_parameter_values vp 
-inner join event_parameters pp on pp.id = vp.parameter_id and pp.name = 'package' on vp.event_id = e.id 
+inner join event_parameters pp on pp.id = vp.parameter_id and pp.name = 'entity' on vp.event_id = e.id
 inner join packages ppp on ppp.id::text = vp.value
 where @date(e.event_time)
 and (ppp.name = any(@packages) or @packages = ARRAY['all']::varchar[])
+--end
+
+--name: PackagesCategories
+--connection: System:Datagrok
+select DISTINCT category from packages;
 --end
