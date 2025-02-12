@@ -57,22 +57,30 @@ export const History = Vue.defineComponent({
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
 
-    Vue.watch(() => props.func.id, () => {
+    const refresh = async () => {
       isLoading.value = true;
+      try {
+        const newHistoricalRuns = await historyUtils.pullRunsByName(
+          props.func.name,
+          [{author: grok.shell.user}],
+          {},
+          ['session.user', 'options']
+        );
+        historicalRuns.value.clear();
 
-      historyUtils.pullRunsByName(props.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
-        .then((newHistoricalRuns) => {
-          historicalRuns.value.clear();
+        newHistoricalRuns.reduce((acc, run) => {
+          acc.set(run.id, run);
+          return acc;
+        }, historicalRuns.value);
+        Vue.triggerRef(historicalRuns);
+      } catch (e: any) {
+        grok.shell.error(e)
+      } finally {
+        isLoading.value = false;
+      }
+    }
 
-          newHistoricalRuns.reduce((acc, run) => {
-            acc.set(run.id, run);
-            return acc;
-          }, historicalRuns.value);
-          Vue.triggerRef(historicalRuns);
-        })
-        .catch((e) => grok.shell.error(e))
-        .finally(() => isLoading.value = false);
-    }, {immediate: true});
+    Vue.watch(() => props.func.id, () => refresh(), { immediate: true });
 
     const defaultDf = DG.DataFrame.fromColumns([
       DG.Column.bool(EXP_COLUMN_NAME, 0),
@@ -333,7 +341,12 @@ export const History = Vue.defineComponent({
           />
         </div>
         <div style={{display: 'flex'}}>
-
+          <IconFA
+            name='sync'
+            tooltip={'Refresh'}
+            onClick={refresh}
+            style={{alignContent: 'center'}}
+          />
         </div>
       </div>;
       const grid = <Viewer

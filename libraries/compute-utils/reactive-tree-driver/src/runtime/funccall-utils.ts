@@ -79,7 +79,7 @@ export async function saveInstanceState(
 }
 
 export async function loadInstanceState(id: string) {
-  const metaCall = await historyUtils.loadRun(id, false);
+  const metaCall = await historyUtils.loadRun(id, false, false);
   const isFavorite = await loadIsFavorite(metaCall);
   const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
   return [config, metaCall, isFavorite] as const;

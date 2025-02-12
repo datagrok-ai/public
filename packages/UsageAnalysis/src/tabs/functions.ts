@@ -90,7 +90,8 @@ export class FunctionsView extends UaView {
     });
 
     const grid = DG.Viewer.grid(DG.DataFrame.create(0));
-    grid.autoSize(2000, 2000, 1000);
+    grid.root.style.maxWidth = '100%';
+    grid.root.style.minWidth = '100%';
     const typeAhead = ui.typeAhead('Function name', {
       source: {local: DG.Func.find().map((f) => f.name)},
       minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
@@ -119,8 +120,9 @@ export class FunctionsView extends UaView {
 
     typeAhead.input.style.width = '300px';
     typeAhead.input.style.marginBottom = '15px';
-    this.functionsExecTime.append(ui.divV([typeAhead, grid]));
-
+    const d = ui.divV([typeAhead, grid]);
+    d.style.width = '100%';
+    this.functionsExecTime.append(d);
     this.viewers.push(functionsViewer);
     this.root.append(functionsViewer.root);
     this.root.append(this.functionsExecTime);

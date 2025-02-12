@@ -69,7 +69,7 @@ GROUP BY res.function, res.package, res.user, time_start, time_end,
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
---test: FunctionsContextPane(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'], ['OpenServerFile'])
+--test: FunctionsContextPane(1739271600, 1739275200, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['fb9cff99-ca6f-5af3-ab6a-bd0d538f9d1a'], ['usageAnalysisApp'])
 with res AS (
     select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package,
     e.friendly_name as run, et.name as function, e.event_time as time, e.id as rid,
@@ -101,14 +101,14 @@ where res.pid::varchar = any(@packages)
 --input: string function
 --connection: System:Datagrok
 with res as (
-    select e.id, EXTRACT(EPOCH FROM (e.event_time_finished - e.event_time)) AS time, ep.name as input,
-    ep.type as type, COALESCE(epv.value, epv.value_array::text, epv.data_frame_value_name, epv.value_string, epv.value_uuid::text) as value
-    from events e
-    inner join event_parameter_values evv on evv.event_id = e.id
-    inner join funcs et on evv.value_uuid = et.id
-    left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id
-    and ep.is_input = true on epv.event_id = e.id
-    where et.name = @function)
+    select EXTRACT(EPOCH FROM (fc.ended - fc.started)) AS time,
+    fp.name as input, fp.type as type, COALESCE(fcv.value, fcv.value_uuid::text, fcv.value_array::text, fcv.data_frame_value_name, fcv.value_string) as value
+    from func_calls fc
+    join funcs f on f.id = fc.func_id
+    left join func_params fp on fp.func_id = f.id
+    right join func_call_values fcv on fcv.func_param_id = fp.id and fcv.func_call_id = fc.id
+    where f.name = @function
+    )
 select res.time, json_object_agg(res.input, res.value)::text as input
 from res
 GROUP BY res.time

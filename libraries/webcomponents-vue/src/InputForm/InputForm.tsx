@@ -115,11 +115,11 @@ export const InputForm = Vue.defineComponent({
 
     return () =>
       <dg-input-form
-        funcCall={currentCall.value}
         skipInit={skipInit.value}
+        funcCall={currentCall.value}
         onFormReplaced={formReplacedCb}
-        onInputChanged={(ev: DG.EventData<DG.InputArgs>) => emit('inputChanged', ev)}
-        onValidationChanged={(ev: boolean) => emit('validationChanged', ev)}>
+        onInputChanged={(ev: CustomEvent<DG.EventData<DG.InputArgs>>) => emit('inputChanged', ev.detail)}
+        onValidationChanged={(ev: CustomEvent<boolean>) => emit('validationChanged', ev.detail)}>
       </dg-input-form>;
   },
 });
