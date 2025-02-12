@@ -6,7 +6,7 @@
     "tables": [
       {
         "path": "Tests.csv",
-        "creationScript": "Result = UsageAnalysis:TestsDashboard(5,null,null,false,false,false)",
+        "creationScript": "Result = UsageAnalysis:TestsDashboard(null,5,null,null,false,false,false)",
         "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
       },
       {
@@ -21,7 +21,7 @@
       }, 
       {
         "path": "Test_Track.csv",
-        "creationScript": "Result = UsageAnalysis:ManualTests(100)",
+        "creationScript": "Result = UsageAnalysis:ManualTests(3)",
         "id": "32a0d3c9-7b4b-420e-b06d-b05d021b8247"
       }
     ]

@@ -553,13 +553,21 @@ export class TreeViewer extends EChartViewer {
       this.setChartOption();
       this.render();
     }));
-    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
-      this.setChartOption();
-      this.render()
-    }));
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
+    this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.handleReset()));
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape")
+        this.handleReset();
+    });
+  }
+
+  handleReset(): void {
+    if (this.clickedPath) {
+      this.cleanTree([this.clickedPath]);
+      this.clickedPath = null;
+    }
   }
 
   onTableAttached() {

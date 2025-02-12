@@ -174,8 +174,10 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   let r: number = (gridCell.bounds.width - 4) / 2;
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
-    r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-    r = Math.max(r, minRadius);
+    if (cols[activeColumn] !== null) {
+      r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
+      r = Math.max(r, minRadius);
+    }
   } else if (settings.sectors) {
     const { sectors } = settings.sectors;
     let currentAngle = 0;
@@ -268,7 +270,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {
       for (let i = 0; i < cols.length; i++) {
-        if (cols[i].isNone(row))
+        if (cols[i] === null || cols[i].isNone(row))
           continue;
 
         let r = cols[i].scale(row) * box.width / 2;

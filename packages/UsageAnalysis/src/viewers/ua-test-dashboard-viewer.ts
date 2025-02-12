@@ -240,17 +240,17 @@ export class TestDashboardWidget extends DG.JsViewer {
         }
         verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
           ui.span([summary]),
-          ui.button('Copy to Clipboard', () => {
-            let slackMessage = '';
-            for (const [owner, tests] of Object.entries(unaddressedTests)) {
-              const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
-              slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
-            }
+          // ui.button('Copy to Clipboard', () => {
+          //   let slackMessage = '';
+          //   for (const [owner, tests] of Object.entries(unaddressedTests)) {
+          //     const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
+          //     slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
+          //   }
       
-            navigator.clipboard.writeText(slackMessage).then(() => {
-              grok.shell.info('Summary copied to clipboard');
-            });
-          })
+          //   navigator.clipboard.writeText(slackMessage).then(() => {
+          //     grok.shell.info('Summary copied to clipboard');
+          //   });
+          // })
         ])));
       }
       return verdicts;
@@ -317,8 +317,20 @@ export class TestDashboardWidget extends DG.JsViewer {
       ]))];
     }
   }
+
+  async loadManualTickets(): Promise<void> {
+    let tickets: DG.DataFrame = await grok.functions.call('ManualTicketFetch');
+    for (var i = 0; i < tickets.rowCount; i++) {
+      const ticket = tickets.col('name')?.getString(i);
+      if (ticket != null)
+        this.tickets.add(ticket);
+    }
+  }
+
   async verdictsForTickets(): Promise<Verdict[]> {
     try {
+      await this.loadManualTickets();
+
       let verdicts: Verdict[] = [];
       const priorityRows: Map<string, number[]> = new Map([
         [Priority.BLOCKER, []],
@@ -326,8 +338,15 @@ export class TestDashboardWidget extends DG.JsViewer {
         [Priority.INFO, []],
         [Priority.RESOLVED, []]
       ]);
+
+      let tickets: string[] = [];
+      this.tickets.forEach((ticket, _v, _t) => {
+        let match = ticket.match(/GROK\-\d+/);
+        if (match != null && match[0] != undefined)
+          tickets.push(match[0]);
+      });
     
-      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...this.tickets]);
+      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...tickets]);
       let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
         ticketColumn: jiraCol,
         field: 'priority:name'
@@ -354,12 +373,12 @@ export class TestDashboardWidget extends DG.JsViewer {
       });
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
-        if (statusCol.getString(i) == 'Done')
+        if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')
           priority = Priority.RESOLVED;
-        else if (severityCol.getString(i).startsWith('High') || fixVersionsCol.getString(i).startsWith(_properties['Platform version']))
+        else if (severityCol.getString(i).startsWith('Blocker'))
           priority = Priority.BLOCKER;
         else if (issueTypeCol.getString(i) == 'Bug') {
-          if (severityCol.getString(i).startsWith('Low'))
+          if (severityCol.getString(i).startsWith('Low') || !(fixVersionsCol.getString(i).startsWith(_properties['Platform version'])))
             priority = Priority.INFO;
           else
             priority = Priority.ERROR;
@@ -370,17 +389,18 @@ export class TestDashboardWidget extends DG.JsViewer {
       for (const [priority, rowIndices] of priorityRows) {
         if (rowIndices.length > 0) {
             const filteredColumns = [
+                jiraCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 summaryCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 fixVersionsCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 statusCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 severityCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 issueTypeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                jiraCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
                 assigneeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx)))
             ];
     
             const grid = DG.Grid.create(DG.DataFrame.fromColumns(filteredColumns));
-            
+            grid.sort(['jira'], [true]);
+            await grok.data.detectSemanticTypes(grid.dataFrame);
             verdicts.push(new Verdict(
                 priority,
                 `JIRA tickets [${priority}] - ${rowIndices.length} items`,
@@ -411,6 +431,19 @@ export class TestDashboardWidget extends DG.JsViewer {
       }
       lastAccordion!.appendChild(ui.div([verdicts[i].widget]));
     }
+    res.addPane('Actions', () => ui.actionLink('Watch a jira ticket', () => {
+      let dialog = ui.dialog('Watch ticket');
+      let ticketInput = ui.input.textArea('name');
+      dialog.add(ticketInput.root);
+      dialog.onOK(async () => {
+        let match = ticketInput.value.match(/GROK\-\d+/);
+        if (match != null && match[0] != undefined)
+          await grok.functions.call('ManualTicketCreation', {'name': match[0]});
+        else
+          (new DG.Balloon()).warning('Cpuldn\'t recognize a ticket name in ' + ticketInput.value);
+      });
+      dialog.show();
+    }));
     return res.root;
   }
 

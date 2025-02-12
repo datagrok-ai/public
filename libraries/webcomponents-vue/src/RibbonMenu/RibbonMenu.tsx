@@ -21,7 +21,7 @@ export const RibbonMenu = Vue.defineComponent({
   setup(props, {slots}) {
     const elements = Vue.reactive(new Map<number, HTMLElement>);
 
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     Vue.watch(elements, () => {
       const elementsArray = [...elements.values()];

@@ -164,6 +164,10 @@ export class AddNewColumnDialog {
 
 
     if (this.sourceDf) {
+      if (!this.sourceDf.rowCount) {
+        grok.shell.error('Column can not be added to empty dataframe');
+        return;
+      }
       this.columnNames = this.sourceDf.columns.names();
       this.columnNamesLowerCase = this.sourceDf.columns.names().map((it) => it.toLowerCase());
       this.hintDiv.append(ui.divText(DEFAULT_HINT));
@@ -208,14 +212,22 @@ export class AddNewColumnDialog {
     );
 
     this.codeMirror = this.initCodeMirror();
-    this.codeMirrorDiv.onkeydown = (e: KeyboardEvent) => {
+    this.codeMirrorDiv.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code === 'Enter' && this.autocompleteEnter) { //do not close the dialog when autocompleting using Enter button
-        e.stopImmediatePropagation();
+        e.stopPropagation();
         this.autocompleteEnter = false;
+      } else if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
+        e.stopPropagation();
+      else if (e.code === 'KeyA' && e.ctrlKey) {
+        e.stopPropagation();
+        this.codeMirror?.dispatch({
+          selection: {
+            anchor: 0,
+            head: this.codeMirror?.state.doc.length,
+          },
+        });
       }
-      if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
-        e.stopImmediatePropagation();
-    }
+    });
 
     this.prepareForSeleniumTests();
     if (!this.call.getParamValue('expression'))
@@ -549,6 +561,7 @@ export class AddNewColumnDialog {
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
             //in case os syntax error we try to run expression to save string interpolation functionality
             this.updatePreviewEvent.next({expression: cmValue, changeName: false , error: !!this.error && this.error !== SYNTAX_ERROR});
+            this.uiDialog!.getButton('OK').disabled = !!this.error && this.error !== SYNTAX_ERROR;
           }),
         ],
       }),

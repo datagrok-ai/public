@@ -8,6 +8,7 @@ import { DIFFDOCK_HELP, ESMFOLD_HELP, openDataset, showHelpPanel } from './utils
 
 export async function _demoEsmFoldModel(): Promise<void> {
   const tv: DG.TableView = await openDataset('demo/folding-demo.csv');
+  await grok.data.detectSemanticTypes(tv.dataFrame);
   const layoutString = await _package.files.readAsText('demo/folding-demo.layout');
   const layout = DG.ViewLayout.fromJson(layoutString);
   tv.loadLayout(layout);

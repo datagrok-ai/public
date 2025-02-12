@@ -37,7 +37,8 @@ async function postprocess() {
   var meta = await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'));
   pivot.columns.add(meta.col('ignore?'));
   pivot.columns.add(meta.col('ignoreReason'));
-  await pivot.columns.addNewCalculated('needs_attention', "And(Or(${flaking},${failing}), Not(${ignore?}))", 'bool');
+  pivot.columns.add(meta.col('lastResolved'));  
+  await pivot.columns.addNewCalculated('needs_attention', "And(${failing}, Not(${ignore?}))", 'bool');
 
   function replaceColumn(prefix, type, buildName, newType) {
     var col = pivot.columns.byName(prefix + type);
@@ -57,6 +58,21 @@ async function postprocess() {
       colResult.semType = 'stackTrace';
     replaceColumn(builds[i-1], ' avg(build_date)', buildName, ' build_date');
     replaceColumn(builds[i-1], ' avg(duration)', buildName, ' duration');
+  }
+
+  for (let i = 0; i < pivot.rowCount; i++) {
+    if (!pivot.col('needs_attention').get(i))
+      continue;
+    if (!meta.col('lastResolved').isNone(i)) {
+      var failed = false;
+      for (let j = 0; j < builds.length; j++) {
+        if (pivot.col(`${builds[j]} concat unique(status)`).isNone(i) || pivot.col(`${builds[j]} concat unique(status)`).get(i) != 'failed')
+            continue;
+        if (pivot.col(`${builds[j]} avg(build_date)`).isNone(i) || pivot.col(`${builds[j]} avg(build_date)`).get(i) > meta.col('lastResolved').get(i))
+          failed = true;
+      }
+      pivot.col('needs_attention').set(i, failed);
+    }
   }
 
 

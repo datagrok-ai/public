@@ -13,7 +13,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public showHistory = new BehaviorSubject(false);
   public isReady = new BehaviorSubject(false);
 
-  public historyRoot = ui.div('', {style: {height: '100%'}});
+  public historyRoot = ui.div('', {style: {height: '100%', width: '100%'}});
 
   public funcCall?: DG.FuncCall;
 
@@ -67,7 +67,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
     this.path = funcCall.author ? `?id=${funcCall.id}` : '?';
-    this.name = funcCall.options['title'] ?? funcCall.func?.friendlyName ?? funcCall.func?.name;
+    const modelName = funcCall?.func?.friendlyName ?? funcCall?.func?.name ;
+    this.name = modelName;
   }
 
   public async onFuncCallReady() {
@@ -104,7 +105,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const rootItem = ui.div([
       this.buildIO(),
       this.historyRoot,
-    ]);
+    ], {style: {width: '100%', height: '100%', display: 'flex'}});
     this.root.appendChild(rootItem);
 
     this.buildRibbonMenu();
@@ -119,7 +120,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       this.getFormats(),
       this.exportRun.bind(this),
     );
-    const newRibbonPanels: HTMLElement[][] = [[historyButton, saveButton, exportBtn]];
+    const newRibbonPanels: HTMLElement[][] = [[historyButton, saveButton, ...(this.hasExport() ? [exportBtn] : [] )]];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
@@ -155,7 +156,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       }
     }
 
-    if (this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
+    if (this.hasExport()) {
       ribbonMenu
         .group('Export')
         .items(this.getFormats(), this.exportRun.bind(this))
@@ -178,6 +179,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   private getFormats() {
     return (this.exportConfig?.supportedFormats ?? []);
+  }
+
+  private hasExport() {
+    return this.exportConfig && this.exportConfig.supportedFormats.length > 0;
   }
 
   private async getPackageData() {

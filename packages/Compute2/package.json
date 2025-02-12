@@ -9,14 +9,14 @@
   "description": "Provides UI based on Vue/Webcomponents",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
-    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/webcomponents-vue": "../../libraries/webcomponents-vue",
     "@he-tree/vue": "^2.8.7",
     "@types/wu": "^2.1.44",
     "@vueuse/core": "^11.1.0",
     "@vueuse/rxjs": "^11.1.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
     "fflate": "^0.8.2",
     "idb": "^8.0.1",
@@ -75,5 +75,9 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "packages/Compute2"
+  },
+  "category": "Compute",
+  "meta": {
+    "dartium": false
   }
 }

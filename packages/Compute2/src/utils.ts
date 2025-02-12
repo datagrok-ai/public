@@ -14,9 +14,9 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
-type NodeWithPath = {
+export type NodeWithPath = {
   state: PipelineState,
   pathSegments: number[],
 }
@@ -33,17 +33,14 @@ function _findTreeNode(
   pathSegments: number[] = [],
 ): NodeWithPath | undefined {
   for (const [idx, stepState] of steps.entries()) {
+    const currentPathSegments = [...pathSegments, idx];
     if (pred(stepState))
-      return {state: stepState, pathSegments: [...pathSegments, idx]};
+      return {state: stepState, pathSegments: currentPathSegments};
 
     if (hasSteps(stepState)) {
-      pathSegments.push(idx);
-
-      const t = _findTreeNode(stepState.steps, pred, pathSegments);
+      const t = _findTreeNode(stepState.steps, pred, currentPathSegments);
       if (t)
         return t;
-      else
-        pathSegments.pop();
     }
   }
 };
@@ -114,12 +111,13 @@ export const couldBeSaved = (data: PipelineState): data is PipelineWithAdd => !i
 
 export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
+  callStates: Record<string, FuncCallStateInfo | undefined>,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
 ) => {
   return _findTreeNode(
     [data],
     (state: PipelineState) => isFuncCallState(state) ?
-      hasInconsistencies(consistencyStates[state.uuid]) && !state.isReadonly :
+      (!state.isReadonly && hasInconsistencies(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
       false,
   );
 };

@@ -9,18 +9,20 @@
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "../compute-utils",
-    "@datagrok-libraries/dock-spawn-dg": "^0.0.1",
-    "@datagrok-libraries/webcomponents": "^0.0.6",
+    "@datagrok-libraries/dock-spawn-dg": "../dock-spawn-dg",
+    "@datagrok-libraries/webcomponents": "../webcomponents",
     "@vueuse/core": "^10.11.1",
     "@vueuse/rxjs": "^11.0.3",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.18.6",
+    "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
+    "uuid": "^11.0.5",
     "vue": "^3.4.38",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",

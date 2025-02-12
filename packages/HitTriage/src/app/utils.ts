@@ -154,8 +154,10 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
       const user = await grok.dapi.groups.getUser(group);
       if (user?.id === userId)
         return true;
-    } else if (userGroupId && group.members.length > 0) {
-      if (group.members.some((memberGroup) => memberGroup.id === userGroupId))
+    } else if (userGroupId) {
+      if ((group.members?.length ?? 0) > 0 && group.members.some((memberGroup) => memberGroup.id === userGroupId))
+        return true;
+      if ((group.adminMembers?.length ?? 0) > 0 && group.adminMembers.some((memberGroup) => memberGroup.id === userGroupId))
         return true;
     }
   }

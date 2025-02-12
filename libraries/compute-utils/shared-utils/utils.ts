@@ -755,7 +755,7 @@ export const isIncomplete = (run: DG.FuncCall) => {
 
 export const getStartedOrNull = (run: DG.FuncCall) => {
   try {
-    return run.started;
+    return run.started as any;
   } catch {
     return null;
   }

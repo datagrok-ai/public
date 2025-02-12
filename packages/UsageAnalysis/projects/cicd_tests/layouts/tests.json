@@ -188,6 +188,11 @@
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
+                          },
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "false": 4288208778,
+                            "true": 4292224808
                           }
                         },
                         {
@@ -996,6 +1001,11 @@
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
+                          },
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "false": 4288208778,
+                            "true": 4292224808
                           }
                         },
                         {

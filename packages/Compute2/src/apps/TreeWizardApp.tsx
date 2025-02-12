@@ -13,6 +13,10 @@ export const TreeWizardApp = Vue.defineComponent({
       type: String,
       required: true,
     },
+    modelName: {
+      type: String,
+      required: true,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -21,7 +25,7 @@ export const TreeWizardApp = Vue.defineComponent({
   setup(props) {
     const currentView = Vue.shallowRef(props.view);
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} view={currentView.value}/>
+      <TreeWizard providerFunc={props.providerFunc} modelName={props.modelName} view={currentView.value} />
     );
   },
 });

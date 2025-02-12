@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.48.3 (2025-02-05)
+
+Remove healthCheck method from the IAutoDockService interface
+
 ## 5.48.2 (2025-01-22)
 
 Async renderer caching improvement

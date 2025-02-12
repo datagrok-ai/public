@@ -21,5 +21,8 @@ export async function initTestStickyMeta() {
     name: 'ignore?', type: DG.TYPE.BOOL, 
   }, {
     name: 'ignoreReason', type: DG.TYPE.STRING,
-  }]);
+  }, {
+    name: 'lastResolved', type: DG.TYPE.DATE_TIME,
+  }
+  ]);
 }

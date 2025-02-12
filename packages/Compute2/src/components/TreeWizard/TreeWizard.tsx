@@ -55,6 +55,10 @@ export const TreeWizard = Vue.defineComponent({
       type: String,
       required: true,
     },
+    modelName: {
+      type: String,
+      required: true,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -110,7 +114,7 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const chosenStepUuid = Vue.ref<string | undefined>(undefined);
+    const chosenStepUuid = Vue.ref<string | undefined>();
 
     const goNextStep = () => {
       if (chosenStepUuid.value == null || treeState.value == null)
@@ -120,7 +124,7 @@ export const TreeWizard = Vue.defineComponent({
         chosenStepUuid.value = nextData.state.uuid;
     };
 
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     const setViewName = (name: string = '') => {
       if (props.view)
@@ -140,7 +144,7 @@ export const TreeWizard = Vue.defineComponent({
         paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
-      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '');
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
     const isLoading = Vue.ref(false);
@@ -247,53 +251,69 @@ export const TreeWizard = Vue.defineComponent({
       await dockRef.value.useLayout(defaultState.layout);
     };
 
-    const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1));
+    const modelName = Vue.computed(() => props.modelName);
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
-        setViewName(providerFuncName.value);
+        setViewName(modelName.value);
         return;
       }
 
       const {id, title, started} = metadata;
       if (id) searchParams.id = id;
-      if (title) setViewName(`${providerFuncName.value} - ${title}`);
-      else if (started) setViewName(`${providerFuncName.value} - ${started}`);
-      else setViewName(providerFuncName.value);
+      if (title) setViewName(`${modelName.value} - ${title}`);
+      else if (started) setViewName(`${modelName.value} - ${started}`);
+      else setViewName(modelName.value);
     });
 
-    Vue.watch(treeState, () => {
-      if (!treeState.value || globalThis.initialURLHandled) return;
+    let pendingStepPath: string | null = null;
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        const nodeWithPath = findTreeNodeByPath(
+          pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
+          treeState,
+        );
+        pendingStepPath = null;
+        if (nodeWithPath?.state) {
+          chosenStepUuid.value = nodeWithPath.state.uuid;
+          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
+          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
+        }
+        return;
+      }
+
+      if (globalThis.initialURLHandled)
+        return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
       if (loadingId) {
-        loadPipeline(loadingId);
         globalThis.initialURLHandled = true;
+        pendingStepPath = startUrl.searchParams.get('currentStep');
+        loadPipeline(loadingId);
       }
-    });
+    }, { immediate: true });
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value) return null;
-
-      const node = chosenStepUuid.value ?
-        findNodeWithPathByUuid(chosenStepUuid.value, treeState.value): undefined;
-      if (node) return node;
-
-      if (searchParams.currentStep) {
-        chosenStepUuid.value = findTreeNodeByPath(
-          searchParams.currentStep.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
-          treeState.value,
-        )?.state.uuid;
-
+      if (!treeState.value)
         return null;
-      }
 
-      return {state: treeState.value, pathSegments: [0]};
+      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    Vue.watch(chosenStep, (newStep) => {
+      if (newStep)
+        searchParams.currentStep = newStep.pathSegments.join(' ');
+      else
+        searchParams.currentStep = undefined;
+    }, { immediate: true });
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -321,10 +341,6 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-    Vue.watch(chosenStep, (newStep) => {
-      if (newStep)
-        searchParams.currentStep = newStep.pathSegments.join(' ');
-    });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
@@ -341,17 +357,17 @@ export const TreeWizard = Vue.defineComponent({
       }
     }, {immediate: true});
 
-    const isTreeReportable = Vue.computed(() => {
-      return Object.values(states.calls)
-        .map((state) => state?.isOutputOutdated)
-        .every((isOutdated) => isOutdated === false);
-    });
-
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.has(stat.data.uuid))
         stat.open = false;
       return stat;
     };
+
+    const isTreeReportable = Vue.computed(() => {
+      return Object.values(states.calls)
+        .map((state) => state?.isOutputOutdated)
+        .every((isOutdated) => isOutdated === false);
+    });
 
     const treeHidden = Vue.ref(false);
     const inspectorHidden = Vue.ref(true);
@@ -469,7 +485,7 @@ export const TreeWizard = Vue.defineComponent({
           /> }
           {isTreeReady.value &&
             treeState.value &&
-            (hasSubtreeFixableInconsistencies(treeState.value, states.consistency) ?
+            (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
               <IconFA
                 name='sync'
                 tooltip={'Rerun tree with consistent values'}
@@ -564,7 +580,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
