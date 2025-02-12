@@ -423,119 +423,6 @@ export const setGridColumnsRendering = (grid: DG.Grid) => {
   grid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
 };
 
-export const styleHistoryGrid = (
-  grid: DG.Grid,
-  isCompactMode: boolean,
-  showInputsOnCards: boolean,
-  showMetadataOnCards: boolean,
-  func?: DG.Func,
-  useOptions?: boolean,
-) => {
-  if (useOptions) {
-    grid.setOptions({
-      'showCurrentRowIndicator': true,
-      'showCurrentCellOutline': false,
-      'allowEdit': false,
-      'allowBlockSelection': false,
-      'showRowHeader': false,
-      'showColumnLabels': !isCompactMode,
-      'extendLastColumn': isCompactMode,
-    });
-  }
-
-  grid.sort([STARTED_COLUMN_NAME], [false]);
-
-  for (let i = 0; i < grid.columns.length; i++) {
-    const col = grid.columns.byIndex(i);
-    if (col && col.column?.type === DG.TYPE.DATE_TIME)
-      col.format = 'MMM d, h:mm tt';
-  }
-
-  setGridColumnsRendering(grid);
-
-  if (isCompactMode) {
-    grid.columns.setVisible([ID_COLUMN_NAME]);
-
-    grid.props.rowHeight = 70;
-    grid.invalidate();
-  } else {
-    grid.props.rowHeight = 28;
-
-    const tagCol = grid.dataFrame.getCol(TAGS_COLUMN_NAME);
-    grid.columns.setVisible([
-      EXP_COLUMN_NAME,
-      FAVORITE_COLUMN_NAME,
-      ACTIONS_COLUMN_NAME,
-      ...showMetadataOnCards ? [STARTED_COLUMN_NAME]: [],
-      ...showMetadataOnCards ? [AUTHOR_COLUMN_NAME]: [],
-      ...showMetadataOnCards && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-      ...showMetadataOnCards ? [TITLE_COLUMN_NAME]: [],
-      ...showMetadataOnCards ? [DESC_COLUMN_NAME]: [],
-      ...showInputsOnCards && func ? getVisibleProps(func)
-        .map((key) => {
-          const param = func.inputs.find((prop) => prop.name === key) ??
-          func.outputs.find((prop) => prop.name === key);
-
-          if (param)
-            return param.caption ?? getColumnName(param.name);
-          else
-            return getColumnName(key);
-        }): [],
-    ]);
-  }
-};
-
-export const styleHistoryFilters = (
-  filters: DG.Viewer<DG.IFiltersSettings>,
-  showMetadataColumns: boolean,
-  showInputColumns: boolean,
-  isHistory: boolean,
-  func?: DG.Func,
-) => {
-  const currentDf = filters.dataFrame;
-  const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
-
-  const columnNames = [
-    ...showMetadataColumns &&
-    currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
-    ...showMetadataColumns &&
-    (currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
-      [FAVORITE_COLUMN_NAME]: [],
-    ...showMetadataColumns ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
-    ...showMetadataColumns &&
-    currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
-    ...showMetadataColumns &&
-    tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-    ...showMetadataColumns &&
-    currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
-    ...showMetadataColumns &&
-    currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
-    ...func && showInputColumns ? getVisibleProps(func)
-      .map((key) => {
-        const param = func.inputs.find((prop) => prop.name === key) ??
-      func.outputs.find((prop) => prop.name === key);
-
-        if (param)
-          return param.caption ?? getColumnName(param.name);
-        else
-          return getColumnName(key);
-      })
-      .filter((columnName) => {
-        return !isHistory ||
-        currentDf.getCol(columnName).categories.length > 1;
-      })
-      .map((columnName) => columnName): [],
-  ];
-  if (columnNames.length > 0) {
-    ui.setDisplay(filters.root, true);
-    filters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFilter': true});
-  } else
-    ui.setDisplay(filters.root, false);
-
-
-  return columnNames.length > 0;
-};
-
 export const getFavStorageName = (func: DG.Func) => {
   return `${storageName}_${func.name}_Fav`;
 };
@@ -632,12 +519,6 @@ export const getRunsDfFromList = async (
   return newRunsGridDf;
 };
 
-export const showHelpWithDelay = async (helpContent: string) => {
-  grok.shell.windows.help.visible = true;
-  // Workaround to deal with help panel bug
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  grok.shell.windows.help.showHelp(ui.markdown(helpContent));
-};
 
 const helpCache = new DG.LruCache<string, string>();
 
@@ -669,66 +550,12 @@ export const hasContextHelp = (func: DG.Func) => {
   return !!(func.options['help'] as string | undefined);
 };
 
-export const categoryToDfParamMap = (func: DG.Func) => {
-  const map = {
-    inputs: {} as Record<string, DG.Property[]>,
-    outputs: {} as Record<string, DG.Property[]>,
-  };
-
-  func.inputs
-    .filter((inputProp) =>
-      inputProp.propertyType === DG.TYPE.DATA_FRAME &&
-      getPropViewers(inputProp).config.length !== 0,
-    )
-    .forEach((p) => {
-      const category = p.category === 'Misc' ? 'Input': p.category;
-
-      if (map.inputs[category])
-        map.inputs[category].push(p);
-      else
-        map.inputs[category] = [p];
-    });
-
-  func.outputs
-    .forEach((p) => {
-      const category = p.category === 'Misc' ? 'Output': p.category;
-
-      if (p.propertyType === DG.TYPE.DATA_FRAME &&
-        getPropViewers(p).config.length === 0) return;
-
-      if (map.outputs[category])
-        map.outputs[category].push(p);
-      else
-        map.outputs[category] = [p];
-    });
-
-  return map;
-};
 
 export const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
   ui.setUpdateIndicator(element, updating);
   const updatingLabel = element.querySelector('.d4-update-shadow .ui-label');
   if (updating && text && updatingLabel)
     updatingLabel.textContent = text;
-};
-
-export const createPartialCopy = async (call: DG.FuncCall) => {
-  const previousId = call.id;
-  // grok.functions.eval creates an ID.
-  // So we should control it and overwrite ID by null again if necessary.
-
-  const callCopy: DG.FuncCall = DG.Func.byName(call.func.nqName)
-    //@ts-ignore
-    .prepare([...call.inputs].reduce((acc, [key, val]) => {
-      acc[key] = val;
-      return acc;
-    }, {} as Record<string, any>));
-  call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
-
-  //@ts-ignore
-  if (!previousId) callCopy.id = null;
-
-  return callCopy;
 };
 
 export const isRunningOnInput = (func: DG.Func) => {
