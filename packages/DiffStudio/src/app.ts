@@ -23,7 +23,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 
-  import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
+import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
@@ -1123,7 +1123,7 @@ export class DiffStudio {
     }
   } // clearSolution
 
-  /** Return form with model inputs */
+  /** Generate model inputs */
   private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
