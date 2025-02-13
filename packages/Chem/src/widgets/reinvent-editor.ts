@@ -19,6 +19,9 @@ export class ReinventBaseEditor {
       const dlg = ui.dialog({title:'Manage files'})
         .add(ui.fileBrowser({path: TARGET_PATH}).root)
         .onOK(async () => await this.initOptimizeInput());
+      
+      dlg.root.addEventListener('dragover', (event) => event.preventDefault());
+      dlg.root.addEventListener('drop', (event) => event.preventDefault());
       dlg.show();
     }, 'Manage folders (add/rename/delete)');
     this.folderIcon.style.marginLeft = '10px';
