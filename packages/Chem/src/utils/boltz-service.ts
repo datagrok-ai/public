@@ -14,10 +14,11 @@ export class BoltzService {
       .map(folder => folder.name);
   }
 
-  static async runBoltz(config: string): Promise<string> {
+  static async runBoltz(config: string, msa: string): Promise<string> {
     const container = await grok.dapi.docker.dockerContainers.filter('boltz').first();
     const body = {
-      yaml: config
+      yaml: config,
+      ...(msa && { msa: msa }),
     };
 
     const url = 'http://127.0.0.1:8001/predict';
@@ -73,6 +74,12 @@ export class BoltzService {
   
   static async docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
     const configFile = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
+    const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
+    
+    let msaFile;
+    if (msa)
+      msaFile = await grok.dapi.files.readAsText(msa.fullPath);
+    
     const existingConfig = yaml.load(await configFile.readAsString()) as any;
     let resultDf = DG.DataFrame.create();
 
@@ -93,7 +100,7 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: updatedConfig }));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
     }
 
