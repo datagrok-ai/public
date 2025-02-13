@@ -1241,7 +1241,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.molColumn?.dataFrame.selection.andNot(bitset);
   }
 
-  updateFilters(triggerRequestFilter = true, callback?: () => void): void {
+  updateFilters(triggerRequestFilter = true): void {
     if (this.molColumn === null)
       return;
 
@@ -1265,21 +1265,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.checkedScaffolds = [];
     removeElementByColor(this.colorCodedScaffolds, '');
 
-    const asyncTasks = checkedNodes.map((node) => this.processNode(node, tmpBitset));
+    for (const node of checkedNodes)
+      this.processNode(node, tmpBitset);
 
-    Promise.all(asyncTasks).then(() => {
-      this.updateTag();
-      if (triggerRequestFilter)
-        this.dataFrame.rows.requestFilter();
-      this.updateUI();
-  
-      callback?.();
-    });
+    this.updateTag();
+    if (triggerRequestFilter)
+      this.dataFrame.rows.requestFilter();
+    this.updateUI();
   }
 
-  private async processNode(node: DG.TreeViewNode, tmpBitset: DG.BitSet): Promise<void> {
-    await this.waitForLoaderToRemove(node);
-
+  private processNode(node: DG.TreeViewNode, tmpBitset: DG.BitSet): void {
     const nodeBitset = value(node).bitset;
     const molStr = value(node).smiles;
     let isNot = false;
