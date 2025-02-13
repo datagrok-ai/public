@@ -37,7 +37,7 @@ export class BoltzService {
     const confidenceCol = df.columns.byName('confidence_score');
       
     pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
-    confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
+    confidenceCol.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
     confidenceCol.meta.format = '0.000';
     confidenceCol.setTag(DG.TAGS.DESCRIPTION, BOLTZ_PROPERTY_DESCRIPTIONS['confidence_score']);
   }
