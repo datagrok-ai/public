@@ -81,6 +81,7 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
+import { ReinventBaseEditor, TARGET_PATH } from './widgets/reinvent-editor';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -119,8 +120,6 @@ export function getMolFileHandler(molString: string): MolfileHandlerBase {
 
 export const _package: DG.Package = new DG.Package();
 export let _properties: any;
-
-export const TARGET_PATH = 'System:AppData/Chem/reinvent';
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
@@ -2081,13 +2080,6 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   table.columns.add(col);
 }
 
-//name: getFolder
-//output: list<string> folders
-export async function getFolder(): Promise<string[]> {
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
-}
-
 async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
   const zip = new JSZip();
   folder.forEach(file => {
@@ -2096,6 +2088,22 @@ async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
 
   const zipBlob = await zip.generateAsync({ type: 'blob' });
   return zipBlob;
+}
+
+//name: ReinventEditor
+//tags: editor
+//input: funccall call
+export function reinventEditor(call: DG.FuncCall): void {
+  const funcEditor = new ReinventBaseEditor();
+  ui.dialog({title: 'Reinvent'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        ligand: params.ligand,
+        optimize: params.optimize
+      }).call(true);
+    }).show();
 }
 
 //name: runReinvent
@@ -2127,8 +2135,9 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
 //top-menu: Chem | Generate molecules...
 //name: Reinvent
 //tags: HitDesignerFunction
-//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
-//input: string optimize {choices: Chem: getFolder} [Optimization criteria]
+//input: string ligand
+//input: string optimize
+//editor: Chem: ReinventEditor
 //output: dataframe result
 export async function reinvent(
   ligand: string, optimize: string
