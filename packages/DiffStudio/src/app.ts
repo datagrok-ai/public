@@ -35,6 +35,8 @@ import '../css/app-styles.css';
 
 import {_package} from './package';
 
+import {Optimizer} from './fitting';
+
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
 
@@ -1421,6 +1423,9 @@ export class DiffStudio {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.tryToSolve(ivp);
+
+      console.log('Applicable in workers: ', Optimizer.isApplicable(ivp));
+
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
       await FittingView.fromEmpty(script, {
