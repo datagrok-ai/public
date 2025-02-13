@@ -82,7 +82,7 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
-import { BoltzService } from './utils/boltz-service';
+import { BoltzService } from '../../Docking/src/utils/boltz-service';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -124,7 +124,6 @@ export let _properties: any;
 
 export const TARGET_PATH = 'System:AppData/Chem/targets';
 export const ADME_CONFIG_PATH = 'System:AppData/Chem/adme_configs';
-export const BOLTZ_CONFIG_PATH = 'System:AppData/Chem/boltz';
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
@@ -2205,55 +2204,4 @@ function generateStickyDf(role: string): DG.DataFrame {
   const dateCol = lineageDf.columns.addNewString('Date');
   dateCol.set(0, new Date().toLocaleString());
   return lineageDf;
-}
-
-//name: getBoltzConfigFolders
-//output: list<string> configFiles
-export async function getBoltzConfigFolders(): Promise<string[]> {
-  return await BoltzService.getBoltzConfigFolders();
-}
-
-//name: runBoltz
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-//input: string config
-//input: string msa
-//output: string s
-export async function runBoltz(config: string, msa: string) {
-  return await BoltzService.runBoltz(config, msa);
-}
-
-//top-menu: Bio | Folding | Boltz...
-//name: Folding
-//input: dataframe df 
-//input: column sequences {semType: Macromolecule}
-//output: dataframe result
-export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
-  return await BoltzService.folding(df, sequences);
-}
-
-//top-menu: Chem | Docking | Boltz...
-//name: Docking
-//input: dataframe df
-//input: column molecules {semType: Molecule}
-//input: string config {choices: Chem: getBoltzConfigFolders} [Folder with config files for docking]
-//output: dataframe result
-export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
-  return await BoltzService.docking(df, molecules, config);
-}
-
-//name: Boltz-1
-//tags: panel, chem, widgets
-//input: semantic_value molecule { semType: Molecule3D }
-//condition: Chem:isApplicable(molecule)
-//output: widget result
-export async function boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  return await BoltzService.boltzWidget(molecule);
-}
-
-//name: isApplicable
-//input: string molecule
-//output: bool result
-export function isApplicable(molecule: string): boolean {
-  return molecule.includes('confidence_score');
 }

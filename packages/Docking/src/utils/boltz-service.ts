@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as yaml from 'js-yaml';
-import $ from 'cash-dom';
-import { BOLTZ_CONFIG_PATH } from '../package';
+import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, Config } from './constants';
+import { getFromPdbs, prop } from './utils';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -39,7 +39,7 @@ export class BoltzService {
     pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
     confidenceCol.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
     confidenceCol.meta.format = '0.000';
-    confidenceCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS['confidence_score']);
+    confidenceCol.setTag(DG.TAGS.DESCRIPTION, BOLTZ_PROPERTY_DESCRIPTIONS['confidence_score']);
   }
   
   static async folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
@@ -61,7 +61,7 @@ export class BoltzService {
       });
   
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: yamlString, msa: '' }));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Docking:runBoltz', { config: yamlString, msa: '' }));
       resultDf.append(result, true);
     }
   
@@ -116,7 +116,7 @@ export class BoltzService {
   
   static async boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
     const value = molecule.value;
-    const boltzResults: DG.DataFrame = getFromPdbs(molecule);
+    const boltzResults: DG.DataFrame = getFromPdbs(molecule, true);
     const widget = new DG.Widget(ui.div([]));
   
     const targetViewer = await molecule.cell.dataFrame.plot.fromType('Biostructure', {
@@ -131,7 +131,7 @@ export class BoltzService {
     for (let i = 0; i < boltzResults!.columns.length; ++i) {
       const columnName = boltzResults!.columns.names()[i];
       const propertyCol = boltzResults!.col(columnName);
-      map[columnName] = prop(molecule, propertyCol!, result);
+      map[columnName] = prop(molecule, propertyCol!, result, BOLTZ_PROPERTY_DESCRIPTIONS);
     }
     result.appendChild(ui.tableFromMap(map));
     widget.root.append(result);
@@ -139,100 +139,3 @@ export class BoltzService {
     return widget;
   }
 }
-
-export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
-  const addColumnIcon = ui.iconFA('plus', () => {
-    const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
-    df.columns.add(propertyCol);
-  }, `Calculate ${propertyCol.name} for the whole table`);
-
-  ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-  
-  const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
-}
-
-export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
-  const col = pdb.cell.column;
-  const resultDf = DG.DataFrame.create(col.length);
-  
-  for (let idx = 0; idx < col.length; idx++) {
-    const pdbValue = col.get(idx);
-    const remarkRegex = /REMARK\s+\d+\s+([^\d]+?)\s+([-\d.]+)/g;
-    let match;
-  
-    while ((match = remarkRegex.exec(pdbValue)) !== null) {
-      const colName = match[1].trim();
-      const value = parseFloat(match[2].trim());
-        
-      let resultCol = resultDf.columns.byName(colName);
-      if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
-        
-      resultDf.set(colName, idx, value);
-    }
-  }
-
-  return resultDf;
-}
-
-export const PROPERTY_DESCRIPTIONS: { [colName: string]: string } = {
-  'confidence_score': 'Overall prediction quality score',
-  'ptm': 'Global fold similarity measure',
-  'iptm': 'Accuracy of chain interactions',
-  'ligand_iptm': 'Confidence in ligand binding',
-  'protein_iptm': 'Confidence in protein interactions',
-  'complex_plddt': 'Average per-residue confidence score',
-  'complex_iplddt': 'Confidence in chain interfaces',
-  'complex_pde': 'Uncertainty in chain positioning',
-  'complex_ipde': 'Uncertainty in interface docking',
-  'chains_ptm': 'Confidence per individual chain',
-  'pair_chains_iptm': 'Interaction accuracy between chains'
-};
-
-type SequenceModification = {
-  position: number;  // Index of the residue, starting from 1
-  ccd: string;       // CCD code of the modified residue
-};
-
-type ProteinEntity = {
-  id: string | string[];  // Chain ID or multiple Chain IDs for identical entities
-  sequence: string;       // Sequence (only for protein, dna, rna)
-  msa?: string;            // MSA Path (only for protein)
-  modifications?: SequenceModification[];  // List of modifications
-};
-
-type LigandEntity = {
-  id: string | string[];  // Chain ID or multiple Chain IDs for identical entities
-  smiles: string;         // SMILES (only for ligands)
-  ccd: string;            // CCD (only for ligands)
-};
-
-type SequenceEntity = {
-  protein?: ProteinEntity;  // Protein entity with sequence and msa
-  ligand?: LigandEntity;    // Ligand entity with smiles and ccd
-};
-
-type Config = {
-  version: number;
-  sequences: SequenceEntity[];  // Array of sequence entities, each with an entity type
-  constraints?: Constraint[];   // Optional constraints (can be empty)
-};
-
-type Constraint = {
-  bond?: {
-    atom1: [string, number, string];  // [CHAIN_ID, RES_IDX, ATOM_NAME]
-    atom2: [string, number, string];  // [CHAIN_ID, RES_IDX, ATOM_NAME]
-  };
-  pocket?: {
-    binder: string;                    // CHAIN_ID for the binder
-    contacts: [string, number][];      // List of [CHAIN_ID, RES_IDX] for contacts
-  };
-};
