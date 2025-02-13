@@ -1255,12 +1255,18 @@ export function toxicity(smiles: DG.SemanticValue): DG.Widget {
 //output: column result
 export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: DG.chem.Notation): Promise<DG.Column> {
   let col: DG.Column;
+  let newColName = `${molecule.name}_${targetNotation}`;
+  try {
+    if (!!molecule.dataFrame?.columns)
+      newColName = molecule.dataFrame.columns.getUnusedName(newColName);
+  } catch (e) {}
+
   try {
     const res = await convertNotationForColumn(molecule, targetNotation);
-    col = DG.Column.fromStrings(`${molecule.name}_${targetNotation}`, res);
+    col = DG.Column.fromStrings(newColName, res);
     col.semType = DG.SEMTYPE.MOLECULE;
   } catch (e: any) {
-    col = DG.Column.string(`${molecule.name}_${targetNotation}`, molecule.length).init((_) => e?.message);
+    col = DG.Column.string(newColName, molecule.length).init((_) => e?.message);
   }
   return col;
 }
@@ -1296,7 +1302,8 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
       molecules.set(i, res[i], false);
     molecules.meta.units = units;
   } else {
-    const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
+    const colName = data.columns.getUnusedName(`${molecules.name}_${targetNotation}`);
+    const col = DG.Column.fromStrings(colName, res);
     col.meta.units = units;
     col.semType = DG.SEMTYPE.MOLECULE;
     if (!join)
