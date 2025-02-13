@@ -205,9 +205,10 @@ export class SubstructureFilter extends DG.Filter {
     };
     //this fix is required for Marvin JS sync between filter panel and hamburger menu
     ui.tools.waitForElementInDom(this.sketcher.root).then(async () => {
-      let inplaceSketcher = false;
+      let inplaceSketcher = !this.root.closest('.d4-filter');
       try {
-        await awaitCheck(() => this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL);
+        if (!inplaceSketcher)
+          await awaitCheck(() => this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL, '', 1500);
       } catch (e) {
         inplaceSketcher = true;
       }

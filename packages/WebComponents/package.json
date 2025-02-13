@@ -8,7 +8,7 @@
   },
   "description": "WebComponents runtime code",
   "dependencies": {
-    "@datagrok-libraries/dock-spawn-dg": "^0.0.2",
+    "@datagrok-libraries/dock-spawn-dg": "file:../../libraries/dock-spawn-dg",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/webcomponents": "../../libraries/webcomponents",
     "cash-dom": "^8.1.4",

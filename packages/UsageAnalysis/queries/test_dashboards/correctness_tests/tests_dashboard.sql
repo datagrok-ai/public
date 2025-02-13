@@ -1,7 +1,7 @@
 --name: TestsDashboard
 --friendlyName: UA | Tests | Tests
 --connection: System:Datagrok
---input: string instanceFilter {nullable: true}
+--input: string instanceFilter = '' {choices: ['', 'dev', 'release', 'public']}
 --input: int lastBuildsNum = 5
 --input: string packageFilter {nullable: true}
 --input: bool showNotRun = false {optional: true}
