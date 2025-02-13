@@ -61,7 +61,7 @@ with chemical data:
   * [Substructure search](#substructure-search--filtering).
   * [Chemical space analysis](#chemical-space).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
-  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](../matched-molecular-pairs.md).
+  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](./matched-molecular-pairs.md).
   <!--* [ADME/Tox calculators](#admetox).-->
   * Property and descriptor [calculators](#calculators).
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for

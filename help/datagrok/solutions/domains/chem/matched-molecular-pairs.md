@@ -1,21 +1,51 @@
-### Matched molecular pairs
+# Matched molecular pairs
 
-The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
-identify structural transformation rules that can be used to improve potency and
-ADMET properties during lead optimization. This tool automatically detects
-matched molecule pairs in your dataset and calculates the difference in property
-or activity values between them. The mean change in property or activity values
-across your dataset represents the expected size of the change when the
-transformation is applied to a molecule.
 
-The results of the MMP analysis are presented in a series of tables and
-visualizations, allowing you to:
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
 
-* View fragments and substitutions in your dataset 
-* Analyze the effect of specific fragments on the chosen activity or property of
-  a lead compound
-* Generate new molecules based on the transformations present in your dataset
-  and view their predicted properties and activities.
+The **Matched Molecular Pairs** (MMP) tool is a powerful cheminformatics method for analyzing structural transformations within chemical datasets.
+It enables chemists and computational researchers to identify small,
+well-defined molecular modifications and quantify their impact on key properties such
+as potency, solubility, permeability, and/or ADMET characteristics.
+
+MMP analysis is particularly valuable in lead optimization, where systematic exploration of chemical space can guide the design of more effective drug candidates.
+By studying how molecular fragments influence activity, the tool helps users make data-driven decisions when selecting modifications to improve lead compounds.
+
+Traditionally, lead optimization relies on trial and error, guided by medicinal chemistry intuition.
+MMP analysis enhances this process by providing quantitative insights into structure-activity relationships (SAR), helping to answer key questions:
+
+* Which molecular transformations are most frequently associated with improved activity?
+* Does replacing a specific fragment increase or decrease potency?
+* Are there consistent trends in physicochemical properties across multiple transformations?
+* Can we predict the impact of a given substitution before synthesizing a new molecule?
+
+By leveraging a data-driven approach, the MMP tool provides a systematic way to explore molecular modifications, ensuring that optimization efforts are based on real-world patterns rather than guesswork.
+
+## How It Works
+
+1. **Pair Identification** – The algorithm scans the dataset to detect matched molecular pairs, defined as molecules that differ by a single small transformation while having a common core.
+2. **Activity & Property Calculation** – The difference in biological activity or physicochemical properties between each pair is calculated.
+3. **Statistical Aggregation** – Changes across multiple pairs are averaged to identify consistent transformation trends.
+4. **Visualization & Exploration** – Users can interactively explore the results through various tables, chemical space plots and other graphical representations.
+5. **Molecule Generation** – Transformations identified in the dataset can be applied to new molecules, predicting their potential properties.
+
+## From Analysis to Action
+
+MMP analysis not only reveals how structural modifications impact molecular properties but also provides a framework for making informed optimization decisions.
+By systematically examining transformations, researchers can:
+
+* Identify key substitution patterns that lead to increased activity or improved ADMET/other properties.
+* Uncover structure-property relationships that guide rational lead optimization.
+* Generate and evaluate new compounds, leveraging known transformations to design better drug candidates.
+
+With its interactive visualizations and predictive capabilities, the MMP tool transforms raw chemical data into actionable insights,
+helping scientists refine molecular designs with greater confidence and efficiency.
+Whether optimizing a single lead or exploring large compound libraries, MMP analysis provides the clarity needed to make smarter, faster decisions in drug discovery.
+
+![MMP Demo](img/mmp-full.gif)
 
 <details>
 <summary>How to use</summary>
@@ -113,6 +143,8 @@ potential transformation, providing:
 * Whether new molecule already exists in the initial dataset or newly generated
 
 In the **Context panel** there is scatter plot showing observed vs predicted values for each activity for molecules from initial dataset.
+
+![MMP Generations](img/mmp-generations.gif)
 
 </TabItem>
 </Tabs>
