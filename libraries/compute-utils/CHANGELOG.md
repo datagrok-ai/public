@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.40.5 (2025-02-28)
+
+- FittingView: in-webworker parameters optimization of Diff Studio models
+
 ## 1.40.4 (2025-01-28)
 
 - ModelHandler: help disable sync

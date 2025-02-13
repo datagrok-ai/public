@@ -19,6 +19,9 @@ import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
+import {IVP} from '@datagrok/diff-studio-tools';
+import {isWorkerApplicable} from './fitting/diff-studio/utils';
+
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
@@ -395,16 +398,20 @@ export class FittingView {
 
   private fittingSettingsDiv = ui.divV([]);
 
+  private ivp: IVP | undefined;
+
   static async fromEmpty(
     func: DG.Func,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      ivp?: IVP,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      ivp: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -431,11 +438,13 @@ export class FittingView {
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      ivp?: IVP,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      ivp: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -501,6 +510,8 @@ export class FittingView {
       this.updateRunIconDisabledTooltip('Select inputs for fitting');
       this.runIcon.classList.add('fas');
     });
+
+    this.ivp = options.ivp;
   } // constructor
 
   /** Check fiiting applicability to the function */
@@ -1009,6 +1020,11 @@ export class FittingView {
       }
 
       let optResult: OptimizationResult;
+
+      if (this.ivp !== undefined) {
+        console.log(this.ivp);
+        console.log(isWorkerApplicable(this.ivp));
+      }
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD)

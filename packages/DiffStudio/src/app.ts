@@ -27,15 +27,13 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow, removeTitle} from './utils';
+  getMaxGraphsInFacetGridRow, removeTitle, strToVal} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
 import '../css/app-styles.css';
 
 import {_package} from './package';
-
-import {Optimizer} from './fitting';
 
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
@@ -187,7 +185,7 @@ const completions = [
   {label: `${CONTROL_EXPR.INPUTS}: `, type: 'keyword', info: INFO.INPUS},
 ];
 
-/** Control expressions completion utilite */
+/** Control expressions completion utility */
 function contrCompletions(context: any) {
   const before = context.matchBefore(/[#]\w*/);
 
@@ -212,12 +210,6 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
     showAggrSelectors: false,
   };
 }
-
-/**  String-to-value */
-const strToVal = (s: string) => {
-  const num = Number(s);
-  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
-};
 
 /** Browse properties */
 type Browsing = {
@@ -1423,13 +1415,11 @@ export class DiffStudio {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.tryToSolve(ivp);
-
-      console.log('Applicable in workers: ', Optimizer.isApplicable(ivp));
-
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        ivp: ivp,
       });
     } catch (err) {
       this.processError(err);
