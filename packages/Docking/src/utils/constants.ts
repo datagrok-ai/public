@@ -29,20 +29,20 @@ export const AUTODOCK_PROPERTY_DESCRIPTIONS: {[colName: string]: string} = {
   'unbound systems (4)': 'Unbound System\s Energy' 
 }
 
-export const BOLTZ_CONFIG_PATH = 'System:AppData/Chem/boltz';
+export const BOLTZ_CONFIG_PATH = 'System:AppData/Docking/boltz';
 
 export const BOLTZ_PROPERTY_DESCRIPTIONS: { [colName: string]: string } = {
-  'confidence_score': 'Overall prediction quality score',
-  'ptm': 'Global fold similarity measure',
-  'iptm': 'Accuracy of chain interactions',
-  'ligand_iptm': 'Confidence in ligand binding',
-  'protein_iptm': 'Confidence in protein interactions',
-  'complex_plddt': 'Average per-residue confidence score',
-  'complex_iplddt': 'Confidence in chain interfaces',
-  'complex_pde': 'Uncertainty in chain positioning',
-  'complex_ipde': 'Uncertainty in interface docking',
-  'chains_ptm': 'Confidence per individual chain',
-  'pair_chains_iptm': 'Interaction accuracy between chains'
+  'confidence_score': 'Aggregated score used to sort the predictions, corresponds to 0.8 * complex_plddt + 0.2 * iptm (ptm for single chains)',
+  'ptm': 'Predicted TM score for the complex',
+  'iptm': 'Predicted TM score when aggregating at the interfaces',
+  'ligand_iptm': 'ipTM but only aggregating at protein-ligand interfaces',
+  'protein_iptm': 'ipTM but only aggregating at protein-protein interfaces',
+  'complex_plddt': 'Average pLDDT score for the complex',
+  'complex_iplddt': 'Average pLDDT score when upweighting interface tokens',
+  'complex_pde': 'Average PDE score for the complex',
+  'complex_ipde': 'Average PDE score when aggregating at interfaces ',
+  'chains_ptm': 'Predicted (interface) TM score between each pair of chains',
+  'pair_chains_iptm': '# Predicted (interface) TM score between each pair of chains'
 };
   
 type SequenceModification = {
