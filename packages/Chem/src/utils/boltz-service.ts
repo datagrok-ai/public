@@ -61,7 +61,7 @@ export class BoltzService {
       });
   
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: yamlString }));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: yamlString, msa: '' }));
       resultDf.append(result, true);
     }
   
@@ -83,6 +83,7 @@ export class BoltzService {
     const existingConfig = yaml.load(await configFile.readAsString()) as any;
     let resultDf = DG.DataFrame.create();
 
+    const isSmiles = molecules.meta.units === DG.UNITS.Molecule.SMILES;
     for (let [index, molecule] of molecules.toList().entries()) {
       const sequences = existingConfig.sequences;
       const constraints = existingConfig.constraints;
@@ -92,9 +93,11 @@ export class BoltzService {
       const ligandBlock = {
         ligand: {
           id: [chainId],
-          smiles: molecule
-        }
-      };
+          smiles: isSmiles 
+            ? molecule 
+            : await grok.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles),
+        },
+      };      
   
       sequences.push(ligandBlock);
       constraints[0].pocket.binder = chainId;
