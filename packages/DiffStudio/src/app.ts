@@ -27,7 +27,8 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow, removeTitle} from './utils';
+  getMaxGraphsInFacetGridRow, removeTitle,
+  noModels} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -1954,7 +1955,6 @@ export class DiffStudio {
       if ((infoCol === null) || (isCustomCol === null))
         throw new Error('corrupted data file');
 
-
       for (let i = 0; i < size; ++i) {
         const name = infoCol.get(i);
 
@@ -1963,8 +1963,11 @@ export class DiffStudio {
         else
           this.appendMenuWithBuiltInModel(submenu, name);
       }
+
+      if (size < 1)
+        submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
     } catch (err) {
-      submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+      submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
     };
 
     submenu.endGroup();
@@ -2013,11 +2016,11 @@ export class DiffStudio {
     try {
       const myModelFiles = await getMyModelFiles();
       if (myModelFiles.length < 1)
-        submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+        submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
       else
         myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
     } catch (err) {
-      submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+      submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
     };
 
     submenu.endGroup();
