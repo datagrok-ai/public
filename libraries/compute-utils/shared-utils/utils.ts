@@ -12,6 +12,8 @@ import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import {ID_COLUMN_NAME} from '../shared-components/src/history-input';
 import {delay, getStarted} from '../function-views/src/shared/utils';
+import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {OUTPUT_OUTDATED_PATH} from '../reactive-tree-driver/src/runtime/funccall-utils';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
@@ -754,7 +756,8 @@ export const getFeature = (features: Record<string, boolean> | string[], feature
 };
 
 export const isIncomplete = (run: DG.FuncCall) => {
-  return !getStartedOrNull(run) || !run.id;
+  const isOutputOutdated = deserialize(run.options[OUTPUT_OUTDATED_PATH] ?? 'false');
+  return isOutputOutdated || !getStartedOrNull(run) || !run.id;
 };
 
 export const getStartedOrNull = (run: DG.FuncCall) => {
