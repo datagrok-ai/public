@@ -10,7 +10,7 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
-import { _demoDocking } from './demo/demo-docking';
+import { _demoBoltzFolding, _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 import { BoltzService } from './utils/boltz-service';
@@ -222,6 +222,13 @@ export async function demoDocking(): Promise<void> {
   await _demoDocking();
 }
 
+//name: Demo Boltz Folding
+//description: tbd
+//meta.demoPath: Bioinformatics | Boltz Folding
+export async function demoBoltzFolding(): Promise<void> {
+  await _demoBoltzFolding();
+}
+
 //name: Biology | AutoDock
 //tags: panel, widgets
 //input: semantic_value smiles { semType: Molecule }
@@ -318,7 +325,7 @@ export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<D
 //name: Docking
 //input: dataframe df
 //input: column molecules {semType: Molecule}
-//input: string config {choices: Chem: getBoltzConfigFolders} [Folder with config files for docking]
+//input: string config {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
 //output: dataframe result
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
   return await BoltzService.docking(df, molecules, config);

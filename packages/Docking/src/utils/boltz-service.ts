@@ -103,7 +103,7 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Chem:runBoltz', { config: updatedConfig, msa: msaFile}));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Docking:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
     }
 

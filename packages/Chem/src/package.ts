@@ -1867,13 +1867,6 @@ export async function demoScaffold(): Promise<void> {
   await _demoScaffoldTree();
 }
 
-//name: Demo Boltz Folding
-//description: tbd
-//meta.demoPath: Bioinformatics | Boltz Folding
-export async function demoBoltzFolding(): Promise<void> {
-  await _demoBoltzFolding();
-}
-
 //top-menu: Chem | Transform | Names To Smiles...
 //name: Names To Smiles
 //tags: Transform
