@@ -43,8 +43,6 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
 //input: funccall call
 //output: view result
 export async function CustomFunctionViewEditor(call: DG.FuncCall) {
-  await customElements.whenDefined('dg-markdown');
-
   const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
   setViewHierarchyData(call, view);
 
@@ -79,8 +77,6 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) {
 //input: funccall call
 //output: view result
 export async function RichFunctionViewEditor(call: DG.FuncCall) {
-  await customElements.whenDefined('dg-markdown');
-
   const view = new DG.ViewBase();
   setViewHierarchyData(call, view);
 
@@ -123,9 +119,6 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 
   const view = new DG.ViewBase();
   setViewHierarchyData(call, view);
-
-  await customElements.whenDefined('dg-markdown');
-
 
   const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
 

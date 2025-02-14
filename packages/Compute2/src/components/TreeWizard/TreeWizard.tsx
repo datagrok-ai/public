@@ -297,7 +297,7 @@ export const TreeWizard = Vue.defineComponent({
         pendingStepPath = startUrl.searchParams.get('currentStep');
         loadPipeline(loadingId);
       }
-    }, { immediate: true });
+    }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
@@ -313,7 +313,7 @@ export const TreeWizard = Vue.defineComponent({
         searchParams.currentStep = newStep.pathSegments.join(' ');
       else
         searchParams.currentStep = undefined;
-    }, { immediate: true });
+    }, {immediate: true});
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;

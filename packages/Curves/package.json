@@ -12,7 +12,7 @@
     "@datagrok-libraries/utils": "^4.3.2",
     "@types/wu": "^2.1.42",
     "cash-dom": "^8.0.0",
-    "datagrok-api": "^1.24.0-rc.2be4bc1364.44bc160fd",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "rxjs": "^6.5.5"
   },
