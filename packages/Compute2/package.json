@@ -16,7 +16,7 @@
     "@vueuse/core": "^11.1.0",
     "@vueuse/rxjs": "^11.1.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.24.0-rc.7a33d2c370.5322b7027",
     "dayjs": "=1.11.10",
     "fflate": "^0.8.2",
     "idb": "^8.0.1",
