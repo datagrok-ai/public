@@ -14,6 +14,8 @@ async function postprocess() {
     .avg('build_date')
     .first('flaking')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'status')
+    .add(DG.STR_AGG.CONCAT_UNIQUE, 'instance')
+    .add(DG.STR_AGG.CONCAT_UNIQUE, 'build_commit')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'result')
     .aggregate();
 
@@ -42,6 +44,8 @@ async function postprocess() {
 
   function replaceColumn(prefix, type, buildName, newType) {
     var col = pivot.columns.byName(prefix + type);
+    if (col != null)
+      col.name = buildName + newType;
     col?.setTag('friendlyName', buildName + newType);
   }
 
@@ -68,9 +72,9 @@ async function postprocess() {
     if (!meta.col('lastResolved').isNone(i)) {
       var failed = false;
       for (let j = 0; j < builds.length; j++) {
-        if (pivot.col(`${builds[j]} concat unique(status)`).isNone(i) || pivot.col(`${builds[j]} concat unique(status)`).get(i) != 'failed')
+        if (pivot.col(`${j + 1}`).isNone(i) || pivot.col(`${j+1}`).get(i) != 'failed')
             continue;
-        if (pivot.col(`${builds[j]} avg(build_date)`).isNone(i) || pivot.col(`${builds[j]} avg(build_date)`).get(i) > meta.col('lastResolved').get(i))
+        if (pivot.col(`${j+1} build_date`).isNone(i) || pivot.col(`${j+1} build_date`).get(i) > meta.col('lastResolved').get(i))
           failed = true;
       }
       pivot.col('needs_attention').set(i, failed);
