@@ -8,6 +8,7 @@ import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_SCAFFOLD_TAG, SubstructureSearchType} from '../constants';
+import { sketchersWarmUp } from './sketcher-tests';
 
 type FilterPanel = {
     filter: SubstructureFilter,
@@ -68,6 +69,8 @@ category('clone and layout tests', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    const funcs = DG.Func.find({tags: ['moleculeSketcher']});
+    await sketchersWarmUp(funcs);
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 
