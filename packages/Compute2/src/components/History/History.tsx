@@ -64,7 +64,7 @@ export const History = Vue.defineComponent({
           props.func.name,
           [{author: grok.shell.user}],
           {},
-          ['session.user', 'options']
+          ['session.user', 'options'],
         );
         historicalRuns.value.clear();
 
@@ -74,13 +74,13 @@ export const History = Vue.defineComponent({
         }, historicalRuns.value);
         Vue.triggerRef(historicalRuns);
       } catch (e: any) {
-        grok.shell.error(e)
+        grok.shell.error(e);
       } finally {
         isLoading.value = false;
       }
-    }
+    };
 
-    Vue.watch(() => props.func.id, () => refresh(), { immediate: true });
+    Vue.watch(() => props.func.id, () => refresh(), {immediate: true});
 
     const defaultDf = DG.DataFrame.fromColumns([
       DG.Column.bool(EXP_COLUMN_NAME, 0),

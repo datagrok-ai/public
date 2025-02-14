@@ -394,7 +394,7 @@ export const RichFunctionView = Vue.defineComponent({
         return;
       isFormValid.value = ev;
       emit('formValidationChanged', ev);
-    }
+    };
 
     return () => {
       let lastCardLabel = null as string | null;

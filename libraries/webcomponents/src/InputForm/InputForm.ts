@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
-import { distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 'rxjs/operators';
+import {distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 'rxjs/operators';
 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
@@ -18,14 +18,14 @@ export class InputForm extends HTMLElement {
 
     this.formChanges$.pipe(
       switchMap((form) => form.onInputChanged),
-      takeUntil(this.destroyed$)
+      takeUntil(this.destroyed$),
     ).subscribe((ev) => this.dispatchEvent(new CustomEvent('input-changed', {detail: ev})));
 
     this.formChanges$.pipe(
       switchMap((form) => form.onValidationCompleted.pipe(mapTo(form), startWith(form))),
       map((form) => form.isValid),
       distinctUntilChanged(),
-      takeUntil(this.destroyed$)
+      takeUntil(this.destroyed$),
     ).subscribe((ev) => this.dispatchEvent(new CustomEvent('validation-changed', {detail: ev})));
   }
 
