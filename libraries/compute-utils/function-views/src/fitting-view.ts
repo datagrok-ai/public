@@ -10,7 +10,8 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI} from './fitting/constants';
+import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
+  DIFF_STUDIO_OUTPUT_IDX} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
@@ -19,8 +20,10 @@ import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
-import {IVP} from '@datagrok/diff-studio-tools';
+import {IVP, IVP2WebWorker, getIvp2WebWorker} from '@datagrok/diff-studio-tools';
 import {isWorkerApplicable} from './fitting/diff-studio/utils';
+
+import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -399,6 +402,7 @@ export class FittingView {
   private fittingSettingsDiv = ui.divV([]);
 
   private ivp: IVP | undefined;
+  private ivpWW: IVP2WebWorker | undefined = undefined;
 
   static async fromEmpty(
     func: DG.Func,
@@ -512,6 +516,9 @@ export class FittingView {
     });
 
     this.ivp = options.ivp;
+
+    if (this.ivp !== undefined)
+      this.ivpWW = getIvp2WebWorker(this.ivp);
   } // constructor
 
   /** Check fiiting applicability to the function */
@@ -1027,9 +1034,26 @@ export class FittingView {
       }
 
       // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD)
-        optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
-      else
+      if (this.method === METHOD.NELDER_MEAD) {
+        if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
+          await getFittedParams(
+            this.loss,
+            this.ivp,
+            this.ivpWW,
+            this.nelderMeadSettings,
+            variedInputNames,
+            minVals,
+            maxVals,
+            inputs,
+            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].colName,
+            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
+            this.samplesCount,
+          );
+
+          return;
+        } else
+          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+      } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
       const allExtremums = optResult.extremums;
