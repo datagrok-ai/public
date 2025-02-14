@@ -10,7 +10,7 @@
 --input: string versionFilter {nullable: true}
 
 WITH last_builds AS (
-    select name, build_date
+    select name, build_date, commit
     from builds b
     -- todo: filter builds with cicd not-stresstest runs
     -- todo: filter only success builds
@@ -18,7 +18,7 @@ WITH last_builds AS (
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
   select name, ROW_NUMBER() OVER (ORDER BY build_date) AS build_index,
-         build_date
+         build_date, commit
   from last_builds b
 )
 select
@@ -28,6 +28,8 @@ select
   t.name as test,
   t.type, 
   r.date_time,
+  r.instance as instance,
+  b.commit as build_commit,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   COALESCE(r.params->>'flaking', 'false')::bool as flaking, 
   r.result,

@@ -50,14 +50,16 @@ async function postprocess() {
   pivot.columns.byName('test').semType = 'autotest';
 
   for (var i = 1; i <= builds.length; i++) {
-    var buildName = buildNames[i - 1];
-    replaceColumn(builds[i-1], ' concat unique(status)', i, '');
-    replaceColumn(builds[i-1], ' concat unique(result)', buildName, ' result');
+    var buildName = builds[i - 1];
+    replaceColumn(buildName, ' concat unique(status)', i, '');
+    replaceColumn(buildName, ' concat unique(result)', i, ' result');
+    replaceColumn(buildName, ' concat unique(instance)', i, ' instance');
+    replaceColumn(buildName, ' concat unique(build_commit)', i, ' commit');
     var colResult = pivot.columns.byName(i + ' concat unique(result)');
     if (colResult !== null)
       colResult.semType = 'stackTrace';
-    replaceColumn(builds[i-1], ' avg(build_date)', buildName, ' build_date');
-    replaceColumn(builds[i-1], ' avg(duration)', buildName, ' duration');
+    replaceColumn(buildName, ' avg(build_date)', i, ' build_date');
+    replaceColumn(buildName, ' avg(duration)', i, ' duration');
   }
 
   for (let i = 0; i < pivot.rowCount; i++) {
