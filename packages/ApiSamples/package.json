@@ -9,7 +9,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.4.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.24.0-rc.2be4bc1364.44bc160fd",
     "dayjs": "^1.11.13",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
