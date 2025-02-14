@@ -60,11 +60,11 @@ export type {
 
 import {
   ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
-  createCompView, createRFV, createPipeline,
+  createCompView, createRFV, createPipeline, createCFV
 } from './src/views';
 export {
   ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
-  createCompView, createRFV, createPipeline,
+  createCompView, createRFV, createPipeline, createCFV
 };
 
 export async function initComputeApi() {
