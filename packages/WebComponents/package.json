@@ -13,7 +13,7 @@
     "@datagrok-libraries/webcomponents": "../../libraries/webcomponents",
     "cash-dom": "^8.1.4",
     "css-loader": "^7.1.2",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.24.0-rc.2be4bc1364.44bc160fd",
     "dayjs": "=1.11.10",
     "style-loader": "^4.0.0"
   },
