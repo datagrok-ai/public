@@ -1,13 +1,16 @@
 /* eslint-disable valid-jsdoc */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {IVP, IVP2WebWorker} from '@datagrok/diff-studio-tools';
+import {IVP, IVP2WebWorker, solveIvp} from '@datagrok/diff-studio-tools';
 import {LOSS} from '../constants';
 import {ARG_IDX} from './constants';
 import {sampleParams} from '../optimizer-sampler';
 
 const DEFAULT_SET_VAL = 0;
 const MIN_TARGET_COLS_COUNT = 2;
+const ARG_INP_COUNT = 3;
+const ARG_COL_IDX = 0;
 
 /** */
 type NelderMeadInput = {
@@ -22,7 +25,6 @@ type NelderMeadInput = {
   variedStart: Float32Array,
   variedInpMin: Float32Array,
   variedInpMax: Float32Array,
-  targetRowCount: number,
   targetNames: string[],
   targetVals: Array<Float64Array>,
   scaleVals: Float64Array,
@@ -34,6 +36,65 @@ async function fit(task: NelderMeadInput): Promise<Float32Array> {
   const res = new Float32Array(1);
 
   console.log(task);
+
+  const ivp = task.ivp2ww;
+
+  const iputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
+  const ivpInputVals = new Float64Array(iputSize);
+  const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
+  const funcNames = task.nonParamNames.slice(ARG_INP_COUNT - 1);
+
+  let idx = 0;
+  let cur = 0;
+
+  for (const name of ivpInputNames) {
+    cur = task.fixedInputsNames.indexOf(name);
+    if (cur > -1)
+      ivpInputVals[idx] = task.fixedInputsVals[cur];
+    else {
+      cur = task.variedInputNames.indexOf(name);
+      ivpInputVals[idx] = task.variedStart[cur];
+    }
+    ++idx;
+  }
+
+  const inpIndex = task.variedInputNames.map((name) => ivpInputNames.indexOf(name));
+
+  const outIndex = task.targetNames.slice(1).map((name) => {
+    const idx = funcNames.indexOf(name);
+
+    if (idx < 0)
+      throw new Error(`Inconsistent target dataframe: no ${name} column in the model's output.`);
+
+    return idx;
+  });
+  console.log('Out idx-s: ', outIndex);
+
+  const dim = task.variedStart.length;
+
+  for (let k = 0; k < 1; ++k) {
+    const vec = new Float64Array(dim);
+
+    for (let i = 0; i < dim; ++i)
+      vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);
+
+    console.log(vec);
+
+    for (let i = 0; i < dim; ++i)
+      ivpInputVals[inpIndex[i]] = vec[i];
+
+    const solution = solveIvp(ivp, ivpInputVals);
+
+    const outputArgVals = solution[ARG_COL_IDX];
+    const outputFuncVals = outIndex.map((idx) => solution[idx]);
+
+    grok.shell.addTableView(DG.DataFrame.fromColumns(solution.map((arr, idx) => {
+      return DG.Column.fromFloat64Array(`${idx}`, arr);
+    })));
+
+    console.log(outputArgVals);
+    console.log(outputFuncVals);
+  }
 
   return res;
 }
@@ -119,7 +180,6 @@ export async function getFittedParams(
       variedStart: startingPoints[i],
       variedInpMin: minVals,
       variedInpMax: maxVals,
-      targetRowCount: targetRowCount,
       targetNames: targetNames,
       targetVals: targetVals,
       scaleVals: scaleVals,
