@@ -14,6 +14,7 @@ export class Viewer<T = any> extends HTMLElement {
 
   private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
 
+  // TODO
   private destroyed$ = new Subject<boolean>();
 
   constructor() {

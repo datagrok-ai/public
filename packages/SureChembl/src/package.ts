@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import '../css/surechembl.css';
 
 export const _package = new DG.Package();
 
@@ -33,9 +34,8 @@ type PatentInfo = {
 
 function patentSearchBySubstructure(molecule: string): DG.Widget {
 
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
+  const compsHost = ui.div([ui.loader()]);
   compsHost.style.overflowY = 'scroll';
-  const panel = ui.divV([compsHost]);
 
   SureChemblSubstructureSearch(molecule).then((table: DG.DataFrame | null) => {
 
@@ -52,35 +52,41 @@ function patentSearchBySubstructure(molecule: string): DG.Widget {
       if (!numPatentsByMol[smiles]) {
         numPatentsByMol[smiles] = [];
       }
+      const patentId = table.col('doc_id')?.get(i);
       const patentInfo = {
         title: table.col('title')?.get(i),
-        id: table.col('doc_id')?.get(i),
+        id: `[${patentId}](${`https://www.surechembl.org/patent/${patentId}`})`,
         language: table.col('language')?.get(i),
         assign_applic: table.col('assign_applic')?.get(i),
-        published: table.col('published')?.get(i),
+        published: table.col('published')?.get(i).toString(),
       };
       numPatentsByMol[smiles].push(patentInfo);
     }
 
     Object.keys(numPatentsByMol).forEach((key: string) => {
       const molHost = ui.div();
-      grok.functions.call('Chem:drawMolecule', {'molStr': key, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      grok.functions.call('Chem:drawMolecule', {'molStr': key, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': false})
         .then((res: HTMLElement) => {
+          res.style.float = 'left';
           molHost.append(res);
         });
       const acc = ui.accordion();
       acc.root.style.paddingLeft = '25px';
-      acc.addPane(`Patents found: ${numPatentsByMol[key].length}`, () => {
-        const patentsPane = ui.divV([]);
-        numPatentsByMol[key].forEach((patent) => {
-          patentsPane.append(ui.tableFromMap(patent));
-          patentsPane.append(ui.link('Go to patent page', () => window.open(`https://www.surechembl.org/patent/${patent.id}`, '_blank')))
-        });
-        return patentsPane;
+      const accPane = acc.addPane(`Patents found: ${numPatentsByMol[key].length}`, () => {
+        const df = DG.DataFrame.fromObjects(numPatentsByMol[key])!;
+        return df.plot.grid().root;
       });
-      compsHost.append(ui.divV([molHost, acc.root]));
-    })
-
+      const addToWorkspaceButton = ui.icons.add(() => {
+        const df = DG.DataFrame.fromObjects(numPatentsByMol[key])!;
+        df.name = `Patents for ${key}`;
+        grok.shell.addTableView(df);
+      }, 'Add table to workspace');
+      addToWorkspaceButton.classList.add('surechembl-add-patents-to-workspace-button');
+      const accPaneHeader = accPane.root.getElementsByClassName('d4-accordion-pane-header');
+      if (accPaneHeader.length)
+        accPaneHeader[0].append(addToWorkspaceButton);
+      compsHost.append(ui.divV([molHost, acc.root], {style: {paddingBottom: '15px'}}));
+    });
   }).catch((err: any) => {
     if (compsHost.children.length > 0)
       compsHost.removeChild(compsHost.firstChild!);
@@ -90,7 +96,7 @@ function patentSearchBySubstructure(molecule: string): DG.Widget {
     ui.tooltip.bind(div, `${err}`);
     compsHost.appendChild(div);
   });
-  return new DG.Widget(panel);
+  return new DG.Widget(compsHost);
 }
 
 

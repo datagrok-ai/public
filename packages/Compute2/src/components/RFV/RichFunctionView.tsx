@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {openDB, DBSchema} from 'idb';
+import {DBSchema} from 'idb';
 import {
   Viewer, InputForm,
   BigButton, IconFA,
@@ -17,7 +17,6 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
@@ -136,16 +135,34 @@ export const RichFunctionView = Vue.defineComponent({
     },
     isReadonly: {
       type: Boolean,
+      default: false,
+    },
+    localValidation: {
+      type: Boolean,
+      default: false,
     },
     historyEnabled: {
       type: Boolean,
       default: false,
     },
-    viewersHook: {
-      type: Function as Vue.PropType<ViewersHook>,
+    showRunButton: {
+      type: Boolean,
+      default: true,
     },
     showStepNavigation: {
       type: Boolean,
+      default: false,
+    },
+    skipInit: {
+      type: Boolean,
+      dafault: true,
+    },
+    viewersHook: {
+      type: Function as Vue.PropType<ViewersHook>,
+    },
+    view: {
+      type: DG.ViewBase,
+      required: true,
     },
   },
   emits: {
@@ -154,6 +171,9 @@ export const RichFunctionView = Vue.defineComponent({
     'nextClicked': () => {},
     'actionRequested': (actionUuid: string) => actionUuid,
     'consistencyReset': (ioName: string) => ioName,
+    'formValidationChanged': (isValid: boolean) => isValid,
+    'formInputChanged': (a: DG.EventData<DG.InputArgs>) => a,
+    'formReplaced': (a: DG.InputForm | undefined) => a,
   },
   methods: {
     savePersonalState: () => {},
@@ -163,6 +183,8 @@ export const RichFunctionView = Vue.defineComponent({
     const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
 
     const currentCall = Vue.computed(() => props.funcCall);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const currentUuid = Vue.computed(() => props.uuid);
 
     const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
 
@@ -338,13 +360,17 @@ export const RichFunctionView = Vue.defineComponent({
       currentCall,
     );
 
+    const isFormValid = Vue.ref(false);
+
     const callMeta = Vue.computed(() => props.callMeta);
 
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
-    const isRunnable = Vue.computed(() => props.callState?.isRunnable);
+    const isRunnable = Vue.computed(() => props.localValidation ? isFormValid.value : props.callState?.isRunnable);
+    const isReadonly = Vue.computed(() => props.isReadonly);
 
     const validationState = Vue.computed(() => props.validationStates);
+    const consistencyState = Vue.computed(() => props.consistencyStates);
 
     const currentFunc = Vue.computed(() => currentCall.value.func);
 
@@ -362,6 +388,13 @@ export const RichFunctionView = Vue.defineComponent({
         ...currentCall.value.inputParams.values(),
         ...currentCall.value.outputParams.values(),
       ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME));
+
+    const onValidationChanged = (ev: boolean) => {
+      if (!props.localValidation)
+        return;
+      isFormValid.value = ev;
+      emit('formValidationChanged', ev);
+    };
 
     return () => {
       let lastCardLabel = null as string | null;
@@ -394,11 +427,11 @@ export const RichFunctionView = Vue.defineComponent({
       const getDf = (name: string) => {
         const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
         return val ? Vue.markRaw(val) : val;
-      }
+      };
 
       return (
         <div class='w-full h-full flex'>
-          <RibbonMenu groupName='Panels'>
+          <RibbonMenu groupName='Panels' view={currentView.value}>
             <span
               onClick={() => formHidden.value = !formHidden.value}
               class={'flex justify-between w-full'}
@@ -434,7 +467,7 @@ export const RichFunctionView = Vue.defineComponent({
             </span>
           </RibbonMenu>
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-            <RibbonMenu groupName={category}>
+            <RibbonMenu groupName={category} view={currentView.value}>
               {
                 actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
                   <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
@@ -442,7 +475,7 @@ export const RichFunctionView = Vue.defineComponent({
               }
             </RibbonMenu>)
           }
-          <RibbonPanel>
+          <RibbonPanel view={currentView.value}>
             { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}
@@ -482,11 +515,11 @@ export const RichFunctionView = Vue.defineComponent({
             /> }
           </RibbonPanel>
           <DockManager
-            key={props.uuid}
+            key={currentUuid.value}
             onPanelClosed={handlePanelClose}
             onInitFinished={handleDockInit}
             ref={dockRef}
-            class={{ 'pseudo_hidden': !layoutLoaded.value }}
+            class={{'pseudo_hidden': !layoutLoaded.value}}
           >
             { !historyHidden.value &&
               <History
@@ -517,10 +550,14 @@ export const RichFunctionView = Vue.defineComponent({
                     funcCall={currentCall.value}
                     callMeta={callMeta.value}
                     validationStates={validationState.value}
-                    consistencyStates={props.consistencyStates}
+                    consistencyStates={consistencyState.value}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
                     onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
-                    isReadonly={props.isReadonly}
+                    onFormReplaced={(ev) =>emit('formReplaced', ev)}
+                    onInputChanged={(ev) => emit('formInputChanged', ev)}
+                    onValidationChanged={onValidationChanged}
+                    skipInit={props.skipInit}
+                    isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
@@ -533,12 +570,13 @@ export const RichFunctionView = Vue.defineComponent({
                       , [[tooltip, action.description]]))
                   }
                   {
-                    <BigButton
-                      isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
-                      onClick={run}
-                    >
-                      { isOutputOutdated.value ? 'Run':'Rerun' }
-                    </BigButton>
+                    props.showRunButton &&
+                      <BigButton
+                        isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
+                        onClick={run}
+                      >
+                        { isOutputOutdated.value ? 'Run' : 'Rerun' }
+                      </BigButton>
                   }
                   {
                     props.showStepNavigation && !isOutputOutdated.value &&

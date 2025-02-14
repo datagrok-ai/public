@@ -348,7 +348,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
-
+        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+        queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
+        if (supportsTransactions)
+            connection.setAutoCommit(false);
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
@@ -362,11 +365,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
-            } else {
-                boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-                queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
-                if (supportsTransactions)
-                    connection.setAutoCommit(false);
+            }
+            else {
                 queryLogger.debug("Executing batch mode...");
                 String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n|\n--batch\n", commentStart));
                 for (String currentQuery : queries)

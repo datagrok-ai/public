@@ -215,18 +215,18 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
 
-  test('list package function with params', async () => {
+  test('list package function with params script', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCall =
-      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}" and func.name="dummyPackageScript"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}" and func.name="dummyPackageScript"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
   });
 
@@ -237,18 +237,18 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
 
-  test('list package function with params', async () => {
+  test('list package function with params func', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCall =
-      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
   });
 

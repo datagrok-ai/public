@@ -1087,12 +1087,24 @@ function monomerFromDfRow(dfRow: DG.Row): Monomer {
     if (typeof metaJSON[key] === 'object')
       metaJSON[key] = JSON.stringify(metaJSON[key]);
   }
+  const smiles = dfRow.get(MONOMER_DF_COLUMN_NAMES.MONOMER);
+  if (!smiles)
+    throw new Error('Monomer SMILES is empty');
+  let molfile = '';
+
+  try {
+    molfile = grok.chem.convert(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    molfile = getCorrectedMolBlock(molfile);
+  } catch (e) {
+    grok.shell.error(`Error converting SMILES to molfile, \n ${smiles}`);
+    console.error(e);
+  }
 
   return {
     symbol: dfRow.get(MONOMER_DF_COLUMN_NAMES.SYMBOL),
     name: dfRow.get(MONOMER_DF_COLUMN_NAMES.NAME),
-    molfile: '',
-    smiles: dfRow.get(MONOMER_DF_COLUMN_NAMES.MONOMER),
+    molfile: molfile,
+    smiles: smiles,
     polymerType: dfRow.get(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE),
     monomerType: dfRow.get(MONOMER_DF_COLUMN_NAMES.MONOMER_TYPE),
     naturalAnalog: dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG),

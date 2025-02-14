@@ -51,7 +51,7 @@ export async function projectData(projectKey: string): Promise<Project | null> {
 //input: string issueKey
 //output: object issue
 export async function issueData(issueKey: string): Promise<JiraIssue | null> {
-  if(!issueKey || issueKey?.length === 0)
+  if (!issueKey || issueKey?.length === 0)
     return null;
   if (cache.has(issueKey))
     return cache.get(issueKey)!;
@@ -119,4 +119,28 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
     resultList.push(ticketsMap.get((ticket ?? '').trim()) ?? '');
 
   return DG.Column.fromStrings(field, resultList);
+}
+
+//name: getJiraTicketsByFilter 
+//input: object filter
+//output: object result
+export async function getJiraTicketsByFilter(filter?: object): Promise<JiraIssue[]> {
+  const jiraCreds = await getJiraCreds();
+  let result: JiraIssue[] = [];
+  let total = -1;
+  const chunkSize = 100;
+  let startAt = 0;
+  while (true) {
+    const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+    startAt, chunkSize, filter, undefined);
+    if (loadedIssues != null) {
+      total = loadedIssues.total;
+      result = [...result, ...loadedIssues.issues]
+    }
+
+    if (total <= startAt)
+      break;
+    startAt += chunkSize;
+  }
+  return result;
 }

@@ -5,7 +5,7 @@
 async function postprocess() {
 
   let builds = result.col('build_index').categories;
-  let buildNames = result.col('build').categories.sort().reverse();
+  let buildNames = result.col('build').categories.sort();
 
   // console.log(result.name);
   // console.log(buildNames[0]);
@@ -35,7 +35,7 @@ async function postprocess() {
 
   pivot.columns.byName('owner').semType = 'User';
   pivot.columns.byName('owner').setTag('cell.renderer', 'User');
-  pivot.columns.byName('test').semType = 'test';
+  pivot.columns.byName('test').semType = 'autotest';
 
   // await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
   // await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
@@ -121,8 +121,8 @@ async function postprocess() {
 
 if (result.rowCount == 0) 
   out = DG.DataFrame.fromColumns([
-    DG.Column.fromType('string', 'test'),
-    DG.Column.fromType('string', 'test')
+    DG.Column.fromType('string', 'test', 1),
+    DG.Column.fromType('string', 'owner', 1)
   ]);
 else
   await postprocess();

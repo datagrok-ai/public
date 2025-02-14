@@ -1077,24 +1077,7 @@ export interface IDartApi {
   grok_ScriptEnvironment_Create(name: String): any;
   grok_ScriptEnvironment_Environment(e: any): any;
   grok_ScriptEnvironment_Setup(p0: any): Promise<any>;
-  grok_IntInput(name: any, value: any): any;
-  grok_SliderInput(name: any, value: any, min: any, max: any, step: any): any;
-  grok_StringInput(name: any, value: any, options: any): any;
-  grok_SearchInput(name: any, value: any): any;
-  grok_TextInput(name: any, value: any): any;
-  grok_FloatInput(name: any, value: any): any;
-  grok_DateInput(name: any, value: any): any;
-  grok_ChoiceInput(name: any, value: any, items: any, options: any): any;
-  grok_MultiChoiceInput(name: any, selected: any, items: any): any;
-  grok_BoolInput(name: any, value: any): any;
-  grok_SwitchInput(name: any, value: any): any;
-  grok_MoleculeInput(name: any, value: any): any;
-  grok_ColumnInput(name: any, table: any, predicate: any, value: any): any;
-  grok_ColumnsInput(name: any, table: any, availableColumns: any, checkedColumns: any): any;
-  grok_TableInput(name: String, t: any, items: any): any;
-  grok_ColorInput(name: any, value: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
-  grok_RadioInput(name: any, value: any, items: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
@@ -1451,6 +1434,7 @@ export interface IDartApi {
   grok_Dapi_UserFiles_Rename(fi: any, newName: String): Promise<any>;
   grok_Dapi_UserFiles_ReadBinaryDataFrames(fi: any): Promise<any>;
   grok_Dapi_UserFiles_WriteBinaryDataFrames(fi: any, dfList: any): Promise<any>;
+  grok_Dapi_UserFiles_CreateDirectory(fi: any): Promise<any>;
   grok_RangeSlider(style: String, vertical: Bool): any;
   grok_RangeSlider_Get_MinRange(rangeSelector: any): any;
   grok_RangeSlider_Get_MaxRange(rangeSelector: any): any;
@@ -1659,13 +1643,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
+  // Generated from ../d4\lib\src\common\common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
-  grok_InputType_Create(): any;
-
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4\lib\src\grid\grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1715,7 +1696,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1730,4 +1711,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
+
+  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
+  grok_InputType_Create(): any;
 }

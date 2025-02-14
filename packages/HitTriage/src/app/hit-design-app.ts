@@ -10,7 +10,7 @@ import {CampaignIdKey, CampaignJsonName, CampaignTableName,
 import {calculateColumns, calculateCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkFileExists, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {getTilesViewDialog} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
@@ -19,7 +19,7 @@ import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Observable, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
-import {getDefaultSharingSettings} from '../packageSettingsEditor';
+import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -267,7 +267,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       this._designView = undefined;
       campaignId = await this.getNewCampaignName(`${this.appName}/campaigns`, template.key);
       modifyUrl(HitDesignCampaignIdKey, campaignId);
-      this._filePath = `System.AppData/HitTriage/${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
+      let defaultFolderPath = await getDefaultCampaignStorageSettings();
+      if (!defaultFolderPath.endsWith('/'))
+        defaultFolderPath += '/';
+      this._filePath = `${defaultFolderPath}${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
     } else {
       const fileLoc = `System.AppData/HitTriage/${this.appName}/campaigns`;
       this._filePath = this.campaign?.savePath ?? `${fileLoc}/${campaignId}/${CampaignTableName}`;
@@ -842,22 +845,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           labelElement.remove();
         newPathInput.root.style.width = '100%';
 
-        async function checkFolder() {
-          const newPath = newPathInput.value;
-          if (!newPath || newPath.trim() === '') {
-            grok.shell.error('Path can not be empty');
-            return false;
-          }
-          const exists = await grok.dapi.files.exists(newPath);
-          if (!exists) {
-            grok.shell.error('Given folder does not exist');
-            return false;
-          }
-          return true;
-        }
-
         const saveButton = ui.button('Save', async () => {
-          const exists = await checkFolder();
+          const exists = await checkFileExists(newPathInput.value);
           if (!exists)
             return;
           const newPath = newPathInput.value;

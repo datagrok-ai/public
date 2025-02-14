@@ -36,7 +36,9 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
     const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
     if (!savePath || !(await grok.dapi.files.exists(savePath)))
       continue;
-    const node = treeNode.item(camp.friendlyName ?? camp.name);
+    const templateName = camp.templateName ?? camp.template?.name;
+    const templateGroup = templateName ? treeNode.getOrCreateGroup(templateName) : treeNode;
+    const node = templateGroup.item(camp.friendlyName ?? camp.name);
     node.onSelected.subscribe(async (_) => {
       try {
         const df = await grok.dapi.files.readCsv(savePath);

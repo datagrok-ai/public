@@ -5,11 +5,15 @@ import {BehaviorSubject} from 'rxjs';
 import {deepCopy} from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
 
+declare global {
+  var initialURLHandled: boolean;
+}
+
 export abstract class CustomFunctionView extends DG.ViewBase {
   public showHistory = new BehaviorSubject(false);
   public isReady = new BehaviorSubject(false);
 
-  public historyRoot = ui.div('', { style: { height: '100%' }});
+  public historyRoot = ui.div('', {style: {height: '100%', width: '100%'}});
 
   public funcCall?: DG.FuncCall;
 
@@ -45,18 +49,29 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   requestFeature: (() => Promise<void>) | null = null;
 
   public async init() {
-    const func = DG.Func.byName(this.funcNqName);
-    this.linkFunccall(func.prepare({}));
-    await this.onFuncCallReady();
+    const startId = this.getStartId();
+    if (startId) {
+      this.setAsLoaded();
+      const pulledRun = await historyUtils.loadRun(startId);
+      this.linkFunccall(pulledRun);
+      await this.onFuncCallReady();
+      await this.onAfterLoadRun(pulledRun);
+    } else {
+      const func = DG.Func.byName(this.funcNqName);
+      this.linkFunccall(func.prepare({}));
+      await this.onFuncCallReady();
+    }
     this.isReady.next(true);
   }
 
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
+    this.path = funcCall.author ? `?id=${funcCall.id}` : '?';
+    const modelName = funcCall?.func?.friendlyName ?? funcCall?.func?.name;
+    this.name = modelName;
   }
 
   public async onFuncCallReady() {
-    this.name = this.funcCall!.func.friendlyName;
     await this.getPackageData();
     this.build();
   }
@@ -90,7 +105,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const rootItem = ui.div([
       this.buildIO(),
       this.historyRoot,
-    ])
+    ], {style: {width: '100%', height: '100%', display: 'flex'}});
     this.root.appendChild(rootItem);
 
     this.buildRibbonMenu();
@@ -105,7 +120,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       this.getFormats(),
       this.exportRun.bind(this),
     );
-    const newRibbonPanels: HTMLElement[][] = [[historyButton, saveButton, exportBtn]];
+    const newRibbonPanels: HTMLElement[][] = [[historyButton, saveButton, ...(this.hasExport() ? [exportBtn] : [] )]];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
@@ -141,7 +156,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       }
     }
 
-    if (this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
+    if (this.hasExport()) {
       ribbonMenu
         .group('Export')
         .items(this.getFormats(), this.exportRun.bind(this))
@@ -166,6 +181,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     return (this.exportConfig?.supportedFormats ?? []);
   }
 
+  private hasExport() {
+    return this.exportConfig && this.exportConfig.supportedFormats.length > 0;
+  }
+
   private async getPackageData() {
     const pack = this.func?.package;
     if (!pack)
@@ -178,6 +197,15 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     const reqFeatureUrl = (await pack?.getProperties() as any)?.REQUEST_FEATURE_URL;
     if (reqFeatureUrl && !this.requestFeature)
       this.requestFeature = async () => {window.open(reqFeatureUrl, '_blank');};
+  }
+
+  private getStartId(): string | null {
+    const startUrl = new URL(grok.shell.startUri);
+    return !globalThis.initialURLHandled ? startUrl.searchParams.get('id'): null;
+  }
+
+  private setAsLoaded(): void {
+    globalThis.initialURLHandled = true;
   }
 
   get func() {
