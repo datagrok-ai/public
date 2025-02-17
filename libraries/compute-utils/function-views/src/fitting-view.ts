@@ -1036,7 +1036,7 @@ export class FittingView {
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
         if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
-          await getFittedParams(
+          optResult = await getFittedParams(
             this.loss,
             this.ivp,
             this.ivpWW,
@@ -1049,8 +1049,6 @@ export class FittingView {
             outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
             this.samplesCount,
           );
-
-          return;
         } else
           optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
       } else

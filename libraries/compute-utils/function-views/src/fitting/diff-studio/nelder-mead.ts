@@ -6,6 +6,9 @@ import {IVP, IVP2WebWorker, solveIvp} from '@datagrok/diff-studio-tools';
 import {LOSS} from '../constants';
 import {ARG_IDX} from './constants';
 import {sampleParams} from '../optimizer-sampler';
+import {mad, rmse} from './utils';
+import {optimizeNM} from '../optimizer-nelder-mead';
+import {OptimizationResult, Extremum} from '../optimizer-misc';
 
 const DEFAULT_SET_VAL = 0;
 const MIN_TARGET_COLS_COUNT = 2;
@@ -32,15 +35,13 @@ type NelderMeadInput = {
 };
 
 /** */
-async function fit(task: NelderMeadInput): Promise<Float32Array> {
-  const res = new Float32Array(1);
-
-  console.log(task);
+async function fit(task: NelderMeadInput): Promise<Extremum> {
+  //console.log(task);
 
   const ivp = task.ivp2ww;
 
-  const iputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
-  const ivpInputVals = new Float64Array(iputSize);
+  const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
+  const ivpInputVals = new Float64Array(inputSize);
   const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
   const funcNames = task.nonParamNames.slice(ARG_INP_COUNT - 1);
 
@@ -68,11 +69,16 @@ async function fit(task: NelderMeadInput): Promise<Float32Array> {
 
     return idx;
   });
-  console.log('Out idx-s: ', outIndex);
+  //console.log('Out idx-s: ', outIndex);
 
   const dim = task.variedStart.length;
+  const targetArgVals = task.targetVals[0];
+  const targetFuncVals = task.targetVals.slice(1);
+  const scaleVals = task.scaleVals.slice(1);
 
-  for (let k = 0; k < 1; ++k) {
+  const metric = (task.loss == LOSS.MAD) ? mad : rmse;
+
+  /*for (let k = 0; k < 1; ++k) {
     const vec = new Float64Array(dim);
 
     for (let i = 0; i < dim; ++i)
@@ -85,19 +91,50 @@ async function fit(task: NelderMeadInput): Promise<Float32Array> {
 
     const solution = solveIvp(ivp, ivpInputVals);
 
-    const outputArgVals = solution[ARG_COL_IDX];
-    const outputFuncVals = outIndex.map((idx) => solution[idx]);
+    const modelArgVals = solution[ARG_COL_IDX];
+    const modelFuncVals = outIndex.map((idx) => solution[idx]);
 
     grok.shell.addTableView(DG.DataFrame.fromColumns(solution.map((arr, idx) => {
       return DG.Column.fromFloat64Array(`${idx}`, arr);
     })));
 
-    console.log(outputArgVals);
-    console.log(outputFuncVals);
-  }
+    console.log(modelArgVals);
+    console.log(modelFuncVals);
+
+    metric(targetArgVals, targetFuncVals, scaleVals, modelArgVals, modelFuncVals);
+  }*/
+
+  let solution: Float64Array[];
+
+  const costFunc = async (x: Float32Array): Promise<number> => {
+    for (let i = 0; i < dim; ++i)
+      ivpInputVals[inpIndex[i]] = x[i];
+
+    solution = solveIvp(ivp, ivpInputVals);
+
+    return metric(
+      targetArgVals,
+      targetFuncVals,
+      scaleVals,
+      solution[ARG_COL_IDX],
+      outIndex.map((idx) => solution[idx]),
+    );
+  };
+
+  const vec = new Float32Array(dim);
+
+  for (let i = 0; i < dim; ++i)
+    vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);
+
+  costFunc(vec);
+
+  const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
+  //console.log(settings);
+
+  const res = await optimizeNM(costFunc, task.variedStart, settings, task.variedInpMin, task.variedInpMax);
 
   return res;
-}
+} // fit
 
 /** Return fitted params of Diff Studio model using the Nelder-Mead method */
 export async function getFittedParams(
@@ -111,7 +148,7 @@ export async function getFittedParams(
   fixedInputs: Record<string, number>,
   argColName: string,
   target: DG.DataFrame,
-  samplesCount: number): Promise<Float32Array[]> {
+  samplesCount: number): Promise<OptimizationResult> {
   // Extract settings names & values
   const settingNames: string[] = [...settings.keys()];
   const settingVals = settingNames.map((name) => settings.get(name) ?? DEFAULT_SET_VAL);
@@ -163,10 +200,10 @@ export async function getFittedParams(
   // Generate starting points
   const startingPoints = sampleParams(samplesCount, minVals, maxVals);
 
-  const res: Float32Array[] = [];
+  const res: Extremum[] = [];
 
   // Run fitting
-  for (let i = 0; i < 1; ++i) {//TODO: replace 1 with samplesCount
+  for (let i = 0; i < samplesCount; ++i) {//TODO: replace 1 with samplesCount
     // Inputs for Nelder-Mead method
     const task: NelderMeadInput = {
       settingNames: settingNames,
@@ -189,5 +226,8 @@ export async function getFittedParams(
     res.push(await fit(task));
   }
 
-  return res;
+  return {
+    extremums: res,
+    fails: null,
+  };
 } // getFittedParams
