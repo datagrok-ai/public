@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.49.1 (2025-02-17)
+
+Fix helm splitter for marginal cases
+
 ## 5.49.0 (2025-02-17)
 
 To-Tomic-level support for RNA/DNA sequences

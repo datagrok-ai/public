@@ -168,7 +168,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
 export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
   const helmParts = seq.split('$');
   const spList = helmParts[0].split('|');
-  const mList: string[] = wu(spList.map((sp: string) => sp.match(/(?<=\{).+(?=})/)![0].split('.').map((m) => cleanupHelmSymbol(m))))
+  const mList: string[] = wu(spList
+    .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
+      .map((m) => cleanupHelmSymbol(m)))
+  )
     .flatten().toArray();
 
   return new StringListSeqSplitted(mList, GapOriginals[NOTATION.HELM]);
