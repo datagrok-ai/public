@@ -9,7 +9,7 @@
   "description": "Datagrok compute global API",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "../compute-utils",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.24.0-rc.7a33d2c370.6a52abd63",
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
