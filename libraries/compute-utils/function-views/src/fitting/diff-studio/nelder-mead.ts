@@ -2,139 +2,34 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {IVP, IVP2WebWorker, solveIvp} from '@datagrok/diff-studio-tools';
+import {IVP, IVP2WebWorker} from '@datagrok/diff-studio-tools';
 import {LOSS} from '../constants';
-import {ARG_IDX} from './constants';
+import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT,NO_ERRORS} from './defs';
 import {sampleParams} from '../optimizer-sampler';
-import {mad, rmse} from './utils';
-import {optimizeNM} from '../optimizer-nelder-mead';
+import {getBatches} from './fitting-utils';
 import {OptimizationResult, Extremum} from '../optimizer-misc';
 
-const DEFAULT_SET_VAL = 0;
-const MIN_TARGET_COLS_COUNT = 2;
-const ARG_INP_COUNT = 3;
-const ARG_COL_IDX = 0;
-
 /** */
-export type NelderMeadInput = {
-  settingNames: string[],
-  settingVals: number[],
-  loss: string,
-  ivp2ww: IVP2WebWorker,
-  nonParamNames: string[],
-  fixedInputsNames: string[],
-  fixedInputsVals: number[],
-  variedInputNames: string[],
-  variedStart: Float32Array,
-  variedInpMin: Float32Array,
-  variedInpMax: Float32Array,
-  targetNames: string[],
-  targetVals: Array<Float64Array>,
-  scaleVals: Float64Array,
-  samplesCount: number,
-};
+export function getFailesDf(points: Float32Array[], warnings: string[]): DG.DataFrame | null {
+  const failsCount = points.length;
 
-/** */
-export async function fit(task: NelderMeadInput): Promise<Extremum> {
-  //console.log(task);
+  if (failsCount > 0) {
+    const dim = points[0].length;
+    const raw = new Array<Float32Array>(dim);
 
-  const ivp = task.ivp2ww;
+    for (let i = 0; i < dim; ++i)
+      raw[i] = new Float32Array(failsCount);
 
-  const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
-  const ivpInputVals = new Float64Array(inputSize);
-  const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
-  const funcNames = task.nonParamNames.slice(ARG_INP_COUNT - 1);
+    points.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
 
-  let idx = 0;
-  let cur = 0;
+    const failsDf = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`arg${idx}`, arr)));
+    failsDf.columns.add(DG.Column.fromStrings('Issue', warnings));
 
-  for (const name of ivpInputNames) {
-    cur = task.fixedInputsNames.indexOf(name);
-    if (cur > -1)
-      ivpInputVals[idx] = task.fixedInputsVals[cur];
-    else {
-      cur = task.variedInputNames.indexOf(name);
-      ivpInputVals[idx] = task.variedStart[cur];
-    }
-    ++idx;
+    return failsDf;
   }
 
-  const inpIndex = task.variedInputNames.map((name) => ivpInputNames.indexOf(name));
-
-  const outIndex = task.targetNames.slice(1).map((name) => {
-    const idx = funcNames.indexOf(name);
-
-    if (idx < 0)
-      throw new Error(`Inconsistent target dataframe: no ${name} column in the model's output.`);
-
-    return idx;
-  });
-  //console.log('Out idx-s: ', outIndex);
-
-  const dim = task.variedStart.length;
-  const targetArgVals = task.targetVals[0];
-  const targetFuncVals = task.targetVals.slice(1);
-  const scaleVals = task.scaleVals.slice(1);
-
-  const metric = (task.loss == LOSS.MAD) ? mad : rmse;
-
-  /*for (let k = 0; k < 1; ++k) {
-    const vec = new Float64Array(dim);
-
-    for (let i = 0; i < dim; ++i)
-      vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);
-
-    console.log(vec);
-
-    for (let i = 0; i < dim; ++i)
-      ivpInputVals[inpIndex[i]] = vec[i];
-
-    const solution = solveIvp(ivp, ivpInputVals);
-
-    const modelArgVals = solution[ARG_COL_IDX];
-    const modelFuncVals = outIndex.map((idx) => solution[idx]);
-
-    grok.shell.addTableView(DG.DataFrame.fromColumns(solution.map((arr, idx) => {
-      return DG.Column.fromFloat64Array(`${idx}`, arr);
-    })));
-
-    console.log(modelArgVals);
-    console.log(modelFuncVals);
-
-    metric(targetArgVals, targetFuncVals, scaleVals, modelArgVals, modelFuncVals);
-  }*/
-
-  let solution: Float64Array[];
-
-  const costFunc = async (x: Float32Array): Promise<number> => {
-    for (let i = 0; i < dim; ++i)
-      ivpInputVals[inpIndex[i]] = x[i];
-
-    solution = solveIvp(ivp, ivpInputVals);
-
-    return metric(
-      targetArgVals,
-      targetFuncVals,
-      scaleVals,
-      solution[ARG_COL_IDX],
-      outIndex.map((idx) => solution[idx]),
-    );
-  };
-
-  const vec = new Float32Array(dim);
-
-  for (let i = 0; i < dim; ++i)
-    vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);
-
-  costFunc(vec);
-
-  const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
-  //console.log(settings);
-
-  const res = await optimizeNM(costFunc, task.variedStart, settings, task.variedInpMin, task.variedInpMax);
-
-  return res;
-} // fit
+  return null;
+} // getFailesDf
 
 /** Return fitted params of Diff Studio model using the Nelder-Mead method */
 export async function getFittedParams(
@@ -200,34 +95,13 @@ export async function getFittedParams(
   // Generate starting points
   const startingPoints = sampleParams(samplesCount, minVals, maxVals);
 
-  // Run fitting
-  /* for (let i = 0; i < samplesCount; ++i) {//TODO: replace 1 with samplesCount
-    // Inputs for Nelder-Mead method
-    const task: NelderMeadInput = {
-      settingNames: settingNames,
-      settingVals: settingVals,
-      loss: loss,
-      ivp2ww: ivp2ww,
-      nonParamNames: nonParamNames,
-      fixedInputsNames: fixedInputsNames,
-      fixedInputsVals: fixedInputsVals,
-      variedInputNames: variedInputNames,
-      variedStart: startingPoints[i],
-      variedInpMin: minVals,
-      variedInpMax: maxVals,
-      targetNames: targetNames,
-      targetVals: targetVals,
-      scaleVals: scaleVals,
-      samplesCount: samplesCount,
-    };
-
-    res.push(await fit(task));
-  }*/
-
   const nThreads = Math.min(Math.max(1, navigator.hardwareConcurrency - 2), samplesCount);
   const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
 
   const resultsArray: Extremum[] = [];
+  const failedInitPoints: Float32Array[] = [];
+  const warnings: string[] = [];
+  const pointBatches = getBatches(startingPoints, nThreads);
 
   const promises = workers.map((w, idx) => {
     return new Promise<void>((resolve, reject) => {
@@ -241,7 +115,6 @@ export async function getFittedParams(
           fixedInputsNames: fixedInputsNames,
           fixedInputsVals: fixedInputsVals,
           variedInputNames: variedInputNames,
-          variedStart: startingPoints[idx],
           variedInpMin: minVals,
           variedInpMax: maxVals,
           targetNames: targetNames,
@@ -249,14 +122,21 @@ export async function getFittedParams(
           scaleVals: scaleVals,
           samplesCount: samplesCount,
         },
+        startPoints: pointBatches[idx],
       });
 
       w.onmessage = (e: any) => {
         w.terminate();
-        if (e.data.callResult === 0)
-          resultsArray.push(e.data.res);
-        else {
-          reject(e.data.msg ?? 'error in calculation');
+        if (e.data.callResult === 0) {
+          e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));
+          e.data.fitRes.forEach((res: string, i: number) => {
+            if (res !== NO_ERRORS) {
+              failedInitPoints.push(pointBatches[idx][i]);
+              warnings.push(res);
+            }
+          });
+        } else {
+          reject(e.data.msg ?? 'error in webworker fitting');
           return;
         }
         resolve();
@@ -272,10 +152,8 @@ export async function getFittedParams(
 
   await Promise.all(promises);
 
-  console.log(resultsArray);
-
   return {
     extremums: resultsArray,
-    fails: null,
+    fails: getFailesDf(failedInitPoints, warnings),
   };
 } // getFittedParams

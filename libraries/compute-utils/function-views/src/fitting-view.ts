@@ -21,7 +21,7 @@ import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, getIvp2WebWorker} from '@datagrok/diff-studio-tools';
-import {isWorkerApplicable} from './fitting/diff-studio/utils';
+import {isWorkerApplicable} from './fitting/diff-studio/fitting-utils';
 
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 
@@ -1030,6 +1030,10 @@ export class FittingView {
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
+        console.log(`Workers: ${navigator.hardwareConcurrency - 2}`);
+
+        const start = Date.now();
+
         if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
           optResult = await getFittedParams(
             this.loss,
@@ -1046,13 +1050,15 @@ export class FittingView {
           );
         } else
           optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+
+        const finish = Date.now();
+
+        console.log(`Time: ${finish - start} ms.`);
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
       const allExtremums = optResult.extremums;
       const allExtrCount = allExtremums.length;
-
-      console.log(optResult);
 
       // Process fails
       if (allExtrCount < this.samplesCount) {
