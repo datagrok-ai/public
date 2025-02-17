@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.3.28 (2025-02-12) WIP
+# 2.3.29 (2025-02-17) WIP
+
+* Postgres: Set uuid as object
+
+# 2.3.28 (2025-02-12)
 
 * TableQuery: Order by support and having with aggregations
 * Bugs fixes and improvements
