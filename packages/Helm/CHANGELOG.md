@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.7.4 (2025-02-17)
+
+Fix Helm Splitter for marginal cases
+
 ## 2.7.3 (2025-02-17)
 
 Support for DNA/RNA for hover and other effects
