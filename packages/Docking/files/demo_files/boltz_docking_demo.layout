@@ -3,7 +3,7 @@
   "viewStateMap": {
     "containerType": "fill",
     "state": {
-      "width": 1462,
+      "width": 1093,
       "height": 801,
       "documentManager": true
     },
@@ -11,10 +11,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 1462,
+          "width": 1093,
           "height": 801,
           "element": {
-            "id": "724b23e0-e920-11ef-f16d-8de2efbf1ecb",
+            "id": "ab1945e0-e920-11ef-dbac-91e9a8a6567b",
             "type": "Grid",
             "look": {
               "#type": "GridLook",
@@ -25,7 +25,7 @@
               "allowColumnMenu": true,
               "columns": [
                 {
-                  "width": 28,
+                  "width": 36,
                   "backgroundColor": 4294440951,
                   "customName": "",
                   "cellType": "row header",
@@ -35,17 +35,17 @@
                   }
                 },
                 {
-                  "width": 119,
-                  "columnName": "Entry",
+                  "width": 80,
+                  "columnName": "Cmpd_ID",
                   "headerCellStyle": {
                     "vertAlign": "bottom",
                     "textWrap": "words"
                   }
                 },
                 {
-                  "width": 230,
-                  "columnName": "Sequence",
-                  "cellType": "sequence",
+                  "width": 200,
+                  "columnName": "SMILES",
+                  "cellType": "Molecule",
                   "headerCellStyle": {
                     "vertAlign": "bottom",
                     "textWrap": "words"
@@ -88,13 +88,13 @@
       }
     ],
     "floating": [],
-    "tableId": "539a15a0-e920-11ef-9456-c9c4933cf07e",
-    "tableName": "boltz_folding_demo"
+    "tableId": "99d54270-e920-11ef-e05f-d1d260aa2d72",
+    "tableName": "Table (4)"
   },
-  "name": "BoltzFoldingDemo",
-  "friendlyName": "boltz_folding_demo",
+  "name": "Table4",
+  "friendlyName": "Table (4)",
   "author": {
     "id": "0509abe0-c210-11ef-8c95-ed39bc031fc6"
   },
-  "createdOn": "2025-02-14T09:02:41.437Z"
+  "createdOn": "2025-02-17T09:07:52.765Z"
 }

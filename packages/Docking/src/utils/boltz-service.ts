@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as yaml from 'js-yaml';
 import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, Config } from './constants';
 import { getFromPdbs, prop } from './utils';
+import { getTableView } from '../package';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -33,10 +34,14 @@ export class BoltzService {
   }
 
   static async processBoltzResult(df: DG.DataFrame) {
+    const {grid} = getTableView(df.name);
     const pdbCol = df.columns.byName('pdb');
-    const confidenceCol = df.columns.byName('confidence_score');
+    const confidenceGridCol = grid.columns.byName('confidence_score');
+    const confidenceCol = confidenceGridCol?.column;
+    if (!pdbCol || !confidenceCol) return;
       
     pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
+    confidenceGridCol.isTextColorCoded = true;
     confidenceCol.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
     confidenceCol.meta.format = '0.000';
     confidenceCol.setTag(DG.TAGS.DESCRIPTION, BOLTZ_PROPERTY_DESCRIPTIONS['confidence_score']);

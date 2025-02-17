@@ -10,7 +10,7 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
-import { _demoBoltzFolding, _demoDocking } from './demo/demo';
+import { _demoBoltzDocking, _demoBoltzFolding, _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 import { BoltzService } from './utils/boltz-service';
@@ -90,7 +90,7 @@ export async function prepareAutoDockData(
   };
 }
 
-function getTableView(tableName?: string): DG.TableView {
+export function getTableView(tableName?: string): DG.TableView {
   const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
   const tableView = inBrowseView
     ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
@@ -227,6 +227,13 @@ export async function demoDocking(): Promise<void> {
 //meta.demoPath: Bioinformatics | Boltz Folding
 export async function demoBoltzFolding(): Promise<void> {
   await _demoBoltzFolding();
+}
+
+//name: Demo Boltz Docking
+//description: tbd
+//meta.demoPath: Bioinformatics | Boltz Docking
+export async function demoBoltzDocking(): Promise<void> {
+  await _demoBoltzDocking();
 }
 
 //name: Biology | AutoDock
