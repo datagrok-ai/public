@@ -1865,7 +1865,6 @@ export async function demoScaffold(): Promise<void> {
   await _demoScaffoldTree();
 }
 
-
 //top-menu: Chem | Transform | Names To Smiles...
 //name: Names To Smiles
 //tags: Transform
