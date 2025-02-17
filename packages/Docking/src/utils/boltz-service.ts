@@ -97,7 +97,7 @@ export class BoltzService {
             ? molecule 
             : await grok.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles),
         },
-      };      
+      };
   
       sequences.push(ligandBlock);
       constraints[0].pocket.binder = chainId;
@@ -105,6 +105,8 @@ export class BoltzService {
       
       const result = DG.DataFrame.fromCsv(await grok.functions.call('Docking:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
+
+      sequences.pop();
     }
 
     await this.processBoltzResult(resultDf);
