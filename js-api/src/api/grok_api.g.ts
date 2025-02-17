@@ -34,6 +34,7 @@ export interface IDartApi {
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
+  grok_Get_BrowsePanel(): any;
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
