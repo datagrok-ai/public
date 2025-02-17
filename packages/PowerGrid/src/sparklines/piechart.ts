@@ -177,7 +177,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     if (cols[activeColumn] !== null) {
-      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn], settings.normalization);
+      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn], {normalization: settings.normalization});
       r = scaledNumber * (gridCell.bounds.width - 4) / 2;
       r = Math.max(r, minRadius);
     }
@@ -276,7 +276,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i] === null || cols[i].isNone(row))
           continue;
 
-        const scaledNumber = getScaledNumber(cols, row, cols[i], settings.normalization);
+        const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
         let r = scaledNumber * box.width / 2;
         r = Math.max(r, minRadius);
         g.beginPath();

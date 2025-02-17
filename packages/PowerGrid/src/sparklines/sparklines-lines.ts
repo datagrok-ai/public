@@ -29,14 +29,16 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const r: number = getScaledNumber(cols, row, cols[col], settings.normalization);
+  const r: number = getScaledNumber(cols, row, cols[col], {normalization: settings.normalization, zeroScale: settings.zeroScale});
 
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
     (b.top + b.height) - b.height * r);
 }
 
-interface SparklineSettings extends SummarySettingsBase { }
+interface SparklineSettings extends SummarySettingsBase {
+  zeroScale?: boolean;
+}
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
   const settings: SparklineSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
@@ -49,6 +51,7 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
 
   settings.normalization ??= NormalizationType.Column;
   settings.colorCode ??= SummaryColumnColoringType.Bins;
+  settings.zeroScale ??= false;
   return settings;
 }
 
@@ -161,7 +164,14 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
     const settings: SparklineSettings = isSummarySettingsBase(gridColumn.settings) ? gridColumn.settings :
       gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
-    return ui.inputs(createBaseInputs(gridColumn, settings));
+    return ui.inputs([...createBaseInputs(gridColumn, settings), ui.input.bool('Zero Scale', {
+      value: settings.zeroScale,
+      onValueChanged: (value) => {
+        settings.zeroScale = value;
+        gridColumn.grid.invalidate();
+      },
+      tooltipText: 'Scale the sparkline to start at zero'
+    })]);
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }

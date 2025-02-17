@@ -113,7 +113,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
 
 
     const path = it.range(cols.length)
-      .map((i) => p(i, !cols[i].isNone(row) ? getScaledNumber(cols, row, cols[i], settings.normalization) : 0));
+      .map((i) => p(i, !cols[i].isNone(row) ? getScaledNumber(cols, row, cols[i], {normalization: settings.normalization}) : 0));
     g.setFillStyle('#00cdff')
       .polygon(path)
       .fill();
@@ -130,7 +130,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     }
     it.range(cols.length).map(function(i) {
       if (!cols[i].isNone(row)) {
-        const scaledNumber = getScaledNumber(cols, row, cols[i], settings.normalization);
+        const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
         const point = p(i, scaledNumber);
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y,
           getRenderColor(settings, DG.Color.fromHtml('#1E90FF'), {column: cols[i], colIdx: i, rowIdx: row}), 3);

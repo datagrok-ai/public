@@ -63,11 +63,13 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
 
-export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, normalization: NormalizationType): number {
+export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: {normalization: NormalizationType, zeroScale?: boolean}): number {
+  const normalization = settings.normalization;
+  const zeroScale = settings.zeroScale ?? false;
   const colMins: number[] = cols.map((c: DG.Column) => c?.min).filter((c) => c !== null) as number[];
   const colMaxs: number[] = cols.map((c: DG.Column) => c?.max).filter((c) => c !== null) as number[];
   const colNumbers: number[] = cols.map((c: DG.Column) => c?.getNumber(row)).filter((c) => c !== null) as number[];
-  const gmin = normalization === NormalizationType.Global ? Math.min(...colMins) :
+  const gmin = zeroScale ? 0 : normalization === NormalizationType.Global ? Math.min(...colMins) :
     normalization === NormalizationType.Row ? Math.min(...colNumbers) : 0;
   const gmax = normalization === NormalizationType.Global ? Math.max(...colMaxs) :
     normalization === NormalizationType.Row ? Math.max(...colNumbers) : 0;

@@ -48,7 +48,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
   if ((activeColumn >= cols.length) || (activeColumn < 0))
     return answer;
-  const scaled = getScaledNumber(cols, row, cols[activeColumn], settings.normalization);
+  const scaled = getScaledNumber(cols, row, cols[activeColumn], {normalization: settings.normalization});
   const bb = b
     .getLeftPart(cols.length, activeColumn)
     .getBottomScaled(scaled > minH ? scaled : minH)
@@ -90,7 +90,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       const currentCol = cols[i];
       if (!currentCol.isNone(row)) {
         g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'),{column: currentCol, colIdx: i, rowIdx: row})));
-        const scaled = getScaledNumber(cols, row, currentCol, settings.normalization);
+        const scaled = getScaledNumber(cols, row, currentCol, {normalization: settings.normalization});
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
