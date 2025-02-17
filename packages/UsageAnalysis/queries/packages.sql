@@ -8,38 +8,41 @@
 --connection: System:Datagrok
 --test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'], ['any'])
 with recursive selected_groups as (
-  select id from groups
-  where id::varchar = any(@groups)
-  union
-  select gr.child_id as id from selected_groups sg
-  join groups_relations gr on sg.id = gr.parent_id
+    select id from groups
+    where id = any(@groups)
+    union
+    select gr.child_id as id from selected_groups sg
+    join groups_relations gr on sg.id = gr.parent_id
 ),
 res AS (
-select DISTINCT e.id, e.event_time as time_old, u.friendly_name as user, u.id as uid, u.group_id as ugid,
-coalesce(pp.name, p.name, 'Core') as package,
-coalesce(pp.package_id, p.id) as pid, p.category
-from events e
-inner join event_parameter_values evv on evv.event_id = e.id
-inner join entities en on evv.value_uuid = en.id
-left join published_packages pp on en.package_id = pp.id
-left join packages p on p.id = pp.package_id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where @date(e.event_time) and (@packagesCategories = ARRAY['any']::varchar[] or p.category = any(@packagesCategories))
-),
-t1 AS (
-  SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
-  FROM res
-),
-t2 AS (
-  SELECT case when inter >= INTERVAL '6 month' then 864000
-  when inter >= INTERVAL '70 day' then 432000
-	when inter >= INTERVAL '10 day' then 86400
-	when inter >= INTERVAL '2 day' then 21600
-	when inter >= INTERVAL '3 hour' then 3600
-	else 600 end as trunc
-from t1
-)
+    select e.id, e.event_time as time_old, u.friendly_name as user, u.id as uid, u.group_id as ugid,
+    coalesce(pp.name, p.name, 'Core') as package,
+    coalesce(pp.package_id, p.id) as pid, p.category
+    from events e
+    inner join users_sessions s on e.session_id = s.id
+    inner join users u on u.id = s.user_id
+    INNER JOIN LATERAL (
+        SELECT evv.value_uuid FROM event_parameter_values evv
+        WHERE evv.value_uuid is not null and evv.event_id = e.id
+    ) evv ON true
+    join entities en on en.id = evv.value_uuid
+    left join published_packages pp on en.package_id = pp.id
+    left join packages p on p.id = pp.package_id
+where @date(e.event_time) and (@packagesCategories = ARRAY['any'] or p.category = any(@packagesCategories))
+    ),
+    t1 AS (
+SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
+FROM res),
+    t2 AS (
+SELECT case
+    when inter >= INTERVAL '1 year' then 1728000
+    when inter >= INTERVAL '6 month' then 864000
+    when inter >= INTERVAL '70 day' then 432000
+    when inter >= INTERVAL '10 day' then 86400
+    when inter >= INTERVAL '2 day' then 21600
+    when inter >= INTERVAL '3 hour' then 3600
+    else 600 end as trunc
+from t1)
 select res.package, res.user, count(*) AS count,
 to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' as time_start,
@@ -47,8 +50,7 @@ to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
 res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid
 from res, t2, selected_groups sg
-where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all']::varchar[])
+where res.ugid = sg.id and (res.package = any(@packages) or @packages = ARRAY['all'])
 GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --end
 
@@ -79,11 +81,11 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id::varchar = any(@users)
+and u.id = any(@users)
 )
 select res.package, res.id, res.name, res.pid, count(*)::int
 from res
-where res.pid::varchar = any(@packages)
+where res.pid = any(@packages)
 group by res.package, res.id, res.name, res.pid
 --end
 
@@ -110,11 +112,11 @@ inner join users u on u.id = s.user_id
 where et.source in ('debug', 'error', 'info', 'warning', 'usage')
 and e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id::varchar = any(@users)
+and u.id = any(@users)
 )
 select res.source, count(*)::int
 from res
-where res.pid::varchar = any(@packages)
+where res.pid = any(@packages)
 group by res.source
 --end
 
@@ -142,11 +144,11 @@ inner join users u on u.id = s.user_id
 where et.source = 'audit'
 and e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id::varchar = any(@users)
+and u.id = any(@users)
 )
 select res.name, count(*)::int
 from res
-where res.pid::varchar = any(@packages)
+where res.pid = any(@packages)
 group by res.name
 --end
 
@@ -166,7 +168,7 @@ left join event_parameter_values vp
 inner join event_parameters pp on pp.id = vp.parameter_id and pp.name = 'entity' on vp.event_id = e.id
 inner join packages ppp on ppp.id::text = vp.value
 where @date(e.event_time)
-and (ppp.name = any(@packages) or @packages = ARRAY['all']::varchar[])
+and (ppp.name = any(@packages) or @packages = ARRAY['all'])
 --end
 
 --name: PackagesCategories
