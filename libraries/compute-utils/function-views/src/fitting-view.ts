@@ -1028,11 +1028,6 @@ export class FittingView {
 
       let optResult: OptimizationResult;
 
-      if (this.ivp !== undefined) {
-        console.log(this.ivp);
-        console.log(isWorkerApplicable(this.ivp));
-      }
-
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
         if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
@@ -1056,6 +1051,8 @@ export class FittingView {
 
       const allExtremums = optResult.extremums;
       const allExtrCount = allExtremums.length;
+
+      console.log(optResult);
 
       // Process fails
       if (allExtrCount < this.samplesCount) {

@@ -16,7 +16,7 @@ const ARG_INP_COUNT = 3;
 const ARG_COL_IDX = 0;
 
 /** */
-type NelderMeadInput = {
+export type NelderMeadInput = {
   settingNames: string[],
   settingVals: number[],
   loss: string,
@@ -35,7 +35,7 @@ type NelderMeadInput = {
 };
 
 /** */
-async function fit(task: NelderMeadInput): Promise<Extremum> {
+export async function fit(task: NelderMeadInput): Promise<Extremum> {
   //console.log(task);
 
   const ivp = task.ivp2ww;
@@ -200,10 +200,8 @@ export async function getFittedParams(
   // Generate starting points
   const startingPoints = sampleParams(samplesCount, minVals, maxVals);
 
-  const res: Extremum[] = [];
-
   // Run fitting
-  for (let i = 0; i < samplesCount; ++i) {//TODO: replace 1 with samplesCount
+  /* for (let i = 0; i < samplesCount; ++i) {//TODO: replace 1 with samplesCount
     // Inputs for Nelder-Mead method
     const task: NelderMeadInput = {
       settingNames: settingNames,
@@ -224,10 +222,60 @@ export async function getFittedParams(
     };
 
     res.push(await fit(task));
-  }
+  }*/
+
+  const nThreads = Math.min(Math.max(1, navigator.hardwareConcurrency - 2), samplesCount);
+  const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
+
+  const resultsArray: Extremum[] = [];
+
+  const promises = workers.map((w, idx) => {
+    return new Promise<void>((resolve, reject) => {
+      w.postMessage({
+        task: {
+          settingNames: settingNames,
+          settingVals: settingVals,
+          loss: loss,
+          ivp2ww: ivp2ww,
+          nonParamNames: nonParamNames,
+          fixedInputsNames: fixedInputsNames,
+          fixedInputsVals: fixedInputsVals,
+          variedInputNames: variedInputNames,
+          variedStart: startingPoints[idx],
+          variedInpMin: minVals,
+          variedInpMax: maxVals,
+          targetNames: targetNames,
+          targetVals: targetVals,
+          scaleVals: scaleVals,
+          samplesCount: samplesCount,
+        },
+      });
+
+      w.onmessage = (e: any) => {
+        w.terminate();
+        if (e.data.callResult === 0)
+          resultsArray.push(e.data.res);
+        else {
+          reject(e.data.msg ?? 'error in calculation');
+          return;
+        }
+        resolve();
+      };
+
+      w.onerror = (e) => {
+        w.terminate();
+        console.error(e);
+        reject(e);
+      };
+    });
+  });
+
+  await Promise.all(promises);
+
+  console.log(resultsArray);
 
   return {
-    extremums: res,
+    extremums: resultsArray,
     fails: null,
   };
 } // getFittedParams
