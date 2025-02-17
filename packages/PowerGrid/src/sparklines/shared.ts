@@ -81,7 +81,7 @@ export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: strin
   const df = gridCell.grid.dataFrame;
   const row = gridCell.cell.row.idx;
   const cols = df.columns.byNames(colNames).filter((c) => c !== null);
-  const values = ui.divV(cols.map((col) => ui.divText(col.name + ': ' + DG.format(col.getNumber(row), col.meta.format!))), { style: { marginTop: '20px' } });
+  const values = ui.divV(cols.map((col) => ui.divText(col.name + ': ' + col.getString(row))), { style: { marginTop: '20px' } });
   return ui.div([DG.GridCellWidget.fromGridCell(gridCell).root, values]);
 }
 
