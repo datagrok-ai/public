@@ -29,7 +29,7 @@ export async function molMIMModel(algorithm: string, num_molecules: number, prop
 }
 
 //name: EsmFoldModel
-//top-menu: Bio | BioNeMo | EsmFold...
+//top-menu: Bio | Folding | EsmFold...
 //input: dataframe df 
 //input: column sequences {semType: Macromolecule}
 export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
@@ -85,7 +85,7 @@ export async function diffDockModelScript(ligand: string, target: string, poses:
 }
 
 //name: DiffDockModel
-//top-menu: Chem | BioNeMo | DiffDock...
+//top-menu: Chem | Docking | DiffDock...
 //input: dataframe df
 //input: column ligands {semType: Molecule}
 //input: string target {choices: Bionemo: getTargetFiles}
