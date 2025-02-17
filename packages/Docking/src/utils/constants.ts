@@ -84,3 +84,9 @@ type Constraint = {
     contacts: [string, number][];      // List of [CHAIN_ID, RES_IDX] for contacts
   };
 };
+
+export interface BoltzResponse {
+  success: boolean;
+  error: string | null;
+  result: string | null;
+}

@@ -3,9 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as yaml from 'js-yaml';
-import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, Config } from './constants';
+import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from './constants';
 import { getFromPdbs, prop } from './utils';
 import { getTableView } from '../package';
+import { _package } from '../package-test';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -16,21 +17,40 @@ export class BoltzService {
   }
 
   static async runBoltz(config: string, msa: string): Promise<string> {
-    const container = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+   const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+
     const body = {
       yaml: config,
       ...(msa && { msa: msa }),
     };
-
-    const url = 'http://127.0.0.1:8001/predict';
-    const response = await fetch(url, {
+  
+    const params: RequestInit = {
       method: 'POST',
-      body: JSON.stringify(body),
-      headers: {'Content-Type': 'application/json'},
-    });
-
-    const json = await response.json();
-    return json['result'];
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    };
+  
+    const response = await grok.dapi.docker.dockerContainers.request(boltzContainer.id, '/predict', params);
+      
+    if (!response && !boltzContainer.status.startsWith('started') && !boltzContainer.status.startsWith('checking')) {
+      this.throwError('Container failed to start.');
+    }
+  
+    let jsonResponse: BoltzResponse;
+    try {
+      jsonResponse = JSON.parse(response!);
+    } catch (err) {
+      this.throwError('Error parsing response from Boltz container.');
+    }
+  
+    if (!jsonResponse.success) {
+      _package.logger.error(jsonResponse.error);
+      this.throwError('Prediction attempt failed: ' + jsonResponse.error);
+    }
+  
+    return jsonResponse.result!;
   }
 
   static async processBoltzResult(df: DG.DataFrame) {
@@ -144,5 +164,10 @@ export class BoltzService {
     widget.root.append(result);
   
     return widget;
+  }
+
+  static throwError(message: string): never {
+    grok.shell.error(message);
+    throw new Error(message);
   }
 }

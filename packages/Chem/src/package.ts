@@ -83,8 +83,6 @@ import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { ReinventBaseEditor, TARGET_PATH } from './widgets/reinvent-editor';
 
-import { BoltzService } from '../../Docking/src/utils/boltz-service';
-
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
   OpenChemLib: 'OpenChemLib',
@@ -188,7 +186,6 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        //@ts-ignore
         col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
@@ -335,7 +332,6 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?
-      //@ts-ignore
         DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
@@ -351,7 +347,6 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
-  //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
 
@@ -421,7 +416,6 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
-    //@ts-ignore
     const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
     return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
@@ -1639,7 +1633,6 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
-  //@ts-ignore
   return await chemDiversitySearch(col, similarityMetric[metricName], limit,
     fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
