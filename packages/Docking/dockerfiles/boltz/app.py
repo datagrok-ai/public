@@ -121,7 +121,6 @@ def predict():
 
               return jsonify({
                 "success": True,
-                "message": "Prediction completed successfully.",
                 "result": csv_string
               }), 200
       return jsonify({"success": False, "error": "PDB file not found in predictions folder."}), 500
@@ -129,7 +128,7 @@ def predict():
       return jsonify({"success": False, "error": "Prediction failed."}), 500
   except Exception as e:
     logging.error(f"Unexpected error: {str(e)}")
-    return jsonify({"success": False, "error": "An unexpected error occurred.", "details": str(e)}), 500
+    return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8001)
+  app.run(host='0.0.0.0', port=8888)

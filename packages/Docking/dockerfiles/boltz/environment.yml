@@ -11,5 +11,3 @@ dependencies:
   - cudatoolkit=11.8
   - pytorch>=1.8.1
   - pip
-  - pip:
-    - boltz

@@ -40,26 +40,28 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /app/
 RUN mkdir -p /home/mambauser/.boltz && chown -R $MAMBA_USER:$MAMBA_USER /home/mambauser
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
-    micromamba run -n base aws s3 cp s3://datagrok-data/models/boltz /app/boltz --no-sign-request --recursive --region us-east-2 && \
+    micromamba run -n base aws s3 cp s3://datagrok-data/models/boltz /app/boltz_weights --no-sign-request --recursive --region us-east-2 && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy && \
     mkdir -p /home/mambauser/.boltz && \
-    mv /app/boltz/* /home/mambauser/.boltz/ && \
-    rmdir /app/boltz && \
+    mv /app/boltz_weights/* /home/mambauser/.boltz/ && \
+    rmdir /app/boltz_weights && \
     chown -R $MAMBA_USER:$MAMBA_USER /home/mambauser/.boltz
 
 RUN set -ex ; \
     micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
-RUN micromamba run -n myenv git clone https://github.com/jwohlwend/boltz.git && \
+RUN git clone https://github.com/jwohlwend/boltz.git && \
     cd boltz && \
     micromamba run -n myenv pip install -e .
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
+ENV PATH="/opt/conda/envs/myenv/bin:$PATH"
 
-SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 EXPOSE 8001
 
-ENTRYPOINT ["micromamba", "run", "-n", "myenv", "python", "boltz.py", "--host", "0.0.0.0", "--port", "8001"]
+SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
+
+ENTRYPOINT ["micromamba", "run", "-n", "myenv", "python", "-m", "app", "--host", "0.0.0.0", "--port", "8001"]
