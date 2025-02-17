@@ -9,7 +9,7 @@
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.24.0-rc.7a33d2c370.6a52abd63",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
