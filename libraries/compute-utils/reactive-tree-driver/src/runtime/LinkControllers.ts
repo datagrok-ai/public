@@ -11,7 +11,7 @@ import {PipelineInstanceConfig} from '../config/PipelineInstance';
 export class ControllerCancelled extends Error { };
 
 export class ControllerBase<T> {
-  private isClosed = true;
+  private isActive = true;
 
   public outputs: Record<string, T> = {};
 
@@ -40,7 +40,7 @@ export class ControllerBase<T> {
   }
 
   protected checkIsClosed() {
-    if (!this.isClosed)
+    if (!this.isActive)
       throw new ControllerCancelled();
   }
 
@@ -49,7 +49,7 @@ export class ControllerBase<T> {
   }
 
   close() {
-    this.isClosed = false;
+    this.isActive = false;
   }
 }
 
