@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.49.0 (2025-02-17)
+
+To-Tomic-level support for RNA/DNA sequences
+
 ## 5.48.3 (2025-02-05)
 
 Remove healthCheck method from the IAutoDockService interface

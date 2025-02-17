@@ -263,6 +263,17 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
   return alphabetName;
 }
 
+export function detectHelmAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
+  // helm can contain DNA/RNA and other monomers. need to check that
+  const mons = Object.keys(freq);
+  // heuristic
+  const hasBranching = mons.filter((m) => m[1] === '(' && m[m.length - 2] === ')').length > mons.length * 0.8;
+  const correctedFreqs = hasBranching ? Object.entries(freq)
+    .reduce((acc, [m, f]) => { acc[m.substring(2, m.length - 2)] = f; return acc; },
+      {} as Record<string, number>) : freq;
+  return detectAlphabet(correctedFreqs, candidates, gapSymbol);
+}
+
 /** Selects a suitable palette based on column data
  * @param {DG.Column} seqCol Column to look for a palette
  * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
