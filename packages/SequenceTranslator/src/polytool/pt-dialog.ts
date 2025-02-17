@@ -353,6 +353,8 @@ function buildCyclizedMonomerHoverLink(
   const resLink: MonomerHoverLink = {
     targetCol: molCol,
     handler: (seqGridCell: DG.GridCell, cyclizedMonomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean => {
+      if (!seqGridCell || !targetGridCol.grid || !seqCol.dataFrame)
+        return true;
       const grid = targetGridCol.grid;
       const tableRowIdx = seqGridCell.tableRowIndex!;
       const gridRowIdx = seqGridCell.gridRow;
@@ -360,13 +362,13 @@ function buildCyclizedMonomerHoverLink(
       const positionMap = positionMaps[gridRowIdx];
 
       const prev = getMonomerHover();
-      if (!prev || (prev && (prev.dataFrameId != seqCol.dataFrame.id || prev.gridRowIdx != gridRowIdx ||
+      if (!prev || (prev && (prev.dataFrameId != seqCol.dataFrame?.id || prev.gridRowIdx != gridRowIdx ||
         prev.seqColName != seqCol.name || prev.seqPosition != cyclizedMonomer?.position))
       ) {
         if (prev) {
           setMonomerHover(null);
-          prev.gridCell.grid?.invalidate();
-          // prev.gridCell.render();
+          //prev.gridCell.grid?.invalidate();
+          prev.gridCell.render();
         }
         if (!cyclizedMonomer) {
           setMonomerHover(null);
@@ -389,7 +391,6 @@ function buildCyclizedMonomerHoverLink(
 
             const resSubstructList: ISubstruct[] = [];
             const seqMonomerList: number[] = positionMap[cyclizedMonomer.position];
-            console.log(seqMonomerList);
             for (const seqMonomer of seqMonomerList) {
               const monomerMap = molMonomerMap.get(seqMonomer); // single monomer
               if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
@@ -402,8 +403,8 @@ function buildCyclizedMonomerHoverLink(
         });
 
         // TODO: Invalidate targetGridCell
-        grid.invalidate();
-        // targetGridCell.render();
+        //grid.invalidate();
+        targetGridCell.render();
       }
 
       return true;
