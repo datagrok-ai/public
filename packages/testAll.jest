@@ -1,0 +1,26 @@
+Environment variable `HOST` is set to dev
+Environment variable `TARGET_PACKAGE` is set to Chembl
+[32mStarting tests...[0m
+Using web root: https://dev.datagrok.ai
+[32mInitialization completed.[0m
+Testing Chembl package...
+
+[32mSaved `test-report.csv`
+[0m
+Test result : Success : 21550 : Chembl.Cartridge usage.Substructure pattern : OK
+Test result : Success : 413 : Chembl.Converting queries.converter Molregno to Smiles : OK
+Test result : Success : 318 : Chembl.Converting queries.converter InchiKey to Inchi : OK
+Test result : Success : 326 : Chembl.Converting queries.converter Id to Smiles : OK
+Test result : Success : 329 : Chembl.Converting queries.converter InchiKey to Smiles : OK
+Test result : Success : 309 : Chembl.Converting queries.converter InchiKey to Chembl : OK
+Test result : Success : 2569 : Chembl.Converting queries.converter Name to Smiles : OK
+Test result : Success : 3795 : Chembl.Cartridge usage.Similarity threshold pattern : OK
+Test result : Success : 830 : Chembl.Converting queries.chemblIdToSmiles : OK
+Test result : Success : 1042 : Chembl.Converting queries.molregnoToSmiles : OK
+Test result : Success : 295 : Chembl.Converting queries.converter Chembl to Inchi : OK
+Test result : Success : 370 : Chembl.Converting queries.converter Chembl to InchiKey : OK
+Test result : Success : 493 : Chembl.Converting queries.converter Chembl to Smiles : OK
+
+Skipped tests: 0
+[32mTests passed.[0m
+Exiting with code 0
