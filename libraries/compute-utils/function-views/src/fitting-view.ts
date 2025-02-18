@@ -16,7 +16,7 @@ import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -683,7 +683,7 @@ export class FittingView {
 
       inputsByCategories.forEach((roots, category) => {
         if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(ui.h3(category));
+          form.append(getCategoryWidget(category, roots));
           form.append(...roots);
         }
       });
@@ -692,8 +692,9 @@ export class FittingView {
         const miscRoots = inputsByCategories.get('Misc');
 
         if (miscRoots!.length > 0) {
-          form.append(ui.h3('Misc'));
-          form.append(...inputsByCategories.get('Misc')!);
+          const roots = inputsByCategories.get('Misc')!;
+          form.append(getCategoryWidget('Misc', roots));
+          form.append(...roots);
         }
       }
     } else
