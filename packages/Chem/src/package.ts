@@ -2096,6 +2096,13 @@ async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
   return zipBlob;
 }
 
+//name: getFolders
+//output: list<string> targetFiles
+export async function getFolders(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
+  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
+}
+
 //name: ReinventEditor
 //tags: editor
 //input: funccall call
@@ -2141,8 +2148,8 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
 //top-menu: Chem | Generate molecules...
 //name: Reinvent
 //tags: HitDesignerFunction
-//input: string ligand
-//input: string optimize
+//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
+//input: string optimize {choices: Chem:getFolders}
 //editor: Chem: ReinventEditor
 //output: dataframe result
 export async function reinvent(

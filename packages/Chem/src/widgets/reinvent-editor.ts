@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { getFolders } from '../package';
 
 export const TARGET_PATH = 'System:AppData/Chem/reinvent';
 
@@ -29,15 +30,10 @@ export class ReinventBaseEditor {
     this.initOptimizeInput();
   }
   private async initOptimizeInput(template?: string) {
-    const templates = await this.getFolders();
+    const templates = await getFolders();
     this.optimizeInput.items = templates;
     if (template)
       this.optimizeInput.value = template;
-  }
-
-  private async getFolders(): Promise<string[]> {
-    const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-    return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
   }
   
   public getEditor(): HTMLElement {
