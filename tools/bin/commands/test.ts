@@ -122,8 +122,8 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     organized = filtered;
   }
   if (args.verbose) {
-    console.log(filtered);
-    console.log(`Tests total: ${filtered.length}`);
+    console.log(organized);
+    console.log(`Tests total: ${organized.length}`);
   }
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
