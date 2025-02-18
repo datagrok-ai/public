@@ -262,6 +262,10 @@ export class TreeViewer extends EChartViewer {
   
     this.chart.on('mouseover', showTooltip);
     this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.on('click', (params: any) => {
+      if (params.componentType === 'series')
+        params.data.collapsed = !params.data.collapsed;
+    });
     this.chart.getZr().on('click', handleZrClick);
     this.chart.getZr().on('mouseover', handleZrHover);
     this.chart.getZr().on('mouseout', handleZrMouseOut);
