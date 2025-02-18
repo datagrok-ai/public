@@ -21,13 +21,10 @@ res AS (
     from events e
     inner join users_sessions s on e.session_id = s.id
     inner join users u on u.id = s.user_id
-    INNER JOIN LATERAL (
-        SELECT evv.value_uuid FROM event_parameter_values evv
-        WHERE evv.value_uuid is not null and evv.event_id = e.id
-    ) evv ON true
-    join entities en on en.id = evv.value_uuid
-    left join published_packages pp on en.package_id = pp.id
-    left join packages p on p.id = pp.package_id
+    inner join event_parameter_values evv on evv.value_uuid is not null and evv.event_id = e.id
+    inner join entities en on en.id = evv.value_uuid
+    inner join published_packages pp on en.package_id = pp.id
+    inner join packages p on p.id = pp.package_id
 where @date(e.event_time) and (@packagesCategories = ARRAY['any'] or p.category = any(@packagesCategories))
     ),
     t1 AS (
