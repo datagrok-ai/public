@@ -1030,10 +1030,6 @@ export class FittingView {
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
-        console.log(`Workers: ${navigator.hardwareConcurrency - 2}`);
-
-        const start = Date.now();
-
         if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
           optResult = await getFittedParams(
             this.loss,
@@ -1050,10 +1046,6 @@ export class FittingView {
           );
         } else
           optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
-
-        const finish = Date.now();
-
-        console.log(`Time: ${finish - start} ms.`);
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 

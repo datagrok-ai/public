@@ -1,6 +1,8 @@
+// Worker for optimization of parameters of Diff Studio model: the basic case (no loops, updates & outputs)
+
 import {Extremum} from '../../optimizer-misc';
 import {fit} from '../fitting-utils';
-import {NO_ERRORS, NelderMeadInput} from '../defs';
+import {NO_ERRORS, NelderMeadInput, RESULT_CODE} from '../defs';
 
 onmessage = async function(evt) {
   try {
@@ -19,10 +21,10 @@ onmessage = async function(evt) {
       }
     }
 
-    postMessage({'callResult': 0, 'extremums': extremums, 'fitRes': fitRes});
+    postMessage({'callResult': RESULT_CODE.SUCCEED, 'extremums': extremums, 'fitRes': fitRes});
   } catch (e) {
     postMessage({
-      'callResult': -1,
+      'callResult': RESULT_CODE.FAILED,
       'msg': e instanceof Error ? e.message : 'Platform issue: in-webworker optimization failed',
     });
   }

@@ -1,15 +1,15 @@
 /* eslint-disable valid-jsdoc */
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {IVP, IVP2WebWorker} from '@datagrok/diff-studio-tools';
 import {LOSS} from '../constants';
-import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT,NO_ERRORS} from './defs';
+import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
+  RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams} from '../optimizer-sampler';
 import {getBatches} from './fitting-utils';
 import {OptimizationResult, Extremum} from '../optimizer-misc';
 
-/** */
+/** Return dataframe summarizing fails of fitting */
 export function getFailesDf(points: Float32Array[], warnings: string[]): DG.DataFrame | null {
   const failsCount = points.length;
 
@@ -95,14 +95,20 @@ export async function getFittedParams(
   // Generate starting points
   const startingPoints = sampleParams(samplesCount, minVals, maxVals);
 
-  const nThreads = Math.min(Math.max(1, navigator.hardwareConcurrency - 2), samplesCount);
+  // Create workers
+  const nThreads = Math.min(
+    Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT),
+    samplesCount,
+  );
   const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
 
+  // Structs for optimization results
   const resultsArray: Extremum[] = [];
   const failedInitPoints: Float32Array[] = [];
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
 
+  // Run optimization
   const promises = workers.map((w, idx) => {
     return new Promise<void>((resolve, reject) => {
       w.postMessage({
@@ -127,7 +133,7 @@ export async function getFittedParams(
 
       w.onmessage = (e: any) => {
         w.terminate();
-        if (e.data.callResult === 0) {
+        if (e.data.callResult === RESULT_CODE.SUCCEED) {
           e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));
           e.data.fitRes.forEach((res: string, i: number) => {
             if (res !== NO_ERRORS) {
@@ -148,7 +154,7 @@ export async function getFittedParams(
         reject(e);
       };
     });
-  });
+  }); // promises
 
   await Promise.all(promises);
 

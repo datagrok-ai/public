@@ -1,9 +1,9 @@
 /* eslint-disable valid-jsdoc */
 import {IVP, solveIvp} from '@datagrok/diff-studio-tools';
-import { optimizeNM } from '../optimizer-nelder-mead';
-import { ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput } from './defs';
-import { Extremum } from '../optimizer-misc';
-import { LOSS } from '../constants';
+import {optimizeNM} from '../optimizer-nelder-mead';
+import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
+import {Extremum} from '../optimizer-misc';
+import {LOSS} from '../constants';
 
 /** Return true if in-worker fitting is applicable */
 export function isWorkerApplicable(ivp: IVP): boolean {
@@ -60,14 +60,8 @@ export function mad(targetArg: Float64Array, targetFuncs: Float64Array[], scaleV
     for (let k = 0; k < argsCount; ++k)
       localMax = Math.max(localMax, Math.abs(targetFuncs[i][k] - modelFuncs[i][indices[k]]));
 
-    //console.log(`${targetArg[k]} <-> ${targetFuncs[i][k]}; ${modelArg[indices[k]]} <-> ${modelFuncs[i][indices[k]]}`);
-    //console.log(`local = ${localMax}`);
-
-
     res = Math.max(res, localMax / scaleVals[i]);
   }
-
-  //console.log(`MAD = ${res}`);
 
   return res;
 } // mad
@@ -90,18 +84,11 @@ export function rmse(targetArg: Float64Array, targetFuncs: Float64Array[], scale
     for (let k = 0; k < argsCount; ++k)
       sum += ((targetFuncs[i][k] - modelFuncs[i][indices[k]]) / scale)**2;
 
-    //console.log(`${targetArg[k]} <-> ${targetFuncs[i][k]}; ${modelArg[indices[k]]} <-> ${modelFuncs[i][indices[k]]}`);
-    //console.log(`sum = ${sum}`);
-
-
     res += sum;
   }
 
-  //console.log(`RMSE = ${Math.sqrt(res)}`);
-
   return Math.sqrt(res);
 } // rmse
-
 
 /** Return points splitted into batches */
 export function getBatches(points: Float32Array[], batchesCount: number): Float32Array[][] {
@@ -121,12 +108,9 @@ export function getBatches(points: Float32Array[], batchesCount: number): Float3
   return batches;
 } // getBatches
 
-/** */
+/** Perform Neldel-Mead optimization */
 export async function fit(task: NelderMeadInput, start: Float32Array): Promise<Extremum> {
-  //console.log(task);
-
   const ivp = task.ivp2ww;
-
   const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
   const ivpInputVals = new Float64Array(inputSize);
   const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
@@ -156,7 +140,6 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
 
     return idx;
   });
-  //console.log('Out idx-s: ', outIndex);
 
   const dim = start.length;
   const targetArgVals = task.targetVals[0];
@@ -190,7 +173,6 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
   costFunc(vec);
 
   const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
-  //console.log(settings);
 
   const res = await optimizeNM(costFunc, start, settings, task.variedInpMin, task.variedInpMax);
 
