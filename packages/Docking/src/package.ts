@@ -315,7 +315,7 @@ export async function getBoltzConfigFolders(): Promise<string[]> {
 //input: string config
 //input: string msa
 //output: string s
-export async function runBoltz(config: string, msa: string) {
+export async function runBoltz(config: string, msa: string): Promise<string> {
   return await BoltzService.runBoltz(config, msa);
 }
 

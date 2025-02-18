@@ -90,9 +90,9 @@ export class BoltzService {
       resultDf.append(result, true);
     }
   
-    await this.processBoltzResult(resultDf);
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
+    await this.processBoltzResult(df);
   
     return df;
   }  
@@ -133,10 +133,10 @@ export class BoltzService {
 
       sequences.pop();
     }
-
-    await this.processBoltzResult(resultDf);
+    
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
+    await this.processBoltzResult(df);
   
     return df;
   }
