@@ -677,8 +677,9 @@ export class FittingView {
     // add inputs to the main form (grouped by categories)
     if (inputsByCategories.size > 1) {
       if (topCategory !== null) {
-        form.append(ui.h3(topCategory));
-        form.append(...inputsByCategories.get(topCategory)!);
+        const roots = inputsByCategories.get(topCategory);
+        form.append(getCategoryWidget(topCategory, roots!));
+        form.append(...roots!);
       }
 
       inputsByCategories.forEach((roots, category) => {
