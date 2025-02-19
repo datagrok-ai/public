@@ -52,12 +52,16 @@ export class SeqValueBase extends DG.SemanticValue<string> {
       return this.getSplitted();
     const originalSplit = splitterAsHelm(this.helm);
     const fullArray: string[] = [];
+    // heuristic for detecting dna/rna
+    const helmNucleotideFullRe = /\(|\)/;
+
     for (let i = 0; i < originalSplit.length; i++) {
       const m = originalSplit.getOriginal(i);
-      if (m[1] === '(' && m[m.length - 2] === ')') {
-        fullArray.push(m[0]);
-        fullArray.push(m.substring(2, m.length - 2));
-        fullArray.push(m[m.length - 1]);
+      const splitM = m.split(helmNucleotideFullRe).filter((el) => !!el);
+      if (splitM.length === 3) {
+        fullArray.push(splitM[0]);
+        fullArray.push(splitM[1]);
+        fullArray.push(splitM[2]);
       } else
         fullArray.push(m);
     }
