@@ -442,7 +442,7 @@ export class TreeViewer extends EChartViewer {
       case 'table':
         this.updateTable();
         this.onTableAttached();
-        this.render();
+        this.render(false);
         break;
   
       case 'onClick':
@@ -451,7 +451,7 @@ export class TreeViewer extends EChartViewer {
   
       case 'hierarchyColumnNames':
         this.chart.clear();
-        this.render();
+        this.render(false);
         break;
   
       case 'colorColumnName':
@@ -481,7 +481,7 @@ export class TreeViewer extends EChartViewer {
   
       case 'initialTreeDepth':
         this.option.series[0].initialTreeDepth = p.get(this);
-        this.render();
+        this.render(false);
 
       case 'symbolSize':
         this.option.series[0].symbolSize = p.get(this);
@@ -763,18 +763,35 @@ export class TreeViewer extends EChartViewer {
     return this.orient === 'BT' || this.orient === 'TB';
   }
 
+  syncCollapsedValues(newData: any, existingData: any) {
+    const pathMap = new Map<string, any>();
+
+    (function traverse(node: any) {
+        if (!node) return;
+        if (node.path !== null) pathMap.set(node.path, node);
+        node.children?.forEach(traverse);
+    })(existingData[0]);
+
+    (function update(node: any) {
+        if (node.path !== null && pathMap.has(node.path)) {
+            node.collapsed = pathMap.get(node.path).collapsed;
+        }
+        node.children?.forEach(update);
+    })(newData[0]);
+  }
+
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
     super.detach();
   }
 
-  render(): void {
+  render(preserveCollapsed: boolean = true): void {
     this.renderQueue = this.renderQueue
-      .then(() => this._render());
+      .then(() => this._render(preserveCollapsed));
   }
 
-  async _render() {
+  async _render(preserveCollapsed: boolean = true) {
     if (!this.dataFrame)
       return;
 
@@ -790,6 +807,10 @@ export class TreeViewer extends EChartViewer {
       return;
 
     const data = await this.getSeriesData();
+    const existingData = this.option.series[0].data || [];
+    
+    if (preserveCollapsed)
+      this.syncCollapsedValues(data, existingData);
 
     Object.assign(this.option.series[0], {
       data
