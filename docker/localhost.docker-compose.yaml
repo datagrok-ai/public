@@ -44,7 +44,8 @@ services:
           "dbPassword": "dg",
           "adminPassword": "admin",
           "adminDevKey": "admin",
-          "isolatesCount": 2
+          "isolatesCount": 2,
+          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key"}
         }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
@@ -121,17 +122,10 @@ services:
     environment:
       GROK_PARAMETERS: |
         {
-          "dbServer": "database",
-          "dbPort": "5432",
-          "db": "datagrok",
-          "dbLogin": "dg",
-          "dbPassword": "dg",
           "isolatesCount": 1,
-          "deployDemo": false,
-          "deployTestDemo": false,
-          "datlasApiUrl": "http://datagrok:8082",
           "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"]
+          "capabilities": ["jupyter"],
+          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped
     depends_on:
