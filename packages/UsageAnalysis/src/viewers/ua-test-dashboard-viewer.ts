@@ -92,6 +92,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       verdicts.push(...this.verdictsOnTestTrack());
       verdicts.push(...(await this.unaddressedTests(dataFrame)));
       verdicts.push(...(await this.verdictsForTickets()));
+      verdicts.push(...this.getBuildInfos(dataFrame));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
         d.append(ui.h1('Platform is not release-ready ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
@@ -194,6 +195,37 @@ export class TestDashboardWidget extends DG.JsViewer {
       ]))];
     }
   }
+  getBuildInfos(df: DG.DataFrame): Verdict[] {
+    try {
+      let builds = Array.from(df.columns.toList().filter((col) => col.name.endsWith('date')).map((col) => col.name.split(' ')[0]));
+      builds.sort((a, b) => parseInt(a) - parseInt(b));
+      let res = ui.table(builds, (build, idx) => {
+          console.log(build);
+          console.log(df.col(build + ' instance')?.categories[0] ?? 'unknown');
+          console.log(df.col(build + ' commit')?.categories[0] ?? 'unknown');
+          let date = null;
+          for (var i = 0; i < df.rowCount; i++) {
+            let curDate = df.get(build + ' build_date', i);
+            if (curDate != undefined) {
+              date = curDate;
+              break;
+            }
+          }
+          return [ui.span([build]),
+            ui.tableFromMap({'Instance': df.col(build + ' instance')?.categories[0] ?? 'unknown',
+                             'Commit': df.col(build + ' commit')?.categories[0] ?? 'unknown',
+                             'Build date': date ?? 'unknown'})
+          ];
+        }
+      );
+      return [new Verdict(Priority.INFO, 'Builds info', res)];
+    } catch (x) {
+      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
+        ui.span(['Failed to get build infos']),
+        ui.span([x])
+      ]))];
+    }
+  }
   async unaddressedTests(df: DG.DataFrame): Promise<Verdict[]> {
     try {
       let verdicts: Verdict[] = [];
@@ -266,6 +298,7 @@ export class TestDashboardWidget extends DG.JsViewer {
     let testColumn: DG.Column = df.col('test')!;
     let ignoreColumn: DG.Column = df.col('ignore?')!;
     let ignoreReasonColumn: DG.Column = df.col('ignoreReason')!;
+    let ignoreVersionColumn: DG.Column = df.col('ignoreReason')!;
     let widgets: DG.Widget[] = [];
     for (var i = 0; i < df.rowCount; i++) {
       if (ignoreColumn.get(i)) {

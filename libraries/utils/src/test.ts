@@ -592,16 +592,17 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!skip)
     stdLog(`Started ${t.category} ${t.name}`);
   const start = Date.now();
+  const startDate = new Date(start).toISOString();
   try {
     if (skip)
-      r = { date: new Date().toISOString(), success: true, result: skipReason!, ms: 0, skipped: true };
+      r = { date: startDate, success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = testTimeout ?? STANDART_TIMEOUT;
-      r = { date: new Date().toISOString(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+      r = { date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
     stdError(x);
-    r = { date: new Date().toISOString(), success: false, result: await getResult(x), ms: 0, skipped: false };
+    r = { date: startDate, success: false, result: await getResult(x), ms: 0, skipped: false };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');

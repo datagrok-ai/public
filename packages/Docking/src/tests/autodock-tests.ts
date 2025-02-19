@@ -71,5 +71,5 @@ category('AutoDock', () => {
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
     const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf, 10);
     expect(posesDf.rowCount, 30);
-  }, {timeout: 90000, stressTest: true});
+  }, {timeout: 90000});
 }, {owner: 'oserhiienko@datagrok.ai'});

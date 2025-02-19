@@ -26,7 +26,7 @@ export const InputForm = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
-    skipInit:{
+    skipInit: {
       type: Boolean,
       default: true,
     },
@@ -55,7 +55,7 @@ export const InputForm = Vue.defineComponent({
     const validationStates = Vue.computed(() => props.validationStates);
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
-    const skipInit = Vue.computed(() => props.skipInit)
+    const skipInit = Vue.computed(() => props.skipInit);
 
     const states = Vue.reactive({
       meta: {} as Record<string, any>,

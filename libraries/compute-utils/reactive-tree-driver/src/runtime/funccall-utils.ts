@@ -10,9 +10,9 @@ import {AdapterInitData} from './StateTreeNodes';
 import {ItemMetadata} from '../view/ViewCommunication';
 import {loadIsFavorite, saveIsFavorite} from '../../../shared-utils/utils';
 
-const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
-const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
-const RUN_ERROR_PATH = 'RUN_ERROR';
+export const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
+export const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
+export const RUN_ERROR_PATH = 'RUN_ERROR';
 
 const CONFIG_PATH = 'PIPELINE_CONFIG';
 

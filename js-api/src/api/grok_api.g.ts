@@ -1434,6 +1434,7 @@ export interface IDartApi {
   grok_Dapi_UserFiles_Rename(fi: any, newName: String): Promise<any>;
   grok_Dapi_UserFiles_ReadBinaryDataFrames(fi: any): Promise<any>;
   grok_Dapi_UserFiles_WriteBinaryDataFrames(fi: any, dfList: any): Promise<any>;
+  grok_Dapi_UserFiles_CreateDirectory(fi: any): Promise<any>;
   grok_RangeSlider(style: String, vertical: Bool): any;
   grok_RangeSlider_Get_MinRange(rangeSelector: any): any;
   grok_RangeSlider_Get_MaxRange(rangeSelector: any): any;

@@ -23,7 +23,7 @@ category('Docker', () => {
   test('Get response: On demand', async () => {
     const container = await stopContainer(containerOnDemandName);
     await testResponse(container.id);
-  }, {timeout: 240000, stressTest: true});
+  }, {timeout: 240000, /*stressTest: true*/});
 
   test('Container timeout', async () => {
     let container = await stopContainer(containerOnDemandName);
@@ -31,7 +31,7 @@ category('Docker', () => {
     await delay(90000);
     container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
     expect(container.status.startsWith('stop'), true);
-  }, {timeout: 240000, stressTest: true});
+  }, {timeout: 240000, /*stressTest: true*/});
 
   test('Get response and logs: Incorrect', async () => {
     let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
@@ -57,7 +57,7 @@ category('Docker', () => {
     } finally {
       grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
     }
-  }, {timeout: 240000, stressTest: true});
+  }, {timeout: 240000, /*stressTest: true*/});
 });
 
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {

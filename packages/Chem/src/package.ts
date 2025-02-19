@@ -81,6 +81,7 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
+import { ReinventBaseEditor, TARGET_PATH } from './widgets/reinvent-editor';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -119,8 +120,6 @@ export function getMolFileHandler(molString: string): MolfileHandlerBase {
 
 export const _package: DG.Package = new DG.Package();
 export let _properties: any;
-
-export const TARGET_PATH = 'System:AppData/Chem/reinvent';
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
@@ -1256,12 +1255,18 @@ export function toxicity(smiles: DG.SemanticValue): DG.Widget {
 //output: column result
 export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: DG.chem.Notation): Promise<DG.Column> {
   let col: DG.Column;
+  let newColName = `${molecule.name}_${targetNotation}`;
+  try {
+    if (!!molecule.dataFrame?.columns)
+      newColName = molecule.dataFrame.columns.getUnusedName(newColName);
+  } catch (e) {}
+
   try {
     const res = await convertNotationForColumn(molecule, targetNotation);
-    col = DG.Column.fromStrings(`${molecule.name}_${targetNotation}`, res);
+    col = DG.Column.fromStrings(newColName, res);
     col.semType = DG.SEMTYPE.MOLECULE;
   } catch (e: any) {
-    col = DG.Column.string(`${molecule.name}_${targetNotation}`, molecule.length).init((_) => e?.message);
+    col = DG.Column.string(newColName, molecule.length).init((_) => e?.message);
   }
   return col;
 }
@@ -1297,7 +1302,8 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
       molecules.set(i, res[i], false);
     molecules.meta.units = units;
   } else {
-    const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
+    const colName = data.columns.getUnusedName(`${molecules.name}_${targetNotation}`);
+    const col = DG.Column.fromStrings(colName, res);
     col.meta.units = units;
     col.semType = DG.SEMTYPE.MOLECULE;
     if (!join)
@@ -1859,7 +1865,6 @@ export async function demoScaffold(): Promise<void> {
   await _demoScaffoldTree();
 }
 
-
 //top-menu: Chem | Transform | Names To Smiles...
 //name: Names To Smiles
 //tags: Transform
@@ -2081,13 +2086,6 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   table.columns.add(col);
 }
 
-//name: getFolder
-//output: list<string> folders
-export async function getFolder(): Promise<string[]> {
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
-}
-
 async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
   const zip = new JSZip();
   folder.forEach(file => {
@@ -2096,6 +2094,29 @@ async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
 
   const zipBlob = await zip.generateAsync({ type: 'blob' });
   return zipBlob;
+}
+
+//name: getFolders
+//output: list<string> targetFiles
+export async function getFolders(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
+  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
+}
+
+//name: ReinventEditor
+//tags: editor
+//input: funccall call
+export function reinventEditor(call: DG.FuncCall): void {
+  const funcEditor = new ReinventBaseEditor();
+  ui.dialog({title: 'Reinvent'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        ligand: params.ligand,
+        optimize: params.optimize
+      }).call(true);
+    }).show();
 }
 
 //name: runReinvent
@@ -2127,8 +2148,9 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
 //top-menu: Chem | Generate molecules...
 //name: Reinvent
 //tags: HitDesignerFunction
-//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
-//input: string optimize {choices: Chem: getFolder} [Optimization criteria]
+//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
+//input: string optimize {choices: Chem:getFolders}
+//editor: Chem: ReinventEditor
 //output: dataframe result
 export async function reinvent(
   ligand: string, optimize: string

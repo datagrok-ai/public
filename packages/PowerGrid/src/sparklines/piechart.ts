@@ -8,7 +8,8 @@ import {
   isSummarySettingsBase,
   SparklineType,
   SummaryColumnColoringType,
-  SummarySettingsBase
+  SummarySettingsBase,
+  NormalizationType, getScaledNumber, getSparklinesContextPanel,
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
@@ -52,6 +53,7 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
   settings.style ??= PieChartStyle.Radius;
   settings.sectors ??= sectors;
   settings.colorCode ??= SummaryColumnColoringType.Bins;
+  settings.normalization ??= NormalizationType.Column;
   return settings;
 }
 
@@ -175,7 +177,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     if (cols[activeColumn] !== null) {
-      r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
+      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn], {normalization: settings.normalization});
+      r = scaledNumber * (gridCell.bounds.width - 4) / 2;
       r = Math.max(r, minRadius);
     }
   } else if (settings.sectors) {
@@ -273,7 +276,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i] === null || cols[i].isNone(row))
           continue;
 
-        let r = cols[i].scale(row) * box.width / 2;
+        const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
+        let r = scaledNumber * box.width / 2;
         r = Math.max(r, minRadius);
         g.beginPath();
         g.moveTo(box.midX, box.midY);
@@ -301,7 +305,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
         const radiusFactor = Math.min(box.width, box.height) / 2;
         const arcEnd = currentAngle + sectorAngle;
-        
+
         // Render inner circle representing the range
         g.beginPath();
         g.arc(box.midX, box.midY, lowerBound * radiusFactor, currentAngle, arcEnd);
@@ -367,5 +371,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
-  async getContextValue (gridCell: DG.GridCell): Promise<any> { return DG.GridCellWidget.fromGridCell(gridCell).root; }
+  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+    return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
+  }
 }

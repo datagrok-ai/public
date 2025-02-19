@@ -187,7 +187,7 @@ async function getPolyToolEnumerateDialog(
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
     // #### Inputs
     inputs = {
-      macromolecule: helmHelper.createHelmInput(
+      macromolecule: helmHelper.createHelmInput(                                                     
         'Macromolecule', {
           editable: false,
           editorOptions: {
@@ -195,9 +195,20 @@ async function getPolyToolEnumerateDialog(
               monomerNumbering: MonomerNumberingTypes.continuous,
               getMonomer: (a: HelmAtom | HelmType, name?: string): GetMonomerResType => {
                 const aa: HelmAtom = a as HelmAtom;
+
+
                 if (aa.T === 'ATOM') {
-                  const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
-                  return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                  try {
+                    if (!seqValue.isDna() && !seqValue.isRna()) {
+                      const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
+                      return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                    } else {
+                      const canonicalSymbol = seqValue.getSplittedWithSugarsAndPhosphates().getCanonical(aa.bio!.continuousId - 1);
+                      return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                    }
+                  } catch (_) {
+                    return monomerLibFuncs.getMonomer(a, name);
+                  }
                 } else { return monomerLibFuncs.getMonomer(a, name); }
               },
             },

@@ -10,6 +10,7 @@ import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
 import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 import { Fingerprint } from '../utils/chem-common';
 import { SubstructureSearchType } from '../constants';
+import { sketchersWarmUp } from './sketcher-tests';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
@@ -137,6 +138,8 @@ category('substructure filters', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    const funcs = DG.Func.find({tags: ['moleculeSketcher']});
+    await sketchersWarmUp(funcs);
   });
 
   test('filterBy2Columns', async () => {

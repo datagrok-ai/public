@@ -168,7 +168,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
 export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
   const helmParts = seq.split('$');
   const spList = helmParts[0].split('|');
-  const mList: string[] = wu(spList.map((sp: string) => sp.match(/(?<=\{).+(?=})/)![0].split('.').map((m) => cleanupHelmSymbol(m))))
+  const mList: string[] = wu(spList
+    .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
+      .map((m) => cleanupHelmSymbol(m)))
+  )
     .flatten().toArray();
 
   return new StringListSeqSplitted(mList, GapOriginals[NOTATION.HELM]);
@@ -261,6 +264,17 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
   } else
     alphabetName = ALPHABET.UN;
   return alphabetName;
+}
+
+export function detectHelmAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
+  // helm can contain DNA/RNA and other monomers. need to check that
+  const mons = Object.keys(freq);
+  // heuristic
+  const hasBranching = mons.filter((m) => m[1] === '(' && m[m.length - 2] === ')').length > mons.length * 0.8;
+  const correctedFreqs = hasBranching ? Object.entries(freq)
+    .reduce((acc, [m, f]) => { acc[m.substring(2, m.length - 2)] = f; return acc; },
+      {} as Record<string, number>) : freq;
+  return detectAlphabet(correctedFreqs, candidates, gapSymbol);
 }
 
 /** Selects a suitable palette based on column data

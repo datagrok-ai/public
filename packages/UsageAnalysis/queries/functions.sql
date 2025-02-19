@@ -9,7 +9,7 @@
 --test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'], ['any'])
 with recursive selected_groups as (
     select id from groups
-    where id::varchar = any(@groups)
+    where id = any(@groups)
 union
 select gr.child_id as id from selected_groups sg
                                   join groups_relations gr on sg.id = gr.parent_id
@@ -31,7 +31,7 @@ and proj.is_package = true
 left join packages p1 on proj.name = p1.name or proj.name = p1.friendly_name
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
-where @date(e.event_time) and (@tags = ARRAY['any']::varchar[] or t.tag = any(@tags))
+where @date(e.event_time) and (@tags = ARRAY['any'] or t.tag = any(@tags))
 ),
 t1 AS (
   SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
@@ -54,7 +54,7 @@ AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
 res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid
 from res, t2, selected_groups sg
 where res.ugid = sg.id
-  and (res.package = any(@packages) or @packages = ARRAY['all']::varchar[])
+  and (res.package = any(@packages) or @packages = ARRAY['all'])
 GROUP BY res.function, res.package, res.user, time_start, time_end,
     res.uid, res.ugid, res.pid
 --end
@@ -88,12 +88,12 @@ with res AS (
     inner join users u on u.id = s.user_id
     where e.event_time between to_timestamp(@time_start)
     and to_timestamp(@time_end)
-    and u.id::varchar = any(@users)
+    and u.id = any(@users)
     and et.name = any(@functions)
     )
 select res.package, res.run, res.function, res.time, res.rid, res.pid
 from res
-where res.pid::varchar = any(@packages)
+where res.pid = any(@packages)
 --end
 
 

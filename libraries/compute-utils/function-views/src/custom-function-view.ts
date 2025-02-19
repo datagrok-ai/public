@@ -67,7 +67,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public linkFunccall(funcCall: DG.FuncCall) {
     this.funcCall = funcCall;
     this.path = funcCall.author ? `?id=${funcCall.id}` : '?';
-    const modelName = funcCall?.func?.friendlyName ?? funcCall?.func?.name ;
+    const modelName = funcCall?.func?.friendlyName ?? funcCall?.func?.name;
     this.name = modelName;
   }
 

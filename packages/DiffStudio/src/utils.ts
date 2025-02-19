@@ -335,8 +335,7 @@ export function removeTitle(node: DG.DockNode) {
   }, UI_TIME.TITLE_REMOVING);
 }
 
-/**  String-to-value */
-export function strToVal(s: string) {
-  const num = Number(s);
-  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
-};
+/** No models message */
+export function noModels(): void {
+  grok.shell.info(`No models`);
+}

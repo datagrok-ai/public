@@ -213,6 +213,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         catchError((e) => {
           this.runError$.next(String(e));
           this.outdatedChanged$.next(true);
+          console.error(e);
           grok.shell.error(e);
           return EMPTY;
         }),

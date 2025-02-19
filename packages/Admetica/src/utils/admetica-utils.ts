@@ -54,7 +54,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
   
-  if (!response && !admeticaContainer.status.startsWith('started')) {
+  if (!response && !admeticaContainer.status.startsWith('started') && !admeticaContainer.status.startsWith('checking')) {
     throwError('Container failed to start.');
   }
   

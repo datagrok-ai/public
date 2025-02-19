@@ -22,11 +22,11 @@ export const RibbonPanel = Vue.defineComponent({
 
     const isInstanceManagedPanel = (panel: HTMLElement[]) => {
       return panel.some((ribbonItem) => (ribbonItem.children[0] as any)?.RibbonPanelUUID === uuid);
-    }
+    };
 
     const filterEmptyPanels = (panels: HTMLElement[][]) => {
       return panels.filter((panel) => panel.some((ribbonItem) => (ribbonItem.children?.length)));
-    }
+    };
 
     Vue.watch(elements, () => {
       // Workaround for ui.comboPopup elements. It doesn't work if it is not a direct child of '.d4-ribbon-item'
