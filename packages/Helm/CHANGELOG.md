@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.8.0 (2025-02-20)
+
+Supporting all notations for hovering, conversion and context actions
+
 ## 2.7.4 (2025-02-17)
 
 Fix Helm Splitter for marginal cases and tests
