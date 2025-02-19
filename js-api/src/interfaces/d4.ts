@@ -431,7 +431,11 @@ export interface IScatterPlotSettings {
 
   /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
   /// Useful when multiple points fall on the same exact position.
+  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
   jitterSize: number;
+
+  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
+  jitterSizeY: number;
 
   markerDrawBorder: boolean;
 
