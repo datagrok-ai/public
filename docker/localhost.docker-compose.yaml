@@ -45,7 +45,7 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key"}
+          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key"}
         }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
@@ -125,7 +125,7 @@ services:
           "isolatesCount": 1,
           "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "capabilities": ["jupyter"],
-          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 4}
+          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped
     depends_on:
