@@ -1,4 +1,34 @@
 services:
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      datagrok:
+        aliases:
+          - rabbitmq
+    restart: unless-stopped
+    profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
+
+  grok_pipe:
+    image: datagrok/grok_pipe:1.0.0
+    container_name: grok_pipe
+    ports:
+      - "3000:3000"
+    environment:
+      API_KEY: test-key
+    networks:
+      datagrok:
+        aliases:
+          - grok_pipe
+    restart: unless-stopped
+    profiles: [ "all", "scripting", "jupyter_kernel_gateway", "jkg" ]
+
   datagrok:
     privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
