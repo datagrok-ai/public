@@ -741,7 +741,7 @@ async function polyToolEnumerateSeq(
           toAtomicLevel.chiralityEngine, toAtomicLevel.highlightMonomers);
         enumeratorResDf.columns.add(talRes.molCol!, false);
         const resMolCol = talRes.molCol!;
-        buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule);
+        await buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule, true);
       } else if (dataRole === PolyToolDataRole.template) {
         const talRes = await polyToolConvert(enumCol,
           toAtomicLevel.generateHelm, false, toAtomicLevel.chiralityEngine, false, toAtomicLevel.rules);
