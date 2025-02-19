@@ -1,12 +1,15 @@
 /* eslint-disable valid-jsdoc */
-import {IVP, solveIvp} from '@datagrok/diff-studio-tools';
+import {IVP, IVP2WebWorker, solveIvp} from '@datagrok/diff-grok';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
 import {Extremum} from '../optimizer-misc';
 import {LOSS} from '../constants';
 
 /** Return true if in-worker fitting is applicable */
-export function isWorkerApplicable(ivp: IVP): boolean {
+export function isWorkerApplicable(ivp: IVP | undefined, ivpWW: IVP2WebWorker | undefined): boolean {
+  if ((ivp === undefined) || (ivpWW === undefined))
+    return false;
+
   return (ivp.loop === null) && (ivp.updates === null) && (ivp.outputs === null);
 }
 

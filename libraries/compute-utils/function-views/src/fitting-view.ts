@@ -20,7 +20,7 @@ import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
-import {IVP, IVP2WebWorker, getIvp2WebWorker} from '@datagrok/diff-studio-tools';
+import {IVP, IVP2WebWorker, getIvp2WebWorker} from '@datagrok/diff-grok';
 import {isWorkerApplicable} from './fitting/diff-studio/fitting-utils';
 
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
@@ -1032,11 +1032,11 @@ export class FittingView {
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
-        if ((this.ivp !== undefined) && (this.ivpWW !== undefined)) {
+        if (isWorkerApplicable(this.ivp, this.ivpWW)) {
           optResult = await getFittedParams(
             this.loss,
-            this.ivp,
-            this.ivpWW,
+            this.ivp!,
+            this.ivpWW!,
             this.nelderMeadSettings,
             variedInputNames,
             minVals,

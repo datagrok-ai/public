@@ -212,6 +212,12 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
   };
 }
 
+/**  String-to-value */
+const strToVal = (s: string) => {
+  const num = Number(s);
+  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
+};
+
 /** Browse properties */
 type Browsing = {
   treeNode: DG.TreeViewGroup,

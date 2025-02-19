@@ -1,4 +1,4 @@
-import {IVP2WebWorker} from '@datagrok/diff-studio-tools';
+import {IVP2WebWorker} from '@datagrok/diff-grok';
 
 export const ARG_IDX = 0;
 export const NO_ERRORS = 'Success';
