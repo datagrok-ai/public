@@ -62,7 +62,7 @@ export async function _toAtomicLevel(
   const res = await seqToMolFileWorker(
     srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule);
   if (res.warnings.length > 0.05 * srcColLength)
-    throw new Error('Too many errors getting molfiles.');
+    grok.shell.warning(`Molfile conversion resulted in ${res.warnings.length} errors`);
 
   return res;
 }
@@ -108,7 +108,7 @@ export function getMonomersDictFromLib(
 ): MonomerMolGraphMap {
   // todo: exception - no gaps, no empty string monomers
   const formattedMonomerLib = getFormattedMonomerLib(monomerLib, polymerType, alphabet);
-  const monomersDict = {};
+  const monomersDict: MonomerMolGraphMap = {};
 
   const pointerToBranchAngle: NumberWrapper = {
     value: null
@@ -129,8 +129,17 @@ export function getMonomersDictFromLib(
       const sym = seqMonomer.symbol;
       if (sym === '') continue; // Skip gap/empty monomer for MSA
       try {
-        addMonomerToDict(monomersDict, sym, formattedMonomerLib,
-          rdKitModule, polymerType, pointerToBranchAngle);
+        if (polymerType === HELM_POLYMER_TYPE.RNA && sym[1] == '(' && sym[sym.length - 2] == ')') {
+          // special case for nucleobases
+          const nsym = sym.substring(2, sym.length - 2);
+          addMonomerToDict(monomersDict, nsym, formattedMonomerLib,
+            rdKitModule, polymerType, pointerToBranchAngle);
+          if (monomersDict[polymerType]?.[nsym])
+            monomersDict[polymerType][sym] = monomersDict[polymerType][nsym];
+        } else {
+          addMonomerToDict(monomersDict, sym, formattedMonomerLib,
+            rdKitModule, polymerType, pointerToBranchAngle);
+        }
       } catch (err: any) {
         const errTxt = err instanceof Error ? err.message : err.toString();
         const errStack = err instanceof Error ? err.stack : undefined;
@@ -535,9 +544,9 @@ export function parseCapGroupIdxMapV3K(molfileV3K: string): Map<number, number> 
   let res;
   while ((res = regex.exec(molfileV3K)) !== null) {
     // This is necessary to avoid infinite loops with zero-width matches
-    if (res.index === regex.lastIndex) {
+    if (res.index === regex.lastIndex)
       regex.lastIndex++;
-    }
+
     // index 1 matches array is the atom number, index 3 is R group number
     capGroupIdxMap.set(parseInt(res[1]), parseInt(res[3]));
   }
@@ -959,6 +968,8 @@ function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number | null {
   let doubleBondedOxygen = 0;
   const sentinel = monomer.atoms.atomTypes.length;
   let i = 0;
+  if (monomer.meta.terminalNodes.length < 2)
+    return null;
   // iterate over the nodes bonded to the carbon and find the double one
   while (doubleBondedOxygen === 0) {
     const node = bondsMap.get(monomer.meta.terminalNodes[1])![i];

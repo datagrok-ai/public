@@ -979,7 +979,8 @@ export async function manageLibrariesApp(): Promise<DG.View> {
 export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
-    const libNode = treeNode.item(libName);
+    const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
+    const libNode = treeNode.item(nodeName);
     // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
     libNode.onSelected.subscribe(async () => {
       const monomerManager = await MonomerManager.getNewInstance();

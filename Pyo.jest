@@ -1,0 +1,26 @@
+Environment variable `HOST` is set to dev
+Environment variable `TARGET_PACKAGE` is set to Pyodide
+[32mLoading tests...[0m
+Using web root: https://dev.datagrok.ai
+[]
+Tests total: 0
+[32mStarting tests...[0m
+Using web root: https://dev.datagrok.ai
+[32mSaved `test-report.csv`
+[0m
+Passed: 
+Test result : Success : 1534 : Auto Tests: Types: PyodideBool :  OK
+Test result : Success : 1609 : Auto Tests: Types: PyodideCalcColumnCall :  OK
+Test result : Success : 109 : Auto Tests: Types: PyodideColumnList :  OK
+Test result : Success : 8 : Auto Tests: Types: PyodideDate :  OK
+Test result : Success : 8 : Auto Tests: Types: PyodideDouble :  OK
+Test result : Success : 63 : Auto Tests: Types: PyodideEmptyDataframe :  OK
+Test result : Success : 3 : Auto Tests: Types: PyodideInt :  OK
+Test result : Success : 26 : Auto Tests: Types: PyodideSingleDf :  OK
+Test result : Success : 8 : Auto Tests: Types: PyodideString :  OK
+
+Passed amount:  9
+Skipped amount: 0
+Failed amount:  0
+[32mTests passed.[0m
+Exiting with code 0

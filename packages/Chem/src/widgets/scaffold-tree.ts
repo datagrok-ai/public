@@ -223,22 +223,20 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
 
 function getVisibleNodes(thisViewer: ScaffoldTreeViewer): Array<TreeViewGroup> {
   const visibleNodes: Array<TreeViewGroup> = [];
-  
   fillVisibleNodes(thisViewer.tree, visibleNodes);
 
   const { scrollTop, offsetHeight: viewerHeight, scrollHeight } = thisViewer.tree.root;
   const nodeHeight = thisViewer.sizesMap[thisViewer.size].height;
 
-  const scrollFraction = scrollTop / (scrollHeight - viewerHeight);
+  const scrollableHeight = scrollHeight - viewerHeight;
+  const scrollFraction = scrollableHeight > 0 ? scrollTop / scrollableHeight : 0;
+
   let end = Math.floor(scrollFraction * visibleNodes.length);
   let start = end - Math.ceil(viewerHeight / nodeHeight);
-  
-  if (start < 0)
-    start = 0;
 
-  if (end >= visibleNodes.length)
-    end = visibleNodes.length - 1;
-  
+  start = Math.max(0, start);
+  end = Math.min(visibleNodes.length - 1, end);
+
   return visibleNodes.slice(start, end + 10);
 }
 
@@ -1267,19 +1265,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.checkedScaffolds = [];
     removeElementByColor(this.colorCodedScaffolds, '');
 
-    const asyncTasks = checkedNodes.map((node) => this.processNode(node, tmpBitset));
+    for (const node of checkedNodes)
+      this.processNode(node, tmpBitset);
 
-    Promise.all(asyncTasks).then(() => {
-      this.updateTag();
-      if (triggerRequestFilter)
-        this.dataFrame.rows.requestFilter();
-      this.updateUI();
-    });
+    this.updateTag();
+    if (triggerRequestFilter)
+      this.dataFrame.rows.requestFilter();
+    this.updateUI();
   }
-  
-  private async processNode(node: DG.TreeViewNode, tmpBitset: DG.BitSet): Promise<void> {
-    await this.waitForLoaderToRemove(node);
 
+  private processNode(node: DG.TreeViewNode, tmpBitset: DG.BitSet): void {
     const nodeBitset = value(node).bitset;
     const molStr = value(node).smiles;
     let isNot = false;
@@ -1508,7 +1503,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateBitset(node: DG.TreeViewNode): boolean {
-    return !(value(node).bitset?.length === this.dataFrame.rowCount);
+    return node ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
   }
 
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {

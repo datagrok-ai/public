@@ -1,0 +1,7 @@
+{
+  "gpu": 1,
+  "cpu": 1,
+  "memory": 8192,
+  "on_demand": true, 
+  "timeout_minutes": 30
+}

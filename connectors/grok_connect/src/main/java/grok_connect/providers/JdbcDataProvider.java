@@ -39,6 +39,7 @@ import serialization.StringColumn;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
+    public static Pattern UUID_REGEX = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
@@ -170,6 +171,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     else if (param.propertyType.equals(Types.BIG_INT) && param.value != null)
                         statement.setLong(n + i + 1, Long.parseLong(param.value.toString()));
+                    else if (param.propertyType.equals(Types.STRING) && param.value != null) {
+                        String s = param.value.toString();
+                        if (UUID_REGEX.matcher(s).matches())
+                            setUuid(statement, n + i + 1, s);
+                        else
+                            statement.setString(n + i + 1, s);
+                    }
                     else {
                         if (param.value == null) {
                             switch (param.propertyType) {
@@ -317,6 +325,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         return 0;
     }
 
+    protected void setUuid(PreparedStatement statement, int n, String value) throws SQLException {
+        statement.setString(n, value);
+    }
+
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
         String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
@@ -348,7 +360,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
-
+        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+        queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
+        if (supportsTransactions)
+            connection.setAutoCommit(false);
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
@@ -362,11 +377,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
-            } else {
-                boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-                queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
-                if (supportsTransactions)
-                    connection.setAutoCommit(false);
+            }
+            else {
                 queryLogger.debug("Executing batch mode...");
                 String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n|\n--batch\n", commentStart));
                 for (String currentQuery : queries)

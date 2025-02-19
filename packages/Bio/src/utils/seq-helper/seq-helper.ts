@@ -87,7 +87,7 @@ export class SeqHelper implements ISeqHelper {
 
     //#endregion From HelmToMolfileConverter
 
-    const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
+    //const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
 
     const molCol = DG.Column.fromStrings(molColName, molList);
     molCol.semType = DG.SEMTYPE.MOLECULE;

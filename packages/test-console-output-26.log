@@ -1,0 +1,75 @@
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/api/packages/published/files/Charts/vhlushchenko/RpP1XgU2jWPoiLdgmM3D3Dwg3RtnxhoE/1/detectors.js
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG ENTRY: Refused to execute script from 'https://dev.datagrok.ai/api/packages/published/files/Charts/vhlushchenko/RpP1XgU2jWPoiLdgmM3D3Dwg3RtnxhoE/1/detectors.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG ENTRY: Refused to execute script from 'https://dev.datagrok.ai/api/packages/published/files/Chembl/vhlushchenko/TZ2Vpdb7y14Hqjo6KMVlhJAhVJOmxxXM/1/detectors.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/api/packages/published/files/Chembl/vhlushchenko/TZ2Vpdb7y14Hqjo6KMVlhJAhVJOmxxXM/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/ribbon/project.svg
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/api/packages/published/files/Curves/vhlushchenko/HxeeF6aV7ONyLHGibvQKLyea7BxPoY6q/1/detectors.js
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG ENTRY: Refused to execute script from 'https://dev.datagrok.ai/api/packages/published/files/Curves/vhlushchenko/HxeeF6aV7ONyLHGibvQKLyea7BxPoY6q/1/detectors.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Gis/1.2.0/X5oM5vlVCY9DLTYoFZEiqDS0BcJkJKpW/2/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/1.13.1/VJtHpYGKAwS21sWl4oLe1df0pJBFlNWc/3/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerGrid/1.5.4.X/z0uXRUwEUWYq5CF2DCQjnmuHF8GHiSHM/17/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/ApiTests/1.9.0.X/2usLsOYkzHiNWt3Q23rih5SlQgsZ7POM/26/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/UsageAnalysis/2.2.2.X/rGGaGhzjiQH2fVs1mq7zxv0UAtnM76Td/2/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerPack/1.3.0.X/dCEhrCAjYtjLkogg8avN8OMVi0P854XF/24/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Bio/2.18.4.X/o59IvTNt0dl9GRwvDaqhaaHaY3MhF2lD/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/d1694ff0-8990-11ee-f346-ad2dc84283a4?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/BiostructureViewer/vhlushchenko/757qhBXTO2ujMXPXiWOZIC4lJzkV6mju/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-Regular.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerPack/1.3.0.X/dCEhrCAjYtjLkogg8avN8OMVi0P854XF/24/css/power-pack.css
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-Bold.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/font-awesome/webfonts/fa-regular-400.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/iconfont/icomoon.ttf?emtv9m
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/font-awesome/webfonts/fa-light-300.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/chevron.svg
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-Light.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text&include=shares.connection&file=true&order=name
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/d1694ff0-8990-11ee-f346-ad2dc84283a4?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/openchemlib-full.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-LightItalic.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerPack/1.3.0.X/dCEhrCAjYtjLkogg8avN8OMVi0P854XF/24/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/1.13.1/VJtHpYGKAwS21sWl4oLe1df0pJBFlNWc/3/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522Datagrok%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/System.AppData/file/PowerPack%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=150464
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522Datagrok%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/relations?schema=public
+CONSOLE LOG ENTRY: Datagrok user object handlers registered
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/groups/ebfa5860-d7b0-11ee-ced4-cb1f59aec389?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/1.13.1/VJtHpYGKAwS21sWl4oLe1df0pJBFlNWc/3//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/projects/recent?limit=5
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/UsageAnalysis/2.2.2.X/rGGaGhzjiQH2fVs1mq7zxv0UAtnM76Td/2/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/datasets/no_picture.png
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/properties/schemas?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/proxy?url=https://community.datagrok.ai/latest.json
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/1.13.1/VJtHpYGKAwS21sWl4oLe1df0pJBFlNWc/3/dist/package-test.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/SequenceTranslator/1.7.0.X/STgZ1ThOtLzhsLrCpuu5MXKmnPVIv29t/25/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/codemirror/codemirror.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Helm/2.7.4.X/No1aGNAnJ0c4tfRFqoML09AglDxiw3DQ/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-f43a7255/T3jnY1LQqBYjhnwLebPgZ8zBKkBTXAmz/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerGrid/1.5.4.X/z0uXRUwEUWYq5CF2DCQjnmuHF8GHiSHM/17/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/codemirror/codemirror.css
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Arrow/1.2.0.X/nLrYatfBQazWb8yYiRyaRjtG2gQceVdm/5/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-f43a7255/T3jnY1LQqBYjhnwLebPgZ8zBKkBTXAmz/1/dist/1c6b2c88cdf173f007cc.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-f43a7255/T3jnY1LQqBYjhnwLebPgZ8zBKkBTXAmz/1/dist/7e505dae909e20381529.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-f43a7255/T3jnY1LQqBYjhnwLebPgZ8zBKkBTXAmz/1/dist/9f08ee9adf26bda60227.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-f43a7255/T3jnY1LQqBYjhnwLebPgZ8zBKkBTXAmz/1/dist/2687550222d9f7b56ceb.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/DevTools/1.5.1.X/he7oG0ZMK1g2PZbUgE8LliTwMhRcF6qE/17/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Arrow/1.2.0.X/nLrYatfBQazWb8yYiRyaRjtG2gQceVdm/5/dist/parquet_wasm_bg.wasm
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/proxy?url=https://reddata.atlassian.net/rest/api/3/project
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/reports?limit=20&page=1&include=reporter
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs?text=package.id%2520%253D%2520%25226dd87689-2628-5de8-9394-feeac3927774%2522
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started clone and layout tests category
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/1.13.1/VJtHpYGKAwS21sWl4oLe1df0pJBFlNWc/3//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG ENTRY: Started clone and layout tests 29_clone_layout_scenario
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/System.AppData/file/Chem%2Ftests%2Fspgi-100.csv?&&flag=150392
+CONSOLE LOG ENTRY: EXECUTION TIMEOUT
+CONSOLE LOG ENTRY: Finished clone and layout tests 29_clone_layout_scenario for 30005 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
