@@ -321,10 +321,19 @@ export class FittingView {
   };
 
   private readyToRun = false;
+  private isFittingRunning = false;
 
   private runIcon = ui.iconFA('play', async () => {
-    if (this.readyToRun)
+    if (this.readyToRun) {
+      this.isFittingRunning = true;
+      this.updateApplicabilityState();
+      this.updateRunIconDisabledTooltip('In progress...');
+
       await this.runOptimization();
+
+      this.isFittingRunning = false;
+      this.updateApplicabilityState();
+    }
   });
 
   private helpIcon = ui.iconFA('question', () => {
@@ -785,7 +794,7 @@ export class FittingView {
 
   /** Check applicability of fitting */
   private updateApplicabilityState(): void {
-    this.readyToRun = this.canFittingBeRun();
+    this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
     this.updateRunIconStyle();
   } // updateApplicabilityState
 
