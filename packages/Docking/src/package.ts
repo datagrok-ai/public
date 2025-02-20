@@ -10,7 +10,7 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
-import { _demoBoltzDocking, _demoBoltzFolding, _demoDocking } from './demo/demo';
+import { _demoFolding, _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 import { BoltzService } from './utils/boltz-service';
@@ -222,18 +222,11 @@ export async function demoDocking(): Promise<void> {
   await _demoDocking();
 }
 
-//name: Demo Boltz Folding
-//description: Demonstrates Boltz-1 for biomolecular folding predictions
-//meta.demoPath: Bioinformatics | Boltz Folding
-export async function demoBoltzFolding(): Promise<void> {
-  await _demoBoltzFolding();
-}
-
-//name: Demo Boltz Docking
-//description: Demonstrates Boltz-1 for biomolecular docking predictions
-//meta.demoPath: Bioinformatics | Boltz Docking
-export async function demoBoltzDocking(): Promise<void> {
-  await _demoBoltzDocking();
+//name: Demo Folding
+//description: Demonstrates ESMFold and Boltz-1 for biomolecular folding predictions
+//meta.demoPath: Bioinformatics | Folding
+export async function demoFolding(): Promise<void> {
+  await _demoFolding();
 }
 
 //name: Biology | AutoDock
