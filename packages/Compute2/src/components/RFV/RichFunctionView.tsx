@@ -20,6 +20,7 @@ import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -429,6 +430,18 @@ export const RichFunctionView = Vue.defineComponent({
         return val ? Vue.markRaw(val) : val;
       };
 
+      const runSA = () => {
+        const ranges: Record<string, RangeDescription> = {};
+        const currentMeta = callMeta.value;
+        for (const inputParam of currentCall.value.inputParams.values()) {
+          const meta$ = currentMeta?.[inputParam.name];
+          const range: RangeDescription  = meta$?.value?.['rangeSA'] ?? meta$?.value?.['range'] ?? {};
+          range.default = inputParam.value;
+          ranges[inputParam.name] = range ?? {};
+        }
+        SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
+      }
+
       return (
         <div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels' view={currentView.value}>
@@ -493,7 +506,7 @@ export const RichFunctionView = Vue.defineComponent({
             />}
             { isSAenabled.value && <IconFA
               name='analytics'
-              onClick={() => SensitivityAnalysisView.fromEmpty(currentFunc.value)}
+              onClick={runSA}
               tooltip='Run sensitivity analysis'
             />}
             { isFittingEnabled.value && <IconFA
