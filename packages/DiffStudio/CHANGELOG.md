@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.2.4 (2025-02-28)
+## 1.2.4 (2025-02-20)
 
 * Implemented the use of Diff Grok library
 * Updated compute-utils
