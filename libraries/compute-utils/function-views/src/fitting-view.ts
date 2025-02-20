@@ -10,14 +10,20 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI} from './fitting/constants';
+import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
+  DIFF_STUDIO_OUTPUT_IDX} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
+
+import {IVP, IVP2WebWorker, getIvp2WebWorker} from '@datagrok/diff-grok';
+import {isWorkerApplicable} from './fitting/diff-studio/fitting-utils';
+
+import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -315,10 +321,19 @@ export class FittingView {
   };
 
   private readyToRun = false;
+  private isFittingRunning = false;
 
   private runIcon = ui.iconFA('play', async () => {
-    if (this.readyToRun)
+    if (this.readyToRun) {
+      this.isFittingRunning = true;
+      this.updateApplicabilityState();
+      this.updateRunIconDisabledTooltip('In progress...');
+
       await this.runOptimization();
+
+      this.isFittingRunning = false;
+      this.updateApplicabilityState();
+    }
   });
 
   private helpIcon = ui.iconFA('question', () => {
@@ -395,16 +410,21 @@ export class FittingView {
 
   private fittingSettingsDiv = ui.divV([]);
 
+  private ivp: IVP | undefined;
+  private ivpWW: IVP2WebWorker | undefined = undefined;
+
   static async fromEmpty(
     func: DG.Func,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      ivp?: IVP,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      ivp: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -431,11 +451,13 @@ export class FittingView {
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      ivp?: IVP,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      ivp: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -501,6 +523,11 @@ export class FittingView {
       this.updateRunIconDisabledTooltip('Select inputs for fitting');
       this.runIcon.classList.add('fas');
     });
+
+    this.ivp = options.ivp;
+
+    if (this.ivp !== undefined)
+      this.ivpWW = getIvp2WebWorker(this.ivp);
   } // constructor
 
   /** Check fiiting applicability to the function */
@@ -659,13 +686,14 @@ export class FittingView {
     // add inputs to the main form (grouped by categories)
     if (inputsByCategories.size > 1) {
       if (topCategory !== null) {
-        form.append(ui.h3(topCategory));
-        form.append(...inputsByCategories.get(topCategory)!);
+        const roots = inputsByCategories.get(topCategory);
+        form.append(getCategoryWidget(topCategory, roots!));
+        form.append(...roots!);
       }
 
       inputsByCategories.forEach((roots, category) => {
         if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(ui.h3(category));
+          form.append(getCategoryWidget(category, roots));
           form.append(...roots);
         }
       });
@@ -674,8 +702,9 @@ export class FittingView {
         const miscRoots = inputsByCategories.get('Misc');
 
         if (miscRoots!.length > 0) {
-          form.append(ui.h3('Misc'));
-          form.append(...inputsByCategories.get('Misc')!);
+          const roots = inputsByCategories.get('Misc')!;
+          form.append(getCategoryWidget('Misc', roots));
+          form.append(...roots);
         }
       }
     } else
@@ -765,7 +794,7 @@ export class FittingView {
 
   /** Check applicability of fitting */
   private updateApplicabilityState(): void {
-    this.readyToRun = this.canFittingBeRun();
+    this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
     this.updateRunIconStyle();
   } // updateApplicabilityState
 
@@ -1011,9 +1040,24 @@ export class FittingView {
       let optResult: OptimizationResult;
 
       // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD)
-        optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
-      else
+      if (this.method === METHOD.NELDER_MEAD) {
+        if (isWorkerApplicable(this.ivp, this.ivpWW)) {
+          optResult = await getFittedParams(
+            this.loss,
+            this.ivp!,
+            this.ivpWW!,
+            this.nelderMeadSettings,
+            variedInputNames,
+            minVals,
+            maxVals,
+            inputs,
+            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].colName,
+            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
+            this.samplesCount,
+          );
+        } else
+          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+      } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
       const allExtremums = optResult.extremums;

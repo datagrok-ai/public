@@ -16,6 +16,7 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 import {getLookupChoiceInput} from './shared/lookup-tools';
+import {getCategoryWidget} from './fitting/fitting-utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -627,13 +628,14 @@ export class SensitivityAnalysisView {
     // add inputs to the main form (grouped by categories)
     if (inputsByCategories.size > 1) {
       if (topCategory !== null) {
-        form.append(ui.h2(topCategory));
-        form.append(...inputsByCategories.get(topCategory)!);
+        const roots = inputsByCategories.get(topCategory);
+        form.append(getCategoryWidget(topCategory, roots!));
+        form.append(...roots!);
       }
 
       inputsByCategories.forEach((roots, category) => {
         if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(ui.h2(category));
+          form.append(getCategoryWidget(category, roots));
           form.append(...roots);
         }
       });
@@ -642,8 +644,8 @@ export class SensitivityAnalysisView {
         const miscRoots = inputsByCategories.get('Misc');
 
         if (miscRoots!.length > 0) {
-          form.append(ui.h2('Misc'));
-          form.append(...inputsByCategories.get('Misc')!);
+          form.append(getCategoryWidget('Misc', miscRoots!));
+          form.append(...miscRoots!);
         }
       }
     } else
