@@ -19,7 +19,7 @@ import {monomerSeqToMolfile} from './to-atomic-level-utils';
 import {MonomerHoverLink} from './utils';
 import {getMolHighlight} from './seq-to-molfile';
 import {MonomerMap} from './types';
-import {ISeqHelper} from '../utils/seq-helper';
+import {IHelmToMolfileConverter, ISeqHelper} from '../utils/seq-helper';
 
 export const MonomerHoverLinksTemp = 'MonomerHoverLinks';
 
@@ -57,7 +57,7 @@ export async function buildMonomerHoverLink(
     return pos;
   };
 
-  const helmToMolfileConverter = await seqHelper.getHelmToMolfileConverter(monomerLib);
+  const helmToMolfileConverter: IHelmToMolfileConverter | null = throughPOM ? await seqHelper.getHelmToMolfileConverter(monomerLib) : null;
   function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
     const seqSH = seqHelper.getSeqHandler(seqCol);
     if (!throughPOM) {
@@ -75,7 +75,7 @@ export async function buildMonomerHoverLink(
       return molWM.monomers;
     } else {
       const helm = seqSH.getHelm(tableRowIdx);
-      const molWM = seqHelper.helmToAtomicLevelSingle(helm, helmToMolfileConverter, false, false); // skip mol beautification step. not needed.
+      const molWM = seqHelper.helmToAtomicLevelSingle(helm, helmToMolfileConverter!, false, false); // skip mol beautification step. not needed.
       return molWM.monomers;
     }
   }

@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.50.1 (2025-02-20)
+
+Remove helm dependency in toAtomicLevel for Linear sequences
+
 ## 5.50.0 (2025-02-20)
 
 Support toAtomicLevel and POM conversion for all notations
