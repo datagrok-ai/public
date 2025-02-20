@@ -23,7 +23,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 
-  import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
+import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
@@ -186,7 +186,7 @@ const completions = [
   {label: `${CONTROL_EXPR.INPUTS}: `, type: 'keyword', info: INFO.INPUS},
 ];
 
-/** Control expressions completion utilite */
+/** Control expressions completion utility */
 function contrCompletions(context: any) {
   const before = context.matchBefore(/[#]\w*/);
 
@@ -1124,7 +1124,7 @@ export class DiffStudio {
     }
   } // clearSolution
 
-  /** Return form with model inputs */
+  /** Generate model inputs */
   private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
@@ -1426,6 +1426,7 @@ export class DiffStudio {
       const script = DG.Script.create(scriptText);
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        ivp: ivp,
       });
     } catch (err) {
       this.processError(err);
