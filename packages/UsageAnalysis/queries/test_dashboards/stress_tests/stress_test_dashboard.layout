@@ -175,7 +175,7 @@
                     "categoryColumnName": "passed",
                     "includeNulls": false,
                     "segmentAngleColumnName": "started",
-                    "showInnerPercent": false,
+                    "showInnerPercent": true,
                     "showInnerLabel": false,
                     "showColumnSelector": false,
                     "showMouseOverRowGroup": false,
@@ -185,7 +185,8 @@
                     "marginBottom": 5,
                     "legendVisibility": "Never",
                     "table": "result",
-                    "legendPosition": "Auto"
+                    "legendPosition": "Auto",
+                    "autoLayout": false
                   },
                   "globalScale": true,
                   "title": "Pass rate by backup size",
@@ -251,7 +252,8 @@
                     "#type": "PieChartLook",
                     "categoryColumnName": "passed",
                     "segmentAngleColumnName": "started",
-                    "showInnerPercent": false,
+                    "showInnerPercent": true,
+                    "autoLayout": false,
                     "showInnerLabel": false,
                     "showColumnSelector": false,
                     "showMouseOverRowGroup": false,
