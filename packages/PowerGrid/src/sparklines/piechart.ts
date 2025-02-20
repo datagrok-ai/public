@@ -273,7 +273,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {
       for (let i = 0; i < cols.length; i++) {
-        if (cols[i] === null || cols[i].isNone(row))
+        if (cols[i] === null || row === -1 || cols[i].isNone(row))
           continue;
 
         const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
