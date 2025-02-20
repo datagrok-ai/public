@@ -9,7 +9,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {getPropViewers} from './shared/utils';
+import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   DIFF_STUDIO_OUTPUT_IDX} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
@@ -61,6 +61,13 @@ type GoFViewer = {
   root: HTMLElement,
 };
 
+export type RangeDescription = {
+  default?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
@@ -69,9 +76,12 @@ const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE
 
 export class FittingView {
   generateInputFields = (func: DG.Func) => {
-    const getInputValue = (input: DG.Property, key: string) => (
-      input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
-    );
+    const getInputValue = (input: DG.Property, key: keyof RangeDescription) => {
+      const range = this.options.ranges?.[input.name];
+      if (range?.[key] != undefined)
+        return range[key];
+      return input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key]);
+    }
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
       const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (value) => f(value)});
@@ -420,11 +430,13 @@ export class FittingView {
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
       ivp?: IVP,
+      ranges?: Record<string, RangeDescription>,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
       ivp: undefined,
+      ranges: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -452,12 +464,14 @@ export class FittingView {
       configFunc?: undefined,
       inputsLookup?: string,
       ivp?: IVP,
+      ranges?: Record<string, RangeDescription>,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
       ivp: undefined,
+      ranges: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {

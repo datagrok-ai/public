@@ -430,16 +430,26 @@ export const RichFunctionView = Vue.defineComponent({
         return val ? Vue.markRaw(val) : val;
       };
 
-      const runSA = () => {
+      const getRanges = (specificRangeName: string) => {
         const ranges: Record<string, RangeDescription> = {};
         const currentMeta = callMeta.value;
         for (const inputParam of currentCall.value.inputParams.values()) {
           const meta$ = currentMeta?.[inputParam.name];
-          const range: RangeDescription  = meta$?.value?.['rangeSA'] ?? meta$?.value?.['range'] ?? {};
+          const range: RangeDescription  = meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {};
           range.default = inputParam.value;
           ranges[inputParam.name] = range ?? {};
         }
+        return ranges;
+      }
+
+      const runSA = () => {
+        const ranges = getRanges('rangeSA');
         SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
+      }
+
+      const runFitting = () => {
+        const ranges = getRanges('rangeFitting');
+        FittingView.fromEmpty(currentFunc.value, {ranges});
       }
 
       return (
@@ -511,7 +521,7 @@ export const RichFunctionView = Vue.defineComponent({
             />}
             { isFittingEnabled.value && <IconFA
               name='chart-line'
-              onClick={() => FittingView.fromEmpty(currentFunc.value)}
+              onClick={runFitting}
               tooltip='Fit inputs'
             />}
             { hasContextHelp.value && <IconFA
