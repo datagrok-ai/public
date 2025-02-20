@@ -125,4 +125,4 @@ category('GUI: Grid', () => {
     filterLinkAction!.click();
     await awaitCheck(() => demog.filter.trueCount == 25, 'Error in filtering', 1000);
   });
-}, { owner: 'dkovalyov@datagrok.ai' });
+}, {owner: 'dkovalyov@datagrok.ai'});
