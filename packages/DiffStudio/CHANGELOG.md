@@ -1,5 +1,10 @@
 # Diff Studio changelog
 
+## 1.2.4 (2025-02-28)
+
+* Implemented the use of Diff Grok library
+* Updated compute-utils
+
 ## 1.2.3 (2025-02-12)
 
 * Fixed the Open model menu
