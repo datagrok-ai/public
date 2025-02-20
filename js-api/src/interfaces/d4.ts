@@ -172,6 +172,8 @@ export interface IPieChartSettings {
 
   startAngle: number;
 
+  pieMaxSize: number;
+
   shift: number;
 
   outlineLineWidth: number;
