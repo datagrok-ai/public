@@ -22,6 +22,16 @@ logging.basicConfig(
   ]
 )
 
+MIN_GPU_MEMORY_GB = 16
+
+def get_available_memory(device):
+    """Returns available GPU memory in GB."""
+    total_memory = torch.cuda.get_device_properties(device).total_memory / 1024**3
+    reserved_memory = torch.cuda.memory_reserved(device) / 1024**3
+    allocated_memory = torch.cuda.memory_allocated(device) / 1024**3
+    available_memory = total_memory - (reserved_memory + allocated_memory)
+    return available_memory
+
 @app.route('/predict', methods=['POST'])
 def predict():
   """
@@ -54,8 +64,19 @@ def predict():
         file.write(yaml_content)
 
     if torch.cuda.is_available():
-      accelerator = "gpu"
-      logging.info("GPU is available. Using GPU for acceleration.")
+      available_memory = get_available_memory(0)
+      if available_memory >= MIN_GPU_MEMORY_GB:
+        accelerator = "gpu"
+        logging.info("GPU is available with sufficient memory. Using GPU for acceleration.")
+      else:
+        accelerator = "cpu"
+        logging.warning(f"GPU memory is too low ({available_memory:.2f} GB). Falling back to CPU.")
+
+      logging.info(f"Current Device: {torch.cuda.current_device()}")
+      logging.info(f"Total CUDA Devices: {torch.cuda.device_count()}")
+      logging.info(f"Device Name: {torch.cuda.get_device_name(0)}")
+      logging.info(f"Total Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+      logging.info(f"Available Memory: {available_memory:.2f} GB")
     else:
       accelerator = "cpu"
       logging.info("No GPU available. Falling back to CPU.")
@@ -81,12 +102,10 @@ def predict():
       text=True
     )
 
-    for line in process.stdout:
-      logging.info(line.strip())
-
-    process.wait()
-
+    stdout, stderr = process.communicate()
+    logging.info(f"Process return code: {process.returncode}")
     if process.returncode == 0:
+      logging.info(f"Process succeeded. Output:\n{stdout.strip()}")
       yaml_file_name = os.path.splitext(os.path.basename(yaml_file_path))[0]
       for root, dirs, files in os.walk("."):
         if "results" in root:
@@ -125,10 +144,12 @@ def predict():
               }), 200
       return jsonify({"success": False, "error": "PDB file not found in predictions folder."}), 500
     else:
+      for line in stderr.splitlines():
+        logging.info(line.strip())
       return jsonify({"success": False, "error": "Prediction failed."}), 500
   except Exception as e:
     logging.error(f"Unexpected error: {str(e)}")
     return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8888)
+  app.run(host='0.0.0.0', port=8001)

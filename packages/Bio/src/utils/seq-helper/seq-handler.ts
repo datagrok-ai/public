@@ -605,12 +605,12 @@ export class SeqHandler implements ISeqHandler {
 
     const isNucleotide = srcSeq.startsWith('RNA');
     // items can be monomers or helms
-    const helmItemsArray = this.splitter(srcSeq);
+    const helmItemsArray = splitterAsHelm(srcSeq);
     const tgtMonomersArray: string[] = [];
     for (let posIdx = 0; posIdx < helmItemsArray.length; ++posIdx) {
       let om: string = helmItemsArray.getOriginal(posIdx);
       if (isNucleotide)
-        om = om.replace(HELM_WRAPPERS_REGEXP, '');
+        om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
       if (om === GapOriginals[NOTATION.HELM])
         tgtMonomersArray.push(tgtGapOriginal);
       else if (this.toFasta(tgtNotation as NOTATION) && om.length > 1) {

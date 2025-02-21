@@ -25,7 +25,7 @@
     "@datagrok-libraries/bio": "^5.48.2",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.4.1",
     "datagrok-api": "^1.23.0",
     "@rcsb/rcsb-api-tools": "2.3.1",
     "@rcsb/rcsb-molstar": "2.0.0-dev.8",
