@@ -631,7 +631,8 @@ export class TreeViewer extends EChartViewer {
 
   onTableAttached() {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length);
+      col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name)
+    );    
 
     if (categoricalColumns.length < 1)
       return;
