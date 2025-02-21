@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, Subject} from 'rxjs';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
@@ -66,6 +66,11 @@ export type RangeDescription = {
   min?: number;
   max?: number;
   step?: number;
+}
+
+export type TargetDescription = {
+  default?: any;
+  argumentCol?: string;
 }
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
@@ -255,6 +260,9 @@ export class FittingView {
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
+            if (this.options.targets?.[outputProp.name]?.default != null)
+              setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
+
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
 
@@ -268,7 +276,7 @@ export class FittingView {
                   }
 
                   temp.colNameInput.items = colNames;
-                  temp.colNameInput.value = colNames[0];
+                  temp.colNameInput.value = this.options.targets?.[outputProp.name]?.argumentCol ?? colNames[0];
                 } else {
                   temp.colNameInput.items = [null];
                   temp.colNameInput.value = null;
@@ -277,6 +285,7 @@ export class FittingView {
 
               this.updateApplicabilityState();
             });
+
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
               (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
@@ -344,6 +353,26 @@ export class FittingView {
       this.isFittingRunning = false;
       this.updateApplicabilityState();
     }
+  });
+
+  private acceptIcon = ui.iconFA('ballot-check', async () => {
+    const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
+    let chosenItem = -1;
+    const input = ui.input.choice('Select fitting', {items: choiceItems, onValueChanged: (x) => chosenItem = x})
+    const confirmed = await new Promise((resolve, _reject) => {
+      ui.dialog({title: 'Accept fitting'})
+        .add(ui.div([input]))
+        .onOK(() => resolve(true))
+        .onCancel(() => resolve(false))
+        .show({ modal: true, fullScreen: true, width: 600, height: 200, center: true })
+    });
+    if (!confirmed || chosenItem < 0) {
+      return;
+    }
+    this.acceptIcon.remove();
+    const chosenCall = this.currentFuncCalls[chosenItem];
+    console.log(`chosen call ${chosenItem}`);
+    this.acceptedFitting$.next(chosenCall);
   });
 
   private helpIcon = ui.iconFA('question', () => {
@@ -423,6 +452,10 @@ export class FittingView {
   private ivp: IVP | undefined;
   private ivpWW: IVP2WebWorker | undefined = undefined;
 
+  private currentFuncCalls: DG.FuncCall[] = [];
+
+  public acceptedFitting$ = new Subject<DG.FuncCall | null>();
+
   static async fromEmpty(
     func: DG.Func,
     options: {
@@ -431,12 +464,16 @@ export class FittingView {
       inputsLookup?: string,
       ivp?: IVP,
       ranges?: Record<string, RangeDescription>,
+      targets?: Record<string, TargetDescription>,
+      acceptMode?: boolean,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
       ivp: undefined,
       ranges: undefined,
+      targets: undefined,
+      acceptMode: false,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -448,7 +485,7 @@ export class FittingView {
       });
     grok.shell.addView(v);
 
-    new this(
+    return new this(
       func,
       v,
       options,
@@ -465,6 +502,8 @@ export class FittingView {
       inputsLookup?: string,
       ivp?: IVP,
       ranges?: Record<string, RangeDescription>,
+      targets?: Record<string, TargetDescription>,
+      acceptMode?: boolean,
     } = {
       parentView: undefined,
       parentCall: undefined,
@@ -472,6 +511,8 @@ export class FittingView {
       inputsLookup: undefined,
       ivp: undefined,
       ranges: undefined,
+      targets: undefined,
+      acceptMode: false,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -496,7 +537,7 @@ export class FittingView {
       nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
       const rbnPanels = this.comparisonView.getRibbonPanels();
-      rbnPanels.push([this.helpIcon, this.runIcon]);
+      rbnPanels.push([this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]);
       this.comparisonView.setRibbonPanels(rbnPanels);
       this.fittingSettingsDiv.hidden = true;
 
@@ -1141,6 +1182,8 @@ export class FittingView {
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
       let toAddGofCols = true;
       const outputColNames: string[] = [];
+
+      this.currentFuncCalls = calledFuncCalls;
 
       extremums.forEach(async (extr, idx) => {
         lossVals[idx] = extr.cost;

@@ -18,7 +18,7 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel} from './ScalarsPanel';
@@ -28,6 +28,7 @@ import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useLayoutDb} from '../../composables/use-layout-db';
+import {take} from 'rxjs/operators';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -397,6 +398,58 @@ export const RichFunctionView = Vue.defineComponent({
       emit('formValidationChanged', ev);
     };
 
+    const getDf = (name: string) => {
+      const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
+      return val ? Vue.markRaw(val) : val;
+    };
+
+    const getRanges = (specificRangeName: string) => {
+      const ranges: Record<string, RangeDescription> = {};
+      const currentMeta = callMeta.value;
+      for (const inputParam of currentCall.value.inputParams.values()) {
+        const meta$ = currentMeta?.[inputParam.name];
+        const range: RangeDescription  = meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {};
+        range.default = inputParam.value;
+        ranges[inputParam.name] = range ?? {};
+      }
+      return ranges;
+    }
+
+    const getTargets = () => {
+      const targets: Record<string, TargetDescription> = {};
+      const currentMeta = callMeta.value;
+      for (const outputParam of currentCall.value.outputParams.values()) {
+        const meta$ = currentMeta?.[outputParam.name];
+        const target: RangeDescription  = meta$?.value?.['targetFitting'] ?? {};
+        target.default = outputParam.value;
+        targets[outputParam.name] = target ?? {};
+      }
+      return targets;
+    }
+
+    const runSA = () => {
+      const ranges = getRanges('rangeSA');
+      SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
+    }
+
+    const isLocked = Vue.ref(false);
+
+    const runFitting = async () => {
+      if (isLocked.value)
+        return;
+      isLocked.value = true;
+      try {
+        const ranges = getRanges('rangeFitting');
+        const targets = getTargets();
+        const view = await FittingView.fromEmpty(currentFunc.value, {ranges, targets, acceptMode: true});
+        const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
+        if (call)
+          emit('update:funcCall', call);
+      } finally {
+        isLocked.value = false;
+      }
+    }
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -425,35 +478,8 @@ export const RichFunctionView = Vue.defineComponent({
         return scalarCardCount < 3 ? 'right': 'down';
       };
 
-      const getDf = (name: string) => {
-        const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
-        return val ? Vue.markRaw(val) : val;
-      };
-
-      const getRanges = (specificRangeName: string) => {
-        const ranges: Record<string, RangeDescription> = {};
-        const currentMeta = callMeta.value;
-        for (const inputParam of currentCall.value.inputParams.values()) {
-          const meta$ = currentMeta?.[inputParam.name];
-          const range: RangeDescription  = meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {};
-          range.default = inputParam.value;
-          ranges[inputParam.name] = range ?? {};
-        }
-        return ranges;
-      }
-
-      const runSA = () => {
-        const ranges = getRanges('rangeSA');
-        SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
-      }
-
-      const runFitting = () => {
-        const ranges = getRanges('rangeFitting');
-        FittingView.fromEmpty(currentFunc.value, {ranges});
-      }
-
       return (
-        <div class='w-full h-full flex'>
+        Vue.withDirectives(<div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels' view={currentView.value}>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -670,7 +696,7 @@ export const RichFunctionView = Vue.defineComponent({
               /> : null
             }
           </DockManager>
-        </div>
+        </div>, [[ifOverlapping, isLocked.value]])
       );
     };
   },
