@@ -44,7 +44,7 @@ category('TreeViewer', () => {
       sizeAggrType: DG.AGG.AVG,
       colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
-      hierarchyColumnNames: ['sex', 'control', 'disease'],
+      hierarchyColumnNames: ['control', 'sex', 'disease'],
       onClick:'Select',
       includeNulls: true
     };
