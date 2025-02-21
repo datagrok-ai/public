@@ -128,10 +128,6 @@ services:
           "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-        restart: false
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
