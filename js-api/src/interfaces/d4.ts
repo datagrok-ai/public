@@ -3065,6 +3065,8 @@ export interface IPcPlotSettings {
   color: string;
   colorColumnName: string;
 
+  showColorSelector: boolean;
+
   invertColorScheme: boolean;
 
   /// Determines the way a value is mapped to the vertical scale.
