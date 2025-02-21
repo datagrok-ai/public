@@ -672,8 +672,8 @@ export class BrowsePanel extends DartWidget {
     super(dart);
   }
 
-  get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
-  get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
+  get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
+  get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
 
 }
 
