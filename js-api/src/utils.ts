@@ -530,7 +530,8 @@ export function _toJson(x: any) {
   return x === null ? null : JSON.stringify(x);
 }
 
-export function* range(length: number) {
+/** Generates [count] increasing integer numbers, starting with 0. */
+export function* range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
     yield i;
 }
