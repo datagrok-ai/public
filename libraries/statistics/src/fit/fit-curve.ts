@@ -443,8 +443,10 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModelType,
-  parameterBounds?: FitParamBounds[]): FitCurve {
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel?: FitErrorModelType,
+    parameterBounds?: FitParamBounds[]): FitCurve {
+
+  errorModel ??= FitErrorModel.CONSTANT as FitErrorModelType;
   const curveFunction = fitFunction.y;
   let paramValues = fitFunction.getInitialParameters(data.x, data.y);
 

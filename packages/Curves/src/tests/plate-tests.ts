@@ -2,6 +2,10 @@ import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src
 import {Plate} from "../plate/plate";
 import wu from 'wu';
 
+// @ts-ignore
+import * as jStat from 'jstat';
+import {fitData, LogLinearFunction} from "@datagrok-libraries/statistics/src/fit/fit-curve";
+
 
 function getPlate(): Plate {
   const concentration = Plate.fromCsvTable(concentrationCsv, 'concentration');
@@ -37,11 +41,29 @@ category('construction', () => {
 
   test('normalization | manual', async () => {
     const plate = getPlate();
-    const avgHighControl = wu(plate.wells)
-      .filter(w => w['layout'] == 'High Control')
-      .map(w => w['readout']).toArray();
 
-    //plate.data.columns.byName('readout').getStats()
+    const hcMean = jStat.mean(plate.values('readout', {match: {'layout': 'High Control'}}));
+    const lcMean = jStat.mean(plate.values('readout', {match: {'layout': 'Low Control'}}));
+    plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
+  })
+
+  test('use case', async () => {
+    const plate = getPlate();
+
+    const hcMean = jStat.mean(plate.values('readout', {match: {'layout': 'High Control'}}));
+    const lcMean = jStat.mean(plate.values('readout', {match: {'layout': 'Low Control'}}));
+    plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
+
+    const c1series = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'});
+    const c1fit = fitData(c1series, new LogLinearFunction());
+
+    // const concentration = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/concentration.csv', 'concentration');
+    // const layout = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/layout.csv', 'role');
+    // const readout = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/readout.csv', 'value');
+    //
+    // const hcMean = readout.values({'layout': 'High Control'}}));
+    // const lcMean = jStat.mean(plate.values('readout', {match: {'layout': 'Low Control'}}));
+    // plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
   })
 });
 

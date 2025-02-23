@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import wu from 'wu';
-import {assure, getExcelColumnLetter} from "./utils";
-
+import {assure, excelToNum, numToExcel, parseExcelPosition} from "./utils";
 
 /** Represents a well in the experimental plate */
 export interface PlateWell {
@@ -24,7 +23,19 @@ interface IPlateCsvImportOptions {
 }
 
 
-/** Represents experimental plate (typically 96-well assay plate) */
+interface IPlateWellFilter {
+  includeEmpty?: boolean;
+  match?: {[key: string]: any};
+}
+
+
+interface ISeriesData {
+  x: number[];
+  y: number[];
+}
+
+
+/** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
   data: DG.DataFrame;
   rows: number = 8;
@@ -46,7 +57,7 @@ export class Plate {
     const rows = table.rowCount;
     // remove row letters
     function containsRowLetters(c: DG.Column): boolean {
-      return c.type == DG.TYPE.STRING && wu(DG.range(rows)).every((i) => getExcelColumnLetter(i) == c.get(i).toUpperCase());
+      return c.type == DG.TYPE.STRING && wu(DG.range(rows)).every((i) => numToExcel(i) == c.get(i).toUpperCase());
     }
     const dataColumns = wu(table.columns).filter((c) => !containsRowLetters(c)).toArray();
     const cols = dataColumns.length;
@@ -113,6 +124,63 @@ export class Plate {
     })();
   }
 
+  /** Returns the specified field value at the specified positions (0-based).
+   * The following examples all return volume for the C4 well:
+   * - plate.get('volume', 2, 3)
+   * - plate.get('volume', 'C4')
+   * */
+  get(field: string, rowIdxOrPos: number | string, colIdx?: number): any {
+    assure(this.data.columns.byName(field) != null, `Field does not exist: ${field}`);
+    if (typeof rowIdxOrPos === 'number' && !colIdx)
+      throw 'Column not defined';
+
+    const [row, col] = (typeof rowIdxOrPos === 'string') ? parseExcelPosition(rowIdxOrPos) : [rowIdxOrPos, colIdx!];
+    return this.data.columns.byName(field).get(this._idx(row, col));
+  }
+
+  /** Changes all numerical values to the results of the specified normalization function */
+  normalize(field: string, f: (value: number) => number) {
+    const col = this.data.getCol(field);
+    for (let i = 0; i < this.rows * this.cols; i++)
+      if (!col.isNone(i))
+        col.set(i, f(col.get(i)), false);
+  }
+
+  matches(i: number, filter: IPlateWellFilter): boolean {
+    return !filter || !filter.match ||
+      Object.keys(filter.match).every((key) => this.data.columns.byName(key).get(i) === filter.match![key]);
+  }
+
+  count(filter?: IPlateWellFilter): number {
+    if (!filter)
+      return this.rows * this.cols;
+    let c = 0;
+    for (let i = 0; i < this.rows * this.cols; i++)
+      if (this.matches(i, filter))
+        c++;
+    return c;
+  }
+
+  /** Array of non-empty values */
+  values(field: string, filter?: IPlateWellFilter): Array<any> {
+    const col = this.data.columns.byName(field);
+    assure(col != null, `Field does not exist: ${field}`);
+
+    const result = [];
+    for (let i = 0; i < this.rows * this.cols; i++)
+      if ((filter?.includeEmpty ?? false) || !col.isNone(i))
+        result.push(col.isNone(i) ? null : col.get(i));
+
+    return result;
+  }
+
+  doseResponseSeries(filter?: IPlateWellFilter & { concentration: string; value: string }): ISeriesData {
+    const len = this.count(filter);
+    const x = this.values(filter?.concentration ?? 'concentration');
+    const y = this.values(filter?.value ?? 'value');
+    return { x, y };
+  }
+
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
   merge(plate: Plate) {
     for (const col of plate.data.columns) {
@@ -134,7 +202,7 @@ export class Plate {
       console.log(fieldCol.name);
       console.log(wu(DG.range(this.cols + 1)).map((col) => col == 0 ? '' : `${col}`).toArray().join('\t'));
       for (let row = 0; row < this.rows; row++) {
-        console.log(getExcelColumnLetter(row) + '\t' +
+        console.log(numToExcel(row) + '\t' +
           wu(DG.range(this.cols)).map((col) => fieldCol.getString(this._idx(row, col))).toArray().join(',\t'));
       }
     }
