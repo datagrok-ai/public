@@ -91,10 +91,9 @@ const tabToProperties = (func: DG.Func) => {
   return map;
 };
 
-const LAYOUT_DB_NAME = 'ComputeDB';
 const STORE_NAME = 'RFV2Layouts';
 
-interface ComputeSchema extends DBSchema {
+interface RFVSchema extends DBSchema {
   [STORE_NAME]: {
     key: string;
     value: PanelsState;
@@ -180,7 +179,7 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
-    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
+    const {layoutDatabase} = useLayoutDb<RFVSchema>();
 
     const currentCall = Vue.computed(() => props.funcCall);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -253,22 +252,22 @@ export const RichFunctionView = Vue.defineComponent({
       return item ?? null;
     };
 
-    const saveDefaultState = (call: DG.FuncCall = currentCall.value) => {
+    const saveDefaultState = async (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
     };
 
-    const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
+    const savePersonalState = async (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
     };
 
     const removeSavedPersonalState = async () => {
-      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
+      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
 
       await loadDefaultLayout();
     };
@@ -334,13 +333,13 @@ export const RichFunctionView = Vue.defineComponent({
         helpText.value = loadedHelp ?? null;
       });
 
-      if (oldCall) savePersonalState(oldCall);
+      if (oldCall) await savePersonalState(oldCall);
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
     const triggerSaveDefault = Vue.ref(false);
     Vue.watch(triggerSaveDefault, async () => {
-      saveDefaultState();
+      await saveDefaultState();
       await loadPersonalLayout();
     }, {flush: 'post'});
 

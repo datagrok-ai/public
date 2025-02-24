@@ -38,10 +38,9 @@ type PanelsState = {
   layout: string,
 };
 
-const LAYOUT_DB_NAME = 'ComputeDB';
 const STORE_NAME = 'TreeWizardLayouts';
 
-interface ComputeSchema extends DBSchema {
+interface TreeWizardSchema extends DBSchema {
   [STORE_NAME]: {
     key: string;
     value: PanelsState;
@@ -65,7 +64,7 @@ export const TreeWizard = Vue.defineComponent({
     },
   },
   setup(props) {
-    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
+    const {layoutDatabase} = useLayoutDb<TreeWizardSchema>();
 
     Vue.onBeforeUnmount(() => {
       savePersonalState(providerFunc.value);
@@ -168,7 +167,7 @@ export const TreeWizard = Vue.defineComponent({
     const dockInited = Vue.ref(false);
     const triggerSaveDefault = Vue.ref(false);
     Vue.watch(triggerSaveDefault, async () => {
-      saveDefaultState();
+      await saveDefaultState();
       await loadPersonalLayout();
     }, {flush: 'post'});
 
@@ -207,22 +206,22 @@ export const TreeWizard = Vue.defineComponent({
 
     const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
 
-    const saveDefaultState = (func: DG.Func = providerFunc.value) => {
+    const saveDefaultState = async (func: DG.Func = providerFunc.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
     };
 
-    const savePersonalState = (func: DG.Func = providerFunc.value) => {
+    const savePersonalState = async (func: DG.Func = providerFunc.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
     };
 
     const removeSavedPersonalState = async () => {
-      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
+      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
 
       await loadDefaultLayout();
     };
