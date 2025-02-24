@@ -781,6 +781,17 @@ export class TreeViewer extends EChartViewer {
     })(newData[0]);
   }
 
+  updateCollapsedState(data: TreeDataType[]) {
+    const { initialTreeDepth } = this;
+  
+    const traverse = (node: TreeDataType, depth: number) => {
+      node.collapsed = depth > initialTreeDepth;
+      node.children?.length && node.children.forEach(child => traverse(child, depth + 1));
+    };
+  
+    data.forEach(rootNode => traverse(rootNode, 1));
+  }  
+
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
@@ -808,6 +819,7 @@ export class TreeViewer extends EChartViewer {
       return;
 
     const data = await this.getSeriesData();
+    this.updateCollapsedState(data);
     const existingData = this.option.series[0].data || [];
     
     if (preserveCollapsed)
