@@ -5,6 +5,11 @@ import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
 
 const colorScheme = [DG.Color.white, DG.Color.gray];
+const dimensions = new Map([
+  [96, {rows: 8, cols: 12}],
+  [384, {rows: 16, cols: 24}],
+  [1536, {rows: 32, cols: 48}],
+]);
 
 export class PlateWidget extends DG.Widget {
 
@@ -57,16 +62,22 @@ export class PlateWidget extends DG.Widget {
 
     let rowCol: DG.Column<number> = this._plateData.col('row')!;
     let colCol: DG.Column<number> = this._plateData.col('col')!;
-    for (let i = 0; i < this._plateData.rowCount; i++)
-      this._posToRow.set(`${rowCol.get(i)}:${colCol.get(i)}`, i);
+    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows;
+    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
 
-    this.rows = rowCol.stats.max;
-    this.cols = colCol.stats.max;
+    if (this.rows == null || this.cols == null)
+      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (92, 384, 1526)';
+
+    for (let i = 0; i < this._plateData.rowCount; i++)
+      if (rowCol && colCol)
+        this._posToRow.set(`${rowCol.get(i)}:${colCol.get(i)}`, i);
+      else
+        this._posToRow.set(`${Math.floor(i / this.cols)}:${i % this.cols}`, i);
 
     // row header + all columns
     this.grid.dataFrame = DG.DataFrame.create(this.rows);
     this.grid.columns.clear();
-    for (let i = 0; i <= 12; i++)
+    for (let i = 0; i <= this.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
     this.grid.invalidate();

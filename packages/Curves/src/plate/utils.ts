@@ -6,6 +6,13 @@ export function assure(condition: boolean, errorMessage: string | (() => string)
 }
 
 
+export function firstWhere<T>(items: Iterable<T>, check: ((item: T) => boolean)): T | null {
+  for (const x of items)
+    if (check(x))
+      return x;
+  return null;
+}
+
 /**
  * Converts a number to Excel column letters (A-ZZ)
  * Examples:
@@ -43,6 +50,7 @@ export function excelToNum(row: string): number {
   return result - 1;
 }
 
+
 /** Parses the 'A3' cell position notation to 0-based {row, col} structure. */
 export function parseExcelPosition(cell: string): [number, number] {
   const match = cell.match(/^([A-Za-z]+)(\d+)$/);
@@ -54,3 +62,4 @@ export function parseExcelPosition(cell: string): [number, number] {
 
   return [ row, col ];
 }
+

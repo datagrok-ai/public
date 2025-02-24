@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
-import {assure, excelToNum, numToExcel, parseExcelPosition} from "./utils";
+import {assure, excelToNum, firstWhere, numToExcel, parseExcelPosition} from "./utils";
 
 /** Represents a well in the experimental plate */
 export interface PlateWell {
@@ -59,13 +60,16 @@ export class Plate {
     function containsRowLetters(c: DG.Column): boolean {
       return c.type == DG.TYPE.STRING && wu(DG.range(rows)).every((i) => numToExcel(i) == c.get(i).toUpperCase());
     }
+
     const dataColumns = wu(table.columns).filter((c) => !containsRowLetters(c)).toArray();
     const cols = dataColumns.length;
     const plate = new Plate(rows, cols);
 
     const nonEmptyCols = dataColumns.filter((c) => c.stats.missingValueCount != rows);
     const toString = (nonEmptyCols.length > 0 && nonEmptyCols.findIndex((c) => c.type != nonEmptyCols[0].type) != -1);
-    const type = toString ? DG.TYPE.STRING : dataColumns[0].type;
+    const type = toString
+      ? DG.TYPE.STRING
+      : firstWhere(dataColumns, c => c.stats.missingValueCount != rows)?.type ?? DG.TYPE.STRING;
 
     const dataColumn = plate.data.columns.addNew(field, type);
 
@@ -82,7 +86,7 @@ export class Plate {
   }
 
   static fromCsvTable(csv: string, field: string, options?: DG.CsvImportOptions): Plate {
-    return this.fromTable(DG.DataFrame.fromCsv(csv), field);
+    return this.fromTable(DG.DataFrame.fromCsv(csv, options), field);
   }
 
   static fromCsv(csv: string, options?: IPlateCsvImportOptions): Plate {
@@ -175,7 +179,6 @@ export class Plate {
   }
 
   doseResponseSeries(filter?: IPlateWellFilter & { concentration: string; value: string }): ISeriesData {
-    const len = this.count(filter);
     const x = this.values(filter?.concentration ?? 'concentration');
     const y = this.values(filter?.value ?? 'value');
     return { x, y };

@@ -1,21 +1,34 @@
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
 import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import {Plate} from "../plate/plate";
 import wu from 'wu';
 
 // @ts-ignore
 import * as jStat from 'jstat';
-import {fitData, LogLinearFunction} from "@datagrok-libraries/statistics/src/fit/fit-curve";
+import {
+  FitChartData,
+  fitData,
+  IFitChartData,
+  LogLinearFunction
+} from "@datagrok-libraries/statistics/src/fit/fit-curve";
+import {excelToNum, numToExcel} from "../plate/utils";
+import {FitConstants} from "../fit/const";
+import {MultiCurveViewer} from "../fit/multi-curve-viewer";
+import {PlateWidget} from "../plate/plate-widget";
 
 
 function getPlate(): Plate {
   const concentration = Plate.fromCsvTable(concentrationCsv, 'concentration');
   const layout = Plate.fromCsvTable(layoutCsv, 'role');
-  const readout = Plate.fromCsvTable(readoutCsv, 'value');
+  const readout = Plate.fromCsvTable(readoutCsv, 'readout');
 
-  return Plate.fromPlates([concentration, layout, readout])
+  return Plate.fromPlates([concentration, layout, readout]);
 }
 
-category('construction', () => {
+category('plates', () => {
   test('fromCsvPlate', async () => {
     const plate = Plate.fromCsv(concentrationCsv, { field: 'concentration' });
     plate.print();
@@ -39,13 +52,13 @@ category('construction', () => {
     Plate.fromPlates([concentration, layout, readout]).print();
   });
 
-  test('normalization | manual', async () => {
+  test('normalization', async () => {
     const plate = getPlate();
 
     const hcMean = jStat.mean(plate.values('readout', {match: {'layout': 'High Control'}}));
     const lcMean = jStat.mean(plate.values('readout', {match: {'layout': 'Low Control'}}));
     plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
-  })
+  });
 
   test('use case', async () => {
     const plate = getPlate();
@@ -56,16 +69,49 @@ category('construction', () => {
 
     const c1series = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'});
     const c1fit = fitData(c1series, new LogLinearFunction());
+    console.log(c1fit);
 
-    // const concentration = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/concentration.csv', 'concentration');
-    // const layout = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/layout.csv', 'role');
-    // const readout = await Plate.fromCsvTableFile('System:DemoFiles/hts/plate/readout.csv', 'value');
-    //
-    // const hcMean = readout.values({'layout': 'High Control'}}));
-    // const lcMean = jStat.mean(plate.values('readout', {match: {'layout': 'Low Control'}}));
-    // plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
-  })
+    // now let's make a widget out of it
+    const fitChartData: IFitChartData = {
+      seriesOptions: { fitFunction: 'log-linear', parameters: [...c1fit.parameters]},
+      series: [{points: wu(DG.range(c1series.x.length)).map(i => ({ x: c1series.x[i], y: c1series.y[i]})).toArray()}]
+    }
+
+    const chart = MultiCurveViewer.fromChartData(fitChartData);
+    chart.curvesColumnNames = ['foo'];  // why is it needed?
+    ui.dialog({title: 'Inspect fit'})
+      .add(chart.root)
+      .show();
+
+    await DG.delay(10000);
+  });
+
+  test('render', async () => {
+    const plate = getPlate();
+    ui.dialog({title: 'Inspect plate'})
+      .add(PlateWidget.detailedView(plate.data).root)
+      .show({width: 500, height: 500});
+    await DG.delay(10000);
+  });
+
+  test('numToExcel', async () => {
+    expect(numToExcel(0), 'A');
+    expect(numToExcel(1), 'B');
+    expect(numToExcel(26), 'AA');
+    expect(numToExcel(52), 'BA');
+  });
+
+  test('excelToNum', async () => {
+    expect(excelToNum('A'), 0);
+    expect(excelToNum('B'), 1);
+    expect(excelToNum('Z'), 25);
+
+    expect(excelToNum('AA'), 26);
+    expect(excelToNum('BA'), 52);
+  });
 });
+
+
 
 
 const concentrationCsv = `col 1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
