@@ -417,16 +417,26 @@ export const setGridColumnsRendering = (grid: DG.Grid) => {
     favCol.cellType = 'html';
     favCol.width = 30;
   }
-  const expCol = grid.columns.byName(EXP_COLUMN_NAME)!;
-  expCol.cellType = 'html';
-  expCol.width = 30;
 
-  const tagsColumn = grid.columns.byName(TAGS_COLUMN_NAME)!;
-  tagsColumn.cellType = 'html';
-  tagsColumn.width = 90;
+  const expCol = grid.columns.byName(EXP_COLUMN_NAME);
+  if (expCol) {
+    expCol.cellType = 'html';
+    expCol.width = 30;
+  }
 
-  grid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
-  grid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
+  const tagsColumn = grid.columns.byName(TAGS_COLUMN_NAME);
+  if (tagsColumn) {
+    tagsColumn.cellType = 'html';
+    tagsColumn.width = 90;
+  }
+
+  const startedCol = grid.columns.byName(STARTED_COLUMN_NAME);
+  if (startedCol)
+    startedCol.width = 110;
+
+  const idCol = grid.columns.byName(ID_COLUMN_NAME);
+  if (idCol)
+    idCol.cellType = 'html';
 };
 
 export const styleHistoryGrid = (
@@ -587,7 +597,7 @@ export const getRunsDfFromList = async (
     if (key === COMPLETE_COLUMN_NAME) {
       return DG.Column.bool(getColumnName(key), newRuns.length)
         // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-        .init((idx) =>getStartedOrNull(newRuns[idx]));
+        .init((idx) => !isIncomplete(newRuns[idx]));
     }
 
     return DG.Column.fromStrings(

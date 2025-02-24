@@ -7,7 +7,7 @@ import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/we
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
-import {EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
+import {FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, take} from 'rxjs/operators';
 import wu from 'wu';
@@ -83,7 +83,7 @@ export const History = Vue.defineComponent({
     Vue.watch(() => props.func.id, () => refresh(), {immediate: true});
 
     const defaultDf = DG.DataFrame.fromColumns([
-      DG.Column.bool(EXP_COLUMN_NAME, 0),
+      DG.Column.fromStrings(ID_COLUMN_NAME, []),
       ...props.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
       ...props.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
       DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
@@ -92,7 +92,6 @@ export const History = Vue.defineComponent({
       DG.Column.string(TAGS_COLUMN_NAME, 0),
       DG.Column.string(TITLE_COLUMN_NAME, 0),
       DG.Column.string(DESC_COLUMN_NAME, 0),
-      DG.Column.fromStrings(ID_COLUMN_NAME, []),
     ]);
 
     const getRunByIdx = (idx: number) => {
@@ -217,15 +216,16 @@ export const History = Vue.defineComponent({
       if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
     });
 
-    Vue.watch([showMetadata, showInputs], () => updateVisibleColumns());
+    const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
 
-    let currentGrid = null as null | DG.Grid;
+    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns());
+
     const updateVisibleColumns = () => {
-      if (!currentGrid) return;
+      if (!currentGrid.value) return;
 
-      const tagCol = currentGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
-      currentGrid.columns.setVisible([
-        ...historicalRunsDf.value.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+      const tagCol = currentGrid.value.dataFrame.getCol(TAGS_COLUMN_NAME);
+      const cols = [
+        ID_COLUMN_NAME,
         FAVORITE_COLUMN_NAME,
         ACTIONS_COLUMN_NAME,
         ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
@@ -242,7 +242,9 @@ export const History = Vue.defineComponent({
             else
               return Utils.getColumnName(key);
           }): [],
-      ]);
+      ];
+      currentGrid.value.columns.setVisible(cols);
+      currentGrid.value.columns.setOrder(cols);
     };
 
     const handleGridRendering = async (grid?: DG.Grid) => {
@@ -253,7 +255,7 @@ export const History = Vue.defineComponent({
         take(1),
       ).toPromise();
 
-      currentGrid = grid;
+      currentGrid.value = grid;
 
       grid.sort([STARTED_COLUMN_NAME], [false]);
 
@@ -287,8 +289,6 @@ export const History = Vue.defineComponent({
       const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
 
       return [
-        ...showMetadata.value &&
-        currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
         ...showMetadata.value &&
         (currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],

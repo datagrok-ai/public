@@ -593,7 +593,7 @@ export const RichFunctionView = Vue.defineComponent({
                 .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
                 tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.has(tabLabel)}))
                 .map(({tabLabel, tabContent, isInput}) => {
-                  if (tabContent.type === 'dataframe') {
+                  if (tabContent?.type === 'dataframe') {
                     const options = tabContent.config;
                     const dfProp = tabContent.dfProp;
                     return <div
@@ -613,7 +613,7 @@ export const RichFunctionView = Vue.defineComponent({
                     </div>;
                   }
 
-                  if (tabContent.type === 'scalars') {
+                  if (tabContent?.type === 'scalars') {
                     const categoryProps = tabContent.scalarProps;
 
                     const panel = <ScalarsPanel
