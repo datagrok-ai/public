@@ -314,18 +314,18 @@ export async function runBoltz(config: string, msa: string): Promise<string> {
 
 //top-menu: Bio | Folding | Boltz-1...
 //name: Folding
-//input: dataframe df 
+//input: dataframe table
 //input: column sequences {semType: Macromolecule}
 //output: dataframe result
-export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
-  return await BoltzService.folding(df, sequences);
+export async function folding(table: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
+  return await BoltzService.folding(table, sequences);
 }
 
 //top-menu: Chem | Docking | Boltz-1...
 //name: Docking
-//input: dataframe df
-//input: column molecules {semType: Molecule}
-//input: string config {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
+//input: dataframe table
+//input: column ligands {semType: Molecule}
+//input: string configuration {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
 //output: dataframe result
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
   return await BoltzService.docking(df, molecules, config);
