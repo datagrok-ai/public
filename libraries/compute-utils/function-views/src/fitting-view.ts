@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
+import {take, filter} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
@@ -370,8 +371,8 @@ export class FittingView {
       return;
     }
     this.acceptIcon.remove();
-    const chosenCall = this.currentFuncCalls[chosenItem];
-    console.log(`chosen call ${chosenItem}`);
+    const chosenCall = this.currentFuncCalls[chosenItem-1];
+    this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
   });
 
@@ -453,7 +454,7 @@ export class FittingView {
   private ivpWW: IVP2WebWorker | undefined = undefined;
 
   private currentFuncCalls: DG.FuncCall[] = [];
-
+  private isFittingAccepted = false;
   public acceptedFitting$ = new Subject<DG.FuncCall | null>();
 
   static async fromEmpty(
@@ -492,9 +493,9 @@ export class FittingView {
     );
   }
 
-  constructor(
+  private constructor(
     public func: DG.Func,
-    baseView: DG.TableView,
+    baseView: RunComparisonView,
     public options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
@@ -520,6 +521,13 @@ export class FittingView {
       baseView.close();
       return;
     }
+
+    grok.events.onViewRemoved.pipe(filter(v => v.id === baseView.id), take(1)).subscribe(() => {
+      if (options.acceptMode && !this.isFittingAccepted) {
+        this.acceptedFitting$.next(null);
+        this.isFittingAccepted = true;
+      }
+    });
 
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;

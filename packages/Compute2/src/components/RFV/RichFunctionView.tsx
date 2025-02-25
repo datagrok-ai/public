@@ -439,10 +439,12 @@ export const RichFunctionView = Vue.defineComponent({
         return;
       isLocked.value = true;
       try {
+        const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
         const targets = getTargets();
         const view = await FittingView.fromEmpty(currentFunc.value, {ranges, targets, acceptMode: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
+        grok.shell.v = currentView;
         if (call)
           emit('update:funcCall', call);
       } finally {
@@ -609,7 +611,7 @@ export const RichFunctionView = Vue.defineComponent({
                     isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
-                <div class='flex sticky bottom-0 justify-end'>
+                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   {
                     buttonActions.value?.map((action) => Vue.withDirectives(
                       <Button onClick={() => emit('actionRequested', action.uuid)}>
