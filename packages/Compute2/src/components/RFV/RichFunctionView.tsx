@@ -408,8 +408,9 @@ export const RichFunctionView = Vue.defineComponent({
       const currentMeta = callMeta.value;
       for (const inputParam of currentCall.value.inputParams.values()) {
         const meta$ = currentMeta?.[inputParam.name];
-        const range: RangeDescription  = meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {};
-        range.default = inputParam.value;
+        const range: RangeDescription  = {...(meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {})};
+        if (range.default == null)
+          range.default = inputParam.value;
         ranges[inputParam.name] = range ?? {};
       }
       return ranges;
@@ -420,8 +421,9 @@ export const RichFunctionView = Vue.defineComponent({
       const currentMeta = callMeta.value;
       for (const outputParam of currentCall.value.outputParams.values()) {
         const meta$ = currentMeta?.[outputParam.name];
-        const target: RangeDescription  = meta$?.value?.['targetFitting'] ?? {};
-        target.default = outputParam.value;
+        const target: RangeDescription  = {...(meta$?.value?.['targetFitting'] ?? {})};
+        if (target.default == null)
+          target.default = outputParam.value;
         targets[outputParam.name] = target ?? {};
       }
       return targets;
