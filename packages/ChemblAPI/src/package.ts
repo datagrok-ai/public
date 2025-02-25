@@ -149,12 +149,10 @@ export async function chemblSearchWidget(mol: string, substructure: boolean = fa
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([]);
-      grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => {
-          molHost.append(res);
-          if (!substructure)
-            molHost.append(ui.divText(`Score: ${table.getCol(ELEMENTS.SIMILARITY).get(i)?.toFixed(2)}`));
-        });
+      const res = grok.chem.drawMolecule(moleculeCol.get(i), WIDTH, HEIGHT, true);
+      molHost.append(res);
+      if (!substructure)
+        molHost.append(ui.divText(`Score: ${table.getCol(ELEMENTS.SIMILARITY).get(i)?.toFixed(2)}`));
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${chemblIdCol.get(i)}\nClick to open in ChEMBL Database`));
