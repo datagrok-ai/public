@@ -93,6 +93,7 @@ export class BoltzService {
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
     await this.processBoltzResult(df);
+    await grok.data.detectSemanticTypes(df);
   
     return df;
   }  
@@ -133,10 +134,11 @@ export class BoltzService {
 
       sequences.pop();
     }
-    
+
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
     await this.processBoltzResult(df);
+    await grok.data.detectSemanticTypes(df);
   
     return df;
   }

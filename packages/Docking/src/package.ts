@@ -9,11 +9,16 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
+import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoFolding, _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 import { BoltzService } from './utils/boltz-service';
+
+import {u2} from "@datagrok-libraries/utils/src/u2";
+import { Boltz1AppView } from './demo/boltz-app';
+
+export const _package = new DG.Package();
 
 //name: info
 export function info() {
@@ -345,4 +350,12 @@ export async function boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget
 //output: bool result
 export function isApplicableBoltz(molecule: string): boolean {
   return molecule.includes('confidence_score');
+}
+
+//tags: app
+//name: Boltz-1 App
+//output: view v
+//meta.browsePath: Bio
+export async function boltz1App(): Promise<DG.ViewBase> {
+  return new Boltz1AppView().getView();
 }
