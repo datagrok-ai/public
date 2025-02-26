@@ -1,4 +1,4 @@
-
+ import * as DG from 'datagrok-api/dg';
 /** If the condition is false, throws message(). */
 export function assure(condition: boolean, errorMessage: string | (() => string)) {
   if (!condition)
@@ -63,3 +63,27 @@ export function parseExcelPosition(cell: string): [number, number] {
   return [ row, col ];
 }
 
+export function safeLog(num: number) {
+  return num <= 0 ? 0 : Math.log10(num);
+}
+
+export function tableFromRow(row: DG.Row) {
+  if (!row || row.idx == null || row.idx < 0 || !row.table)
+    return {};
+  const res: {[index: string]: any} = {};
+  const idx = row.idx;
+  for (const column of row.table.columns)
+    res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx);
+  return res;
+
+}
+
+export function formatTableNumber(num: number): string | number {
+  if (num === 0) 
+    return '0';
+  if (Math.abs(num) < 1e-3)
+      return DG.format(num, 'scientific');
+  else if (Math.abs(num) < 1)
+    return DG.format(num, '0.0000');
+  return num;
+}
