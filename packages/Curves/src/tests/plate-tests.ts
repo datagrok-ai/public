@@ -52,6 +52,14 @@ category('plates', () => {
     Plate.fromPlates([concentration, layout, readout]).print();
   });
 
+  test('fromExcel', async () => {
+    const plate = await Plate.fromExcel('System:DemoFiles/hts/plate/plate.xlsx');
+    ui.dialog({title: 'Inspect plate'})
+      .add(PlateWidget.detailedView(plate.data).root)
+      .show({width: 500, height: 500});
+    await DG.delay(10000);
+  });
+
   test('normalization', async () => {
     const plate = getPlate();
 
@@ -85,6 +93,29 @@ category('plates', () => {
 
     await DG.delay(10000);
   });
+
+  // test('tt', async () => {
+  //   const concentration = Plate.fromCsvTable(concentrationCsv, 'concentration');
+  //   const layout = Plate.fromCsvTable(layoutCsv, 'role');
+  //   const readout = Plate.fromCsvTable(readoutCsv, 'readout');
+  //
+  //   const plate = Plate.fromPlates([concentration, layout, readout]);
+  //
+  //   const hcMean = jStat.mean(plate.values('readout', {match: {'layout': 'High Control'}}));
+  //   const hcMea1 = readout.values({'layout': 'High Control'}).mean();
+  //
+  //   plate.getSeries({ split: 'compoundId', filter: {'layout': (role) => role.startsWith('Compound')} })
+  //     .map((series) => series.fit(...))
+  //
+  //   plate.getDoseResponseCurves({
+  //     split: 'compoundId',
+  //     filter: {'layout': (role) => role.startsWith('Compound')},
+  //     fit: (series) => series.fit(...),
+  //     include: (fitResult: IFitResult) => {
+  //       ic50: fitResult.ic50
+  //     }
+  //   });  // DataFrame
+  // });
 
   test('render', async () => {
     const plate = getPlate();
