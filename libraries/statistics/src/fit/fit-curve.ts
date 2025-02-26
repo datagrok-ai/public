@@ -299,6 +299,32 @@ export class ExponentialFunction extends FitFunction {
   }
 }
 
+/** Class that implements the Four Parameter Logistic Regression function */
+export class FourPLRegressionFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_4PL_REGRESSION;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Bottom', 'Slope', 'EC50'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return fourPLRegression(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(4);
+    const bottom = Math.min(...y);
+    const top = Math.max(...y);
+    const midIdx = Math.floor(y.length / 2);
+    const ec50 = x[midIdx];
+    const slope = (y[y.length - 1] > y[0]) ? 1 : -1;
+    params.set([top, bottom, slope, ec50]);
+    return params;
+  }
+}
+
 /** Class that implements user JS functions */
 export class JsFunction extends FitFunction {
   private _name: string;
@@ -338,6 +364,7 @@ export const fitFunctions: {[index: string]: FitFunction} = {
   'sigmoid': new SigmoidFunction(),
   'log-linear': new LogLinearFunction(),
   'exponential': new ExponentialFunction(),
+  '4pl-regression': new FourPLRegressionFunction(),
 };
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
@@ -419,6 +446,7 @@ export const FIT_FUNCTION_SIGMOID = 'sigmoid';
 export const FIT_FUNCTION_LINEAR = 'linear';
 export const FIT_FUNCTION_LOG_LINEAR = 'log-linear';
 export const FIT_FUNCTION_EXPONENTIAL = 'exponential';
+export const FIT_FUNCTION_4PL_REGRESSION = '4pl-regression';
 
 export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
@@ -653,6 +681,14 @@ export function exponential(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
   return A * Math.exp(x * B);
+}
+
+export function fourPLRegression(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  const C = params[2];
+  const D = params[3];
+  return B + (A - B) / (1 + Math.pow(x / D, C));
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {

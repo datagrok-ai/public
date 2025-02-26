@@ -1,0 +1,326 @@
+import * as DG from 'datagrok-api/dg';
+import {
+  FIT_FUNCTION_LINEAR,
+  linear,
+  IFitSeries,
+  IFitPoint,
+  FIT_FUNCTION_SIGMOID,
+  sigmoid,
+  FIT_FUNCTION_LOG_LINEAR,
+  logLinear,
+  FIT_FUNCTION_EXPONENTIAL,
+  exponential,
+  FIT_FUNCTION_4PL_REGRESSION,
+  fourPLRegression,
+  IFitFunctionDescription,
+  FitParamBounds,
+  FitMarkerType,
+  FitOutlierMarkerType,
+  FitLineStyle,
+  FitErrorModelType,
+} from './fit-curve';
+import {fitSeries} from './fit-data';
+
+
+/** Class for the fit functions */
+export abstract class FitFunction<T> {
+  abstract get name(): string;
+  abstract get parameterNames(): string[];
+  abstract fillParams(params: Float32Array): T;
+  abstract y(params: Float32Array, x: number): number;
+  abstract getInitialParameters(x: number[], y: number[]): Float32Array;
+}
+
+interface IFit {}
+
+
+interface ILinearFit extends IFit {
+  slope: number;
+  intercept: number;
+}
+
+interface ILogLinearFit extends ILinearFit {}
+
+interface ISigmoidFit extends IFit {
+  top: number;
+  bottom: number;
+  slope: number;
+  ic50: number;
+}
+
+interface IExponentialFit extends IFit {
+  mantissa: number;
+  power: number;
+}
+
+interface IFourPLRegressionFit extends IFit {
+  top: number;
+  bottom: number;
+  slope: number;
+  ec50: number;
+}
+
+/** Class that implements the linear function */
+export class LinearFunction extends FitFunction<ILinearFit> {
+  get name(): string {
+    return FIT_FUNCTION_LINEAR;
+  }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  fillParams(params: Float32Array): ILinearFit {
+    return {
+      slope: params[0],
+      intercept: params[1],
+    };
+  }
+
+  y(params: Float32Array, x: number): number {
+    return linear(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[minIndex])
+        minIndex = i;
+      if (x[i] > x[maxIndex])
+        maxIndex = i;
+    }
+
+    const deltaX = x[maxIndex] - x[minIndex];
+    const deltaY = y[maxIndex] - y[minIndex];
+    const A = deltaY / deltaX;
+    const B = y[maxIndex] - A * x[maxIndex];
+    const params = new Float32Array(2);
+    params.set([A, B]);
+    return params;
+  }
+}
+
+/** Class that implements the sigmoid function */
+export class SigmoidFunction extends FitFunction<ISigmoidFit> {
+  get name(): string {
+    return FIT_FUNCTION_SIGMOID;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Bottom', 'Slope', 'IC50'];
+  }
+
+  fillParams(params: Float32Array): ISigmoidFit {
+    return {
+      top: params[0],
+      bottom: params[1],
+      slope: params[2],
+      ic50: params[3],
+    };
+  }
+
+  y(params: Float32Array, x: number): number {
+    return sigmoid(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const dataBounds = DG.Rect.fromXYArrays(x, y);
+    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
+    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const xAtMedY = x[nearestXIndex];
+    const slope = y[0] > y[y.length - 1] ? 1 : -1;
+
+    // params are: [max, tan, IC50, min]
+    const params = new Float32Array(4);
+    params.set([dataBounds.bottom, slope, xAtMedY, dataBounds.top]);
+    return params;
+  }
+}
+
+/** Class that implements the linear logarithmic function */
+export class LogLinearFunction extends FitFunction<ILogLinearFit> {
+  get name(): string {
+    return FIT_FUNCTION_LOG_LINEAR;
+  }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  fillParams(params: Float32Array): ILogLinearFit {
+    return {
+      slope: params[0],
+      intercept: params[1],
+    };
+  }
+
+  y(params: Float32Array, x: number): number {
+    return logLinear(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([-5, 100]);
+    return params;
+  }
+}
+
+/** Class that implements the exponential function */
+export class ExponentialFunction extends FitFunction<IExponentialFit> {
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  get parameterNames(): string[] {
+    return ['Mantissa', 'Power'];
+  }
+
+  fillParams(params: Float32Array): IExponentialFit {
+    return {
+      mantissa: params[0],
+      power: params[1],
+    };
+  }
+
+  y(params: Float32Array, x: number): number {
+    return exponential(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([100, -2]);
+    return params;
+  }
+}
+
+/** Class that implements the Four Parameter Logistic Regression function */
+export class FourPLRegressionFunction extends FitFunction<IFourPLRegressionFit> {
+  get name(): string {
+    return FIT_FUNCTION_4PL_REGRESSION;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Bottom', 'Slope', 'EC50'];
+  }
+
+  fillParams(params: Float32Array): IFourPLRegressionFit {
+    return {
+      top: params[0],
+      bottom: params[1],
+      slope: params[2],
+      ec50: params[3],
+    };
+  }
+
+  y(params: Float32Array, x: number): number {
+    return fourPLRegression(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(4);
+    const bottom = Math.min(...y);
+    const top = Math.max(...y);
+    const midIdx = Math.floor(y.length / 2);
+    const ec50 = x[midIdx];
+    const slope = (y[y.length - 1] > y[0]) ? 1 : -1;
+    params.set([top, bottom, slope, ec50]);
+    return params;
+  }
+}
+
+
+// Object with fit functions
+export const fitFunctions = {
+  'linear': new LinearFunction(),
+  'sigmoid': new SigmoidFunction(),
+  'log-linear': new LogLinearFunction(),
+  'exponential': new ExponentialFunction(),
+  '4pl-regression': new FourPLRegressionFunction(),
+};
+
+class FitFunctions {
+  series: FitSeries;
+
+  constructor(series: FitSeries) {
+    this.series = series;
+  }
+
+  linear(): ILinearFit {
+    return fitFunctions[FIT_FUNCTION_LINEAR]
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LINEAR]).parameters);
+  }
+
+  logLinear(): ILogLinearFit {
+    return fitFunctions[FIT_FUNCTION_LOG_LINEAR]
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LOG_LINEAR]).parameters);
+  }
+
+  sigmoid(): ISigmoidFit {
+    return fitFunctions[FIT_FUNCTION_SIGMOID]
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_SIGMOID]).parameters);
+  }
+
+  exponential(): IExponentialFit {
+    return fitFunctions[FIT_FUNCTION_EXPONENTIAL]
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_EXPONENTIAL]).parameters);
+  }
+
+  fourPLRegression(): IFourPLRegressionFit {
+    return fitFunctions[FIT_FUNCTION_4PL_REGRESSION]
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]).parameters);
+  }
+}
+
+
+export class FitSeries implements IFitSeries {
+  [key: string]: any;
+
+  fit: FitFunctions;
+  points: IFitPoint[];
+
+  constructor(points: IFitPoint[]) {
+    this.points = points;
+    this.fit = new FitFunctions(this);
+  }
+
+  name?: string;                        // controls the series name
+  fitFunction?: string | IFitFunctionDescription; // controls the series fit function
+  parameters?: number[];                // controls the series parameters, auto-fitting when not defined
+  parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
+  markerType?: FitMarkerType;           // defines the series marker type
+  outlierMarkerType?: FitOutlierMarkerType;  // defines the series outlier marker type
+  lineStyle?: FitLineStyle;             // defines the series line style
+  pointColor?: string;                  // overrides the standardized series point color
+  fitLineColor?: string;                // overrides the standardized series fit line color
+  confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
+  outlierColor?: string;                // overrides the standardized series outlier color
+  connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
+  showFitLine?: boolean;                // defines whether to show the fit line or not
+  showPoints?: string;                  // defines the data display mode
+  showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
+  errorModel?: FitErrorModelType;       // defines the series error model
+  clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
+  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
+  droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
+  columnName?: string;                  // defines the column name where the series is stored
+}
+
+
+const series: FitSeries = new FitSeries([
+  {'x': 0, 'y': 0},
+  {'x': 1, 'y': 0.5},
+  {'x': 2, 'y': 1},
+  {'x': 3, 'y': 10, 'outlier': true},
+  {'x': 4, 'y': 0},
+]);
+
+
