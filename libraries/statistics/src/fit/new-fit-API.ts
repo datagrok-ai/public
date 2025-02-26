@@ -17,22 +17,24 @@ import {
   FitMarkerType,
   FitOutlierMarkerType,
   FitLineStyle,
-  FitErrorModelType,
+  FitErrorModelType, FitCurve, getAuc, getDetCoeff,
 } from './fit-curve';
-import {fitSeries} from './fit-data';
+import {fitSeries, getDataPoints} from './fit-data';
 
 
 /** Class for the fit functions */
 export abstract class FitFunction<T> {
   abstract get name(): string;
   abstract get parameterNames(): string[];
-  abstract fillParams(params: Float32Array): T;
+  abstract fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): T;
   abstract y(params: Float32Array, x: number): number;
   abstract getInitialParameters(x: number[], y: number[]): Float32Array;
 }
 
-interface IFit {}
-
+interface IFit {
+  auc: number;
+  rSquared: number;
+}
 
 interface ILinearFit extends IFit {
   slope: number;
@@ -60,6 +62,13 @@ interface IFourPLRegressionFit extends IFit {
   ec50: number;
 }
 
+function getAucAndRsquared(fitCurve: (x: number) => number, data: {x: number[], y: number[]}): IFit {
+  return {
+    auc: getAuc(fitCurve, data),
+    rSquared: getDetCoeff(fitCurve, data),
+  };
+}
+
 /** Class that implements the linear function */
 export class LinearFunction extends FitFunction<ILinearFit> {
   get name(): string {
@@ -70,10 +79,11 @@ export class LinearFunction extends FitFunction<ILinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  fillParams(params: Float32Array): ILinearFit {
+  fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): ILinearFit {
     return {
-      slope: params[0],
-      intercept: params[1],
+      ...getAucAndRsquared(fitCurve.fittedCurve, data),
+      slope: fitCurve.parameters[0],
+      intercept: fitCurve.parameters[1],
     };
   }
 
@@ -111,12 +121,13 @@ export class SigmoidFunction extends FitFunction<ISigmoidFit> {
     return ['Top', 'Bottom', 'Slope', 'IC50'];
   }
 
-  fillParams(params: Float32Array): ISigmoidFit {
+  fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): ISigmoidFit {
     return {
-      top: params[0],
-      bottom: params[1],
-      slope: params[2],
-      ic50: params[3],
+      ...getAucAndRsquared(fitCurve.fittedCurve, data),
+      top: fitCurve.parameters[0],
+      bottom: fitCurve.parameters[1],
+      slope: fitCurve.parameters[2],
+      ic50: fitCurve.parameters[3],
     };
   }
 
@@ -156,10 +167,11 @@ export class LogLinearFunction extends FitFunction<ILogLinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  fillParams(params: Float32Array): ILogLinearFit {
+  fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): ILogLinearFit {
     return {
-      slope: params[0],
-      intercept: params[1],
+      ...getAucAndRsquared(fitCurve.fittedCurve, data),
+      slope: fitCurve.parameters[0],
+      intercept: fitCurve.parameters[1],
     };
   }
 
@@ -184,10 +196,11 @@ export class ExponentialFunction extends FitFunction<IExponentialFit> {
     return ['Mantissa', 'Power'];
   }
 
-  fillParams(params: Float32Array): IExponentialFit {
+  fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): IExponentialFit {
     return {
-      mantissa: params[0],
-      power: params[1],
+      ...getAucAndRsquared(fitCurve.fittedCurve, data),
+      mantissa: fitCurve.parameters[0],
+      power: fitCurve.parameters[1],
     };
   }
 
@@ -212,12 +225,13 @@ export class FourPLRegressionFunction extends FitFunction<IFourPLRegressionFit> 
     return ['Top', 'Bottom', 'Slope', 'EC50'];
   }
 
-  fillParams(params: Float32Array): IFourPLRegressionFit {
+  fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): IFourPLRegressionFit {
     return {
-      top: params[0],
-      bottom: params[1],
-      slope: params[2],
-      ec50: params[3],
+      ...getAucAndRsquared(fitCurve.fittedCurve, data),
+      top: fitCurve.parameters[0],
+      bottom: fitCurve.parameters[1],
+      slope: fitCurve.parameters[2],
+      ec50: fitCurve.parameters[3],
     };
   }
 
@@ -256,27 +270,27 @@ class FitFunctions {
 
   linear(): ILinearFit {
     return fitFunctions[FIT_FUNCTION_LINEAR]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LINEAR]).parameters);
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LINEAR]), getDataPoints(this.series));
   }
 
   logLinear(): ILogLinearFit {
     return fitFunctions[FIT_FUNCTION_LOG_LINEAR]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LOG_LINEAR]).parameters);
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LOG_LINEAR]), getDataPoints(this.series));
   }
 
   sigmoid(): ISigmoidFit {
     return fitFunctions[FIT_FUNCTION_SIGMOID]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_SIGMOID]).parameters);
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_SIGMOID]), getDataPoints(this.series));
   }
 
   exponential(): IExponentialFit {
     return fitFunctions[FIT_FUNCTION_EXPONENTIAL]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_EXPONENTIAL]).parameters);
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_EXPONENTIAL]), getDataPoints(this.series));
   }
 
   fourPLRegression(): IFourPLRegressionFit {
     return fitFunctions[FIT_FUNCTION_4PL_REGRESSION]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]).parameters);
+      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]), getDataPoints(this.series));
   }
 }
 
@@ -322,5 +336,3 @@ const series: FitSeries = new FitSeries([
   {'x': 3, 'y': 10, 'outlier': true},
   {'x': 4, 'y': 0},
 ]);
-
-
