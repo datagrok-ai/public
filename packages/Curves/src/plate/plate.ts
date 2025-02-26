@@ -5,6 +5,7 @@ import wu from 'wu';
 import {assure, excelToNum, firstWhere, numToExcel, parseExcelPosition} from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
+import { FitSeries } from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 /** Represents a well in the experimental plate */
@@ -30,6 +31,7 @@ interface IPlateCsvImportOptions {
 interface IPlateWellFilter {
   includeEmpty?: boolean;
   match?: {[key: string]: any};
+  exclude?: {[key: string]: any};
 }
 
 
@@ -193,8 +195,14 @@ export class Plate {
   }
 
   matches(i: number, filter: IPlateWellFilter): boolean {
-    return !filter || !filter.match ||
-      Object.keys(filter.match).every((key) => this.data.columns.byName(key).get(i) === filter.match![key]);
+    const cols = this.data.columns;
+    // we allow both any and array of any things in matches object, so we need to convert it to array to have one api
+    const arMatches = filter.match ? Object.entries(filter.match).reduce((acc, [key, value]) => {acc[key] = Array.isArray(value) ? value : [value]; return acc;}, {} as Record<string, any[]>) : null;
+    const arExclude = filter.exclude ? Object.entries(filter.exclude).reduce((acc, [key, value]) => {acc[key] = Array.isArray(value) ? value : [value]; return acc;}, {} as Record<string, any[]>) : null;
+    return !filter || (!arMatches && !arExclude) ||
+        (
+        Object.keys(arMatches ?? {}).filter((m) => cols.contains(m)).every((key) => arMatches![key].some((m) => this.data.columns.byName(key).get(i) === m)) &&
+        Object.keys(arExclude ?? {}).filter((m) => cols.contains(m)).every((key) => arExclude![key].every((e) => this.data.columns.byName(key).get(i) !== e)));
   }
 
   count(filter?: IPlateWellFilter): number {
@@ -208,22 +216,40 @@ export class Plate {
   }
 
   /** Array of non-empty values */
-  values(field: string, filter?: IPlateWellFilter): Array<any> {
-    const col = this.data.columns.byName(field);
-    assure(col != null, `Field does not exist: ${field}`);
-
-    const result = [];
+  values(fields: string[], filter?: IPlateWellFilter): Array<Record<string, any>> {
+    const cols = fields.map((f) => this.data.columns.byName(f));
+    assure(cols.every((c) => c != null), `Field does not exist: ${fields.find((_, i) => cols[i] == null)}`);
+    const colsObj: Record<string, DG.Column> = {};
+    for (let i = 0; i < fields.length; i++)
+      colsObj[fields[i]] = cols[i];
+    const result: Record<string, any>[]  = [];
     for (let i = 0; i < this.rows * this.cols; i++)
-      if ((filter?.includeEmpty ?? false) || !col.isNone(i))
-        result.push(col.isNone(i) ? null : col.get(i));
-
+      if (((filter?.includeEmpty ?? false) || cols.every((col) => !col.isNone(i))) && (!filter || this.matches(i, filter)))
+        result.push(fields.reduce((acc, f) => { acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc; }, {} as Record<string, any>));
     return result;
   }
 
-  doseResponseSeries(filter?: IPlateWellFilter & { concentration: string; value: string }): ISeriesData {
-    const x = this.values(filter?.concentration ?? 'concentration');
-    const y = this.values(filter?.value ?? 'value');
-    return { x, y };
+  fieldValues(field: string, filter?: IPlateWellFilter): Array<any> {
+    return this.values([field], filter).map((v) => v[field]);
+
+  }
+
+  doseResponseSeries(options?: IPlateWellFilter & { concentration?: string; value?: string, groupBy?: string}): Record<string, FitSeries> {
+    const valueOptions = {includeEmpty: options?.includeEmpty ?? false, exclude: options?.exclude ?? {'role': ['High Control', 'Low Control']}}
+    const concKey = options?.concentration ?? 'concentration';
+    const valueKey = options?.value ?? 'value';
+    const values = this.values([concKey, valueKey, ...(options?.groupBy ? [options.groupBy] : [])], valueOptions);
+
+    const series: Record<string, ISeriesData> = {};
+    for (const v of values) {
+      const group = options?.groupBy ? v[options.groupBy] : '0';
+      if (!series[group])
+        series[group] = {x: [], y: []};
+      series[group].x.push(v[concKey]);
+      series[group].y.push(v[valueKey]);
+    }
+
+    return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i]})))]));
   }
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
