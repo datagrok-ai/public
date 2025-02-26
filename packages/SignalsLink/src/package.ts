@@ -12,10 +12,10 @@ export const _package = new DG.Package();
 //meta.icon: images/signals-icon.png
 //output: view v
 //meta.browsePath: Chem
-export async function cddVaultApp(): Promise<DG.ViewBase> {
+export async function signalsApp(): Promise<DG.ViewBase> {
 
   const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/images/cdd-icon-big.png',
+    iconPath: _package.webRoot + '/images/signals-icon.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/Signals/README.md',
     description: '- Connect to the Revvity Signals ELN.\n' +
       '- Analyze assay data.\n' +
