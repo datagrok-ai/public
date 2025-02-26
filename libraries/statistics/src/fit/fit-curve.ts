@@ -237,8 +237,8 @@ export class SigmoidFunction extends FitFunction {
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
-    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
-    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    const medY = (dataBounds.top - dataBounds.bottom) / 2 + dataBounds.bottom;
+    let maxYInterval = dataBounds.top - dataBounds.bottom;
     let nearestXIndex = 0;
     for (let i = 0; i < x.length; i++) {
       const currentInterval = Math.abs(y[i] - medY);
@@ -472,8 +472,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
 }
 
 export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel?: FitErrorModelType,
-    parameterBounds?: FitParamBounds[]): FitCurve {
-
+  parameterBounds?: FitParamBounds[]): FitCurve {
   errorModel ??= FitErrorModel.CONSTANT as FitErrorModelType;
   const curveFunction = fitFunction.y;
   let paramValues = fitFunction.getInitialParameters(data.x, data.y);
@@ -486,7 +485,7 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     topParamBounds[i] = paramValues[i] === 0 ? 1 : paramValues[i] + Math.abs(paramValues[i] * 0.5);
   }
   const parameterBoundsBitset: DG.BitSet = DG.BitSet.create(fitFunction.parameterNames.length * 2);
-  if (parameterBounds && parameterBounds.length !== 0)
+  if (parameterBounds && parameterBounds.length !== 0) {
     for (let i = 0; i < parameterBounds.length; i++) {
       if (parameterBounds[i].min !== undefined && parameterBounds[i].min !== null) {
         bottomParamBounds[i] = parameterBounds[i].min!;
@@ -497,7 +496,7 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
         parameterBoundsBitset.set(i * 2 + 1, true);
       }
     }
-
+  }
   const getConsistency = (extremum: Extremum) => {
     const residuals = of(extremum.point).residuals;
     let q1q4 = 0;
@@ -531,9 +530,10 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     }, 10, paramValues);
 
     minIdx = 0;
-    for (let i = 1; i < optimization.extremums.length; i++)
+    for (let i = 1; i < optimization.extremums.length; i++) {
       if (optimization.extremums[i].cost < optimization.extremums[minIdx].cost)
         minIdx = i;
+    }
 
     const newStatistics = getConsistency(optimization.extremums[minIdx]);
     if (statistics === null)

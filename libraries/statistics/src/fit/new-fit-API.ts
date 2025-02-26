@@ -137,8 +137,8 @@ export class SigmoidFunction extends FitFunction<ISigmoidFit> {
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
-    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
-    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    const medY = (dataBounds.top - dataBounds.bottom) / 2 + dataBounds.bottom;
+    let maxYInterval = dataBounds.top - dataBounds.bottom;
     let nearestXIndex = 0;
     for (let i = 0; i < x.length; i++) {
       const currentInterval = Math.abs(y[i] - medY);
