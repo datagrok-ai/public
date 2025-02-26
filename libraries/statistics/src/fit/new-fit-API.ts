@@ -288,7 +288,7 @@ class FitFunctions {
       .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_EXPONENTIAL]), getDataPoints(this.series));
   }
 
-  fourPLRegression(): IFourPLRegressionFit {
+  fourPL(): IFourPLRegressionFit {
     return fitFunctions[FIT_FUNCTION_4PL_REGRESSION]
       .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]), getDataPoints(this.series));
   }
