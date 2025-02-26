@@ -53,7 +53,7 @@
     "openchemlib": "^7.2.3",
     "pako": "^2.1.0",
     "rxjs": "^6.5.5",
-    "typescript": "^5.6.3",
+    "typescript": "5.6.3",
     "worker-loader": "^3.0.8",
     "source-map-loader": "^4.0.1",
     "wu": "^2.1.0",
