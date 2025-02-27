@@ -1975,7 +1975,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const eventView = eventData.args.view;
       if (this.dataFrame.name) {
         const currentView = grok.shell.getTableView(this.dataFrame.name);
-        if (eventView.id === currentView.id)
+        if (eventView && currentView && eventView.id === currentView.id)
           this.closeAll = true;
       }
     }));
