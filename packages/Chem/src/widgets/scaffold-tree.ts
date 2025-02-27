@@ -1973,9 +1973,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.subs.push(grok.events.onViewRemoving.subscribe((eventData) => {
       const eventView = eventData.args.view;
-      const currentView = grok.shell.getTableView(this.dataFrame.name);
-      if (eventView.id === currentView.id)
-        this.closeAll = true;
+      if (this.dataFrame.name) {
+        const currentView = grok.shell.getTableView(this.dataFrame.name);
+        if (eventView.id === currentView.id)
+          this.closeAll = true;
+      }
     }));
 
     this.subs.push(DG.debounce(grok.events.onCustomEvent(SCAFFOLD_TREE_SKETCHER_ACTION), 250).subscribe(async (_) => {
