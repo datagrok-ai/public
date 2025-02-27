@@ -1,0 +1,62 @@
+{
+  "name": "spectroscopy",
+  "friendlyName": "Spectroscopy",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.3.6",
+    "cash-dom": "^8.1.5",
+    "common-spectrum": "^2.12.0",
+    "datagrok-api": "^1.21.3",
+    "dayjs": "^1.11.13",
+    "ir-spectrum": "^3.1.0",
+    "jcampconverter": "^11.0.1",
+    "mass-spectrum": "^0.0.2",
+    "ms-spectrum": "^3.7.6",
+    "react-dom": "18.3.1",
+    "uv-spectrum": "^0.7.0"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "latest",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-spectroscopy": "webpack && grok publish",
+    "release-spectroscopy": "webpack && grok publish --release",
+    "build-spectroscopy": "webpack",
+    "build": "webpack",
+    "debug-spectroscopy-public": "webpack && grok publish public",
+    "release-spectroscopy-public": "webpack && grok publish public --release",
+    "debug-spectroscopy-local": "webpack && grok publish local",
+    "release-spectroscopy-local": "webpack && grok publish local --release",
+    "debug-spectroscopy-release": "webpack && grok publish release",
+    "release-spectroscopy-release": "webpack && grok publish release --release",
+    "debug-spectroscopy-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
+    "release-spectroscopy-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release",
+    "debug-spectroscopy-core": "webpack && grok publish core",
+    "release-spectroscopy-core": "webpack && grok publish core --release",
+    "debug-spectroscopy-ec2": "webpack && grok publish ec2",
+    "release-spectroscopy-ec2": "webpack && grok publish ec2 --release",
+    "debug-spectroscopy-test": "webpack && grok publish test",
+    "release-spectroscopy-test": "webpack && grok publish test --release",
+    "debug-spectroscopy-localDocker": "webpack && grok publish localDocker",
+    "release-spectroscopy-localDocker": "webpack && grok publish localDocker --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Spectroscopy"
+  }
+}

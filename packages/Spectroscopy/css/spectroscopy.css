@@ -1,0 +1,11 @@
+.mass-spectrum-context-panel .ui-input-root{
+    justify-content: space-between;
+}
+
+.mass-spectrum-context-panel .ui-input-color-input{
+    margin-left: auto;
+}
+
+.mass-spectrum-context-panel  .ui-input-root{
+    width: 200px;
+}
