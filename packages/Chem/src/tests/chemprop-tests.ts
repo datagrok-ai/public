@@ -8,13 +8,11 @@ import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 category('chemprop', () => {
-  let container: DG.DockerContainer;
   let binBlob: Uint8Array;
   let table: DG.DataFrame;
 
   before(async () => {
     table = await readDataframe('tests/smiles_test.csv');
-    container = await getContainer();
     await ensureContainerRunning('chemprop');
   });
 
