@@ -527,8 +527,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let j = 0; j < data.series![i].points.length!; j++) {
           const p = data.series![i].points[j];
           if (this.hitTest(e, p, viewport)) {
-            ui.tooltip.show(ui.divV([ui.divText(`x: ${DG.format(p.x, '#0.000')}`),
-              ui.divText(`y: ${DG.format(p.y, '#0.000')}`)]), e.x + 16, e.y + 16);
+            ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
+              ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);
             if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH &&
               screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT)
               document.body.style.cursor = 'pointer';

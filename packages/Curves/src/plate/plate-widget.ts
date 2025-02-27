@@ -4,6 +4,22 @@ import * as grok from 'datagrok-api/grok';
 import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
 import {safeLog, tableFromRow } from './utils';
+import { Plate } from './plate';
+//@ts-ignore
+import * as jStat from 'jstat';
+import { FitMarkerType, IFitPoint } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import { FitConstants } from '../fit/const';
+
+
+type AnalysisOptions = {
+  roleName?: string,
+  concentrationName?: string,
+  valueName?: string
+  controlColumns?: string[],
+  normalize?: boolean,
+  autoFilterOutliers?: boolean
+}
+
 
 const colorScheme = [DG.Color.white, DG.Color.gray];
 const dimensions = new Map([
@@ -21,6 +37,8 @@ export class PlateWidget extends DG.Widget {
   rows = 0;
   cols = 0;
   colorColumnName: string = '';
+  colorSelector?: DG.InputBase;
+  detailsDiv?: HTMLElement;
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -37,22 +55,142 @@ export class PlateWidget extends DG.Widget {
     const pw = new PlateWidget();
     pw.grid.root.style.width = '100%';
     pw.plateData = table;
-    const colorSelector = ui.input.column('Color by', {
+    pw.colorSelector = ui.input.column('Color by', {
       table: table,
       value: pw._colorColumn,
       onValueChanged: (v) => { pw._colorColumn = v; pw.grid.invalidate(); }
     });
 
-    const detailsDiv = div();
+    pw.detailsDiv = div();
     pw.grid.onCurrentCellChanged.subscribe((gc) => {
-      ui.empty(detailsDiv);
+      ui.empty(pw.detailsDiv!);
       const row = pw.dataRow(gc);
       if (row)
-        detailsDiv.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
+        pw.detailsDiv!.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
     });
 
-    pw.root.prepend(colorSelector.root);
-    pw.root.append(detailsDiv);
+    pw.root.prepend(pw.colorSelector.root);
+    pw.root.append(pw.detailsDiv);
+    return pw;
+  }
+
+  static analysisView(plate: Plate, options?: AnalysisOptions): PlateWidget {
+    const pw = PlateWidget.detailedView(plate.data);
+    const gridRoot = pw.grid.root;
+    const detailsRoot = pw.detailsDiv;
+    if (!gridRoot || !detailsRoot)
+      return pw;
+    // place them horizontally
+    const container = ui.divH([gridRoot, detailsRoot]);
+    pw.root.appendChild(container);
+    detailsRoot.style.flex = '0 0 min(200px, 20%)';
+    gridRoot.style.flexGrow = '1';
+    gridRoot.style.removeProperty('width');
+
+    const defaultOptions: Required<AnalysisOptions> = {roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true};
+    const actOptions: Required<AnalysisOptions> = {...defaultOptions, ...options};
+
+    if (actOptions.normalize && actOptions.controlColumns.length === 2) {
+      const [lMean, hMean] = actOptions.controlColumns.map((colName) => jStat.mean(plate.fieldValues(actOptions.valueName, {match: {[actOptions.roleName]: colName}}))).sort((a,b) => a - b);
+      actOptions.valueName = plate.normalize(actOptions.valueName, (v) => (hMean - v) / (hMean - lMean) * 100).name;
+    }
+
+    const series = plate.doseResponseSeries({exclude: {[actOptions.roleName]: actOptions.controlColumns}, value: actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
+    
+    const seriesVals = Object.entries(series);
+
+    const roleCol = DG.Column.string(actOptions.roleName, seriesVals.length);
+    const curveCol = DG.Column.string('Curve', seriesVals.length);
+    curveCol.init((i) => JSON.stringify(
+      {
+                  "chartOptions": {
+                    "xAxisName": "Conc.",
+                    "yAxisName": "Result",
+                    "logX": true,
+                    "title": `${seriesVals[i][0]}`,
+                    'minY': 0,
+                    'maxY': 100,
+                    'clickToToggle': true,
+                  },
+                series: [{...seriesVals[i][1], fit: undefined, fitFunction: 'sigmoid', clickToToggle: true}]
+      }
+      
+      ));
+    roleCol.init((i) => seriesVals[i][0]);
+
+    const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
+    curveCol.semType ='fit';
+    const curvesGrid = df.plot.grid();
+    curvesGrid.root.style.width = '100%';
+    pw.root.style.display = 'flex';
+    pw.root.style.flexDirection = 'column';
+
+    pw.root.appendChild(curvesGrid.root);
+    
+    // when selecting a cell on plate, go to appropriate curve and mark the corresponding point with different marker
+    // remember the previous change, so that we can revert it
+    let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string} | null = null;
+
+    function clearPreviousSelection() {
+      try {
+        if (!prevSelection || (prevSelection.seriesIndex ?? -1) < 0) {
+          return;
+        }
+        const series = curveCol.get(prevSelection.seriesIndex);
+        if (!series)
+          return;
+        const parsed = JSON.parse(series);
+        const points: IFitPoint[] = parsed.series[0]?.points;
+        if (points && points.length && points.length > prevSelection.pointIndex) {
+          points[prevSelection.pointIndex].marker = prevSelection.markerType;
+          points[prevSelection.pointIndex].size = prevSelection.markerSize;
+          points[prevSelection.pointIndex].color = prevSelection.markerColor;
+          curveCol.set(prevSelection.seriesIndex, JSON.stringify(parsed));
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        prevSelection = null;
+      }
+
+    }
+    pw.subs.push(pw.grid.onCurrentCellChanged.subscribe((gc) => {
+      clearPreviousSelection();
+      if (gc?.gridRow == null || gc?.gridRow == -1 || !gc?.gridColumn || gc?.gridColumn.idx == 0)
+        return;
+      const row = pw.dataRow(gc);
+      if (row == undefined || row < 0)
+        return;
+      const catValue = pw.plateData.get(actOptions.roleName, row)?.toLowerCase();
+      if (!catValue)
+        return;
+      const seriesIndex = seriesVals.findIndex(([serName, _]) => serName?.toLowerCase() === catValue);
+      if (seriesIndex < 0)
+        return;
+      const conscentration: number = pw.plateData.get(actOptions.concentrationName, row);
+      const value: number = pw.plateData.get(actOptions.valueName, row);
+
+      const pointInSeriesIndex: number = seriesVals[seriesIndex][1].points.findIndex((p) => p.x === conscentration && p.y === value); 
+      if (pointInSeriesIndex < 0)
+        return;
+
+      prevSelection = {seriesIndex, pointIndex: pointInSeriesIndex, markerType: seriesVals[seriesIndex][1].points[pointInSeriesIndex].marker ?? DG.MARKER_TYPE.CIRCLE,
+         markerSize: seriesVals[seriesIndex][1].points[pointInSeriesIndex].size ?? FitConstants.POINT_PX_SIZE, markerColor: seriesVals[seriesIndex][1].points[pointInSeriesIndex].color ?? DG.Color.toHtml(DG.Color.getCategoricalColor(0))};
+
+      const curveJSON = JSON.parse(curveCol.get(seriesIndex)!);
+      const points: IFitPoint[] = curveJSON.series[0]?.points;
+      if (points && points.length && points.length > pointInSeriesIndex) {
+        points[pointInSeriesIndex].marker = DG.MARKER_TYPE.SQUARE;
+        points[pointInSeriesIndex].size = FitConstants.POINT_PX_SIZE * 2;
+        points[pointInSeriesIndex].color = DG.Color.toHtml(DG.Color.getCategoricalColor(1));
+        curveCol.set(seriesIndex, JSON.stringify(curveJSON));
+      }
+
+      // scroll in grid
+      const curveGridRow = curvesGrid.tableRowToGrid(seriesIndex);
+      curvesGrid.scrollToCell(curveCol.name, curveGridRow);
+    }));
+
 
     return pw;
   }

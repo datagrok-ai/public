@@ -109,6 +109,14 @@ export class Plate {
     return this.fromTable(await grok.dapi.files.readCsv(csvPath, options), field);
   }
 
+  // getClosestRoleName(fileName: string): string {
+  //   const roleRoleNames = ['role', 'compound', 'compound name'];
+  //   const concentrationRoleNames = ['concentration', 'conc', 'dilution'];
+  //   const valueRoleNames = ['value', 'readout', 'response', 'activity', 'signal', 'absorbance', 'fluorescence', 'luminescence', 'intensity', 'od', 'optical density'];
+  //   const foundRoleIndex = [roleRoleNames, concentrationRoleNames, valueRoleNames];
+
+  // }
+
   static fromCsvTable(csv: string, field: string, options?: DG.CsvImportOptions): Plate {
     return this.fromTable(DG.DataFrame.fromCsv(csv, options), field);
   }
@@ -187,11 +195,11 @@ export class Plate {
   }
 
   /** Changes all numerical values to the results of the specified normalization function */
-  normalize(field: string, f: (value: number) => number) {
-    const col = this.data.getCol(field);
-    for (let i = 0; i < this.rows * this.cols; i++)
-      if (!col.isNone(i))
-        col.set(i, f(col.get(i)), false);
+  normalize(field: string, f: (value: number) => number, inplace: boolean = false) {
+    const originalCol = this.data.getCol(field);
+    const col = inplace ? originalCol : this.data.columns.addNewFloat(this.data.columns.getUnusedName(`${field}_normalized`));
+    col.init((i) => originalCol.isNone(i) ? null : f(originalCol.get(i)));
+    return col;
   }
 
   matches(i: number, filter: IPlateWellFilter): boolean {
@@ -248,8 +256,7 @@ export class Plate {
       series[group].x.push(v[concKey]);
       series[group].y.push(v[valueKey]);
     }
-
-    return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i]})))]));
+    return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i]})).sort((a, b) => a.x - b.x))]));
   }
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
