@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {isColumnPresent, returnDialog, setDialogInputValue} from './gui-utils';
-import {ensureContainersRunning, readDataframe} from './utils';
+import {ensureContainerRunning, readDataframe} from './utils';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 category('UI top menu', () => {
@@ -13,7 +13,6 @@ category('UI top menu', () => {
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = true;
-    await ensureContainersRunning();
   });
 
   test('similarity search', async () => {
@@ -104,6 +103,7 @@ category('UI top menu', () => {
   });
 
   test('map identifiers', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await grok.data.detectSemanticTypes(smiles);
@@ -169,6 +169,7 @@ category('UI top menu', () => {
   }, {stressTest: true});
 
   test('descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await grok.data.detectSemanticTypes(smiles);

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
 
@@ -85,6 +85,15 @@ export async function ensureContainersRunning() {
       ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
       : Promise.resolve()
   ]);
+}
+
+export async function ensureContainerRunning(containerName: string) {
+  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+  if (!(container.status.startsWith('started') || container.status.startsWith('checking')))
+    grok.dapi.docker.dockerContainers.run(container.id, true)
+
+  await awaitCheck(() => container.status.startsWith('started') || container.status.startsWith('checking'),
+    `${containerName} hasn't been started after 2 minutes`, 120000);
 }
 
 export const malformedMolblock = `

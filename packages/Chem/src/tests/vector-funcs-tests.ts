@@ -4,10 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import {category, test, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { ensureContainersRunning } from './utils';
+import { ensureContainerRunning } from './utils';
 
 category('vector functions', () => {
-
 
     before(async () => {
         grok.shell.closeAll();
@@ -15,7 +14,6 @@ category('vector functions', () => {
             chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
             await chemCommonRdKit.initRdKitModuleLocal();
         }
-        await ensureContainersRunning();
     });
 
     test('getMorganFingerprints', async () => {
@@ -24,6 +22,7 @@ category('vector functions', () => {
     });
 
     test('chemDescriptor', async () => {
+        await ensureContainerRunning('name = "chem-chem"');
         await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
     });

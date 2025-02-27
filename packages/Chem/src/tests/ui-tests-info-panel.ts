@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import { ensureContainersRunning } from './utils';
+import { ensureContainerRunning } from './utils';
 
 const identifiers: {[key: string]: string} = {
   'Smiles': 'CN1CCC(Oc2ccc(C(F)(F)F)cc2)CC1',
@@ -17,7 +17,6 @@ category('UI info panel', () => {
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = true;
-    await ensureContainersRunning();
   });
 
 
@@ -213,11 +212,11 @@ category('UI info panel', () => {
   });
 
   test('structural alerts', async () => {
-    smiles = grok.data.demo.molecules();
+    smiles = grok.data.demo.molecules(20);
+    smiles.rows.removeAt(0, 2);
     grok.shell.o = ui.div();
     v = grok.shell.addTableView(smiles);
     await grok.data.detectSemanticTypes(smiles);
-    smiles.currentCell = smiles.cell(2, 'smiles');
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const bp = await awaitPanel(pp, 'Biology');
@@ -241,6 +240,7 @@ category('UI info panel', () => {
   });
 
   test('descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await grok.data.detectSemanticTypes(smiles);
@@ -268,6 +268,6 @@ async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Pro
   await awaitCheck(() => {
     return Array.from(pp?.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === name) !== undefined;
-  }, `cannot find ${name} property`, ms);
+  }, `cannot find ${name} panel`, ms);
   return Array.from(pp!.querySelectorAll('div.d4-accordion-pane-header')).find((el: any) => el.textContent === name)!;
 }

@@ -5,15 +5,15 @@ import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import { ensureContainersRunning, readDataframe } from './utils';
+import { ensureContainerRunning, readDataframe } from './utils';
 
 category('server features', () => {
 
   before(async () => {
-    await ensureContainersRunning();
   });
   
   test('descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
