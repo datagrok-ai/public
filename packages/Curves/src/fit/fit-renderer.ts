@@ -319,19 +319,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         const p = data.series![i].points[j];
         if (this.hitTest(e, p, viewport)) {
           p.outlier = !p.outlier;
-          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
-          if (columns) {
-            for (const column of columns) {
-              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
-              const stats = column.tags['.seriesAggregation'] !== null ?
-                getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
-                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
-              if (stats === null)
-                continue;
-              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
-            }
-          }
-
+          
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
@@ -345,6 +333,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             });
             const g = gridCell.grid.canvas.getContext('2d')!;
             gridCell.render({context: g, bounds: gridCell.bounds});
+          }
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
+          if (columns) {
+            for (const column of columns) {
+              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+              const stats = column.tags['.seriesAggregation'] !== null ?
+                getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
+                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
+              if (stats === null)
+                continue;
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
+            }
           }
           return;
         }

@@ -7,18 +7,20 @@ import {safeLog, tableFromRow } from './utils';
 import { IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
-import {FIT_FUNCTION_4PL_REGRESSION, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import { FitConstants } from '../fit/const';
 import { FitCellOutlierToggleArgs } from '../fit/fit-renderer';
+import { _package } from '../package';
 
 
 type AnalysisOptions = {
-  roleName?: string,
-  concentrationName?: string,
-  valueName?: string
-  controlColumns?: string[],
-  normalize?: boolean,
-  autoFilterOutliers?: boolean
+  roleName: string,
+  concentrationName: string,
+  valueName: string
+  controlColumns: string[],
+  normalize: boolean,
+  autoFilterOutliers: boolean,
+  submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void
 }
 
 
@@ -32,7 +34,7 @@ const dimensions = new Map([
 export class PlateWidget extends DG.Widget {
 
   _plateData: DG.DataFrame = DG.DataFrame.create();
-  _colorColumn?: DG.Column<number>;
+  _colorColumn?: DG.Column;
   grid: DG.Grid = DG.Viewer.heatMap(this._plateData);
   _posToRow: Map<String, number> = new Map();
   rows = 0;
@@ -79,7 +81,7 @@ export class PlateWidget extends DG.Widget {
     return pw;
   }
 
-  static analysisView(plate: Plate, options?: AnalysisOptions): PlateWidget {
+  static analysisView(plate: Plate, options?: Partial<AnalysisOptions>): PlateWidget {
     const pw = PlateWidget.detailedView(plate.data);
     const gridRoot = pw.grid.root;
     const detailsRoot = pw.detailsDiv;
@@ -87,8 +89,33 @@ export class PlateWidget extends DG.Widget {
     pw.plateDetailsDiv = ui.div();
     detailsRoot!.prepend(pw.plateDetailsDiv);
     detailsRoot!.append(pw.plateActionsDiv);
+    const defaultOptions: AnalysisOptions = {
+      roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true
+    };
+    
+    const aliases = {
+      concentrationName: ['conc', 'dose', 'conc.', 'dilution', 'concentrations'],
+      valueName: ['response', 'value', 'signal', 'raw data', 'raw signal', 'raw', 'response', 'values'],
+      roleName: ['role', 'plate layout', 'plate positions', 'group', 'compound', 'well']
+    };
+    Object.entries(aliases).forEach(([key , value]) => {
+      const colName = defaultOptions[key as keyof typeof defaultOptions] as string;
+      if (plate.data.columns.contains(colName))
+        return;
+      const alias = value.find((v) => plate.data.columns.contains(v));
+      if (alias)
+        (defaultOptions[key as keyof typeof defaultOptions] as string) = alias;
+    })
 
+    const actOptions: AnalysisOptions & {normalizedColName?: string} = {...defaultOptions, ...options};
 
+    // find control columns
+    if (plate.data.columns.contains(actOptions.roleName) && !actOptions.controlColumns.every((cc) => plate.data.col(actOptions.roleName)!.categories.includes(cc))) {
+      //  if control columns are not provided, try to find them in the data
+      const controlCols = plate.data.col(actOptions.roleName)!.categories.filter((cat) => cat.toLowerCase().includes('control'));
+      // take maximum of 2 control columns
+      actOptions.controlColumns = controlCols.slice(0, 2);
+    }
 
     if (!gridRoot || !detailsRoot)
       return pw;
@@ -99,14 +126,23 @@ export class PlateWidget extends DG.Widget {
     gridRoot.style.flexGrow = '1';
     gridRoot.style.removeProperty('width');
 
-    const defaultOptions: Required<AnalysisOptions> = {roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true};
-    const actOptions: Required<AnalysisOptions> & {normalizedColName?: string} = {...defaultOptions, ...options};
     const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
     let normed = false;
     if (actOptions.normalize && actOptions.controlColumns.length === 2) {
-      const [lMean, hMean] = actOptions.controlColumns.map((colName) => jStat.mean(plate.fieldValues(actOptions.valueName, {match: {[actOptions.roleName]: colName}}))).sort((a,b) => a - b);
-      actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hMean - v) / (hMean - lMean) * 100).name;
+      const [lStats, hStats] = actOptions.controlColumns
+        .map((colName) => {
+          const values = plate.fieldValues(actOptions.valueName, {match: {[actOptions.roleName]: colName}});
+          return {mean: jStat.mean(values), std: jStat.stdev(values)};
+        })
+        .sort((a,b) => a.mean - b.mean);
+
+      actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hStats.mean - v) / (hStats.mean - lStats.mean) * 100).name;
       normed = true;
+      const zPrime = 1 - (3 * (hStats.std + lStats.std) / Math.abs(hStats.mean - lStats.mean));
+      const stb = hStats.mean / lStats.mean;
+
+      const statTable = ui.tableFromMap({'Z prime': DG.format(zPrime, '#0.0000'), 'Signal to background': DG.format(stb, '#0.0000')});
+      pw.plateDetailsDiv!.appendChild(statTable);
       // mark outliers that go outside the bounds
 
       if (actOptions.autoFilterOutliers) {
@@ -119,23 +155,22 @@ export class PlateWidget extends DG.Widget {
       }
     }
 
-    const series = plate.doseResponseSeries({...drFilterOptions, value: actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
-
+    const series = plate.doseResponseSeries({...drFilterOptions, value: normed ? actOptions.normalizedColName! : actOptions.valueName , concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
     const seriesVals = Object.entries(series);
-
-    const minXYOpts = normed ? {minY: 0, maxY: 100} : {};
-
+    const minMax = normed ? {minY: -10, maxY: 110} : 0;
     const roleCol = DG.Column.string(actOptions.roleName, seriesVals.length);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
     curveCol.init((i) => JSON.stringify(
       {
                   "chartOptions": {
                     "xAxisName": actOptions.concentrationName,
-                    "yAxisName": actOptions.valueName,
+                    "yAxisName": normed ? `norm(${actOptions.valueName})` : actOptions.valueName,
                     "logX": true,
                     "title": `${seriesVals[i][0]}`,
                     'clickToToggle': true,
+                    ...minMax
                   },
+                  // TODO: change to 4PL regression once fixed for normed data
                 series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50']}]
       }
 
@@ -158,7 +193,9 @@ export class PlateWidget extends DG.Widget {
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMaxFuncParams).callSync({processed: false});
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(ic50FuncParams).callSync({processed: false});
     df.col('IC50')!.meta.format = 'scientific';
-
+      
+    //categorize the curves
+    df.columns.addNewCalculated('Criteria', 'if(${rSquared} > 0.8 && ${slope} > 0.25 && ${max} > 80 && ${max} < 120, "Qualified", "Fails Criteria")', 'string');
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
     pw.root.style.flexDirection = 'column';
@@ -208,7 +245,7 @@ export class PlateWidget extends DG.Widget {
       if (seriesIndex < 0)
         return;
       const conscentration: number = pw.plateData.get(actOptions.concentrationName, row);
-      const value: number = pw.plateData.get(actOptions.valueName, row);
+      const value: number = pw.plateData.get(normed ? actOptions.normalizedColName! : actOptions.valueName, row);
 
       const pointInSeriesIndex: number = seriesVals[seriesIndex][1].points.findIndex((p) => p.x === conscentration && p.y === value);
       if (pointInSeriesIndex < 0)
@@ -222,7 +259,7 @@ export class PlateWidget extends DG.Widget {
       if (points && points.length && points.length > pointInSeriesIndex) {
         points[pointInSeriesIndex].marker = DG.MARKER_TYPE.SQUARE;
         points[pointInSeriesIndex].size = FitConstants.POINT_PX_SIZE * 2;
-        points[pointInSeriesIndex].color = DG.Color.toHtml(DG.Color.getCategoricalColor(1));
+        points[pointInSeriesIndex].color = DG.Color.toHtml(DG.Color.green);
         curveCol.set(seriesIndex, JSON.stringify(curveJSON));
       }
 
@@ -241,16 +278,19 @@ export class PlateWidget extends DG.Widget {
         plate._markOutlier(point.meta, !!point.outlier);
         pw.grid.invalidate();
       }
-
-
     }));
 
 
-    setTimeout(() => {
-      curvesGrid.col(curveCol.name)!.width = 400;
+    const s = DG.debounce(curvesGrid.onAfterDrawContent, 300).subscribe(() => {
+      s.unsubscribe();
+      curvesGrid.col(curveCol.name) && (curvesGrid.col(curveCol.name)!.width = 400);
       curvesGrid.props.rowHeight = 200;
-    }, 300);
+    });
 
+    if (actOptions.submitAction) {
+      const btn = ui.button('Submit', () => actOptions.submitAction!(plate, df));
+      pw.plateActionsDiv!.appendChild(btn);
+    }
     return pw;
   }
 
@@ -258,7 +298,8 @@ export class PlateWidget extends DG.Widget {
   set plateData(t: DG.DataFrame) {
     this._plateData = t;
     this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
+
+      ?? t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT)
       ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
       ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
       ?? t.columns.byIndex(0);
@@ -346,4 +387,55 @@ export class PlateWidget extends DG.Widget {
     const max = isLog ? safeLog((this._colorColumn!.max - this._colorColumn!.min) * 1e9) : this._colorColumn!.max;
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
   }
+}
+
+
+export async function getPlatesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
+  const nameLowerCase = folder.name?.toLowerCase();
+    if (!nameLowerCase?.includes('plate'))
+      return undefined;
+  
+    const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
+    let csvView: DG.Widget | undefined = undefined;
+    if (csvFiles.length > 2) {
+      
+      const plate = Plate.fromPlates(await Promise.all(csvFiles.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
+      csvView = PlateWidget.analysisView(plate, {submitAction: () => {grok.shell.info('Plate Submitted')}});
+      plate.data.name = `${csvFiles.map((file) => file.name.slice(0, file.name.length - 4)).join('_')}.csv`;
+      if (csvFiles.length === files.length)
+        return csvView;
+    }
+    const multiView = new DG.MultiView({viewFactories: {}});
+  
+    if (csvView) {
+      multiView.addView('Plate 1', () => DG.View.fromRoot(csvView.root), true);
+    }
+  
+    const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
+  
+    if (xlsxFiles.length == 0)
+      return csvView 
+  
+    for (const xlsxFile of xlsxFiles) {
+      try {
+        const plate = await Plate.fromExcelFileInfo(xlsxFile);
+        const pw = PlateWidget.analysisView(plate, {submitAction: () => {grok.shell.info('Plate Submitted')}});
+        const v = DG.View.fromRoot(pw.root);
+        v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);
+        multiView.addView(v.name, () => v, true);  
+      } catch (e) {
+        _package.logger.error(e);
+      }
+    }
+    setTimeout(() => {
+      const header: HTMLElement | null = multiView.root.querySelector('.d4-tab-header-stripe');
+      if (!header)
+        return;
+      header.style.overflow = 'scroll';
+
+      const headerItems = header.querySelectorAll('.d4-tab-header');
+      headerItems?.forEach((el) => (el as HTMLElement).style.whiteSpace = 'nowrap');
+    }, 300)
+
+    return multiView;
 }

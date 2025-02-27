@@ -16,7 +16,7 @@ import {FitConstants} from './fit/const';
 import {PlateCellHandler} from "./plate/plate-cell-renderer";
 import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {Plate} from './plate/plate';
-import {PlateWidget} from './plate/plate-widget';
+import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
 //@ts-ignore
 import * as jStat from 'jstat';
 
@@ -199,42 +199,7 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
 //input: list<file> files
 //output: widget res
 export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
-  const nameLowerCase = folder.name?.toLowerCase();
-  if (!nameLowerCase?.startsWith('plate'))
-    return undefined;
-
-  const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
-  let csvView: DG.Widget | undefined = undefined;
-  if (csvFiles.length > 2) {
-    const plate = Plate.fromPlates(await Promise.all(csvFiles.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
-    plate.data.name = `${csvFiles.map((file) => file.name.slice(0, file.name.length - 4)).join('_')}.csv`;
-    csvView = PlateWidget.analysisView(plate,);
-    if (csvFiles.length === files.length)
-      return csvView;
-  }
-  const multiView = new DG.MultiView({viewFactories: {}});
-
-  if (csvView) {
-    multiView.addView('Plate 1', () => DG.View.fromRoot(csvView.root), true);
-  }
-
-  const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
-
-  if (xlsxFiles.length == 0)
-    return csvView;
-
-  for (const xlsxFile of xlsxFiles) {
-    try {
-      const plate = await Plate.fromExcelFileInfo(xlsxFile);
-      const pw = PlateWidget.analysisView(plate);
-      const v = DG.View.fromRoot(pw.root);
-      v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);
-      multiView.addView(v.name, () => v, true);
-    } catch (e) {
-      _package.logger.error(e);
-    }
-  }
-  return multiView;
+  return getPlatesFolderPreview(folder, files);
 }
 
 //name: Plates
