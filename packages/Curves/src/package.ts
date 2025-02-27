@@ -133,10 +133,11 @@ export function _initCurves(): void {
 //input: string propName
 //input: string seriesName
 //input: int seriesNumber
-export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number): void {
+//input: string newColName
+export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName?: string): void {
   const grid = DG.Viewer.grid(df);
   const chartColumn = grid.col(colName)!;
-  const column = DG.Column.float(`${colName} ${seriesName} ${propName}`, chartColumn.column?.length);
+  const column = DG.Column.float(newColName ?? `${colName} ${seriesName} ${propName}`, chartColumn.column?.length);
   column.tags[SOURCE_COLUMN_TAG] = colName;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = propName;

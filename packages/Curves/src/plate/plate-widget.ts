@@ -146,6 +146,16 @@ export class PlateWidget extends DG.Widget {
     df.name = pw.plateData.name;
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
+
+    const rSquaredFuncParams = {df: df, colName: curveCol.name, propName: 'rSquared', seriesName: 'series 0', seriesNumber: 0, newColName: 'rSquared'};
+    const slopeFuncParams = {df: df, colName: curveCol.name, propName: 'slope', seriesName: 'series 0', seriesNumber: 0, newColName: 'slope'};
+    const curveMinFuncParams = {df: df, colName: curveCol.name, propName: 'bottom', seriesName: 'series 0', seriesNumber: 0, newColName: 'min'};
+    const curveMaxFuncParams = {df: df, colName: curveCol.name, propName: 'top', seriesName: 'series 0', seriesNumber: 0, newColName: 'max'};
+    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(rSquaredFuncParams).callSync({processed: false});
+    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(slopeFuncParams).callSync({processed: false});
+    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMinFuncParams).callSync({processed: false});
+    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMaxFuncParams).callSync({processed: false});
+
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
     pw.root.style.flexDirection = 'column';
