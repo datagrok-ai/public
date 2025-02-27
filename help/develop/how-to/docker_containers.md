@@ -39,19 +39,22 @@ Each container can be configured using a `container.json` file, which must be pl
   "gpu": 1,
   "memory": 2048,
   "on_demand": true,
-  "shutdown_timeout": 60
+  "shutdown_timeout": 60,
+  "storage": 25
 }
 ```
 
 ### Configuration Properties
 
-| Option               | Type     | Default | Description                                                      |
-|----------------------|----------|---------|------------------------------------------------------------------|
-| **cpu**              | Double   | 0.25    | Number of CPU cores allocated to the container.                  |
-| **gpu**              | Integer  | 0       | Number of GPU devices that should be reserved.                   |
-| **memory**           | Integer  | 512     | Amount of RAM allocated in megabytes.                            |
-| **on_demand**        | Boolean  | false   | If `true`, the container starts only when a request is received. |
-| **shutdown_timeout** | Integer  | null    | Time in minutes after which the container shuts down if idle.    |
+| Option               | Type    | Default | Description                                                      |
+|----------------------|---------|---------|------------------------------------------------------------------|
+| **cpu**              | Double  | 0.25    | Number of CPU cores allocated to the container.                  |
+| **gpu**              | Integer | 0       | Number of GPU devices that should be reserved.                   |
+| **memory**           | Integer | 512     | Amount of RAM allocated in megabytes.                            |
+| **on_demand**        | Boolean | false   | If `true`, the container starts only when a request is received. |
+| **shutdown_timeout** | Integer | null    | Time in minutes after which the container shuts down if idle.    |
+ | **storage**          | Integer | 21      | Allocated storage size in gigabytes.                             |
+| **shm_size**         | Integer | 64      | Shared memory size in megabytes.                                 |
 
 ### Usage
 
