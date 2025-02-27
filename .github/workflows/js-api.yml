@@ -294,7 +294,7 @@ jobs:
         working-directory: packages/ApiTests
       - name: Upload ApiTests results
         if: steps.test-ApiTests.outcome != 'skipped'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ApiTests.test-results
           path: |
