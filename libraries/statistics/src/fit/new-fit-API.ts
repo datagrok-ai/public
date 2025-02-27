@@ -222,16 +222,16 @@ export class FourPLRegressionFunction extends FitFunction<IFourPLRegressionFit> 
   }
 
   get parameterNames(): string[] {
-    return ['Top', 'Bottom', 'Slope', 'EC50'];
+    return ['Top', 'Slope', 'EC50', 'Bottom'];
   }
 
   fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): IFourPLRegressionFit {
     return {
       ...getAucAndRsquared(fitCurve.fittedCurve, data),
       top: fitCurve.parameters[0],
-      bottom: fitCurve.parameters[1],
-      slope: fitCurve.parameters[2],
-      ec50: fitCurve.parameters[3],
+      slope: fitCurve.parameters[1],
+      ec50: fitCurve.parameters[2],
+      bottom: fitCurve.parameters[3],
     };
   }
 
@@ -243,10 +243,19 @@ export class FourPLRegressionFunction extends FitFunction<IFourPLRegressionFit> 
     const params = new Float32Array(4);
     const bottom = Math.min(...y);
     const top = Math.max(...y);
-    const midIdx = Math.floor(y.length / 2);
-    const ec50 = x[midIdx];
-    const slope = (y[y.length - 1] > y[0]) ? 1 : -1;
-    params.set([top, bottom, slope, ec50]);
+    const medY = (top - bottom) / 2 + bottom;
+    let maxYInterval = top -bottom;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const ec50 = x[nearestXIndex];
+    const slope = (y[y.length - 1] > y[0]) ? -10 : 10;
+    params.set([top, slope, ec50, bottom]);
     return params;
   }
 }
