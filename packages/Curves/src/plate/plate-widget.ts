@@ -7,7 +7,7 @@ import {safeLog, tableFromRow } from './utils';
 import { IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
-import { FitMarkerType, IFitPoint } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_REGRESSION, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import { FitConstants } from '../fit/const';
 import { FitCellOutlierToggleArgs } from '../fit/fit-renderer';
 
@@ -108,7 +108,7 @@ export class PlateWidget extends DG.Widget {
       actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hMean - v) / (hMean - lMean) * 100).name;
       normed = true;
       // mark outliers that go outside the bounds
-      
+
       if (actOptions.autoFilterOutliers) {
         const values = plate.values([actOptions.normalizedColName], drFilterOptions);
         values.forEach((v) => {
@@ -120,7 +120,7 @@ export class PlateWidget extends DG.Widget {
     }
 
     const series = plate.doseResponseSeries({...drFilterOptions, value: actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
-    
+
     const seriesVals = Object.entries(series);
 
     const minXYOpts = normed ? {minY: 0, maxY: 100} : {};
@@ -136,9 +136,9 @@ export class PlateWidget extends DG.Widget {
                     "title": `${seriesVals[i][0]}`,
                     'clickToToggle': true,
                   },
-                series: [{...seriesVals[i][1], fit: undefined, fitFunction: 'sigmoid', clickToToggle: true}]
+                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true}]
       }
-      
+
       ));
     roleCol.init((i) => seriesVals[i][0]);
 
@@ -151,7 +151,7 @@ export class PlateWidget extends DG.Widget {
     pw.root.style.height = '100%';
 
     pw.root.appendChild(curvesGrid.root);
-    
+
     // when selecting a cell on plate, go to appropriate curve and mark the corresponding point with different marker
     // remember the previous change, so that we can revert it
     let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string} | null = null;
@@ -196,7 +196,7 @@ export class PlateWidget extends DG.Widget {
       const conscentration: number = pw.plateData.get(actOptions.concentrationName, row);
       const value: number = pw.plateData.get(actOptions.valueName, row);
 
-      const pointInSeriesIndex: number = seriesVals[seriesIndex][1].points.findIndex((p) => p.x === conscentration && p.y === value); 
+      const pointInSeriesIndex: number = seriesVals[seriesIndex][1].points.findIndex((p) => p.x === conscentration && p.y === value);
       if (pointInSeriesIndex < 0)
         return;
 
@@ -218,7 +218,7 @@ export class PlateWidget extends DG.Widget {
     }));
 
     // mark outliers in the original plate if it is switched from curve manually
-    
+
     pw.subs.push(grok.events.onCustomEvent('fit-cell-outlier-toggle').subscribe((args: FitCellOutlierToggleArgs) => {
       if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol)
         return;
@@ -289,7 +289,7 @@ export class PlateWidget extends DG.Widget {
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
     const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
-    
+
     // column header
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
