@@ -28,10 +28,7 @@ const aggregationMap = new Map<string, string[]>([
 
   // Aggregation for datetime columns
   ['datetime', [
-    ...Object.values(DG.STAT_COUNTS), 
-    DG.AGG.MIN, 
-    DG.AGG.MAX, 
-    DG.AGG.AVG
+    ...Object.values(DG.STAT_COUNTS),
   ]],
 
   // Aggregation for virtual columns
