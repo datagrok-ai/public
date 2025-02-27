@@ -130,8 +130,8 @@ export class PlateWidget extends DG.Widget {
     curveCol.init((i) => JSON.stringify(
       {
                   "chartOptions": {
-                    "xAxisName": "Conc.",
-                    "yAxisName": "Result",
+                    "xAxisName": actOptions.concentrationName,
+                    "yAxisName": actOptions.valueName,
                     "logX": true,
                     "title": `${seriesVals[i][0]}`,
                     'clickToToggle': true,

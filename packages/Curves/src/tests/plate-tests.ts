@@ -53,7 +53,7 @@ category('plates', () => {
   });
 
   test('fromExcel', async () => {
-    const plate = await Plate.fromExcel('System:DemoFiles/hts/plate/plate.xlsx');
+    const plate = await Plate.fromExcelPath('System:DemoFiles/hts/plate/plate.xlsx');
     ui.dialog({title: 'Inspect plate'})
       .add(PlateWidget.detailedView(plate.data).root)
       .show({width: 500, height: 500});

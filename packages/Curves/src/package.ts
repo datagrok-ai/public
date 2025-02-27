@@ -3,6 +3,8 @@ import {_MultiCurveViewer} from './package.g';
 import {_FitChartCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
@@ -195,17 +197,74 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
 //input: file folder
 //input: list<file> files
 //output: widget res
-export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
   const nameLowerCase = folder.name?.toLowerCase();
   if (!nameLowerCase?.startsWith('plate'))
     return undefined;
 
-  if (files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv')).length > 2) {
-    // const fileNames = files.map((f) => f.name.substring(0, f.name.length - 4)); // remove .csv
-      
-    const plate = Plate.fromPlates(await Promise.all(files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv')).map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
-    return PlateWidget.analysisView(plate,);
+  const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
+  let csvView: DG.Widget | undefined = undefined;
+  if (csvFiles.length > 2) {
+    
+    const plate = Plate.fromPlates(await Promise.all(csvFiles.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
+    csvView = PlateWidget.analysisView(plate,);
+    if (csvFiles.length === files.length)
+      return csvView;
   }
+  const multiView = new DG.MultiView({viewFactories: {}});
+
+  if (csvView) {
+    multiView.addView('Plate 1', () => DG.View.fromRoot(csvView.root), true);
+  }
+
+  const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
+
+  if (xlsxFiles.length == 0)
+    return csvView 
+
+  for (const xlsxFile of xlsxFiles) {
+    try {
+      const plate = await Plate.fromExcelFileInfo(xlsxFile);
+      const pw = PlateWidget.analysisView(plate);
+      const v = DG.View.fromRoot(pw.root);
+      v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);
+      multiView.addView(v.name, () => v, true);  
+    } catch (e) {
+      _package.logger.error(e);
+    }
+  }
+  return multiView;
+}
+
+//name: Plates
+//tags: app
+//meta.browsePath: Chem
+export function plateApp() {
+  const plateFileInput = ui.input.file('Plate file', {nullable: false});
+  ui.dialog('Select Plate File').add(plateFileInput).onOK(async () => {
+    const file = plateFileInput.value;
+    if (!file || file.extension !== 'xlsx') {
+      grok.shell.warning('Please, select an Excel file with plates');
+      return;
+    }
+
+    try {
+      const plate = await Plate.fromExcelFileInfo(file);
+      const pw = PlateWidget.analysisView(plate);
+      const view = DG.View.fromRoot(pw.root);
+      view.name = file.name;
+      grok.shell.addView(view);
+    } catch (e) {
+      grok.shell.error('Error parsing plate file');
+      _package.logger.error(e);
+    }
+  }).show();
+  // if (file.extension !== 'xlsx') {
+  //   grok.shell.warning('Please, select an Excel file with plates');
+  //   return;
+  // }
+  // console.log(file);
+  // const plate = Plate.fromExcel(file.fullPath); 
 }
 
 //name: testPlatesCurvesNewAPI

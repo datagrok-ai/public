@@ -19,6 +19,9 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
   const results: ExcelPlatePosition[] = [];
 
   workbook.eachSheet((worksheet) => {
+    // TODO: Hack for current things, remove later
+    if (worksheet.name?.toLowerCase() === 'desired outputs')
+      return;
     // Create a grid representation of the worksheet
     const grid: any[][] = [];
     worksheet.eachRow((row, rowIndex) => {
@@ -61,9 +64,9 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
           if (!grid[i]) continue;
           const val = grid[i][j];
 
-          if (typeof val === 'string' && /^[A-Z]$/.test(val)) {
+          if (typeof val === 'string' && /^[A-Za-z]$/.test(val)) {
             const expected = String.fromCharCode('A'.charCodeAt(0) + letterSequence);
-            if (val === expected) {
+            if (val?.toLowerCase() === expected?.toLowerCase()) {
               if (letterSequence === 0) seqStart = i;
               letterSequence++;
             }

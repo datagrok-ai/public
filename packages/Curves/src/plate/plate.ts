@@ -158,22 +158,31 @@ export class Plate {
     return plates.reduce((p1, p2) => p1 ? p1.merge(p2) : p2.clone());
   }
 
+  static async fromExcelFileInfo(fi: DG.FileInfo): Promise<Plate> {
+    return fi.data && fi.data.length ? await Plate.fromExcel(fi.data, fi.friendlyName) : await Plate.fromExcelPath(fi.fullPath);
+  }
+
+  static async fromExcelPath(excelPath: string): Promise<Plate> {
+    const content = await grok.dapi.files.readAsBytes(excelPath);
+    return this.fromExcel(content);
+  }
+
   /** Constructs the plates from the specified Excel file.
    * Plate positions are detected automatically. */
-  static async fromExcel(excelPath: string): Promise<Plate> {
+  static async fromExcel(excelBytes: Uint8Array, name?: string): Promise<Plate> {
     await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
 
     //@ts-ignore
     const loadedExcelJS = window.ExcelJS as ExcelJS;
     const workbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
-    const content = await grok.dapi.files.readAsBytes(excelPath);
-    const wb= await workbook.xlsx.load(content);
+    // @ts-ignore reason: some typescript error with araryLike and arrayBufferLike
+    const wb= await workbook.xlsx.load(excelBytes);
 
     const platePositions = findPlatePositions(wb);
     if (platePositions.length == 0) throw 'Plates not found in "${excelPath}"';
     const p0 = platePositions[0];
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
-      throw `Plate sizes differ in "${excelPath}"`;
+      throw `Plate sizes differ in "${name}"`;
 
     return Plate.fromPlates(platePositions.map(p => getPlateFromSheet(p)));
   }
