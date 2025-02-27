@@ -102,6 +102,24 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
   df.columns.insert(column, chartColumn.idx);
 }
 
+//name: platesFolderPreview
+//tags: folderViewer
+//input: file folder
+//input: list<file> files
+//output: widget res
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+  const nameLowerCase = folder.name?.toLowerCase();
+  if (!nameLowerCase?.startsWith('plate'))
+    return undefined;
+
+  if (files.every((f) => f?.name?.toLowerCase()?.endsWith('.csv'))) {
+    // const fileNames = files.map((f) => f.name.substring(0, f.name.length - 4)); // remove .csv
+
+    const plate = Plate.fromPlates(await Promise.all(files.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
+    return PlateWidget.analysisView(plate,);
+  }
+}
+
 //name: testPlatesCurvesNewAPI
 export function testPlatesCurvesNewAPI(): void {
   const series = new FitSeries([
