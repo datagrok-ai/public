@@ -423,6 +423,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
+      const containsParams = series.parameters && series.parameters.length > 0;
       if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
       series.points.sort((a, b) => a.x - b.x);
@@ -459,6 +460,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
+      if (!containsParams)
+        delete series.parameters;
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
