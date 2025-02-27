@@ -7,7 +7,7 @@ import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/we
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
-import {FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
+import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, take} from 'rxjs/operators';
 import wu from 'wu';
@@ -84,8 +84,6 @@ export const History = Vue.defineComponent({
 
     const defaultDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(ID_COLUMN_NAME, []),
-      ...props.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
-      ...props.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
       DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
       DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
       DG.Column.string(AUTHOR_COLUMN_NAME, 0),
@@ -201,6 +199,7 @@ export const History = Vue.defineComponent({
     };
 
     const historicalRunsDf = Vue.shallowRef(defaultDf);
+
     Vue.watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
         historicalRuns.value,
@@ -218,17 +217,13 @@ export const History = Vue.defineComponent({
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
 
-    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns());
-
     const updateVisibleColumns = () => {
       if (!currentGrid.value) return;
 
       const tagCol = currentGrid.value.dataFrame.getCol(TAGS_COLUMN_NAME);
       const cols = [
         ID_COLUMN_NAME,
-        FAVORITE_COLUMN_NAME,
-        ACTIONS_COLUMN_NAME,
-        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
+        ...showMetadata.value ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]: [],
         ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
         ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
@@ -247,6 +242,8 @@ export const History = Vue.defineComponent({
       currentGrid.value.columns.setOrder(cols);
     };
 
+    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), { flush: 'post' });
+
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;
 
@@ -256,8 +253,8 @@ export const History = Vue.defineComponent({
       ).toPromise();
 
       currentGrid.value = grid;
-
       grid.sort([STARTED_COLUMN_NAME], [false]);
+      grid.props.rowHeight = 46;
 
       for (let i = 0; i < grid.columns.length; i++) {
         const col = grid.columns.byIndex(i);
@@ -276,14 +273,22 @@ export const History = Vue.defineComponent({
         onUnfavoriteClick,
         true,
       );
-
-      updateVisibleColumns();
     };
 
-    const fallbackText = <div class='p-1'> {props.fallbackText} </div>;
+    const fallbackText = (
+      <div class='p-1'>
+        {props.fallbackText}
+        <IconFA
+          name='sync'
+          tooltip={'Refresh'}
+          onClick={refresh}
+          style={{alignContent: 'center', paddingLeft: '10px'}}
+        />
+      </div>
+    );
 
-    const currentFunc = Vue.computed(()=> props.func);
-    const isHistory = Vue.computed(()=> props.isHistory);
+    const currentFunc = Vue.computed(() => props.func);
+    const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;
       const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
