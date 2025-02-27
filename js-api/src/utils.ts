@@ -307,6 +307,12 @@ export class Utils {
       csv = resultDF.toCsv()       
     }
 
+    if ((<any>window).DG.Test.isInDebug)
+    {
+      console.log('on browser closing debug point');
+      debugger
+    }
+
     return {
       failed: failed,
       verbosePassed: verbosePassed,
@@ -834,6 +840,7 @@ export namespace Test {
    * */
   export let isInBenchmark = false;
   export let isReproducing = false;
+  export let isInDebug = false;
   export let isCiCd = false;
 
   export function getTestDataGeneratorByType(type: string) {

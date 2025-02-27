@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.62 (2025-02-27)
+
+### Features
+
+* No Sandbox mode for puppeteer removed
+* Added debug mode for test and testAll
+
 ## 4.13.61 (2025-01-27)
 
 ### Features

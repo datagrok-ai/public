@@ -419,7 +419,7 @@ function resetConsole(): void {
 
 export async function runTests(options?: TestExecutionOptions) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
-  const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>'))?? ['', ''])[1];
+  const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>')) ?? ['', ''])[1];
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
@@ -469,7 +469,9 @@ export async function runTests(options?: TestExecutionOptions) {
         let test = t[i];
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
-        } 
+        }
+        if (DG.Test.isInDebug)
+          debugger;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
         if (testRun)
           res.push(testRun);
@@ -481,7 +483,9 @@ export async function runTests(options?: TestExecutionOptions) {
         let test = t[i];
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
-        } 
+        }
+        if (DG.Test.isInDebug)
+          debugger;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
         if (testRun)
           res.push(testRun);
@@ -548,7 +552,7 @@ export async function runTests(options?: TestExecutionOptions) {
         date: new Date().toISOString(),
         category: 'Unhandled exceptions',
         name: 'Exception',
-        result: error ?? '', success: !error, ms: 0, skipped: false, 
+        result: error ?? '', success: !error, ms: 0, skipped: false,
         'flaking': DG.Test.isReproducing && !error,
         owner: packageOwner ?? ''
       };
@@ -628,7 +632,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       'success': r.success, 'result': r.result, 'ms': r.ms, 'date': r.date,
       'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
       'flaking': DG.Test.isReproducing && r.success,
-      'timeoutWarning' : DG.Test.isInBenchmark  && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
+      'timeoutWarning': DG.Test.isInBenchmark && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
