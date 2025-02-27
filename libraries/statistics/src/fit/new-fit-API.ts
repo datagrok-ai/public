@@ -118,16 +118,16 @@ export class SigmoidFunction extends FitFunction<ISigmoidFit> {
   }
 
   get parameterNames(): string[] {
-    return ['Top', 'Bottom', 'Slope', 'IC50'];
+    return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
 
   fillParams(fitCurve: FitCurve, data: {x: number[], y: number[]}): ISigmoidFit {
     return {
       ...getAucAndRsquared(fitCurve.fittedCurve, data),
       top: fitCurve.parameters[0],
-      bottom: fitCurve.parameters[1],
-      slope: fitCurve.parameters[2],
-      ic50: fitCurve.parameters[3],
+      slope: fitCurve.parameters[1],
+      ic50: fitCurve.parameters[2],
+      bottom: fitCurve.parameters[3],
     };
   }
 
@@ -137,8 +137,8 @@ export class SigmoidFunction extends FitFunction<ISigmoidFit> {
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
-    const medY = (dataBounds.top - dataBounds.bottom) / 2 + dataBounds.bottom;
-    let maxYInterval = dataBounds.top - dataBounds.bottom;
+    const medY = (dataBounds.maxY - dataBounds.minY) / 2 + dataBounds.minY;
+    let maxYInterval = dataBounds.maxY - dataBounds.minY;
     let nearestXIndex = 0;
     for (let i = 0; i < x.length; i++) {
       const currentInterval = Math.abs(y[i] - medY);
@@ -152,7 +152,7 @@ export class SigmoidFunction extends FitFunction<ISigmoidFit> {
 
     // params are: [max, tan, IC50, min]
     const params = new Float32Array(4);
-    params.set([dataBounds.bottom, slope, xAtMedY, dataBounds.top]);
+    params.set([dataBounds.maxY, slope, xAtMedY, dataBounds.minY]);
     return params;
   }
 }

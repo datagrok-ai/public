@@ -228,7 +228,7 @@ export class SigmoidFunction extends FitFunction {
   }
 
   get parameterNames(): string[] {
-    return ['Top', 'Bottom', 'Slope', 'IC50'];
+    return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
 
   y(params: Float32Array, x: number): number {
@@ -237,8 +237,8 @@ export class SigmoidFunction extends FitFunction {
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
-    const medY = (dataBounds.top - dataBounds.bottom) / 2 + dataBounds.bottom;
-    let maxYInterval = dataBounds.top - dataBounds.bottom;
+    const medY = (dataBounds.maxY - dataBounds.minY) / 2 + dataBounds.minY;
+    let maxYInterval = dataBounds.maxY - dataBounds.minY;
     let nearestXIndex = 0;
     for (let i = 0; i < x.length; i++) {
       const currentInterval = Math.abs(y[i] - medY);
@@ -252,7 +252,7 @@ export class SigmoidFunction extends FitFunction {
 
     // params are: [max, tan, IC50, min]
     const params = new Float32Array(4);
-    params.set([dataBounds.bottom, slope, xAtMedY, dataBounds.top]);
+    params.set([dataBounds.maxY, slope, xAtMedY, dataBounds.minY]);
     return params;
   }
 }
@@ -545,26 +545,21 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     else
       continueOptimization++;
 
-    if (iter === -1) {
-      if (statistics <= 2)
-        break;
-      iter++;
-    }
+    paramValues = optimization.extremums[minIdx].point;
 
-    if (iter > 40)
-      break;
-    if (continueOptimization === 3)
+    if (iter > 40 || continueOptimization === 3)
       break;
 
     for (let i = 0; i < fitFunction.parameterNames.length; i++) {
       if (!parameterBoundsBitset.get(i * 2))
-        bottomParamBounds[i] = paramValues[i] - Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+        bottomParamBounds[i] = paramValues[i] - Math.abs(paramValues[i] * (continueOptimization + 0.5));
       if (!parameterBoundsBitset.get(i * 2 + 1))
-        topParamBounds[i] = paramValues[i] + Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+        topParamBounds[i] = paramValues[i] + Math.abs(paramValues[i] * (continueOptimization + 0.5));
     }
+
+    iter++;
   } while (true);
 
-  paramValues = optimization.extremums[minIdx].point;
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
