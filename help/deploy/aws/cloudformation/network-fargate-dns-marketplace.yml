@@ -181,7 +181,7 @@ Parameters:
     Type: String
   GrokPipeVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: bleeding-edge
+    Default: 1.0.1
     Description: Enter Grok Pipe docker image version.
     Type: String
   GrokSpawnerVersion:
@@ -217,7 +217,7 @@ Parameters:
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: bleeding-edge
+    Default: 1.13.0
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   JNVersion:
