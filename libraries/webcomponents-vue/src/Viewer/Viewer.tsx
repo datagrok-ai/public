@@ -24,14 +24,16 @@ export const Viewer = Vue.defineComponent({
     viewerChanged: (v: DG.Viewer<any> | undefined) => v,
   },
   setup(props, {emit}) {
-    const currentDf = Vue.computed(() => props.dataFrame);
+    const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
+    const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
+    const type = Vue.computed(() => props.type);
     const viewerChangedCb = (event: any) => {
       emit('viewerChanged', event.detail);
     };
     return () => <Vue.KeepAlive>
       <dg-viewer
-        type={props.type}
-        options={props.options}
+        type={type.value}
+        options={options.value}
         dataFrame={currentDf.value}
         onViewerChanged={viewerChangedCb}
         style={{display: 'block', flexGrow: '1'}}

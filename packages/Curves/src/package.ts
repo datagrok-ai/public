@@ -12,6 +12,9 @@ import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
 import {PlateCellHandler} from "./plate/plate-cell-renderer";
+import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {Plate} from './plate/plate';
+import {PlateWidget} from './plate/plate-widget';
 
 
 export const _package = new DG.Package();
@@ -99,6 +102,37 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
       return fitResult[propName as keyof FitStatistics];
     });
   df.columns.insert(column, chartColumn.idx);
+}
+
+//name: platesFolderPreview
+//tags: folderViewer
+//input: file folder
+//input: list<file> files
+//output: widget res
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+  const nameLowerCase = folder.name?.toLowerCase();
+  if (!nameLowerCase?.startsWith('plate'))
+    return undefined;
+
+  if (files.every((f) => f?.name?.toLowerCase()?.endsWith('.csv'))) {
+    // const fileNames = files.map((f) => f.name.substring(0, f.name.length - 4)); // remove .csv
+
+    const plate = Plate.fromPlates(await Promise.all(files.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
+    return PlateWidget.analysisView(plate,);
+  }
+}
+
+//name: testPlatesCurvesNewAPI
+export function testPlatesCurvesNewAPI(): void {
+  const series = new FitSeries([
+    {'x': 0, 'y': 0},
+    {'x': 1, 'y': 0.5},
+    {'x': 2, 'y': 1},
+    {'x': 3, 'y': 10, 'outlier': true},
+    {'x': 4, 'y': 0},
+  ]);
+  const params = series.fit.sigmoid();
+  console.log(params);
 }
 
 export {_FitChartCellRenderer};

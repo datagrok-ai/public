@@ -32,6 +32,13 @@ import {
 } from './render-utils';
 
 
+interface FitCellOutlierToggleArgs {
+  gridCell: DG.GridCell;
+  series: IFitSeries;
+  seriesIdx: number;
+  pointIdx: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -321,15 +328,21 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
                 column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
               if (stats === null)
                 continue;
-              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
             }
           }
-          
+
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
             gridCellValue.series![i].points[j].outlier = p.outlier;
             gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), false);
+            grok.events.fireCustomEvent('fit-cell-outlier-toggle', {
+              gridCell: gridCell,
+              series: gridCellValue.series![i],
+              seriesIdx: i,
+              pointIdx: j,
+            });
             const g = gridCell.grid.canvas.getContext('2d')!;
             gridCell.render({context: g, bounds: gridCell.bounds});
           }
@@ -410,6 +423,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
+      const containsParams = series.parameters && series.parameters.length > 0;
       if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
       series.points.sort((a, b) => a.x - b.x);
@@ -446,6 +460,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
+      if (!containsParams)
+        delete series.parameters;
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
@@ -527,8 +543,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let j = 0; j < data.series![i].points.length!; j++) {
           const p = data.series![i].points[j];
           if (this.hitTest(e, p, viewport)) {
-            ui.tooltip.show(ui.divV([ui.divText(`x: ${DG.format(p.x, '#0.000')}`),
-              ui.divText(`y: ${DG.format(p.y, '#0.000')}`)]), e.x + 16, e.y + 16);
+            ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
+              ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);
             if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH &&
               screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT)
               document.body.style.cursor = 'pointer';

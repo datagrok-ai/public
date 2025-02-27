@@ -20,19 +20,96 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
-## 2025-01-20 1.23.1
-
-### Addressed Issues
 
 
+## 2025-02-18 Datagrok 1.24.0 release
 
-## 2024-12-23 1.23.0
+The Datagrok 1.24.0 release includes stability, visualization, and UX improvements
 
-### Addressed Issues
+### Main updates
+
+* **New plate cell renderer** for visualizing experimental plates (96 wells, 384 wells, 1536 wells)
+* **Grid**: columns groups, files in cells, dynamic column width, and mouse panning
+* Calculated columns persisting with the layout
+* **Tab ordering**: you can now reorder tables (tabs) within the project by dragging and dropping them
+
+### Platform
+
+* [#3110](https://github.com/datagrok-ai/public/issues/3110): Added the ability to send informational emails to users or groups
+* Projects: 
+   * Calculated columns now persist with the layout
+   * [#2833](https://github.com/datagrok-ai/public/issues/2833): Added the ability to order tables (tabs) in project via drag-n-drop
+   * [#2883](https://github.com/datagrok-ai/public/issues/2883): Added the ability to view the creation script when uploading the data-sync project 
 
 
+  #### Data Access
 
-## 2024-12-20 Datagrok 1.23.0 release
+* Visual Query: Added the `Order by` option
+
+### Viewers
+
+* Improved legend positioning:
+   * Added the ability to customize the legend's position in the viewer's corners
+   * Implemented automatic positioning: the legend can appear on the right or top based on size, or float in a corner
+* [#3203](https://github.com/datagrok-ai/public/issues/3203): Preserved legend position in the previously saved layouts
+* Improved handling of color schemes:
+   *  Ability to select color schemes from the context menu
+   * Grid column and viewers linear color schemes now stay in sync — changing one updates the other
+   * Redesigned the linear and categorical color scheme selector icons for the **Context Panel**
+
+
+* [#3162](https://github.com/datagrok-ai/public/issues/3162): Viewer properties: Added null state for property types: color properties, string input, numeric (with slider), column selector
+* [#3224](https://github.com/datagrok-ai/public/issues/3224): [Box plot](../../visualize/viewers/box-plot.md): Added the option to define Y-axis minimum and maximum range
+*  [Bar chart](../../visualize/viewers/bar-chart.md): Bars are now colored when `Stack` and `Split` are set to the same value
+* [Trellis plot:](../../visualize/viewers/trellis-plot.md) 
+   * Added the ability to select a current cell using the keyboard
+   * Added the ability to add/remove categories using plus/minus icons
+* Fixed:
+   * [#3212](https://github.com/datagrok-ai/public/issues/3212): Resetting filters unexpectedly resets selection if PC plot with transformation is present
+ 
+#### [Grid](../../visualize/viewers/grid.md)
+
+* [#3195](https://github.com/datagrok-ai/public/issues/3195): Implemented a new plate cell renderer for visualizing experimental plates in grid
+* Added new cell types: `File` and `User`
+* [#3194](https://github.com/datagrok-ai/public/issues/3194): Added adaptive grid cells for Jira tickets
+* Implemented convenient handling of hidden columns
+* Row height resizing: Font size and column widths now automatically adjust when resizing
+* Added mouse-panning via the right button
+* Column properties: Added the ability to set color coding for multiple selected columns
+* [#3178](https://github.com/datagrok-ai/public/issues/3178): Add new column: Added the ability to remove qualifier
+* Summary columns: Implemented normalization for sparklines. For details, see [Grid updates](https://community.datagrok.ai/t/grid-updates/616/14)
+* Fixed:
+  *  [#3208](https://github.com/datagrok-ai/public/issues/3208): Hamburger icon in the column header does not disappear when cursor is no longer in the header in some cases
+   *  [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu partially or fully hidden on the last columns when nothing is present on the right
+
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+Fixed:
+*  [#3201](https://github.com/datagrok-ai/public/issues/3201): Two formula lines with same formula but different min/max cannot be displayed
+* [#3181](https://github.com/datagrok-ai/public/issues/3181): Labels: Resizing has no effect if label does not contain a structure
+
+#### [Line Chart](../../visualize/viewers/line-chart.md)
+
+* [#3210](https://github.com/datagrok-ai/public/issues/3210): Set a reasonable limit on the number of categories to prevent users from crashing the page
+* Improved the automatic initial selection of the X column
+
+### Packages
+
+#### [Charts:](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+Fixed:
+
+* [#3245](https://github.com/datagrok-ai/public/issues/3245): Tree viewer: Usability issues
+* [#3196](https://github.com/datagrok-ai/public/issues/3196): Sunburst chart causes performance issues
+
+#### [PowerGrid:](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md)
+
+Fixed:
+
+* [#3229](https://github.com/datagrok-ai/public/issues/3229): Pin columns: Wrong order in pin column after reordering by another column
+*  [#3075](https://github.com/datagrok-ai/public/issues/3075): Pinned columns: Table header hamburger menu disappears after hovering pinned columns
+
+## 2024-12-23 Datagrok 1.23.0 release
 
 The Datagrok 1.23.0 release includes stability and data access improvements
 
