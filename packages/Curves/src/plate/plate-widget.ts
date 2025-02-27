@@ -13,7 +13,7 @@ import { FitCellOutlierToggleArgs } from '../fit/fit-renderer';
 import { _package } from '../package';
 
 
-type AnalysisOptions = {
+export type AnalysisOptions = {
   roleName: string,
   concentrationName: string,
   valueName: string

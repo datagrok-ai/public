@@ -6,6 +6,7 @@ import {assure, excelToNum, firstWhere, numToExcel, parseExcelPosition} from "./
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
 import { FitSeries } from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import { AnalysisOptions, PlateWidget } from './plate-widget';
 
 
 /** Represents a well in the experimental plate */
@@ -295,6 +296,12 @@ export class Plate {
     }
     return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i], outlier: v.outlier[i], meta: v.meta[i]})).sort((a, b) => a.x - b.x))]
   ));
+  }
+
+  getAnalysisDialog(options: AnalysisOptions) {
+    ui.dialog('Plate Analysis')
+    .add(PlateWidget.analysisView(this, options))
+    .showModal(true);
   }
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
