@@ -56,8 +56,11 @@ export function _convertMolNotation(
           mol.normalize_depiction(1);
           mol.straighten_depiction(false);
         }
-        if (addHs)
-          mol.add_hs_in_place();
+        if (addHs) {
+          try {
+            mol.add_hs_in_place();
+          } catch (e) {}
+        }
         result = mol.get_molblock();
       }
       if (targetNotation === MolNotation.Smiles)

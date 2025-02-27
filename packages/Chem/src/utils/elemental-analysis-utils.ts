@@ -24,7 +24,9 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     } else {
       const mol = getMolSafe(el, {}, _rdKitModule).mol;
       if (mol) {
-        mol.add_hs_in_place();
+        try {
+          mol.add_hs_in_place();
+        } catch (e) {}
         el = mol.get_molblock();
       }
       else {
