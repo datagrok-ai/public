@@ -13,6 +13,8 @@ import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
 import {PlateCellHandler} from "./plate/plate-cell-renderer";
 import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {Plate} from './plate/plate';
+import {PlateWidget} from './plate/plate-widget';
 
 
 export const _package = new DG.Package();
