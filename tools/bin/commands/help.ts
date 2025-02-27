@@ -143,7 +143,7 @@ Options:
 --host              Host alias as in the config file
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
---debug             Enables debug point on tests run (useless without gui mode(you also have to open Inspector)) 
+--debug             Enables debug point on tests run (useless without gui mode) 
 --catchUnhandled    Catch unhandled exceptions during test execution (default=true)
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
@@ -172,7 +172,7 @@ Options:
 --host              Host alias as in the config file
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
---debug             Enables debug point on tests run (useless without gui mode(you also have to open Inspector)) 
+--debug             Enables debug point on tests run (useless without gui mode) 
 --catchUnhandled    Catch unhandled exceptions during test execution (default=true)
 --report            Report failed tests to audit, notifies packages author (default=false)
 --skip-build        Skip the packages build step

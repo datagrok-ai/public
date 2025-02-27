@@ -10,7 +10,7 @@ import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
 import Papa from 'papaparse';
- 
+
 const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -25,7 +25,7 @@ export const defaultLaunchParameters: utils.Indexable = {
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
-  protocolTimeout: 0,
+  protocolTimeout: 0
 };
 
 export async function getToken(url: string, key: string) {
@@ -72,7 +72,7 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defa
   const token = await getToken(url, key);
   url = await getWebUrl(url, token);
   console.log(`Using web root: ${url}`);
-  
+
   const browser = await puppeteer.launch(params);
 
   const page = await browser.newPage();
@@ -165,7 +165,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
         const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "") ?? packagesToRun.get(dirName);
-      
+
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
             process.stdout.write(`Building and publishing ${dirName}...`);
@@ -204,8 +204,8 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
-    const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | {failReport: string}> => {
-      return new Promise<LoadedPackageData[] | {failReport: string}>((resolve, reject) => {
+    const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | { failReport: string }> => {
+      return new Promise<LoadedPackageData[] | { failReport: string }>((resolve, reject) => {
         const promises: any[] = [];
         try {
           packages.map((packageName: string) => {
@@ -307,7 +307,9 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
 
 export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
   return await timeout(async () => {
-    const params = Object.assign({}, defaultLaunchParameters);
+    const params = Object.assign({
+      devtools: browserOptions.debug
+    }, defaultLaunchParameters);
     if (browserOptions.gui)
       params['headless'] = false;
     const out = await getBrowserPage(puppeteer, params);
@@ -330,7 +332,9 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
     }
+
     let testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
+
       if (options.benchmark)
         (<any>window).DG.Test.isInBenchmark = true;
       if (options.reproduce)
@@ -414,7 +418,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
 export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?:boolean
+  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean
 }
 
 export type ResultObject = {
@@ -453,8 +457,8 @@ export type Test = {
   packageName: string,
   options: {
     tags: string[],
-    stressTest : boolean,
-    benchmark : boolean
+    stressTest: boolean,
+    benchmark: boolean
   }
 }
 

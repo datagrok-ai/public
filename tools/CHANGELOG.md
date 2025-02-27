@@ -4,6 +4,12 @@
 
 ### Features
 
+* Test/TestAll opens inspector in debug mode
+
+## 4.13.63 (2025-02-27)
+
+### Features
+
 * Grok Link minor fixes
 
 ## 4.13.62 (2025-02-27)
