@@ -17,7 +17,7 @@ const aggregationMap = new Map<string, string[]>([
   // Aggregation for numeric columns: int, bigint, float, qnum
   ['int', Object.values(DG.AGG)],
   ['bigint', Object.values(DG.AGG)],
-  ['float', Object.values(DG.AGG)],
+  ['double', Object.values(DG.AGG)],
   ['qnum', Object.values(DG.AGG)],
 
   // Aggregation for string columns
@@ -238,7 +238,8 @@ export class TreeViewer extends EChartViewer {
         if (this.onClick === 'Filter') {
           this.handleTreeClick(targetPath, this.selectedRowsColor);
           this.filteredPath = targetPath;
-          this.selectedPaths = null;
+          if (this.selectedPaths)
+            this.handleSelectionChange();
         }
       }
     };
@@ -614,6 +615,9 @@ export class TreeViewer extends EChartViewer {
     if (this.selectedPaths && !changedProp) {
       this.cleanTree(this.selectedPaths!);
     }
+
+    if (this.filteredPath)
+      this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
   
     const treeData = this.getSelectionData();
     const dict = this.addParentPaths(treeData);
