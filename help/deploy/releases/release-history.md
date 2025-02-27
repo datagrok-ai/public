@@ -27,15 +27,17 @@ See also:
 The Datagrok 1.24.0 release includes stability, visualization, and UX improvements
 
 ### Main updates
-* **Improved legend positioning**
-* **New plate viewer** for visualizing experimental plates (96 wells, 384 wells, 1536 wells) within a grid cell
-* **Grid enhancements**: improved navigation, better handling of hidden data, and dynamic resizing for better readability
 
+* **New plate cell renderer** for visualizing experimental plates (96 wells, 384 wells, 1536 wells)
+* **Grid**: columns groups, files in cells, dynamic column width, and mouse panning
+* Calculated columns persisting with the layout
+* **Tab ordering**: you can now reorder tables (tabs) within the project by dragging and dropping them
 
 ### Platform
 
 * [#3110](https://github.com/datagrok-ai/public/issues/3110): Added the ability to send informational emails to users or groups
 * Projects: 
+   * Calculated columns now persist with the layout
    * [#2833](https://github.com/datagrok-ai/public/issues/2833): Added the ability to order tables (tabs) in project via drag-n-drop
    * [#2883](https://github.com/datagrok-ai/public/issues/2883): Added the ability to view the creation script when uploading the data-sync project 
 
@@ -51,10 +53,10 @@ The Datagrok 1.24.0 release includes stability, visualization, and UX improvemen
    * Implemented automatic positioning: the legend can appear on the right or top based on size, or float in a corner
 * [#3203](https://github.com/datagrok-ai/public/issues/3203): Preserved legend position in the previously saved layouts
 * Improved handling of color schemes:
-  *  Implemented support for selecting linear coloring schemes in the viewers' context menu
-   * Ensured consistency between grid column’s and viewers' color schemes
-   * Redesigned the linear and categorical color scheme selector icons for the **Context Pane**
-* Implemented calculated columns persisting with the layout
+   *  Ability to select color schemes from the context menu
+   * Grid column and viewers linear color schemes now stay in sync — changing one updates the other
+   * Redesigned the linear and categorical color scheme selector icons for the **Context Panel**
+
 
 * [#3162](https://github.com/datagrok-ai/public/issues/3162): Viewer properties: Added null state for property types: color properties, string input, numeric (with slider), column selector
 * [#3224](https://github.com/datagrok-ai/public/issues/3224): [Box plot](../../visualize/viewers/box-plot.md): Added the option to define Y-axis minimum and maximum range
@@ -67,19 +69,17 @@ The Datagrok 1.24.0 release includes stability, visualization, and UX improvemen
  
 #### [Grid](../../visualize/viewers/grid.md)
 
-* [#3195](https://github.com/datagrok-ai/public/issues/3195): Implemented a new plate viewer for visualizing experimental plates within a grid cell
+* [#3195](https://github.com/datagrok-ai/public/issues/3195): Implemented a new plate cell renderer for visualizing experimental plates in grid
 * Added new cell types: `File` and `User`
 * [#3194](https://github.com/datagrok-ai/public/issues/3194): Added adaptive grid cells for Jira tickets
 * Implemented convenient handling of hidden columns
-* Row height resizing: 
-   * Added adaptive font
-   * Implemented auto-resize column widths feature
+* Row height resizing: Font size and column widths now automatically adjust when resizing
 * Added mouse-panning via the right button
 * Column properties: Added the ability to set color coding for multiple selected columns
 * [#3178](https://github.com/datagrok-ai/public/issues/3178): Add new column: Added the ability to remove qualifier
-* Summary columns: Implemented scaling for sparklines
+* Summary columns: Implemented normalization for sparklines
 * Fixed:
-  *   [#3208](https://github.com/datagrok-ai/public/issues/3208): Hamburger icon in the column header does not disappear when cursor is no longer in the header in some cases
+  *  [#3208](https://github.com/datagrok-ai/public/issues/3208): Hamburger icon in the column header does not disappear when cursor is no longer in the header in some cases
    *  [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu partially or fully hidden on the last columns when nothing is present on the right
 
 #### [Scatterplot](../../visualize/viewers/scatter-plot.md)
