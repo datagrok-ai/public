@@ -136,7 +136,7 @@ export class PlateWidget extends DG.Widget {
                     "title": `${seriesVals[i][0]}`,
                     'clickToToggle': true,
                   },
-                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true}]
+                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50']}]
       }
 
       ));
@@ -151,10 +151,13 @@ export class PlateWidget extends DG.Widget {
     const slopeFuncParams = {df: df, colName: curveCol.name, propName: 'slope', seriesName: 'series 0', seriesNumber: 0, newColName: 'slope'};
     const curveMinFuncParams = {df: df, colName: curveCol.name, propName: 'bottom', seriesName: 'series 0', seriesNumber: 0, newColName: 'min'};
     const curveMaxFuncParams = {df: df, colName: curveCol.name, propName: 'top', seriesName: 'series 0', seriesNumber: 0, newColName: 'max'};
+    const ic50FuncParams = {df: df, colName: curveCol.name, propName: 'interceptX', seriesName: 'series 0', seriesNumber: 0, newColName: 'IC50'};
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(rSquaredFuncParams).callSync({processed: false});
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(slopeFuncParams).callSync({processed: false});
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMinFuncParams).callSync({processed: false});
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMaxFuncParams).callSync({processed: false});
+    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(ic50FuncParams).callSync({processed: false});
+    df.col('IC50')!.meta.format = 'scientific';
 
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
