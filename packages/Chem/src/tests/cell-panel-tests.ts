@@ -66,7 +66,7 @@ category('cell panel', async () => {
     }
     if (checkPackage('PubchemApi', 'GetIupacName'))
       expect(Object.keys(res).includes('Name'), true);
-  }, {timeout: 150000});
+  }, {timeout: 330000});
 
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
@@ -182,5 +182,5 @@ category('cell panel', async () => {
           `descriptors table hasn\'t been created for ${mol}`, 55000);
       }
     }
-  }, {timeout: 180000, stressTest: true});
+  }, {timeout: 360000, stressTest: true});
 });

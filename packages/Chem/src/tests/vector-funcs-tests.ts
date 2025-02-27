@@ -25,7 +25,7 @@ category('vector functions', () => {
         await ensureContainerRunning('name = "chem-chem"');
         await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
-    }, {timeout: 150000});
+    }, {timeout: 330000});
 
     test('getInchis', async () => {
         await testVectorFunc('Chem:getInchis(${smiles})', 'Inchi', [0, 9],

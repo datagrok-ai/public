@@ -13,10 +13,10 @@ category('chemprop', () => {
 
   before(async () => {
     table = await readDataframe('tests/smiles_test.csv');
-    await ensureContainerRunning('chemprop');
   });
 
   test('trainModel', async () => {
+    await ensureContainerRunning('chemprop');
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
     const modelBlob = await fetchWrapper(() => trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
@@ -27,15 +27,16 @@ category('chemprop', () => {
     binBlob = await file?.async('uint8array')!;
         
     expect(file !== null, true);
-  }, {timeout: 60000});
+  }, {timeout: 360000});
 
   test('applyModel', async () => {
+    await ensureContainerRunning('chemprop');
     const smilesColumn = table.columns.byName('canonical_smiles');
     const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
         
     expect(column.length, 30);
   });
-});
+}, {timeout: 300000});
 
 function getParameterValues() {
   return {

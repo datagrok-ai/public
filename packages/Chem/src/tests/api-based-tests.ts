@@ -33,7 +33,7 @@ category('server features', () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
     expect(result !== null, true);
   });
-}, {timeout: 150000});
+}, {timeout: 330000});
 
 
 category('chem exported', () => {

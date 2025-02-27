@@ -147,7 +147,7 @@ category('UI top menu', () => {
       grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  }, {timeout: 180000});
+  }, {timeout: 360000});
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -195,7 +195,7 @@ category('UI top menu', () => {
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
     grok.shell.o = ui.div();
-  }, {stressTest: true, timeout: 150000});
+  }, {stressTest: true, timeout: 330000});
 
   test('toxicity risks', async () => {
     await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');

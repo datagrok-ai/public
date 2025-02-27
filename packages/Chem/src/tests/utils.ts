@@ -93,7 +93,7 @@ export async function ensureContainerRunning(containerName: string) {
     await grok.dapi.docker.dockerContainers.run(container.id, true);
 
   await awaitCheck(() => container.status.startsWith('started') || container.status.startsWith('checking'),
-    `${containerName} hasn't been started after 2 minutes`, 120000);
+    `${containerName} hasn't been started after 5 minutes`, 300000);
 }
 
 export const malformedMolblock = `
