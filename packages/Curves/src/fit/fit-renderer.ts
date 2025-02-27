@@ -434,7 +434,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (!(series.connectDots && !series.showFitLine)) {
         if (series.parameters) {
           if (data.chartOptions?.logX) {
-            if (series.parameters[2] > 0)
+            if (series.parameters[2] > 0) // check if sigmoid, then log
               series.parameters[2] = Math.log10(series.parameters[2]);
           }
           curve = getCurve(series, fitFunc);

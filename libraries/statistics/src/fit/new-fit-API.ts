@@ -45,9 +45,9 @@ interface ILogLinearFit extends ILinearFit {}
 
 interface ISigmoidFit extends IFit {
   top: number;
-  bottom: number;
   slope: number;
   ic50: number;
+  bottom: number;
 }
 
 interface IExponentialFit extends IFit {
