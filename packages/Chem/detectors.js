@@ -34,6 +34,7 @@ class ChemPackageDetectors extends DG.Package {
     return true;
   }
 
+  //name: detectMolecules
   //tags: semTypeDetector
   //input: column col
   //output: string semType
