@@ -151,20 +151,23 @@ export class Plate {
   }
 
   /** Merges the attributes from {@link plates} into one plate. */
-  static fromPlates(plates: Plate[]) {
+  static fromPlates(plates: Plate[], name?: string) {
     assure(plates.length > 0, 'Array is empty.');
     assure(plates.every(p => p.rows == plates[0].rows && p.cols == plates[0].cols), 'Plate dimensions differ.');
 
-    return plates.reduce((p1, p2) => p1 ? p1.merge(p2) : p2.clone());
+    const result = plates.reduce((p1, p2) => p1 ? p1.merge(p2) : p2.clone());
+    if (name != null)
+      result.data.name = name;
+    return result;
   }
 
   static async fromExcelFileInfo(fi: DG.FileInfo): Promise<Plate> {
-    return fi.data && fi.data.length ? await Plate.fromExcel(fi.data, fi.friendlyName) : await Plate.fromExcelPath(fi.fullPath);
+    return fi.data && fi.data.length ? await Plate.fromExcel(fi.data, fi.friendlyName) : await Plate.fromExcelPath(fi.fullPath, fi.friendlyName);
   }
 
-  static async fromExcelPath(excelPath: string): Promise<Plate> {
+  static async fromExcelPath(excelPath: string, name?: string): Promise<Plate> {
     const content = await grok.dapi.files.readAsBytes(excelPath);
-    return this.fromExcel(content);
+    return this.fromExcel(content, name);
   }
 
   /** Constructs the plates from the specified Excel file.
@@ -184,7 +187,7 @@ export class Plate {
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
       throw `Plate sizes differ in "${name}"`;
 
-    return Plate.fromPlates(platePositions.map(p => getPlateFromSheet(p)));
+    return Plate.fromPlates(platePositions.map(p => getPlateFromSheet(p)), name);
   }
 
   /** Generates [count] increasing integer numbers, starting with 0. */

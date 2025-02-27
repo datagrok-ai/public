@@ -143,6 +143,7 @@ export class PlateWidget extends DG.Widget {
     roleCol.init((i) => seriesVals[i][0]);
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
+    df.name = pw.plateData.name;
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
     curvesGrid.root.style.width = '100%';

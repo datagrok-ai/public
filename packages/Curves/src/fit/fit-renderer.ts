@@ -145,7 +145,7 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
 export function getOrCreateParsedChartData(gridCell: DG.GridCell, useCache = true): IFitChartData {
   const column = gridCell?.cell?.column;
   return (useCache && column && gridCell?.cell) ?
-    FitChartCellRenderer.parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
+    FitChartCellRenderer.parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
       return getChartData(gridCell);
     }) : getChartData(gridCell);
 }
@@ -188,7 +188,7 @@ export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number,
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
   const column = gridCell?.cell?.column;
   return (useCache && column && gridCell?.cell) ?
-    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
+    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex}`, () => {
       return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
     }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
 }
@@ -198,7 +198,7 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
   userParamsFlag?: boolean, gridCell?: DG.GridCell, useCache = true): {x: number[], y: number[]} {
   const column = gridCell?.cell?.column;
   return (useCache && column && gridCell?.cell) ?
-    FitChartCellRenderer.curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
+    FitChartCellRenderer.curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${gridCell?.tableRowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
       return getDataPoints(series, logOptions, userParamsFlag);
     }) : getDataPoints(series, logOptions, userParamsFlag);
 }

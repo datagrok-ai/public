@@ -205,8 +205,8 @@ export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInf
   const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
   let csvView: DG.Widget | undefined = undefined;
   if (csvFiles.length > 2) {
-    
     const plate = Plate.fromPlates(await Promise.all(csvFiles.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
+    plate.data.name = `${csvFiles.map((file) => file.name.slice(0, file.name.length - 4)).join('_')}.csv`;
     csvView = PlateWidget.analysisView(plate,);
     if (csvFiles.length === files.length)
       return csvView;
@@ -220,7 +220,7 @@ export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInf
   const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
 
   if (xlsxFiles.length == 0)
-    return csvView 
+    return csvView;
 
   for (const xlsxFile of xlsxFiles) {
     try {
@@ -228,7 +228,7 @@ export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInf
       const pw = PlateWidget.analysisView(plate);
       const v = DG.View.fromRoot(pw.root);
       v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);
-      multiView.addView(v.name, () => v, true);  
+      multiView.addView(v.name, () => v, true);
     } catch (e) {
       _package.logger.error(e);
     }
@@ -264,7 +264,7 @@ export function plateApp() {
   //   return;
   // }
   // console.log(file);
-  // const plate = Plate.fromExcel(file.fullPath); 
+  // const plate = Plate.fromExcel(file.fullPath);
 }
 
 //name: testPlatesCurvesNewAPI
