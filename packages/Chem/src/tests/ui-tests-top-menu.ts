@@ -307,7 +307,7 @@ category('UI top menu', () => {
     }, 'element columns haven\'t been added', 5000);
     const okButton = dialog.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton?.click();
-    await awaitCheck(() => smiles.columns.length === 11, 'element columns haven\'t been added', 5000);
+    await awaitCheck(() => smiles.columns.length === 12, 'element columns haven\'t been added', 5000);
     v.close();
     grok.shell.o = ui.div();
   });
