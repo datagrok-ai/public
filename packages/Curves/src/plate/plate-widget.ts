@@ -40,6 +40,9 @@ export class PlateWidget extends DG.Widget {
   colorColumnName: string = '';
   colorSelector?: DG.InputBase;
   detailsDiv?: HTMLElement;
+  wellDetailsDiv?: HTMLElement;
+  plateDetailsDiv?: HTMLElement;
+  plateActionsDiv?: HTMLElement;
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -61,13 +64,14 @@ export class PlateWidget extends DG.Widget {
       value: pw._colorColumn,
       onValueChanged: (v) => { pw._colorColumn = v; pw.grid.invalidate(); }
     });
-
-    pw.detailsDiv = div();
+    pw.detailsDiv = ui.divV([]);
+    pw.wellDetailsDiv = div();
+    pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
     pw.grid.onCurrentCellChanged.subscribe((gc) => {
-      ui.empty(pw.detailsDiv!);
+      ui.empty(pw.wellDetailsDiv!);
       const row = pw.dataRow(gc);
       if (row != null && row >= 0)
-        pw.detailsDiv!.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
+        pw.wellDetailsDiv!.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
     });
 
     pw.root.prepend(pw.colorSelector.root);
@@ -79,6 +83,13 @@ export class PlateWidget extends DG.Widget {
     const pw = PlateWidget.detailedView(plate.data);
     const gridRoot = pw.grid.root;
     const detailsRoot = pw.detailsDiv;
+    pw.plateActionsDiv = ui.div();
+    pw.plateDetailsDiv = ui.div();
+    detailsRoot!.prepend(pw.plateDetailsDiv);
+    detailsRoot!.append(pw.plateActionsDiv);
+
+
+
     if (!gridRoot || !detailsRoot)
       return pw;
     // place them horizontally
