@@ -77,7 +77,7 @@ The Datagrok 1.24.0 release includes stability, visualization, and UX improvemen
 * Added mouse-panning via the right button
 * Column properties: Added the ability to set color coding for multiple selected columns
 * [#3178](https://github.com/datagrok-ai/public/issues/3178): Add new column: Added the ability to remove qualifier
-* Summary columns: Implemented normalization for sparklines
+* Summary columns: Implemented normalization for sparklines. For details, see [Grid updates](https://community.datagrok.ai/t/grid-updates/616/14)
 * Fixed:
   *  [#3208](https://github.com/datagrok-ai/public/issues/3208): Hamburger icon in the column header does not disappear when cursor is no longer in the header in some cases
    *  [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu partially or fully hidden on the last columns when nothing is present on the right
