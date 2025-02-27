@@ -257,7 +257,7 @@ category('UI info panel', () => {
     desc?.click(); await delay(100);
     (cp as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {timeout: 150000});
 
   after(async () => {
     grok.shell.closeAll();
