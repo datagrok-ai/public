@@ -101,7 +101,7 @@ export interface IFitPoint {
   stdev?: number;          // when defined, renders an error bar candlestick
   // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
   // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  meta?: string;           // any additional data
+  meta?: any;           // any additional data
 }
 
 /** A series consists of points, has a name, and options.

@@ -4,11 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
 import {safeLog, tableFromRow } from './utils';
-import { Plate } from './plate';
+import { IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import { FitMarkerType, IFitPoint } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import { FitConstants } from '../fit/const';
+import { FitCellOutlierToggleArgs } from '../fit/fit-renderer';
 
 
 type AnalysisOptions = {
@@ -65,7 +66,7 @@ export class PlateWidget extends DG.Widget {
     pw.grid.onCurrentCellChanged.subscribe((gc) => {
       ui.empty(pw.detailsDiv!);
       const row = pw.dataRow(gc);
-      if (row)
+      if (row != null && row >= 0)
         pw.detailsDiv!.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
     });
 
@@ -83,21 +84,35 @@ export class PlateWidget extends DG.Widget {
     // place them horizontally
     const container = ui.divH([gridRoot, detailsRoot]);
     pw.root.appendChild(container);
-    detailsRoot.style.flex = '0 0 min(200px, 20%)';
+    detailsRoot.style.flex = '0 0 min(250px, 25%)';
     gridRoot.style.flexGrow = '1';
     gridRoot.style.removeProperty('width');
 
     const defaultOptions: Required<AnalysisOptions> = {roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true};
-    const actOptions: Required<AnalysisOptions> = {...defaultOptions, ...options};
-
+    const actOptions: Required<AnalysisOptions> & {normalizedColName?: string} = {...defaultOptions, ...options};
+    const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
+    let normed = false;
     if (actOptions.normalize && actOptions.controlColumns.length === 2) {
       const [lMean, hMean] = actOptions.controlColumns.map((colName) => jStat.mean(plate.fieldValues(actOptions.valueName, {match: {[actOptions.roleName]: colName}}))).sort((a,b) => a - b);
-      actOptions.valueName = plate.normalize(actOptions.valueName, (v) => (hMean - v) / (hMean - lMean) * 100).name;
+      actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hMean - v) / (hMean - lMean) * 100).name;
+      normed = true;
+      // mark outliers that go outside the bounds
+      
+      if (actOptions.autoFilterOutliers) {
+        const values = plate.values([actOptions.normalizedColName], drFilterOptions);
+        values.forEach((v) => {
+          if (v[actOptions.normalizedColName!] > 106 || v[actOptions.normalizedColName!] < -6) {
+            plate._markOutlier(v.innerDfRow, true);
+          }
+        })
+      }
     }
 
-    const series = plate.doseResponseSeries({exclude: {[actOptions.roleName]: actOptions.controlColumns}, value: actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
+    const series = plate.doseResponseSeries({...drFilterOptions, value: actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
     
     const seriesVals = Object.entries(series);
+
+    const minXYOpts = normed ? {minY: 0, maxY: 100} : {};
 
     const roleCol = DG.Column.string(actOptions.roleName, seriesVals.length);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
@@ -108,8 +123,6 @@ export class PlateWidget extends DG.Widget {
                     "yAxisName": "Result",
                     "logX": true,
                     "title": `${seriesVals[i][0]}`,
-                    'minY': 0,
-                    'maxY': 100,
                     'clickToToggle': true,
                   },
                 series: [{...seriesVals[i][1], fit: undefined, fitFunction: 'sigmoid', clickToToggle: true}]
@@ -124,6 +137,7 @@ export class PlateWidget extends DG.Widget {
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
     pw.root.style.flexDirection = 'column';
+    pw.root.style.height = '100%';
 
     pw.root.appendChild(curvesGrid.root);
     
@@ -154,6 +168,7 @@ export class PlateWidget extends DG.Widget {
       }
 
     }
+    // highlight selected point in the curve
     pw.subs.push(pw.grid.onCurrentCellChanged.subscribe((gc) => {
       clearPreviousSelection();
       if (gc?.gridRow == null || gc?.gridRow == -1 || !gc?.gridColumn || gc?.gridColumn.idx == 0)
@@ -191,6 +206,25 @@ export class PlateWidget extends DG.Widget {
       curvesGrid.scrollToCell(curveCol.name, curveGridRow);
     }));
 
+    // mark outliers in the original plate if it is switched from curve manually
+    
+    pw.subs.push(grok.events.onCustomEvent('fit-cell-outlier-toggle').subscribe((args: FitCellOutlierToggleArgs) => {
+      if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol)
+        return;
+      const point: IFitPoint = args.series.points[args.pointIdx];
+      if (point.meta !== null) {
+        plate._markOutlier(point.meta, !!point.outlier);
+        pw.grid.invalidate();
+      }
+
+
+    }));
+
+
+    setTimeout(() => {
+      curvesGrid.col(curveCol.name)!.width = 400;
+      curvesGrid.props.rowHeight = 200;
+    }, 300);
 
     return pw;
   }
@@ -244,6 +278,7 @@ export class PlateWidget extends DG.Widget {
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
     const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
+    
     // column header
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
@@ -262,6 +297,16 @@ export class PlateWidget extends DG.Widget {
           : this._colorColumn.meta.colors.getColor(dataRow);
         g.fillStyle = DG.Color.toHtml(color);
         g.fill();
+        const outlierCol = this.plateData.col(PLATE_OUTLIER_WELL_NAME);
+        if (outlierCol?.get(dataRow)) {
+          g.strokeStyle = DG.Color.toHtml(DG.Color.red);
+          g.lineWidth = 2;
+          g.moveTo(x + w / 2 - r, y + h / 2 - r);
+          g.lineTo(x + w / 2 + r, y + h / 2 + r);
+          g.moveTo(x + w / 2 + r, y + h / 2 - r);
+          g.lineTo(x + w / 2 - r, y + h / 2 + r);
+          g.stroke();
+        }
       }
 
       g.stroke();

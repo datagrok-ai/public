@@ -32,7 +32,7 @@ import {
 } from './render-utils';
 
 
-interface FitCellOutlierToggleArgs {
+export interface FitCellOutlierToggleArgs {
   gridCell: DG.GridCell;
   series: IFitSeries;
   seriesIdx: number;

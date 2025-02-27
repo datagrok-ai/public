@@ -28,7 +28,7 @@ interface IPlateCsvImportOptions {
 }
 
 
-interface IPlateWellFilter {
+export interface IPlateWellFilter {
   includeEmpty?: boolean;
   match?: {[key: string]: any};
   exclude?: {[key: string]: any};
@@ -59,6 +59,8 @@ interface ISeriesData {
 //   }
 // }
 
+export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
+
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
   data: DG.DataFrame;
@@ -77,6 +79,23 @@ export class Plate {
   }
 
   //well(row: number, col: number): PlateWell { return new PlateWell(); }
+
+  _markOutlier(row: number, flag: boolean = true) {
+    const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
+    outlierCol.set(row, flag);
+  }
+
+  markOutlier(row: number, col: number, flag: boolean = true) {
+    this._markOutlier(this._idx(row, col), flag);
+  }
+
+  _isOutlier(row: number): boolean {
+    const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
+    return outlierCol.get(row);
+  }
+  isOutlier(row: number, col: number): boolean {
+    return this._isOutlier(this._idx(row, col));
+  }
 
   static fromTable(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
@@ -224,16 +243,20 @@ export class Plate {
   }
 
   /** Array of non-empty values */
-  values(fields: string[], filter?: IPlateWellFilter): Array<Record<string, any>> {
+  values(fields: string[], filter?: IPlateWellFilter): Array<Record<string, any> & {innerDfRow: number}> {
     const cols = fields.map((f) => this.data.columns.byName(f));
     assure(cols.every((c) => c != null), `Field does not exist: ${fields.find((_, i) => cols[i] == null)}`);
     const colsObj: Record<string, DG.Column> = {};
     for (let i = 0; i < fields.length; i++)
       colsObj[fields[i]] = cols[i];
-    const result: Record<string, any>[]  = [];
-    for (let i = 0; i < this.rows * this.cols; i++)
-      if (((filter?.includeEmpty ?? false) || cols.every((col) => !col.isNone(i))) && (!filter || this.matches(i, filter)))
-        result.push(fields.reduce((acc, f) => { acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc; }, {} as Record<string, any>));
+    const result: (Record<string, any> & {innerDfRow: number}) []  = [];
+    for (let i = 0; i < this.rows * this.cols; i++) {
+      if (((filter?.includeEmpty ?? false) || cols.every((col) => !col.isNone(i))) && (!filter || this.matches(i, filter))) {
+        const res = fields.reduce((acc, f) => { acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc; }, {} as Record<string, any> & {innerDfRow: number});
+        res.innerDfRow = i;
+        result.push(res);
+      }
+    }
     return result;
   }
 
@@ -248,15 +271,18 @@ export class Plate {
     const valueKey = options?.value ?? 'value';
     const values = this.values([concKey, valueKey, ...(options?.groupBy ? [options.groupBy] : [])], valueOptions);
 
-    const series: Record<string, ISeriesData> = {};
+    const series: Record<string, ISeriesData & Record<string, any>> = {};
     for (const v of values) {
       const group = options?.groupBy ? v[options.groupBy] : '0';
       if (!series[group])
-        series[group] = {x: [], y: []};
+        series[group] = {x: [], y: [], meta: [], outlier: []};
       series[group].x.push(v[concKey]);
       series[group].y.push(v[valueKey]);
+      series[group].meta.push(v.innerDfRow);
+      series[group].outlier.push(this._isOutlier(v.innerDfRow));
     }
-    return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i]})).sort((a, b) => a.x - b.x))]));
+    return Object.fromEntries(Object.entries(series).map(([k, v]) => [k, new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i], outlier: v.outlier[i], meta: v.meta[i]})).sort((a, b) => a.x - b.x))]
+  ));
   }
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
