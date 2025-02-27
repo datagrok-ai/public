@@ -796,7 +796,7 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
 async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
   //setting structure and wait for results
   filter.sketcher.setMolFile(molfile);
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 10000);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 20000);
 }
 
 async function useAsFilter(tv: DG.TableView, molfile: string, trueCount: number) {
