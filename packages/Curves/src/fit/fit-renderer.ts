@@ -32,6 +32,13 @@ import {
 } from './render-utils';
 
 
+interface FitCellOutlierToggleArgs {
+  gridCell: DG.GridCell;
+  series: IFitSeries;
+  seriesIdx: number;
+  pointIdx: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -321,15 +328,21 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
                 column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
               if (stats === null)
                 continue;
-              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
             }
           }
-          
+
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
             gridCellValue.series![i].points[j].outlier = p.outlier;
             gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), false);
+            grok.events.fireCustomEvent('fit-cell-outlier-toggle', {
+              gridCell: gridCell,
+              series: gridCellValue.series![i],
+              seriesIdx: i,
+              pointIdx: j,
+            });
             const g = gridCell.grid.canvas.getContext('2d')!;
             gridCell.render({context: g, bounds: gridCell.bounds});
           }
