@@ -79,11 +79,10 @@ export class Boltz1AppView {
       input = this.sequenceInputs.get(uniqueName);
     }
     input!.value = value;
-  }  
+  }
 
   private createButtons(): void {
     const submitButton = ui.bigButton('Submit', async () => {
-      grok.shell.info('Generated YAML is logged to the console');
       console.log(this.generateYaml());
     });
 
@@ -188,6 +187,17 @@ export class Boltz1AppView {
     return ui.divV([sequenceInp.root, addModificationsButton]);
   }
 
+  private getModificationsForSequence(sequenceName: string): { ccd: string; position: string }[] {
+    return Array.from(this.modificationInputs.entries())
+      .filter(([key]) => key.startsWith(sequenceName)) // Only modifications belonging to the sequence
+      .map(([, inputs]) => {
+        const position = inputs[0].value.trim();
+        const ccd = inputs[1].value.trim();
+        return position && ccd ? { position, ccd } : null;
+      })
+      .filter(Boolean) as { ccd: string; position: string }[];
+  }
+
   private generateYaml(): string {
     const sequences = Array.from(this.sequenceInputs.entries())
       .filter(([name]) => !name.includes(" Position") && !name.includes(" CCD"))
@@ -199,7 +209,7 @@ export class Boltz1AppView {
             ENTITY_TYPE: baseType, 
             id: name, 
             sequence: input.value, 
-            modifications: []
+            modifications: this.getModificationsForSequence(name)
           };
         } else if (baseType === FUNC_PROPS_FIELD.LIGAND) {
           return { 
@@ -236,7 +246,7 @@ export class Boltz1AppView {
     console.log(sequences);
     console.log(constraints);
     return yaml.dump({ sequences, constraints });
-  }    
+  }
 
   public getView(): DG.ViewBase {
     return DG.View.fromRoot(this.divV);
