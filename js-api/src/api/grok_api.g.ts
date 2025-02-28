@@ -1423,6 +1423,7 @@ export interface IDartApi {
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
+  grok_Dapi_WS_Root(): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Move(filesOrDirs: any, fi: any): Promise<any>;
