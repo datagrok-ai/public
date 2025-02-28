@@ -68,6 +68,10 @@ that is located in the `Admetica` plugin.
 
 ## 3. Implement the function to get a response
 
+Make sure that application inside Docker container has embedded HTTP server that handles requests and the listening port is [exposed](https://docs.docker.com/reference/dockerfile/#expose) in Dockerfile.
+
+### 3.1. Http request
+
 Add code that is responsible for making a request to the container:
 
 ```js
@@ -87,13 +91,34 @@ async function requestAlignedObjects(id: string, body: PepseaBodyUnit[], method:
 To make a request `grok.dapi.dockerfiles.fetchProxy` is used. You should specify the `id` in order to make the request to the right container, `path`
 and `params` of the request. The method logic it totally aligned with [JavaScript Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and `params` 
 is [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/RequestInit) object type.
+
 To get `id` do:
 
 ```js
 const dockerfileId = (await grok.dapi.docker.dockerContainers.filter('pepsea').first()).id;
 ```
 
-That's it!
+### 3.2. WebSocket connection
+
+To make WebSocket connection to Docker container use `grok.dapi.docker.dockerContainers.webSocketProxy` method. You should specify the `id` of container
+and `path`. You can also provide optional `timeout` for initial connection establishment. Function `webSocketProxy` returns [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) 
+when connection is ready.
+
+#### Example
+
+```js
+const ws: WebSocket = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
+ws.send('Hell World!');
+
+const onMessage = (event: MessageEvent) => {
+ const message = event.data;
+ console.log(message);
+};
+
+ws.addEventListener("message", onMessage);
+
+setTimeout(() => ws.close(), 3000);
+```
 
 ## 4. Build and publish
 
