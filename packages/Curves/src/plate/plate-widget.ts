@@ -22,6 +22,8 @@ export type AnalysisOptions = {
   autoFilterOutliers: boolean,
   submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
   categorizeFormula: string,
+  statisticsColumns: string[],
+  plateStatistics?: {[key: string]: (plate: Plate) => string | number}
 }
 
 
@@ -91,10 +93,12 @@ export class PlateWidget extends DG.Widget {
     detailsRoot!.prepend(pw.plateDetailsDiv);
     detailsRoot!.append(pw.plateActionsDiv);
     const defaultOptions: AnalysisOptions = {
-      roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true,
-      categorizeFormula: '${rSquared} > 0.8 && ${slope} > 0.25 && ${max} > 80 && ${max} < 120'
+      roleName: 'layout', concentrationName: 'concentration', valueName: 'readout',
+      normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true,
+      categorizeFormula: '${rSquared} > 0.8 && ${Hill} > 0.25 && ${Max} > 80 && ${Max} < 120', statisticsColumns: ['Min', 'Max', 'rSquared', 'Hill', 'IC50', 'AUC'],
     };
 
+    // system of aliases for the column names
     const aliases = {
       concentrationName: ['conc', 'dose', 'conc.', 'dilution', 'concentrations'],
       valueName: ['response', 'value', 'signal', 'raw data', 'raw signal', 'raw', 'response', 'values'],
@@ -109,15 +113,32 @@ export class PlateWidget extends DG.Widget {
         (defaultOptions[key as keyof typeof defaultOptions] as string) = alias;
     })
 
+    // find control columns
+    if (plate.data.columns.contains(defaultOptions.roleName) && !defaultOptions.controlColumns.every((cc) => plate.data.col(defaultOptions.roleName)!.categories.includes(cc))) {
+      //  if control columns are not provided, try to find them in the data
+      const controlCols = plate.data.col(defaultOptions.roleName)!.categories.filter((cat) => cat.toLowerCase().includes('control'));
+      // take maximum of 2 control columns
+      defaultOptions.controlColumns = controlCols.slice(0, 2);
+    }
+
     const actOptions: AnalysisOptions & {normalizedColName?: string} = {...defaultOptions, ...options};
 
-    // find control columns
-    if (plate.data.columns.contains(actOptions.roleName) && !actOptions.controlColumns.every((cc) => plate.data.col(actOptions.roleName)!.categories.includes(cc))) {
-      //  if control columns are not provided, try to find them in the data
-      const controlCols = plate.data.col(actOptions.roleName)!.categories.filter((cat) => cat.toLowerCase().includes('control'));
-      // take maximum of 2 control columns
-      actOptions.controlColumns = controlCols.slice(0, 2);
-    }
+    const statisticsAliases = {
+      'rSquared': ['rsquared', 'r2', 'r squared', 'r^2'],
+      'slope': ['slope', 'hill', 'steepness', 'hill slope'],
+      'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
+      'top': ['top', 'max', 'maximum', 'maxy', 'max y'], 
+      'interceptX': ['interceptx', 'intercept x','ic50', 'ic 50', 'ic-50', 'ic_50', 'ic 50 value', 'ic50 value', 'ic50value', 'ec50', 'ec 50', 'ec-50', 'ec_50', 'ec 50 value', 'ec50 value', 'ec50value'],
+      'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
+    };
+
+    const actualStatNames: Record<string, string> = {}; // will hold actual statistic name to its alias column name
+    actOptions.statisticsColumns.forEach((stat) => {
+      const alias = Object.entries(statisticsAliases).find(([_, aliases]) => aliases.includes(stat.toLowerCase()));
+      if (alias)
+        actualStatNames[alias[0]] = stat;
+    });
+
 
     if (!gridRoot || !detailsRoot)
       return pw;
@@ -131,19 +152,25 @@ export class PlateWidget extends DG.Widget {
     const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
     let normed = false;
     if (actOptions.normalize && actOptions.controlColumns.length === 2) {
-      const [lStats, hStats] = actOptions.controlColumns
-        .map((colName) => {
-          const values = plate.fieldValues(actOptions.valueName, {match: {[actOptions.roleName]: colName}});
-          return {mean: jStat.mean(values), std: jStat.stdev(values)};
-        })
-        .sort((a,b) => a.mean - b.mean);
 
+      const [lStats, hStats] = actOptions.controlColumns.map((colName) => {
+        return plate.getStatistics(actOptions.valueName, ['mean', 'std'], {match: {[actOptions.roleName]: colName}});
+      }).sort((a,b) => a.mean - b.mean);
+  
+      defaultOptions.plateStatistics = {
+        'Z Prime': (_plate) => 1 - (3 * (hStats.std + lStats.std) / Math.abs(hStats.mean - lStats.mean)),
+        'Signal to background': (_plate) => hStats.mean / lStats.mean,
+      }
+      if (!actOptions.plateStatistics)
+        actOptions.plateStatistics = defaultOptions.plateStatistics;
       actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hStats.mean - v) / (hStats.mean - lStats.mean) * 100).name;
       normed = true;
-      const zPrime = 1 - (3 * (hStats.std + lStats.std) / Math.abs(hStats.mean - lStats.mean));
-      const stb = hStats.mean / lStats.mean;
-
-      const statTable = ui.tableFromMap({'Z prime': DG.format(zPrime, '#0.0000'), 'Signal to background': DG.format(stb, '#0.0000')});
+      const plateStatMap: Record<string, string> = {};
+      Object.entries(actOptions.plateStatistics).forEach(([statName, statFunc]) => {
+        const value = statFunc(plate);
+        plateStatMap[statName] = typeof value === 'number' ? DG.format(value, '#0.0000') : value;
+      });
+      const statTable = ui.tableFromMap(plateStatMap);
       pw.plateDetailsDiv!.appendChild(statTable);
       // mark outliers that go outside the bounds
 
@@ -179,17 +206,13 @@ export class PlateWidget extends DG.Widget {
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
 
-    const rSquaredFuncParams = {df: df, colName: curveCol.name, propName: 'rSquared', seriesName: 'series 0', seriesNumber: 0, newColName: 'rSquared'};
-    const slopeFuncParams = {df: df, colName: curveCol.name, propName: 'slope', seriesName: 'series 0', seriesNumber: 0, newColName: 'slope'};
-    const curveMinFuncParams = {df: df, colName: curveCol.name, propName: 'bottom', seriesName: 'series 0', seriesNumber: 0, newColName: 'min'};
-    const curveMaxFuncParams = {df: df, colName: curveCol.name, propName: 'top', seriesName: 'series 0', seriesNumber: 0, newColName: 'max'};
-    const ic50FuncParams = {df: df, colName: curveCol.name, propName: 'interceptX', seriesName: 'series 0', seriesNumber: 0, newColName: 'IC50'};
-    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(rSquaredFuncParams).callSync({processed: false});
-    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(slopeFuncParams).callSync({processed: false});
-    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMinFuncParams).callSync({processed: false});
-    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMaxFuncParams).callSync({processed: false});
-    DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(ic50FuncParams).callSync({processed: false});
-    df.col('IC50')!.meta.format = 'scientific';
+    // add statistics columns
+    Object.entries(actualStatNames).forEach(([statName, alias]) => {
+      const params = {df: df, colName: curveCol.name, propName: statName, seriesName: 'series 0', seriesNumber: 0, newColName: alias};
+      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
+    });
+    if (actualStatNames['interceptX'])
+      df.col(actualStatNames['interceptX']) && (df.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
 
     //categorize the curves
     

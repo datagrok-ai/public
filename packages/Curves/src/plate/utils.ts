@@ -1,5 +1,7 @@
  import * as DG from 'datagrok-api/dg';
 import { PLATE_OUTLIER_WELL_NAME } from './plate';
+//@ts-ignore
+import * as jStat from 'jstat';
 /** If the condition is false, throws message(). */
 export function assure(condition: boolean, errorMessage: string | (() => string)) {
   if (!condition)
@@ -96,4 +98,16 @@ export function formatTableNumber(num: number): string | number {
   else if (Math.abs(num) < 1)
     return DG.format(num, '0.0000');
   return num;
+}
+
+export type JSTATStatistics = 'mean' | 'median' | 'std' | 'min' | 'max' | 'meansqerr' | 'geomean'; // TODO: add more
+
+export const jstatStatistics: Record<JSTATStatistics, (val: number[]) => number> = {
+  mean: jStat.mean,
+  median: jStat.median,
+  std: jStat.stdev,
+  min: jStat.min,
+  max: jStat.max,
+  meansqerr: jStat.meansqerr,
+  geomean: jStat.geomean
 }

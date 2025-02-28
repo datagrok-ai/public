@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
-import {assure, excelToNum, firstWhere, numToExcel, parseExcelPosition} from "./utils";
+import {assure, excelToNum, firstWhere, jstatStatistics, JSTATStatistics, numToExcel, parseExcelPosition} from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
 import { FitSeries } from '@datagrok-libraries/statistics/src/fit/new-fit-API';
@@ -280,9 +280,18 @@ export class Plate {
     return result;
   }
 
+  /// Returns specified field statistics for the specified filter and specified field name
+  getStatistics<T extends JSTATStatistics[]>(field: string, statistics: T, filter?: IPlateWellFilter): Record<T[number], number> {
+    const values = this.fieldValues(field, filter);
+    const result: Record<JSTATStatistics, number> = {} as Record<JSTATStatistics, number>;
+    for (const stat of statistics) {
+      result[stat] = jstatStatistics[stat](values);
+    }
+    return result;
+  }
+
   fieldValues(field: string, filter?: IPlateWellFilter): Array<any> {
     return this.values([field], filter).map((v) => v[field]);
-
   }
 
   doseResponseSeries(options?: IPlateWellFilter & { concentration?: string; value?: string, groupBy?: string}): Record<string, FitSeries> {
