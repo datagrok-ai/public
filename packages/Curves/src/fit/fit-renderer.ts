@@ -488,7 +488,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (w < FitConstants.MIN_CELL_RENDERER_PX_WIDTH || h < FitConstants.MIN_CELL_RENDERER_PX_HEIGHT)
       return;
 
-    const isRenderedOnGrid = g.canvas === gridCell.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+    const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
     const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
       convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell, isRenderedOnGrid);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));

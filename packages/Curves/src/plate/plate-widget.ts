@@ -195,7 +195,7 @@ export class PlateWidget extends DG.Widget {
                     ...minMax
                   },
                   // TODO: change to 4PL regression once fixed for normed data
-                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50']}]
+                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: seriesVals[i][0]}]
       }
 
       ));
