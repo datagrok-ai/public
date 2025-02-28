@@ -60,35 +60,40 @@ category('Docker', () => {
   }, {timeout: 240000, /*stressTest: true*/});
 
   test('Proxy WebSocket', async () => {
-    const container = await startContainer(containerSimple);
-    const ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
-    const testMessage = 'Hello World!';
-    await new Promise<void>((res, rej) => {
-      const onMessage = (event: MessageEvent) => {
-        if (event.data === testMessage) {
+    let ws: WebSocket | undefined;
+    try {
+      const container = await startContainer(containerSimple);
+      ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
+      const testMessage = 'Hello World!';
+      await new Promise<void>((res, rej) => {
+        const onMessage = (event: MessageEvent) => {
+          if (event.data === testMessage) {
+            cleanup();
+            res();
+          }
+          else {
+            cleanup();
+            rej(new Error(`First message wasn't the same as expected: ${event.data}`))
+          }
+        };
+
+        const onError = (_: Event) => {
           cleanup();
-          res();
+          rej(new Error("WebSocket encountered an error"));
+        };
+
+        function cleanup() {
+          ws!.removeEventListener("message", onMessage);
+          ws!.removeEventListener("error", onError);
         }
-        else {
-          cleanup();
-          rej(new Error(`First message wasn't the same as expected: ${event.data}`))
-        }
-      };
 
-      const onError = (_: Event) => {
-        cleanup();
-        rej(new Error("WebSocket encountered an error"));
-      };
-
-      function cleanup() {
-        ws.removeEventListener("message", onMessage);
-        ws.removeEventListener("error", onError);
-      }
-
-      ws.addEventListener("message", onMessage);
-      ws.addEventListener("error", onError);
-      ws.send(testMessage);
-    });
+        ws!.addEventListener("message", onMessage);
+        ws!.addEventListener("error", onError);
+        ws!.send(testMessage);
+      });
+    } finally {
+      ws?.close();
+    }
   });
 });
 
