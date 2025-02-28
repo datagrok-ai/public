@@ -113,6 +113,8 @@ export const InputForm = Vue.defineComponent({
           const hideMeta = meta[param.property.name]?.['hidden'];
           if (hideMeta)
             input.root.style.display = 'none';
+          else
+            input.root.style.display = 'flex';
         });
     });
 
