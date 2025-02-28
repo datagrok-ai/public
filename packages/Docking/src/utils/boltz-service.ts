@@ -40,7 +40,7 @@ export class BoltzService {
   
     let jsonResponse: BoltzResponse;
     try {
-      jsonResponse = JSON.parse(await response.text());
+      jsonResponse = await response.json();
     } catch (err) {
       this.throwError('Error parsing response from Boltz container.');
     }

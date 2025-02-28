@@ -139,7 +139,8 @@ async function requestAlignedObjects(
     responseObj = await response.json();
   } else {
     // @ts-ignore
-    const responseStr = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params)!;
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(dockerfileId, path, params)!;
+    const responseStr = await response.text();
     if (!responseStr)
       throw new Error('Empty response');
     responseObj = JSON.parse(responseStr);
