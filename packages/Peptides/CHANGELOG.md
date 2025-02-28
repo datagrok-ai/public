@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.21.3 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
 ## 1.21.2 (2025-02-03)
 
 Correct Sizing of mutation cliff grids
