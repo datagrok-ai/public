@@ -91,17 +91,17 @@ export async function ensureContainersRunning() {
 
 export async function ensureContainerRunning(containerName: string) {
   const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
-  console.log(`*********************** ${container.name}`);
-  console.log(`*********************** ${container.status}`);
-  const time1 = performance.now();
   if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
     console.log(`starting container ${container.name}`);
-    grok.dapi.docker.dockerContainers.run(container.id, true);
-  }
+    await grok.dapi.docker.dockerContainers.run(container.id, false);
+  };
+
+  let started = false;
   await awaitCheck(() => {
-    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.status}`);
-    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.name}`);
-    return container.status.startsWith('started') || container.status.startsWith('checking')
+    grok.dapi.docker.dockerContainers.find(container.id).then((cont) => {
+      started = cont.status.startsWith('started') || cont.status.startsWith('checking');
+    });
+    return started;
   },`${containerName} hasn't been started after 5 minutes`, CONTAINER_TIMEOUT, 5000);
 }
 
