@@ -402,7 +402,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     g.clip();
 
-    const isRenderedOnGrid = g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+    const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
 
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
       data.series?.some((series) => series.points.some((p) => p.x === 0)))

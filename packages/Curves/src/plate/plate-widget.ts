@@ -203,6 +203,8 @@ export class PlateWidget extends DG.Widget {
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
     df.name = pw.plateData.name;
+    df.id = `${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}`;
+
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
 
@@ -259,8 +261,8 @@ export class PlateWidget extends DG.Widget {
       } finally {
         prevSelection = null;
       }
-
     }
+
     // highlight selected point in the curve
     pw.subs.push(pw.grid.onCurrentCellChanged.subscribe((gc) => {
       clearPreviousSelection();
