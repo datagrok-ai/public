@@ -21,8 +21,8 @@ async function getAdmeticaContainer() {
 
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
   try {
-    const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
-    return JSON.parse(response!);
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
+    return JSON.parse(await response.text());
   } catch (error) {
     //grok.log.error(error);
     return null;
