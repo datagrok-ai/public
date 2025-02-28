@@ -98,6 +98,13 @@ export class Plate {
     return this._isOutlier(this._idx(row, col));
   }
 
+  markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter) {
+    this.values([field], filter).forEach((v) => {
+      if(valueFunc(v[field]))
+        this._markOutlier(v.innerDfRow, true);
+    })
+  }
+
   static fromTable(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
     // remove row letters
@@ -302,6 +309,12 @@ export class Plate {
     ui.dialog('Plate Analysis')
     .add(PlateWidget.analysisView(this, options))
     .showModal(true);
+  }
+
+  getAnalysisView(options: AnalysisOptions) {
+    const view = DG.View.fromRoot(PlateWidget.analysisView(this, options).root);
+    view.name = 'Plate Analysis';
+    return grok.shell.addView(view);
   }
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */

@@ -3,13 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
-import {safeLog, tableFromRow } from './utils';
+import {safeLog, mapFromRow } from './utils';
 import { IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import { FitConstants } from '../fit/const';
-import { FitCellOutlierToggleArgs } from '../fit/fit-renderer';
+import { FitCellOutlierToggleArgs, setOutlier } from '../fit/fit-renderer';
 import { _package } from '../package';
 
 
@@ -20,7 +20,8 @@ export type AnalysisOptions = {
   controlColumns: string[],
   normalize: boolean,
   autoFilterOutliers: boolean,
-  submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void
+  submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
+  categorizeFormula: string,
 }
 
 
@@ -44,6 +45,7 @@ export class PlateWidget extends DG.Widget {
   wellDetailsDiv?: HTMLElement;
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
+  mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow; 
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -72,7 +74,7 @@ export class PlateWidget extends DG.Widget {
       ui.empty(pw.wellDetailsDiv!);
       const row = pw.dataRow(gc);
       if (row != null && row >= 0)
-        pw.wellDetailsDiv!.appendChild(ui.tableFromMap(tableFromRow(pw.plateData.rows.get(row))));
+        pw.wellDetailsDiv!.appendChild(ui.tableFromMap(pw.mapFromRowFunc(pw.plateData.rows.get(row))));
     });
 
     pw.root.prepend(pw.colorSelector.root);
@@ -89,7 +91,8 @@ export class PlateWidget extends DG.Widget {
     detailsRoot!.prepend(pw.plateDetailsDiv);
     detailsRoot!.append(pw.plateActionsDiv);
     const defaultOptions: AnalysisOptions = {
-      roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true
+      roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true,
+      categorizeFormula: '${rSquared} > 0.8 && ${slope} > 0.25 && ${max} > 80 && ${max} < 120'
     };
 
     const aliases = {
@@ -145,12 +148,7 @@ export class PlateWidget extends DG.Widget {
       // mark outliers that go outside the bounds
 
       if (actOptions.autoFilterOutliers) {
-        const values = plate.values([actOptions.normalizedColName], drFilterOptions);
-        values.forEach((v) => {
-          if (v[actOptions.normalizedColName!] > 106 || v[actOptions.normalizedColName!] < -6) {
-            plate._markOutlier(v.innerDfRow, true);
-          }
-        })
+        plate.markOutliersWhere(actOptions.normalizedColName!, (v) => v > 106 || v < -6, drFilterOptions);
       }
     }
 
@@ -194,7 +192,11 @@ export class PlateWidget extends DG.Widget {
     df.col('IC50')!.meta.format = 'scientific';
 
     //categorize the curves
-    df.columns.addNewCalculated('Criteria', 'if(${rSquared} > 0.8 && ${slope} > 0.25 && ${max} > 80 && ${max} < 120, "Qualified", "Fails Criteria")', 'string');
+    
+    const criteriaCol = df.columns.addNewString(df.columns.getUnusedName('Criteria'));
+    criteriaCol.applyFormula(`if(${actOptions.categorizeFormula}, "Qualified", "Fails Criteria")`, 'string');
+    criteriaCol.meta.colors.setCategorical({ "Fails Criteria":4294922560, "Qualified":4283477800 });
+
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
     pw.root.style.flexDirection = 'column';
@@ -204,7 +206,14 @@ export class PlateWidget extends DG.Widget {
 
     // when selecting a cell on plate, go to appropriate curve and mark the corresponding point with different marker
     // remember the previous change, so that we can revert it
-    let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string} | null = null;
+    let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string, curvesGridCell?: DG.GridCell} | null = null;
+
+    pw.mapFromRowFunc = (row) => mapFromRow(row, (rowIdx, checkBoxState) => {
+      plate._markOutlier(rowIdx, checkBoxState);
+      if (prevSelection && prevSelection.curvesGridCell)
+      setOutlier(prevSelection.curvesGridCell, {x: 0, y: 0, outlier: !checkBoxState}, 0, prevSelection.pointIndex);
+      pw.grid.invalidate();
+    });
 
     function clearPreviousSelection() {
       try {
@@ -264,7 +273,8 @@ export class PlateWidget extends DG.Widget {
 
       // scroll in grid
       const curveGridRow = curvesGrid.tableRowToGrid(seriesIndex);
-      curvesGrid.scrollToCell(curveCol.name, curveGridRow);
+      prevSelection.curvesGridCell = curvesGrid.cell(curveCol.name, curveGridRow);
+      prevSelection.curvesGridCell && curvesGrid.scrollToCell(curveCol.name, curveGridRow);
     }));
 
     // mark outliers in the original plate if it is switched from curve manually
@@ -287,7 +297,7 @@ export class PlateWidget extends DG.Widget {
     });
 
     if (actOptions.submitAction) {
-      const btn = ui.button('Submit', () => actOptions.submitAction!(plate, df));
+      const btn = ui.button('Save to ELN', () => actOptions.submitAction!(plate, df));
       pw.plateActionsDiv!.appendChild(btn);
     }
     return pw;

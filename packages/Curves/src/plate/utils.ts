@@ -1,4 +1,5 @@
  import * as DG from 'datagrok-api/dg';
+import { PLATE_OUTLIER_WELL_NAME } from './plate';
 /** If the condition is false, throws message(). */
 export function assure(condition: boolean, errorMessage: string | (() => string)) {
   if (!condition)
@@ -67,13 +68,22 @@ export function safeLog(num: number) {
   return num <= 0 ? 0 : Math.log10(num);
 }
 
-export function tableFromRow(row: DG.Row) {
+export function mapFromRow(row: DG.Row, outlierSetFunc?: (row: number, checkBoxState: boolean) => void) {
   if (!row || row.idx == null || row.idx < 0 || !row.table)
     return {};
   const res: {[index: string]: any} = {};
   const idx = row.idx;
-  for (const column of row.table.columns)
-    res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx);
+  for (const column of row.table.columns) {
+    if (column.name?.toLowerCase() === PLATE_OUTLIER_WELL_NAME?.toLowerCase() && column.type === DG.COLUMN_TYPE.BOOL && outlierSetFunc) {
+      const currentVal = column.isNone(idx) ? false : column.get(idx);
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.checked = check.value = currentVal;
+      check.onchange = (e) => outlierSetFunc(row.idx, check.checked);
+      res[column.name] = check;
+    } else
+      res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx);
+  }
   return res;
 
 }
