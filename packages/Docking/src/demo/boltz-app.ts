@@ -7,20 +7,22 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 
 import * as yaml from 'js-yaml';
 
+import '../css/docking.css';
+
 export class Boltz1AppView {
-  private inputs: Array<{ name: string, value: DG.InputBase }> = [];
+  private inputs: Map<string, DG.InputBase> = new Map();
+  private entityCounters: Map<FUNC_PROPS_FIELD, number> = new Map();
   private divV: HTMLDivElement;
-  private submitButton!: HTMLButtonElement;
-  private addIcon!: HTMLButtonElement;
   private menu!: DG.Menu;
+  samplesInput!: DG.InputBase<number | null>;
 
   constructor() {
     this.divV = ui.divV([], 'ui-form');
-    this.divV.style.overflow = 'unset';
+    this.divV.classList.add('docking-app-wrapper');
 
     this.createHeader();
     this.createSamplesInput();
-    this.createSubmitButton();
+    this.createButtons();
   }
 
   private createHeader(): void {
@@ -37,166 +39,142 @@ export class Boltz1AppView {
   }
 
   private createSamplesInput(): void {
-    const samplesInput = ui.input.int('Number of samples', { value: 1 });
-    this.inputs.push({ name: 'Number of samples', value: samplesInput });
-    this.createAddButton();
-    this.divV.append(ui.divH([samplesInput.root, this.addIcon]));
+    this.samplesInput = ui.input.int('Results', { value: 1 });
+    this.samplesInput.root.classList.add('docking-samples-input');
+    this.inputs.set(this.samplesInput.caption, this.samplesInput);
+    this.divV.append(this.samplesInput.root);
   }
 
-  private createAddButton(): void {
+  private createAddButton(): HTMLElement {
     this.menu = DG.Menu.popup();
-    FUNC_PROPS_FIELDS.forEach((prop) => {
+    FUNC_PROPS_FIELDS.forEach(prop =>
       this.menu.item(prop, () => {
-        this.submitButton.remove();
-        const div = this.createInputSection(prop);
-        this.divV.append(div);
-        this.divV.append(this.submitButton);
-      });
-    });
+        const uniqueName = this.getUniqueEntityName(prop);
+        const div = this.createInputSection(prop, uniqueName);
+        this.divV.insertBefore(div, this.samplesInput.root);
+        this.divV.scrollTop = this.divV.scrollHeight;
+      })
+    );
 
-    this.addIcon = ui.button(ui.icons.add(() => this.menu.show()), () => {});
-    this.addIcon.style.margin = '0px';
+    const addButton = ui.button('Add', () => this.menu.show());
+    return addButton;
   }
 
-  private createSubmitButton(): void {
-    this.submitButton = ui.button('Submit', async () => {
+  private createButtons(): void {
+    const submitButton = ui.bigButton('Submit', async () => {
       grok.shell.info('Generated YAML is logged to the console');
-      this.inputs.forEach((input) => {
-        console.log(this.generateYaml());
-      });
+      console.log(this.generateYaml());
     });
-    this.submitButton.style.margin = '0px';
 
-    this.divV.append(this.submitButton);
+    const addButton = this.createAddButton();
+
+    Object.assign(submitButton.style, { margin: '0' });
+    this.createAddButton();
+    Object.assign(addButton.style, { margin: '0' });
+
+    this.divV.append(
+      ui.divH([addButton, submitButton], 'docking-buttons-container')
+    );
   }
 
-  private createInputSection(name: string): HTMLDivElement {
+  private getUniqueEntityName(type: FUNC_PROPS_FIELD): string {
+    const count = (this.entityCounters.get(type) || 0) + 1;
+    this.entityCounters.set(type, count);
+    return `${type}_${count}`;
+  }
+
+  private createInputSection(type: FUNC_PROPS_FIELD, uniqueName: string): HTMLDivElement {
     const div = ui.divV([]);
-    div.style.border = '1px solid #ccc';
-    div.style.padding = '10px';
-    div.style.marginBottom = '10px';
-    div.style.borderRadius = '8px';
+    div.classList.add('docking-input-section');
 
-    const titleDiv = ui.divH([]);
-    const title = ui.divText(name);
-    title.style.fontWeight = 'bold';
-    title.style.fontSize = '14px';
-    title.style.marginBottom = '10px';
-
-    titleDiv.append(title);
+    const titleDiv = ui.divH([ui.divText(type)], 'docking-title');
 
     const deleteButton = ui.button(ui.icons.delete(() => {
       div.remove();
-      this.inputs = this.inputs.filter((input) => input.name !== name);
+      this.inputs.delete(uniqueName);
     }), () => {});
+
     deleteButton.style.marginLeft = 'auto';
     titleDiv.append(deleteButton);
     div.append(titleDiv);
-
-    const sequenceInp = ui.input.string(name);
-    this.inputs.push({ name, value: sequenceInp });
-
-    if (name === 'Ligand') {
-      div.append(this.createLigandTabControl());
-    } else if (name === 'Pocket Restraint') {
-      div.append(...this.createPocketRestraintInputs());
-    } else {
-      div.append(this.createModifiableInput(sequenceInp, div));
+    
+    switch (type) {
+      case FUNC_PROPS_FIELD.LIGAND:
+        div.append(this.createLigandTabControl(uniqueName));
+        break;
+      case FUNC_PROPS_FIELD.POCKET_RESTRAINT:
+        div.append(this.createPocketRestraintInputs());
+        break;
+      default:
+        div.append(this.createModifiableInput(uniqueName, div));
     }
 
     return div;
   }
 
-  private createLigandTabControl(): HTMLDivElement {
-    const tabControl =  ui.tabControl({
+  private createLigandTabControl(uniqueName: string): HTMLDivElement {
+    const tabControl = ui.tabControl({
       'CCD': () => {
         const ccdInput = ui.input.string('CCD');
-        this.inputs.push({ name: 'Ligand CCD', value: ccdInput });
+        this.inputs.set(`${uniqueName} ${ccdInput.caption}`, ccdInput);
         return ui.panel([ui.divH([ccdInput.root, ui.link('', 'https://www.ebi.ac.uk/pdbe-srv/pdbechem/', 'Find your ligand CCD')])]);
       },
-      'SMILES': () => {
-        const smilesInput = ui.input.molecule('SMILES');
-        this.inputs.push({ name: 'Ligand SMILES', value: smilesInput });
-        return ui.panel([smilesInput.root]);
+      'Structure': () => {
+        const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.INPLACE);
+        const panel = ui.panel([sketcher.root]);
+        panel.style.cssText = 'overflow: hidden !important; flex-grow: initial !important;';
+        return panel;
       },
     }).root;
-    tabControl.style.height = '150px';
+    tabControl.classList.add('docking-tab-control');
     return tabControl;
   }
 
-  private createPocketRestraintInputs(): HTMLElement[] {
-    const binderChainChoice = ui.input.choice('Binder Chain', { items: ['A', 'B', 'C', 'D'] });
-    const pocketChainChoice = ui.input.choice('Pocket Chain', { items: ['A', 'B', 'C', 'D'] });
-    const pocketResiduesList = ui.input.string('Pocket Residues (comma separated)');
+  private createPocketRestraintInputs(): HTMLElement {
+    const binderChain = ui.input.choice('Binder Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
+    const pocketChain = ui.input.choice('Pocket Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
+    const pocketResidues = ui.input.list('Pocket Residues');
 
-    this.inputs.push({ name: 'Binder Chain', value: binderChainChoice });
-    this.inputs.push({ name: 'Pocket Chain', value: pocketChainChoice });
-    this.inputs.push({ name: 'Pocket Residues', value: pocketResiduesList });
+    pocketResidues.root.style.width = '150px';
 
-    return [binderChainChoice.root, pocketChainChoice.root, pocketResiduesList.root];
+    [binderChain, pocketChain].forEach(inp => inp.root.style.width = '50px');
+    this.inputs.set('Binder Chain', binderChain);
+    this.inputs.set('Pocket Chain', pocketChain);
+    this.inputs.set('Pocket Residues', pocketResidues);
+
+    return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], { style: { justifyContent: 'stretch' } });
+  }
+
+  private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {
+    const sequenceInp = ui.input.textArea('Sequence');
+    sequenceInp.root.classList.add('docking-sequence-input');
+    this.inputs.set(uniqueName, sequenceInp);
+
+    const addModificationsButton = ui.button('Add modifications', () => {
+      const position = ui.input.string('Position');
+      const ccd = ui.input.string('CCD');
+      ccd.root.append(ui.link('', 'https://www.ebi.ac.uk/pdbe-srv/pdbechem/', 'Find your ligand CCD'));
+
+      div.append(ui.divH([position.root, ccd.root]));
+      this.inputs.set(`${uniqueName} ${position.caption}`, position);
+      this.inputs.set(`${uniqueName} ${ccd.caption}`, ccd);
+    });
+
+    return ui.divV([sequenceInp.root, addModificationsButton]);
   }
 
   private generateYaml(): string {
-    const sequences = this.inputs
-      .map(input => {
-        const { name: inputName, value: { value } } = input;
-        let sequenceObj: any;
-  
-        if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(inputName as FUNC_PROPS_FIELD)) {
-          const modifications = this.inputs.filter(i => i.name.includes(value));
-          sequenceObj = {
-            ENTITY_TYPE: inputName,
-            id: value,
-            sequence: value,
-            position: modifications.find(m => m.name.includes('Position'))?.value.value,
-            ccd: modifications.find(m => m.name.includes('CCD'))?.value.value,
-          };
-        }
-        else if (inputName.includes(FUNC_PROPS_FIELD.LIGAND)) {
-          const ligandType = value === 'SMILES' ? 'smiles' : 'ccd';
-          sequenceObj = {
-            ENTITY_TYPE: inputName,
-            id: value,
-            [ligandType]: value,
-          };
-        }
-  
-        return sequenceObj;
-      })
-      .filter(Boolean);
-  
-    const yamlData = {
-      sequences,
-      constraints: [],
-    };
-  
-    const yamlString = yaml.dump(yamlData);
-    return yamlString;
-  }  
+    const sequences = Array.from(this.inputs.entries()).map(([name, input]) => {
+      const baseType = name.split('_')[0] as FUNC_PROPS_FIELD;
 
-  private createModifiableInput(sequenceInp: DG.InputBase, div: HTMLDivElement): HTMLDivElement {
-    const modificationsDiv = ui.divV([]);
-    modificationsDiv.style.display = 'none';
-    let modificationsAdded = false;
-
-    const addModificationsButton = ui.button(ui.icons.settings(() => {
-      if (!modificationsAdded) {
-        const position = ui.input.string('Position');
-        const ccd = ui.input.string('CCD');
-        ccd.root.append(ui.link('', 'https://www.ebi.ac.uk/pdbe-srv/pdbechem/', 'Find your ligand CCD'));
-        modificationsDiv.append(position.root, ccd.root);
-        this.inputs.push({ name: `${sequenceInp.stringValue} Position`, value: position });
-        this.inputs.push({ name: `${sequenceInp.stringValue} CCD`, value: ccd });
-        div.append(modificationsDiv);
-        modificationsAdded = true;
+      if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(baseType)) {
+        return { ENTITY_TYPE: baseType, id: name, sequence: input.value };
+      } else if (baseType === FUNC_PROPS_FIELD.LIGAND) {
+        return { ENTITY_TYPE: baseType, id: name, [input.value === 'SMILES' ? 'smiles' : 'ccd']: input.value };
       }
+    }).filter(Boolean);
 
-      modificationsDiv.style.display = modificationsDiv.style.display === 'none' ? 'block' : 'none';
-    }), () => {}, 'Add modifications');
-
-    addModificationsButton.style.margin = '0px';
-
-    return ui.divH([sequenceInp.root, addModificationsButton]);
+    return yaml.dump({ sequences, constraints: [] });
   }
 
   public getView(): DG.ViewBase {
