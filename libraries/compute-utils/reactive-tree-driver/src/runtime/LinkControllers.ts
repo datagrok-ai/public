@@ -50,6 +50,14 @@ export class ControllerBase<T> {
     return this.scopeInfo?.additionalParams?.[name];
   }
 
+  getMatchedInputs() {
+    return this.inputsSet;
+  }
+
+  getMatchedOutputs() {
+    return this.outputsSet;
+  }
+
   close() {
     this.isActive = false;
   }
