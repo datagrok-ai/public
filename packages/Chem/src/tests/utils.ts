@@ -4,6 +4,8 @@ import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
 
+export const CONTAINER_TIMEOUT = 900000;
+
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
@@ -95,13 +97,12 @@ export async function ensureContainerRunning(containerName: string) {
   if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
     console.log(`starting container ${container.name}`);
     grok.dapi.docker.dockerContainers.run(container.id, true);
-    console.log(`*********************** container ${container.name} started in ${performance.now() - time1} ms`);
   }
   await awaitCheck(() => {
     console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.status}`);
     console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.name}`);
     return container.status.startsWith('started') || container.status.startsWith('checking')
-  },`${containerName} hasn't been started after 5 minutes`, 300000, 5000);
+  },`${containerName} hasn't been started after 5 minutes`, CONTAINER_TIMEOUT, 5000);
 }
 
 export const malformedMolblock = `

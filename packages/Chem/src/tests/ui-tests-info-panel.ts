@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import { ensureContainerRunning } from './utils';
+import { CONTAINER_TIMEOUT, ensureContainerRunning } from './utils';
 
 const identifiers: {[key: string]: string} = {
   'Smiles': 'CN1CCC(Oc2ccc(C(F)(F)F)cc2)CC1',
@@ -257,7 +257,7 @@ category('UI info panel', () => {
     desc?.click(); await delay(100);
     (cp as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {timeout: 330000});
+  }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
   after(async () => {
     grok.shell.closeAll();

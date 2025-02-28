@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {category, test, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { ensureContainerRunning } from './utils';
+import { CONTAINER_TIMEOUT, ensureContainerRunning } from './utils';
 
 category('vector functions', () => {
 
@@ -25,7 +25,7 @@ category('vector functions', () => {
         await ensureContainerRunning('name = "chem-chem"');
         await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
-    }, {timeout: 330000});
+    }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
     test('getInchis', async () => {
         await testVectorFunc('Chem:getInchis(${smiles})', 'Inchi', [0, 9],

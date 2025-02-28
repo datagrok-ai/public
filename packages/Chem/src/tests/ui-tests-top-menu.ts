@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {isColumnPresent, returnDialog, setDialogInputValue} from './gui-utils';
-import {ensureContainerRunning, readDataframe} from './utils';
+import {CONTAINER_TIMEOUT, ensureContainerRunning, readDataframe} from './utils';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 category('UI top menu', () => {
@@ -147,7 +147,7 @@ category('UI top menu', () => {
       grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  }, {timeout: 360000});
+  }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -195,7 +195,7 @@ category('UI top menu', () => {
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
     grok.shell.o = ui.div();
-  }, {stressTest: true, timeout: 330000});
+  }, {stressTest: true, timeout: 30000 + CONTAINER_TIMEOUT});
 
   test('toxicity risks', async () => {
     await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
 import {_package, getContainer, applyModelChemprop, trainModelChemprop} from '../package';
-import {ensureContainerRunning, readDataframe} from './utils';
+import {CONTAINER_TIMEOUT, ensureContainerRunning, readDataframe} from './utils';
 import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
@@ -27,7 +27,7 @@ category('chemprop', () => {
     binBlob = await file?.async('uint8array')!;
         
     expect(file !== null, true);
-  }, {timeout: 360000});
+  }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
   test('applyModel', async () => {
     await ensureContainerRunning('chemprop');
@@ -36,7 +36,7 @@ category('chemprop', () => {
         
     expect(column.length, 30);
   });
-}, {timeout: 300000});
+}, {timeout: CONTAINER_TIMEOUT});
 
 function getParameterValues() {
   return {
