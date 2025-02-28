@@ -43,7 +43,6 @@ export class Boltz1AppView {
   private createSamplesInput(): void {
     this.samplesInput = ui.input.int('Results', { value: 1 });
     this.samplesInput.root.classList.add('docking-samples-input');
-    //this.inputs.set(this.samplesInput.caption, this.samplesInput);
     this.divV.append(this.samplesInput.root);
   }
 
@@ -62,6 +61,26 @@ export class Boltz1AppView {
     return addButton;
   }
 
+  private createExampleButton(): HTMLElement {
+    const exampleButton = ui.button('Example', () => this.fillProteinInputs());
+    return exampleButton;
+  }
+
+  private fillProteinInputs(): void {
+    this.setProteinInput(FUNC_PROPS_FIELD.PROTEIN + '_1', PROTEIN_1);
+    this.setProteinInput(FUNC_PROPS_FIELD.PROTEIN + '_2', PROTEIN_2);
+  }
+  
+  private setProteinInput(uniqueName: string, value: string): void {
+    let input = this.sequenceInputs.get(uniqueName);
+    if (!input) {
+      const div = this.createInputSection(FUNC_PROPS_FIELD.PROTEIN, uniqueName);
+      this.divV.insertBefore(div, this.samplesInput.root);
+      input = this.sequenceInputs.get(uniqueName);
+    }
+    input!.value = value;
+  }  
+
   private createButtons(): void {
     const submitButton = ui.bigButton('Submit', async () => {
       grok.shell.info('Generated YAML is logged to the console');
@@ -69,13 +88,14 @@ export class Boltz1AppView {
     });
 
     const addButton = this.createAddButton();
+    const exampleButton = this.createExampleButton();
 
     Object.assign(submitButton.style, { margin: '0' });
-    this.createAddButton();
     Object.assign(addButton.style, { margin: '0' });
+    Object.assign(exampleButton.style, { margin: '0' });
 
     this.divV.append(
-      ui.divH([addButton, submitButton], 'docking-buttons-container')
+      ui.divH([addButton, exampleButton, submitButton], 'docking-buttons-container')
     );
   }
 
@@ -173,8 +193,6 @@ export class Boltz1AppView {
       .filter(([name]) => !name.includes(" Position") && !name.includes(" CCD"))
       .map(([name, input]) => {
         const baseType = name.split('_')[0] as FUNC_PROPS_FIELD;
-
-        const modifications = 
   
         if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(baseType)) {
           return { 
@@ -234,3 +252,6 @@ export enum FUNC_PROPS_FIELD {
 }
 
 export const FUNC_PROPS_FIELDS = [...Object.values(FUNC_PROPS_FIELD)];
+
+const PROTEIN_1 = "HHHHHHMAEGEITTFTALTEKFNLPPGNYKKPKLLYCSNGGHFLRILPDGTVDGTRDRSDQHIQLQLSAESVGEVYIKSTETGQYLAMDTDGLLYGSQTPNEECLFLERLEENHYNTYISKKHAEKNWFVGLKKNGSCKRGPRTHYGQKAILFLPLPV";
+const PROTEIN_2 = "AVLFPVLLEVQRAVQLVVAPWLLQPAPGAPPPERLSLPAGRRLVVNLWATWCVLAALGLALGPPHRALVPGDPQAFRGLAHLVLGRHGNPLLLRVARAEGPRAVAAAFAGHPQLHLLPGSLALGQALELLLPWLQVLGPAPSCVLERGYLRRRQGAEGLPFRSWLREQGLAGLQARVARLLRALGPALAAELPPPVAAEALRAGLSAPVGGLLRAAARLLEAGQPPPGPEPLRAAALAVLAAIAAFLAAVAL"
