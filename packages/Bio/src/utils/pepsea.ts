@@ -7,7 +7,7 @@ import {Subject} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {checkForSingleSeqClusters} from './multiple-sequence-alignment';
@@ -108,51 +108,33 @@ async function requestAlignedObjects(
     body: JSON.stringify(body),
   };
   const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
-  let responseObj: any;
-  if ('fetchProxy' in grok.dapi.docker.dockerContainers) {
-    // new dockerContainers API
-    const t1: number = window.performance.now();
-    // @ts-ignore
-    const response: Response = await grok.dapi.docker.dockerContainers.fetchProxy(dockerfileId, path, params);
-    const t2: number = window.performance.now();
-    _package.logger.debug(`Bio: requestAlignedObjects() dockerContainers.fetchProxy(), ET: ${(t2 - t1)} ms`);
-    const responseContentType = response.headers.get('content-type');
-    const isJson: boolean = responseContentType === 'application/json';
-    if (!response.ok && isJson) {
-      const responseJson = await response.json();
-      const pepseaErrorMsg = responseJson['pepsea-error'];
-      if (!!pepseaErrorMsg)
-        throw new Error(`PepSeA error: ${pepseaErrorMsg}`);
-
-      const datagrokErrorMsg = responseJson['datagrok-error'];
-      if (!!datagrokErrorMsg)
-        throw new Error(`Datagrok error: ${datagrokErrorMsg}`);
-
-      throw new Error(response.statusText);
-    } else if (!response.ok && !isJson) {
-      const responseStr = await response.text();
-      throw new Error(`Error: ${responseStr}`);
-    } else if (!isJson) {
-      const responseStr = await response.text();
-      throw new Error(`Error: PepSeA expected JSON response, got '${responseStr}'.`);
-    }
-    responseObj = await response.json();
-  } else {
-    // @ts-ignore
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(dockerfileId, path, params)!;
-    const responseStr = await response.text();
-    if (!responseStr)
-      throw new Error('Empty response');
-    responseObj = JSON.parse(responseStr);
-
-    const pepseaErrorMsg = responseObj['pepsea-error'];
+  // new dockerContainers API
+  const t1: number = window.performance.now();
+  // @ts-ignore
+  const response: Response = await grok.dapi.docker.dockerContainers.fetchProxy(dockerfileId, path, params);
+  const t2: number = window.performance.now();
+  _package.logger.debug(`Bio: requestAlignedObjects() dockerContainers.fetchProxy(), ET: ${(t2 - t1)} ms`);
+  const responseContentType = response.headers.get('content-type');
+  const isJson: boolean = responseContentType === 'application/json';
+  if (!response.ok && isJson) {
+    const responseJson = await response.json();
+    const pepseaErrorMsg = responseJson['pepsea-error'];
     if (!!pepseaErrorMsg)
       throw new Error(`PepSeA error: ${pepseaErrorMsg}`);
 
-    const datagrokErrorMsg = responseObj['datagrok-error'];
+    const datagrokErrorMsg = responseJson['datagrok-error'];
     if (!!datagrokErrorMsg)
       throw new Error(`Datagrok error: ${datagrokErrorMsg}`);
+
+    throw new Error(response.statusText);
+  } else if (!response.ok && !isJson) {
+    const responseStr = await response.text();
+    throw new Error(`Error: ${responseStr}`);
+  } else if (!isJson) {
+    const responseStr = await response.text();
+    throw new Error(`Error: PepSeA expected JSON response, got '${responseStr}'.`);
   }
+  const responseObj = await response.json();
   // Check for pepsea stderr output
   if ('pepsea-stderr' in responseObj) {
     const pepseaStdErr: string = responseObj['pepsea-stderr'] as string;
