@@ -89,11 +89,19 @@ export async function ensureContainersRunning() {
 
 export async function ensureContainerRunning(containerName: string) {
   const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
-  if (!(container.status.startsWith('started') || container.status.startsWith('checking')))
-    await grok.dapi.docker.dockerContainers.run(container.id, true);
-
-  await awaitCheck(() => container.status.startsWith('started') || container.status.startsWith('checking'),
-    `${containerName} hasn't been started after 5 minutes`, 300000);
+  console.log(`*********************** ${container.name}`);
+  console.log(`*********************** ${container.status}`);
+  const time1 = performance.now();
+  if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
+    console.log(`starting container ${container.name}`);
+    grok.dapi.docker.dockerContainers.run(container.id, true);
+    console.log(`*********************** container ${container.name} started in ${performance.now() - time1} ms`);
+  }
+  await awaitCheck(() => {
+    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.status}`);
+    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~ ${container.name}`);
+    return container.status.startsWith('started') || container.status.startsWith('checking')
+  },`${containerName} hasn't been started after 5 minutes`, 300000, 5000);
 }
 
 export const malformedMolblock = `
