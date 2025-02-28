@@ -10,7 +10,9 @@ import * as yaml from 'js-yaml';
 import '../css/docking.css';
 
 export class Boltz1AppView {
-  private inputs: Map<string, DG.InputBase> = new Map();
+  private sequenceInputs: Map<string, DG.InputBase> = new Map();
+  private modificationInputs: Map<string, DG.InputBase[]> = new Map();
+  private pocketInputs: Map<string, DG.InputBase> = new Map();
   private entityCounters: Map<FUNC_PROPS_FIELD, number> = new Map();
   private divV: HTMLDivElement;
   private menu!: DG.Menu;
@@ -41,7 +43,7 @@ export class Boltz1AppView {
   private createSamplesInput(): void {
     this.samplesInput = ui.input.int('Results', { value: 1 });
     this.samplesInput.root.classList.add('docking-samples-input');
-    this.inputs.set(this.samplesInput.caption, this.samplesInput);
+    //this.inputs.set(this.samplesInput.caption, this.samplesInput);
     this.divV.append(this.samplesInput.root);
   }
 
@@ -91,7 +93,8 @@ export class Boltz1AppView {
 
     const deleteButton = ui.button(ui.icons.delete(() => {
       div.remove();
-      this.inputs.delete(uniqueName);
+      this.sequenceInputs.delete(uniqueName);
+      this.pocketInputs.delete(uniqueName);
     }), () => {});
 
     deleteButton.style.marginLeft = 'auto';
@@ -102,8 +105,8 @@ export class Boltz1AppView {
       case FUNC_PROPS_FIELD.LIGAND:
         div.append(this.createLigandTabControl(uniqueName));
         break;
-      case FUNC_PROPS_FIELD.POCKET_RESTRAINT:
-        div.append(this.createPocketRestraintInputs());
+      case FUNC_PROPS_FIELD.POCKET:
+        div.append(this.createPocketRestraintInputs(uniqueName));
         break;
       default:
         div.append(this.createModifiableInput(uniqueName, div));
@@ -116,7 +119,7 @@ export class Boltz1AppView {
     const tabControl = ui.tabControl({
       'CCD': () => {
         const ccdInput = ui.input.string('CCD');
-        this.inputs.set(`${uniqueName} ${ccdInput.caption}`, ccdInput);
+        this.sequenceInputs.set(`${uniqueName} ${ccdInput.caption}`, ccdInput);
         return ui.panel([ui.divH([ccdInput.root, ui.link('', 'https://www.ebi.ac.uk/pdbe-srv/pdbechem/', 'Find your ligand CCD')])]);
       },
       'Structure': () => {
@@ -130,7 +133,7 @@ export class Boltz1AppView {
     return tabControl;
   }
 
-  private createPocketRestraintInputs(): HTMLElement {
+  private createPocketRestraintInputs(uniqueName: string): HTMLElement {
     const binderChain = ui.input.choice('Binder Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
     const pocketChain = ui.input.choice('Pocket Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
     const pocketResidues = ui.input.list('Pocket Residues');
@@ -138,9 +141,9 @@ export class Boltz1AppView {
     pocketResidues.root.style.width = '150px';
 
     [binderChain, pocketChain].forEach(inp => inp.root.style.width = '50px');
-    this.inputs.set('Binder Chain', binderChain);
-    this.inputs.set('Pocket Chain', pocketChain);
-    this.inputs.set('Pocket Residues', pocketResidues);
+    this.pocketInputs.set(`${uniqueName} ${binderChain.caption}`, binderChain);
+    this.pocketInputs.set(`${uniqueName} ${pocketChain.caption}`, pocketChain);
+    this.pocketInputs.set(`${uniqueName} ${pocketResidues.caption}`, pocketResidues);
 
     return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], { style: { justifyContent: 'stretch' } });
   }
@@ -148,34 +151,74 @@ export class Boltz1AppView {
   private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {
     const sequenceInp = ui.input.textArea('Sequence');
     sequenceInp.root.classList.add('docking-sequence-input');
-    this.inputs.set(uniqueName, sequenceInp);
+    this.sequenceInputs.set(uniqueName, sequenceInp);
+
+    let modificationCounter = 0;
 
     const addModificationsButton = ui.button('Add modifications', () => {
+      ++modificationCounter;
       const position = ui.input.string('Position');
       const ccd = ui.input.string('CCD');
       ccd.root.append(ui.link('', 'https://www.ebi.ac.uk/pdbe-srv/pdbechem/', 'Find your ligand CCD'));
 
       div.append(ui.divH([position.root, ccd.root]));
-      this.inputs.set(`${uniqueName} ${position.caption}`, position);
-      this.inputs.set(`${uniqueName} ${ccd.caption}`, ccd);
+      this.modificationInputs.set(`${uniqueName} ${modificationCounter}`, [position, ccd]);
     });
 
     return ui.divV([sequenceInp.root, addModificationsButton]);
   }
 
   private generateYaml(): string {
-    const sequences = Array.from(this.inputs.entries()).map(([name, input]) => {
-      const baseType = name.split('_')[0] as FUNC_PROPS_FIELD;
+    const sequences = Array.from(this.sequenceInputs.entries())
+      .filter(([name]) => !name.includes(" Position") && !name.includes(" CCD"))
+      .map(([name, input]) => {
+        const baseType = name.split('_')[0] as FUNC_PROPS_FIELD;
 
-      if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(baseType)) {
-        return { ENTITY_TYPE: baseType, id: name, sequence: input.value };
-      } else if (baseType === FUNC_PROPS_FIELD.LIGAND) {
-        return { ENTITY_TYPE: baseType, id: name, [input.value === 'SMILES' ? 'smiles' : 'ccd']: input.value };
+        const modifications = 
+  
+        if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(baseType)) {
+          return { 
+            ENTITY_TYPE: baseType, 
+            id: name, 
+            sequence: input.value, 
+            modifications: []
+          };
+        } else if (baseType === FUNC_PROPS_FIELD.LIGAND) {
+          return { 
+            ENTITY_TYPE: baseType, 
+            id: name, 
+            [input.value === 'SMILES' ? 'smiles' : 'ccd']: input.value 
+          };
+        }
+      })
+      .filter(Boolean);
+
+    const constraints: any[] = [];
+
+    this.pocketInputs.forEach((input, key) => {
+      const uniqueName = key.split(' ')[0];
+        
+      const binderChain = this.pocketInputs.get(`${uniqueName} Binder Chain`)?.value;
+      const pocketChain = this.pocketInputs.get(`${uniqueName} Pocket Chain`)?.value;
+      const pocketResidues = this.pocketInputs.get(`${uniqueName} Pocket Residues`)?.value;
+    
+      const contacts = pocketResidues ? pocketResidues.map((resIdx: string) => {
+        return [pocketChain, resIdx];
+      }) : [];
+
+      if (binderChain || pocketChain || pocketResidues) {
+        constraints.push({
+          pocket: {
+            binder: binderChain,
+            contacts: contacts
+          }
+        });
       }
-    }).filter(Boolean);
-
-    return yaml.dump({ sequences, constraints: [] });
-  }
+    });
+    console.log(sequences);
+    console.log(constraints);
+    return yaml.dump({ sequences, constraints });
+  }    
 
   public getView(): DG.ViewBase {
     return DG.View.fromRoot(this.divV);
@@ -187,7 +230,7 @@ export enum FUNC_PROPS_FIELD {
   RNA = 'RNA',
   DNA = 'DNA',
   LIGAND = 'Ligand',
-  POCKET_RESTRAINT = 'Pocket Restraint',
+  POCKET = 'Pocket',
 }
 
 export const FUNC_PROPS_FIELDS = [...Object.values(FUNC_PROPS_FIELD)];
