@@ -254,7 +254,7 @@ export class FourPLRegressionFunction extends FitFunction<IFourPLRegressionFit> 
       }
     }
     const ec50 = x[nearestXIndex];
-    const slope = (y[y.length - 1] > y[0]) ? -10 : 10;
+    const slope = y[0] > y[y.length - 1]? -10 : 10;
     params.set([top, slope, ec50, bottom]);
     return params;
   }
