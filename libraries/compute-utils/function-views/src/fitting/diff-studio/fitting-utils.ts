@@ -1,5 +1,5 @@
 /* eslint-disable valid-jsdoc */
-import {IVP, IVP2WebWorker, solveIvp} from '@datagrok/diff-grok';
+import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from '@datagrok/diff-grok';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
 import {Extremum} from '../optimizer-misc';
@@ -114,6 +114,7 @@ export function getBatches(points: Float32Array[], batchesCount: number): Float3
 /** Perform Neldel-Mead optimization */
 export async function fit(task: NelderMeadInput, start: Float32Array): Promise<Extremum> {
   const ivp = task.ivp2ww;
+  const pipeline = task.pipeline;
   const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
   const ivpInputVals = new Float64Array(inputSize);
   const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
@@ -157,7 +158,8 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
     for (let i = 0; i < dim; ++i)
       ivpInputVals[inpIndex[i]] = x[i];
 
-    solution = solveIvp(ivp, ivpInputVals);
+    //solution = solveIvp(ivp, ivpInputVals);
+    solution = applyPipeline(pipeline, ivp, ivpInputVals);
 
     return metric(
       targetArgVals,

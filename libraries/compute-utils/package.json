@@ -9,7 +9,7 @@
   "description": "Datagrok compute utils",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.4.1",
-    "@datagrok/diff-grok": "^1.0.1",
+    "@datagrok/diff-grok": "^1.0.3",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
