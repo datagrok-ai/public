@@ -110,6 +110,9 @@ export const InputForm = Vue.defineComponent({
             // TODO: FormApi
             console.log(rangeMeta);
           }
+          const hideMeta = meta[param.property.name]?.['hidden'];
+          if (hideMeta)
+            input.root.style.display = 'none';
         });
     });
 
