@@ -1034,13 +1034,6 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * @deprecated The method will be removed soon. Use {@link fetchProxy}.
-   */
-  request(id: string, path: string, params: ResponseInit): Promise<string | null> {
-    return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
-  }
-
-  /**
    * Returns container's logs or throws Exception with the cause.
    * @param containerId - ID of the {@link DockerContainer} whose logs is to be obtained.
    * @param limit - maximum line count of logs.
