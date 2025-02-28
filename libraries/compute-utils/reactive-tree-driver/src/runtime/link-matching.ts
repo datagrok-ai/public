@@ -9,7 +9,7 @@ import {StateTreeNode} from './StateTreeNodes';
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
 export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | FuncCallActionConfiguration<LinkIOParsed[]>;
 
-type MatchedIO = {
+export type MatchedIO = {
   path: Readonly<NodePath>;
   ioName?: string;
 }
