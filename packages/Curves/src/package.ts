@@ -120,6 +120,14 @@ export async function curveFitDemo(): Promise<void> {
   await curveDemo();
 }
 
+//name: Assay Plates
+//description: Assasy plates with concentration, layout and readout data
+//meta.demoPath: Curves | Assay Plates
+export async function assayPlatesDemo(): Promise<void> {
+  const plateFiles = await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates');
+  grok.shell.addView(await getPlatesFolderPreview(plateFiles) as DG.ViewBase);
+} 
+
 //tags: init
 export function _initCurves(): void {
   DG.ObjectHandler.register(new FitGridCellHandler());
@@ -199,7 +207,10 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
 //input: list<file> files
 //output: widget res
 export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
-  return getPlatesFolderPreview(folder, files);
+  const nameLowerCase = folder.name?.toLowerCase();
+  if (!nameLowerCase?.includes('plate'))
+    return undefined;
+  return getPlatesFolderPreview(files);
 }
 
 //name: Plates

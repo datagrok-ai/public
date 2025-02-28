@@ -424,10 +424,7 @@ export class PlateWidget extends DG.Widget {
 }
 
 
-export async function getPlatesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
-  const nameLowerCase = folder.name?.toLowerCase();
-    if (!nameLowerCase?.includes('plate'))
-      return undefined;
+export async function getPlatesFolderPreview(files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
 
     const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
     let csvView: DG.Widget | undefined = undefined;
