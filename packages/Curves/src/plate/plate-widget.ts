@@ -32,7 +32,6 @@ const dimensions = new Map([
 ]);
 
 export class PlateWidget extends DG.Widget {
-
   _plateData: DG.DataFrame = DG.DataFrame.create();
   _colorColumn?: DG.Column;
   grid: DG.Grid = DG.Viewer.heatMap(this._plateData);
@@ -92,7 +91,7 @@ export class PlateWidget extends DG.Widget {
     const defaultOptions: AnalysisOptions = {
       roleName: 'layout', concentrationName: 'concentration', valueName: 'readout', normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true
     };
-    
+
     const aliases = {
       concentrationName: ['conc', 'dose', 'conc.', 'dilution', 'concentrations'],
       valueName: ['response', 'value', 'signal', 'raw data', 'raw signal', 'raw', 'response', 'values'],
@@ -193,7 +192,7 @@ export class PlateWidget extends DG.Widget {
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(curveMaxFuncParams).callSync({processed: false});
     DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(ic50FuncParams).callSync({processed: false});
     df.col('IC50')!.meta.format = 'scientific';
-      
+
     //categorize the curves
     df.columns.addNewCalculated('Criteria', 'if(${rSquared} > 0.8 && ${slope} > 0.25 && ${max} > 80 && ${max} < 120, "Qualified", "Fails Criteria")', 'string');
     curvesGrid.root.style.width = '100%';
@@ -394,11 +393,11 @@ export async function getPlatesFolderPreview(folder: DG.FileInfo, files: DG.File
   const nameLowerCase = folder.name?.toLowerCase();
     if (!nameLowerCase?.includes('plate'))
       return undefined;
-  
+
     const csvFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.csv'));
     let csvView: DG.Widget | undefined = undefined;
     if (csvFiles.length > 2) {
-      
+
       const plate = Plate.fromPlates(await Promise.all(csvFiles.map(async (f) => await Plate.fromCsvTableFile(f.fullPath, f.name.toLowerCase().substring(0, f.name.length - 4)))));
       csvView = PlateWidget.analysisView(plate, {submitAction: () => {grok.shell.info('Plate Submitted')}});
       plate.data.name = `${csvFiles.map((file) => file.name.slice(0, file.name.length - 4)).join('_')}.csv`;
@@ -406,23 +405,23 @@ export async function getPlatesFolderPreview(folder: DG.FileInfo, files: DG.File
         return csvView;
     }
     const multiView = new DG.MultiView({viewFactories: {}});
-  
+
     if (csvView) {
       multiView.addView('Plate 1', () => DG.View.fromRoot(csvView.root), true);
     }
-  
+
     const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
-  
+
     if (xlsxFiles.length == 0)
-      return csvView 
-  
+      return csvView;
+
     for (const xlsxFile of xlsxFiles) {
       try {
         const plate = await Plate.fromExcelFileInfo(xlsxFile);
         const pw = PlateWidget.analysisView(plate, {submitAction: () => {grok.shell.info('Plate Submitted')}});
         const v = DG.View.fromRoot(pw.root);
         v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);
-        multiView.addView(v.name, () => v, true);  
+        multiView.addView(v.name, () => v, true);
       } catch (e) {
         _package.logger.error(e);
       }

@@ -262,6 +262,38 @@ export function substituteZeroes(data: IFitChartData): void {
   }
 }
 
+export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: number, pointIdx: number, data?: IFitChartData) {
+  data ??= gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+    convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
+  p.outlier = !p.outlier;
+  // temporarily works only for JSON structure
+  if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
+    const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
+    gridCellValue.series![seriesIdx].points[pointIdx].outlier = p.outlier;
+    gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), false);
+    grok.events.fireCustomEvent('fit-cell-outlier-toggle', {
+      gridCell: gridCell,
+      series: gridCellValue.series![seriesIdx],
+      seriesIdx: seriesIdx,
+      pointIdx: pointIdx,
+    });
+    const g = gridCell.grid.canvas.getContext('2d')!;
+    gridCell.render({context: g, bounds: gridCell.bounds});
+  }
+  const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
+  if (columns) {
+    for (const column of columns) {
+      const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+      const stats = column.tags['.seriesAggregation'] !== null ?
+        getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
+        column.tags['.seriesNumber'] === seriesIdx ? calculateSeriesStats(data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell) : null;
+      if (stats === null)
+        continue;
+      column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
+    }
+  }
+}
+
 @grok.decorators.cellRenderer({
   name: 'Fit',
   cellType: 'fit',
@@ -318,34 +350,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
         if (this.hitTest(e, p, viewport)) {
-          p.outlier = !p.outlier;
-          
-          // temporarily works only for JSON structure
-          if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
-            const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
-            gridCellValue.series![i].points[j].outlier = p.outlier;
-            gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), false);
-            grok.events.fireCustomEvent('fit-cell-outlier-toggle', {
-              gridCell: gridCell,
-              series: gridCellValue.series![i],
-              seriesIdx: i,
-              pointIdx: j,
-            });
-            const g = gridCell.grid.canvas.getContext('2d')!;
-            gridCell.render({context: g, bounds: gridCell.bounds});
-          }
-          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
-          if (columns) {
-            for (const column of columns) {
-              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
-              const stats = column.tags['.seriesAggregation'] !== null ?
-                getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
-                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], i, chartLogOptions, gridCell) : null;
-              if (stats === null)
-                continue;
-              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
-            }
-          }
+          setOutlier(gridCell, p, i, j, data);
           return;
         }
       }
