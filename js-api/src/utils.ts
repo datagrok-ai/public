@@ -7,6 +7,7 @@ import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
 import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
+import wu from 'wu';
 
 declare let DG: any;
 declare let grok: any;
@@ -536,10 +537,15 @@ export function _toJson(x: any) {
   return x === null ? null : JSON.stringify(x);
 }
 
-/** Generates [count] increasing integer numbers, starting with 0. */
-export function* range(length: number): IterableIterator<number> {
+function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
     yield i;
+}
+
+/** Generates [count] increasing integer numbers, starting with 0. */
+export function range(length: number): wu.WuIterable<number> {
+
+  return wu(_range(length));
 }
 
 /** Returns an 'identity' array where the element in idx-th position is equals to idx. */
