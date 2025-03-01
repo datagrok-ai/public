@@ -1,7 +1,7 @@
 /* eslint-disable valid-jsdoc */
 import * as DG from 'datagrok-api/dg';
 
-import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
+import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames} from '@datagrok/diff-grok';
 import {LOSS} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
@@ -131,6 +131,7 @@ export async function getFittedParams(
           targetVals: targetVals,
           scaleVals: scaleVals,
           samplesCount: samplesCount,
+          outputNames: getOutputNames(ivp),
         },
         startPoints: pointBatches[idx],
       });

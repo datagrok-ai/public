@@ -33,4 +33,5 @@ export type NelderMeadInput = {
   targetVals: Array<Float64Array>,
   scaleVals: Float64Array,
   samplesCount: number,
+  outputNames: string[],
 };

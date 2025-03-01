@@ -118,7 +118,8 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
   const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
   const ivpInputVals = new Float64Array(inputSize);
   const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
-  const funcNames = task.nonParamNames.slice(ARG_INP_COUNT - 1);
+  const funcNames = task.outputNames;
+  //task.nonParamNames.slice(ARG_INP_COUNT - 1);
 
   let idx = 0;
   let cur = 0;
