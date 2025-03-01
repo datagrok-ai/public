@@ -104,7 +104,7 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
 export function getPlateFromSheet(p: ExcelPlatePosition): Plate {
   const df = DataFrame.create(p.rows);
   for (let col = p.startCol + 1; col <= p.startCol + p.cols; col++) {
-    const strings = wu(DG.range(p.rows)).map(i => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
+    const strings = DG.range(p.rows).map(i => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
     df.columns.add(DG.Column.fromStrings(`${col - p.startCol + 1}`, strings));
   }
   return Plate.fromTable(df, p.sheet.name);

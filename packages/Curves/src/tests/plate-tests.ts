@@ -75,47 +75,8 @@ category('plates', () => {
     const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
     plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
 
-    const c1series = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'});
-    //const c1fit = fitData(c1series, new LogLinearFunction());
-    //console.log(c1fit);
-
-    // now let's make a widget out of it
-    // const fitChartData: IFitChartData = {
-    //   seriesOptions: { fitFunction: 'log-linear', parameters: [...c1fit.parameters]},
-    //   series: [{points: wu(DG.range(c1series.x.length)).map(i => ({ x: c1series.x[i], y: c1series.y[i]})).toArray()}]
-    // }
-
-    // const chart = MultiCurveViewer.fromChartData(fitChartData);
-    // chart.curvesColumnNames = ['foo'];  // why is it needed?
-    // ui.dialog({title: 'Inspect fit'})
-    //   .add(chart.root)
-    //   .show();
-
-    // await DG.delay(10000);
+    plate.doseResponseSeries({concentration: 'concentration', value: 'readout'});
   });
-
-  // test('tt', async () => {
-  //   const concentration = Plate.fromCsvTable(concentrationCsv, 'concentration');
-  //   const layout = Plate.fromCsvTable(layoutCsv, 'role');
-  //   const readout = Plate.fromCsvTable(readoutCsv, 'readout');
-  //
-  //   const plate = Plate.fromPlates([concentration, layout, readout]);
-  //
-  //   const hcMean = jStat.mean(plate.values('readout', {match: {'layout': 'High Control'}}));
-  //   const hcMea1 = readout.values({'layout': 'High Control'}).mean();
-  //
-  //   plate.getSeries({ split: 'compoundId', filter: {'layout': (role) => role.startsWith('Compound')} })
-  //     .map((series) => series.fit(...))
-  //
-  //   plate.getDoseResponseCurves({
-  //     split: 'compoundId',
-  //     filter: {'layout': (role) => role.startsWith('Compound')},
-  //     fit: (series) => series.fit(...),
-  //     include: (fitResult: IFitResult) => {
-  //       ic50: fitResult.ic50
-  //     }
-  //   });  // DataFrame
-  // });
 
   test('render', async () => {
     const plate = getPlate();

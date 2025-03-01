@@ -2,11 +2,19 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
-import {assure, excelToNum, firstWhere, jstatStatistics, JSTATStatistics, numToExcel, parseExcelPosition} from "./utils";
+import {
+  assure,
+  firstWhere,
+  getMaxPosition,
+  jstatStatistics,
+  JSTATStatistics,
+  numToExcel,
+  parseExcelPosition, toStandardSize
+} from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
-import { FitSeries } from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-import { AnalysisOptions, PlateWidget } from './plate-widget';
+import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {AnalysisOptions, PlateWidget} from './plate-widget';
 
 
 /** Represents a well in the experimental plate */
@@ -75,6 +83,12 @@ export class Plate {
     this.cols = cols;
   }
 
+  /** Creates an empty plate of the standard size to fit the specified positions. t*/
+  static autoSize(positions: Iterable<[number, number]>): Plate {
+    const [rows, cols] = toStandardSize(getMaxPosition(positions));
+    return new Plate(rows, cols);
+  }
+
   _idx(row: number, col: number): number {
     return row * this.cols + col;
   }
@@ -109,7 +123,7 @@ export class Plate {
     const rows = table.rowCount;
     // remove row letters
     function containsRowLetters(c: DG.Column): boolean {
-      return c.type == DG.TYPE.STRING && wu(DG.range(rows)).every((i) => numToExcel(i) == c.get(i).toUpperCase());
+      return c.type == DG.TYPE.STRING && DG.range(rows).every((i) => numToExcel(i) == c.get(i).toUpperCase());
     }
 
     const dataColumns = wu(table.columns).filter((c) => !containsRowLetters(c)).toArray();
@@ -150,6 +164,14 @@ export class Plate {
 
   static fromCsv(csv: string, options?: IPlateCsvImportOptions): Plate {
     const df = DG.DataFrame.fromCsv(csv);
+
+    // we do not need first row with row letters
+    if (DG.range(df.rowCount).every((i) => df.col(0)!.get(i) == String.fromCharCode(65 + i)))
+      df.columns.remove(df.columns.byIndex(0).name);
+
+    // sometimes there is an unnecessary last column in the end
+    if (df.columns.length == 13 || df.columns.length == 25 || df.columns.length == 49 && df.col(df.columns.length - 1)?.isEmpty)
+      df.columns.remove(df.columns.length - 1);
 
     // TODO: tall format?
     // if (df.columns.contains('pos'))
@@ -345,11 +367,16 @@ export class Plate {
     for (const fieldCol of this.data.columns) {
       console.log();
       console.log(fieldCol.name);
-      console.log(wu(DG.range(this.cols + 1)).map((col) => col == 0 ? '' : `${col}`).toArray().join('\t'));
+      console.log(DG.range(this.cols + 1).map((col) => col == 0 ? '' : `${col}`).toArray().join('\t'));
       for (let row = 0; row < this.rows; row++) {
         console.log(numToExcel(row) + '\t' +
-          wu(DG.range(this.cols)).map((col) => fieldCol.getString(this._idx(row, col))).toArray().join(',\t'));
+          DG.range(this.cols).map((col) => fieldCol.getString(this._idx(row, col))).toArray().join(',\t'));
       }
     }
   }
 }
+
+
+
+
+

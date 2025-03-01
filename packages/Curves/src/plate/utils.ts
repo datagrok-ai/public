@@ -1,7 +1,10 @@
  import * as DG from 'datagrok-api/dg';
 import { PLATE_OUTLIER_WELL_NAME } from './plate';
+import wu from 'wu';
 //@ts-ignore
 import * as jStat from 'jstat';
+
+
 /** If the condition is false, throws message(). */
 export function assure(condition: boolean, errorMessage: string | (() => string)) {
   if (!condition)
@@ -66,6 +69,20 @@ export function parseExcelPosition(cell: string): [number, number] {
   return [ row, col ];
 }
 
+export function getMaxPosition(positions: Iterable<[number, number]>): [number, number] {
+  return wu(positions).reduce((max, [row, col]) => [Math.max(max[0], row), Math.max(max[1], col)], [0, 0]);
+}
+
+export function toStandardSize([rows, cols]: number[]): [number, number] {
+  if (rows <= 8 && cols <= 12)
+    return [8, 12];
+  if (rows <= 16 && cols <= 24)
+    return [16, 24];
+  if (rows <= 32 && cols <= 48)
+    return [32, 48];
+  throw `${rows}x${cols} exceeds maximum plate size 32x48`;
+}
+
 export function safeLog(num: number) {
   return num <= 0 ? 0 : Math.log10(num);
 }
@@ -87,7 +104,6 @@ export function mapFromRow(row: DG.Row, outlierSetFunc?: (row: number, checkBoxS
       res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx);
   }
   return res;
-
 }
 
 export function formatTableNumber(num: number): string | number {

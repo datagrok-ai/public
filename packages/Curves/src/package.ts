@@ -19,6 +19,7 @@ import {Plate} from './plate/plate';
 import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
 //@ts-ignore
 import * as jStat from 'jstat';
+import {PlateReader} from "./plate/plate-reader";
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -256,6 +257,50 @@ export function testPlatesCurvesNewAPI(): void {
   const params = series.fit.sigmoid();
   console.log(params);
 }
+
+
+//meta.fileViewer: txt
+//meta.fileViewerCheck: Curves:checkFileIsPlate
+//input: file file
+//output: view result
+export function previewPlate(file: DG.FileInfo): DG.View {
+  const view = DG.View.create();
+  file.readAsString().then((content) => {
+    const plate = PlateReader.read(content);
+    if (plate !== null) {
+      view.root.appendChild(PlateWidget.fromPlate(plate).root);
+    }
+  });
+  return view;
+}
+
+
+//input: string context
+//output: bool isPlate
+export function checkFileIsPlate(content: string): boolean {
+  return PlateReader.getReader(content) != null;
+}
+
+
+//meta.fileViewer: txt
+//meta.fileViewerCheck: Curves:checkFileIsPlateX
+//input: file file
+//output: view result
+export function previewPlateX(file: DG.FileInfo): DG.View {
+  const view = DG.View.create();
+  view.root.appendChild(ui.divText('foo'));
+  return view;
+}
+
+
+//input: blob context
+//output: bool isPlate
+export function checkFileIsPlateX(content: Uint8Array): boolean {
+  return content.length == 12192;
+}
+
+
+
 
 export {_FitChartCellRenderer};
 export {_MultiCurveViewer};

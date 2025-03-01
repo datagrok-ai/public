@@ -60,6 +60,10 @@ export class PlateWidget extends DG.Widget {
     this.grid.onCellRender.subscribe((args) => this.renderCell(args));
   }
 
+  static fromPlate(plate: Plate) {
+    return PlateWidget.detailedView(plate.data);
+  }
+
   static detailedView(table: DG.DataFrame): PlateWidget {
     const pw = new PlateWidget();
     pw.grid.root.style.width = '100%';
@@ -344,7 +348,7 @@ export class PlateWidget extends DG.Widget {
     this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
 
     if (this.rows == null || this.cols == null)
-      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (92, 384, 1526)';
+      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1526)';
 
     for (let i = 0; i < this._plateData.rowCount; i++)
       if (rowCol && colCol)
@@ -439,7 +443,7 @@ export async function getPlatesFolderPreview(files: DG.FileInfo[]): Promise<DG.W
     const multiView = new DG.MultiView({viewFactories: {}});
 
     if (csvView) {
-      multiView.addView('Plate 1', () => DG.View.fromRoot(csvView.root), true);
+      multiView.addView('Plate 1', () => DG.View.fromRoot(csvView!.root), true);
     }
 
     const xlsxFiles = files.filter((f) => f?.name?.toLowerCase()?.endsWith('.xlsx') && f?.name?.toLowerCase().includes('plate'));
