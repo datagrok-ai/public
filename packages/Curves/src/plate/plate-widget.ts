@@ -28,7 +28,7 @@ export type AnalysisOptions = {
 
 
 const colorScheme = [DG.Color.white, DG.Color.gray];
-const dimensions = new Map([
+export const dimensions = new Map([
   [96, {rows: 8, cols: 12}],
   [384, {rows: 16, cols: 24}],
   [1536, {rows: 32, cols: 48}],

@@ -1,4 +1,4 @@
- import * as DG from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 import { PLATE_OUTLIER_WELL_NAME } from './plate';
 import wu from 'wu';
 //@ts-ignore

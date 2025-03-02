@@ -282,26 +282,6 @@ export function checkFileIsPlate(content: string): boolean {
 }
 
 
-//meta.fileViewer: txt
-//meta.fileViewerCheck: Curves:checkFileIsPlateX
-//input: file file
-//output: view result
-export function previewPlateX(file: DG.FileInfo): DG.View {
-  const view = DG.View.create();
-  view.root.appendChild(ui.divText('foo'));
-  return view;
-}
-
-
-//input: blob context
-//output: bool isPlate
-export function checkFileIsPlateX(content: Uint8Array): boolean {
-  return content.length == 12192;
-}
-
-
-
-
 export {_FitChartCellRenderer};
 export {_MultiCurveViewer};
 export {_PlateGridCellRenderer};

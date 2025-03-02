@@ -146,6 +146,32 @@ export class Plate {
     return plate;
   }
 
+
+  /** Constructs a plate from a dataframe where each row corresponds to a well.
+   * Automatically detects position column (has to be in Excel notation). */
+  static fromTableByRow(table: DG.DataFrame, field?: string): Plate {
+    const posCol = wu(table.columns)
+      .find((c) => c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
+    if (!posCol)
+      throw 'Column with well positions not found';
+
+    const [rows, cols] = toStandardSize(getMaxPosition(wu(posCol.values()).map(parseExcelPosition)));
+    const plate = new Plate(rows, cols);
+
+    for (const col of table.columns) {
+      if (col.isEmpty || col == posCol)
+        continue;
+
+      const plateCol = plate.data.columns.addNew(col.name, col.type);
+      for (let r = 0; r < col.length; r++) {
+        const [wellRow, wellCol] = parseExcelPosition(posCol.get(r));
+        plateCol.set(wellRow * cols + wellCol, col.get(r), false);
+      }
+    }
+
+    return plate;
+  }
+
   static async fromCsvTableFile(csvPath: string, field: string, options?: DG.CsvImportOptions): Promise<Plate> {
     return this.fromTable(await grok.dapi.files.readCsv(csvPath, options), field);
   }
