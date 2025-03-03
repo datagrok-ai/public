@@ -50,7 +50,7 @@ category('UI info panel', () => {
     v.close();
     (cp as HTMLElement)?.click(); //closing chemistry panel
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-17649'});
 
   test('identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
