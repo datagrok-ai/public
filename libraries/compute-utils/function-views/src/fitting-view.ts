@@ -74,7 +74,7 @@ export type TargetDescription = {
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
 
-type DiffGrok = {
+export type DiffGrok = {
   ivp: IVP,
   ivpWW: IVP2WebWorker,
   pipelineCreator: PipelineCreator,
