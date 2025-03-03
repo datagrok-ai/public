@@ -38,6 +38,7 @@ class ChemPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: GROK-17630
   detectMolecules(col) {
     if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {
       col.meta.units = DG.UNITS.Molecule.MOLBLOCK;

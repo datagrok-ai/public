@@ -217,6 +217,7 @@ category('UI info panel', () => {
     await grok.data.detectSemanticTypes(smiles);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    await delay(1000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     const bp = await awaitPanel(pp, 'Biology');
     (bp as HTMLElement)?.click();
