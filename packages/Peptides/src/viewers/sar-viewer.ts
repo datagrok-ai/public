@@ -676,7 +676,7 @@ export class MonomerPosition extends SARViewer {
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
         ?.set(this, this.activityColumnName);
-      this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame, filter: (col) => col.isCategorical,
+      this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame, filter: (col: DG.Column) => col.isCategorical,
         onValueChanged: (value) => {
           const prop = this.getProperty(`${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`);
           if (prop && prop.get(this) != (value?.name ?? null))
