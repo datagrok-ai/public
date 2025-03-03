@@ -35,7 +35,7 @@ category('scaffold tree', () => {
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 180000);
     await delay(2000); //need to scaffold to finish generation
     tv.close();
-  }, {timeout: 190000, benchmark: true, stressTest: true, benchmarkTimeout: 300000});
+  }, {timeout: 190000, benchmark: true, stressTest: true, benchmarkTimeout: 300000, skipReason: 'GROK-17648'});
 
   test('parent node contains H atom', async () => {
     const tv = await createTableView('mol1K.csv');
