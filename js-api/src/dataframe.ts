@@ -263,6 +263,8 @@ export class DataFrame {
    * @param {string} nameOrIndex - Column name.
    * @returns {Column} */
   col(nameOrIndex: string | number): Column | null {
+    if (nameOrIndex == null)
+      return null;
     if (typeof nameOrIndex === 'string')
       return toJs(api.grok_DataFrame_ColumnByName(this.dart, nameOrIndex));
     else
