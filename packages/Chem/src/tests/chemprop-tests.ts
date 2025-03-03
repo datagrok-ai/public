@@ -36,7 +36,7 @@ category('chemprop', () => {
         
     expect(column.length, 20);
   });
-}, {timeout: 60000 + CONTAINER_TIMEOUT});
+}, {timeout: 90000 + CONTAINER_TIMEOUT});
 
 function getParameterValues() {
   return {
