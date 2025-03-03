@@ -265,6 +265,7 @@ export function testPlatesCurvesNewAPI(): void {
 //output: view result
 export function previewPlate(file: DG.FileInfo): DG.View {
   const view = DG.View.create();
+  view.name = file.name;
   file.readAsString().then((content) => {
     const plate = PlateReader.read(content);
     if (plate !== null) {
@@ -274,10 +275,81 @@ export function previewPlate(file: DG.FileInfo): DG.View {
   return view;
 }
 
+//name: importPlate
+//tags: file-handler
+//meta.ext: txt
+//meta.fileViewerCheck: Curves:checkFileIsPlate
+//input: string fileContent
+//output: list tables
+export async function importPlate(fileContent: string): Promise<DG.DataFrame[]> {
+  const plate = PlateReader.read(fileContent);
+  const view = DG.View.create();
+  if (plate !== null) {
+    view.root.appendChild(PlateWidget.fromPlate(plate).root);
+  }
+  view.name = 'Plate';
+  grok.shell.addView(view);
+  return [];
+}
 
-//input: string context
+//name: importPlateXlsx
+//tags: file-handler
+//meta.ext: xlsx
+//meta.fileViewerCheck: Curves:checkExcelIsPlate
+//input: blob fileContent
+//output: list tables
+export async function importPlateXlsx(fileContent: Uint8Array) {
+  const view = DG.View.create();
+  const plate = await parseExcelPlate(fileContent);
+  view.root.appendChild(PlateWidget.analysisView(plate).root);
+  view.name = 'Plate';
+  grok.shell.addView(view);
+  return [];
+}
+
+//name: viewPlateXlsx
+//meta.fileViewer: xlsx
+//meta.fileViewerCheck: Curves:checkExcelIsPlate
+//input: file file
+//output: view result
+export async function previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
+  const view = DG.View.create();
+  view.name = file.friendlyName;
+  const plate = await parseExcelPlate(await file.readAsBytes());
+  view.root.appendChild(PlateWidget.analysisView(plate).root);
+  return view;
+}
+
+//name checkExcelIsPlate
+//input: blob content
+//output: bool isPlate
+export async function checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
+  try {
+    if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
+      return false;
+    const plate = await parseExcelPlate(content);
+    return plate !== null;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function parseExcelPlate(content: string | Uint8Array, name?: string) {
+  if (typeof content === 'string') {
+    const blob = new Blob([content], {type: 'application/octet-binary'});
+    const buf = await blob.arrayBuffer();
+    const plate = await Plate.fromExcel(new Uint8Array(buf), name);
+    return plate;
+  } else
+    return await Plate.fromExcel(content, name);
+}
+
+//name: checkFileIsPlate
+//input: string content
 //output: bool isPlate
 export function checkFileIsPlate(content: string): boolean {
+  if (content.length > 1_000_000)
+      return false;
   return PlateReader.getReader(content) != null;
 }
 
