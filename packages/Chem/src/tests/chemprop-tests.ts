@@ -29,7 +29,7 @@ category('chemprop', () => {
     expect(file !== null, true);
   }, {timeout: 90000 + CONTAINER_TIMEOUT});
 
-  test('applyModel', async () => {
+  test('trainedModelApply', async () => {
     await ensureContainerRunning('chemprop');
     const smilesColumn = table.columns.byName('canonical_smiles');
     const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
