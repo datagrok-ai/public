@@ -86,6 +86,7 @@ def predict():
       "predict",
       yaml_file_path,
       "--accelerator", accelerator,
+      "--num_workers", "1",
       "--output_format", "pdb",
       "--override",
     ]
@@ -112,30 +113,55 @@ def predict():
           predictions_folder = os.path.join(root, "predictions", yaml_file_name)
           if os.path.exists(predictions_folder):
             pdb_files = [f for f in os.listdir(predictions_folder) if f.endswith(".pdb")]
-            confidence_file_name = f"confidence_{yaml_file_name}_model_0.json"
-            confidence_file_path = os.path.join(predictions_folder, confidence_file_name)
-            if pdb_files:
-              pdb_file_path = os.path.join(predictions_folder, pdb_files[0])
-              with open(pdb_file_path, 'r') as pdb_file:
-                pdb_content = pdb_file.read()
+            confidence_files = [f for f in os.listdir(predictions_folder) if f.startswith(f"confidence_{yaml_file_name}_model_") and f.endswith(".json")]
+                        
+            if pdb_files and confidence_files:
+              # Sorting pdb and confidence files based on their numeric suffixes to pair them correctly
+              pdb_files.sort()
+              confidence_files.sort(key=lambda f: int(f.split('_')[-1].split('.')[0]))
 
-              confidence_score = None
-              if os.path.exists(confidence_file_path):
-                with open(confidence_file_path, 'r') as confidence_file:
-                  confidence_data = json.load(confidence_file)
-                  confidence_score = confidence_data.get("confidence_score", None)
-              
-              remark_lines = [
-                f"REMARK   1 {key:<20} {value:.3f}\n"
-                for key, value in confidence_data.items()
-                if isinstance(value, (int, float))
-              ]
-              
-              pdb_content_str = "\n".join(remark_lines) + pdb_content
-              
-              df = pd.DataFrame([{"pdb": pdb_content_str, "confidence_score": confidence_score}])
+              all_pdb_content = []
+              all_confidence_scores = []
+
+              # Process each pdb file and its corresponding confidence file
+              for pdb_file, confidence_file in zip(pdb_files, confidence_files):
+                pdb_file_path = os.path.join(predictions_folder, pdb_file)
+                confidence_file_path = os.path.join(predictions_folder, confidence_file)
+                
+                # Read the PDB file content
+                with open(pdb_file_path, 'r') as pdb_file:
+                  pdb_content = pdb_file.read()
+                  
+                # Read the confidence data
+                confidence_data = {}
+                with open(confidence_file_path, 'r') as cf_file:
+                  confidence_data = json.load(cf_file)
+
+                confidence_score = confidence_data.get("confidence_score", None)
+
+                # Create remark lines from the confidence data
+                remark_lines = [
+                  f"REMARK   1 {key:<20} {value:.3f}\n"
+                  for key, value in confidence_data.items()
+                  if isinstance(value, (int, float))
+                ]
+                
+                # Combine remark lines with pdb content
+                pdb_content_str = "\n".join(remark_lines) + pdb_content
+
+                # Collect the results
+                all_pdb_content.append(pdb_content_str)
+                all_confidence_scores.append(confidence_score)
+
+              # Prepare the data for CSV export
+              df = pd.DataFrame({
+                "pdb": all_pdb_content,
+                "confidence_score": all_confidence_scores
+              })
+
               csv_string = df.to_csv(index=False)
 
+              # Clean up the results folder
               shutil.rmtree(f"boltz_results_{yaml_file_name}")
 
               return jsonify({
@@ -146,9 +172,13 @@ def predict():
     else:
       for line in stderr.splitlines():
         logging.info(line.strip())
+      # Clean up the results folder
+      shutil.rmtree(f"boltz_results_{yaml_file_name}")
       return jsonify({"success": False, "error": "Prediction failed."}), 500
   except Exception as e:
     logging.error(f"Unexpected error: {str(e)}")
+    # Clean up the results folder
+    shutil.rmtree(f"boltz_results_{yaml_file_name}")
     return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
