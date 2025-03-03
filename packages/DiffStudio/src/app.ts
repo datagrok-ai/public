@@ -11,6 +11,8 @@ import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 
+import * as DSL from '@datagrok/diff-grok';
+
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
@@ -31,10 +33,14 @@ import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, ha
   noModels} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
+import {getDiffGrok} from './pipeline';
 
 import '../css/app-styles.css';
 
 import {_package} from './package';
+
+// TODO: delete
+import {DEFAULT_EQUATIONS, DdtPipelineCreator, feeding} from './debug';
 
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
@@ -1420,14 +1426,48 @@ export class DiffStudio {
   /** Run fitting */
   private async runFitting(): Promise<void> {
     try {
-      const ivp = getIVP(this.editorView!.state.doc.toString());
+      const ivp = getIVP(DEFAULT_EQUATIONS);
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
+
+      enum FEED_FUNC {
+        VOL = 'Vol',
+        GLC = 'Glc',
+        GLN = 'Gln',
+      };
+
+      const FUNC_NAMES = ['X_T', 'X_V', 'Glc', 'Gln', 'Lac', 'Amm', 'MAb', 'ATP'];
+
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
-        ivp: ivp,
+        diffGrok: {
+          ivp: ivp,
+          ivpWW: DSL.getIvp2WebWorker(ivp),
+          pipelineCreator: new DdtPipelineCreator(
+            ivp,
+            feeding,
+            {
+              vol: FEED_FUNC.VOL,
+              glc: FEED_FUNC.GLC,
+              gln: FEED_FUNC.GLN,
+            },
+            FUNC_NAMES,
+            0.5,
+            0.000001,
+          ),
+        },
       });
+
+      /*const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+
+      await FittingView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        diffGrok: getDiffGrok(ivp),
+      });*/
     } catch (err) {
       this.processError(err);
     }
