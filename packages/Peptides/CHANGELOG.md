@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.21.4 (2025-03-03)
+
+Fix SAR errors on nulling targets
+
 ## 1.21.3 (2025-02-28)
 
 MCL: Sparse matrix pruning to avoid browser crash

@@ -427,7 +427,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
   private resetTargetCategoryValue(): void {
     const colName = this.targetColumnName;
-    const col = this.dataFrame.col(colName);
+    const col = colName ? this.dataFrame.col(colName) : null;
     this.targetCategoryInput.items = col?.categories ?? [];
     this.targetCategoryInput.value = null;
     if (!colName)
@@ -676,11 +676,11 @@ export class MonomerPosition extends SARViewer {
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
         ?.set(this, this.activityColumnName);
-      this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame,
+      this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame, filter: (col) => col.isCategorical,
         onValueChanged: (value) => {
           const prop = this.getProperty(`${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`);
-          if (prop && prop.get(this) !== value.name)
-            prop?.set(this, value.name ?? null);
+          if (prop && prop.get(this) != (value?.name ?? null))
+            prop?.set(this, value?.name ?? null);
         },
       });
     } else {
