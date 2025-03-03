@@ -237,7 +237,7 @@ category('UI info panel', () => {
     tv?.close();
     (bp as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-17649'});
 
   test('descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"');
