@@ -20,7 +20,7 @@ category('scaffold tree', () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('smiles.csv') :
       await readDataframe('tests/sar-small_test.csv');
     if (!DG.Test.isInBenchmark) //leave only first 5 rows for scaffold tree analysis
-      df.rows.removeAt(5, 195);
+      df.rows.removeAt(5, df.rowCount - 5);
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
