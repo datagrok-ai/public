@@ -66,9 +66,8 @@ sidebar_position: 1.2
 |------|-------|------------|----------------------|---|
 |ML Toolkit |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)|Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
 |Jupyter Notebooks |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)|Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
-<!--
-|?? |[TensorFlow.js]|Optional|Support for training and applying TensorFlow.js-based predictive models|Labs|
--->
+|MLFlow models |[MLFlow](https://github.com/datagrok-ai/public/tree/master/packages/MLFlow)| Fit-for-purpose| Integrates MLFlow models into the Datagrok platform|Beta|
+
 
 ## Develop
 
