@@ -117,6 +117,8 @@ jobs:
               runner='ubuntu-22.04'
               if [[ "${job_test_env}" == *"JKG"* ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
                 runner='ubuntu-latest-m'
               fi
