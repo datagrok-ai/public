@@ -348,7 +348,7 @@ export class PlateWidget extends DG.Widget {
     this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
 
     if (this.rows == null || this.cols == null)
-      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1526)';
+      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1536)';
 
     for (let i = 0; i < this._plateData.rowCount; i++)
       if (rowCol && colCol)
@@ -387,8 +387,10 @@ export class PlateWidget extends DG.Widget {
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
     // row header
-    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0)
-      g.fillText(String.fromCharCode(65 + gc.gridRow), x + w / 2, y + h / 2);
+    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0) {
+      const prefix = gc.gridRow > 25 ? 'A' : '';
+      g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
+    }
     else if (h > 0 && dataRow != null) {
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
