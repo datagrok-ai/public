@@ -19,3 +19,5 @@ on the property panel, and set the following:
 - username 
 - key
 - host
+
+![](img/jira-cred-setup.gif)
