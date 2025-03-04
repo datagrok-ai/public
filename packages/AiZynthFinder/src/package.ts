@@ -9,7 +9,7 @@ export const _package = new DG.Package();
 
 //top-menu: Chem | RetroSynthesis
 //name: RetroSynthesis
-//input: string molecule { semType: molecule }
+//input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
 export async function retroSynthesis(molecule: string): Promise<void> {
   const container = await grok.dapi.docker.dockerContainers.filter('aizynthfinder').first();
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
