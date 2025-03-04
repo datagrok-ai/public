@@ -8,6 +8,7 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import * as yaml from 'js-yaml';
 
 import '../css/docking.css';
+import { BoltzService } from '../utils/boltz-service';
 
 export class Boltz1AppView {
   private sequenceInputs: Map<string, DG.InputBase> = new Map();
@@ -81,9 +82,28 @@ export class Boltz1AppView {
     input!.value = value;
   }
 
+  private getExampleYaml(): string {
+    return yaml.dump({
+      sequences: [
+        { ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_1', sequence: PROTEIN_1, modifications: [] },
+        { ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_2', sequence: PROTEIN_2, modifications: [] }
+      ],
+      constraints: []
+    });
+  }
+
   private createButtons(): void {
     const submitButton = ui.bigButton('Submit', async () => {
-      console.log(this.generateYaml());
+      const generatedYaml = this.generateYaml();
+      const exampleYaml = this.getExampleYaml();
+      if (generatedYaml === exampleYaml) {
+        const cachedResults = DG.DataFrame.fromCsv(await _package.files.readAsText('demo_files/boltz_demo.csv'));
+        grok.shell.addTableView(cachedResults);
+        BoltzService.processBoltzResult(cachedResults);
+        await grok.data.detectSemanticTypes(cachedResults);
+      } else {
+        // Run Boltz
+      }
     });
 
     const addButton = this.createAddButton();
@@ -243,8 +263,6 @@ export class Boltz1AppView {
         });
       }
     });
-    console.log(sequences);
-    console.log(constraints);
     return yaml.dump({ sequences, constraints });
   }
 
