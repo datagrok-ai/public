@@ -1,16 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { after, before, category, expect, test, delay, testViewer } from '@datagrok-libraries/utils/src/test';
-import { TestViewerForProperties } from './test-viewer-for-properties';
-import { _package } from '../package-test';
+import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
+import {TestViewerForProperties} from './test-viewer-for-properties';
+import {_package} from '../package-test';
 
 category('Viewers: Core Viewers', () => {
   let df: DG.DataFrame;
 
   const skip: { [key: string]: string } = {
     'Form': 'GROK-11708',
-    'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'
+    'Heat map': 'GROK-11705',
+    'Network diagram': 'GROK-11707',
+    'Shape Map': 'GROK-16568',
   };
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&

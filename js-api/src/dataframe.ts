@@ -260,10 +260,15 @@ export class DataFrame {
   }
 
   /** Returns a {@link Column} with the specified name.
-   * @param {string} name - Column name.
+   * @param {string} nameOrIndex - Column name.
    * @returns {Column} */
-  col(name: string): Column | null {
-    return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
+  col(nameOrIndex: string | number): Column | null {
+    if (nameOrIndex == null)
+      return null;
+    if (typeof nameOrIndex === 'string')
+      return toJs(api.grok_DataFrame_ColumnByName(this.dart, nameOrIndex));
+    else
+      return this.columns.byIndex(nameOrIndex);
   }
 
   /** Returns a {@link Cell} with the specified row and column.
@@ -968,6 +973,11 @@ export class Column<T = any, TInit = T> {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
 
+  /** Returns whether all values in the columns are empty. */
+  get isEmpty(): boolean {
+    return this.stats.missingValueCount == this.length;
+  }
+
   /** Returns whether i-th value is missing.
    * @param {number} i - Row index.
    * @returns {boolean} */
@@ -1391,8 +1401,13 @@ export class ColumnList {
   }
 
   /** Removes column by name (case-insensitive).*/
-  remove(column: string, notify: boolean = true): ColumnList {
-    api.grok_ColumnList_Remove(this.dart, column, notify);
+  remove(column: string | number | Column, notify: boolean = true): ColumnList {
+    const columnName
+      = typeof column === 'string' ? column
+      : typeof column === 'number' ? this.byIndex(column).name
+      : column.name;
+
+    api.grok_ColumnList_Remove(this.dart, columnName, notify);
     return this;
   }
 

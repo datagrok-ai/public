@@ -694,5 +694,4 @@ category('ComputeUtils: Driver links matching', async () => {
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links optional matching');
   });
-
 });

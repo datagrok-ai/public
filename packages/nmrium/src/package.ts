@@ -17,25 +17,27 @@ async function addNmriumView(extension: string, bytes: string) {
 }
 
 //name: jdxFileHandler
-//input: list bytes
+//input: string bytes
 //output: list tables
 //tags: file-handler
+//meta.fileViewerCheck: Nmrium:checkNmriumJdx
 //meta.ext: jdx
 export async function jdxFileHandler(bytes: string) {
   return await addNmriumView('jdx', bytes);
 }
 
 //name: jdxFileHandler
-//input: list bytes
+//input: string bytes
 //output: list tables
 //tags: file-handler
+//meta.fileViewerCheck: Nmrium:checkNmriumJdx
 //meta.ext: dx
 export async function dxFileHandler(bytes: string) {
   return await addNmriumView('dx', bytes);
 }
 
 //name: nmriumFileHandler
-//input: list bytes
+//input: string bytes
 //output: list tables
 //tags: file-handler
 //meta.ext: nmrium
@@ -44,7 +46,7 @@ export async function nmriumFileHandler(bytes: string) {
 }
 
 //tags: fileViewer
-//meta.fileViewer: dx, jdx, nmrium
+//meta.fileViewer: nmrium
 //input: file file
 //output: view v
 export function previewNMRData(fileData: DG.FileInfo): DG.View {
@@ -56,3 +58,21 @@ export function previewNMRData(fileData: DG.FileInfo): DG.View {
 
   return v;
 }
+
+//tags: fileViewer
+//meta.fileViewer: dx, jdx
+//input: file file
+//meta.fileViewerCheck: Nmrium:checkNmriumJdx
+//output: view v
+export function previewNMRFromDX(fileData: DG.FileInfo): DG.View {
+  return previewNMRData(fileData);
+}
+
+//name: checkNmriumJdx
+//input: string content
+//output: bool result
+export function checkNmriumJdx(content: string) {
+  return content.includes('NMR SPECTRUM');
+}
+
+

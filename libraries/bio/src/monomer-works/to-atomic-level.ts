@@ -11,7 +11,8 @@ import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {IMonomerLib, IMonomerLibBase, Monomer} from '../types';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
-import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph, MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
+import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph,
+  MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {errInfo} from '../utils/err-info';
 import {alphabetToPolymerType} from './utils';
@@ -84,7 +85,9 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>, seqHelp
     const seqSS = sh.getSplitted(rowIdx);
     containsEmptyValues ||= seqSS.length === 0;
     result[rowIdx] = wu.count(0).take(seqSS.length).filter((posIdx) => !seqSS.isGap(posIdx))
-      .map((posIdx) => { return {position: posIdx, biotype: biotype, symbol: seqSS.getCanonical(posIdx)} as ISeqMonomer; }).toArray();
+      .map((posIdx) => {
+        return {position: posIdx, biotype: biotype, symbol: seqSS.getCanonical(posIdx)} as ISeqMonomer;
+      }).toArray();
   }
 
   if (containsEmptyValues)
@@ -129,9 +132,9 @@ export function getMonomersDictFromLib(
       const sym = seqMonomer.symbol;
       if (sym === '') continue; // Skip gap/empty monomer for MSA
       try {
-        if (polymerType === HELM_POLYMER_TYPE.RNA && sym[1] == '(' && sym[sym.length - 2] == ')') {
+        if (polymerType === HELM_POLYMER_TYPE.RNA && sym.split(/\(|\)/).filter((e) => !!e).length === 3) {
           // special case for nucleobases
-          const nsym = sym.substring(2, sym.length - 2);
+          const nsym = sym.split(/\(|\)/)[1];
           addMonomerToDict(monomersDict, nsym, formattedMonomerLib,
             rdKitModule, polymerType, pointerToBranchAngle);
           if (monomersDict[polymerType]?.[nsym])
@@ -223,6 +226,8 @@ function getMolGraph(
     setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol);
     // todo: restore after debugging
     removeHydrogen(monomerGraph);
+
+    removeRgroupKwargs(monomerGraph);
 
     return monomerGraph;
   }
@@ -634,6 +639,18 @@ function removeHydrogen(monomerGraph: MolGraph): void {
   }
 }
 
+/** After processing and removing r-groups, the KWARGS property might still contain RGROUPS lines.
+ * this needs to be removed
+ * @param {MolGraph} monomerGraph - monomer graph*/
+function removeRgroupKwargs(monomerGraph: MolGraph): void {
+  const molv3kRGroupKwargLine = ' RGROUPS=(1 1)';
+  for (let i = 0; i < (monomerGraph.atoms.kwargs?.length ?? 0); i++) {
+    const kwarg = monomerGraph.atoms.kwargs[i];
+    if (kwarg && kwarg.includes(molv3kRGroupKwargLine))
+      monomerGraph.atoms.kwargs[i] = kwarg.replace(molv3kRGroupKwargLine, ''); // remove the line
+  }
+}
+
 /** Remove node 'removedNode' and the associated bonds. Notice, numeration of
  * nodes in molfiles starts from 1, not 0
  * @param {MolGraph} monomerGraph - monomer graph
@@ -754,9 +771,11 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
 }
 
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
-  const centeredNode = monomer.meta.terminalNodes[0] - 1; // Phosphorus
+  //need to rotate phosphate so that O-P-O is on OX axis, this is not always possible, but we can always
+  // make sure both O's are on the OX axis
+
+  const centeredNode = monomer.meta.rNodes[1] - 1; // Oxigen 1
   const rotatedNode = monomer.meta.rNodes[0] - 1; // Oxygen
-  // const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
@@ -766,11 +785,14 @@ function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
   // angle is measured between OY and the rotated node
   const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
 
-  // rotate the centered graph so that P-O is on OX
+  // rotate the centered graph so that O-P-O is on OX
   rotateCenteredGraph(monomer.atoms, Math.PI / 2 - angle);
 }
 
 function adjustSugarMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberWrapper): void {
+  // eslint-disable-next-line max-len
+  // sugars connect with R1 to previous nucleotide phosphate, R3 to the nucleobase and R2 to the next nucleotide phosphate
+  // need to adjust the graph so that R1 is looking left, R2 is looking right and R3 is looking up
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
@@ -778,15 +800,21 @@ function adjustSugarMonomerGraph(monomer: MolGraph, pointerToBranchAngle: Number
   const rotatedNode = monomer.meta.rNodes[1] - 1;
 
   shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
+  // check if the sugar needs to be flipped around (mirrored)
+  // orient sugar with R3 pointing up
+  const r3Angle = findAngleWithOY(x[monomer.meta.rNodes[2] - 1], y[monomer.meta.rNodes[2] - 1]);
+  rotateCenteredGraph(monomer.atoms, -r3Angle);
+  // console.log(x[monomer.meta.rNodes[0] - 1], x[monomer.meta.rNodes[1] - 1]);
+  // if r1 is to the right of r2, flip the sugar around OY
+  if (x[monomer.meta.rNodes[0] - 1] > x[monomer.meta.rNodes[1] - 1])
+    flipMonomerAroundOY(monomer);
 
   // angle is measured between OX and the rotated node
   const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
-
   // rotate the centered graph so that the rotated node in on OX
   rotateCenteredGraph(monomer.atoms, 3 * Math.PI / 2 - angle);
 
   pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
-
   centeredNode = monomer.meta.terminalNodes[0] - 1;
   shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
 }
@@ -944,7 +972,7 @@ function getAngleBetweenSugarBranchAndOY(molGraph: MolGraph): number {
   const xShift = x[rNode] - x[terminalNode];
   const yShift = y[rNode] - y[terminalNode];
 
-  return Math.atan(yShift / xShift) + Math.PI / 2;
+  return Math.atan2(xShift, yShift); // notice the fliped order of arguments
 }
 
 /** Flips double-bonded 'O' in carbonyl group with 'OH' in order for the monomers

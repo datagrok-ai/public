@@ -7,7 +7,17 @@ import {
   LogOptions,
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {
+  statisticsProperties,
+  fitSeriesProperties,
+  fitChartDataProperties,
+  IFitChartData,
+  IFitSeries,
+  IFitChartOptions,
+  IFitSeriesOptions,
+  FitStatistics,
+  FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID,
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   getOrCreateParsedChartData,
   getColumnChartOptions,
@@ -63,6 +73,8 @@ export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, char
 
   const seriesStatistics = getSeriesStatistics(series, fitFunction,
     getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, gridCell), chartLogOptions);
+  if ([FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID].includes(fitFunction.name) && chartLogOptions.logX && seriesStatistics.interceptX !== undefined && seriesStatistics.interceptX < 0)
+    seriesStatistics.interceptX = Math.pow(10, seriesStatistics.interceptX);
   return seriesStatistics;
 }
 
@@ -186,7 +198,7 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
       gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
       columns = [gridCell.cell.column];
     }
-    
+
     for (let i = 0; i < columns.length; i++) {
       if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
         const columnChartOptions = getColumnChartOptions(columns[i]);
@@ -235,7 +247,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   isApplicable(x: any): boolean {
     return x instanceof DG.GridCell && x.cellType === FitConstants.FIT_CELL_TYPE;
   }
-  
+
   // TODO: add aspect ratio for the cell
   // TODO: add legend
   // TODO: add the table for the values on the cell or don't render it at all
@@ -255,7 +267,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
-    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) => 
+    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
     const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
@@ -326,7 +338,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         for (let i = 0; i < chartData.series!.length; i++) {
           const series = chartData.series![i];
           const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, gridCell);
-  
+
           const color = getSeriesColor(series, i, ColorType.FIT_LINE);
           const seriesName = series.name ?? 'series ' + i;
           host.appendChild(ui.panel([

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
@@ -269,10 +270,16 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
 export function detectHelmAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
   // helm can contain DNA/RNA and other monomers. need to check that
   const mons = Object.keys(freq);
-  // heuristic
-  const hasBranching = mons.filter((m) => m[1] === '(' && m[m.length - 2] === ')').length > mons.length * 0.8;
+  const helmNucleotideFullRe = /\(|\)/;
+  // heuristic for detecting dna/rna
+  const hasBranching = mons.filter((m) => m.split(helmNucleotideFullRe).filter((p) => !!p).length === 3).length > mons.length * 0.8;
   const correctedFreqs = hasBranching ? Object.entries(freq)
-    .reduce((acc, [m, f]) => { acc[m.substring(2, m.length - 2)] = f; return acc; },
+    .reduce((acc, [m, f]) => {
+      const split = m.split(helmNucleotideFullRe);
+      const actualMonomer = split[1]; // the inside part is the actual monomer (for example r(A)p)
+      if (actualMonomer)
+        acc[actualMonomer] = f; return acc;
+    },
       {} as Record<string, number>) : freq;
   return detectAlphabet(correctedFreqs, candidates, gapSymbol);
 }

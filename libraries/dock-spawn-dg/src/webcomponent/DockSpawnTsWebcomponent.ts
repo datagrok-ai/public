@@ -49,12 +49,12 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     await this.dockManager.loadState(serializedState);
     oldPanels.forEach((panel) => panel.elementContentContainer.remove());
     this.dockManager.element.firstChild.remove();
-    
+
     this.observer.observe(this, {childList: true});
-    
+
     setTimeout(() => {
       this.dockManager.invalidate();
-    }, 50)    
+    }, 50);
   }
 
   private initDockspawn() {
@@ -138,11 +138,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     const hideCloseButton = element.hasAttribute('dock-spawn-hide-close-button');
     const title = element.getAttribute('dock-spawn-title');
     const panelIcon = element.getAttribute('dock-spawn-panel-icon');
-    const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton, panelIcon);
-    const customZindex = element.getAttribute('dock-spawn-z-index');
-    if (customZindex && slot.parentElement) {
-      slot.parentElement.style.zIndex = customZindex;
-    }
+    const zIndex = element.getAttribute('dock-spawn-z-index');
+    const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton, panelIcon, zIndex);
     element.slot = slotName;
     this.slotElementMap.set(slot, (<HTMLElement>element));
     this.elementContainerMap.set(element, container);

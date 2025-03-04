@@ -10,7 +10,7 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
-import { _demoBoltzDocking, _demoBoltzFolding, _demoDocking } from './demo/demo';
+import { _demoFolding, _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 import { BoltzService } from './utils/boltz-service';
@@ -222,18 +222,11 @@ export async function demoDocking(): Promise<void> {
   await _demoDocking();
 }
 
-//name: Demo Boltz Folding
-//description: Demonstrates Boltz-1 for biomolecular folding predictions
-//meta.demoPath: Bioinformatics | Boltz Folding
-export async function demoBoltzFolding(): Promise<void> {
-  await _demoBoltzFolding();
-}
-
-//name: Demo Boltz Docking
-//description: Demonstrates Boltz-1 for biomolecular docking predictions
-//meta.demoPath: Bioinformatics | Boltz Docking
-export async function demoBoltzDocking(): Promise<void> {
-  await _demoBoltzDocking();
+//name: Demo Folding
+//description: Demonstrates ESMFold and Boltz-1 for biomolecular folding predictions
+//meta.demoPath: Bioinformatics | Folding
+export async function demoFolding(): Promise<void> {
+  await _demoFolding();
 }
 
 //name: Biology | AutoDock
@@ -315,24 +308,24 @@ export async function getBoltzConfigFolders(): Promise<string[]> {
 //input: string config
 //input: string msa
 //output: string s
-export async function runBoltz(config: string, msa: string) {
+export async function runBoltz(config: string, msa: string): Promise<string> {
   return await BoltzService.runBoltz(config, msa);
 }
 
 //top-menu: Bio | Folding | Boltz-1...
 //name: Folding
-//input: dataframe df 
+//input: dataframe table
 //input: column sequences {semType: Macromolecule}
 //output: dataframe result
-export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
-  return await BoltzService.folding(df, sequences);
+export async function folding(table: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
+  return await BoltzService.folding(table, sequences);
 }
 
 //top-menu: Chem | Docking | Boltz-1...
 //name: Docking
-//input: dataframe df
-//input: column molecules {semType: Molecule}
-//input: string config {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
+//input: dataframe table
+//input: column ligands {semType: Molecule}
+//input: string configuration {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
 //output: dataframe result
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
   return await BoltzService.docking(df, molecules, config);

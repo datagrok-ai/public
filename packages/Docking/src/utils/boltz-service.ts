@@ -32,7 +32,7 @@ export class BoltzService {
       body: JSON.stringify(body)
     };
   
-    const response = await grok.dapi.docker.dockerContainers.request(boltzContainer.id, '/predict', params);
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(boltzContainer.id, '/predict', params);
       
     if (!response && !boltzContainer.status.startsWith('started') && !boltzContainer.status.startsWith('checking')) {
       this.throwError('Container failed to start.');
@@ -40,7 +40,7 @@ export class BoltzService {
   
     let jsonResponse: BoltzResponse;
     try {
-      jsonResponse = JSON.parse(response!);
+      jsonResponse = await response.json();
     } catch (err) {
       this.throwError('Error parsing response from Boltz container.');
     }
@@ -90,9 +90,10 @@ export class BoltzService {
       resultDf.append(result, true);
     }
   
-    await this.processBoltzResult(resultDf);
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
+    await this.processBoltzResult(df);
+    await grok.data.detectSemanticTypes(df);
   
     return df;
   }  
@@ -134,9 +135,10 @@ export class BoltzService {
       sequences.pop();
     }
 
-    await this.processBoltzResult(resultDf);
     df.columns.add(resultDf.columns.byName('pdb'));
     df.columns.add(resultDf.columns.byName('confidence_score'));
+    await this.processBoltzResult(df);
+    await grok.data.detectSemanticTypes(df);
   
     return df;
   }

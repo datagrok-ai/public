@@ -19,6 +19,45 @@ export class SparseMatrixService {
       this._workerCount = Math.max(navigator.hardwareConcurrency - 2, 1);
     }
 
+    static pruneSparseMatrix(orig: SparseMatrixResult, maxNum = 1_000_000): SparseMatrixResult {
+      // bin values
+      const mult = 200;
+      const binRanges = new Uint32Array(mult);
+      const len = orig.distance.length;
+      const distances = orig.distance;
+      for (let i = 0; i < len; i++) {
+        const r = Math.floor(distances[i] * mult);
+        binRanges[r]++;
+      }
+
+      // get the max distance
+      let acum = 0;
+      let maxIndex = 0
+      for (let i = 0; i < mult; i++) {
+        acum += binRanges[i];
+        maxIndex = i;
+        if (acum >= maxNum)
+          break;
+      }
+      
+      const resIs = new Uint32Array(acum);
+      const resJs = new Uint32Array(acum);
+      const resDs = new Float32Array(acum);
+      const is = orig.i;
+      const js = orig.j;
+      let ind = 0;
+      const maxDistance = (maxIndex + 1) / mult;
+      for (let i = 0; i < len; i++) {
+        if (distances[i] < maxDistance) {
+          resIs[ind] = is[i];
+          resJs[ind] = js[i];
+          resDs[ind] = distances[i];
+          ind ++;
+        }
+      }
+      return {i: resIs, j: resJs, distance: resDs};
+    }
+
     public async calcMultiColumn(values: Array<any[]>, fnNames: KnownMetrics[],
       threshold: number, opts: {[_: string]: any}[] = [{}], weights: number[] = [1],
       aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.EUCLIDEAN

@@ -18,8 +18,9 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -27,6 +28,7 @@ import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useLayoutDb} from '../../composables/use-layout-db';
+import {take} from 'rxjs/operators';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -91,10 +93,9 @@ const tabToProperties = (func: DG.Func) => {
   return map;
 };
 
-const LAYOUT_DB_NAME = 'ComputeDB';
 const STORE_NAME = 'RFV2Layouts';
 
-interface ComputeSchema extends DBSchema {
+interface RFVSchema extends DBSchema {
   [STORE_NAME]: {
     key: string;
     value: PanelsState;
@@ -180,7 +181,7 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
-    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
+    const {layoutDatabase} = useLayoutDb<RFVSchema>();
 
     const currentCall = Vue.computed(() => props.funcCall);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -253,22 +254,22 @@ export const RichFunctionView = Vue.defineComponent({
       return item ?? null;
     };
 
-    const saveDefaultState = (call: DG.FuncCall = currentCall.value) => {
+    const saveDefaultState = async (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
     };
 
-    const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
+    const savePersonalState = async (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
     };
 
     const removeSavedPersonalState = async () => {
-      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
+      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
 
       await loadDefaultLayout();
     };
@@ -334,13 +335,13 @@ export const RichFunctionView = Vue.defineComponent({
         helpText.value = loadedHelp ?? null;
       });
 
-      if (oldCall) savePersonalState(oldCall);
+      if (oldCall) await savePersonalState(oldCall);
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
     const triggerSaveDefault = Vue.ref(false);
     Vue.watch(triggerSaveDefault, async () => {
-      saveDefaultState();
+      await saveDefaultState();
       await loadPersonalLayout();
     }, {flush: 'post'});
 
@@ -396,6 +397,62 @@ export const RichFunctionView = Vue.defineComponent({
       emit('formValidationChanged', ev);
     };
 
+    const getDf = (name: string) => {
+      const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
+      return val ? Vue.markRaw(val) : val;
+    };
+
+    const getRanges = (specificRangeName: string) => {
+      const ranges: Record<string, RangeDescription> = {};
+      const currentMeta = callMeta.value;
+      for (const inputParam of currentCall.value.inputParams.values()) {
+        const meta$ = currentMeta?.[inputParam.name];
+        const range: RangeDescription  = {...(meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {})};
+        if (range.default == null)
+          range.default = inputParam.value;
+        ranges[inputParam.name] = range ?? {};
+      }
+      return ranges;
+    }
+
+    const getTargets = () => {
+      const targets: Record<string, TargetDescription> = {};
+      const currentMeta = callMeta.value;
+      for (const outputParam of currentCall.value.outputParams.values()) {
+        const meta$ = currentMeta?.[outputParam.name];
+        const target: RangeDescription  = {...(meta$?.value?.['targetFitting'] ?? {})};
+        if (target.default == null)
+          target.default = outputParam.value;
+        targets[outputParam.name] = target ?? {};
+      }
+      return targets;
+    }
+
+    const runSA = () => {
+      const ranges = getRanges('rangeSA');
+      SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
+    }
+
+    const isLocked = Vue.ref(false);
+
+    const runFitting = async () => {
+      if (isLocked.value)
+        return;
+      isLocked.value = true;
+      try {
+        const currentView = grok.shell.v;
+        const ranges = getRanges('rangeFitting');
+        const targets = getTargets();
+        const view = await FittingView.fromEmpty(currentFunc.value, {ranges, targets, acceptMode: true});
+        const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
+        grok.shell.v = currentView;
+        if (call)
+          emit('update:funcCall', call);
+      } finally {
+        isLocked.value = false;
+      }
+    }
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -424,13 +481,8 @@ export const RichFunctionView = Vue.defineComponent({
         return scalarCardCount < 3 ? 'right': 'down';
       };
 
-      const getDf = (name: string) => {
-        const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
-        return val ? Vue.markRaw(val) : val;
-      };
-
       return (
-        <div class='w-full h-full flex'>
+        Vue.withDirectives(<div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels' view={currentView.value}>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -493,12 +545,12 @@ export const RichFunctionView = Vue.defineComponent({
             />}
             { isSAenabled.value && <IconFA
               name='analytics'
-              onClick={() => SensitivityAnalysisView.fromEmpty(currentFunc.value)}
+              onClick={runSA}
               tooltip='Run sensitivity analysis'
             />}
             { isFittingEnabled.value && <IconFA
               name='chart-line'
-              onClick={() => FittingView.fromEmpty(currentFunc.value)}
+              onClick={runFitting}
               tooltip='Fit inputs'
             />}
             { hasContextHelp.value && <IconFA
@@ -560,7 +612,7 @@ export const RichFunctionView = Vue.defineComponent({
                     isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
-                <div class='flex sticky bottom-0 justify-end'>
+                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   {
                     buttonActions.value?.map((action) => Vue.withDirectives(
                       <Button onClick={() => emit('actionRequested', action.uuid)}>
@@ -594,7 +646,7 @@ export const RichFunctionView = Vue.defineComponent({
                 .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
                 tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.has(tabLabel)}))
                 .map(({tabLabel, tabContent, isInput}) => {
-                  if (tabContent.type === 'dataframe') {
+                  if (tabContent?.type === 'dataframe') {
                     const options = tabContent.config;
                     const dfProp = tabContent.dfProp;
                     return <div
@@ -614,7 +666,7 @@ export const RichFunctionView = Vue.defineComponent({
                     </div>;
                   }
 
-                  if (tabContent.type === 'scalars') {
+                  if (tabContent?.type === 'scalars') {
                     const categoryProps = tabContent.scalarProps;
 
                     const panel = <ScalarsPanel
@@ -647,7 +699,7 @@ export const RichFunctionView = Vue.defineComponent({
               /> : null
             }
           </DockManager>
-        </div>
+        </div>, [[ifOverlapping, isLocked.value]])
       );
     };
   },

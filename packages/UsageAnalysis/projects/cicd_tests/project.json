@@ -16,7 +16,7 @@
       },
       {
         "path": "Stress_Tests.csv",
-      "creationScript": "Result = UsageAnalysis:StressTestsDashboard(5,false,false)",
+        "creationScript": "Result = UsageAnalysis:StressTestsDashboard(3)",
         "id": "48498f80-c210-11ef-9cb9-7bfcfe94b295"
       }, 
       {

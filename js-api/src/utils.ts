@@ -7,6 +7,7 @@ import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
 import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
+import wu from 'wu';
 
 declare let DG: any;
 declare let grok: any;
@@ -307,6 +308,12 @@ export class Utils {
       csv = resultDF.toCsv()       
     }
 
+    if ((<any>window).DG.Test.isInDebug)
+    {
+      console.log('on browser closing debug point');
+      debugger
+    }
+
     return {
       failed: failed,
       verbosePassed: verbosePassed,
@@ -530,9 +537,15 @@ export function _toJson(x: any) {
   return x === null ? null : JSON.stringify(x);
 }
 
-export function* range(length: number) {
+function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
     yield i;
+}
+
+/** Generates [count] increasing integer numbers, starting with 0. */
+export function range(length: number): wu.WuIterable<number> {
+
+  return wu(_range(length));
 }
 
 /** Returns an 'identity' array where the element in idx-th position is equals to idx. */
@@ -833,6 +846,7 @@ export namespace Test {
    * */
   export let isInBenchmark = false;
   export let isReproducing = false;
+  export let isInDebug = false;
   export let isCiCd = false;
 
   export function getTestDataGeneratorByType(type: string) {

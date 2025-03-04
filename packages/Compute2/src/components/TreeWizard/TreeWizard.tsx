@@ -38,10 +38,9 @@ type PanelsState = {
   layout: string,
 };
 
-const LAYOUT_DB_NAME = 'ComputeDB';
 const STORE_NAME = 'TreeWizardLayouts';
 
-interface ComputeSchema extends DBSchema {
+interface TreeWizardSchema extends DBSchema {
   [STORE_NAME]: {
     key: string;
     value: PanelsState;
@@ -65,7 +64,7 @@ export const TreeWizard = Vue.defineComponent({
     },
   },
   setup(props) {
-    const {layoutDatabase} = useLayoutDb<ComputeSchema>(LAYOUT_DB_NAME, STORE_NAME);
+    const {layoutDatabase} = useLayoutDb<TreeWizardSchema>();
 
     Vue.onBeforeUnmount(() => {
       savePersonalState(providerFunc.value);
@@ -93,6 +92,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
+      changeFuncCall
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
     const runActionWithConfirmation = (uuid: string) => {
@@ -168,7 +168,7 @@ export const TreeWizard = Vue.defineComponent({
     const dockInited = Vue.ref(false);
     const triggerSaveDefault = Vue.ref(false);
     Vue.watch(triggerSaveDefault, async () => {
-      saveDefaultState();
+      await saveDefaultState();
       await loadPersonalLayout();
     }, {flush: 'post'});
 
@@ -207,22 +207,22 @@ export const TreeWizard = Vue.defineComponent({
 
     const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
 
-    const saveDefaultState = (func: DG.Func = providerFunc.value) => {
+    const saveDefaultState = async (func: DG.Func = providerFunc.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
     };
 
-    const savePersonalState = (func: DG.Func = providerFunc.value) => {
+    const savePersonalState = async (func: DG.Func = providerFunc.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
+      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
     };
 
     const removeSavedPersonalState = async () => {
-      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
+      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
 
       await loadDefaultLayout();
     };
@@ -450,9 +450,9 @@ export const TreeWizard = Vue.defineComponent({
 
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
         if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
         if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
+        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
       }
     };
 
@@ -467,6 +467,11 @@ export const TreeWizard = Vue.defineComponent({
         }
       }
     };
+
+    const onFuncCallChange = (call: DG.FuncCall) => {
+      if (chosenStepUuid.value)
+        changeFuncCall(chosenStepUuid.value, call)
+    }
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
@@ -541,7 +546,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-panel-icon='folder-tree'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
-                dock-spawn-z-index={51}
+                dock-spawn-z-index={1000}
 
                 rootDroppable={false}
                 treeLine
@@ -609,7 +614,8 @@ export const TreeWizard = Vue.defineComponent({
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 showStepNavigation={true}
-                onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
+                skipInit={true}
+                onUpdate:funcCall={onFuncCallChange}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 onNextClicked={goNextStep}
                 onActionRequested={runActionWithConfirmation}

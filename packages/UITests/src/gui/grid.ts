@@ -65,6 +65,7 @@ category('GUI: Grid', () => {
   });
 
   test('grid.deleteCols', async () => {
+    await delay(5000);
     const demog = grok.data.demo.demog(10);
     demog.currentCell = demog.cell(0, 'disease');
     grok.shell.addTableView(demog);
@@ -125,4 +126,4 @@ category('GUI: Grid', () => {
     filterLinkAction!.click();
     await awaitCheck(() => demog.filter.trueCount == 25, 'Error in filtering', 1000);
   });
-}, { owner: 'dkovalyov@datagrok.ai' });
+}, {owner: 'dkovalyov@datagrok.ai'});

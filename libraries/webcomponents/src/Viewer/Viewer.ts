@@ -71,8 +71,10 @@ export class Viewer<T = any> extends HTMLElement {
       withLatestFrom(this.viewer$),
       takeUntil(this.destroyed$),
     ).subscribe(([df, viewer]) => {
-      if (viewer && df && viewer.dataFrame !== df)
+      if (viewer && df && viewer.dataFrame !== df) {
         viewer.dataFrame = df;
+        viewer.setOptions(this._options);
+      }
     });
 
     this.viewer$.pipe(

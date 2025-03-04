@@ -16,7 +16,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
-import {ensureContainersRunning, molV2000, molV3000} from './utils';
+import {ensureContainerRunning, molV2000, molV3000} from './utils';
 import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
@@ -40,7 +40,6 @@ category('cell panel', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    await ensureContainersRunning();
   });
 
   test('drug-likeness', async () => {
@@ -55,6 +54,7 @@ category('cell panel', async () => {
   });
 
   test('identifiers', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     const res: any = await getIdentifiersSingle(molStr);
     console.log(res);
     for (const key of Object.keys(identifiers))
@@ -66,7 +66,7 @@ category('cell panel', async () => {
     }
     if (checkPackage('PubchemApi', 'GetIupacName'))
       expect(Object.keys(res).includes('Name'), true);
-  });
+  }, {timeout: 30000 + utils.CONTAINER_TIMEOUT});
 
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
@@ -171,6 +171,7 @@ category('cell panel', async () => {
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"');
     for (const mol of molFormats) {
       const widget: DG.Widget = await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
       if (mol === CONST.EMPTY) {
@@ -181,5 +182,5 @@ category('cell panel', async () => {
           `descriptors table hasn\'t been created for ${mol}`, 55000);
       }
     }
-  }, {timeout: 60000, stressTest: true});
+  }, {timeout: 60000 + utils.CONTAINER_TIMEOUT, stressTest: true});
 });

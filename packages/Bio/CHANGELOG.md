@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.19.0 (2025-02-20)
+
+* Correct conversion and highlighting of toAtomicLevel
+* Added context actions
+
 ## 2.18.4 (2025-02-17)
 
 * ToAtomicLevel support for DNA/RNA

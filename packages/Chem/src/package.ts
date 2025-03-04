@@ -82,6 +82,7 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { ReinventBaseEditor, TARGET_PATH } from './widgets/reinvent-editor';
+import { oclMol } from './utils/chem-common-ocl';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1312,6 +1313,16 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
   }
 }
 
+//name: Convert Notation...
+//meta.action: Convert Notation...
+//input: column col {semType: Molecule}
+export function convertMolNotationAction(col: DG.Column) {
+  const func = DG.Func.find({name: 'convertNotation', package: 'Chem'})[0];
+  if (!func || !col?.dataFrame)
+    return;
+  func.prepare({data: col.dataFrame, molecules: col}).edit();
+} 
+
 //tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
@@ -1435,7 +1446,6 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
-//tags: exclude-actions-panel
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
@@ -1444,7 +1454,9 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   const dframe = molCol.dataFrame;
   const smiles = molCol.get(tableRowIdx);
 
-  const grid = value.viewer as DG.Grid;
+  const grid = value.viewer as DG.Grid ?? grok.shell.getTableView(dframe.name)?.grid;
+  if (!grid)
+    throw new Error('Cannnot access value grid');
   ui.setUpdateIndicator(grid.root, true);
   const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
   progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
@@ -1466,7 +1478,6 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
 
 //name: Use as filter
 //description: Adds this structure as a substructure filter
-//tags: exclude-actions-panel
 //meta.action: Use as filter
 //input: semantic_value value { semType: Molecule }
 export function useAsSubstructureFilter(value: DG.SemanticValue): void {
@@ -1495,6 +1506,25 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   }, false);
 }
 
+//name: Copy as...
+//description: Copies structure in different formats
+//meta.action: Copy as...
+//tags: exclude-current-value-menu
+//input: semantic_value value { semType: Molecule }
+export function copyAsAction(value: DG.SemanticValue) {
+  const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
+  const menu = DG.Menu.popup();
+
+  formats.forEach((format) => {
+    const func = DG.Func.find({package: 'Chem', name: `copyAs${format}`})[0];
+    if (func)
+      menu.item(format, () => {
+        func.apply({value: value});
+      });
+  });
+  menu.show();
+}
+
 //name: Copy as SMILES
 //description: Copies structure as smiles
 //tags: exclude-actions-panel
@@ -1517,6 +1547,30 @@ export function copyAsMolfileV2000(value: DG.SemanticValue): void {
     _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
   navigator.clipboard.writeText(molfileV2000);
   grok.shell.info('Molfile V2000 copied to clipboard');
+}
+
+//name: Copy as MOLFILE V3000
+//description: Copies structure as molfile V3000
+//tags: exclude-actions-panel
+//meta.action: Copy as MOLFILE V3000
+//input: semantic_value value { semType: Molecule }
+export function copyAsMolfileV3000(value: DG.SemanticValue): void {
+  const molfileV3000 = DG.chem.isMolBlock(value.value) && value.value.includes('V3000') ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule());
+  navigator.clipboard.writeText(molfileV3000);
+  grok.shell.info('Molfile V3000 copied to clipboard');
+}
+
+//name: Copy as SMARTS
+//description: Copies structure as smarts
+//tags: exclude-actions-panel
+//meta.action: Copy as SMARTS
+//input: semantic_value value { semType: Molecule }
+export function copyAsSmarts(value: DG.SemanticValue): void {
+  const smarts = !DG.chem.isMolBlock(value.value) && _isSmarts(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule());
+  navigator.clipboard.writeText(smarts);
+  grok.shell.info('Smarts copied to clipboard');
 }
 
 //name: Copy as IMAGE
@@ -1543,31 +1597,6 @@ export function copyAsImage(value: DG.SemanticValue): void {
       grok.shell.info('Image copied to clipboard');
     });
   });
-}
-
-
-//name: Copy as MOLFILE V3000
-//description: Copies structure as molfile V3000
-//tags: exclude-actions-panel
-//meta.action: Copy as MOLFILE V3000
-//input: semantic_value value { semType: Molecule }
-export function copyAsMolfileV3000(value: DG.SemanticValue): void {
-  const molfileV3000 = DG.chem.isMolBlock(value.value) && value.value.includes('V3000') ? value.value :
-    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule());
-  navigator.clipboard.writeText(molfileV3000);
-  grok.shell.info('Molfile V3000 copied to clipboard');
-}
-
-//name: Copy as SMARTS
-//description: Copies structure as smarts
-//tags: exclude-actions-panel
-//meta.action: Copy as SMARTS
-//input: semantic_value value { semType: Molecule }
-export function copyAsSmarts(value: DG.SemanticValue): void {
-  const smarts = !DG.chem.isMolBlock(value.value) && _isSmarts(value.value) ? value.value :
-    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule());
-  navigator.clipboard.writeText(smarts);
-  grok.shell.info('Smarts copied to clipboard');
 }
 
 //name: isSmiles
@@ -1887,6 +1916,13 @@ export function canonicalize(molecule: string): string {
   return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
 }
 
+//name: getMolecularFormula
+//input: string molecule { semType: molecule }
+//output: string molecularFormula
+export function getMolecularFormula(molecule: string): string {
+  return oclMol(molecule).getMolecularFormula().formula;
+}
+
 //name: validateMolecule
 //input: string s
 //output: object result
@@ -2096,6 +2132,13 @@ async function zipFolder(folder: DG.FileInfo[]): Promise<Blob> {
   return zipBlob;
 }
 
+//name: getFolders
+//output: list<string> targetFiles
+export async function getFolders(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
+  return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
+}
+
 //name: ReinventEditor
 //tags: editor
 //input: funccall call
@@ -2141,8 +2184,8 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
 //top-menu: Chem | Generate molecules...
 //name: Reinvent
 //tags: HitDesignerFunction
-//input: string ligand
-//input: string optimize
+//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
+//input: string optimize {choices: Chem:getFolders}
 //editor: Chem: ReinventEditor
 //output: dataframe result
 export async function reinvent(

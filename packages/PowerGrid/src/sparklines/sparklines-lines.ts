@@ -123,7 +123,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     if (w < 20 || h < 10 || df === void 0) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const b = new DG.Rect(x, y, w, h).inflate(-3, -2);
+    const b = new DG.Rect(x, y, w, h).inflate(-4, -4);
     g.strokeStyle = 'lightgrey';
     g.lineWidth = 1;
 

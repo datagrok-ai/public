@@ -77,7 +77,7 @@ RUN conda install -n base -c conda-forge awscli -y && \
 WORKDIR /app
 
 RUN mkdir -p /app/autodock_vina && \
-    curl -L https://vina.scripps.edu/wp-content/uploads/sites/55/2020/12/autodock_vina_1_1_2_linux_x86.tgz -o /app/autodock_vina.tar.gz && \
+    curl -k -L https://vina.scripps.edu/wp-content/uploads/sites/55/2020/12/autodock_vina_1_1_2_linux_x86.tgz -o /app/autodock_vina.tar.gz && \
     tar -xzvf /app/autodock_vina.tar.gz -C /app/autodock_vina && \
     rm /app/autodock_vina.tar.gz
 
