@@ -113,14 +113,14 @@ export class SensitivityAnalysisView {
       if (range?.[key] != undefined)
         return range[key];
       return input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key]);
-    }
+    };
 
     const getInputDefaultValue = (input: DG.Property) => {
       const range = this.options.ranges?.[input.name];
       if (range?.default != undefined)
         return range.default;
       return getDefaultValue(input);
-    }
+    };
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput = true) => {
       const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (value) => f(value)});

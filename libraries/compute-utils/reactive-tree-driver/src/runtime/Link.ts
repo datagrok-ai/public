@@ -236,7 +236,7 @@ export class Link {
   }
 
   private getOrderedIO(ioData: Record<string, MatchedNodePaths>) {
-    return Object.entries(ioData).sort(([,v1], [,v2]) => {
+    return Object.entries(ioData).sort(([, v1], [, v2]) => {
       const p1 = this.getFirstMatch(v1);
       const p2 = this.getFirstMatch(v2);
       return BaseTree.compareAddresses(p1, p2);
@@ -245,9 +245,9 @@ export class Link {
 
   private getFirstMatch(matchIO: readonly MatchedIO[]) {
     const p0 = matchIO.reduce((acc, val) => {
-        const d = BaseTree.compareAddresses(acc, val.path)
-        return d < 0 ? val.path : acc;
-      }, [{idx: Infinity, id: ''}] as readonly NodePathSegment[] );
+      const d = BaseTree.compareAddresses(acc, val.path);
+      return d < 0 ? val.path : acc;
+    }, [{idx: Infinity, id: ''}] as readonly NodePathSegment[] );
     return p0;
   }
 
