@@ -103,13 +103,19 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form!.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
-          if (paramItems && input.inputType === DG.InputType.Choice)
-            (input as DG.ChoiceInput<any>).items = paramItems;
-          const rangeMeta = meta[param.property.name]?.['range'];
-          if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {
-            // TODO: FormApi
-            console.log(rangeMeta);
+          if (paramItems && input.inputType === DG.InputType.Choice) {
+            input.notify = false;
+            try {
+              const currentValue = param.value;
+              (input as DG.ChoiceInput<any>).items = paramItems;
+              input.value = currentValue;
+            } finally {
+              input.notify = true;
+            }
           }
+          // TODO: FormApi
+          // const rangeMeta = meta[param.property.name]?.['range'];
+          //if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
           const hideMeta = meta[param.property.name]?.['hidden'];
           if (hideMeta)
             input.root.style.display = 'none';
