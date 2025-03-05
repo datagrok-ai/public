@@ -578,6 +578,8 @@ jobs:
             if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
               cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
             fi
+            df -h
+            docker images
             docker buildx create --use
             docker buildx build $(dirname $dockerfile) --load \
               --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} 
