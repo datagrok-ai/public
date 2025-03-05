@@ -2110,7 +2110,7 @@ export class DiffStudio {
       const plot = DG.Viewer.lineChart(this.solutionTable, {
         xColumnName: colNames[0],
         yColumnNames: [colNames[i]],
-        autoLayout: false,
+        autoLayout: true,
         showXAxis: true,
         showYAxis: true,
         showXSelector: false,
