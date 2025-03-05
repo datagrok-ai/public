@@ -21,7 +21,7 @@ const getDeviation = (solutionTable: DG.DataFrame, solutionArrs: Float64Array[])
   let deviation = 0;
   const rowCount = solutionTable.rowCount;
   const cols = solutionTable.columns;
-  const colsCount = cols.length;
+  const colsCount = cols.length - (cols.contains(DSL.STAGE_COL_NAME) ? 1 : 0);
 
   if (colsCount !== solutionArrs.length)
     throw new Error('Non-equal solution columns count');
@@ -76,8 +76,7 @@ const testPipelineTemplate = (modelName: string, problem: string) => {
       const solutionCols = solutionDf.columns;
 
       // Remove segments column
-      if (solutionCols.contains(DSL.STAGE_COL_NAME))
-        solutionCols.remove(DSL.STAGE_COL_NAME, true);
+      const hasStageCol = solutionCols.contains(DSL.STAGE_COL_NAME);
 
       // Apply computations via the pipeline features
       ivpWW = DSL.getIvp2WebWorker(ivp);
@@ -94,7 +93,7 @@ const testPipelineTemplate = (modelName: string, problem: string) => {
         arrsSameLength = arrsSameLength && (solutionArrs[i].length === arrRowCount);
 
       // Compare results
-      sameColsCount = (solutionCols.length === arrColCount);
+      sameColsCount = (solutionCols.length - (hasStageCol ? 1 : 0) === arrColCount);
       sameRowsCount = (solutionDf.rowCount === arrRowCount);
 
       if (arrsSameLength && sameColsCount && sameRowsCount)
