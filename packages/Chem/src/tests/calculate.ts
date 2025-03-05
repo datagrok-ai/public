@@ -32,10 +32,10 @@ category('calculate', () => {
     }
 
     await checkIdentifier('inchi', 'InChI=1S/C6H4O3S2/c7-5-3-4(6(8)9-5)11-2-1-10-3/h1-2H2');
-    await checkIdentifier('actor', '10489-75-5');
 
     const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
     if (chemblPackInstalled) {
+      await checkIdentifier('actor', '10489-75-5');
       await checkIdentifier('chembl', 'CHEMBL2262349');
       await checkIdentifier('pubchem', '82669'); 
       await checkIdentifier('mcule', 'MCULE-6494517749');     
