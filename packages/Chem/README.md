@@ -21,7 +21,7 @@ Here are some of the features:
 
 * Molecule sketching
   * OpenChemLib
-* SAR analysis
+* SAR analysis 
 * Chembl integration
 * Pubchem integration
 * Works completely on the client side where possible.
