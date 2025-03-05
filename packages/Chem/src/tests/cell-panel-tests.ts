@@ -218,7 +218,7 @@ category('cell panel', async () => {
     );
     expect(res.columns.names().length, 3);
     expect(selesctedDesc.every((it => res.columns.names().includes(it))), true);
-    expect((res.get('FractionCSP3', 0) as number).toFixed(1), 0.6000);
+    expect((res.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
     expect(res.get('HeavyAtomCount', 0), 25);
     expect(res.get('NHOHCount', 0), 1);
 
