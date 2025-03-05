@@ -580,8 +580,7 @@ jobs:
             fi
             docker buildx create --use
             docker buildx build $(dirname $dockerfile) --load \
-              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} \
-               --cache-push false
+              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} 
             images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
           done
           echo "images=$images" >> $GITHUB_OUTPUT
