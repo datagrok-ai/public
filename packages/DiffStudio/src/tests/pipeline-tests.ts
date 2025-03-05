@@ -17,11 +17,11 @@ const TIMEOUT = 10000;
 const MIN_ROWS = 1;
 const TINY = 0.1;
 
-const getDeviation = (solutionTable: DG.DataFrame, solutionArrs: Float64Array[]): number => {
+const getDeviation = (solutionTable: DG.DataFrame, solutionArrs: Float64Array[], hasStageCol: boolean): number => {
   let deviation = 0;
   const rowCount = solutionTable.rowCount;
   const cols = solutionTable.columns;
-  const colsCount = cols.length - (cols.contains(DSL.STAGE_COL_NAME) ? 1 : 0);
+  const colsCount = cols.length - (hasStageCol ? 1 : 0);
 
   if (colsCount !== solutionArrs.length)
     throw new Error('Non-equal solution columns count');
@@ -76,7 +76,7 @@ const testPipelineTemplate = (modelName: string, problem: string) => {
       const solutionCols = solutionDf.columns;
 
       // Remove segments column
-      const hasStageCol = solutionCols.contains(DSL.STAGE_COL_NAME);
+      const hasStageCol = (ivp.updates !== null);
 
       // Apply computations via the pipeline features
       ivpWW = DSL.getIvp2WebWorker(ivp);
@@ -93,11 +93,11 @@ const testPipelineTemplate = (modelName: string, problem: string) => {
         arrsSameLength = arrsSameLength && (solutionArrs[i].length === arrRowCount);
 
       // Compare results
-      sameColsCount = (solutionCols.length - (hasStageCol ? 1 : 0) === arrColCount);
+      sameColsCount = ((solutionCols.length - (hasStageCol ? 1 : 0)) === arrColCount);
       sameRowsCount = (solutionDf.rowCount === arrRowCount);
 
       if (arrsSameLength && sameColsCount && sameRowsCount)
-        deviation = getDeviation(solutionDf, solutionArrs);
+        deviation = getDeviation(solutionDf, solutionArrs, hasStageCol);
     } catch (e) {}
 
     expect(ivp !== null, true, `Failed to parse equations: ${modelName}`);
