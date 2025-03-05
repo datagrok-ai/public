@@ -718,19 +718,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          matrix: ${{ toJson(matrix) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
