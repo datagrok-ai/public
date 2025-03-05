@@ -570,8 +570,8 @@ jobs:
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
         run: |
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${{ steps.datagrok-image.outputs.profiles }} down
-          docker system prune -af
+#          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${{ steps.datagrok-image.outputs.profiles }} down
+#          docker system prune -af
           docker images
           df -h
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
@@ -590,6 +590,10 @@ jobs:
             images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
             df -h
             docker images
+            docker volume prune -af   
+            echo "ASDASDASD"
+            df -h   
+            
           done
           echo "images=$images" >> $GITHUB_OUTPUT
 
