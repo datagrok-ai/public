@@ -190,7 +190,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     await awaitCheck(() => {
-      const resMolblock =  s.getMolFile();;
+      const resMolblock =  s.getMolFile();
       return compareTwoMols(rdkitModule, mol, resMolblock);
     }, 'mols are not equal', 3000);
     d.close();
