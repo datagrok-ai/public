@@ -330,7 +330,7 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-          echo "profiles=$profiles >> $GITHUB_OUTPUT
+          echo "profiles=$profiles" >> $GITHUB_OUTPUT
 #      - id: datagrok-tools
 #        run: npm install -g datagrok-tools@latest
 #      - if: ${{ matrix.unpublished_deps != '' }}
