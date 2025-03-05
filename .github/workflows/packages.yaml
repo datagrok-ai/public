@@ -330,6 +330,7 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
+          echo "profiles=$profiles >> $GITHUB_OUTPUT
 #      - id: datagrok-tools
 #        run: npm install -g datagrok-tools@latest
 #      - if: ${{ matrix.unpublished_deps != '' }}
@@ -569,6 +570,10 @@ jobs:
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
         run: |
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${{ steps.datagrok-image.outputs.profiles }} down
+          docker system prune -af
+          docker images
+          df -h
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
             image_name=${{ steps.docker_name_ver.outputs.package_name }}
             if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
