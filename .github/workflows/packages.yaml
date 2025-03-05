@@ -131,7 +131,7 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      if [[ '${{ github.ref }}' == 'refs/heads/vhlushchenko/Chem-pipeline' ]]; then
+                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]]; then
                         publish="publish"
                         MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                         job_name+=' and publish to NPM'
@@ -330,222 +330,221 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-          echo "profiles=$profiles" >> $GITHUB_OUTPUT
-#      - id: datagrok-tools
-#        run: npm install -g datagrok-tools@latest
-#      - if: ${{ matrix.unpublished_deps != '' }}
-#        run: grok link
-#        working-directory: packages/${{ matrix.package }}
-#      - name: webpack cache
-#        uses: actions/cache@v4
-#        with:
-#          path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
-#          key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
-#          restore-keys: |
-#            ${{ matrix.package }}-master-webpack-build
-#      - name: Remove GPU from docker configuration
-#        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
-#        run: |
-#          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-#            docker_config_file="$(dirname $dockerfile)/container.json"
-#            if [ -f "${docker_config_file}" ]; then
-#              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
-#            fi
-#          done
-#      - name: Build package
-#        if: ${{ matrix.build == 'build' }}
-#        id: build
-#        run: |
-#          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
-#            npm run build -- --mode=production
-#          else
-#            npm run build
-#          fi
-#        working-directory: packages/${{ matrix.package }}
-#      - name: Wait for Datagrok to become available
-#        if: ${{ matrix.test == 'test' }}
-#        timeout-minutes: 5
-#        run: |
-#          until .github/scripts/check-output.sh "curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server" '"Http Server"'
-#          do
-#            sleep 1
-#            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-#              docker compose -p datagrok logs --no-color --timestamps datagrok
-#            fi
-#            echo -e "\nRetrying..."
-#          done
-#          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
-#          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
-#
-#          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
-#          curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
-#      - name: Create configuration for grok command-line tool
-#        if: ${{ matrix.test == 'test' }}
-#        id: grok-config
-#        env:
-#          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
-#          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-#        run: |
-#          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-#            key="$TEST_TEST_DEV_KEY"
-#          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-#            key="$DEV_TEST_DEV_KEY"
-#          else
-#            key='admin'
-#          fi
-#          grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
-#      - name: Install Grok Dependencies before package publish to Datagrok
-#        if: ${{ matrix.test == 'test' }}
-#        run: |
-#          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
-#          if [ -n "$grok_deps" ]; then
-#            for dep in $grok_deps; do
-#              current_dir=$(pwd)
-#              cd node_modules/$dep
-#              count=0
-#              retries=5
-#              echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-#              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
-#                exit=$?
-#                wait=$((2 ** count))
-#                count=$((count + 1))
-#                if [ $count -lt "$retries" ]; then
-#                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep in $wait seconds..."
-#                  sleep $wait
-#                else
-#                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep."
-#                  exit $exit
-#                fi
-#              done
-#              cd $current_dir
-#            done
-#          fi
-#        working-directory: packages/${{ matrix.package }}
-#      - name: Publish package to Datagrok
-#        if: ${{ matrix.test == 'test' }}
-#        run: |
-#          count=0
-#          retries=5
-#          until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
-#            exit=$?
-#            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-#              docker compose -p datagrok logs --no-color --timestamps datagrok
-#            fi
-#            wait=$((2 ** count))
-#            count=$((count + 1))
-#            if [ "$count" -lt "$retries" ]; then
-#              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' in $wait seconds..."
-#              sleep $wait
-#            else
-#              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}'."
-#              exit $exit
-#            fi
-#          done
-#        working-directory: packages/${{ matrix.package }}
-#      - name: Set required credentials
-#        if: ${{ matrix.test == 'test' }}
-#        env:
-#          CHEMSPACE_APIKEY: ${{ secrets.CHEMSPACE_APIKEY }}
-#        run: |
-#          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-#            if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
-#              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
-#              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
-#            fi
-#          fi
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - if: ${{ matrix.unpublished_deps != '' }}
+        run: grok link
+        working-directory: packages/${{ matrix.package }}
+      - name: webpack cache
+        uses: actions/cache@v4
+        with:
+          path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
+          key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
+          restore-keys: |
+            ${{ matrix.package }}-master-webpack-build
+      - name: Remove GPU from docker configuration
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+            fi
+          done
+      - name: Build package
+        if: ${{ matrix.build == 'build' }}
+        id: build
+        run: |
+          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
+            npm run build -- --mode=production
+          else
+            npm run build
+          fi
+        working-directory: packages/${{ matrix.package }}
+      - name: Wait for Datagrok to become available
+        if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server" '"Http Server"'
+          do
+            sleep 1
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              docker compose -p datagrok logs --no-color --timestamps datagrok
+            fi
+            echo -e "\nRetrying..."
+          done
+          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
+          curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
 
-#      - name: Wait for published docker to become available
-#        id: docker-wait
-#        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
-#        env:
-#          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
-#          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-#        timeout-minutes: 20
-#        run: |
-#          check_container=false
-#          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-#            docker_config_file="$(dirname $dockerfile)/container.json"
-#            if [ -f "${docker_config_file}" ]; then
-#              on_demand=$(jq '.on_demand' ${docker_config_file})
-#              if [ "$on_demand" == "true" ]; then
-#                check_container=false
-#              else
-#                check_container=true
-#                break
-#              fi
-#            else
-#              check_container=true
-#              break
-#            fi
-#          done
-#
-#          if [[ "${check_container}" == "true" ]] ; then
-#            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-#              key="$TEST_TEST_DEV_KEY"
-#            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-#              key="$DEV_TEST_DEV_KEY"
-#            else
-#              key='admin'
-#            fi
-#            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-#            long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
-#            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
-#            do
-#              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;"
-#              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
-#              sleep 1
-#              echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-#              echo -e "\nRetrying '/api/docker/containers'..."
-#            done
-#            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-#              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-#              do
-#                sleep 1
-#                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-#                echo -e "\nRetrying 'docker ps'..."
-#              done
-#            fi
-#          fi
-#      - name: Configuration setuid sandbox
-#        run: |
-#          linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)
-#          cd ~/.cache/puppeteer/chrome/$linux_version/chrome-linux64/
-#          sudo chown root:root chrome_sandbox
-#          sudo chmod 4755 chrome_sandbox
-#          sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
-#      - name: Test Package
-#        if: ${{ matrix.test == 'test' }}
-#        continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
-#        timeout-minutes: 30
-#        id: test-package
-#        env:
-#          CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
-#        run: |
-#          npm list -g --depth=0 --json
-#          if [ "${{ matrix.package }}" == "Charts" ]; then
-#            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
-#          else
-#            npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
-#          fi
-#        working-directory: packages/${{ matrix.package }}
-#      - name: Upload Artifact
-#        if: always() && steps.test-package.outcome != 'skipped'
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{ matrix.package }}.test-results
-#          path: packages/${{ matrix.package }}/test-*
-#          retention-days: 14
-#          if-no-files-found: warn
-#      - name: Create error notification
-#        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
-#        run: |
-#          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-#            docker compose -p datagrok logs --no-color --timestamps
-#          else
-#            echo 'Check dev logs'
-#          fi
-#          echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
-#          echo "status=error" >> $GITHUB_OUTPUT
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
+      - name: Create configuration for grok command-line tool
+        if: ${{ matrix.test == 'test' }}
+        id: grok-config
+        env:
+          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
+          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
+          else
+            key='admin'
+          fi
+          grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
+      - name: Install Grok Dependencies before package publish to Datagrok
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+          if [ -n "$grok_deps" ]; then
+            for dep in $grok_deps; do
+              current_dir=$(pwd)
+              cd node_modules/$dep
+              count=0
+              retries=5
+              echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+                exit=$?
+                wait=$((2 ** count))
+                count=$((count + 1))
+                if [ $count -lt "$retries" ]; then
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep in $wait seconds..."
+                  sleep $wait
+                else
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for $dep."
+                  exit $exit
+                fi
+              done
+              cd $current_dir
+            done
+          fi
+        working-directory: packages/${{ matrix.package }}
+      - name: Publish package to Datagrok
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          count=0
+          retries=5
+          until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+            exit=$?
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              docker compose -p datagrok logs --no-color --timestamps datagrok
+            fi
+            wait=$((2 ** count))
+            count=$((count + 1))
+            if [ "$count" -lt "$retries" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' in $wait seconds..."
+              sleep $wait
+            else
+              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}'."
+              exit $exit
+            fi
+          done
+        working-directory: packages/${{ matrix.package }}
+      - name: Set required credentials
+        if: ${{ matrix.test == 'test' }}
+        env:
+          CHEMSPACE_APIKEY: ${{ secrets.CHEMSPACE_APIKEY }}
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
+            fi
+          fi
+
+      - name: Wait for published docker to become available
+        id: docker-wait
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        env:
+          DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
+          TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
+        timeout-minutes: 20
+        run: |
+          check_container=false
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              on_demand=$(jq '.on_demand' ${docker_config_file})
+              if [ "$on_demand" == "true" ]; then
+                check_container=false
+              else
+                check_container=true
+                break
+              fi
+            else
+              check_container=true
+              break
+            fi
+          done
+
+          if [[ "${check_container}" == "true" ]] ; then
+            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+              key="$TEST_TEST_DEV_KEY"
+            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+              key="$DEV_TEST_DEV_KEY"
+            else
+              key='admin'
+            fi
+            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+            do
+              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;"
+              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+              sleep 1
+              echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+              echo -e "\nRetrying '/api/docker/containers'..."
+            done
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+              do
+                sleep 1
+                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+                echo -e "\nRetrying 'docker ps'..."
+              done
+            fi
+          fi
+      - name: Configuration setuid sandbox
+        run: |
+          linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)
+          cd ~/.cache/puppeteer/chrome/$linux_version/chrome-linux64/
+          sudo chown root:root chrome_sandbox
+          sudo chmod 4755 chrome_sandbox
+          sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
+      - name: Test Package
+        if: ${{ matrix.test == 'test' }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
+        timeout-minutes: 30
+        id: test-package
+        env:
+          CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
+        run: |
+          npm list -g --depth=0 --json
+          if [ "${{ matrix.package }}" == "Charts" ]; then
+            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+          else
+            npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+          fi
+        working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}.test-results
+          path: packages/${{ matrix.package }}/test-*
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Create error notification
+        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            docker compose -p datagrok logs --no-color --timestamps
+          else
+            echo 'Check dev logs'
+          fi
+          echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
+          echo "status=error" >> $GITHUB_OUTPUT
 
       - name: Get docker image version
         if: matrix.build_docker == 'true'
@@ -570,10 +569,8 @@ jobs:
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
         run: |
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${{ steps.datagrok-image.outputs.profiles }} down
+          docker rm -f $(docker ps --format '{{.ID}}')
           docker system prune -af
-          docker images
-          df -h
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
             image_name=${{ steps.docker_name_ver.outputs.package_name }}
             if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
@@ -587,164 +584,158 @@ jobs:
             docker buildx create --use
             docker buildx build $(dirname $dockerfile) --load \
               --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} 
-            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
-            df -h
-            docker images
-            docker volume prune -af   
-            echo "ASDASDASD"
-            df -h   
-            
+            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"        
           done
           echo "images=$images" >> $GITHUB_OUTPUT
 
-#      - name: General checks
-#        run: |
-#          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
-#            echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
-#            exit 1
-#          fi
-#          if [ ! -z "$(jq '. | select( has("beta") == true ).beta' package.json)" ]; then
-#            echo "::error title=${{ matrix.package }}: failed properties check::Remove beta property in ${{ matrix.package }}/package.json. It is deprecated."
-#            exit 1
-#          fi
-#        id: gen_checks
-#        working-directory: packages/${{ matrix.package }}
-#
-#      - run: grok check
-#        if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-#        id: check
-#        working-directory: packages/${{ matrix.package }}
-#
-#      - name: Publish to npm
-#        run: npm publish --access public
-#        id: publish
-#        working-directory: packages/${{ matrix.package }}
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-#        if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace'))
-#
-#      - name: Get actors slack
-#        id: actor
-#        uses: ./.github/actions/slack-user-action
-#        with:
-#          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-#          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
-#      - name: Get owner email
-#        run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
-#        id: owner-email
-#        working-directory: packages/${{ matrix.package }}
-#      - name: Get owners slack
-#        id: owner
-#        uses: ./.github/actions/slack-user-action
-#        with:
-#          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-#          emails: ${{ steps.owner-email.outputs.owner }}
-#      - name: Get QA slack
-#        id: qa
-#        uses: ./.github/actions/slack-user-action
-#        if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
-#        with:
-#          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-#          emails: "opavlenko@datagrok.ai"
-#      - name: Prepare Slack Message
-#        id: slack-prepare
-#        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
-#        shell: bash
-#        run: |
-#          mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}\n${{ steps.qa.outputs.user-ids }}" | sort -u)
-#          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
-#          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
-#
-#      - name: Send to Slack
-#        id: slack
-#        if: steps.slack-prepare.outcome == 'success'
-#        uses: ./.github/actions/slack-post-action
-#        with:
-#          channel: '#build'
-#          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-#          message: ${{ env.SLACK_MESSAGE_HEADER }}
-#
-#      - name: Save package Docker image to tar archive
-#        if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
-#        id: save-docker
-#        run: |
-#          docker save -o /tmp/${{ matrix.package }}.docker.tar ${{ steps.build-docker.outputs.images }}
-#
-#      - uses: actions/upload-artifact@v4
-#        if: steps.save-docker.outcome == 'success'
-#        with:
-#          path: /tmp/${{ matrix.package }}.docker.tar
-#          name: ${{ matrix.package }}.docker.tar
-#          retention-days: 14
-#          if-no-files-found: warn
-#
-#      - name: Publish package Docker image
-#        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
-#        id: publish-docker
-#        run: |
-#          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
-#            docker push $image
-#          done
-#
-#      - name: Commit package-lock.json
-#        id: git
-#        continue-on-error: true
-#        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
-#        run: |
-#          git config --global user.name 'github-actions[bot]'
-#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-#          git pull
-#          continue=false
-#          if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
-#            git add packages/${{ matrix.package }}/package-lock.json
-#            skip_ci=""
-#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-#              skip_ci="[skip ci]"
-#            fi
-#            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
-#
-#            Workflow ${{ github.workflow }} ${{ github.run_number }}
-#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-#            continue=true
-#          fi
-#          if [[ "${continue}" == "true" ]]; then
-#            count=0
-#            retries=10
-#            until git push; do
-#              exit=$?
-#              wait=$((2 ** count))
-#              count=$((count + 1))
-#              if [ $count -lt "$retries" ]; then
-#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-#                sleep $wait
-#                git pull --rebase
-#              else
-#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-#                exit $exit
-#              fi
-#            done
-#          fi
-#
-#      - name: Trigger help update
-#        continue-on-error: true
-#        if: steps.publish.outcome == 'success'
-#        run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
-#        env:
-#          GH_TOKEN: ${{ github.token }}
+      - name: General checks
+        run: |
+          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
+            exit 1
+          fi
+          if [ ! -z "$(jq '. | select( has("beta") == true ).beta' package.json)" ]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Remove beta property in ${{ matrix.package }}/package.json. It is deprecated."
+            exit 1
+          fi
+        id: gen_checks
+        working-directory: packages/${{ matrix.package }}
 
-#      - name: Slack Notification
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ steps.publish.outcome }}
-#          steps: ${{ toJson(steps) }}
-#          matrix: ${{ toJson(matrix) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-#      - name: Slack Failed-Cancelled Notification
-#        if: failure() || cancelled()
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ job.status }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - run: grok check
+        if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
+        id: check
+        working-directory: packages/${{ matrix.package }}
+
+      - name: Publish to npm
+        run: npm publish --access public
+        id: publish
+        working-directory: packages/${{ matrix.package }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace'))
+
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
+      - name: Get owner email
+        run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
+        id: owner-email
+        working-directory: packages/${{ matrix.package }}
+      - name: Get owners slack
+        id: owner
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: ${{ steps.owner-email.outputs.owner }}
+      - name: Get QA slack
+        id: qa
+        uses: ./.github/actions/slack-user-action
+        if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: "opavlenko@datagrok.ai"
+      - name: Prepare Slack Message
+        id: slack-prepare
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        shell: bash
+        run: |
+          mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}\n${{ steps.qa.outputs.user-ids }}" | sort -u)
+          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-prepare.outcome == 'success'
+        uses: ./.github/actions/slack-post-action
+        with:
+          channel: '#build'
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: ${{ env.SLACK_MESSAGE_HEADER }}
+
+      - name: Save package Docker image to tar archive
+        if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
+        id: save-docker
+        run: |
+          docker save -o /tmp/${{ matrix.package }}.docker.tar ${{ steps.build-docker.outputs.images }}
+
+      - uses: actions/upload-artifact@v4
+        if: steps.save-docker.outcome == 'success'
+        with:
+          path: /tmp/${{ matrix.package }}.docker.tar
+          name: ${{ matrix.package }}.docker.tar
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Publish package Docker image
+        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
+        id: publish-docker
+        run: |
+          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
+            docker push $image
+          done
+
+      - name: Commit package-lock.json
+        id: git
+        continue-on-error: true
+        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git pull
+          continue=false
+          if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
+            git add packages/${{ matrix.package }}/package-lock.json
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+            continue=true
+          fi
+          if [[ "${continue}" == "true" ]]; then
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+
+      - name: Trigger help update
+        continue-on-error: true
+        if: steps.publish.outcome == 'success'
+        run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Slack Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          matrix: ${{ toJson(matrix) }}
+          config: ".github/config/slack.yml"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: Slack Failed-Cancelled Notification
+        if: failure() || cancelled()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
