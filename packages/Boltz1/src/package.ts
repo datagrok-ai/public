@@ -22,9 +22,10 @@ export async function getBoltzConfigFolders(): Promise<string[]> {
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
 //input: string config
+//input: string msa
 //output: string s
-export async function runBoltz(config: string): Promise<string> {
-  return await BoltzService.runBoltz(config);
+export async function runBoltz(config: string, msa: string): Promise<string> {
+  return await BoltzService.runBoltz(config, msa);
 }
 
 //top-menu: Bio | Folding | Boltz-1...

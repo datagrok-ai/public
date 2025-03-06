@@ -15,11 +15,12 @@ export class BoltzService {
       .map(folder => folder.name);
   }
 
-  static async runBoltz(config: string): Promise<string> {
-   const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+  static async runBoltz(config: string, msa: string): Promise<string> {
+    const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
 
     const body = {
-      yaml: config
+      yaml: config,
+      ...(msa && msa.trim() !== "" && { msa: msa }),
     };
   
     const params: RequestInit = {
