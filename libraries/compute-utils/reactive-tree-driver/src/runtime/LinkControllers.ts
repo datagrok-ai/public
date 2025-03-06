@@ -50,6 +50,14 @@ export class ControllerBase<T> {
     return this.scopeInfo?.additionalParams?.[name];
   }
 
+  getMatchedInputs() {
+    return this.inputsSet;
+  }
+
+  getMatchedOutputs() {
+    return this.outputsSet;
+  }
+
   close() {
     this.isActive = false;
   }
@@ -76,7 +84,7 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
     return this.getAll<T>(name)?.[0];
   }
 
-  setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'none') {
+  setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
     this.outputs[name] = [state, restriction] as const;

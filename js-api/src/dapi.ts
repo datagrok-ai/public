@@ -959,7 +959,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * Proxies URL requests to docker containers via Datagrok server with the same interface as [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). Returns response
+   * Proxies URL requests to Docker containers via Datagrok server with the same interface as [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). Returns response
    * from the containers as it is. If an error occurs on the server side returns a response with "application/json"
    * Content-Type and JSON body with field "datagrok-error" that describes the cause. If container status is incorrect
    * for performing requests returns a response with a 400 status code. If something goes wrong in the server workflow,
@@ -978,10 +978,59 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * @deprecated The method will be removed soon. Use {@link fetchProxy}.
+   * Proxies WebSocket connection to Docker containers via Datagrok server. Returns ready WebSocket that is connected through the server to the
+   * Docker container WebSocket endpoint. If container status is incorrect or there is error while establishing WebSocket connection to Docker container, caller will receive an error.
+   * After the WebSocket is returned, caller can do anything with it and should take care of reconnection. After the caller closes the connection, server will close
+   * proxied Docker WebSocket connection.
+   * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
+   * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
    */
-  request(id: string, path: string, params: ResponseInit): Promise<string | null> {
-    return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
+  async webSocketProxy(containerId: string, path: string, timeout: number = 60000): Promise<WebSocket> {
+    if (!path.startsWith('/')) path = `/${path}`;
+
+    return new Promise<WebSocket>((resolve, reject) => {
+      const socket = new WebSocket(`${api.grok_Dapi_WS_Root()}/docker/containers/proxy-ws/${containerId}${path}`);
+
+      let timeoutTimer = setTimeout(() => {
+        cleanup();
+        socket.close(4001, "Timeout waiting for Docker container");
+        reject(new Error("Timeout waiting for Docker container"));
+      }, timeout); // Timeout after 5 seconds
+
+      // Wait for the CONNECTED message from the server.
+      // Message indicates that this and Docker container WebSockets are connected to each other.
+      const onMessage = (event: MessageEvent) => {
+        if (event.data === "CONNECTED") {
+          clearTimeout(timeoutTimer);
+          cleanup();
+          resolve(socket);
+        }
+      };
+
+      const onClose = (event: CloseEvent) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error(`Could not open WebSocket connection: ${event.reason}`));
+      };
+
+      // Unfortunately, event doesn't have error reference
+      const onError = (_: Event) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error("WebSocket encountered an error"));
+      };
+
+      function cleanup() {
+        socket.removeEventListener("message", onMessage);
+        socket.removeEventListener("close", onClose);
+        socket.removeEventListener("error", onError);
+      }
+
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose);
+      socket.addEventListener("error", onError);
+    });
   }
 
   /**

@@ -9,6 +9,30 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.24 || 2025-Feb
+
+### Visualization and analysis
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+|**Grid**: Rows and columns now resize together when you change row heights. This creates a zoom effect, where cell content adapts for optimal viewing. Zooming out shows the big picture. Zooming in shows details. This works especially well with dynamic content like proteins, user profiles, [forms](../../visualize/viewers/grid.md#summary-columns), and JIRA tickets. |![grid dynamic column width](img/grid-dynamic-column-widths.gif)|
+|**Grid**: We now support right-click panning. Hold the right mouse button to drag and move around your data. This feature is particularly useful when exploring extensive datasets in the zoomed-out mode.|![grid mouse pan](img/grid-mouse-pan-content.gif)|
+|**Grid**: You can now create [column groups](../../visualize/viewers/grid.md#column-groups)|![grid column groups](img/grid-column-groups.gif)|
+|**Grid**: You can now easily [(un)hide columns](../../visualize/viewers/grid.md#hiding-and-unhiding-columns)|![grid unhide columns](img/grid-unhide-columns.gif)|
+|**Cell renderers**: [Tags](../../visualize/viewers/grid.md#cell-renderers) cell renderer now works with boolean columns (previously, it required comma-separated values)|![grid tags renderer](img/grid-tags-renderer.gif)|
+|**Cell renderers**: [Sparklines](../../visualize/viewers/grid.md#summary-columns) now support multiple normalization options - by row, column, or global values|![sparklines normalization](img/sparklines-normalization-demo.gif)|
+|**Cell renderers**: We now support adaptive rendering of files in cells|![grid-files in cells](img/grid-files-in-cells.gif)|
+
+### Developer updates
+
+**JS API changes**:
+
+* New features:
+  * Classes: 0
+  * Functions: 10
+* [Breaking changes](http://localhost:3000/help/deploy/releases/compatibility/?from=1.23.1&to=1.24.0&breakingchanges=true)
+
+
 ## 1.23 || 2024-Dec
 
 ### New tools and apps

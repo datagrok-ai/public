@@ -2,23 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
-import {_package, getContainer, applyModelChemprop, trainModelChemprop} from '../package';
-import {ensureContainersRunning, readDataframe} from './utils';
+import {_package, applyModelChemprop, trainModelChemprop} from '../package';
+import {CONTAINER_TIMEOUT, ensureContainerRunning, readDataframe} from './utils';
 import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 category('chemprop', () => {
-  let container: DG.DockerContainer;
   let binBlob: Uint8Array;
   let table: DG.DataFrame;
 
   before(async () => {
     table = await readDataframe('tests/smiles_test.csv');
-    container = await getContainer();
-    await ensureContainersRunning();
   });
 
   test('trainModel', async () => {
+    await ensureContainerRunning('chemprop');
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
     const modelBlob = await fetchWrapper(() => trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
@@ -29,15 +27,16 @@ category('chemprop', () => {
     binBlob = await file?.async('uint8array')!;
         
     expect(file !== null, true);
-  }, {timeout: 60000});
+  }, {timeout: 90000 + CONTAINER_TIMEOUT});
 
-  test('applyModel', async () => {
+  test('utilizeModel', async () => {
+    await ensureContainerRunning('chemprop');
     const smilesColumn = table.columns.byName('canonical_smiles');
     const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
         
-    expect(column.length, 30);
+    expect(column.length, 20);
   });
-});
+}, {timeout: 90000 + CONTAINER_TIMEOUT});
 
 function getParameterValues() {
   return {

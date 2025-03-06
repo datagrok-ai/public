@@ -82,6 +82,7 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { ReinventBaseEditor, TARGET_PATH } from './widgets/reinvent-editor';
+import { oclMol } from './utils/chem-common-ocl';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1913,6 +1914,13 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //meta.role: canonicalizer
 export function canonicalize(molecule: string): string {
   return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+}
+
+//name: getMolecularFormula
+//input: string molecule { semType: molecule }
+//output: string molecularFormula
+export function getMolecularFormula(molecule: string): string {
+  return oclMol(molecule).getMolecularFormula().formula;
 }
 
 //name: validateMolecule

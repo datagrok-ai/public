@@ -1,5 +1,10 @@
 # Helm changelog
 
+## 2.8.1 (2025-03-03)
+
+### Bug fixes
+Fix error on empty R group in HELM
+
 ## 2.8.0 (2025-02-20)
 
 Supporting all notations for hovering, conversion and context actions

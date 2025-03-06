@@ -116,7 +116,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     );
   }
 
-  setState<T = any>(id: string, val: T | undefined, restrictionType: RestrictionType = 'none') {
+  setState<T = any>(id: string, val: T | undefined, restrictionType: RestrictionType = 'restricted') {
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);

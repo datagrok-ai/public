@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.8.2 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
 ## 6.8.1 (2025-02-03)
 
 MCL: Add History support

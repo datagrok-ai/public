@@ -92,6 +92,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
+      changeFuncCall
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
     const runActionWithConfirmation = (uuid: string) => {
@@ -449,9 +450,9 @@ export const TreeWizard = Vue.defineComponent({
 
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
         if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
         if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
+        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
       }
     };
 
@@ -466,6 +467,11 @@ export const TreeWizard = Vue.defineComponent({
         }
       }
     };
+
+    const onFuncCallChange = (call: DG.FuncCall) => {
+      if (chosenStepUuid.value)
+        changeFuncCall(chosenStepUuid.value, call)
+    }
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
@@ -540,7 +546,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-panel-icon='folder-tree'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
-                dock-spawn-z-index={51}
+                dock-spawn-z-index={2}
 
                 rootDroppable={false}
                 treeLine
@@ -608,7 +614,8 @@ export const TreeWizard = Vue.defineComponent({
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 showStepNavigation={true}
-                onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
+                skipInit={true}
+                onUpdate:funcCall={onFuncCallChange}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 onNextClicked={goNextStep}
                 onActionRequested={runActionWithConfirmation}

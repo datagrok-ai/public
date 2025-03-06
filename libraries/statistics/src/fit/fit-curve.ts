@@ -101,6 +101,7 @@ export interface IFitPoint {
   stdev?: number;          // when defined, renders an error bar candlestick
   // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
   // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
+  meta?: any;           // any additional data
 }
 
 /** A series consists of points, has a name, and options.
@@ -228,7 +229,7 @@ export class SigmoidFunction extends FitFunction {
   }
 
   get parameterNames(): string[] {
-    return ['Top', 'Bottom', 'Slope', 'IC50'];
+    return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
 
   y(params: Float32Array, x: number): number {
@@ -237,8 +238,8 @@ export class SigmoidFunction extends FitFunction {
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
-    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
-    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    const medY = (dataBounds.maxY - dataBounds.minY) / 2 + dataBounds.minY;
+    let maxYInterval = dataBounds.maxY - dataBounds.minY;
     let nearestXIndex = 0;
     for (let i = 0; i < x.length; i++) {
       const currentInterval = Math.abs(y[i] - medY);
@@ -252,7 +253,7 @@ export class SigmoidFunction extends FitFunction {
 
     // params are: [max, tan, IC50, min]
     const params = new Float32Array(4);
-    params.set([dataBounds.bottom, slope, xAtMedY, dataBounds.top]);
+    params.set([dataBounds.maxY, slope, xAtMedY, dataBounds.minY]);
     return params;
   }
 }
@@ -299,6 +300,41 @@ export class ExponentialFunction extends FitFunction {
   }
 }
 
+/** Class that implements the Four Parameter Logistic Regression function */
+export class FourPLRegressionFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_4PL_REGRESSION;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Slope', 'EC50', 'Bottom'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return fourPLRegression(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(4);
+    const bottom = Math.min(...y);
+    const top = Math.max(...y);
+    const medY = (top - bottom) / 2 + bottom;
+    let maxYInterval = top -bottom;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const ec50 = x[nearestXIndex];
+    const slope = y[0] > y[y.length - 1]? -10 : 10;
+    params.set([top, slope, ec50, bottom]);
+    return params;
+  }
+}
+
 /** Class that implements user JS functions */
 export class JsFunction extends FitFunction {
   private _name: string;
@@ -338,6 +374,7 @@ export const fitFunctions: {[index: string]: FitFunction} = {
   'sigmoid': new SigmoidFunction(),
   'log-linear': new LogLinearFunction(),
   'exponential': new ExponentialFunction(),
+  '4pl-regression': new FourPLRegressionFunction(),
 };
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
@@ -419,6 +456,7 @@ export const FIT_FUNCTION_SIGMOID = 'sigmoid';
 export const FIT_FUNCTION_LINEAR = 'linear';
 export const FIT_FUNCTION_LOG_LINEAR = 'log-linear';
 export const FIT_FUNCTION_EXPONENTIAL = 'exponential';
+export const FIT_FUNCTION_4PL_REGRESSION = '4pl-regression';
 
 export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
@@ -444,8 +482,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
 }
 
 export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel?: FitErrorModelType,
-    parameterBounds?: FitParamBounds[]): FitCurve {
-
+  parameterBounds?: FitParamBounds[]): FitCurve {
   errorModel ??= FitErrorModel.CONSTANT as FitErrorModelType;
   const curveFunction = fitFunction.y;
   let paramValues = fitFunction.getInitialParameters(data.x, data.y);
@@ -458,7 +495,7 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     topParamBounds[i] = paramValues[i] === 0 ? 1 : paramValues[i] + Math.abs(paramValues[i] * 0.5);
   }
   const parameterBoundsBitset: DG.BitSet = DG.BitSet.create(fitFunction.parameterNames.length * 2);
-  if (parameterBounds && parameterBounds.length !== 0)
+  if (parameterBounds && parameterBounds.length !== 0) {
     for (let i = 0; i < parameterBounds.length; i++) {
       if (parameterBounds[i].min !== undefined && parameterBounds[i].min !== null) {
         bottomParamBounds[i] = parameterBounds[i].min!;
@@ -469,7 +506,7 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
         parameterBoundsBitset.set(i * 2 + 1, true);
       }
     }
-
+  }
   const getConsistency = (extremum: Extremum) => {
     const residuals = of(extremum.point).residuals;
     let q1q4 = 0;
@@ -503,9 +540,10 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     }, 10, paramValues);
 
     minIdx = 0;
-    for (let i = 1; i < optimization.extremums.length; i++)
+    for (let i = 1; i < optimization.extremums.length; i++) {
       if (optimization.extremums[i].cost < optimization.extremums[minIdx].cost)
         minIdx = i;
+    }
 
     const newStatistics = getConsistency(optimization.extremums[minIdx]);
     if (statistics === null)
@@ -517,26 +555,21 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
     else
       continueOptimization++;
 
-    if (iter === -1) {
-      if (statistics <= 2)
-        break;
-      iter++;
-    }
+    paramValues = optimization.extremums[minIdx].point;
 
-    if (iter > 40)
-      break;
-    if (continueOptimization === 3)
+    if (iter > 40 || continueOptimization === 3)
       break;
 
     for (let i = 0; i < fitFunction.parameterNames.length; i++) {
       if (!parameterBoundsBitset.get(i * 2))
-        bottomParamBounds[i] = paramValues[i] - Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+        bottomParamBounds[i] = paramValues[i] - Math.abs(paramValues[i] * (continueOptimization + 0.5));
       if (!parameterBoundsBitset.get(i * 2 + 1))
-        topParamBounds[i] = paramValues[i] + Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+        topParamBounds[i] = paramValues[i] + Math.abs(paramValues[i] * (continueOptimization + 0.5));
     }
+
+    iter++;
   } while (true);
 
-  paramValues = optimization.extremums[minIdx].point;
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
@@ -653,6 +686,14 @@ export function exponential(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
   return A * Math.exp(x * B);
+}
+
+export function fourPLRegression(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  const C = params[2];
+  const D = params[3];
+  return D + (A - D) / (1 + Math.pow(x / C, B));
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {

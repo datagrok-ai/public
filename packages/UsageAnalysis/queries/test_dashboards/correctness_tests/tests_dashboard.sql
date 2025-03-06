@@ -14,7 +14,8 @@ WITH last_builds AS (
     from builds b
     -- todo: filter builds with cicd not-stresstest runs
     -- todo: filter only success builds
-    where (SELECT count(*) from test_runs r where r.build_name = b.name
+    where (SELECT count(*) from test_runs r join tests t on r.test_name = t.name where t.type = 'package'
+                                              and r.build_name = b.name
                                               and not r.stress_test
                                               and (@instanceFilter is null or r.instance like '%' || @instanceFilter || '%')
                                               and r.benchmark = @showBenchmarks

@@ -59,13 +59,19 @@ category('projects', () => {
   }, {timeout: 50000});
 
   test('names_to_smiles', async () => {
-    await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
-      ['Name', 'canonical_smiles'], '');
+    const chemblPackInstalled = DG.Func.find({ package: 'ChemblApi', name: 'getCompoundsIds' }).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
+        ['Name', 'canonical_smiles'], '');
+    }
   });
 
   test('names_to_smiles_sync', async () => {
-    await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
-      ['Name', 'canonical_smiles'], '', true);
+    const chemblPackInstalled = DG.Func.find({ package: 'ChemblApi', name: 'getCompoundsIds' }).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
+        ['Name', 'canonical_smiles'], '', true);
+    }
   });
 
   test('convert_notation', async () => {
@@ -354,10 +360,16 @@ async function checkViewerAdded(viewerType: string): Promise<void> {
   }, `${viewerType} hasn\'t been added`, 5000);
 }
 
-export async function checkActivityCliffsCustomInit(): Promise<void> {
+export async function checkActivityCliffsCustomInit(tv: DG.TableView): Promise<void> {
+  //get activity cliffs scatter plot
+  let sp: DG.Viewer | null = null;
+  for (let v of grok.shell.tv.viewers) {
+    if (v.type === DG.VIEWER.SCATTER_PLOT)
+      sp = v;
+  }
   await awaitCheck(() => {
-    const links = document.getElementsByClassName('scatter_plot_link');
-    return links.length === 2 && (links[0] as HTMLElement).innerText.toLowerCase() === `15 cliffs`
+    const link = sp?.root.getElementsByClassName('scatter_plot_link');
+    return !link || !link.length ? false : (link[0] as HTMLElement).innerText.toLowerCase() === `15 cliffs`;
   }, 'Initialization function hasn\'t been applied on scatter plot', 5000);
 }
 

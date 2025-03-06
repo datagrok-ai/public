@@ -35,6 +35,7 @@ export class PanelContainer implements IDockContainerWithSize {
   title: string;
   containerType: ContainerType;
   icon: string;
+  zIndex: string;
   hasChanges: boolean;
   minimumAllowedChildNodes: number;
   isDialog: boolean;
@@ -60,7 +61,7 @@ export class PanelContainer implements IDockContainerWithSize {
   _grayOut: HTMLDivElement;
   _ctxMenu: HTMLDivElement;
 
-  constructor(elementContent: HTMLElement, dockManager: DockManager, title?: string, panelType?: PanelType, hideCloseButton?: boolean, panelIcon?: string) {
+  constructor(elementContent: HTMLElement, dockManager: DockManager, title?: string, panelType?: PanelType, hideCloseButton?: boolean, panelIcon?: string, zIndex?: string) {
     if (!title)
       title = Localizer.getString('DefaultPanelName');
     if (!panelType)
@@ -96,6 +97,7 @@ export class PanelContainer implements IDockContainerWithSize {
     this.title = title;
     this.containerType = ContainerType.panel;
     this.icon = panelIcon;
+    this.zIndex = zIndex;
     this.minimumAllowedChildNodes = 0;
     this._floatingDialog = undefined;
     this.isDialog = false;
@@ -166,6 +168,8 @@ export class PanelContainer implements IDockContainerWithSize {
     this._resolvedElementContent = this.elementContent;
     if (this.elementContent instanceof HTMLSlotElement)
       this._resolvedElementContent = <HTMLElement> this.elementContent.assignedElements()?.[0];
+
+    this.elementContent.parentElement.style.zIndex = this.zIndex;
   }
 
   static createContextMenuContentCallback = (panelContainer: PanelContainer): Node[] => {
@@ -265,13 +269,14 @@ export class PanelContainer implements IDockContainerWithSize {
     if (elementContent === null)
       return null;
 
-    const ret = new PanelContainer(elementContent, dockManager, title);
+    const ret = new PanelContainer(elementContent, dockManager, title, state.panelType, state.hideCloseButton, state.panelIcon, state.zIndex);
     ret.loadState(state);
     return ret;
   }
 
   saveState(state: IState) {
     state.panelIcon = this.icon;
+    state.zIndex = this.zIndex;
     state.element = this.elementContent.tagName === 'SLOT' ?
       //@ts-ignore
       this.elementContent.assignedElements()[0].getAttribute('dock-spawn-title') :
@@ -291,6 +296,7 @@ export class PanelContainer implements IDockContainerWithSize {
     this.hideCloseButton(state.hideCloseButton);
     this.panelType = state.panelType;
     this.icon = state.panelIcon;
+    this.zIndex = state.zIndex;
     this._updateTitle();
   }
 
@@ -565,7 +571,7 @@ export class PanelContainer implements IDockContainerWithSize {
 
   private async closeInternal(runCallback: boolean) {
     let close = true;
-    
+
     if (!(this.elementContentContainer.parentElement === this.dockManager.config.dialogRootElement))
       this.prepareForDocking();
 

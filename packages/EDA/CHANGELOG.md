@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.3.4 (2025-02-28)
+
+MCL: Updated ML library to support large MCL matrices
+
 ## 1.3.3 (2025-02-20)
 
 * Updated the MVA demo

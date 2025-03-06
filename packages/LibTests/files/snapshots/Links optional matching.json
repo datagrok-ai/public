@@ -103,8 +103,7 @@
             ],
             "ioName": "res"
           }
-        ],
-        "in2": []
+        ]
       },
       "outputs": {
         "out1": [

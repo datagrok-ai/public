@@ -31,6 +31,7 @@ import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, ha
   noModels} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
+import {getDiffGrok} from './pipeline';
 
 import '../css/app-styles.css';
 
@@ -1424,9 +1425,10 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
+
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
-        ivp: ivp,
+        diffGrok: getDiffGrok(ivp),
       });
     } catch (err) {
       this.processError(err);
@@ -2108,7 +2110,7 @@ export class DiffStudio {
       const plot = DG.Viewer.lineChart(this.solutionTable, {
         xColumnName: colNames[0],
         yColumnNames: [colNames[i]],
-        autoLayout: false,
+        autoLayout: true,
         showXAxis: true,
         showYAxis: true,
         showXSelector: false,

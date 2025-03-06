@@ -9,4 +9,5 @@ export interface IState {
     hideCloseButton?: boolean;
     panelType?: PanelType;
     panelIcon?: string,
+    zIndex?: string;
 }

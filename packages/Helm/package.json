@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"

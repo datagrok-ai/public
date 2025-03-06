@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Oleksandra Serhiienko",

@@ -54,7 +54,7 @@ export type PipelineLinkConfigurationBase<P> = {
   base?: P,
   actions?: P;
   dataFrameMutations?: boolean | string[];
-  defaultRestrictions?: Record<string, RestrictionType>;
+  defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
 }
 
@@ -120,6 +120,7 @@ export type ActionPositions = typeof actionPositions[number];
 // static steps config
 export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
+  type?: 'step',
   nqName: NqName;
   friendlyName?: string;
   io?: S;

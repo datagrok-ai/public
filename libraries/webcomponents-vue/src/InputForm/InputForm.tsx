@@ -71,7 +71,7 @@ export const InputForm = Vue.defineComponent({
       );
     });
 
-    const currentForm = Vue.ref(undefined as undefined | DG.InputForm);
+    const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
     Vue.watchEffect(() => {
       if (!currentForm.value) return;
@@ -103,8 +103,24 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form!.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
-          if (paramItems && input.inputType === DG.InputType.Choice)
-            (input as DG.ChoiceInput<any>).items = paramItems;
+          if (paramItems && input.inputType === DG.InputType.Choice) {
+            input.notify = false;
+            try {
+              const currentValue = param.value;
+              (input as DG.ChoiceInput<any>).items = paramItems;
+              input.value = currentValue;
+            } finally {
+              input.notify = true;
+            }
+          }
+          // TODO: FormApi
+          // const rangeMeta = meta[param.property.name]?.['range'];
+          //if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
+          const hideMeta = meta[param.property.name]?.['hidden'];
+          if (hideMeta)
+            input.root.style.display = 'none';
+          else
+            input.root.style.display = 'flex';
         });
     });
 

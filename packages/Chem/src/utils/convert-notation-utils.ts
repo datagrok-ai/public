@@ -29,6 +29,7 @@ M  END`;
  * Molfile V3000)
  * @param {string} targetNotation  possible values: same as for sourceNotation
  * @param {RDModule} rdKitModule
+ * @param {boolean} addHs
  * @return {string} the converted representation
  */
 export function _convertMolNotation(
@@ -36,6 +37,7 @@ export function _convertMolNotation(
   sourceNotation: DG.chem.Notation,
   targetNotation: DG.chem.Notation,
   rdKitModule: RDModule,
+  addHs: boolean = false,
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
@@ -53,6 +55,11 @@ export function _convertMolNotation(
             mol!.set_new_coords();
           mol.normalize_depiction(1);
           mol.straighten_depiction(false);
+        }
+        if (addHs) {
+          try {
+            mol.add_hs_in_place();
+          } catch (e) {}
         }
         result = mol.get_molblock();
       }

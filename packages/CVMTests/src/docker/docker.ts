@@ -58,6 +58,43 @@ category('Docker', () => {
       grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
     }
   }, {timeout: 240000, /*stressTest: true*/});
+
+  test('Proxy WebSocket', async () => {
+    let ws: WebSocket | undefined;
+    try {
+      const container = await startContainer(containerSimple);
+      ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
+      const testMessage = 'Hello World!';
+      await new Promise<void>((res, rej) => {
+        const onMessage = (event: MessageEvent) => {
+          if (event.data === testMessage) {
+            cleanup();
+            res();
+          }
+          else {
+            cleanup();
+            rej(new Error(`First message wasn't the same as expected: ${event.data}`))
+          }
+        };
+
+        const onError = (_: Event) => {
+          cleanup();
+          rej(new Error("WebSocket encountered an error"));
+        };
+
+        function cleanup() {
+          ws!.removeEventListener("message", onMessage);
+          ws!.removeEventListener("error", onError);
+        }
+
+        ws!.addEventListener("message", onMessage);
+        ws!.addEventListener("error", onError);
+        ws!.send(testMessage);
+      });
+    } finally {
+      ws?.close();
+    }
+  });
 });
 
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {

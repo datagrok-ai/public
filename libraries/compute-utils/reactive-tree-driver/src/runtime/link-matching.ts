@@ -9,7 +9,7 @@ import {StateTreeNode} from './StateTreeNodes';
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
 export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | FuncCallActionConfiguration<LinkIOParsed[]>;
 
-type MatchedIO = {
+export type MatchedIO = {
   path: Readonly<NodePath>;
   ioName?: string;
 }
@@ -85,8 +85,12 @@ function matchLinkInstance(
     const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call'));
     const useDescriptionsStore = (spec.type === 'selector' && kind === 'outputs');
     const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
-    if (paths.length == 0 && !io.flags?.includes('optional'))
-      return;
+    if (paths.length == 0) {
+      if (io.flags?.includes('optional'))
+        continue;
+      else
+        return;
+    }
     if (currentIO[io.name] != null)
       throw new Error(`Duplicate io name ${io.name} in link ${rnode.getItem().config.id}`);
     currentIO[io.name] = paths;

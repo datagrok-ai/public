@@ -39,6 +39,16 @@ export class BaseTree<T> {
     return true;
   }
 
+  public static compareAddresses(a1: Readonly<NodeAddress>, a2: Readonly<NodeAddress>): number {
+    for (const [level, {idx}] of a1.entries()) {
+      const idx2 = a2[level]?.idx;
+      if (idx === idx2)
+        continue;
+      return idx - idx2;
+    }
+    return a1.length - a2.length;
+  }
+
   constructor(item: T) {
     this.root = new TreeNode(item);
   }

@@ -141,9 +141,6 @@ export class AutoDockService implements IAutoDockService {
     };
 
     const path = `/autodock/dock_ligand`;
-    // const adResStr = (await grok.dapi.docker.dockerContainers.request(this.dc.id, path, params))!;
-    // const adRes: Forms.runRes = JSON.parse(adResStr) as Forms.runRes;
-    // TODO: Use the new dockerContainers API
     const adRes = (await this.fetchAndCheck(path, params)) as Forms.dockLigandRes;
     const result = adRes as unknown as Forms.LigandResults;
     const poses = result.poses;
