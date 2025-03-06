@@ -1,5 +1,10 @@
 # Diff Studio changelog
 
+## 1.2.5 (2025-03-06)
+
+* Fitting in webworkers for models with updates
+* Added tests for pipelines
+
 ## 1.2.4 (2025-02-20)
 
 * Implemented the use of Diff Grok library
