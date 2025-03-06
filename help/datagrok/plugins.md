@@ -18,6 +18,7 @@ sidebar_position: 1.2
 | Data format |[Arrow](https://github.com/datagrok-ai/public/tree/master/packages/Arrow)|Optional |Support for parquet and feather |Stable|
 | Data format |[FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors)|Optional |Support for PDF, DOCX |Stable|
 | Misc |[Alation](https://github.com/datagrok-ai/public/tree/master/packages/Alation)|Optional| Integration with [Alation](https://www.alation.com/) (commercial 3rd party license)|Stable|
+| Jira |[JiraConnect](https://github.com/datagrok-ai/public/tree/master/packages/JiraConnect)|Optional| Integration with Jira |Stable|
 
 ## Govern
 
