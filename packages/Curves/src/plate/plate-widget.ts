@@ -375,6 +375,7 @@ export class PlateWidget extends DG.Widget {
     const gc = args.cell;
     args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
     args.g.strokeStyle = 'grey';
+    args.g.lineWidth = 1;
     let g = args.g;
     let x = args.bounds.x, y = args.bounds.y, w = args.bounds.width, h = args.bounds.height;
     const dataRow  = this.dataRow(gc);
