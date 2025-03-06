@@ -1,37 +1,37 @@
-.docking-samples-input {
+.boltz-samples-input {
   margin-left: -90px;
 }
 
-.docking-buttons-container {
+.boltz-buttons-container {
   justify-content: center;
   gap: 10px;
   margin-top: 10px;
 }
 
-.docking-input-section {
+.boltz-input-section {
   border: 1px solid #ccc;
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 8px;
 }
 
-.docking-title {
+.boltz-title {
   font-weight: bold;
   font-size: 14px;
   margin-bottom: 10px;
 }
 
-.docking-app-wrapper {
+.boltz-app-wrapper {
   width: fit-content;
   overflow: unset;
 }
 
-.docking-tab-control {
+.boltz-tab-control {
   height: 100%!important;
   width: 100%!important;
 }
 
-.docking-sequence-input {
+.boltz-sequence-input {
   height: 50px!important;
   margin-left: -50px!important;
 }

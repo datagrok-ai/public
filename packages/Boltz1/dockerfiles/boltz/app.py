@@ -86,7 +86,6 @@ def predict():
       "predict",
       yaml_file_path,
       "--accelerator", accelerator,
-      "--num_workers", "1",
       "--output_format", "pdb",
       "--override",
     ]
@@ -105,9 +104,10 @@ def predict():
     
     stdout, stderr = process.communicate()
     logging.info(f"Process return code: {process.returncode}")
+
+    yaml_file_name = os.path.splitext(os.path.basename(yaml_file_path))[0]
     if process.returncode == 0:
       logging.info(f"Process succeeded. Output:\n{stdout.strip()}")
-      yaml_file_name = os.path.splitext(os.path.basename(yaml_file_path))[0]
       for root, dirs, files in os.walk("."):
         if "results" in root:
           predictions_folder = os.path.join(root, "predictions", yaml_file_name)

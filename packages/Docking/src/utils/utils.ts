@@ -7,7 +7,7 @@ import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
 import { BINDING_ENERGY_COL, CACHED_RESULTS, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
 
-export function getFromPdbs(pdb: DG.SemanticValue, inBoltz: boolean = false): DG.DataFrame {
+export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
   const col = pdb.cell.column;
   if (CACHED_RESULTS.has(col.toString()))
     return CACHED_RESULTS.get(col.toString())!;
@@ -16,9 +16,7 @@ export function getFromPdbs(pdb: DG.SemanticValue, inBoltz: boolean = false): DG
   
   for (let idx = 0; idx < col.length; idx++) {
     const pdbValue = col.get(idx);
-    const remarkRegex = inBoltz 
-      ? /REMARK\s+\d+\s+([^\d]+?)\s+([-\d.]+)/g
-      : /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
+    const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
     let match;
   
     while ((match = remarkRegex.exec(pdbValue)) !== null) {

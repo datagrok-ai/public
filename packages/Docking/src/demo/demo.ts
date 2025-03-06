@@ -20,17 +20,12 @@ export function showHelpPanel(info: string) {
   grok.shell.windows.help.visible = true;
 }
 
-export async function _demoFolding(): Promise<void> {
-  await demo('folding', ['Boltz1 protein', 'EsmFold protein']);
-  showHelpPanel(HELP_FOLDING);
-}
-
 export async function _demoDocking(): Promise<void> {
   await demo('docking', ['Autodock poses', 'DiffDock poses']);
   showHelpPanel(HELP_DOCKING);
 }
 
-async function demo(type: "docking" | "folding", columnNames: string[]): Promise<void> {
+async function demo(type: "docking", columnNames: string[]): Promise<void> {
   const datasetPath = `System:AppData/Docking/demo_files/${type}_demo.csv`;
   const layoutPath = `System:AppData/Docking/demo_files/${type}_demo.layout`;
 
@@ -45,23 +40,11 @@ async function demo(type: "docking" | "folding", columnNames: string[]): Promise
     const name = columnNames[i];
     const column = dataFrame.getCol(name);
     column.semType = DG.SEMTYPE.MOLECULE3D;
-    if (type === 'docking') {
-      column.setTag('docking.role', 'ligand');
-    }
+    column.setTag('docking.role', 'ligand');
   }
 
   dataFrame.currentCell = dataFrame.cell(0, columnNames[0]);
 }
-
-// Constants
-export const HELP_FOLDING = `# Folding Demo
-
-This demo showcases **EsmFold** and **Boltz-1**, models for predicting biomolecular structures.
-
-To run folding for the entire column:  
-  - Select **Bio | Folding | EsmFold** or **Bio | Folding | Boltz-1** from the top menu.  
-  - This applies the selected model to all sequences in the column.  
-`
 
 export const HELP_DOCKING = `# Docking Demo  
 

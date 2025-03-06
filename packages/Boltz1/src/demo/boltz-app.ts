@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import { _package } from '../package';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-
 import * as yaml from 'js-yaml';
 
-import '../css/docking.css';
 import { BoltzService } from '../utils/boltz-service';
+import { _package } from '../package';
+
+import '../css/boltz.css';
 
 export class Boltz1AppView {
   private sequenceInputs: Map<string, DG.InputBase> = new Map();
@@ -21,7 +21,7 @@ export class Boltz1AppView {
 
   constructor() {
     this.divV = ui.divV([], 'ui-form');
-    this.divV.classList.add('docking-app-wrapper');
+    this.divV.classList.add('boltz-app-wrapper');
 
     this.createHeader();
     this.createSamplesInput();
@@ -43,7 +43,7 @@ export class Boltz1AppView {
 
   private createSamplesInput(): void {
     this.samplesInput = ui.input.int('Results', { value: 1 });
-    this.samplesInput.root.classList.add('docking-samples-input');
+    this.samplesInput.root.classList.add('boltz-samples-input');
     this.divV.append(this.samplesInput.root);
   }
 
@@ -114,7 +114,7 @@ export class Boltz1AppView {
     Object.assign(exampleButton.style, { margin: '0' });
 
     this.divV.append(
-      ui.divH([addButton, exampleButton, submitButton], 'docking-buttons-container')
+      ui.divH([addButton, exampleButton, submitButton], 'boltz-buttons-container')
     );
   }
 
@@ -126,9 +126,9 @@ export class Boltz1AppView {
 
   private createInputSection(type: FUNC_PROPS_FIELD, uniqueName: string): HTMLDivElement {
     const div = ui.divV([]);
-    div.classList.add('docking-input-section');
+    div.classList.add('boltz-input-section');
 
-    const titleDiv = ui.divH([ui.divText(type)], 'docking-title');
+    const titleDiv = ui.divH([ui.divText(type)], 'boltz-title');
 
     const deleteButton = ui.button(ui.icons.delete(() => {
       div.remove();
@@ -168,7 +168,7 @@ export class Boltz1AppView {
         return panel;
       },
     }).root;
-    tabControl.classList.add('docking-tab-control');
+    tabControl.classList.add('boltz-tab-control');
     return tabControl;
   }
 
@@ -189,7 +189,7 @@ export class Boltz1AppView {
 
   private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {
     const sequenceInp = ui.input.textArea('Sequence');
-    sequenceInp.root.classList.add('docking-sequence-input');
+    sequenceInp.root.classList.add('boltz-sequence-input');
     this.sequenceInputs.set(uniqueName, sequenceInp);
 
     let modificationCounter = 0;
