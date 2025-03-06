@@ -64,7 +64,7 @@ export function isApplicableBoltz(molecule: string): boolean {
 }
 
 //tags: app
-//name: Boltz-1 App
+//name: Boltz-1
 //output: view v
 //meta.browsePath: Bio
 export async function boltz1App(): Promise<DG.ViewBase> {
