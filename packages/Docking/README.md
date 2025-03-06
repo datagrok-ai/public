@@ -2,7 +2,7 @@
 
 The [Docking package](https://datagrok.ai/help/develop/develop#packages) 
 is a plugin that integrates 
-the [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) utility and [Boltz-1](https://github.com/jwohlwend/boltz/tree/main) model
+the [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) utility
 with the [Datagrok](https://datagrok.ai) platform.
 
 This package also provides a good example of Datagrok integration 
@@ -79,36 +79,3 @@ When the results are ready, you can:
 4. **Explore additional properties**: Calculated properties for the selected pose allow users to explore binding affinities, interaction energies, or other relevant information for detailed analysis.
 
 ![additional properties](help/additional-properties.gif)
-
-## Boltz-1
-
-[Boltz-1](https://github.com/jwohlwend/boltz/tree/main) is the state-of-the-art open-source model to predict biomolecular structures containing combinations of proteins, RNA, DNA, and other molecules. It also supports modified residues, covalent ligands and glycans, as well as conditioning the prediction on specified interaction pockets or contacts.
-
-### How To
-
-#### Prepare the configuration
-
-The Docking plugin comes with several pre-configured [configurations](https://github.com/datagrok-ai/public/tree/master/packages/Docking/files/boltz). To add your own custom configuration, follow the [Boltz-1 setup instructions](https://github.com/jwohlwend/boltz/blob/main/docs/prediction.md).
-
-Once you've prepared your configuration, place the files in a folder under **System:AppData/Docking/boltz**. The folder name will appear as the configuration name in the Datagrok plugin UI.
-
-#### Run Folding
-
-1. Navigate to **Bio > Folding > Boltz-1**. A dialog appears.
-2. Configure the parameters:
-   - `Table`: Select the table.
-   - `Sequences`: Specify the column within the provided dataframe that contains sequences to be folded.
-3. Run the calculations.
-
-![boltz folding](help/boltz-folding.gif)
-
-#### Run Docking
-
-1. Navigate to Chem > Docking > Boltz-1. A dialog appears.
-2. Configure the parameters:
-   * `Table`: Select the table.
-   * `Ligands`: Specify the column within the provided dataframe that contains the small molecules to be docked.
-   * `Configuration`: Choose the folder containing the configurations.
-3. Run the calculations.
-
-![boltz docking](help/boltz-docking.gif)

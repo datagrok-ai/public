@@ -3,10 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as yaml from 'js-yaml';
-import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from './constants';
-import { getFromPdbs, prop } from './utils';
-import { getTableView } from '../package';
-import { _package } from '../package-test';
+import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
+import { _package } from '../package';
+import { getFromPdbs, prop, getTableView } from '../utils/utils';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -17,11 +16,11 @@ export class BoltzService {
   }
 
   static async runBoltz(config: string, msa: string): Promise<string> {
-   const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+    const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
 
     const body = {
       yaml: config,
-      ...(msa && { msa: msa }),
+      ...(msa && msa.trim() !== "" && { msa: msa }),
     };
   
     const params: RequestInit = {
@@ -86,7 +85,7 @@ export class BoltzService {
       });
   
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Docking:runBoltz', { config: yamlString, msa: '' }));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
       resultDf.append(result, true);
     }
   
@@ -102,7 +101,7 @@ export class BoltzService {
     const configFile = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
     const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
     
-    let msaFile;
+    let msaFile = '';
     if (msa)
       msaFile = await grok.dapi.files.readAsText(msa.fullPath);
     
@@ -129,7 +128,7 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Docking:runBoltz', { config: updatedConfig, msa: msaFile}));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
 
       sequences.pop();
@@ -145,7 +144,7 @@ export class BoltzService {
   
   static async boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
     const value = molecule.value;
-    const boltzResults: DG.DataFrame = getFromPdbs(molecule, true);
+    const boltzResults: DG.DataFrame = getFromPdbs(molecule);
     const widget = new DG.Widget(ui.div([]));
   
     const targetViewer = await molecule.cell.dataFrame.plot.fromType('Biostructure', {

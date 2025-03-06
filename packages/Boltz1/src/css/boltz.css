@@ -1,0 +1,37 @@
+.boltz-samples-input {
+  margin-left: -90px;
+}
+
+.boltz-buttons-container {
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.boltz-input-section {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+
+.boltz-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.boltz-app-wrapper {
+  width: fit-content;
+  overflow: unset;
+}
+
+.boltz-tab-control {
+  height: 100%!important;
+  width: 100%!important;
+}
+
+.boltz-sequence-input {
+  height: 50px!important;
+  margin-left: -50px!important;
+}
