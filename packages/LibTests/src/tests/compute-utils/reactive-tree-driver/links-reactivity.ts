@@ -708,6 +708,42 @@ category('ComputeUtils: Driver links reactivity', async () => {
     });
   });
 
+  test('Run no inputs meta on init', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: [],
+        to: 'out1:step1/a',
+        type: 'meta',
+        handler({controller}) {
+          controller.setViewMeta('out1', {key: 'val'});
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]);
+      expectObservable((node.getItem().getStateStore() as FuncCallInstancesBridge).meta$.pipe(
+        switchMap((x) => x.a),
+      )).toBe('a', {
+        a: {
+          'key': 'val',
+        },
+      });
+    });
+  });
+
   test('Get and run pipeline validation actions', async () => {
     const s = new Subject<string>();
     const config3: PipelineConfiguration = {
