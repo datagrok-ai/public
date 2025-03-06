@@ -101,7 +101,7 @@ export class BoltzService {
     const configFile = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
     const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
     
-    let msaFile = null;
+    let msaFile = '';
     if (msa)
       msaFile = await grok.dapi.files.readAsText(msa.fullPath);
     
@@ -128,7 +128,7 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig}));
+      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
 
       sequences.pop();

@@ -86,6 +86,7 @@ def predict():
       "predict",
       yaml_file_path,
       "--accelerator", accelerator,
+      "--num_workers", "4",
       "--output_format", "pdb",
       "--override",
     ]

@@ -1,6 +1,6 @@
 {
-  "cpu": 2,
-  "memory": 16385,
+  "cpu": 4,
+  "memory": 30721,
   "on_demand": true, 
   "shutdown_timeout": 30
 }
