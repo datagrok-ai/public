@@ -21,14 +21,15 @@ enum ELEMENTS {
   SIMILARITY = 'similarity',
 }
 
-export function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null): DG.DataFrame | null {
-  const xmlhttp = new XMLHttpRequest();
-  xmlhttp.open("GET", `${BASE_URL}/${searchType}/${smiles}${searchType === SEARCH_TYPE.SUBSTRUCTURE ? '' : `/${score}`}`, false);
-  xmlhttp.send();
-  const xmlDoc = xmlhttp.responseXML;
-  if (xmlDoc === null)
-    return null;
-  const molecules = xmlDoc.getElementsByTagName("molecule");
+export async function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null):
+  Promise<DG.DataFrame | null> {
+  const response = await grok.dapi.fetchProxy(
+    `${BASE_URL}/${searchType}/${smiles}${searchType === SEARCH_TYPE.SUBSTRUCTURE ?'' :`/${score}`}`);
+
+  const responseText = await response.text();
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(responseText, 'text/xml');
+  const molecules = xmlDoc.getElementsByTagName('molecule');
   const rowCount = Math.min(molecules.length, 20);
 
   const df = DG.DataFrame.create(rowCount);
@@ -84,7 +85,7 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
     //   return null;
 
     // return df;
-    return getData(SEARCH_TYPE.SUBSTRUCTURE, mol);
+    return await getData(SEARCH_TYPE.SUBSTRUCTURE, mol);
   } catch (e: any) {
     console.error('In SubstructureSearch: ' + e.toString());
     throw e;
@@ -105,7 +106,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
     //   return null;
 
     // return df;
-    return getData(SEARCH_TYPE.SIMILARITY, molecule, 40);
+    return await getData(SEARCH_TYPE.SIMILARITY, molecule, 40);
   } catch (e: any) {
     console.error('In SimilaritySearch: ' + e.toString());
     throw e;

@@ -8,7 +8,7 @@ const smiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
 
 category('Searches', () => {
   test('Similarity', async () => {
-    const df = getData(SEARCH_TYPE.SIMILARITY, smiles, 40);
+    const df = await getData(SEARCH_TYPE.SIMILARITY, smiles, 40);
     expect(df!.rowCount, 19);
 
     if (df != null)
@@ -16,7 +16,7 @@ category('Searches', () => {
   });
 
   test('Substructure', async () => {
-    const df = getData(SEARCH_TYPE.SUBSTRUCTURE, smiles, 40);
+    const df = await getData(SEARCH_TYPE.SUBSTRUCTURE, smiles, 40);
     expect(df!.rowCount, 19);
 
     if (df != null)
