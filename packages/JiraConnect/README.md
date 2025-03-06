@@ -20,6 +20,5 @@ Go to **Platform / Plugins / JiraConnect**, expand the Actions tab on the Contex
 - host
 
 Optionally, you can open this dialog by selecting **Credentials** from the JiraConnect package's context menu.
-https://github.com/datagrok-ai/public/blob/master/packages/JiraConnect/README.md#setting-up
 
 ![](img/jira-cred-setup.gif)
