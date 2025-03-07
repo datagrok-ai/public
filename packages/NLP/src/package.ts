@@ -10,6 +10,7 @@ import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemm
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
 import '../css/stemming-search.css';
+import { SentenceSimilarityViewer } from './sentence-similarity-viewer';
 
 export const _package = new DG.Package();
 
@@ -321,4 +322,71 @@ export function similar(query: string): DG.Widget {
   }
 
   return new DG.Widget(ui.divV(uiElements));
+}
+
+//name: getEmbeddings
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: column sentences
+export async function getEmbeddings(sentences: DG.Column) {
+  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
+  
+  const body = {
+    sentences: sentences.toList(),
+  };
+
+  const response = await fetch('http://127.0.0.1:8000/get_embeddings', {
+  //const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const result = await response.json();
+  const embeddings = result.embeddings;
+  return embeddings;
+}
+
+//name: getSimilar
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: list embeddings
+//input: column sentences
+//input: int currentRow
+//output: string result
+export async function getSimilar(embeddings: Array<Array<number>>, sentences: DG.Column, currentRow: number): Promise<string> {
+  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
+  
+  const body = {
+    embeddings: embeddings,
+    sentences: sentences.toList(),
+    index: currentRow
+  };
+
+  const response = await fetch('http://127.0.0.1:8000/find_similar', {
+  //const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const result = await response.json();
+  const resultString = result.result;
+  return resultString;
+}
+
+//name: Sentence Similarity Search
+//tags: viewer
+//output: viewer result
+export function sentenceSearchViewer() {
+  return new SentenceSimilarityViewer();
+}
+
+//top-menu: ML | Duplicate search
+//name: sentenceSearch
+//output: viewer result
+export function sentenceSearchTopMenu(): void {
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = view.addViewer('Sentence Similarity Search');
+  view.dockManager.dock(viewer, 'down');
 }
