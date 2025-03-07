@@ -1,5 +1,18 @@
 # Admetica changelog
 
+## 1.1.0 (2025-03-07)
+
+### Features
+
+* Admetica: Demo application showcasing main functionality
+
+### Bug Fixes
+
+* Admetica: Form: Wraps content properly when space is limited
+* Admetica: Added units to the calculated ADMET values for cell
+* Admetica: Fixed issue with the summary pane not working for molblocks
+* Admetica: Grid groups for property organization
+
 ## 1.0.2 (2024-10-18)
 
 ### Bug Fixes
