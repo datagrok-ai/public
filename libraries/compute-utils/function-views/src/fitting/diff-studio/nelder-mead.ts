@@ -1,7 +1,7 @@
 /* eslint-disable valid-jsdoc */
 import * as DG from 'datagrok-api/dg';
 
-import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames} from '@datagrok/diff-grok';
+import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from '@datagrok/diff-grok';
 import {LOSS} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
@@ -30,6 +30,18 @@ export function getFailesDf(points: Float32Array[], warnings: string[]): DG.Data
 
   return null;
 } // getFailesDf
+
+/** Return input vector defined by fitting inputs */
+function getInputVec(variedInputNames: string[], minVals: Float32Array, maxVals: Float32Array,
+  fixedInputs: Record<string, number>, ivp: IVP): Float64Array {
+  const allInputs: Record<string, number> = {};
+
+  Object.entries(fixedInputs).forEach(([name, value]) => allInputs[name] = value);
+
+  variedInputNames.forEach((name, idx) => allInputs[name] = (minVals[idx] + maxVals[idx]) / 2);
+
+  return getInputVector(allInputs, ivp);
+}
 
 /** Return fitted params of Diff Studio model using the Nelder-Mead method */
 export async function getFittedParams(
@@ -109,7 +121,8 @@ export async function getFittedParams(
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
 
-  const pipeline = pipelineCreator.getPipeline(new Float64Array(10));
+  const inputVector = getInputVec(variedInputNames, minVals, maxVals, fixedInputs, ivp);
+  const pipeline = pipelineCreator.getPipeline(inputVector);
 
   // Run optimization
   const promises = workers.map((w, idx) => {
