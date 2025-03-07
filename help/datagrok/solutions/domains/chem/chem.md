@@ -331,7 +331,7 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.md).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![chem-space](../../../../compute/chem-space.gif)
 
@@ -348,7 +348,7 @@ The dialog has the following inputs:
     * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
 * **Method**: The dimensionality reduction method that will be used. The options are:
     * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
-    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
 * **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
@@ -536,71 +536,101 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 ### Matched molecular pairs
 
-:::note
+The **Matched Molecular Pairs** (MMP) tool in Datagrok enables precise, data-driven exploration of molecular modifications within chemical datasets.
+By identifying small structural changes and quantifying their impact on key properties such as potency, solubility, permeability, and ADMET, MMP analysis guides lead optimization with actionable insights.
 
-This feature is in Beta.
+MMP analysis identifies molecular pairs that differ by a single transformation while maintaining a common core. For each pair, it calculates changes in biological activity and physicochemical properties, revealing patterns that guide lead optimization. Statistical aggregation of multiple transformations highlights consistent trends, providing a deeper understanding of structure-activity relationships.
 
-:::
+The results of the MMP analysis are presented in a series of tables and visualizations, allowing you to:
 
-The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
-identify structural transformation rules that can be used to improve potency and
-ADMET properties during lead optimization. This tool automatically detects
-matched molecule pairs in your dataset and calculates the difference in property
-or activity values between them. The mean change in property or activity values
-across your dataset represents the expected size of the change when the
-transformation is applied to a molecule.
+* View fragments and substitutions in your dataset that consistently enhance molecular properties
+* Analyze the effect of specific fragments on the chosen activity or property of a lead compound
+* Generate new molecules based on the transformations present in your dataset and view their predicted properties and activities.
 
-The results of the MMP analysis are presented in a series of tables and
-visualizations, allowing you to:
-
-* View fragments and substitutions in your dataset 
-* Analyze the effect of specific fragments on the chosen activity or property of
-  a lead compound
-* Generate new molecules based on the transformations present in your dataset
-  and view their predicted properties and activities.
+![MMP Demo](img/mmp-full.gif)
 
 <details>
 <summary>How to use</summary>
 
 To run MMP analysis:
 
-1. In the **Top Menu**, select **Chem** > **Analyze ** > **Matched Molecular
-   Pairs...** A dialog opens.
-1. In the dialog, select the table you want to analyze (**Table**), the column
-   containing molecules within this table (**Molecules**), and the
-   activity/property columns (**Activity**). Click **OK**. An MMP section is
-   added to the view. It has four tabs:
+1. In the **Top Menu**, select **Chem** > **Analyze** > **Matched Molecular
+ Pairs...** to open the analysis dialog.
+2. In the dialog, configure the analysis by selecting:
+    * **Table**: The dataset you want to analyze.
+    * **Molecules**: The column containing molecules.
+    * **Activity**: The column(s) representing activity or property values.
+    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core.
+3. Click OK. An MMP section is added to the view with four tabs:
 
 <Tabs>
-<TabItem value="transformations" label="Transformations" default> 
+<TabItem value="substitutions" label="Substitutions" default> 
 
-The **Transformations** tab has two tables:
+The **Substitutions** tab has two tables:
 
-* **The upper table** shows all fragment substitutions found in the dataset for
-  the current molecule. It includes the frequency of each substitution and the
-  corresponding change in the analyzed activity or property.
-* **The lower table** shows all pairs of molecules associated with the
-  substitution from the upper table.  It provides details about the analyzed
-  activity or property for each pair of molecules.
+* **The upper table (Fragments)** shows all fragment substitutions found in the dataset. It includes the frequency of each substitution and the
+ corresponding change in the analyzed activity or property. There are two modes to explore fragments dataset:
+ - *All* shows all found fragment pairs at once
+ - *Current* shows fragment pairs found for the current molecule in the initial dataset. Use *Current* mode and click any molecule in the initial dataset to filter corresponding substitutions.
+ A message in the top-left corner of the table indicates the number of filtered rows.
+ ![Fragments modes](img/mmp_fragments_modes.gif)
+
+ Click any row in the **Fragments** table to show all molecule pairs with corresponding substitution in the **Molecule pairs** table. Molecules are sourced from the initial dataset.
+ Use `Ctrl + click` in the Fragments table to select multiple substitutions. This highlights all molecules in the dataset that contain either the *From* or *To* fragment.
+ ![Fragments selection](img/mmp_fragments_selection.gif)
+
+
+* **The lower table (Molecule pairs)** shows all pairs of molecules associated with the
+ substitution from the upper (Fragments) table. It provides details about the analyzed
+ activity or property for each pair of molecules.
+ Click any row in the **Fragments** table to filter molecule pairs with current substitution. If *Current* mode is selected on the **Fragments** table, then the pair containing the current molecule from the initial dataset will be on top.
+ Corresponding fragments are highlighted in each molecule.
+ Click any row in **Molecule pairs** table to pin corresponding *From* and *To* molecules in the initial dataset and to open **Context panel** with pair details.
+ Select rows with `Ctrl` + click to select corresponding *From* and *To* molecules in the initial dataset.
+ ![Molecule pairs](img/mmp_molecule_pairs_navigation.gif)
+
+Click **+** icon above the corresponding table to add it to the workspace.
 
 </TabItem>
 <TabItem value="fragments" label="Fragments">
 
-In the **Fragments** tab, a 
-[trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
+The **Fragments** tab has two components:
+
+* [Trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
 fragments on the x and y axes. Each intersection in the plot displays the change
 in the analyzed activity or property resulting from a fragment substitution.
+
+* **Molecule pairs** table. Functions identically to the one in the **Substitutions** tab, displaying molecule pairs associated with each substitution.
+
+Click on any non-empty cell on the trellis plot to filter molecule pairs with the corresponding substitution in the **Molecule pairs** table.
+![Fragments trellis plot](img/fragments_trellis_plot.gif)
+
+Filter the trellis plot using the filter icon above the viewer.
+![Filter Fragments trellis plot](img/filter_fragments_trellis_plot.gif)
+
+Sort trellis plot using sort icons on the axes. Two sorting options are available: fragment frequency and molecular weight.
+![Sort Fragments trellis plot](img/sort_fragments_trellis_plot.gif)
+
 
 </TabItem>
 <TabItem value="cliffs" label="Cliffs"> 
 
-In the **Cliffs** tab, a
-[scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
+The **Cliffs** tab has two components:
+
+* [Scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
 molecules with similar structures but significant differences in the analyzed
 activity or property. Arrows connecting molecules represent changes in the
 specified activity or property, with the arrow pointing toward the molecule with
-the higher value. Clicking an arrow shows both molecules in the **Context
-Panel**, along with the information about the analyzed activity or property.
+the higher value.
+
+* **Molecule pairs** table. The same as on **Substitutions** tab. Show or hide the table using **Show Pairs** checkbox above the scatterplot.
+Click any row to zoom to the corresponding molecule pair on the scatterplot and show details in the **Context Panel**.
+Navigation also works vice versa: click an arrow on a scatterplot to zoom in and highlight molecule pair in the **Molecule pairs** table.
+![Cliffs scatterplot](img/cliffs_scatter_plot.gif)
+
+Use activity filters on a scatterplot to filter pairs by activity difference. The filter is reflected in the **Molecule pairs** table.
+![Filter Cliffs scatterplot](img/filter_cliffs_scatter_plot.gif)
+
 
 </TabItem>
 <TabItem value="generation" label="Generation">
@@ -613,7 +643,12 @@ potential transformation, providing:
 * Both the starting and new compounds.
 * The maximum common substructure for this pair and the substituted fragment.
 * Original and predicted values for one of the analyzed activities or
-  properties.
+ properties.
+* Whether a new molecule already exists in the initial dataset or is newly generated
+
+The **Context Panel** includes a **scatterplot** comparing observed vs. predicted values for each activity or property, based on molecules from the initial dataset.
+
+![MMP Generations](img/mmp-generations.gif)
 
 </TabItem>
 </Tabs>
