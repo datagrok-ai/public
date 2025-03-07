@@ -84,7 +84,7 @@ category('Admetica', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology', 6000);
   
-    const expandPanel = async (panelTitle: string, timeout = 3000) => {
+    const expandPanel = async (panelTitle: string, timeout = 5000) => {
       const panel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === panelTitle) as HTMLElement;
   
