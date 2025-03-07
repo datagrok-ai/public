@@ -16,7 +16,6 @@
 * GROK-17511: Chem | ChemProp: Error when training a model
 * GROK-17555: Filter Panel: Reset filter causes errors in some cases
 * GROK-17471: Chem: Incorrect filter UI when adding filter via 'Use as filter' or 'Add filter'
-* GROK-17555: Filter Panel: Reset filter causes errors in some cases
 * GROK-17597: Chem: Wrong filtering when opening the project
 
 ## 1.13.1 (2025-01-06)
