@@ -40,10 +40,6 @@ function getInputVec(variedInputNames: string[], minVals: Float32Array, maxVals:
 
   variedInputNames.forEach((name, idx) => allInputs[name] = (minVals[idx] + maxVals[idx]) / 2);
 
-  console.log(fixedInputs);
-  console.log(variedInputNames);
-  console.log(allInputs);
-
   return getInputVector(allInputs, ivp);
 }
 
@@ -126,7 +122,6 @@ export async function getFittedParams(
   const pointBatches = getBatches(startingPoints, nThreads);
 
   const inputVector = getInputVec(variedInputNames, minVals, maxVals, fixedInputs, ivp);
-  console.log(inputVector);
   const pipeline = pipelineCreator.getPipeline(inputVector);
 
   // Run optimization
