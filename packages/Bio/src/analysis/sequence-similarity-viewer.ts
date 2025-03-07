@@ -36,7 +36,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     private readonly seqHelper: ISeqHelper,
     demo?: boolean,
   ) {
-    super('similarity');
+    super('similarity', DG.SEMTYPE.MACROMOLECULE);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
     this.similarColumnLabel = this.string('similarColumnLabel', null);
@@ -51,19 +51,19 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
+    if (this.targetColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const sh = this.seqHelper.getSeqHandler(this.moleculeColumn!);
+        const sh = this.seqHelper.getSeqHandler(this.targetColumn!);
 
         await (!sh.isHelm() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
-          `similar (${this.moleculeColumnName})`;
+          `similar (${this.targetColumn})`;
         this.molCol = DG.Column.string(similarColumnName,
-          this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
+          this.idxs!.length).init((i) => this.targetColumn?.get(this.idxs?.get(i)));
         this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
-        this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));
+        this.tags.forEach((tag) => this.molCol!.setTag(tag, this.targetColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
         resDf.onCurrentRowChanged.subscribe((_: any) => {
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
@@ -86,7 +86,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!, this.seqHelper);
+    const monomericMols = await getMonomericMols(this.targetColumn!, this.seqHelper);
     //need to create df to calculate fingerprints
     const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
     const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
@@ -103,11 +103,11 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByMM() {
-    const len = this.moleculeColumn!.length;
+    const len = this.targetColumn!.length;
     const actualLimit = Math.min(this.limit, len - 1);
     if (!this.knn || this.kPrevNeighbors !== actualLimit) {
       const encodedSequences =
-        (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
+        (await getEncodedSeqSpaceCol(this.targetColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
 
       this.kPrevNeighbors = actualLimit;
       this.knn = await (new SparseMatrixService()
@@ -128,7 +128,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
     const resCol: DG.Column<string> = resDf.col(molColName)!;
-    const molColSh = this.seqHelper.getSeqHandler(this.moleculeColumn!);
+    const molColSh = this.seqHelper.getSeqHandler(this.targetColumn!);
     const resSh = this.seqHelper.getSeqHandler(resCol);
     const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
     const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
