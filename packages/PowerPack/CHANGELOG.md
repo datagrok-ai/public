@@ -4,7 +4,7 @@
 
 ### Features
 
-* [#2708](https://github.com/datagrok-ai/public/issues/2708): Formula lines: Changed "${x}" to "x" on Formula Lines
+* [#2708](https://github.com/datagrok-ai/public/issues/2708): Formula lines: Changed "\$\{x\}" to "x" on Formula Lines
 * Updated validation, added tests for BinBySpecificLimits
 * Widgets visibility
 * PowerPack: Add new column dialog: Added code mirror border when not focused
