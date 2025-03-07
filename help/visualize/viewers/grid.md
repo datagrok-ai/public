@@ -349,7 +349,9 @@ To embed an image, double click a cell and select the source file.
 
 ![](../../develop/how-to/binary-cell-renderer.gif)
 
-For linked images, Datagrok automatically detects and visualizes images saved as URLs (those starting with "http://" or "https://", and ending with one of the supported image formats) using a [cell renderer](#cell-renderers). 
+For linked images, Datagrok automatically detects and visualizes images from URLs (starting with "http://" or "https://"
+and ending with a supported image extension) as well as images stored as Datagrok paths (beginning with "System:" and
+ending with a supported image extension) using a [cell renderer](#cell-renderers).
 
 <details>
 <summary>Troubleshooting</summary>
