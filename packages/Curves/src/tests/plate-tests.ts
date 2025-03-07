@@ -1,23 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
-import {Plate} from "../plate/plate";
-import wu from 'wu';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {Plate} from '../plate/plate';
 
 // @ts-ignore
 import * as jStat from 'jstat';
-import {
-  FitChartData,
-  fitData,
-  IFitChartData,
-  LogLinearFunction
-} from "@datagrok-libraries/statistics/src/fit/fit-curve";
-import {excelToNum, numToExcel} from "../plate/utils";
-import {FitConstants} from "../fit/const";
-import {MultiCurveViewer} from "../fit/multi-curve-viewer";
-import {PlateWidget} from "../plate/plate-widget";
+import {excelToNum, numToExcel} from '../plate/utils';
+import {PlateWidget} from '../plate/plate-widget';
 
 
 function getPlate(): Plate {
@@ -75,7 +65,8 @@ category('plates', () => {
     const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
     plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
 
-    plate.doseResponseSeries({concentration: 'concentration', value: 'readout'});
+    const drc = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'}); // if we get
+    Plate.inspectSeries(drc['Compound 1'], '4pl-regression');
   });
 
   test('render', async () => {
