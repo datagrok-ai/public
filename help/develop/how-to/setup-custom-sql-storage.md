@@ -30,8 +30,8 @@ Please note that no rollback functionality is provided, so we advise performing 
 
 In this section, we provide an example of setting up the database for the compound registration app. We assume the package name is `CompoundRegistrator`.
 
-1. Create a new folder `CompoundRegistrator/databases/compounds`.
-2. In the folder, create a file `0000_init.sql` with the following content:
+* Create a new folder `CompoundRegistrator/databases/compounds`.
+* In the folder, create a file `0000_init.sql` with the following content:
 
 ```sql
 create table compounds.list (
@@ -42,8 +42,8 @@ create table compounds.list (
 GRANT ALL ON TABLE compounds.list to :LOGIN;
 ```
 
-3. Note that `compounds` is the name of the PostgreSQL database, and login configuration might be needed.
-4. Under `CompoundRegistrator/queries`, create queries to register compounds and fetch the list of compounds:
+* Note that `compounds` is the name of the PostgreSQL database, and login configuration might be needed.
+* Under `CompoundRegistrator/queries`, create queries to register compounds and fetch the list of compounds:
 
 ```sql
 --name: insertElement
@@ -59,7 +59,7 @@ SELECT id, smiles from compounds.list;
 --end
 ```
 
-5. Access the queries through the JS-API in your application! For example, you can create a form that registers a molecule:
+* Access the queries through the JS-API in your application! For example, you can create a form that registers a molecule:
 
 ```js
 const smilesInput = ui.input.molecule('Molecule');
