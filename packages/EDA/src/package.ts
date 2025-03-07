@@ -163,7 +163,7 @@ export async function reduceDimensionality(): Promise<void> {
       params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
       !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
         fastRowCount: 10000,
-      }, params.postProcessingFunction, params.postProcessingFunctionArgs);
+      }, params.postProcessingFunction, params.postProcessingFunctionArgs, params.vectorDistanceMetric);
     }).show();
   dialog.helpUrl = 'https://datagrok.ai/help/explore/dim-reduction.md';
   const validate = () => {
