@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties, healthCheck } from '../utils/admetica-utils';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
+export const CONTAINER_TIMEOUT = 1800000;
+
 category('Admetica', () => {
   let v: DG.TableView;
   let molecules: DG.DataFrame;
@@ -14,20 +16,15 @@ category('Admetica', () => {
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = false;
-  
-    admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
+
     await Promise.all([
-      (async () => {
-        if (!admeticaContainer.status.startsWith('started')) {
-          await grok.dapi.docker.dockerContainers.run(admeticaContainer.id, true);
-        }
-      })(),
       setProperties(),
       delay(1000)
     ]);
   });  
 
   test('Container. Post request', async () => {
+    await ensureContainerRunning('admetica');
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const distributionResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
@@ -35,6 +32,7 @@ category('Admetica', () => {
   }, {timeout: 25000});
 
   test('Calculate dialog. UI', async () => {
+    await ensureContainerRunning('admetica');
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
     await grok.data.detectSemanticTypes(molecules);
@@ -57,6 +55,7 @@ category('Admetica', () => {
   });
 
   test('Calculate dialog. Added properties', async () => {
+    await ensureContainerRunning('admetica');
     molecules = grok.data.demo.molecules(5);
     v = grok.shell.addTableView(molecules);
     await delay(1000);
@@ -71,6 +70,7 @@ category('Admetica', () => {
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
+    await ensureContainerRunning('admetica');
     const molecules = grok.data.demo.molecules(20);
     const v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Table failed to load', 3000);
@@ -108,6 +108,7 @@ category('Admetica', () => {
   }, { timeout: 100000 });  
 
   test('Calculate.Benchmark column', async () => {
+    await ensureContainerRunning('admetica');
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
@@ -118,6 +119,7 @@ category('Admetica', () => {
   }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
+    await ensureContainerRunning('admetica');
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
@@ -146,4 +148,20 @@ export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
       return dialog;
     }
   }
+}
+
+export async function ensureContainerRunning(containerName: string) {
+  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+  if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
+    console.log(`starting container ${container.name}`);
+    await grok.dapi.docker.dockerContainers.run(container.id, false);
+  };
+
+  let started = false;
+  await awaitCheck(() => {
+    grok.dapi.docker.dockerContainers.find(container.id).then((cont) => {
+      started = cont.status.startsWith('started') || cont.status.startsWith('checking');
+    });
+    return started;
+  },`${containerName} hasn't been started after 10 minutes`, CONTAINER_TIMEOUT, 5000);
 }
