@@ -30,7 +30,7 @@ export default function Home(): JSX.Element {
             <script async src="https://www.googletagmanager.com/gtag/js?id=G-KGZGSFPGHS"></script>
             <script>
                 window.dataLayer = window.dataLayer || [];
-                function gtag(){window.dataLayer.push(arguments);}
+                function gtag(){window.dataLayer.push(arguments)}
                 gtag('js', new Date());
 
                 gtag('config', 'G-KGZGSFPGHS');
