@@ -201,22 +201,21 @@ export const PipelineView = Vue.defineComponent({
                     <div> { action.friendlyName ?? action.uuid } </div>
                   </div>, [[tooltip, action.description]]))
                 }
+                { hasAddControls(state.value) && <div
+                  class={cardsClasses}
+                  onClick={() => functionsHidden.value = false}
+                >
+                  <IconFA name='plus' class={'d4-picture'} />
+                  <div> Choose a step to add </div>
+                </div> }
+                { hasInnerStep.value && <div
+                  class={cardsClasses}
+                  onClick={() => emit('proceedClicked')}
+                >
+                  <IconFA name='plane-departure' class={'d4-picture'} />
+                  <div> Proceed to the sequence's first step </div>
+                </div> }
               </div>
-
-              { hasAddControls(state.value) && <div
-                class={cardsClasses}
-                onClick={() => functionsHidden.value = false}
-              >
-                <IconFA name='plus' class={'d4-picture'} />
-                <div> Choose a step to add </div>
-              </div> }
-              { hasInnerStep.value && <div
-                class={cardsClasses}
-                onClick={() => emit('proceedClicked')}
-              >
-                <IconFA name='plane-departure' class={'d4-picture'} />
-                <div> Proceed to the sequence's first step </div>
-              </div> }
             </div>
           </div>
         </DockManager>

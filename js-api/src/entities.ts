@@ -1278,7 +1278,7 @@ export class Package extends Entity {
    * The metadata gets generated when the package is built.
    * It is a concatenation of JSON files located under the /meta folder.
    * See example: /packages/PowerPack. */
-  get meta(): {[key: string]: any} {
+  get meta(): {[key: string]: any} | null {
     return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart));
   }
 

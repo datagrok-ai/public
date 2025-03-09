@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.41.3 (2025-03-07)
+
+- FittingView: Diff Studio models: Updated input vector computation
+
 ## 1.41.2 (2025-03-03)
 
 - FittingView: Diff Studio models: Optimization using pipelines

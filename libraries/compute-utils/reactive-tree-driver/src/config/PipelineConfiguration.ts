@@ -120,6 +120,7 @@ export type ActionPositions = typeof actionPositions[number];
 // static steps config
 export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
+  type?: 'step',
   nqName: NqName;
   friendlyName?: string;
   io?: S;

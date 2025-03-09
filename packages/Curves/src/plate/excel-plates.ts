@@ -17,7 +17,7 @@ interface ExcelPlatePosition {
  * and finding row/column label patterns such as (1-24, A-P). */
 export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePosition[] {
   const results: ExcelPlatePosition[] = [];
-
+  const ACharCode = 'A'.charCodeAt(0);
   workbook.eachSheet((worksheet) => {
     // TODO: Hack for current things, remove later
     if (worksheet.name?.toLowerCase() === 'desired outputs')
@@ -64,8 +64,9 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
           if (!grid[i]) continue;
           const val = grid[i][j];
 
-          if (typeof val === 'string' && /^[A-Za-z]$/.test(val)) {
-            const expected = String.fromCharCode('A'.charCodeAt(0) + letterSequence);
+          if (typeof val === 'string' && /^[A-Za-z]{1,2}$/.test(val)) {
+            const prefix = letterSequence > 25 ? 'A' : '';
+            const expected = prefix + String.fromCharCode(ACharCode + letterSequence % 26);
             if (val?.toLowerCase() === expected?.toLowerCase()) {
               if (letterSequence === 0) seqStart = i;
               letterSequence++;

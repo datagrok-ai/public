@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodePath} from '../data/BaseTree';
+import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
@@ -239,25 +239,33 @@ export class LinksState {
   private calculateStepsDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
     const deps: Map<string, DependenciesData> = new Map();
     for (const link of links) {
-      for (const infosIn of Object.values(link.matchInfo.inputs)) {
+      const inputInfos = Object.values(link.matchInfo.inputs);
+      for (const infosIn of inputInfos) {
         for (const infoIn of infosIn) {
           const inPathFull = [...link.prefix, ...infoIn.path];
-          const nodeIn = state.getNode(inPathFull);
-          for (const infosOut of Object.values(link.matchInfo.outputs)) {
-            for (const infoOut of infosOut) {
-              const outPathFull = [...link.prefix, ...infoOut.path];
-              const nodeOut = state.getNode(outPathFull);
-              const depData = deps.get(nodeOut.getItem().uuid) ?? new DependenciesData();
-              if (!BaseTree.isNodeAddressEq(inPathFull, outPathFull))
-                depData.nodes.add(nodeIn.getItem().uuid);
-              depData.links.add(link.uuid);
-              deps.set(nodeOut.getItem().uuid, depData);
-            }
-          }
+          this.addOutputDeps(state, deps, link, inPathFull);
         }
       }
+      if (inputInfos.length === 0)
+        this.addOutputDeps(state, deps, link);
     }
     return deps;
+  }
+
+  private addOutputDeps(state: BaseTree<StateTreeNode>, deps: Map<string, DependenciesData>, link: Link, inPathFull?: NodePathSegment[]) {
+    for (const infosOut of Object.values(link.matchInfo.outputs)) {
+      for (const infoOut of infosOut) {
+        const outPathFull = [...link.prefix, ...infoOut.path];
+        const nodeOut = state.getNode(outPathFull);
+        const depData = deps.get(nodeOut.getItem().uuid) ?? new DependenciesData();
+        if (inPathFull && !BaseTree.isNodeAddressEq(inPathFull, outPathFull)) {
+          const nodeIn = state.getNode(inPathFull);
+          depData.nodes.add(nodeIn.getItem().uuid);
+        }
+        depData.links.add(link.uuid);
+        deps.set(nodeOut.getItem().uuid, depData);
+      }
+    }
   }
 
   private calculateIoDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
@@ -274,7 +282,7 @@ export class LinksState {
           if (depsData[ioName] == null)
             depsData[ioName] = {};
           if (depType === 'meta' || depType === 'data') {
-            if (depsData[depType])
+            if (depsData[ioName][depType])
               grok.shell.warning(`Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName} $`);
 
             depsData[ioName][depType] = linkId;

@@ -30,6 +30,7 @@ import {
   renderFitLine, renderLegend,
   renderPoints, renderStatistics, renderTitle
 } from './render-utils';
+import {merge} from 'rxjs';
 
 
 export interface FitCellOutlierToggleArgs {
@@ -294,6 +295,25 @@ export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: numbe
   }
 }
 
+export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rerenderOnChange: boolean = false): void {
+  if (!gridCell.cell.value)
+    return;
+
+  const gridCellWidget = DG.GridCellWidget.fromGridCell(gridCell);
+  gridCellWidget.root.style.removeProperty('aspectRatio');
+  gridCellWidget.root.style.height = '100%';
+  gridCellWidget.canvas.style.removeProperty('height');
+  gridCellWidget.canvas.style.removeProperty('width');
+  gridCellWidget.canvas.style.left = '18px';
+  gridCellWidget.canvas.style.top = '18px';
+
+  const dlg = ui.dialog({title: 'Edit chart'})
+    .add(gridCellWidget.root)
+    .show({resizable: true, width: size?.width ?? 350, height: size?.height ?? 300});
+  if (rerenderOnChange)
+    dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
+}
+
 @grok.decorators.cellRenderer({
   name: 'Fit',
   cellType: 'fit',
@@ -358,20 +378,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell.value)
-      return;
-
-    const gridCellWidget = DG.GridCellWidget.fromGridCell(gridCell);
-    gridCellWidget.root.style.removeProperty('aspectRatio');
-    gridCellWidget.root.style.height = '100%';
-    gridCellWidget.canvas.style.removeProperty('height');
-    gridCellWidget.canvas.style.removeProperty('width');
-    gridCellWidget.canvas.style.left = '18px';
-    gridCellWidget.canvas.style.top = '18px';
-
-    ui.dialog({title: 'Edit chart'})
-      .add(gridCellWidget.root)
-      .show({resizable: true, width: 350, height: 300});
+    inspectCurve(gridCell);
   }
 
   areAxesShown(screenBounds: DG.Rect): boolean {

@@ -546,7 +546,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-panel-icon='folder-tree'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
-                dock-spawn-z-index={1000}
+                dock-spawn-z-index={2}
 
                 rootDroppable={false}
                 treeLine

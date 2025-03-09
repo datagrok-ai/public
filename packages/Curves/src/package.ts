@@ -127,7 +127,7 @@ export async function curveFitDemo(): Promise<void> {
 export async function assayPlatesDemo(): Promise<void> {
   const plateFiles = await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates');
   grok.shell.addView(await getPlatesFolderPreview(plateFiles) as DG.ViewBase);
-} 
+}
 
 //tags: init
 export function _initCurves(): void {
@@ -244,20 +244,6 @@ export function plateApp() {
   // console.log(file);
   // const plate = Plate.fromExcel(file.fullPath);
 }
-
-//name: testPlatesCurvesNewAPI
-export function testPlatesCurvesNewAPI(): void {
-  const series = new FitSeries([
-    {'x': 0, 'y': 0},
-    {'x': 1, 'y': 0.5},
-    {'x': 2, 'y': 1},
-    {'x': 3, 'y': 10, 'outlier': true},
-    {'x': 4, 'y': 0},
-  ]);
-  const params = series.fit.sigmoid();
-  console.log(params);
-}
-
 
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate

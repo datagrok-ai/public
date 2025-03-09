@@ -1,5 +1,44 @@
 # PowerGrid changelog
 
+## 1.5.5 (2025-03-07)
+
+* GROK-17680: ImageUrl: Supported images with Datagrok paths, added docs
+
+## 1.5.4 (2025-03-03) - 1.4.11
+
+### Features
+
+* Made pinned columns apply the same column header style as the standard grid
+* GROK-17292: Implemented normalization for sparklines (row/column/global) with backward compatibility
+* GROK-17359: Enabled renderer to define context values for sparklines in the context panel
+* GROK-17600: Added zeroScale to sparklines, allowing them to be based at zero or a minimum value
+* Allowed cross-origin images in canvas
+* Tags cell renderer:
+  * Added support for boolean columns
+  * Minor rendering improvements
+* Vlaaivis renderer:
+  * Ensured no borders or filled segments for cells smaller than 40x40
+  * Render only a light border
+
+### Bug Fixes
+
+* Fixed pinned columns not applying grid cell styles
+* GROK-14428: Fixed duplicated row numbers in pinned columns
+* GROK-16985: Fixed text not visible when editing in pinned columns
+* [#3229](https://github.com/datagrok-ai/public/issues/3229): Fixed incorrect order in pinned columns after reordering by another column
+* GROK-17599:
+  * Different normalizations applied to all sparklines
+  * Proper rendering in the context panel.
+  * Fixed number formatting
+  * Added margins and column name in the context panel
+  * Fixed cases where `currentRow = -1`
+* Fixed NaN errors in sparklines
+* Fixed cases where the column is null in sparklines settings
+* GROK-17550: Fixed error when saving to a project in some cases
+* Fixed alignment in summary column tooltips
+* GROK-17303: Fixed column name and value misalignment
+* GROK-17293: Fixed invisible text in SmartForm when the column text is colored
+
 ## 1.4.10 (2024-11-18)
 
 * Grid scrolling and current row fixes for pinned columns

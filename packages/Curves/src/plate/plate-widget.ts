@@ -4,12 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
 import {safeLog, mapFromRow } from './utils';
-import { IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
+import {IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME, randomizeTableId} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import { FitConstants } from '../fit/const';
-import { FitCellOutlierToggleArgs, setOutlier } from '../fit/fit-renderer';
+import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
 
 
@@ -47,7 +47,7 @@ export class PlateWidget extends DG.Widget {
   wellDetailsDiv?: HTMLElement;
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
-  mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow; 
+  mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -131,7 +131,7 @@ export class PlateWidget extends DG.Widget {
       'rSquared': ['rsquared', 'r2', 'r squared', 'r^2'],
       'slope': ['slope', 'hill', 'steepness', 'hill slope'],
       'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
-      'top': ['top', 'max', 'maximum', 'maxy', 'max y'], 
+      'top': ['top', 'max', 'maximum', 'maxy', 'max y'],
       'interceptX': ['interceptx', 'intercept x','ic50', 'ic 50', 'ic-50', 'ic_50', 'ic 50 value', 'ic50 value', 'ic50value', 'ec50', 'ec 50', 'ec-50', 'ec_50', 'ec 50 value', 'ec50 value', 'ec50value'],
       'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
     };
@@ -160,7 +160,7 @@ export class PlateWidget extends DG.Widget {
       const [lStats, hStats] = actOptions.controlColumns.map((colName) => {
         return plate.getStatistics(actOptions.valueName, ['mean', 'std'], {match: {[actOptions.roleName]: colName}});
       }).sort((a,b) => a.mean - b.mean);
-  
+
       defaultOptions.plateStatistics = {
         'Z Prime': (_plate) => 1 - (3 * (hStats.std + lStats.std) / Math.abs(hStats.mean - lStats.mean)),
         'Signal to background': (_plate) => hStats.mean / lStats.mean,
@@ -195,7 +195,6 @@ export class PlateWidget extends DG.Widget {
                     "yAxisName": normed ? `norm(${actOptions.valueName})` : actOptions.valueName,
                     "logX": true,
                     "title": `${seriesVals[i][0]}`,
-                    'clickToToggle': true,
                     ...minMax
                   },
                   // TODO: change to 4PL regression once fixed for normed data
@@ -207,7 +206,7 @@ export class PlateWidget extends DG.Widget {
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
     df.name = pw.plateData.name;
-    df.id = `${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}`;
+    df.id = randomizeTableId();
 
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
@@ -221,7 +220,7 @@ export class PlateWidget extends DG.Widget {
       df.col(actualStatNames['interceptX']) && (df.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
 
     //categorize the curves
-    
+
     const criteriaCol = df.columns.addNewString(df.columns.getUnusedName('Criteria'));
     criteriaCol.applyFormula(`if(${actOptions.categorizeFormula}, "Qualified", "Fails Criteria")`, 'string');
     criteriaCol.meta.colors.setCategorical({ "Fails Criteria":4294922560, "Qualified":4283477800 });
@@ -348,7 +347,7 @@ export class PlateWidget extends DG.Widget {
     this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
 
     if (this.rows == null || this.cols == null)
-      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1526)';
+      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1536)';
 
     for (let i = 0; i < this._plateData.rowCount; i++)
       if (rowCol && colCol)
@@ -375,6 +374,7 @@ export class PlateWidget extends DG.Widget {
     const gc = args.cell;
     args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
     args.g.strokeStyle = 'grey';
+    args.g.lineWidth = 1;
     let g = args.g;
     let x = args.bounds.x, y = args.bounds.y, w = args.bounds.width, h = args.bounds.height;
     const dataRow  = this.dataRow(gc);
@@ -387,8 +387,10 @@ export class PlateWidget extends DG.Widget {
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
     // row header
-    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0)
-      g.fillText(String.fromCharCode(65 + gc.gridRow), x + w / 2, y + h / 2);
+    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0) {
+      const prefix = gc.gridRow > 25 ? 'A' : '';
+      g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
+    }
     else if (h > 0 && dataRow != null) {
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;

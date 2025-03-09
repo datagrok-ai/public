@@ -55,10 +55,10 @@ public class QueryManager {
         if (isDebug)
             initMessage = message;
         LOGGER.debug("Deserialized and preprocessed call");
-        processTableQuery();
+        processTableQuery(query);
     }
 
-    private void processTableQuery() {
+    private void processTableQuery(FuncCall query) {
         if (query.func instanceof TableQuery) {
             LOGGER.debug("Building table query...");
             query.func.query = provider.queryTableSql((TableQuery) query.func);
@@ -82,7 +82,7 @@ public class QueryManager {
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException {
         FuncCall query = GrokConnect.gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
-        processTableQuery();
+        processTableQuery(query);
         initResultSet(query);
         String sessionId = MDC.get(QueryHandler.CALL_ID_HEADER);
         if (skipColumnFillingLog)

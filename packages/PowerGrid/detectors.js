@@ -12,8 +12,7 @@ class PowerGridPackageDetectors extends DG.Package {
     if (s == null)
       return false;
     s = s.toLowerCase();
-
-    return s.startsWith('http') && ['png', 'jpg', 'jpeg'].some((x) => s.endsWith(x));
+    return (s.startsWith('http') || s.startsWith('system:')) && ['png', 'jpg', 'jpeg'].some((x) => s.endsWith(x));
   }
 
   //tags: semTypeDetector
