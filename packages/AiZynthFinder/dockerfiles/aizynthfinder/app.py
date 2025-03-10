@@ -53,7 +53,8 @@ def aizynthfind():
     stdout, stderr = process.communicate()
 
     if (process.returncode == 0):
-      logging.debug(stdout)
+      logging.info(f"return code {process.returncode}")
+      logging.info(stdout)
       result_file_path = os.path.join(output_dir, 'trees.json')
       with open(result_file_path, 'r') as result_file:
         result_content = result_file.read()
@@ -62,13 +63,15 @@ def aizynthfind():
         "success": True
       }, 200)
     else:
-      logging.debug(stderr)
+      logging.info(f"return code {process.returncode}")
+      logging.info(stdout)
+      logging.info(stderr)
       return jsonify({
         "success": False,
         "error": stderr
       }, 500)
   except Exception as e:
-    logging.error(f"Unexpected error: {str(e)}")
+    logging.info(f"Unexpected error: {str(e)}")
     return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
