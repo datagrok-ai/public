@@ -69,42 +69,6 @@ export async function _testSearchSubstructureAllParameters(foo: any): Promise<vo
   await foo();
 }
 
-export async function ensureContainersRunning() {
-  const [chempropContainer, chemContainer] = await Promise.all([
-    grok.dapi.docker.dockerContainers.filter('chemprop').first(),
-    grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
-  ]);
-
-  _package.logger.debug(`*************** chempropContainer ${chempropContainer.status}`);
-  _package.logger.debug(`*************** chemContainer ${chemContainer.status}`);
-
-  await Promise.all([
-    !(chemContainer.status.startsWith('started') || chemContainer.status.startsWith('checking')) 
-      ? grok.dapi.docker.dockerContainers.run(chemContainer.id, true) 
-      : Promise.resolve(),
-
-    !(chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking'))
-      ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
-      : Promise.resolve()
-  ]);
-}
-
-export async function ensureContainerRunning(containerName: string) {
-  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
-  if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
-    console.log(`starting container ${container.name}`);
-    await grok.dapi.docker.dockerContainers.run(container.id, false);
-  };
-
-  let started = false;
-  await awaitCheck(() => {
-    grok.dapi.docker.dockerContainers.find(container.id).then((cont) => {
-      started = cont.status.startsWith('started') || cont.status.startsWith('checking');
-    });
-    return started;
-  },`${containerName} hasn't been started after 5 minutes`, CONTAINER_TIMEOUT, 5000);
-}
-
 export const malformedMolblock = `
 Accelrys05311914342D 1   1.00000     0.00000     0
 

@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {CONTAINER_TIMEOUT, ensureContainerRunning} from './utils';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {CONTAINER_TIMEOUT} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import { getMapIdentifiers } from '../widgets/identifiers';
@@ -21,7 +22,7 @@ category('calculate', () => {
 
 
   test('map identifiers', async () => {
-    await ensureContainerRunning('name = "chem-chem"');
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
 

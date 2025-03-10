@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {_package, applyModelChemprop, trainModelChemprop} from '../package';
-import {CONTAINER_TIMEOUT, ensureContainerRunning, readDataframe} from './utils';
+import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
@@ -16,7 +17,7 @@ category('chemprop', () => {
   });
 
   test('trainModel', async () => {
-    await ensureContainerRunning('chemprop');
+    await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
     const modelBlob = await fetchWrapper(() => trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
@@ -30,7 +31,7 @@ category('chemprop', () => {
   }, {timeout: 90000 + CONTAINER_TIMEOUT});
 
   test('utilizeModel', async () => {
-    await ensureContainerRunning('chemprop');
+    await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
     const smilesColumn = table.columns.byName('canonical_smiles');
     const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
         
