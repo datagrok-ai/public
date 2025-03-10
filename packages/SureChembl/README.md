@@ -4,9 +4,9 @@ SureChEMBL is a [package](https://datagrok.ai/help/develop/#packages) for the [D
 It allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
 To run the search:
 
-* open context panel and select cell with molecule structure
-* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) will appear under the tab.
-* change the number in the *Molecules limit* field to show more or fewer molecules in the result
+* select cell with molecule structure in the grid
+* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
+* change the number in the *Molecules limit* field to search for more or fewer molecules
 * change the similarity cutoff using the *Similarity cutoff* slider
 * click the *plus* icon to add all patents found for molecules in the results as a table view
 
