@@ -138,11 +138,9 @@ export class DemoScript {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    const scriptDockNode = grok.shell.isInDemo ?
-      Array.from((grok.shell.view('Browse') as DG.BrowseView).dockManager.rootNode.children)[0] :
-      Array.from(grok.shell.dockManager.rootNode.children)[0];
+    const scriptDockNode = Array.from(Array.from(grok.shell.dockManager.rootNode.children)[0].children)[0];
 
-    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, scriptDockNode, '');
+    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, scriptDockNode, this.name);
 
     if (scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild?.
       classList.contains('tab-handle-list-container'))
@@ -178,10 +176,8 @@ export class DemoScript {
       this._steps[this._currentStep].options?.delay! : 2000;
 
     try {
-      grok.shell.isInDemo = true;
       await this._steps[this._currentStep].func();
     } catch (e) {
-      grok.shell.isInDemo = false;
       console.error(e);
     }
 
@@ -204,7 +200,6 @@ export class DemoScript {
     if (this._currentStep === this.stepNumber) {
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
-      grok.shell.isInDemo = false;
       return;
     }
 
@@ -216,13 +211,8 @@ export class DemoScript {
       this._nextStepBtn.classList.remove('disabled');
       (this._nextStepBtn.firstChild as HTMLElement).classList.remove('fa-disabled');
     }
-
-    if (grok.shell.isInDemo) {
-      const browseView = grok.shell.view('Browse') as DG.BrowseView;
-      if (browseView?.preview instanceof DG.TableView)
-        await grok.data.detectSemanticTypes(browseView.preview.dataFrame);
-      grok.shell.isInDemo = false;
-    }
+    if (grok.shell.v instanceof DG.TableView)
+      await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
   }
 
   /** Starts the demo script actions */
@@ -351,7 +341,6 @@ export class DemoScript {
   cancelScript(): void {
     this._isCancelled = true;
     DemoScript.currentObject = null;
-    grok.shell.isInDemo = false;
   }
 
   /**
@@ -372,8 +361,9 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start(): Promise<void> {
-    grok.shell.isInDemo = true;
     this._initRoot();
+    if (grok.shell.v.name === this.name)
+      grok.shell.v.close();
     grok.shell.newView(this.name);
 
     if (this._isAutomatic) {

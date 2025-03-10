@@ -80,6 +80,10 @@ There are three ways to define entities for a rule (filters 1 and 2 can be combi
 2. entities marked with a specified tag
 3. entities of the specified type
 
+## Favorites 
+
+Drag-and-drop app to group favorites, and it will appear on sidebar at the startup for all group users.
+
 ## Examples
 
 This system lets us easily setup access rights for groups of people and subsets of entities. Here are some examples:

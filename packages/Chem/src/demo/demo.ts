@@ -65,7 +65,7 @@ export async function _demoChemOverview(): Promise<void> {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       tv.grid.columns.setOrder(firstCols.concat(lastCols));
       grok.shell.windows.showHelp = false;
-      grok.shell.windows.context.visible = true;  
+      grok.shell.windows.context.visible = true;
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
@@ -305,7 +305,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       await activityCliffs(table, molecules, table.col('In-vivo Activity')!,
         78, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto,
         preprocessing, {}, true);
-      tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
+      // tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
       awaitCheck(() => {
         for (const v of tv.viewers) {
           if (v.type === DG.VIEWER.SCATTER_PLOT) {
@@ -356,7 +356,7 @@ export async function _demoScaffoldTree(): Promise<void> {
     const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
     const table: DG.DataFrame = tv.dataFrame;
     await grok.data.detectSemanticTypes(table);
-    
+
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
     scaffoldTree.dataFrame = table;
     scaffoldTree.size = 'normal';

@@ -19,7 +19,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Molecule Activity Cliffs',
 				},
 				{
-					name: 'R Group Analysis',
+					name: 'R-Group Analysis',
 				},
 				{
 					name: 'Similarity & Diversity Search',
@@ -148,7 +148,7 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Heatmap',
 						},
 						{
-							name: 'Histogram',	
+							name: 'Histogram',
 						},
 						{
 							name: 'Line Chart',

@@ -55,42 +55,42 @@ export class FittingTutorial extends Tutorial {
           grok.shell.v = DG.View.createByType('browse');
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
-    
+
         // 1. Open Apps
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    grok.shell.v = browseView;
-    browseView.showTree = true;
-        
-    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    // grok.shell.v = browseView;
+    // browseView.showTree = true;
+
+    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
-        
+
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
-    
+
     // 2. Run Diff Studio
     let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(browseView.root,`div[name="div-${name}"]`);
+    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
-        
+
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
-        
+
     await this.action(
       `Run ${name}`,
       fromEvent(modelCatalogIcn, 'dblclick'),
       modelCatalogIcn,
       `Double-click the ${name} icon`,
     );
-    
+
     // 3. Run model
     const rootDiv = document.querySelector('div[id="rootDiv"]') as HTMLElement;
     const modelIconRoot = await getElement(rootDiv, 'span.d4-link-label[name="span-ballFlight"]');
@@ -98,36 +98,36 @@ export class FittingTutorial extends Tutorial {
       grok.shell.warning(`${name} run timeout exceeded`);
       return;
     }
-        
+
     await this.action(
       'Run the "Ball flight" model',
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
-    ); 
-    
+    );
+
     // 4. Play
     const modelView = await getView('Ball flight');
     if (modelView === null) {
       grok.shell.warning('Model run timeout exceeded');
       return;
     }
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
-    
+
     const modelRoot = await getElement(modelView.root, 'div.d4-line-chart');
     if (modelRoot === null) {
       grok.shell.warning('Fitting run timeout exceeded');
       return;
     }
-    
+
     let okBtn = singleDescription(
       modelRoot,
       `# Simulation\n\nThis model takes the ball and thrown parameters, and 
       computes\n\n* the flight trajectory\n\n* max height and distance`,
       'Go to the next step',
     );
-        
+
     await this.action(
       'Click "OK"',
       fromEvent(okBtn, 'click'),
@@ -276,9 +276,9 @@ export class FittingTutorial extends Tutorial {
     const bestAngle = grid.table.get('Angle', 0) as number;
 
     okBtn = singleDescription(
-      grid.cell('[Height]', 0).element, 
+      grid.cell('[Height]', 0).element,
       '# The best fit\n\nTo make the ball follow the specified trajectory, use the following throw parameters:\n\n' +
-      `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`, 
+      `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`,
       'Complete the step',
       ui.hints.POSITION.RIGHT,
     );

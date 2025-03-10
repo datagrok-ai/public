@@ -77,16 +77,16 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     }
 
     // 1. Open Apps
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    grok.shell.v = browseView;
-    browseView.showTree = true;
-    
-    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    // grok.shell.v = browseView;
+    // browseView.showTree = true;
+
+    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
-    
+
     await this.action(
      'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
@@ -96,14 +96,14 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     // 2. Run Diff Studio
     let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(browseView.root,`div[name="div-${name}"]`);
+    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
-    
+
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
-    
+
     await this.action(
       `Run ${name}`,
       fromEvent(modelCatalogIcn, 'dblclick'),
@@ -118,13 +118,13 @@ export class SensitivityAnalysisTutorial extends Tutorial {
         grok.shell.warning(`${name} run timeout exceeded`);
         return;
     }
-    
+
     await this.action(
       'Run the "Ball flight" model',
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
-    ); 
+    );
 
     // 4. Play
     const modelView = await getView('Ball flight');
@@ -147,7 +147,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       computes\n\n* the flight trajectory\n\n* max height and distance`,
       'Go to the next step',
     );
-    
+
     await this.action(
       'Click "OK"',
       fromEvent(okBtn, 'click'),
@@ -217,7 +217,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
       runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
-    );    
+    );
 
     // 9. Explore viewers
 
