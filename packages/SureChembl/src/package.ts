@@ -168,6 +168,10 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
 }
 
 
+//name: sureChemblSubstructureSearch
+//input: string molecule {semType: Molecule}
+//input: int limit
+//output: dataframe df
 export async function sureChemblSubstructureSearch(molecule: string, limit: number): Promise<DG.DataFrame | null> {
   try {
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
@@ -182,6 +186,11 @@ export async function sureChemblSubstructureSearch(molecule: string, limit: numb
   }
 }
 
+//name: sureChemblSimilaritySearch
+//input: string molecule {semType: Molecule}
+//input: int limit
+//input: double similarityThreshold
+//output: dataframe df
 export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold?: number): Promise<DG.DataFrame | null> {
   try {
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
