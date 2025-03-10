@@ -25,6 +25,7 @@ import textract
 
 nltk.download('cmudict')
 nltk.download('punkt')
+nltk.download('punkt_tab')
 
 # Pronunciation dictionary
 PROND = cmudict.dict()
