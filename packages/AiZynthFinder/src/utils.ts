@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {TreeNode, Tree} from './aizynth-api';
 import {HORIZONTAL_SPACING, MOL_HEIGHT, MOL_WIDTH, PADDING, VERTICAL_SPACING} from './const';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export function createPathsTreeTabs(paths: Tree[], isHorizontal: boolean = true): DG.TabControl {
   const tabControl = ui.tabControl();
@@ -282,3 +283,10 @@ async function drawMolecule(ctx: CanvasRenderingContext2D, smiles: string, x: nu
 //   // Draw the rotated image back to the original canvas
 //   ctx.drawImage(newCanvas, 0, 0);
 // }
+
+export function isFragment(molString: string) {
+  if (DG.chem.isMolBlock(molString))
+    return MolfileHandler.getInstance(molString).isFragment();
+  else
+    return !!molString.match(/\[.?:|\*.?\]/g);
+}

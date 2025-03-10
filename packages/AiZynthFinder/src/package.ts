@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
 import {AiZynthFinderViewer} from './aizynthfinder-viewer';
-import {createPathsTreeTabs} from './utils';
+import {createPathsTreeTabs, isFragment} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
 
 export const _package = new DG.Package();
@@ -39,6 +39,18 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
+  if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule))
+    return new DG.Widget(ui.divText('Molecule is empty'));
+  if (DG.chem.isSmarts(molecule) || isFragment(molecule))
+    return new DG.Widget(ui.divText('Not applicable for smarts or moleculer fragments'));
+
+  //check molecule is valid and convert to smiles
+  try {
+    molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+  } catch {
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+  }
+
   const result = await grok.functions.call('Aizynthfinder:calculateRetroSynthesisPaths',
     {molecule: molecule});
   const reactionData = JSON.parse(result) as ReactionData;
