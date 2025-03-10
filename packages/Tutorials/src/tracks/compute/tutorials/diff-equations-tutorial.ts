@@ -125,11 +125,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
     }
 
     // 1. Open Apps
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    grok.shell.v = browseView;
-    browseView.showTree = true;
+    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    // grok.shell.v = browseView;
+    // browseView.showTree = true;
 
-    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
@@ -143,7 +143,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 2. Run Diff Studio
-    const diffStudIcon = await getElement(browseView.root,'div[name="div-Diff-Studio"]');
+    const diffStudIcon = await getElement(grok.shell.browsePanel.root,'div[name="div-Diff-Studio"]');
 
     if (diffStudIcon === null) {
       grok.shell.warning('Diff Studio not found: install the Diff Studio package');
@@ -160,16 +160,16 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const viewToClose = await getViewWithElement('div.d4-line-chart');
     if (viewToClose === null) {
       grok.shell.warning('Failed to run Diff Studio');
-      return;      
+      return;
     }
-    viewToClose.close();  
+    viewToClose.close();
 
     const openModelFunc: DG.Func = await grok.functions.eval('DiffStudio:ivpFileHandler');
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
     await openModelFuncCall.call();
 
     await new Promise((resolve) => setTimeout(resolve, 300));
-    
+
     // 3. Explore elements
     this.describe('We start with an incomplete model.');
 
@@ -188,7 +188,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Click "Next" to go to the next item.',
     );
 
-    // 4. Play with inputs    
+    // 4. Play with inputs
     let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
@@ -198,8 +198,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 5. Go to ODEs
-    this.describe('Explore the underlying mathematical model.');    
-    const ribbonPanels = dsView.getRibbonPanels();    
+    this.describe('Explore the underlying mathematical model.');
+    const ribbonPanels = dsView.getRibbonPanels();
     const editToggle = ribbonPanels[DS_CONSTS.EDIT_RIBBON_IDX][DS_CONSTS.EDIT_TOGGLE_IDX];
     await this.action(
       'Open equations editor',
@@ -232,7 +232,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
 
-    // 7. Complete 1st equation  
+    // 7. Complete 1st equation
     this.title('Improving models');
     this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
 
@@ -252,7 +252,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     ]);
 
     setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
-    
+
     await this.action(
       'Complete the first equation',
       interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == rawEquation)),
@@ -260,7 +260,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-    // 8. Complete 2nd equation    
+    // 8. Complete 2nd equation
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
@@ -295,10 +295,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 10. Check meaning
-    const description = '# Updates\n\nNow, the model takes into account:' + 
+    const description = '# Updates\n\nNow, the model takes into account:' +
       '\n* the effect of the presence of predators on the prey death rate' +
       '\n* the effect of the presence of prey on the predator\'s growth rate';
-    
+
     let okBtn = singleDescription(lineChartRoot, description, 'Go to the next step');
 
     await this.action(
@@ -331,7 +331,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
       'Reduce the initial value of the prey population.',
-    );    
+    );
 
     const deltaEditor = inputRoots[8].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(

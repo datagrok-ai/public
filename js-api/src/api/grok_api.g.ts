@@ -36,6 +36,7 @@ export interface IDartApi {
   grok_Get_BottomPanel(): any;
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
+  grok_Get_BrowsePanel(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
   grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
@@ -1524,14 +1525,8 @@ export interface IDartApi {
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
-  grok_BrowseView_Get_LocalTree(view: any): any;
-  grok_BrowseView_Get_MainTree(view: any): any;
-  grok_BrowseView_Get_Preview(view: any): any;
-  grok_BrowseView_Set_Preview(view: any, preview: any): any;
-  grok_BrowseView_Get_DockManager(view: any): any;
-  grok_BrowseView_Get_ShowTree(view: any): any;
-  grok_BrowseView_Set_ShowTree(view: any, x: Bool): any;
-  grok_BrowseView_SetHomeView(view: any): Promise<any>;
+  grok_BrowsePanel_Get_LocalTree(view: any): any;
+  grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;

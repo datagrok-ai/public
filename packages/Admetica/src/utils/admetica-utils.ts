@@ -527,6 +527,7 @@ export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: st
 
   ui.onSizeChanged(form.root).subscribe(() => {
     const containerWidth = form.root.clientWidth;
+    if (!containerWidth) return;
     const updatedFormState = generator.generateFormState(containerWidth);
     form.form.state = JSON.stringify(updatedFormState);
   });

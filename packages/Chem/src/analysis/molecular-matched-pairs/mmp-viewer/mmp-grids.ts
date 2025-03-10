@@ -258,7 +258,7 @@ export class MmpPairedGrids {
     const idxToTo: number = columns!.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
     const molFrom = this.parentTable!.columns.byName(this.mmpa.initData.molName).get(idxFrom);
     const molTo = this.parentTable!.columns.byName(this.mmpa.initData.molName).get(idxToTo);
-    const gridt = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
+    const gridt = grok.shell.tv.grid;
     gridt.setOptions({
       pinnedRowValues: [molFrom, molTo],
       pinnedRowColumnNames: [this.mmpa.initData.molName, this.mmpa.initData.molName],
@@ -280,7 +280,7 @@ export class MmpPairedGrids {
       this.parentTable.selection.set(i, false);
 
     const columns = this.mmpGridTrans.dataFrame.columns;
-    const gridt = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
+    const gridt = grok.shell.tv.grid;
     const newSelection = DG.BitSet.create(this.parentTable.rowCount);
     const indexesPairs = pairsGrid ? this.mmpGridTrans.dataFrame.selection.getSelectedIndexes() :
       this.mmpMaskTransSelection.getSelectedIndexes();
@@ -293,7 +293,7 @@ export class MmpPairedGrids {
   }
 
   unPinMatchedPair(): void {
-    const grid = grok.shell.tv?.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)?.preview as DG.TableView)?.grid;
+    const grid = grok.shell.tv?.grid;
     if (grid) {
       grid.setOptions({
         pinnedRowValues: [],

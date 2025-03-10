@@ -123,7 +123,7 @@ export function demoApp(path?: string, filter?: string): DG.ViewBase {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
   new DemoView();
 }
 
@@ -371,7 +371,7 @@ export async function _tableLinkingDemo() {
 
   const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
   const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
-	
+
   grok.shell.addTableView(demog);
   const demogTypesTableView = grok.shell.addTableView(demogTypes);
 
@@ -379,7 +379,7 @@ export async function _tableLinkingDemo() {
     [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
   const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: 'Table'});
   demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, 'demog', 0.7);
-  
+
   grok.shell.windows.showContextPanel = false;
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;

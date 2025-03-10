@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.3.5 (2025-03-07)
+
+Vector distance functions support for dimensionality reduction on webGPU and without
+
 ## 1.3.4 (2025-02-28)
 
 MCL: Updated ML library to support large MCL matrices

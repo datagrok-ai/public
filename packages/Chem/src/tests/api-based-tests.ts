@@ -3,9 +3,10 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import { CONTAINER_TIMEOUT, ensureContainerRunning, readDataframe } from './utils';
+import { CONTAINER_TIMEOUT, readDataframe } from './utils';
 
 category('server features', () => {
 
@@ -13,7 +14,7 @@ category('server features', () => {
   });
   
   test('descriptors', async () => {
-    await ensureContainerRunning('name = "chem-chem"');
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :

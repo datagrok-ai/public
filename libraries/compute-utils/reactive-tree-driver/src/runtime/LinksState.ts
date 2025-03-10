@@ -282,7 +282,7 @@ export class LinksState {
           if (depsData[ioName] == null)
             depsData[ioName] = {};
           if (depType === 'meta' || depType === 'data') {
-            if (depsData[depType])
+            if (depsData[ioName][depType])
               grok.shell.warning(`Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName} $`);
 
             depsData[ioName][depType] = linkId;

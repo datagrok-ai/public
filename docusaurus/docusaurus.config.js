@@ -113,7 +113,10 @@ const config = {
                     path: '../help',
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
-                }
+                },
+                googleTagManager: {
+                    containerId: 'GTM-PV25ZPW',
+                },
             }),
         ],
     ],

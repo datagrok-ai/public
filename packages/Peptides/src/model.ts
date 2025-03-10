@@ -150,7 +150,7 @@ export class PeptidesModel {
         this._analysisView = grok.shell.addTableView(this.df);
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !grok.shell.isInDemo)
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
       grok.shell.v = this._analysisView;
 
 

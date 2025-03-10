@@ -76,6 +76,7 @@ export function rmse(targetArg: Float64Array, targetFuncs: Float64Array[], scale
   const dim = scaleVals.length;
   let scale = 0;
   let sum = 0;
+  let valsCount = 0;
 
   const indices = getIndices(targetArg, modelArg);
   const argsCount = indices.length;
@@ -84,13 +85,15 @@ export function rmse(targetArg: Float64Array, targetFuncs: Float64Array[], scale
     scale = scaleVals[i];
     sum = 0;
 
-    for (let k = 0; k < argsCount; ++k)
+    for (let k = 0; k < argsCount; ++k) {
       sum += ((targetFuncs[i][k] - modelFuncs[i][indices[k]]) / scale)**2;
+      ++valsCount;
+    }
 
     res += sum;
   }
 
-  return Math.sqrt(res);
+  return Math.sqrt(res / valsCount);
 } // rmse
 
 /** Return points splitted into batches */

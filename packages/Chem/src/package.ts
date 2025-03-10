@@ -908,7 +908,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       isDemo: isDemo,
     }).call(undefined, undefined, {processed: false});
 
-    const view = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(table.name);
+    const view = grok.shell.getTableView(table.name);
 
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: axesNames[0],
@@ -1321,7 +1321,7 @@ export function convertMolNotationAction(col: DG.Column) {
   if (!func || !col?.dataFrame)
     return;
   func.prepare({data: col.dataFrame, molecules: col}).edit();
-} 
+}
 
 //tags: cellEditor
 //description: Molecule
@@ -1776,8 +1776,7 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   if (demo) {
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    view = browseView ? (browseView.preview as DG.TableView) : grok.shell.getTableView(table.name) as DG.TableView;
+    view = grok.shell.getTableView(table.name) as DG.TableView;
   } else
     view = grok.shell.getTableView(table.name) as DG.TableView;
 
@@ -1869,7 +1868,7 @@ export async function demoMMPA(): Promise<void> {
 
 //name: Demo R Group Analysis
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
-//meta.demoPath: Cheminformatics | R Group Analysis
+//meta.demoPath: Cheminformatics | R-Group Analysis
 //meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoRgroupAnalysis(): Promise<void> {

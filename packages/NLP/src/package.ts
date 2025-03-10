@@ -72,7 +72,7 @@ async function getCredentials(): Promise<{accessKeyId: string, secretAccessKey: 
 
 async function extractText(textfile: DG.FileInfo) {
   const textExtractor = await grok.functions.eval('NLP:TextExtractor');
-  const extraction = textExtractor.prepare({file: textfile});
+  const extraction = textExtractor.prepare({file: textfile, extension: textfile.extension});
   await extraction.call();
   return extraction.getParamValue('text');
 }

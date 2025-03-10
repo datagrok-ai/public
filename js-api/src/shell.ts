@@ -1,5 +1,5 @@
 import { DataFrame } from "./dataframe";
-import {BrowseView, TableView, View, ViewBase} from "./views/view";
+import {BrowsePanel, TableView, View, ViewBase} from "./views/view";
 import { Project, User } from "./entities";
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
@@ -38,7 +38,6 @@ export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
   build: AppBuildInfo = new AppBuildInfo();
-  isInDemo: boolean = false;
 
   testError(s: String): void {
     return api.grok_Test_Error(s);
@@ -124,6 +123,10 @@ export class Shell {
     return api.grok_Get_BottomPanel();
   }
 
+  get browsePanel(): BrowsePanel {
+    return api.grok_Get_BrowsePanel();
+  }
+
   /** Shows information message (green background)
    * @param {string} x - message
    * @param options */
@@ -186,11 +189,6 @@ export class Shell {
     } else {
       if (context != null)
         v.parentCall = context;
-      if (this.isInDemo && grok.shell.view('Browse') !== null) {
-        const bv = grok.shell.view('Browse') as BrowseView;
-        bv.preview = v as View;
-      }
-      else
         api.grok_AddView(v.dart, dockType, width);
     }
     return v;
@@ -219,14 +217,7 @@ export class Shell {
    * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
-    if (this.isInDemo && grok.shell.view('Browse') !== null) {
-      const tv = TableView.create(table, false);
-      const bv = grok.shell.view('Browse') as BrowseView;
-      bv.preview = tv;
-      return tv;
-    }
-    else
-      return toJs(api.grok_AddTableView(table.dart, dockType, width));
+    return toJs(api.grok_AddTableView(table.dart, dockType, width));
   }
 
   /**

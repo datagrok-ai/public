@@ -79,6 +79,12 @@ export interface SettingsInterface {
 
   showToolbox: boolean;
 
+  showBrowse: boolean;
+
+  showProjects: boolean;
+
+  showFavorites: boolean;
+
   showStatusBar: boolean;
 
   showVariables: boolean;
