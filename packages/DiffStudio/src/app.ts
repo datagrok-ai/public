@@ -10,6 +10,7 @@ import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -31,7 +32,6 @@ import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, ha
   noModels} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
-import {getDiffGrok} from './pipeline';
 
 import '../css/app-styles.css';
 
@@ -1428,7 +1428,11 @@ export class DiffStudio {
 
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
-        diffGrok: getDiffGrok(ivp),
+        diffGrok: {
+          ivp: ivp,
+          ivpWW: getIvp2WebWorker(ivp),
+          pipelineCreator: getPipelineCreator(ivp),
+        },
       });
     } catch (err) {
       this.processError(err);

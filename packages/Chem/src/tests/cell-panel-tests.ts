@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
@@ -16,7 +17,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
-import {ensureContainerRunning, molV2000, molV3000} from './utils';
+import {molV2000, molV3000} from './utils';
 import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import { identifiers } from '../package';
@@ -210,7 +211,7 @@ category('cell panel', async () => {
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
-    await ensureContainerRunning('name = "chem-chem"');
+    await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
     const res: DG.DataFrame = await getDescriptorsPy(
       'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',

@@ -16,7 +16,7 @@ export function init() {
 }
 
 
-//name: Databases | SureChembl | Substructure Search
+//name: Databases | SureChEMBL | Substructure Search
 //tags: panel, widgets
 //input: string molecule {semType: Molecule}
 //output: widget result
@@ -25,7 +25,7 @@ export function sureChemblSubstructureSearchWidget(molecule: string): DG.Widget 
   return molecule ? patentSearch(molecule, sureChemblSubstructureSearch) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Databases | SureChembl | Similarity Search
+//name: Databases | SureChEMBL | Similarity Search
 //tags: panel, widgets
 //input: string molecule {semType: Molecule}
 //output: widget result
@@ -141,6 +141,7 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
   Object.keys(numPatentsByMol).forEach((key: string) => {
     const molHost = ui.div();
     const res = grok.chem.drawMolecule(key, WIDTH, HEIGHT, false);
+    res.style.float = 'left';
     molHost.append(res);
     const acc = ui.accordion();
     acc.root.style.paddingLeft = '25px';
@@ -167,6 +168,10 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
 }
 
 
+//name: sureChemblSubstructureSearch
+//input: string molecule {semType: Molecule}
+//input: int limit
+//output: dataframe df
 export async function sureChemblSubstructureSearch(molecule: string, limit: number): Promise<DG.DataFrame | null> {
   try {
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
@@ -181,6 +186,11 @@ export async function sureChemblSubstructureSearch(molecule: string, limit: numb
   }
 }
 
+//name: sureChemblSimilaritySearch
+//input: string molecule {semType: Molecule}
+//input: int limit
+//input: double similarityThreshold
+//output: dataframe df
 export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold?: number): Promise<DG.DataFrame | null> {
   try {
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);

@@ -1,5 +1,10 @@
 # Diff Studio changelog
 
+## 1.2.6 (2025-03-10)
+
+* Fitting in webworkers for cyclic models
+* Updaed tests for pipelines
+
 ## 1.2.5 (2025-03-06)
 
 * Fitting in webworkers for models with updates

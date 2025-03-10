@@ -11,3 +11,8 @@
 .d4-accordion-pane-header:hover .surechembl-add-patents-to-workspace-button {
     visibility: visible;
 }
+
+.retrosynthesis-reaction-container {
+  position: relative;
+  margin-top: 15px;
+}
