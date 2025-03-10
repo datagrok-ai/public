@@ -88,7 +88,7 @@ jobs:
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ "${{ github.event_name }}" != "pull_request" ]]; then
                 if [[ $npm_version != ${current_version} ]]; then
-                  if [[ $unpublished_deps == "" ]] && [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
+                  if [[ $unpublished_deps == "" ]] && [[ ${{ github.ref }} == 'refs/heads/oserhiienko/utils' ]]; then
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                     packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                     MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
