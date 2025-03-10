@@ -135,4 +135,6 @@ category('Pipelines', () => {
   testPipelineTemplate('Bioreactor', USE_CASES.BIOREACTOR);
   testPipelineTemplate('Pollution', USE_CASES.POLLUTION);
   testPipelineTemplate('Energy-n-control', ENERGY_N_CONTROL);
+  testPipelineTemplate('PK', USE_CASES.PK);
+  testPipelineTemplate('PK-PD', USE_CASES.PK);
 }); // Correctness
