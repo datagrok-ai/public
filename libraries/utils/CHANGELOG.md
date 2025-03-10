@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.4.2 (2025-03-10)
+
+Added a method to ensure a container is running, starting it if necessary
+
 ## 4.4.1 (2025-14-01)
 
 Testing output info minor update
