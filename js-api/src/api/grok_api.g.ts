@@ -1209,6 +1209,12 @@ export interface IDartApi {
   grok_Windows_Set_ShowSidebar(x: Bool): any;
   grok_Windows_Get_ShowToolbox(): any;
   grok_Windows_Set_ShowToolbox(x: Bool): any;
+  grok_Windows_Get_ShowFavorites(): any;
+  grok_Windows_Set_ShowFavorites(x: Bool): any;
+  grok_Windows_Get_ShowBrowse(): any;
+  grok_Windows_Set_ShowBrowse(x: Bool): any;
+  grok_Windows_Get_ShowProjects(): any;
+  grok_Windows_Set_ShowProjects(x: Bool): any;
   grok_Windows_Get_ShowStatusBar(): any;
   grok_Windows_Set_ShowStatusBar(x: Bool): any;
   grok_Windows_Get_ShowConsole(): any;
@@ -1283,7 +1289,7 @@ export interface IDartApi {
   grok_Route(url: String): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
-  grok_AddTableView(t: any, dockStyle: String, width: Num): any;
+  grok_AddTableView(t: any, dockStyle: String, width: Num, preview: Bool): any;
   grok_AddTable(t: any): any;
   grok_CloseTable(t: any): any;
   grok_GetTableView(name: String): any;
@@ -1293,7 +1299,7 @@ export interface IDartApi {
   grok_GetVar(name: String): any;
   grok_SetVar(name: String, value: any): any;
   grok_ShowHelp(x: any): any;
-  grok_AddView(v: any, dockStyle: String, width: Num): any;
+  grok_AddView(v: any, dockStyle: String, width: Num, preview: Bool): any;
   grok_CloseAll(): any;
   grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool): any;
   grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any): any;
