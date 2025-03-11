@@ -19,7 +19,7 @@ export abstract class BaseViewApp {
   sketcherDiv: HTMLElement = ui.div([], { classes: 'demo-content-container', style: { border: 'none' } });
   sketcherInstance: grok.chem.Sketcher = new grok.chem.Sketcher();
   sketcher?: HTMLElement;
-  browseView: DG.BrowseView = grok.shell.view(DG.View.BROWSE) as DG.BrowseView;
+  view: DG.TableView = grok.shell.tv;
 
   filePath: string = '';
   addTabControl: boolean = true;
@@ -130,9 +130,7 @@ export abstract class BaseViewApp {
       this.tableView!._onAdded();
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-      if (inBrowseView)
-        (grok.shell.view(DG.VIEW_TYPE.BROWSE) as DG.BrowseView).preview = this.tableView!;
+      this.view = this.tableView!;
     }, 300);
   }
 

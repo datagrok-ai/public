@@ -14,7 +14,7 @@ export class AdmeticaViewApp extends BaseViewApp {
 
     this.formGenerator = this.customFormGenerator;
     this.setFunction = () => this.performAdmetica();
-    this.browseView.path = 'browse/apps/Admetica';
+    this.view.path = 'browse/apps/Admetica';
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
     this.tableName = 'Admetica';
   }
