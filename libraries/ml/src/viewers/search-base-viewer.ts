@@ -40,7 +40,7 @@ export class SearchBaseViewer extends DG.JsViewer {
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
       this.targetColumn = this.dataFrame.columns.bySemType(this.semType) as DG.Column<string>;
-      this.targetColumnName = this.targetColumn.name!;
+      this.targetColumnName = this.targetColumn?.name;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
     }
     this.render();

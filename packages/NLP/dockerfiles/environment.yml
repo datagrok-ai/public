@@ -10,6 +10,3 @@ dependencies:
   - pip
   - pip:
     - sentence-transformers
-    - numpy
-    - pandas
-    - scikit-learn

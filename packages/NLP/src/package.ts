@@ -10,7 +10,8 @@ import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemm
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
 import '../css/stemming-search.css';
-import { SentenceSimilarityViewer } from './sentence-similarity-viewer';
+import { SentenceSimilarityViewer } from './utils/sentence-similarity-viewer';
+import {vectorCosineDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 export const _package = new DG.Package();
 
@@ -327,53 +328,64 @@ export function similar(query: string): DG.Widget {
 //name: getEmbeddings
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-//input: column sentences
-export async function getEmbeddings(sentences: DG.Column) {
+//input: list<string> sentences
+//output: string embeddings
+export async function getEmbeddings(sentences: string[]): Promise<string> {
   const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
   
   const body = {
-    sentences: sentences.toList(),
+    sentences: sentences,
   };
 
-  const response = await fetch('http://127.0.0.1:8000/get_embeddings', {
-  //const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {'Content-Type': 'application/json'},
   });
 
   const result = await response.json();
-  const embeddings = result.embeddings;
+  const embeddings = JSON.stringify(result.embeddings);
   return embeddings;
 }
 
 //name: getSimilar
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-//input: list embeddings
-//input: column sentences
+//input: string embeddingsStr
+//input: list<string> sentences
 //input: int currentRow
 //output: string result
-export async function getSimilar(embeddings: Array<Array<number>>, sentences: DG.Column, currentRow: number): Promise<string> {
-  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
-  
-  const body = {
-    embeddings: embeddings,
-    sentences: sentences.toList(),
-    index: currentRow
-  };
+export async function getSimilar(embeddingsStr: string, sentences: string[], currentRow: number): Promise<string> {
+  const embeddings = JSON.parse(embeddingsStr);
+  const targetEmbedding = embeddings[currentRow];
 
-  const response = await fetch('http://127.0.0.1:8000/find_similar', {
-  //const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {'Content-Type': 'application/json'},
-  });
+  const sentenceArr: string[] = new Array(embeddings.length - 1);
+  const distanceArr: number[] = new Array(embeddings.length - 1);
+  const indexArr: number[] = new Array(embeddings.length - 1);
 
-  const result = await response.json();
-  const resultString = result.result;
-  return resultString;
+  let j = 0;
+  for (let i = 0; i < embeddings.length; i++) {
+    if (i !== currentRow) {
+      sentenceArr[j] = sentences[i];
+      distanceArr[j] = vectorCosineDistance(targetEmbedding, embeddings[i]);
+      indexArr[j] = i;
+      j++;
+    }
+  }
+  const sortedIndices = distanceArr
+    .map((dist, idx) => [dist, idx])
+    .sort((a, b) => a[0] - b[0])
+    .map(([_, idx]) => idx);
+
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('sentence', sortedIndices.map(idx => sentenceArr[idx])),
+    DG.Column.fromList(DG.TYPE.FLOAT, 'score', sortedIndices.map(idx => distanceArr[idx])),
+    DG.Column.fromList(DG.TYPE.INT, 'idx', sortedIndices.map(idx => indexArr[idx])),
+  ]);
+
+  return df.toCsv();
 }
+
 
 //name: Sentence Similarity Search
 //tags: viewer
