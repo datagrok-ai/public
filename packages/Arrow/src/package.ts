@@ -12,7 +12,11 @@ export function info() {``
 }
 
 //tags: autostart
-export async function parquetInit() {
+export function parquetInit() {
+}
+
+//tags: init
+export async function initPackage() {
   await init(_package.webRoot + 'dist/parquet_wasm_bg.wasm');
 }
 
