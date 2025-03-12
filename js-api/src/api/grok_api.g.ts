@@ -55,8 +55,6 @@ export interface IDartApi {
   grok_GetDemoTable(path: String): Promise<any>;
   grok_DetectSemanticTypes(t: any): Promise<any>;
   grok_LoadDataFrame(p0: any): Promise<any>;
-  grok_Settings_Get_JupyterNotebook(): any;
-  grok_Settings_Get_JupyterNotebookToken(): any;
   grok_ViewByName(s: any): any;
   grok_Stream_Listen(stream: any, onData: any): any;
   grok_Object_ToString(o: any): any;
@@ -1077,7 +1075,6 @@ export interface IDartApi {
   grok_Credentials_Create(json: any): any;
   grok_ScriptEnvironment_Create(name: String): any;
   grok_ScriptEnvironment_Environment(e: any): any;
-  grok_ScriptEnvironment_Setup(p0: any): Promise<any>;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
@@ -1397,9 +1394,9 @@ export interface IDartApi {
   grok_Notebook_Get_Environment(n: any): any;
   grok_Notebook_Set_Environment(n: any, e: String): any;
   grok_Notebook_Get_Description(n: any): any;
+  grok_Notebook_Get_Notebook_Content(n: any): any;
+  grok_Notebook_Set_Notebook_Content(n: any, jsObject: any): any;
   grok_Notebook_Set_Description(n: any, d: String): any;
-  grok_Notebook_ToHtml(n: any): Promise<any>;
-  grok_Notebook_Edit(n: any): Promise<any>;
   grok_Package_Get_Credentials(packageName: String): Promise<any>;
   grok_Package_Get_Meta(p: any): any;
   grok_Package_GetModuleName(p: any, file: String): any;
@@ -1504,7 +1501,6 @@ export interface IDartApi {
   grok_Dapi_DockerImagesDataSource_Rebuild(s: any, id: String): Promise<any>;
   grok_Dapi_DockerContainersDataSource_Run(s: any, id: String, awaitStart: Bool): Promise<any>;
   grok_Dapi_DockerContainersDataSource_Stop(s: any, id: String, awaitStop: Bool): Promise<any>;
-  grok_Dapi_DockerContainersDataSource_ProxyRequest(s: any, id: String, path: String, params: any): Promise<any>;
   grok_Dapi_DockerContainersDataSource_GetContainerLogs(s: any, id: String, limit: Num): Promise<any>;
   grok_Dapi_DockersDataSource_GetServiceLogs(serviceName: String, limit: Num): Promise<any>;
   grok_Dapi_DockersDataSource_GetAvailableServices(): Promise<any>;

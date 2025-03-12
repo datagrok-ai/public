@@ -996,7 +996,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
         cleanup();
         socket.close(4001, "Timeout waiting for Docker container");
         reject(new Error("Timeout waiting for Docker container"));
-      }, timeout); // Timeout after 5 seconds
+      }, timeout);
 
       // Wait for the CONNECTED message from the server.
       // Message indicates that this and Docker container WebSockets are connected to each other.
@@ -1031,6 +1031,57 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
       socket.addEventListener("close", onClose);
       socket.addEventListener("error", onError);
     });
+  }
+
+  /**
+   * This is the synchronous version of the function {@link webSocketProxy}. Note that the container won't be
+   * ready to accept messages immediately after this function returns. If your application logic requires sending
+   * a message right away, consider using the asynchronous version.
+   * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
+   * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
+   */
+  webSocketProxySync(containerId: string, path: string, timeout: number = 60000): WebSocket {
+    const socket = new WebSocket(`${api.grok_Dapi_WS_Root()}/docker/containers/proxy-ws/${containerId}${path}`);
+    new Promise((resolve, reject) => {
+      let timeoutTimer = setTimeout(() => {
+        cleanup();
+        socket.close(4001, "Timeout waiting for Docker container");
+        reject(new Error("Timeout waiting for Docker container"));
+      }, timeout);
+
+      const onMessage = (event: MessageEvent) => {
+        if (event.data === "CONNECTED") {
+          clearTimeout(timeoutTimer);
+          cleanup();
+          resolve(socket);
+        }
+      };
+
+      const onClose = (event: CloseEvent) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error(`Could not open WebSocket connection: ${event.reason}`));
+      };
+
+      const onError = (_: Event) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        socket.close(4001, "WebSocket encountered an error");
+        reject(new Error("WebSocket encountered an error"));
+      };
+
+      function cleanup() {
+        socket.removeEventListener("message", onMessage);
+        socket.removeEventListener("close", onClose);
+        socket.removeEventListener("error", onError);
+      }
+
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose);
+      socket.addEventListener("error", onError);
+    }).catch((e) => console.error(e));
+    return socket;
   }
 
   /**
