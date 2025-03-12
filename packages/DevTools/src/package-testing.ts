@@ -137,8 +137,8 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
       {
-        packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
-        testName: pathSegments[pathSegments.length - 1]
+        packName: pathSegments[4], catName: pathSegments[5],
+        testName: pathSegments.length < 5 ? '' : pathSegments[pathSegments.length - 1]
       } : null;
     const testUIElements: ITestManagerUI = await this.createTestManagerUI(testFromUrl);
     this.testManagerView.name = this.name;
@@ -151,8 +151,10 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
       grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
-    if (pathInputParameter.has("run") && pathInputParameter.get("run") == 'true')
+    if (pathInputParameter.has("run") && pathInputParameter.get("run") == 'true') {
+      await delay(1000);
       this.runTestsForSelectedNode();
+    }
   }
 
   async collectPackages(packageName?: string): Promise<any[]> {
@@ -381,6 +383,11 @@ export class TestManager extends DG.ViewBase {
       const menu = DG.Menu.popup()
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
+        })
+        .item('Profile', async () => {
+          DG.Test.isProfiling = true;
+          this.runAllTests(node, tests, nodeType);
+          DG.Test.isProfiling = false;
         })
         .item('Copy', async () => {
           navigator.clipboard.writeText(node.captionLabel.innerText.trim());

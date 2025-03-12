@@ -848,6 +848,7 @@ export namespace Test {
   export let isReproducing = false;
   export let isInDebug = false;
   export let isCiCd = false;
+  export let isProfiling = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);
