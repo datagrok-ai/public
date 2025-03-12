@@ -65,7 +65,7 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
 //name: Reinvent
 //tags: HitDesignerFunction
 //input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
-//input: string optimize {choices: Chem:getFolders}
+//input: string optimize {choices: Reinvent4:getFolders}
 //editor: Reinvent4: ReinventEditor
 //output: dataframe result
 export async function reinvent(
