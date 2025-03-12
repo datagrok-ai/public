@@ -7,7 +7,10 @@ const linkSpecGrammar = `
 Link ::= Name FlagList? (':' Segment)? ('/' Segment)*
 FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
 Flag ::= "call" | "optional"
-Segment ::=  WS* (Selector | TargetIds) WS* {fragment=true}
+Segment ::=  WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
+TagSpec ::=  WS* '#' WS* TagSelectorType '(' TagSelectorArg ')' WS*
+TagSelectorArg ::= ((RefArg ',' TagArg) | TagArg) {fragment=true}
+TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
 Selector ::= SelectorType '(' SelectorArgs ')'
 SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
 SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
@@ -15,9 +18,11 @@ TargetIds ::= ListArg
 StopIds ::= ListArg
 ListArg ::= WS* Id WS* ('|' WS* Id WS*)* {fragment=true}
 RefArg ::= WS* '@' Ref WS* {fragment=true}
+TagArg ::= WS* Tag WS* {fragment=true}
 Ref ::= IDENTIFIER
 Id ::= IDENTIFIER
 Name ::= IDENTIFIER
+Tag ::= IDENTIFIER
 IDENTIFIER ::= [a-zA-Z][a-zA-Z_0-9]*
 WS ::= ' '
 `;
@@ -25,20 +30,30 @@ WS ::= ' '
 const linkParser = new Parser(Grammars.Custom.getRules(linkSpecGrammar));
 
 export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
+export type TagRefSelectors = 'after*' | 'after' | 'before*' | 'before' | 'same';
 export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
 export type LinkFlags = 'call' | 'optional';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
+export type TagSelectors = LinkNonRefSelectors | TagRefSelectors;
 
-export type LinkSegment = {
+export type LinkSelectorSegment = {
+  type: 'selector',
   selector: LinkSelectors,
   ids: ItemId[],
   stopIds: ItemId[],
   ref?: string | undefined,
 }
 
+export type LinkTagSegment = {
+  type: 'tag',
+  selector: TagSelectors,
+  tag: string,
+  ref?: string | undefined,
+}
+
 export type LinkIOParsed = {
   name: string;
-  segments: LinkSegment[];
+  segments: (LinkSelectorSegment | LinkTagSegment)[];
   flags?: LinkFlags[] | undefined,
 }
 
@@ -82,25 +97,23 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
       const selector = node.children[0].text as LinkSelectors;
-      const refNode = node.children.find((cnode) => cnode.type === 'Ref');
+      const ref = node.children.find((cnode) => cnode.type === 'Ref')?.text;
       const targetIdsNode = node.children.find((cnode) => cnode.type === 'TargetIds');
       const stopIdsNode = node.children.find((cnode) => cnode.type === 'StopIds');
-      const ref = refNode ? refNode.text : undefined;
-      if (ref && isNonRefSelector(selector))
-        throw new Error(`Link io ${io} is using non-ref selector with ref`);
-      if (isBase && !isNonRefSelector(selector))
-        throw new Error(`Link io ${io} is using ref selector ${selector} in link base`);
-      if (isBase && selector === 'all')
-        throw new Error(`Link io ${io} is using all selector in link base`);
-      if (!isBase && selector === 'expand')
-        throw new Error(`Link io ${io} is using expand selector in non-base`);
+      checkSelector(io, selector, isBase, ref);
       const ids = targetIdsNode!.children.map((cnode) => cnode.text);
       const stopIds = stopIdsNode ? stopIdsNode.children.map((cnode) => cnode.text) : [];
-      return {selector, ids, stopIds, ref};
+      return {type: 'selector' as const, selector, ids, stopIds, ref};
     } else if (node.type === 'TargetIds') {
       const selector = 'first' as const;
       const ids = node.children.map((cnode) => cnode.text);
-      return {ids, selector, stopIds: []};
+      return {type: 'selector' as const, ids, selector, stopIds: []};
+    } else if(node.type === 'TagSpec') {
+      const selector = node.children[0].text as TagSelectors;
+      const ref = node.children.find((cnode) => cnode.type === 'Ref')?.text;
+      const tag = node.children.find((cnode) => cnode.type === 'Tag')!.text;
+      checkSelector(io, selector, isBase, ref);
+      return {type: 'tag' as const, selector, tag, ref };
     } else if (node.type === 'Name' || node.type === 'Flag')
       return;
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
@@ -109,6 +122,17 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   if (lastSegment && !isBase && !isAction && (lastSegment.selector !== 'first'))
     throw new Error(`Link io ${io} is not ending with input/output selector`);
   return {name, segments, flags};
+}
+
+function checkSelector(io: string, selector: LinkSelectors | TagSelectors, isBase: boolean, ref?: string) {
+  if (ref && isNonRefSelector(selector))
+    throw new Error(`Link io ${io} is using non-ref selector with ref`);
+  if (isBase && !isNonRefSelector(selector))
+    throw new Error(`Link io ${io} is using ref selector ${selector} in link base`);
+  if (isBase && selector === 'all')
+    throw new Error(`Link io ${io} is using all selector in link base`);
+  if (!isBase && selector === 'expand')
+    throw new Error(`Link io ${io} is using expand selector in non-base`);
 }
 
 function checkAST(str: string, ast?: IToken) {

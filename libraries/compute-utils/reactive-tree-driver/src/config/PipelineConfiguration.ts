@@ -128,6 +128,7 @@ export type PipelineStepConfiguration<P, S> = {
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
   viewersHook?: ViewersHook;
+  tags?: string[];
 };
 
 export interface CustomExport {
@@ -147,6 +148,7 @@ export type PipelineConfigurationBase<P> = {
   customExports?: CustomExport[],
   actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
   states?: StateItem[];
+  tags?: string[];
 };
 
 // fixed pipeline
