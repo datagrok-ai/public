@@ -354,7 +354,7 @@ export class DiffStudio {
     this.solverView.setRibbonPanels([
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.downLoadIcon, this.appStateInputWgt, saveBtn],            
+      [this.downLoadIcon, this.appStateInputWgt, saveBtn],
     ]);
 
     this.updateRibbonWgts();
@@ -900,15 +900,15 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath) {
+      if (this.toChangePath)
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
-        // if (this.inBrowseRun)
-        //   this.browsePanel.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
+      // if (this.inBrowseRun)
+      //   this.browsePanel.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
 
-        // if (this.isRecentRun)
-        //   this.browsePanel.path = this.solverView.path;
-      }
+      // if (this.isRecentRun)
+      //   this.browsePanel.path = this.solverView.path;
+
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -1517,7 +1517,7 @@ export class DiffStudio {
   } // showPerformanceDlg
 
   /** Browse tree */
-  private async createTree(browsing?: Browsing) {    
+  private async createTree(browsing?: Browsing) {
     if (browsing) {
       this.browsePanel = browsing.browsePanel;
       this.appTree = browsing.treeNode;
@@ -1734,6 +1734,8 @@ export class DiffStudio {
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
       grok.shell.addPreview(view, undefined, undefined, null);
+      view.basePath = 'browse/apps/DiffStudio/';
+      view.path = `${title}`;
     });
 
     return folder;
