@@ -500,11 +500,9 @@ export class DiffStudio {
         dockTabCtrl();
     }
 
-    //this.createTree(browsing);
+    this.createTree(browsing);
 
     this.solverView.ribbonMenu = DG.Menu.create();
-
-    //this.prepareClosingEvent();
   }; // constructor
 
   /** Update ribbon panel widgets */
@@ -1524,10 +1522,7 @@ export class DiffStudio {
       this.browsePanel = browsing.browsePanel;
       this.appTree = browsing.treeNode;
     } else {
-      if (grok.shell.view(TITLE.BROWSE) === undefined)
-        grok.shell.v = DG.View.createByType('browse');
-
-      this.browsePanel = new DG.BrowsePanel(null);//grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+      this.browsePanel = grok.shell.browsePanel;
 
       const appsGroup = this.browsePanel.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
 
@@ -1589,10 +1584,10 @@ export class DiffStudio {
       const treeNodeY = panelRoot.scrollTop!;
 
       const solver = new DiffStudio(false);
-      // this.browsePanel.preview = await solver.runSolverApp(
-      //   undefined,
-      //   STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      // ) as DG.View;
+      grok.shell.addPreview( await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View, undefined, null, null);
 
       setTimeout(() => {
         panelRoot.scrollTo(0, treeNodeY);
@@ -1626,11 +1621,11 @@ export class DiffStudio {
           const equations = await file.readAsString();
 
           const solver = new DiffStudio(false);
-          // this.browsePanel.preview = await solver.runSolverApp(
-          //   equations,
-          //   undefined,
-          //   `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          // ) as DG.View;
+          grok.shell.addPreview(await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View);
 
           await this.saveModelToRecent(path, true);
         } else
@@ -1736,8 +1731,9 @@ export class DiffStudio {
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
     folder.onSelected.subscribe(() => {
-      //this.browsePanel.preview = this.getBuiltInModelsCardsView(models);
-      //this.browsePanel.path = `browse/apps/DiffStudio/${title}`;
+      const view = this.getBuiltInModelsCardsView(models);
+      view.name = title;
+      grok.shell.addPreview(view, undefined, undefined, null);
     });
 
     return folder;
@@ -1749,7 +1745,6 @@ export class DiffStudio {
 
     folder.onSelected.subscribe(async () => {
       const view = DG.View.create();
-      //this.browsePanel.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
 
       try {
         const folder = `${grok.shell.user.project.name}:Home/`;
@@ -1780,7 +1775,8 @@ export class DiffStudio {
         } else
           view.append(ui.h2('No recent models'));
 
-        //this.browsePanel.preview = view;
+        view.name = TITLE.RECENT;
+        grok.shell.addPreview(view, undefined, undefined, null);
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
@@ -2154,4 +2150,4 @@ export class DiffStudio {
 
     return facet;
   } // getFacetPlot
-};
+}; // DiffStudio

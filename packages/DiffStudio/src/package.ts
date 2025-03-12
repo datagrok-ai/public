@@ -90,7 +90,6 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
 //input: dynamic treeNode
 //input: view browsePanel
 export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
-  //console.log(treeNode);
   new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
 }
 
