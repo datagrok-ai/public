@@ -1,29 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-
-export let _package = new DG.Package();
-
 import '../css/notebooks.css';
 
 import {PageConfig} from '@jupyterlab/coreutils';
 import {CommandRegistry} from '@lumino/commands';
-import {ServiceManager, ServerConnection} from '@jupyterlab/services';
+import {ServerConnection, ServiceManager} from '@jupyterlab/services';
 import {MathJaxTypesetter} from '@jupyterlab/mathjax2';
 import {
-  NotebookPanel,
-  NotebookWidgetFactory,
-  NotebookModelFactory,
+  CellTypeSwitcher,
   NotebookActions,
-  CellTypeSwitcher
+  NotebookModelFactory,
+  NotebookPanel,
+  NotebookWidgetFactory
 } from '@jupyterlab/notebook';
-import {CompleterModel, Completer, CompletionHandler, KernelConnector} from '@jupyterlab/completer';
+import {Completer, CompleterModel, CompletionHandler, KernelConnector} from '@jupyterlab/completer';
 import {editorServices} from '@jupyterlab/codemirror';
 import {DocumentManager} from '@jupyterlab/docmanager';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
 import {RenderMimeRegistry, standardRendererFactories as initialFactories} from '@jupyterlab/rendermime';
 import {SetupCommands} from './commands';
-import {} from '@jupyterlab/apputils';
+import {removeChildren, editNotebook, setupEnvironment} from './utils';
+
+export let _package = new DG.Package();
 
 class NotebookView extends DG.ViewBase {
   constructor(params, path) {
@@ -138,7 +137,7 @@ class NotebookView extends DG.ViewBase {
     await this.initNotebook();
     removeChildren(this.root);
     if (this.html === null)
-      this.html = await this.notebook.toHtml();
+      this.html = await toHtml(this.notebook);
     let iframe = document.createElement('iframe');
     iframe.src = 'data:text/html;base64,' + btoa(this.html.replace(/\u00a0/g, " "));
     iframe.classList.add('grok-notebook-view-iframe');
@@ -171,7 +170,7 @@ class NotebookView extends DG.ViewBase {
         this.notebook.environment = environment.name;
         if (environment.name !== 'default') {
           ui.setUpdateIndicator(this.root, true);
-          await environment.setup();
+          await setupEnvironment(environment, CONTAINER_ID);
           ui.setUpdateIndicator(this.root, false);
         }
         this.editMode();
@@ -189,7 +188,7 @@ class NotebookView extends DG.ViewBase {
         this.name = e.name;
     }));
 
-    let notebookPath = await this.notebook.edit();
+    let notebookPath = await editNotebook(this.notebook, CONTAINER_ID);
     const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
     await manager.ready;
 
@@ -202,7 +201,7 @@ class NotebookView extends DG.ViewBase {
     });
 
     const opener = {
-      open: (widget) => {
+      open: (_) => {
       }
     };
     const docRegistry = new DocumentRegistry();
@@ -255,7 +254,7 @@ class NotebookView extends DG.ViewBase {
       link.rel = 'stylesheet';
       link.type = 'text/css';
       link.href = _package.webRoot + 'dist/' + path;
-      iframeDocument.head.append(link);  
+      iframeDocument.head.append(link);
     }
     addLink('styles/jupyter-styles.css');
     iframe.style.pointerEvents = 'auto';
@@ -268,7 +267,7 @@ class NotebookView extends DG.ViewBase {
     iframeDocument.body.append(container);
     iframeDocument.documentElement.style.overflow = 'auto';
     iframeDocument.body.style.overflow = 'auto';
-    
+
     handler.editor = editor;
     nbWidget.content.activeCellChanged.connect((sender, cell) => {
       handler.editor = cell !== null && cell !== undefined ? cell.editor : null;
@@ -392,8 +391,7 @@ class NotebookView extends DG.ViewBase {
 
   static getSettings() {
     const _settings = {
-      baseUrl: grok.settings.jupyterNotebook,
-      token: grok.settings.jupyterNotebookToken,
+      baseUrl: 'http://localhost:8080/notebook', // host will be removed, needed only to extract path and use it in proxy request to container
       mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
       mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
     };
@@ -401,6 +399,37 @@ class NotebookView extends DG.ViewBase {
     for (let key in _settings) PageConfig.setOption(key, _settings[key]);
 
     let settings = ServerConnection.defaultSettings;
+
+    settings.fetch = async (info, _) => {
+      let url = new URL(info.url);
+      let path = url.pathname + url.search;
+      const params = {method: info.method, headers: info.headers};
+      if (info.body && info.body instanceof ReadableStream) {
+        const reader = info.body.getReader();
+        const chunks = [];
+        let totalLength = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          chunks.push(value);
+          totalLength += value.length;
+        }
+        const bodyBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          bodyBuffer.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        params.body = bodyBuffer.buffer;
+      }
+      return await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, path, params);
+    }
+
+    settings.WebSocket = DockerWebSocket;
+
     settings.baseUrl = PageConfig.getBaseUrl();
     settings.wsUrl = PageConfig.getWsUrl();
     settings.token = PageConfig.getToken();
@@ -409,6 +438,77 @@ class NotebookView extends DG.ViewBase {
   }
 }
 
+function createDockerWebSocket(url, _) {
+  let uri = new URL(url);
+  return grok.dapi.docker.dockerContainers.webSocketProxySync(CONTAINER_ID, uri.pathname + uri.search);
+}
+
+const DockerWebSocket = new Proxy(createDockerWebSocket, {
+  construct(target, args) {
+    const ws = target(...args);
+    let connected = false;
+    const buffer = [];
+    return new Proxy(ws, {
+      set(target, prop, value) {
+        if (prop === 'onmessage') {
+          target[prop] = function(event) {
+            if (event.data === "CONNECTED") {
+              connected = true;
+              if (buffer.length !== 0) {
+                for (let m of buffer)
+                  ws.send(m);
+                buffer.length = 0;
+              }
+              return;
+            }
+            value(event);
+          };
+        }
+        else {
+          target[prop] = value;
+        }
+        return true;
+      },
+
+      get(target, prop) {
+        if (prop === 'send') {
+          return new Proxy(target[prop], {
+            apply: (sendMethod, thisArg, argumentsList) => {
+              if (!connected)
+                buffer.push(argumentsList[0])
+              else
+                return Reflect.apply(sendMethod, target, argumentsList);
+            }
+          });
+        }
+        else if (prop === 'close') {
+          // Intercept close method to ensure correct context
+          return function(...args) {
+            console.log("Calling WebSocket close...");
+            return Reflect.apply(target[prop], target, args); // Call close on the actual WebSocket
+          };
+        }
+        else
+          return Reflect.get(target, prop);
+      }
+    });
+  }
+});
+
+let CONTAINER_ID;
+
+async function toHtml(notebook) {
+  const arrayBuffer = await convertNotebook(JSON.stringify(notebook.notebook));
+  return new TextDecoder("utf-8").decode(arrayBuffer);
+}
+
+//tags: init
+export async function initContainer() {
+  const container = await grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
+  CONTAINER_ID = container.id;
+  if (container.status !== 'started' && !container.status.startsWith('pending') && container.status !== 'checking')
+    await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
+}
 
 //name: Notebook
 //description: Creates a Notebook View
@@ -420,8 +520,16 @@ export function notebookView(params = null, path = '') {
   return new NotebookView(params, path);
 }
 
-
-function removeChildren(node) {
-  while (node.firstChild)
-    node.removeChild(node.firstChild);
+//name: convertNotebook
+//description: Converts notebook file content into specified format
+//input: string notebook
+//input: string format
+//input: bool execute
+//output: blob result
+export async function convertNotebook(notebook, format = 'html', execute = false) {
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
+      {method: 'POST', body: new TextEncoder().encode(notebook)})
+  if (response.status > 201)
+    throw response.statusText;
+  return response.arrayBuffer();
 }

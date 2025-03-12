@@ -1,0 +1,9 @@
+# GrokHelper configuration template
+
+general:
+  cache_path: '/home/grok/grok_helper/cache'
+  environments_path: '/home/grok/grok_helper/environments'
+  host: '0.0.0.0'
+  port: 5005
+  application_root: ''
+  notebook_enabled: True
