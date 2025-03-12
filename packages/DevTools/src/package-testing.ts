@@ -386,7 +386,7 @@ export class TestManager extends DG.ViewBase {
         })
         .item('Profile', async () => {
           DG.Test.isProfiling = true;
-          this.runAllTests(node, tests, nodeType);
+          await this.runAllTests(node, tests, nodeType);
           DG.Test.isProfiling = false;
         })
         .item('Copy', async () => {
