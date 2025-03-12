@@ -1,5 +1,12 @@
 # Peptides changelog
 
+## 1.21.5 (2025-03-12)
+
+* Fix weblogo renderer with corrected colors and background corrections
+* Improved mutation cliffs preview window with horizontal splitter
+* Correct circle rendering in Monomer-Position viewer
+* Mutations groups column in mutation cliffs pairs panel 
+
 ## 1.21.4 (2025-03-03)
 
 Fix SAR errors on nulling targets

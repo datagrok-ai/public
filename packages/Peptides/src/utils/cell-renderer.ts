@@ -13,6 +13,9 @@ import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import { getMonomerLibHelper } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import { PeptideUtils } from '../peptideUtils';
+import { HelmTypes } from '@datagrok-libraries/bio/src/helm/consts';
 
 /**
  * Renders cell selection border.
@@ -51,7 +54,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const halfWidth = bounds.width / 2;
   const midX = Math.ceil(bounds.x + 1 + halfWidth);
   const midY = Math.ceil(bounds.y + 1 + bounds.height / 2);
-  const maxRadius = 0.9 * halfWidth / 2; // Fill at most 90% of the half of the cell width
+  const maxRadius = Math.min(0.9 * halfWidth / 2, 0.9 * bounds.height / 2); // Fill at most 90% of the half of the cell width
   // render most potent residues cells according to the p-value (color) and mean difference (size)
   if (viewer instanceof MostPotentResidues) {
     const positionStats = viewer.monomerPositionStats[currentPosition];
@@ -230,6 +233,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const barWidth = (bounds.width - (leftShift + drawOptions.marginHorizontal)) * pr;
   const xStart = (bounds.x + leftShift) * pr;
 
+  const monomerLib = PeptideUtils.getMonomerLib();
   const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
     const monomerHeight = barHeight * (stats[monomer]!.count / rowCount);
@@ -246,8 +250,8 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
         ctx.lineWidth = selectionWidth;
         ctx.line(xSelection, currentY, xSelection, currentY + selectionHeight, DG.Color.rowSelection);
       }
-
-      ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
+      const monomerColor = monomerLib.getMonomerTextColor(HelmTypes.AA, monomer);
+      ctx.fillStyle = monomerColor;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.font = drawOptions.symbolStyle;
@@ -318,6 +322,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
     ctx.save();
     try {
       ctx.beginPath();
+      ctx.clearRect(bounds.x, bounds.y, bounds.width, bounds.height);
       ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
       ctx.clip();
 

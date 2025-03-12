@@ -1338,6 +1338,7 @@ export class MostPotentResidues extends SARViewer {
     const afterDraw = grid.onAfterDrawContent.subscribe(() => {
       const monomerGCol = grid.col(C.COLUMNS_NAMES.MONOMER)!;
       if (monomerGCol.width === AAR_CELL_WIDTH) {
+        mdCol.width = MUTATION_CLIFFS_CELL_WIDTH;
         afterDraw.unsubscribe();
         return;
       }
