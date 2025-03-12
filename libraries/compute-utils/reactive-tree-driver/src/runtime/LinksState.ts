@@ -6,7 +6,7 @@ import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
-import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
+import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
 import {parseLinkIO} from '../config/LinkSpec';
 import {makeValidationResult} from '../utils';
@@ -79,8 +79,8 @@ export class LinksState {
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
-        this.runLinks(state, this.toLinksMap(newData)),
-        this.runLinks(state, this.toLinksMap(newMeta)),
+        this.runLinks(state, this.toLinksMap(newData), false),
+        this.runLinks(state, this.toLinksMap(newMeta), true),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
@@ -88,7 +88,7 @@ export class LinksState {
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
-        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap))) : of(null),
+        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -294,7 +294,7 @@ export class LinksState {
     return deps;
   }
 
-  public runLinks(state: BaseTree<StateTreeNode>, links: Map<string, Link>) {
+  public runLinks(state: BaseTree<StateTreeNode>, links: Map<string, Link>, isMeta: boolean) {
     const scheduledLinks = new Set<string>();
     const obs = state.traverse(state.root, (acc, node) => {
       const item = node.getItem();
@@ -315,7 +315,7 @@ export class LinksState {
           this.runningLinks$,
           this.getLinkRunObs(linkUUID),
         ]).pipe(
-          debounceTime(0),
+          isMeta ? identity : debounceTime(0),
           filter(([running]) => !running || running.length === 0),
           take(1),
           mapTo(undefined),
