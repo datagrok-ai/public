@@ -222,7 +222,7 @@ const strToVal = (s: string) => {
 /** Browse properties */
 type Browsing = {
   treeNode: DG.TreeViewGroup,
-  browseView: DG.BrowseView,
+  browsePanel: DG.BrowsePanel,
 };
 
 /** Last called model specification */
@@ -289,13 +289,14 @@ export class DiffStudio {
             await this.runLastCalledModel();
         } else {
           const folderName = this.startingPath.slice(modelIdx);
-          const node = this.appTree.items.find((node) => node.text === folderName);
+          await this.runLastCalledModel();
+          // const node = this.appTree.items.find((node) => node.text === folderName);
 
-          if (node !== undefined) {
-            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
-            return DG.View.create();
-          } else
-            await this.runLastCalledModel();
+          // if (node !== undefined) {
+          //   setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
+          //   return DG.View.create();
+          // } else
+          //   await this.runLastCalledModel();
         }
       }
     },
@@ -335,7 +336,6 @@ export class DiffStudio {
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations);
     this.toChangePath = true;
-    this.solverView.setRibbonPanels([]);
 
     const saveBtn = ui.button(TITLE.SAVE, async () => {
       const source = new DG.FileSource();
@@ -351,11 +351,11 @@ export class DiffStudio {
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
 
-    const ribbonPnls = this.browseView!.getRibbonPanels();
-    ribbonPnls.push([this.openComboMenu, this.addNewWgt]);
-    ribbonPnls.push([this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt]);
-    ribbonPnls.push([this.downLoadIcon, this.appStateInputWgt, saveBtn]);
-    this.browseView!.setRibbonPanels(ribbonPnls);
+    this.solverView.setRibbonPanels([
+      [this.openComboMenu, this.addNewWgt],
+      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
+      [this.downLoadIcon, this.appStateInputWgt, saveBtn],            
+    ]);
 
     this.updateRibbonWgts();
 
@@ -428,7 +428,7 @@ export class DiffStudio {
   private fromFileHandler = false;
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
-  private browseView: DG.BrowseView | null = null;
+  private browsePanel: DG.BrowsePanel | null = null;
   private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
@@ -500,7 +500,7 @@ export class DiffStudio {
         dockTabCtrl();
     }
 
-    this.createTree(browsing);
+    //this.createTree(browsing);
 
     this.solverView.ribbonMenu = DG.Menu.create();
 
@@ -905,11 +905,11 @@ export class DiffStudio {
       if (this.toChangePath) {
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
-        if (this.inBrowseRun)
-          this.browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
+        // if (this.inBrowseRun)
+        //   this.browsePanel.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
 
-        if (this.isRecentRun)
-          this.browseView.path = this.solverView.path;
+        // if (this.isRecentRun)
+        //   this.browsePanel.path = this.solverView.path;
       }
 
       const start = ivp.arg.initial.value;
@@ -1519,17 +1519,17 @@ export class DiffStudio {
   } // showPerformanceDlg
 
   /** Browse tree */
-  private async createTree(browsing?: Browsing) {
+  private async createTree(browsing?: Browsing) {    
     if (browsing) {
-      this.browseView = browsing.browseView;
+      this.browsePanel = browsing.browsePanel;
       this.appTree = browsing.treeNode;
     } else {
       if (grok.shell.view(TITLE.BROWSE) === undefined)
         grok.shell.v = DG.View.createByType('browse');
 
-      this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+      this.browsePanel = new DG.BrowsePanel(null);//grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
 
-      const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+      const appsGroup = this.browsePanel.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
 
       const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
       this.appTree = computeGroup.getOrCreateGroup(TITLE.DIF_ST);
@@ -1589,10 +1589,10 @@ export class DiffStudio {
       const treeNodeY = panelRoot.scrollTop!;
 
       const solver = new DiffStudio(false);
-      this.browseView.preview = await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View;
+      // this.browsePanel.preview = await solver.runSolverApp(
+      //   undefined,
+      //   STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      // ) as DG.View;
 
       setTimeout(() => {
         panelRoot.scrollTo(0, treeNodeY);
@@ -1626,11 +1626,11 @@ export class DiffStudio {
           const equations = await file.readAsString();
 
           const solver = new DiffStudio(false);
-          this.browseView.preview = await solver.runSolverApp(
-            equations,
-            undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          ) as DG.View;
+          // this.browsePanel.preview = await solver.runSolverApp(
+          //   equations,
+          //   undefined,
+          //   `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          // ) as DG.View;
 
           await this.saveModelToRecent(path, true);
         } else
@@ -1736,8 +1736,8 @@ export class DiffStudio {
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
     folder.onSelected.subscribe(() => {
-      this.browseView.preview = this.getBuiltInModelsCardsView(models);
-      this.browseView.path = `browse/apps/DiffStudio/${title}`;
+      //this.browsePanel.preview = this.getBuiltInModelsCardsView(models);
+      //this.browsePanel.path = `browse/apps/DiffStudio/${title}`;
     });
 
     return folder;
@@ -1749,7 +1749,7 @@ export class DiffStudio {
 
     folder.onSelected.subscribe(async () => {
       const view = DG.View.create();
-      this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
+      //this.browsePanel.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
 
       try {
         const folder = `${grok.shell.user.project.name}:Home/`;
@@ -1780,7 +1780,7 @@ export class DiffStudio {
         } else
           view.append(ui.h2('No recent models'));
 
-        this.browseView.preview = view;
+        //this.browsePanel.preview = view;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
@@ -1824,10 +1824,10 @@ export class DiffStudio {
 
     card.onclick = async () => {
       const solver = new DiffStudio(false);
-      this.browseView.preview = await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View;
+      // this.browsePanel.preview = await solver.runSolverApp(
+      //   undefined,
+      //   STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      // ) as DG.View;
     };
 
     ui.tooltip.bind(card, HINT.CLICK_RUN);
@@ -1861,11 +1861,11 @@ export class DiffStudio {
           const equations = await file.readAsString();
 
           const solver = new DiffStudio(false);
-          this.browseView.preview = await solver.runSolverApp(
-            equations,
-            undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          ) as DG.View;
+          // this.browsePanel.preview = await solver.runSolverApp(
+          //   equations,
+          //   undefined,
+          //   `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          // ) as DG.View;
 
           await this.saveModelToRecent(path, true);
         } else
