@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getFolders } from '../package';
 
-export const TARGET_PATH = 'System:AppData/Chem/reinvent';
+export const TARGET_PATH = 'System:AppData/Reinvent4/reinvent';
 
 export class ReinventBaseEditor {
   ligandInput: DG.InputBase;

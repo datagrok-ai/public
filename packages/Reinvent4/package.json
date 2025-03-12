@@ -1,0 +1,50 @@
+{
+  "name": "@datagrok/reinvent4",
+  "friendlyName": "Reinvent4",
+  "fullName": "Reinvent4",
+  "version": "0.0.1",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "^1.24.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "^4.4.2",
+    "jszip": "3.10.1"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "typescript": "5.6.3"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-reinvent4": "webpack && grok publish",
+    "release-reinvent4": "webpack && grok publish --release",
+    "build-reinvent4": "webpack",
+    "build": "webpack",
+    "debug-reinvent4-dev": "webpack && grok publish dev",
+    "release-reinvent4-dev": "webpack && grok publish dev --release",
+    "debug-reinvent4-local": "webpack && grok publish local",
+    "release-reinvent4-local": "webpack && grok publish local --release",
+    "debug-reinvent4-localhost": "webpack && grok publish localhost",
+    "release-reinvent4-localhost": "webpack && grok publish localhost --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Reinvent4"
+  }
+}
