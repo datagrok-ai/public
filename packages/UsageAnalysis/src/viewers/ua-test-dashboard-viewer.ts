@@ -434,11 +434,15 @@ export class TestDashboardWidget extends DG.JsViewer {
             const grid = DG.Grid.create(DG.DataFrame.fromColumns(filteredColumns));
             grid.sort(['jira'], [true]);
             await grok.data.detectSemanticTypes(grid.dataFrame);
+            grid.props.rowHeight = 32;
             verdicts.push(new Verdict(
                 priority,
                 `JIRA tickets [${priority}] - ${rowIndices.length} items`,
                 grid.root
             ));
+            grid.root.style.width = '800px';
+            grid.root.style.height = '500px';
+            grid.autoSize(1000, 500);
         }
       }
       return verdicts;
