@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.21.6 (2025-03-13)
+
+* Fix demo and compatibility to older platform versions
+
 ## 1.21.5 (2025-03-12)
 
 * Fix weblogo renderer with corrected colors and background corrections

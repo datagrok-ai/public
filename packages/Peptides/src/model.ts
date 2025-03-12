@@ -146,11 +146,15 @@ export class PeptidesModel {
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
       this._analysisView = this.id ? wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id) : undefined;
-      if (typeof this._analysisView === 'undefined')
+
+      if (!this._analysisView && (grok.shell.v as any)?.preview instanceof DG.TableView && (grok.shell.v as any)?.preview?.dataFrame === this.df)
+        this._analysisView = (grok.shell.v as any)!.preview as any as DG.TableView;
+
+      if (!this._analysisView)
         this._analysisView = grok.shell.addTableView(this.df);
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !grok.shell.isInDemo)
       grok.shell.v = this._analysisView;
 
 
@@ -1173,6 +1177,7 @@ export class PeptidesModel {
     };
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, viewerProperties) as MonomerPosition;
+    this.analysisView.addViewer(monomerPosition);
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -1195,6 +1200,7 @@ export class PeptidesModel {
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
+    this.analysisView.addViewer(mostPotentResidues);
     const monomerPosition = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -1327,7 +1333,7 @@ export class PeptidesModel {
       minClusterSize: mclParams.minClusterSize,
     } satisfies MCLSerializableOptions);
 
-    const tv = grok.shell.getTableView(this.df.name);
+    const tv = this.analysisView ?? grok.shell.getTableView(this.df.name);
     if (tv) {
       const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
       if (!func)
