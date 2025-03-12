@@ -124,7 +124,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
 }
 
 export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string): void {
-  const tableView = getTableView(table);
+  const tableView = grok.shell.getTableView(table.name);
   if (!tableView && !showInPanel) return;
 
   for (const columnName of columnNames) {
@@ -223,7 +223,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 }
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
-  const tv = getTableView(table);
+  const tv = grok.shell.getTableView(table.name);;
   const {grid} = tv;
   if (!tv) return;
 
@@ -273,7 +273,7 @@ function getTooltipContent(model: any, value: any): string {
 }
 
 export function addCustomTooltip(table: DG.DataFrame): void {
-  const view = getTableView(table);
+  const view = grok.shell.getTableView(table.name);
   view.grid.onCellTooltip((cell, x, y) => {
     if (cell.isTableCell) {
       const subgroup = cell.tableColumn!.name;
@@ -287,14 +287,6 @@ export function addCustomTooltip(table: DG.DataFrame): void {
       return true;
     }
   });
-}
-
-function getTableView(dataFrame: DG.DataFrame): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : grok.shell.getTableView(dataFrame.name);
-  return tableView;
 }
 
 function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
@@ -374,7 +366,7 @@ export function addResultColumns(
     }
   }
 
-  const tableView = getTableView(viewTable);
+  const tableView = grok.shell.getTableView(viewTable.name);
   const {grid} = tableView;
   models.forEach((model: Model) => {
     const columnName = updatedModelNames.find((name) => name.includes(model.name));
@@ -501,7 +493,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const { cell, units } = semValue;
   const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
 
-  const view = getTableView(dataFrame);
+  const view = grok.shell.getTableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
