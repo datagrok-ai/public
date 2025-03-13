@@ -464,8 +464,8 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
 /** Creates an html table based on [map].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
 */
-export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
-  return api.grok_UI_TableFromMap(map);
+export function tableFromMap(map: { [key: string]: any }, showCopyValue: boolean = false): HTMLTableElement {
+  return api.grok_UI_TableFromMap(map, showCopyValue);
 }
 
 /** Creates an editable html table for the specified items (rows) and properties (columns). */
