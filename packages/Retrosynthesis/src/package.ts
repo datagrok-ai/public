@@ -33,7 +33,7 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
 }
 
 
-//name: Chemistry | Retro synthesis path
+//name: Chemistry | Retrosynthesis
 //tags: panel, chem, widgets
 //condition: true
 //input: string smiles { semType: Molecule }
@@ -74,7 +74,7 @@ export function retrosynthesisViewer(): AiZynthFinderViewer {
   return new AiZynthFinderViewer();
 }
 
-//top-menu: Chem | Retro-synthesis
+//top-menu: Chem | Retrosynthesis
 //name: RetrosynthesisPath
 export function retrosynthesisTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
