@@ -335,6 +335,9 @@ export class DiffStudio {
     const equations = await file.readAsString();
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations);
+
+    this.solverView.basePath = file.fullPath.replace(':', '.');
+
     this.toChangePath = true;
 
     const saveBtn = ui.button(TITLE.SAVE, async () => {
@@ -903,7 +906,7 @@ export class DiffStudio {
 
     try {
       if (this.toChangePath)
-        this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+        this.solverView.path = `${this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
       // if (this.inBrowseRun)
       //   this.browsePanel.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
