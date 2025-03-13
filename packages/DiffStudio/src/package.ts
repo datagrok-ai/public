@@ -83,6 +83,9 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   } else
     path = window.location.href;
 
+  console.log(path);
+  console.log(file);
+
   const solver = new DiffStudio(false, true, true);
   return await solver.getFilePreview(file, path);
 }

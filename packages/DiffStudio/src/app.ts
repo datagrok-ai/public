@@ -1626,7 +1626,7 @@ export class DiffStudio {
           grok.shell.addPreview(await solver.runSolverApp(
             equations,
             undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+            `f/${file.fullPath.replace(':', '.')}`,
           ) as DG.View);
 
           await this.saveModelToRecent(path, true);
@@ -1864,7 +1864,7 @@ export class DiffStudio {
           grok.shell.addView(await solver.runSolverApp(
             equations,
             undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+            `f/${file.fullPath.replace(':', '.')}`,
           ) as DG.TableView);
 
           await this.saveModelToRecent(path, true);
