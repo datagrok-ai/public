@@ -342,8 +342,6 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        if (grok.shell.view(DG.View.BROWSE) === undefined)
-          grok.shell.v = DG.View.createByType(DG.View.BROWSE);
         await delay(300);
         grok.shell.clearLastError();
         await f.apply();
