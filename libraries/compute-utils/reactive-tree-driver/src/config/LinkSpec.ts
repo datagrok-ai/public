@@ -8,22 +8,22 @@ Link ::= Name FlagList? (':' Segment)? ('/' Segment)*
 FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
 Flag ::= "call" | "optional"
 Segment ::=  WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
-TagSpec ::=  WS* '#' WS* TagSelectorType '(' TagSelectorArg ')' WS*
-TagSelectorArg ::= ((RefArg ',' TagArg) | TagArg) {fragment=true}
+TagSpec ::=  WS* '#' WS* TagSelectorType '(' TagSelectorArgs ')' WS*
+TagSelectorArgs ::= ((RefArg ',' TagIds) | TagIds) {fragment=true}
 TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
 Selector ::= SelectorType '(' SelectorArgs ')'
 SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
 SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
-TargetIds ::= ListArg
-StopIds ::= ListArg
-ListArg ::= WS* Id WS* ('|' WS* Id WS*)* {fragment=true}
+TargetIds ::= ArgsOr
+StopIds ::= ArgsOr
+TagIds ::= ArgsAnd
+ArgsOr ::= WS* Id WS* ('|' WS* Id WS*)* {fragment=true}
+ArgsAnd ::= WS* Id WS* ('&' WS* Id WS*)* {fragment=true}
 RefArg ::= WS* '@' Ref WS* {fragment=true}
-TagArg ::= WS* Tag WS* {fragment=true}
 Ref ::= IDENTIFIER
 Id ::= IDENTIFIER
 Name ::= IDENTIFIER
-Tag ::= IDENTIFIER
-IDENTIFIER ::= [a-zA-Z][a-zA-Z_0-9]*
+IDENTIFIER ::= [_a-zA-Z][a-zA-Z_0-9]*
 WS ::= ' '
 `;
 
@@ -47,7 +47,7 @@ export type LinkSelectorSegment = {
 export type LinkTagSegment = {
   type: 'tag',
   selector: TagSelectors,
-  tag: string,
+  tags: string[],
   ref?: string | undefined,
 }
 
@@ -108,12 +108,13 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
       const selector = 'first' as const;
       const ids = node.children.map((cnode) => cnode.text);
       return {type: 'selector' as const, ids, selector, stopIds: []};
-    } else if(node.type === 'TagSpec') {
+    } else if (node.type === 'TagSpec') {
       const selector = node.children[0].text as TagSelectors;
       const ref = node.children.find((cnode) => cnode.type === 'Ref')?.text;
-      const tag = node.children.find((cnode) => cnode.type === 'Tag')!.text;
+      const tagsNode = node.children.find((cnode) => cnode.type === 'TagIds');
+      const tags = tagsNode ? tagsNode.children.map((cnode) => cnode.text) : [];
       checkSelector(io, selector, isBase, ref);
-      return {type: 'tag' as const, selector, tag, ref };
+      return {type: 'tag' as const, selector, tags, ref};
     } else if (node.type === 'Name' || node.type === 'Flag')
       return;
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);

@@ -1,0 +1,90 @@
+[
+  [
+    {
+      "spec": {
+        "id": "link1",
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "first",
+                "tags": [
+                  "step1"
+                ]
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "selector",
+                "ids": [
+                  "step3"
+                ],
+                "selector": "first",
+                "stopIds": []
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "base": [],
+        "not": [],
+        "actions": []
+      },
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "stepAdd",
+                "idx": 0
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "step3",
+                "idx": 1
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ]
+]

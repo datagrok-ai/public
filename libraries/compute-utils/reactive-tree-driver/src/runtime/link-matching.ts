@@ -1,4 +1,4 @@
-import { isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne, LinkTagSegment, TagRefSelectors } from '../config/LinkSpec';
+import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne, TagRefSelectors} from '../config/LinkSpec';
 import {DataActionConfiguraion, FuncCallActionConfiguration, PipelineLinkConfiguration, PipelineMutationConfiguration} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
@@ -27,6 +27,11 @@ export type MatchInfo = {
   outputsUUID: Map<string, Set<string>>;
   isDefaultValidator?: boolean;
 }
+
+type NodeTraverseState = {
+  pnode: TreeNode<StateTreeNode>,
+  isLastSegment: boolean,
+};
 
 export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): MatchInfo[] | undefined {
   const [rnode] = state.nodeTree.find(((_node, path) => BaseTree.isNodeAddressEq(path, address))) ?? [];
@@ -104,23 +109,31 @@ function expandLinkBase(
   rnode: TreeNode<StateTreeNode>,
   baseLink: LinkIOParsed,
 ) {
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
-    const segment = baseLink.segments[level!];
+  const traverse = buildTraverseD([] as Readonly<NodePath>, (state: NodeTraverseState, currentPath, currentSegment?: number) => {
+    const segment = baseLink.segments[currentSegment!];
+    const {pnode} = state;
+    const isLastSegment = baseLink.segments.length - 1 === currentSegment;
     if (segment?.type === 'selector') {
       const {selector, ids} = segment;
       const nextNodes = matchNonRefSegment(pnode, ids, selector as LinkNonRefSelectors);
-      return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
+      return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
     } else if (segment?.type === 'tag') {
+      const {selector, tags} = segment;
+      const nextNodes = matchNonRefTag(pnode, tags, selector as LinkNonRefSelectors);
+      return nextNodes.map(({path, node}) => [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
+    } else
       return [] as const;
-    } else {
-      return [] as const;
-    }
   }, 0);
 
-  const basePaths = traverse(rnode, (acc, _node, path) => {
-    if (path.length < baseLink.segments.length)
-      return acc;
-    return [...acc, {path}] as const;
+  const initialData = {
+    pnode: rnode,
+    isLastSegment: baseLink.segments.length === 0,
+  };
+
+  const basePaths = traverse(initialData, (acc, {isLastSegment}, path) => {
+    if (isLastSegment)
+      return [...acc, {path}] as const;
+    return acc;
   }, [] as MatchedNodePaths);
 
   return basePaths;
@@ -150,54 +163,62 @@ function matchLinkIO(
   skipIO: boolean,
   useDescriptionStore: boolean,
 ): MatchedNodePaths {
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
-    const segment = parsedLink.segments[level!];
+  const traverse = buildTraverseD([] as Readonly<NodePath>, (state: NodeTraverseState, currentPath, currentSegment?: number) => {
+    const segment = parsedLink.segments[currentSegment!];
+    const {pnode} = state;
+    const isLastSegment = parsedLink.segments.length - (skipIO ? 1 : 2) === currentSegment;
     if (segment?.type === 'selector') {
       const {ref, selector, ids, stopIds} = segment;
-      if (isNonRefSelector(selector)) {
-        const nextNodes = matchNonRefSegment(pnode, ids, selector);
-        return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
-      } else {
+      let nextNodes: ReturnType<typeof matchNonRefSegment> = [];
+      if (isNonRefSelector(selector))
+        nextNodes = matchNonRefSegment(pnode, ids, selector);
+      else {
         let originIdx = undefined;
         if (ref) {
-          const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, path);
-          originIdx = refOrigin.path[level!].idx;
+          const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+          originIdx = refOrigin.path[currentSegment!].idx;
         }
-        const nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
-        return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
+        nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
       }
+      return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
     } else if (segment?.type === 'tag') {
-      const {ref, selector, tag} = segment;
-      if (isNonRefSelector(selector)) {
-        const nextNodes = matchNonRefTag(pnode, tag, selector);
-        return nextNodes.map(({path, node}) => [node, path, level!+1] as const);
-      } else {
+      const {ref, selector, tags} = segment;
+      let nextNodes: ReturnType<typeof matchNonRefTag> = [];
+      if (isNonRefSelector(selector))
+        nextNodes = matchNonRefTag(pnode, tags, selector);
+      else {
         if (!ref)
           return [];
-        const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, path);
-        const refNode = rnode.getNode(refOrigin.path); // TODO: check full/local paths
+        const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        const refNode = rnode.getNode(refOrigin.path);
         if (!refNode)
           return [];
-        const nextNodes = matchRefTag(pnode, tag, selector, refNode.getItem().uuid);
-        return nextNodes.map(({path, node}) => [node, path, level!+1] as const);
+        nextNodes = matchRefTag(pnode, tags, selector, refNode.getItem().uuid);
       }
+      return nextNodes.map(({path, node}) => [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
     }
     return [];
   }, 0);
 
-  const paths = traverse(rnode, (acc, node, path) => {
-    if (path.length === parsedLink.segments.length - 1 && !skipIO) {
+  const initialData = {
+    pnode: rnode,
+    isLastSegment: parsedLink.segments.length === (skipIO ? 0 : 1),
+  };
+
+  const paths = traverse(initialData, (acc, state, path) => {
+    const {pnode: node, isLastSegment} = state;
+    if (isLastSegment && !skipIO) {
       const ioSegment = indexFromEnd(parsedLink.segments)!;
       if (ioSegment.type === 'tag')
         throw new Error(`Link ${parsedLink.name}, path ${JSON.stringify(path)} is ending with tag instead of io selector`);
       const ioName = ioSegment.ids[0];
       const item = node.getItem();
-      const names = useDescriptionStore ? item.nodeDescription.getStateNames(): item.getStateStore().getStateNames();
+      const names = useDescriptionStore ? item.nodeDescription.getStateNames() : item.getStateStore().getStateNames();
       const state = names.find((name) => name === ioName);
       if (state)
         return [...acc, {path, ioName}] as const;
       return acc;
-    } else if (path.length === parsedLink.segments.length && skipIO) {
+    } else if (isLastSegment && skipIO) {
       const p = {path};
       return [...acc, p] as const;
     }
@@ -225,12 +246,12 @@ function matchNonRefSegment(
   throw new Error(`Unknown segement mode ${selector}`);
 }
 
-function matchNonRefTag(pnode: TreeNode<StateTreeNode>, tag: string, selector: LinkNonRefSelectors) {
+function matchNonRefTag(pnode: TreeNode<StateTreeNode>, tags: string[], selector: LinkNonRefSelectors) {
   const matchingNodes = pnode.traverse((acc, node, path) => {
     const item = node.getItem();
-    if ((item.config.tags ?? []).includes(tag)) {
-      acc!.push({path, node})
-    }
+    if (includesAll(item.config.tags ?? [], tags))
+      acc!.push({path, node});
+
     return acc;
   }, [] as {path: readonly NodePathSegment[], node: TreeNode<StateTreeNode>}[]);
   if (matchingNodes.length === 0)
@@ -259,9 +280,7 @@ function matchRefSegment(
     if (originIdx == null)
       return [];
     const target = allNodeEntries[originIdx];
-    if (idsSet.has(target[1].id))
-      return [target];
-    return [];
+    return [target];
   }
 
   const selDirection = refSelectorDirection(selector);
@@ -308,12 +327,11 @@ function matchRefSegment(
 
 function matchRefTag(
   pnode: TreeNode<StateTreeNode>,
-  tag: string,
+  tags: string[],
   selector: TagRefSelectors,
   refUuid: string,
 ) {
   type MatchData = {path: readonly NodePathSegment[], node: TreeNode<StateTreeNode>};
-
   type MatchAcc = {
     before: MatchData[],
     same?: MatchData,
@@ -324,7 +342,7 @@ function matchRefTag(
   const matchingNodesData = pnode.traverse((acc, node, path) => {
     const item = node.getItem();
     const {uuid} = item;
-    if ((item.config.tags ?? []).includes(tag)) {
+    if (includesAll(item.config.tags ?? [], tags)) {
       if (uuid === refUuid)
         acc!.same = {path, node};
       else if (!acc.isRefVisited)
@@ -333,13 +351,13 @@ function matchRefTag(
         acc.after.push({path, node});
     }
     if (!acc.isRefVisited && uuid === refUuid)
-      acc.isRefVisited = true
+      acc.isRefVisited = true;
     return acc;
-  }, { before: [], same: undefined, after: [], isRefVisited: false } as MatchAcc);
+  }, {before: [], same: undefined, after: [], isRefVisited: false} as MatchAcc);
 
-  if (selector === 'same') {
-    return matchingNodesData.same ? [matchingNodesData.same] : []
-  }
+  if (selector === 'same')
+    return matchingNodesData.same ? [matchingNodesData.same] : [];
+
 
   const selDirection = refSelectorDirection(selector);
   if (refSelectorFindOne(selector)) {
@@ -355,6 +373,15 @@ function matchRefTag(
   }
 
   throw new Error(`Unknown tag mode ${selector}`);
+}
+
+function includesAll(target: string[], toInclide: string[]) {
+  const targetSet = new Set(target);
+  for (const item of toInclide) {
+    if (!targetSet.has(item))
+      return false;
+  }
+  return true;
 }
 
 export function updateMatchInfoUUIDs(rnode: TreeNode<StateTreeNode>, matchInfo: MatchInfo) {

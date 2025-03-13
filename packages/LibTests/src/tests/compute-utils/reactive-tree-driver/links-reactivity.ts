@@ -1412,7 +1412,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         handler({controller}) {
           inputs$.next(controller.getMatchedInputs());
           outputs$.next(controller.getMatchedOutputs());
-        }
+        },
       }],
     };
     const pconf = await getProcessedConfig(config);
