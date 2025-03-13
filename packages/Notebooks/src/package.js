@@ -506,8 +506,16 @@ async function toHtml(notebook) {
 export async function initContainer() {
   const container = await grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
   CONTAINER_ID = container.id;
-  if (container.status !== 'started' && !container.status.startsWith('pending') && container.status !== 'checking')
-    await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
+  if (container.status !== 'started' && !container.status.startsWith('pending') && container.status !== 'checking') {
+    const progress = DG.TaskBarProgressIndicator.create('Starting Jupyter Notebook...');
+    try {
+      await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
+      // wait additional time, because nginx tends to start faster
+      await new Promise((res, _) => setTimeout(() => res(), 3000));
+    } finally {
+      progress.close();
+    }
+  }
 }
 
 //name: Notebook
