@@ -107,33 +107,24 @@ export const History = Vue.defineComponent({
       Vue.triggerRef(historicalRuns);
     };
 
-    const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
+    const showEditDialog = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
       const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
-
-      editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        if (!props.isHistory)
-          updateRun(funcCall);
-        else {
-          return ((editOptions.favorite !== 'same') ?
-            Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
-            Promise.resolve())
-            .then(() => historyUtils.loadRun(funcCall.id, false, false))
-            .then((fullCall) => {
-              if (editOptions.title) fullCall.options['title'] = editOptions.title;
-              if (editOptions.description) fullCall.options['description'] = editOptions.description;
-              if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-
-              return [historyUtils.saveRun(fullCall), fullCall] as const;
-            })
-            .then(([, fullCall]) => {
-              updateRun(fullCall);
-            })
-            .catch((err) => {
-              grok.shell.error(err);
-            });
-        }
-      });
       editDialog.show({center: true, width: 500});
+      const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
+      try {
+        if (!props.isHistory)
+          return updateRun(funcCall);
+        if (editOptions.favorite !== 'same')
+          await Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
+        if (editOptions.title) fullCall.options['title'] = editOptions.title;
+        if (editOptions.description) fullCall.options['description'] = editOptions.description;
+        if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+        await historyUtils.saveRun(fullCall);
+        updateRun(fullCall);
+      } catch(e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const onEditClick = (cell: DG.GridCell) => {
@@ -144,58 +135,46 @@ export const History = Vue.defineComponent({
       );
     };
 
-    const onFavoriteClick = (cell: DG.GridCell) => {
+    const onFavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, true).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, true);
+      updateRun(run);
     };
 
-    const onUnfavoriteClick = (cell: DG.GridCell) => {
+    const onUnfavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, false).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, false);
+      updateRun(run);
     };
 
     const deleteRun = async (id: string) => {
-      return historyUtils.loadRun(id, true, false)
-        .then(async (loadedRun) => {
-          return [
-            await (props.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
-            loadedRun,
-          ] as const;
-        })
-        .then(([, loadedRun]) => {
-          historicalRuns.value.delete(id);
-          Vue.triggerRef(historicalRuns);
-
-          return loadedRun;
-        })
-        .then((loadedRun) => {
-          Utils.saveIsFavorite(loadedRun, false);
-        })
-        .catch((e) => {
-          grok.shell.error(e);
-        });
+      try {
+        const loadedRun = await historyUtils.loadRun(id, true, false);
+        if (props.isHistory)
+          await historyUtils.deleteRun(loadedRun);
+        historicalRuns.value.delete(id);
+        Vue.triggerRef(historicalRuns);
+        await Utils.saveIsFavorite(loadedRun, false);
+      } catch(e: any) {
+        grok.shell.error(e);
+      }
     };
 
-    const onDeleteClick = (cell: DG.GridCell) => {
+    const onDeleteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
       const setToDelete = new Set([run]);
       const deleteDialog = new HistoricalRunsDelete(setToDelete);
-
-      deleteDialog.onFuncCallDelete.pipe(
-        take(1),
-      ).subscribe(async () => {
-        try {
-          await Promise.all(
-            wu(setToDelete.values()).map(async (funcCall) => {
-              await deleteRun(funcCall.id);
-
-              return Promise.resolve();
-            }));
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      });
       deleteDialog.show({center: true, width: 500});
+
+      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      try {
+        await Promise.all(
+          wu(setToDelete.values()).map(async (funcCall) => {
+            await deleteRun(funcCall.id);
+          }));
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const historicalRunsDf = Vue.shallowRef(defaultDf);
