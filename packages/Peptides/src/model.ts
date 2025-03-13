@@ -1177,7 +1177,9 @@ export class PeptidesModel {
     };
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, viewerProperties) as MonomerPosition;
-    this.analysisView.addViewer(monomerPosition);
+    // for browse mode, we need to add viewer to the analysis view before docking. remove with release of 1.25
+    if (grok.shell.isInDemo)
+      this.analysisView.addViewer(monomerPosition);
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -1200,7 +1202,8 @@ export class PeptidesModel {
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
-    this.analysisView.addViewer(mostPotentResidues);
+    if (grok.shell.isInDemo)
+      this.analysisView.addViewer(mostPotentResidues);
     const monomerPosition = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :

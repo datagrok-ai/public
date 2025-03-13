@@ -36,8 +36,7 @@ export async function initPeptides(): Promise<void> {
   try {
     monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
     treeHelper ??= await getTreeHelper();
-    await PeptideUtils.loadSeqHelper();
-    await PeptideUtils.loadMonomerLib();
+    await PeptideUtils.loadComponents();
   } catch (e) {
     grok.log.error(e as string);
   }

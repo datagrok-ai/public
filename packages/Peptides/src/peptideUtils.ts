@@ -20,6 +20,11 @@ export class PeptideUtils {
     this._secHelper ??= await getSeqHelper();
   }
 
+  public static async loadComponents(): Promise<void> {
+    await this.loadSeqHelper();
+    await this.loadMonomerLib();
+  }
+
   public static async loadMonomerLib(): Promise<void> {
     this._monomerLibHelper ??= await getMonomerLibHelper();
     await this._monomerLibHelper.awaitLoaded();
