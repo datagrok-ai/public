@@ -559,6 +559,7 @@ export class DiffStudio {
 
     return wgt;
   }
+
   /** Return the app state control widget */
   private getAppStateInput(): HTMLElement {
     const input = ui.input.toggle('', {value: this.isEditState});
@@ -1821,11 +1822,11 @@ export class DiffStudio {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
 
     card.onclick = async () => {
-      const solver = new DiffStudio(false);
-      // this.browsePanel.preview = await solver.runSolverApp(
-      //   undefined,
-      //   STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      // ) as DG.View;
+      const solver = new DiffStudio();
+      grok.shell.addView(await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.TableView);
     };
 
     ui.tooltip.bind(card, HINT.CLICK_RUN);
@@ -1859,11 +1860,11 @@ export class DiffStudio {
           const equations = await file.readAsString();
 
           const solver = new DiffStudio(false);
-          // this.browsePanel.preview = await solver.runSolverApp(
-          //   equations,
-          //   undefined,
-          //   `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          // ) as DG.View;
+          grok.shell.addView(await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.TableView);
 
           await this.saveModelToRecent(path, true);
         } else
