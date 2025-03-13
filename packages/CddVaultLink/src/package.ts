@@ -9,6 +9,7 @@ import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
 
 export const _package = new DG.Package();
+const CDD_HOST = 'https://app.collaborativedrug.com/';
 
 //tags: app
 //name: CDD Vault
@@ -43,6 +44,14 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
       const molecules = await queryMolecules(vault.id, { page_size: 100 });
       console.log(molecules);
       const df = DG.DataFrame.fromObjects(molecules.data!.objects!)!;
+      const idCol = df.col('id');
+      if (idCol) {
+        const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
+          const id = idCol.get(i);
+          return `[${id}](${`${CDD_HOST}vaults/${vault.id}/molecules/${id}/`})`;
+        });
+        df.columns.replace(idCol, linkIdsCol);
+      }
       await grok.data.detectSemanticTypes(df);
       const tv = DG.TableView.create(df, false);
       browseView.preview = tv;
@@ -147,11 +156,11 @@ export function molColumnPropertyPanel(molecule: string): DG.Widget {
     if (!cddMols.data?.objects?.length)
       return ui.divText('Not found');
 
-    return createCDDContextPanel(cddMols.data.objects[0]);
+    return createCDDContextPanel(cddMols.data.objects[0], vaultId);
   }));
 }
 
-function createCDDContextPanel(obj: Molecule | Batch): HTMLElement {
+function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): HTMLElement {
   const keys = Object.keys(obj);
   const resDiv = ui.divV([], 'cdd-context-panel');
   const accordions = ui.divV([]);
@@ -181,8 +190,12 @@ function createCDDContextPanel(obj: Molecule | Batch): HTMLElement {
       acc.addPane(key, () => ui.tableFromMap((obj as any)[key] as any, true));
       accordions.append(acc.root);
     } else {
-      const valueInitial = (obj as any)[key];
-      const value = valueInitial instanceof Array ? valueInitial.join(', ') : valueInitial;
+      const initialValue = (obj as any)[key];
+      let value: any | null = null;
+      if (key === 'id' && vaultId)
+        value = ui.link(initialValue, () => window.open(`${CDD_HOST}vaults/${vaultId}/molecules/${initialValue}/`));
+      else
+        value = initialValue instanceof Array ? initialValue.join(', ') : initialValue;
       dictForTableView[key] = value;
     }
   }
