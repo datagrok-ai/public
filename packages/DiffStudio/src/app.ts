@@ -908,13 +908,6 @@ export class DiffStudio {
       if (this.toChangePath)
         this.solverView.path = `${this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
-      // if (this.inBrowseRun)
-      //   this.browsePanel.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
-
-      // if (this.isRecentRun)
-      //   this.browsePanel.path = this.solverView.path;
-
-
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
       const step = ivp.arg.step.value;
@@ -1826,11 +1819,14 @@ export class DiffStudio {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
 
     card.onclick = async () => {
-      const solver = new DiffStudio();
-      grok.shell.addView(await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.TableView);
+      setTimeout(async () => {
+        const solver = new DiffStudio();
+        const v = await solver.runSolverApp(
+          undefined,
+          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+        ) as DG.TableView;
+        grok.shell.v = v;
+      }, UI_TIME.BROWSING);
     };
 
     ui.tooltip.bind(card, HINT.CLICK_RUN);
