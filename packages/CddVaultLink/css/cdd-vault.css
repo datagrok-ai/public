@@ -49,3 +49,14 @@
 .cdd-molecule-input {
     margin-top: 20px;
 }
+
+.cdd-context-panel .fa-copy {
+    margin-left: 5px;
+}
+
+.cdd-context-panel .d4-table-map-value span {
+    max-width: 300px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}

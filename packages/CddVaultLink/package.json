@@ -19,6 +19,7 @@
     "typescript": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "link-all": "grok link",
     "debug-cddvaultlink": "webpack && grok publish",
     "release-cddvaultlink": "webpack && grok publish --release",
