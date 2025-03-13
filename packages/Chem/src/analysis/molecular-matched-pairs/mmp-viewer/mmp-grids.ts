@@ -119,7 +119,7 @@ export class MmpPairedGrids {
 
     this.fpGrid.table.onCurrentRowChanged.subscribe(() => {
       if (this.fpGrid!.table.currentRowIdx !== -1)
-        this.refreshMatchedPair();
+        this.refreshMatchedPair(false);
     });
 
     this.fpGrid.table.onSelectionChanged.subscribe(() => {
@@ -228,8 +228,10 @@ export class MmpPairedGrids {
   * Prepares all the entities to show for selected pair.
   * @param {RDModule} rdkitModule RDkit module instance
   */
-  async refreshMatchedPair() : Promise<void> {
-    const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
+  async refreshMatchedPair(createProgressBar = true) : Promise<void> {
+    let progressBarPairs: DG.TaskBarProgressIndicator | null = null;
+    if (createProgressBar)
+      progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
     this.mmpMaskTrans.setAll(false);
 
@@ -245,7 +247,7 @@ export class MmpPairedGrids {
 
     this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
 
-    progressBarPairs.close();
+    progressBarPairs?.close();
   }
 
   /**
