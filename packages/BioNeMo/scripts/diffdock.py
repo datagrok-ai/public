@@ -4,71 +4,35 @@
 #input: string protein
 #input: string ligand
 #input: int num_poses
+#input: string api_key
 #output: blob result
 
-import sys
 import requests
-import time
 
-url = "https://health.api.nvidia.com/v1/biology/mit/diffdock"
-header_auth = "Bearer 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"
-
-def _upload_asset(input):
-    assets_url = "https://api.nvcf.nvidia.com/v2/nvcf/assets"
-
-    headers = {
-        "Authorization": header_auth,
-        "Content-Type": "application/json",
-        "accept": "application/json",
-    }
-
-    s3_headers = {
-        "x-amz-meta-nvcf-asset-description": "diffdock-file",
-        "content-type": "text/plain",
-    }
-
-    payload = {
-        "contentType": "text/plain", 
-        "description": "diffdock-file"
-    }
-
-    response = requests.post(
-        assets_url, headers=headers, json=payload, timeout=30
+def get_query_url_and_headers(api_key):
+  if api_key.strip():
+    return (
+      "https://health.api.nvidia.com/v1/biology/mit/diffdock",
+      {"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
     )
+  return (
+    "http://0.0.0.0:8000/molecular-docking/diffdock/generate",
+    {"Content-Type": "application/json"},
+  )
 
-    response.raise_for_status()
+query_url, headers = get_query_url_and_headers(api_key)
 
-    asset_url = response.json()["uploadUrl"]
-    asset_id = response.json()["assetId"]
-
-    response = requests.put(
-        asset_url,
-        data=input,
-        headers=s3_headers,
-        timeout=300,
-    )
-
-    response.raise_for_status()
-    return asset_id
-
-protein_id = _upload_asset(protein)
-ligand_id = _upload_asset(ligand)
-
-headers = {
-    "Content-Type": "application/json",
-    "NVCF-INPUT-ASSET-REFERENCES": ",".join([protein_id, ligand_id]),
-    "Authorization": header_auth
+data = {
+  "ligand": ligand,
+  "ligand_file_type": "sdf",
+  "protein": protein,
+  "num_poses": num_poses,
+  "time_divisions": 20,
+  "steps": 18,
+  "save_trajectory": False,
+  "is_staged": False
 }
 
-r = requests.post(url, headers=headers, json={
-    "ligand": ligand_id,
-    "ligand_file_type": "sdf",
-    "protein": protein_id,
-    "num_poses": num_poses,
-    "time_divisions": 20,
-    "steps": 18,
-    "save_trajectory": True,
-    "is_staged": True
-})
+response = requests.post(query_url, headers=headers, json=data)
 
-result = (r.text).encode('utf-8')
+result = response.text.encode("utf-8")
