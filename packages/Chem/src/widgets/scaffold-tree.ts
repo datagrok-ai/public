@@ -1397,9 +1397,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.highlightCanvas(group, color!, substr);
 
-    this.updateTag();
     if (setToChildren)
       this.removeColorFromChildren(group.children, chosenColor, substr);
+
+    this.updateTag();
   }
 
   setHighlightAndColor(group: TreeViewGroup, smiles: string, chosenColor: string, setToChildren: boolean = true): void {
@@ -1411,9 +1412,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       removeElementByMolecule(this.checkedScaffolds, smiles);
     }
     this.colorCodedScaffolds[this.colorCodedScaffolds.length] = { molecule: smiles, color: chosenColor };
-    this.updateTag();
+
     if (setToChildren)
       this.setColorToChildren(group.children, chosenColor, smiles);
+
+    this.updateTag();
   }
 
   updateTag() {
@@ -1429,10 +1432,52 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else {
       updatedTag = checkedString;
     }
-    if (this.setHighlightTag)
+    if (this.setHighlightTag) {
       this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
+      this.assignScaffoldColors();
+    }
   }
 
+  assignScaffoldColors() {
+    if (!this.dataFrame)
+      return;
+  
+    const rowCount = this.dataFrame.rowCount;
+    const treeChildren = this.tree.items;
+    
+    const columnName = "Scaffold color";
+    const colorColumn = this.dataFrame.columns.getOrCreate(columnName, DG.TYPE.STRING);
+    const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
+    if (gridColorColumn)
+      gridColorColumn.visible = false;
+
+    const colorBuffer = new Array<string | null>(rowCount).fill(null);
+
+    for (const child of treeChildren) {
+      const nodeValue = value(child);
+      const bitset = nodeValue.bitset;
+      const chosenColor = nodeValue.chosenColor && nodeValue.colorOn
+        ? nodeValue.chosenColor
+        : nodeValue.parentColor;
+    
+      if (!bitset || !chosenColor) continue;
+    
+      if (bitset.trueCount === 0) continue;
+    
+      let index = bitset.findNext(-1, true);
+      while (index !== -1) {
+        colorBuffer[index] = chosenColor || null;
+        index = bitset.findNext(index, true);
+      }
+    }  
+  
+    colorColumn.init((i) => colorBuffer[i]);
+
+    colorColumn.meta.colors.setCategorical(Object.fromEntries(
+      colorColumn.categories.map(value => [value, value])
+    ));
+  }
+  
   updateBitset(node: DG.TreeViewNode): boolean {
     return node ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
   }
