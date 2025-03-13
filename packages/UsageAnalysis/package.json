@@ -5,7 +5,7 @@
     "email": "ppolovyi@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Platform usage analysis system",
   "repository": {
     "type": "git",
