@@ -1,7 +1,7 @@
 FROM datagrok/jupyter_notebook:bleeding-edge
 
 USER root
-RUN apt-get update && apt-get install -y nginx gettext curl && \
+RUN apt-get update && apt-get install -y nginx gettext && \
     rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /etc/nginx/sites-enabled /etc/nginx/conf.d
