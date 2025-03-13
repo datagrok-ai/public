@@ -14,9 +14,6 @@ COPY jupyter_notebook_config.py /home/grok/jupyter_notebook_config.py
 COPY grok_helper_configuration.yaml ${GROK_HELPER_DIR}/grok_helper_configuration.yaml
 RUN sed -i 's/\r$//' /etc/nginx/entrypoint.sh && chmod +x /etc/nginx/entrypoint.sh
 
-
-RUN sed -i 's/\r$//' /etc/nginx/entrypoint.sh && chmod +x /etc/nginx/entrypoint.sh
-
 RUN chown -R grok:grok /etc/nginx /var/lib/nginx /var/log/nginx
 
 EXPOSE 8090
