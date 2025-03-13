@@ -819,7 +819,8 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
+    //this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
+    this.solverMainPath = `${PATH.APPS_DS}${stateToPath(state)}`;
 
     // save model to recent
 
