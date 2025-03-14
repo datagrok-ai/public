@@ -480,7 +480,7 @@ export async function runTests(options?: TestExecutionOptions) {
         if ((window as any).gc)
           (window as any).gc();
         if (testRun)
-          res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
+          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: DG.Widget.getAll().length - widgetsBefore });
         if (DG.Test.isProfiling)
           console.profileEnd(`${test.category}: ${test.name}`);
         grok.shell.closeAll();
