@@ -63,6 +63,8 @@ export async function runDiffStudioDemo(): Promise<void> {
 //output: list tables
 //meta.ext: ivp
 export async function ivpFileHandler(content: string) {
+  console.log('File handler!');
+
   const solver = new DiffStudio();
   await solver.runSolverApp(content);
 
@@ -82,6 +84,8 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
     path = grok.shell.startUri;
   } else
     path = window.location.href;
+
+  console.log('File preview! Path:', path);
 
   const solver = new DiffStudio(false, true, true);
   return await solver.getFilePreview(file, path);

@@ -336,7 +336,9 @@ export class DiffStudio {
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations);
 
-    this.solverView.basePath = file.fullPath.replace(':', '.');
+    console.log(file.fullPath);
+
+    this.solverView.basePath = `f/${file.fullPath.replace(':', '.')}`;
 
     this.toChangePath = true;
 
