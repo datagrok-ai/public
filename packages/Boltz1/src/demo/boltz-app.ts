@@ -188,7 +188,7 @@ export class Boltz1AppView {
   }
 
   private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {
-    const sequenceInp = ui.input.textArea('Sequence');
+    const sequenceInp = ui.input.textArea('Sequence', {size: {width: 300, height: 50}});
     sequenceInp.root.classList.add('boltz-sequence-input');
     this.sequenceInputs.set(uniqueName, sequenceInp);
 
