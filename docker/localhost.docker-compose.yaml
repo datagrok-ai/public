@@ -102,7 +102,7 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "jupyter_notebook", "notebook" ]
+    profiles: [ "all", "nginx", "cvm" ]
 
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
