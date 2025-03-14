@@ -121,10 +121,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     // 1. Open Apps
     let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    if (browseHeader === null) {
-      let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
       browseIcon.click();
-    }
     
     const browsePanel = grok.shell.browsePanel;
 
@@ -150,7 +149,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
       return;
     }
 
-    const diffStudIcon = await getElement(galleryGrid,'div[name="div-Diff-Studio"]');
+    browseIcon.click();
+
+    const diffStudIcon = await getElement(galleryGrid, 'div[name="div-Diff-Studio"]');
     if (diffStudIcon === null) {
       grok.shell.warning('Diff Studio not found: install the Diff Studio package');
       return;
