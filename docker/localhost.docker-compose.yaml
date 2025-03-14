@@ -106,6 +106,10 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     networks:
       datagrok:
         aliases:

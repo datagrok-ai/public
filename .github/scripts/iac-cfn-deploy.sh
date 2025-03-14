@@ -7,7 +7,7 @@ action=${1:-'merge,lint'}
 if [[ $action == *"merge"* ]]; then
     echo "Installing dependencies for merge script..."
     python3 -V
-    python3 -m pip install pyyaml deepmerge argparse cfn-lint awscli
+    python3 -m pip install pyyaml deepmerge argparse cfn-lint awscli --break-system-packages
     echo "Creating CFN scripts from templates using merge script..."
     python3 help/deploy/aws/cloudformation/templates/cf_template_merge.py -i help/deploy/aws/cloudformation/templates/create_network.template.yml \
      -i help/deploy/aws/cloudformation/templates/fargate.template.yml \
