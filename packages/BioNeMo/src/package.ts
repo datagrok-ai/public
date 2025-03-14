@@ -144,30 +144,37 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
   const loader = ui.loader();
   resultsContainer.appendChild(loader);
 
-  const table = smiles.cell.dataFrame;
-  const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find(file => file.extension === 'pdbqt')!;
-  const receptor = await grok.dapi.files.readAsText(receptorFile);
+  try {
+    const table = smiles.cell.dataFrame;
+    const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find(file => file.extension === 'pdbqt')!;
+    const receptor = await grok.dapi.files.readAsText(receptorFile);
+    
+    const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, receptorFile.name, poses);
+    const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name, poses);
+    
+    let virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
+    
+    if (!virtualPosesColumn) {
+      const posesJson = await diffDockModel.getPosesJson(smiles.value, smiles.units);
+      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualPosesColumnName, table.rowCount);
+      table.columns.add(virtualPosesColumn);
+      virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
+      diffDockModel.virtualPosesColumn = virtualPosesColumn;
+    } else {
+      diffDockModel.virtualPosesColumn = virtualPosesColumn;
+    }
+    
+    const posesJson = JSON.parse(virtualPosesColumn.get(smiles.cell.rowIndex));
+    const { bestId, bestPose, confidence } = diffDockModel.findBestPose(posesJson);
+    const combinedControl = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);
 
-  const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, receptorFile.name, poses);
-  const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name, poses);
-
-  let virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
-
-  if (!virtualPosesColumn) {
-    virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualPosesColumnName, table.rowCount);
-    table.columns.add(virtualPosesColumn);
-    const posesJson = await diffDockModel.getPosesJson(smiles.value, smiles.units);
-    virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
-    diffDockModel.virtualPosesColumn = virtualPosesColumn;
-  } else
-    diffDockModel.virtualPosesColumn = virtualPosesColumn;
-
-  const posesJson = JSON.parse(virtualPosesColumn.get(smiles.cell.rowIndex));
-  const { bestId, bestPose, confidence } = diffDockModel.findBestPose(posesJson);
-  const combinedControl = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);
-
-  resultsContainer.removeChild(loader);
-  resultsContainer.append(combinedControl);
+    resultsContainer.removeChild(loader);
+    resultsContainer.append(combinedControl);
+  } catch (e: any) {
+    resultsContainer.removeChild(loader);
+    const errorDiv = ui.divText(e.message)
+    resultsContainer.append(errorDiv);
+  }
 }
 
 function getVirtualPosesColumnName(target: string, poses: number): string {
