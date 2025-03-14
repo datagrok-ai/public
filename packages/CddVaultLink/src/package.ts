@@ -53,9 +53,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
         df.columns.replace(idCol, linkIdsCol);
       }
       await grok.data.detectSemanticTypes(df);
-      const tv = DG.TableView.create(df, false);
-      browseView.preview = tv;
-      
+      grok.shell.addTablePreview(df);     
     });
 
     const searchNode = vaultNode.item('Search');
@@ -80,7 +78,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
         runButton,
         gridDiv
       ]));
-      browseView.preview = view;
+      grok.shell.addPreview(view);
     });
 
    // searchNode.onSelected.subscribe(async (_) => {
