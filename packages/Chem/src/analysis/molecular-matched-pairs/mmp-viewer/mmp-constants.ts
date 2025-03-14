@@ -27,7 +27,7 @@ export enum MMP_NAMES {
   CORE_NUM = '~Core',
   PREDICTION = 'Prediction',
   GENERATIONS = 'Generation',
-  NEW_MOLECULE = 'New molecule',
+  NEW_MOLECULE = 'Predicted molecule',
 }
 
 export enum SHOW_FRAGS_MODE {
@@ -51,10 +51,10 @@ export const GENERATIONS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
   [MMP_NAMES.CORE]: 'Conservative fragment',
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
-  'New molecule': 'New molecule obtained with fragments substitution',
+  [MMP_NAMES.NEW_MOLECULE]: 'New molecule obtained with fragments substitution',
   [MMP_NAMES.ACTIVITY]: 'Activity type',
-  'Original activity': 'Initial activity value',
-  'New activity': 'Activity value based on MMP rules (initial activity + mean difference)',
+  'Observed activity': 'Observed activity value',
+  'Predicted activity': 'Predicted activity value based on MMP rules (initial activity + mean difference)',
   '\u0394 activity': 'Activity difference',
   'Prediction': 'Molecule does not exists in the initial dataset',
 };
