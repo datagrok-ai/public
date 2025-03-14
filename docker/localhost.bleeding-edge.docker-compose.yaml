@@ -112,6 +112,7 @@ services:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
+    environment:
       GROK_PARAMETERS: |
         {
           "isolatesCount": 1,
