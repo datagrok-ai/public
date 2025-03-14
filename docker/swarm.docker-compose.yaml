@@ -55,6 +55,77 @@ x-healthcheck:
   start_period: 5s
 
 services:
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    stop_grace_period: 2m
+    ports:
+      - target: 5672
+        published: 5672
+        protocol: tcp
+        mode: host
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *datagrok-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          cpus: '0.25'
+          memory: 300M
+    networks:
+      datagrok:
+        aliases:
+          - rabbitmq
+    logging: *default-logging
+
+  grok_pipe:
+    image: datagrok/grok_pipe:latest
+    stop_grace_period: 2m
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *datagrok-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          cpus: '0.25'
+          memory: 300M
+    healthcheck:
+      <<: *healthcheck
+      test: [ "CMD", "wget", "-SqO", "-", "http://localhost:3000/info" ]
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: host
+    networks:
+      datagrok:
+        aliases:
+          - grok_pipe
+    logging: *default-logging
 
   datagrok:
     image: datagrok/datagrok:latest
@@ -86,16 +157,40 @@ services:
       GROK_MODE: "auto"
       GROK_PARAMETERS: |
         {
-          "name": "prod",
-          "debug": false,
+          "deployDemo": false,
           "dbServer": "database",
           "db": "datagrok",
-          "dbAdminLogin": "db_admin",
-          "dbAdminPassword": "db_password",
-          "dbLogin": "datagrok",
-          "dbPassword": "datagrok123",
+          "dbAdminLogin": "postgres",
+          "dbAdminPassword": "postgres",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
           "adminPassword": "admin",
-          "isolatesCount": 4
+          "adminDevKey": "admin",
+          "isolatesCount": 2,
+          "connectorsSettings":{
+            "dataframeParsingMode":"New Process",
+            "externalDataFrameCompress":true,
+            "grokConnectHost":"grok_connect",
+            "grokConnectPort":1234,
+            "localFileSystemAccess":false,
+            "sambaSpaceEscape":"none",
+            "sambaVersion":"3.0",
+          },
+          "dockerSettings": {
+            "grokSpawnerApiKey": "test-x-api-key",
+            "grokSpawnerHost": "grok_spawner",
+            "grokSpawnerPort": 8000,
+            "imageBuildTimeoutMinutes": 30,
+            "proxyRequestTimeout": 60000
+          },
+          "queueSettings":{
+            "amqpHost": "rabbitmq",
+            "amqpPassword": "guest",
+            "amqpPort": 5672,
+            "amqpUser": "guest",
+            "pipeHost": "grok_pipe",
+            "pipeKey": "test-key"
+          }
         }
     ports:
       - target: 8080
@@ -255,35 +350,6 @@ services:
           - nginx_cvm
     logging: *default-logging
 
-  jupyter_notebook:
-    image: datagrok/jupyter_notebook:latest
-    stop_grace_period: 2m
-    deploy:
-      replicas: 1
-      mode: replicated
-      endpoint_mode: dnsrr
-      placement: *cvm-placement
-      update_config:
-        <<: *update-config
-        order: start-first
-      restart_policy:
-        <<: *restart-policy
-      rollback_config:
-        <<: *rollback-config
-        order: start-first
-      resources:
-        reservations:
-          cpus: '0.125'
-          memory: 100M
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "wget", "-SqO", "-", "http://localhost:5005/notebook/helper/info"]
-    networks:
-      datagrok:
-        aliases:
-          - jupyter_notebook
-    logging: *default-logging
-
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:latest
     stop_grace_period: 2m
@@ -310,17 +376,7 @@ services:
     environment:
       GROK_PARAMETERS: |
         {
-          "dbServer": "database",
-          "dbPort": "5432",
-          "db": "datagrok",
-          "dbLogin": "datagrok",
-          "dbPassword": "datagrok123",
-          "isolatesCount": 1,
-          "deployDemo": false,
-          "deployTestDemo": false,
-          "datlasApiUrl": "http://datagrok:8082",
-          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"]
+          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     networks:
       datagrok:
