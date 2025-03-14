@@ -61,7 +61,15 @@ export class FittingTutorial extends Tutorial {
     // grok.shell.v = browseView;
     // browseView.showTree = true;
 
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    if (browseHeader === null) {
+      let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+      browseIcon.click();
+    }
+
+    const browsePanel = grok.shell.browsePanel;
+
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
