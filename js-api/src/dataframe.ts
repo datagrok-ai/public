@@ -19,7 +19,7 @@ import {SIMILARITY_METRIC} from "./const";
 import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
-import {Widget} from "./widgets";
+import {Color, Widget} from './widgets';
 import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
@@ -2502,6 +2502,23 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = `${options.min}`;
     if (options?.max != null)
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
+  }
+
+  /** Enables linear color-coding on a column with absolute values.
+   * @param colorMap - dictionary of values (either string or number) and colors (hex-values).
+   *
+   * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats}}
+   */
+  setLinearAbsolute(colorMap: {[index: number | string]: string} | null = null): void {
+    this.column.tags[TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
+    if (colorMap != null) {
+      const orderedEntries = Object.entries(colorMap).sort(([a], [b]) => +a - +b);
+      const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
+      const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
+      this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
+      this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
+      this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
+    }
   }
 
   setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {

@@ -285,6 +285,8 @@ export const TAGS = {
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
+  COLOR_CODING_LINEAR_ABSOLUTE: '.%color-coding-linear-absolute',
+  COLOR_CODING_LINEAR_IS_ABSOLUTE: '.%color-coding-linear-is-absolute',
   COLOR_CODING_SCHEME_MAX: '.color-coding-scheme-max',
   COLOR_CODING_SCHEME_MIN: '.color-coding-scheme-min',
   COLOR_CODING_MATCH_TYPE: '.color-coding-match-type',

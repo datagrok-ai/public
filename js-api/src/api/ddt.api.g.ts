@@ -33,6 +33,10 @@ export class Tags {
 
   static ColorCodingLinear = '.color-coding-linear';
 
+  static ColorCodingLinearAbsolute = '.%color-coding-linear-absolute';
+
+  static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
+
   static ColorCodingConditional = '.color-coding-conditional';
 
   static ColorCodingCategorical = '.color-coding-categorical';
