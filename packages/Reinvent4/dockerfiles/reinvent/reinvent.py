@@ -140,4 +140,4 @@ def run_reinvent():
 
 if __name__ == '__main__':
     logging.info("Starting Flask app...")
-    app.run(host='0.0.0.0', port=6666, threaded=True)
+    app.run(host='0.0.0.0', port=8000, threaded=True)
