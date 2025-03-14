@@ -45,14 +45,14 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "connectorsSettings":{
+          "connectorsSettings": {
             "dataframeParsingMode":"New Process",
             "externalDataFrameCompress":true,
             "grokConnectHost":"grok_connect",
             "grokConnectPort":1234,
             "localFileSystemAccess":false,
             "sambaSpaceEscape":"none",
-            "sambaVersion":"3.0",
+            "sambaVersion":"3.0"
             },
           "dockerSettings": {
             "grokSpawnerApiKey": "test-x-api-key",
@@ -61,7 +61,7 @@ services:
             "imageBuildTimeoutMinutes": 30,
             "proxyRequestTimeout": 60000
            },
-          "queueSettings":{
+          "queueSettings": {
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
@@ -143,14 +143,15 @@ services:
     profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
+    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge-cuda}
     networks:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
     environment:
       GROK_PARAMETERS: |
-        {
+        {           
+          "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
         }
     restart: unless-stopped
