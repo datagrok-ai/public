@@ -157,7 +157,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         .querySelector(`[dock-spawn-title="${dockToAttribute}"]`) as HTMLElement | null;
       if (dockToElement && this.elementContainerMap.get(dockToElement)) {
         dockRelativeTo = this.dockManager
-          .findNodeFromContainerElement(this.elementContainerMap.get(dockToElement).containerElement);
+          .findNodeFromContainerElement(this.elementContainerMap.get(dockToElement).containerElement) ?? dockRelativeTo;
       }
     }
 

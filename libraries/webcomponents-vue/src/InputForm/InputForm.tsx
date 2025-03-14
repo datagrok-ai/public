@@ -103,13 +103,18 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form!.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
-          if (paramItems && input.inputType === DG.InputType.Choice) {
+          if (input.inputType === DG.InputType.Choice) {
             input.notify = false;
+            const currentValue = param.value;
             try {
-              const currentValue = param.value;
-              (input as DG.ChoiceInput<any>).items = paramItems;
-              input.value = currentValue;
+              if (paramItems)
+                (input as DG.ChoiceInput<any>).items = paramItems;
+              else if (param.property.options.choices)
+                (input as DG.ChoiceInput<any>).items = JSON.parse(param.property.options.choices);
+            } catch(e) {
+              console.error(e);
             } finally {
+              input.value = currentValue;
               input.notify = true;
             }
           }
