@@ -91,9 +91,9 @@ sidebar_position: 1.2
 | Database search |[ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI) | Optional| Webservice integration: ChEMBL | Stable|
 | Database search |[PubChemApi](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 | Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
+| Database search |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChEMBL)| Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
 | Virtual screening | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 | Virtual screening<br/>Hit to lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
-| Database search |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChEMBL)| Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
 
 <!--
 | Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
@@ -115,6 +115,7 @@ sidebar_position: 1.2
 | Oligonucleotides  |[OligoBatchCalculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) |Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
 | ADMET | [Admetica](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) | Optional | App that lets you evaluate ADMET properties | Stable |
 | Docking | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Stable |
+|Protein structure prediction, docking | [BioNeMo](https://github.com/datagrok-ai/public/tree/master/packages/BioNeMo) | Fit-for-purpose | Integrates advanced models for protein structure prediction and molecular docking| Beta |
 
 ### NLP
 
