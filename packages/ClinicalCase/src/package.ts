@@ -32,7 +32,7 @@ import {demoStudyId, domainsToValidate, StudyJsonName} from './constants/constan
 import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -85,14 +85,13 @@ export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup,
-  browseView: DG.BrowseView) {// TODO: DG.BrowseView
+export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {// TODO: DG.BrowseView
   if (!validationRulesList)
     validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   const url = new URL(window.location.href);
   const currentStudyAndViewPath = url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``);
   const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-  await clinicalCaseAppTB(treeNode, browseView, studyAndView.study, studyAndView.viewName);
+  await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
 }
 
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
@@ -106,7 +105,7 @@ function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   return {study: currentStudy, viewName: currentViewName};
 }
 
-async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView,
+async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
   currentStudy: string, currentViewName: string) {
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
@@ -157,12 +156,12 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup, browseView: DG.Brow
             view = VIEW_CREATE_FUNC[viewName](study.name) as DG.ViewBase;
         }
       }
-      browseView.preview = view as DG.View;
+      grok.shell.addPreview(view);
       if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
         (view as ClinicalCaseViewBase).load();
       else
         helper?.propertyPanel();
-      browseView.path =
+      view.path =
         `browse${CLINICAL_CASE_APP_PATH}/${study.name}/${viewName.replaceAll(' ', '')}`;
     };
 
