@@ -436,7 +436,7 @@ export async function runTests(options?: TestExecutionOptions) {
   }
   return results;
 
-  async function InvokeCategoryMethod(method: (() => Promise<void>) | undefined, category: string): Promise<string | undefined> {
+  async function invokeCategoryMethod(method: (() => Promise<void>) | undefined, category: string): Promise<string | undefined> {
     var invokationResult = undefined;
     try {
       if (method !== undefined) {
@@ -453,13 +453,12 @@ export async function runTests(options?: TestExecutionOptions) {
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
     const res = [];
-    if ((window as any).gc)
-      (window as any).gc();
-    const memmoryUsageBefore  = (window?.performance as any)?.memory?.usedJSHeapSize;
+    const memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = DG.Widget.getAll().length;
 
     if (category.clear) {
       for (let i = 0; i < t.length; i++) {
+
         if (t[i].options) {
           if (t[i].options?.benchmark === undefined) {
             if (!t[i].options)
@@ -473,14 +472,15 @@ export async function runTests(options?: TestExecutionOptions) {
         }
         if (DG.Test.isInDebug)
           debugger;
-
+        if ((window as any).gc)
+          (window as any).gc();
         if (DG.Test.isProfiling)
           console.profile(`${test.category}: ${test.name}`);
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
         if ((window as any).gc)
           (window as any).gc();
         if (testRun)
-          res.push({...testRun, memoryUsed:  (window?.performance as any)?.memory?.usedJSHeapSize - memmoryUsageBefore, widgetsDifference:  DG.Widget.getAll().length - widgetsBefore});
+          res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
         if (DG.Test.isProfiling)
           console.profileEnd(`${test.category}: ${test.name}`);
         grok.shell.closeAll();
@@ -497,15 +497,16 @@ export async function runTests(options?: TestExecutionOptions) {
         }
         if (DG.Test.isInDebug)
           debugger;
-
+        if ((window as any).gc)
+          (window as any).gc();
         if (DG.Test.isProfiling)
           console.profile(`${test.category}: ${test.name}`);
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
         if ((window as any).gc)
           (window as any).gc();
         if (testRun)
-          res.push({...testRun, memoryUsed:  (window?.performance as any)?.memory?.usedJSHeapSize - memmoryUsageBefore, widgetsDifference:  DG.Widget.getAll().length - widgetsBefore});
-        
+          res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
+
         if (DG.Test.isProfiling) {
           console.profileEnd(`${test.category}: ${test.name}`);
           grok.shell.info(`${test.category}: ${test.name} finished \n You can find results in DevTools (F12) / Performance panel`);
@@ -525,7 +526,7 @@ export async function runTests(options?: TestExecutionOptions) {
         stdLog(`Started ${key} category`);
         const skipped = value.tests?.every((t) => t.options?.skipReason);
         if (!skipped)
-          value.beforeStatus = await InvokeCategoryMethod(value.before, options.category ?? '');
+          value.beforeStatus = await invokeCategoryMethod(value.before, options.category ?? '');
 
         let t = value.tests ?? [];
 
@@ -551,7 +552,7 @@ export async function runTests(options?: TestExecutionOptions) {
         const data = res.filter((d) => d.result != 'skipped');
 
         if (!skipped)
-          value.afterStatus = await InvokeCategoryMethod(value.after, options.category ?? '');
+          value.afterStatus = await invokeCategoryMethod(value.after, options.category ?? '');
 
         // Clear after category
         // grok.shell.closeAll();
