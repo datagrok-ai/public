@@ -93,7 +93,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     
     appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
 
-    // 2. Run Diff Studio
+    // 2. Run Model catalog
     const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
