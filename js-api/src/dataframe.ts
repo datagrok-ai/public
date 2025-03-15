@@ -2505,20 +2505,18 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column with absolute values.
-   * @param colorMap - dictionary of values (either string or number) and colors (hex-values).
+   * @param valueColors - dictionary of numerical values and hex-colors.
    *
-   * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats}}
+   * See samples: {@link https://public.datagrok.ai/js/samples/grid/color-coding/color-coding}}
    */
-  setLinearAbsolute(colorMap: {[index: number | string]: string} | null = null): void {
+  setLinearAbsolute(valueColors: {[value: number]: string}): void { // value: number and also should be valueColors
     this.column.tags[TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
-    if (colorMap != null) {
-      const orderedEntries = Object.entries(colorMap).sort(([a], [b]) => +a - +b);
-      const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
-      const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
-      this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
-      this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
-      this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
-    }
+    const orderedEntries = Object.entries(valueColors).sort(([a], [b]) => +a - +b);
+    const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
+    const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
+    this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
   }
 
   setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {
