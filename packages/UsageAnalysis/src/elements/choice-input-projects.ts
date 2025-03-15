@@ -7,9 +7,9 @@ import Choices from 'choices.js';
 import {ChoiceInputBase} from "./choice-input-base";
 
 
-export class ChoiceInputPackagesCategories extends ChoiceInputBase {
+export class ChoiceInputProjects extends ChoiceInputBase {
     static async construct() {
-        const field = ui.input.choice('Categories');
+        const field = ui.input.choice('Projects');
 
         field.input.setAttribute('multiple', '');
         field.input.querySelectorAll('option').forEach((o) => {o.selected = false;});
@@ -23,15 +23,15 @@ export class ChoiceInputPackagesCategories extends ChoiceInputBase {
         });
         field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
-        const categories: string[] = ((await grok.functions.call('UsageAnalysis:PackagesCategories')) as DG.DataFrame).getCol('category').toList();
+        const projects: string[] = ((await grok.functions.call('UsageAnalysis:ProjectsList')) as DG.DataFrame).getCol('project_name').toList();
 
-        choices.setChoices(() => categories.map((p: string) => {
+        choices.setChoices(() => projects.map((p: string) => {
             return {value: p, label: p};
         }));
-        return new ChoiceInputPackagesCategories(choices, field);
+        return new ChoiceInputProjects(choices, field);
     }
 
     private constructor(choices: Choices, field: DG.InputBase) {
-        super(choices, field, 'any');
+        super(choices, field);
     }
 }
