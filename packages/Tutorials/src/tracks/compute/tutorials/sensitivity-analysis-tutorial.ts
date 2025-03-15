@@ -279,9 +279,6 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     // Align elements
     const panelRoot = sensAnView.root.querySelector('div.panel-base') as HTMLElement;
-    panelRoot.style.width = '300px';
-    const pcPlotColumnRoot = sensAnView.root.querySelector('div.splitter-container-column.splitter-container-horizontal') as HTMLElement;
-    pcPlotColumnRoot.style.width = '300px';
 
     this.title('Parameters\' impact');
     this.describe(`Explore which of the throw parameters has the most significant impact on
