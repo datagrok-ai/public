@@ -2,6 +2,7 @@
 
 **Curves** provides support for fitted curves (such as dose-response curves),
 including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.
+In addition, 
 
 - Fitting: computing parameters of the specified function to best fit the data
   - For dose-response curves, we are typically fitting the sigmoid function
@@ -21,10 +22,12 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
 - Ability to overlay curves from multiple grid cells (special viewer)
 - Work with series stored in multiple formats (binary for performance, JSON for flexibility, etc.)
 
-## Rendering fitted curves using JSON format
+## Data format
 
-To render a fitted curve based on series points, you need to write it in the following JSON format:
+To render a fitted curve, the cell has to contain a string in the following JSON format:
 
+<details>
+<summary> Example of the JSON chart cell </summary>
 ```json
 {
   "series": [
@@ -77,6 +80,7 @@ To render a fitted curve based on series points, you need to write it in the fol
   }
 }
 ```
+</details>
 
 Each series has its own parameters, such as:
 
@@ -146,9 +150,18 @@ returns the result of the fit function. These functions are written as JavaScrip
 
 ## Multi Curve Viewer
 
-You can overlay curves from multiple cells on one chart with the Multi Curve Viewer:
+To compare dose-response curves from multiple cells, put them on the Multi Curve Viewer::
 
 ![](img/multi-curve-viewer.gif)
+
+## Plate readers
+
+The package provides support for some of the common plate formats produced by instruments, such 
+as **BMG Pherastar**, **Delfia Envision**, and **Spectramax**. The detection / parsing mechanism
+is extensible, so you can easily write your own reader - [see examples](src/plate/plate-reader.ts).
+
+
+![](img/plate-readers.gif)
 
 See also:
 
