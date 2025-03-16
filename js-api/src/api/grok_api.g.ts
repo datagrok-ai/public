@@ -1171,6 +1171,7 @@ export interface IDartApi {
   grok_ColumnsInput_ChangeTable(input: any, table: any, predicate: any): any;
   grok_ColumnsInput_ChangeAvailableColumns(input: any, availableColumns: any): any;
   grok_ColumnsInput_ChangeCheckedColumns(input: any, checkedColumns: any): any;
+  grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
   grok_TreeViewNode_Tree(): any;

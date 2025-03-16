@@ -12,9 +12,6 @@ export interface IBarChartSettings {
   /// Determines what happens when you click on a bar.
   onClick: keyof typeof RowGroupAction;
 
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
-
   /// Value column. See *Value Aggr Type* for aggregation options.
   value: string;
   valueColumnName: string;
@@ -2155,9 +2152,6 @@ export interface IPieChartSettings {
   /// Action to be performed when you click on a pie
   onClick: keyof typeof RowGroupAction;
 
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
-
   startAngle: number;
 
   maxRadius: number;
@@ -2547,9 +2541,6 @@ export interface IScatterPlotSettings {
   showDropLines: boolean;
 
   mouseDrag: string;
-
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
 
   /// When true, lasso area selector is used instead of the rectangular one.
   /// Toggle this option by pressing L.
