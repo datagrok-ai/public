@@ -1,8 +1,10 @@
 # Curves
 
-**Curves** provides support for fitted curves (such as dose-response curves),
-including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.
-In addition, 
+**Curves** provides support for dose-response curves,
+including charts in cells, interactivity, and automatic fitting.
+Also, it integrates with assay plates, allowing you to 
+[read data directly from instruments](#plate-readers), and visualize
+[dose-response curves from assay plates](#integration-with-assay-plates).
 
 - Fitting: computing parameters of the specified function to best fit the data
   - For dose-response curves, we are typically fitting the sigmoid function
@@ -153,6 +155,19 @@ returns the result of the fit function. These functions are written as JavaScrip
 To compare dose-response curves from multiple cells, put them on the Multi Curve Viewer::
 
 ![](img/multi-curve-viewer.gif)
+
+## Integration with assay plates
+
+For a number of commonly used formats representing assay plates, Curves automatically detects
+layout, concentration, and activity layers, and shows you plate content in the form of automatically
+fitted dose-response curves.
+
+While typically such functionality gets integrated into custom apps (for instance, for doing
+the quality control, registering experiments to ELN, etc), this is quite useful for
+previewing plates. In this picture, excel files are recognized as containing assay plate data,
+and we can see dose-response curves in the file preview. 
+
+![](img/plate-dose-response-series.gif)
 
 ## Plate readers
 
