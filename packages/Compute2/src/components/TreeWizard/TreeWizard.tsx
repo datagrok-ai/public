@@ -6,6 +6,7 @@ import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-librari
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
+  PipelineState,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -92,7 +93,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
-      changeFuncCall
+      changeFuncCall,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
     const runActionWithConfirmation = (uuid: string) => {
@@ -268,10 +269,7 @@ export const TreeWizard = Vue.defineComponent({
 
     let pendingStepPath: string | null = null;
 
-    Vue.watch(treeState, (treeState) => {
-      if (!treeState)
-        return;
-
+    const processPendingStepPath = (treeState: PipelineState) => {
       if (pendingStepPath) {
         const nodeWithPath = findTreeNodeByPath(
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
@@ -283,6 +281,15 @@ export const TreeWizard = Vue.defineComponent({
           if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
           if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
         }
+      }
+    };
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        processPendingStepPath(treeState);
         return;
       }
 
@@ -291,12 +298,14 @@ export const TreeWizard = Vue.defineComponent({
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
+      globalThis.initialURLHandled = true;
+
       const loadingId = startUrl.searchParams.get('id');
-      if (loadingId) {
-        globalThis.initialURLHandled = true;
-        pendingStepPath = startUrl.searchParams.get('currentStep');
+      pendingStepPath = startUrl.searchParams.get('currentStep');
+      if (loadingId)
         loadPipeline(loadingId);
-      }
+      else if (pendingStepPath)
+        processPendingStepPath(treeState);
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
@@ -470,8 +479,8 @@ export const TreeWizard = Vue.defineComponent({
 
     const onFuncCallChange = (call: DG.FuncCall) => {
       if (chosenStepUuid.value)
-        changeFuncCall(chosenStepUuid.value, call)
-    }
+        changeFuncCall(chosenStepUuid.value, call);
+    };
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
