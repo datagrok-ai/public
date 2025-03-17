@@ -528,20 +528,18 @@ export const RichFunctionView = Vue.defineComponent({
             </RibbonMenu>)
           }
           <RibbonPanel view={currentView.value}>
-            { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
-              caption={ui.iconFA('arrow-to-bottom')}
-              items={['Excel']}
-              onSelected={({item: format}) => {
-                Utils.richFunctionViewReport(
-                  format,
+            { isReportEnabled.value && !isOutputOutdated.value && <IconFA
+              name='arrow-to-bottom'
+              onClick={async () => {
+                const [blob] = await Utils.richFunctionViewReport(
+                  'Excel',
                   currentCall.value.func,
                   currentCall.value,
                   Utils.dfToViewerMapping(currentCall.value),
-                ).then((blob) =>
-                  DG.Utils.download(`${currentCall.value.func.nqName} -
-                  ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
+                );
+                DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
               }}
-              tooltip='Generate a report for the current step'
+              tooltip='Generate standard report for the current step'
             />}
             { isSAenabled.value && <IconFA
               name='analytics'

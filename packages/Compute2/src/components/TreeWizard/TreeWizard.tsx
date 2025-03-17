@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
   PipelineState,
-  StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
@@ -30,6 +29,7 @@ import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
 import {DBSchema} from 'idb';
 import {useLayoutDb} from '../../composables/use-layout-db';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -308,6 +308,12 @@ export const TreeWizard = Vue.defineComponent({
         processPendingStepPath(treeState);
     }, {immediate: true});
 
+    const exports = Vue.computed(() => {
+      if (!treeState.value || isFuncCallState(treeState.value))
+        return [];
+      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+    });
+
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
         return null;
@@ -519,12 +525,20 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={saveEntireModelState}
           /> }
-          {isTreeReady.value && isTreeReportable.value && <IconFA
-            name='arrow-to-bottom'
-            tooltip='Report all steps'
-            onClick={async () => reportStep(treeState.value) }
-          /> }
         </RibbonPanel>
+        {isTreeReady.value && isTreeReportable.value &&
+          <RibbonMenu groupName='Export' view={currentView.value}>
+            {
+              exports.value.map(({name, handler}) =>
+                <span onClick={() => (treeState.value)
+                  ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
+                  : null}>
+                  <div> {name} </div>
+                </span>,
+              )
+            }
+          </RibbonMenu>
+        }
         {treeState.value &&
         <DockManager class='block h-full'
           ref={dockRef}
