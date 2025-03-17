@@ -30,7 +30,7 @@ To render a fitted curve, the cell has to contain a string in the following JSON
 
 <details>
 <summary> Example of the JSON chart cell </summary>
-```json
+<pre>
 {
   "series": [
     {
@@ -81,7 +81,7 @@ To render a fitted curve, the cell has to contain a string in the following JSON
     "showColumnLabel": true
   }
 }
-```
+</pre>
 </details>
 
 Each series has its own parameters, such as:
