@@ -36,7 +36,8 @@ sidebar_position: 1.2
 | Trees |[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)|Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
 | Trees |[PhyloTreeViewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
 |GIS|[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)|Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
-|NMR diagram |[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)|Fit-for-purpose| Visualization of NMR diagram | Stable |
+|NMR data |[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)|Fit-for-purpose| Visualization of NMR diagram | Stable |
+|Spectral data |[SpectraViewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)|Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 <!--
 |Viewers |[Forms]||???|Beta|
 |Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
