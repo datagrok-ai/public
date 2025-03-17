@@ -19,6 +19,7 @@ async function genomeFileBrowse(data: string, fileName : string = 'GenomeFileBro
 }
 
 
+//name: previewGenomeFileBrowse
 //tags: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: GenomeFileBrowse:checkGenomeConfig
