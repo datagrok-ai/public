@@ -25,7 +25,7 @@ export interface IDartApi {
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
-  grok_Set_CurrentObject(x: any, freeze: Bool): any;
+  grok_Set_CurrentObject(x: any, freeze: Bool, force: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
   grok_Get_LastError(): Promise<any>;
