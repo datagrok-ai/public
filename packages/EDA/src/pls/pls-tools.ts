@@ -132,11 +132,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  //const view = grok.shell.tableView(input.table.name);
-
-  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
-    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
-    grok.shell.tableView(input.table.name);
+  const view = grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
   const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
@@ -192,7 +188,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    // @ts-ignore
     labelColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
@@ -215,14 +210,13 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     markerType: DG.MARKER_TYPE.CIRCLE,
     help: LINK.SCORES,
     showViewerFormulaLines: true,
+    labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
   });
 
-  if ((input.names !== undefined) && (input.names !== null))
-    scoresScatter.setOptions({labelColumnNames: [input.names?.name]});
 
-  // 4.3) create lines & circles
-  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
+  // 4.3) create lines & circles  
   view.addViewer(scoresScatter);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
 
   // 5. Explained Variances
 
@@ -286,9 +280,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
-    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
-    grok.shell.t;
+  const table = grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
