@@ -930,7 +930,10 @@ export class MonomerPosition extends SARViewer {
         setTimeout(() => grid?.invalidate(), 300);
       } finally {
         this.keyPressed = false;
-        this.currentGridCell = gridCell;
+        if (gridCell.tableColumn?.name && gridCell.grid)
+          this.currentGridCell = DG.GridCell.fromColumnRow(gridCell.grid, gridCell.tableColumn.name, gridCell.gridRow);
+        else
+          this.currentGridCell = null;
       }
     });
     grid.root.addEventListener('keydown', (ev) => {
