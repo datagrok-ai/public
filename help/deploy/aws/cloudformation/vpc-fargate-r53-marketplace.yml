@@ -1234,10 +1234,9 @@ Resources:
         - Name: GROK_PARAMETERS
           Value:
             Fn::Sub:
-            - '{"capabilities": ["jupyter"], "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-              "isolatesCount": 4, "queuePluginSettings":{ "amqpHost":"${amqpHost}",
-              "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
-              "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }}'
+            - '{ "queueSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest",
+              "amqpPassword":"${amqpPassword}", "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}"
+              }}'
             - amqpHost:
                 Fn::Sub: rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               amqpPassword:
@@ -2614,7 +2613,7 @@ Resources:
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
               "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl":
-              false, "deployDemo": false, "deployTestDemo": false, "adminPassword":
+              true, "deployDemo": false, "deployTestDemo": false, "adminPassword":
               "${adminPassword}", "adminDevKey": "${adminDevKey}", "queueSettings":{
               "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
               "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }, "dockerSettings":{
