@@ -1442,9 +1442,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.dataFrame)
       return;
   
-    const rowCount = this.dataFrame.rowCount;
-    const treeChildren = this.tree.items;
-    
+    const rowCount = this.dataFrame.rowCount;  
     const columnName = `Scaffold color_${this.moleculeColumnName}`;
     let colorColumn = this.dataFrame.columns.byName(columnName);
     const isNewColumn = !colorColumn;
@@ -1457,27 +1455,30 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       gridColorColumn.visible = false;
 
     const colorBuffer = new Array<string | null>(rowCount).fill(null);
-
-    for (const child of treeChildren) {
-      const nodeValue = value(child);
-      const bitset = nodeValue.bitset;
-      const chosenColor = nodeValue.chosenColor && nodeValue.colorOn
-        ? nodeValue.chosenColor
-        : nodeValue.parentColor;
+    const scaffoldColorMap = new Map(this.colorCodedScaffolds.map(scaffold => [scaffold.molecule, scaffold.color]));
+    const childNodeMap = new Map(this.tree.items.map(child => [value(child).smiles, child]));
     
-      if (!bitset || !chosenColor) continue;
+    const childNodeColorPairs = this.colorCodedScaffolds.reduce((pairs, scaffold) => {
+      const childNode = childNodeMap.get(scaffold.molecule);
+      const color = scaffoldColorMap.get(scaffold.molecule);
+      if (childNode && color)
+        pairs.push({ childNode, color });
+      return pairs;
+    }, [] as { childNode: TreeViewNode<any>, color: string }[]);
     
-      if (bitset.trueCount === 0) continue;
-    
-      let index = bitset.findNext(-1, true);
-      while (index !== -1) {
-        colorBuffer[index] = chosenColor || null;
-        index = bitset.findNext(index, true);
+    childNodeColorPairs.sort((a, b) => value(b.childNode).bitset!.trueCount - value(a.childNode).bitset!.trueCount);
+    for (const { childNode, color } of childNodeColorPairs) {
+      const bitset = value(childNode).bitset;
+      if (bitset && bitset.trueCount > 0) {
+        let index = bitset.findNext(-1, true);
+        while (index !== -1) {
+          colorBuffer[index] = color;
+          index = bitset.findNext(index, true);
+        }
       }
-    }  
-  
-    colorColumn.init((i) => colorBuffer[i]);
+    }
 
+    colorColumn.init((i) => colorBuffer[i]);
     colorColumn.meta.colors.setCategorical(Object.fromEntries(
       colorColumn.categories.map(value => [value, value])
     ));
