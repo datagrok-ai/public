@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.2.3 (2025-03-17)
+
+* Showing update indicator in context panel when waiting for request
+
 ## 1.2.2 (2025-01-16)
 
 * Fixed 'Compound Names' query

@@ -50,17 +50,18 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //input: string mol {semType: Molecule}
 //input: bool substructure
 //output: widget result
-export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
+export async function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): Promise<DG.Widget> {
   const headerHost = ui.div([]);
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
-  searchFunc().then((table: DG.DataFrame | null) => {
+  try {
+    const table = await searchFunc();
     compsHost.removeChild(compsHost.firstChild!);
     if (table === null || table.rowCount === 0) {
       compsHost.appendChild(ui.divText('No matches'));
-      return;
+      return new DG.Widget(panel);
     }
 
     const moleculeCol = table.getCol('smiles');
@@ -106,15 +107,16 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       grok.shell.addTableView(table);
     }, 'Open compounds as table'));
     compsHost.style.overflowY = 'auto';
-  }).catch((err: any) => {
+    return new DG.Widget(panel);
+  } catch (err: any) {
     if (compsHost.children.length > 0)
       compsHost.removeChild(compsHost.firstChild!);
 
     const div = ui.divText('No matches');
     ui.tooltip.bind(div, `${err}`);
     compsHost.appendChild(div);
-  });
-  return new DG.Widget(panel);
+    return new DG.Widget(panel);
+  }
 }
 
 //name: Databases | ChEMBL | Substructure Search (Internal)
@@ -122,8 +124,8 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
-  return mol ? chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function chemblSubstructureSearchPanel(mol: string): Promise<DG.Widget> {
+  return mol ? await chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Databases | ChEMBL | Similarity Search (Internal)
@@ -131,8 +133,8 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
-  return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function chemblSimilaritySearchPanel(mol: string): Promise<DG.Widget> {
+  return mol ? await chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Chembl targets by organism
