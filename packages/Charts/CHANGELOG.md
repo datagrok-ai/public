@@ -1,5 +1,11 @@
 # Charts changelog
 
+## 1.5.0 (WIP)
+
+### Features
+
+* Added Multiplot viewer
+
 ## 1.4.4 (2024-02-27)
 
 ### Features

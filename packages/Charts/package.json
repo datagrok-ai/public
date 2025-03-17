@@ -25,7 +25,9 @@
     "echarts-wordcloud": "^2.0.0",
     "rxjs": "6.5.5",
     "three": "^0.148.0",
-    "three-globe": "^2.24.13"
+    "three-globe": "^2.24.13",
+    "chokidar": "^3.5.2",
+    "ws": "^7.5.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
