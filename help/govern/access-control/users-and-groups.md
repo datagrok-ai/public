@@ -166,12 +166,19 @@ with specific roles and permissions:
 Members of the Administrators group have global permissions, accessible via **Top Menu > Admin > Global Permissions...** 
 
 The following operations require global permissions:
-    * Creating a new user
-    * Inviting a user
-    * Editing a user
-    * Editing a group
-    * Editing global permissions
-    * Editing server plugin settings
+    * Creating a new user - `CreateUser`
+    * Inviting a user - `InviteUser`
+    * Editing a user - `EditUser`
+    * Editing a group - `EditGroup`
+    * Editing global permissions - `EditGlobalPermissions`
+    * Editing server settings - `EditPluginsSettings`
+    * Start Admin Session (disable all permissions check during current session) - `StartAdminSession`
+    * Deploy or install a package - `PublishPackage`
+    * Delete a comment in any chat - `DeleteComments`
+    * Create or edit entity type (see [Sticky Meta](../catalog/sticky-meta.md)) - `SaveEntityType`
+    * Modify any system pre-created data connection, such as `Datagrok`, `DatagrokAdmin` or `AppData` - `AdminSystemConnections`
+    * Create anything - `CreateEntity`
+    * Create a [script](../../compute/scripting/scripting.mdx) - `CreateScript`
 
 ### Managing groups
 
