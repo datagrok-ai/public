@@ -71,32 +71,39 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.describe('Consider ball flight simulation.');
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-      grok.shell.v = DG.View.createByType('browse');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
     // 1. Open Apps
-    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    // grok.shell.v = browseView;
-    // browseView.showTree = true;
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
 
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    const browsePanel = grok.shell.browsePanel;    
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
-
+    
     await this.action(
-     'Open Apps',
+      'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
+    
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
 
-    // 2. Run Diff Studio
+    // 2. Run Model catalog
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+
+    browseIcon.click();
+
     let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
+    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
 
     if (modelCatalogIcn === null) {
@@ -272,9 +279,6 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     // Align elements
     const panelRoot = sensAnView.root.querySelector('div.panel-base') as HTMLElement;
-    panelRoot.style.width = '300px';
-    const pcPlotColumnRoot = sensAnView.root.querySelector('div.splitter-container-column.splitter-container-horizontal') as HTMLElement;
-    pcPlotColumnRoot.style.width = '300px';
 
     this.title('Parameters\' impact');
     this.describe(`Explore which of the throw parameters has the most significant impact on

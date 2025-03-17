@@ -32,7 +32,7 @@ export async function getViewWithElement(selector: string) {
 }
 
 /** Get the specified child */
-export async function getElement(parent: HTMLElement, selectors: string) {
+export async function getElement(parent: HTMLElement | Document, selectors: string) {
   let element: HTMLElement | null;
   let totalTime = 0;
 
