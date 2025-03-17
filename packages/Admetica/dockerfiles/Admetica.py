@@ -201,4 +201,4 @@ def admetica_predict():
     }), 500
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=6678, debug=False)
+  app.run(host='0.0.0.0', port=8000, debug=False)

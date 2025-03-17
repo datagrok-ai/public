@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary, AdmeticaResponse } from './constants';
 import { FormStateGenerator } from './admetica-form';
@@ -16,6 +16,7 @@ let piechartIndex = 0;
 
 async function getAdmeticaContainer() {
   const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
+  await ensureContainerRunning('admetica');
   return admeticaContainer;
 }
 
@@ -29,23 +30,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
   }
 }
 
-export async function healthCheck() {
-  const admeticaContainer = await getAdmeticaContainer();
-  const path = '/health_check';
-  const params: RequestInit = {
-    method: 'GET',
-  }
-  const response: AdmeticaResponse | null = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  if (!response?.success)
-    throw new Error('Health check failed.');
-}
-
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admeticaContainer = await getAdmeticaContainer();
   const params: RequestInit = {
     method: 'POST',
     headers: {
-      'Accept': 'text/csv',
       'Content-type': 'text/csv'
     },
     body: csvString
