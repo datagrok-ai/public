@@ -15,8 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/statistics": "^0.1.7",
     "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok/charts": "^1.4.0",
-    "@datagrok/multiplot": "^0.0.5",
+    "@datagrok/charts": "../../packages/Charts",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "jstat": "^1.9.5",

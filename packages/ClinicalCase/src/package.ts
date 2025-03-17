@@ -89,7 +89,8 @@ export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {//
   if (!validationRulesList)
     validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
   const url = new URL(window.location.href);
-  const currentStudyAndViewPath = url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``);
+  const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
+    url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
   const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
   await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
 }
@@ -167,6 +168,8 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
 
     let validationNode: DG.TreeViewNode = null;
     node.onNodeExpanding.subscribe(async (_) => {
+      if (loadingStudyData[study.name])
+        return;
       for (const viewName of Object.keys(VIEW_CREATE_FUNC)) {
         const viewNode = node.item(viewName);
         if (viewName === VALIDATION_VIEW_NAME)
@@ -181,13 +184,10 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
         });
       }
       await initClinicalStudy(study);
-      if (initialViewSelected) {
-        //need to allow clinicalCaseApp to return view first not to reset selected view from URL
-        await awaitCheck(() => cliniclaCaseLaunched === true, `Clinical Case app hasn't been started`, 10000);
-        initialViewSelected = false;
-        const viewItem = node.items.find((node) => node.text === currentViewName)?.root;
-        viewItem?.click();
-      }
+      const viewItem = node.items
+        .find((node) => node.text === (initialViewSelected ? currentViewName : SUMMARY_VIEW_NAME))?.root;
+      viewItem?.click();
+      initialViewSelected = false;
     });
   }
   loaderItem.remove();
