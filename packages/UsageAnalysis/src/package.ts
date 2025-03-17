@@ -95,10 +95,15 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //input: string projects {isOptional: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string): Promise<DG.ViewBase | null> {
-  const handler = new ViewHandler();
-  await handler.init(date, groups, packages, tags, categories, projects, path);
-  return handler.view;
+export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string): DG.ViewBase {
+  const view = DG.View.fromViewAsync(async () => {
+    const handler = new ViewHandler();
+    await handler.init(date, groups, packages, tags, categories, projects, path);
+    //@ts-ignore
+    return handler.view as DG.View;
+  });
+  view.name = ViewHandler.UA_NAME;
+  return view;
 }
 
 //name: Test Track
@@ -121,11 +126,15 @@ export function testTrackApp(): void {
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function reportsApp(path?: string): Promise<DG.ViewBase> {
+export function reportsApp(path?: string): DG.ViewBase {
   const parent = grok.functions.getCurrentCall();
-  const app = new ReportingApp(parent);
-  await app.init(path);
-  return app.view!;
+  const view = DG.View.fromViewAsync(async () => {
+    const app = new ReportingApp(parent);
+    await app.init(path);
+    return app.view!;
+  });
+  view.name = ReportingApp.APP_NAME;
+  return view;
 }
 
 //name: Service Logs
@@ -136,13 +145,20 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //input: map params {isOptional: true}
 //input: int limit {isOptional: true}
 //output: view v
-export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
-  const currentCall = grok.functions.getCurrentCall();
-  const services = await grok.dapi.docker.getAvailableServices();
-  const app = new ServiceLogsApp(currentCall, services, path, limit);
-  if (services.length > 0)
-    app.getLogs().then((_) => {});
-  return app;
+export function serviceLogsApp(path?: string, params?: any, limit?: number): DG.ViewBase {
+  if (path && path.startsWith('/'))
+    path = path.slice(1);
+  const view = DG.View.fromViewAsync(async () => {
+    const currentCall = grok.functions.getCurrentCall();
+    const services = await grok.dapi.docker.getAvailableServices();
+    const app = new ServiceLogsApp(currentCall, services, path, limit);
+    if (services.length > 0)
+      app.getLogs().then((_) => {});
+    //@ts-ignore
+    return app as DG.View;
+  });
+  view.name = ServiceLogsApp.APP_NAME;
+  return view;
 }
 
 //input: dynamic treeNode
