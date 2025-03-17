@@ -600,6 +600,10 @@ export class DockManager {
 
   /** Finds the node that owns the specified [container] */
   private _findNodeFromContainer(container: IDockContainer): DockNode {
+    //@ts-ignore
+    if (!container.title)
+      return this.findNodeFromContainerElement(container.containerElement);
+
     const stack = [];
     stack.push(this.context.model.rootNode);
 

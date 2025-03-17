@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "description": "A TypeScript Version of dock-spawn with changes for Datagrok",
   "license": "MIT",
-  "author": {
-    "name": "Aufar Zakiev",
-    "email": "aufar.zakiev@softwarecountry.com"
+    "author": {
+    "name": "Andrey Sharapov",
+    "email": "andrey.sharapov@softwarecountry.com"
   },
   "scripts": {
     "build": "tsc",
@@ -17,16 +17,15 @@
     "rxjs": "^6.6.7"
   },
   "devDependencies": {
-    "@types/wu": "latest",
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "eslint": "latest",
-    "eslint-config-google": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "@types/node": "latest"
+    "@types/wu": "^2.1.44",
+    "@typescript-eslint/eslint-plugin": "^8.13.0",
+    "@typescript-eslint/parser": "^8.13.0",
+    "eslint": "^8.16.0",
+    "eslint-config-google": "^0.14.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "repository": {
     "type": "git",
