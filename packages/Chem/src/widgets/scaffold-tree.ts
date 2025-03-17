@@ -1445,10 +1445,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const rowCount = this.dataFrame.rowCount;
     const treeChildren = this.tree.items;
     
-    const columnName = "Scaffold color";
-    const colorColumn = this.dataFrame.columns.getOrCreate(columnName, DG.TYPE.STRING);
+    const columnName = `Scaffold color_${this.moleculeColumnName}`;
+    let colorColumn = this.dataFrame.columns.byName(columnName);
+    const isNewColumn = !colorColumn;
+    
+    if (!colorColumn)
+      colorColumn = this.dataFrame.columns.addNewString(columnName);
+
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
-    if (gridColorColumn)
+    if (isNewColumn && gridColorColumn)
       gridColorColumn.visible = false;
 
     const colorBuffer = new Array<string | null>(rowCount).fill(null);
