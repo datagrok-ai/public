@@ -714,8 +714,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     });
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell) => {
-      if (!gridCell.isTableCell)
+      if (!gridCell.isTableCell || gridCell.gridRow === -1) {
+        this.initClusterSelection({notify: false});
+        this.model.fireBitsetChanged(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+        grid.invalidate();
         return;
+      }
 
 
       try {

@@ -373,8 +373,37 @@ export class PeptidesModel {
       // this is important bit. settings are written by startAnalysis function or other viewers, but separate viewers will not init the peptides model
       if (settings)
         model.init(settings);
+
+      let wasEmptySelectionBefore = true;
+      model.subs.push(DG.debounce(dataFrame.onSelectionChanged, 10).subscribe((_) => {
+      //clear all selections if user cleared the selection.
+        if (wasEmptySelectionBefore || dataFrame.selection.anyTrue || !model._analysisView || !document.contains(model._analysisView.root) ||
+        model._analysisView.dataFrame !== dataFrame || !model.positionColumns) {
+          wasEmptySelectionBefore = !dataFrame?.selection?.anyTrue;
+          return;
+        }
+        model.webLogoSelection = initSelection(model.positionColumns!);
+        const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
+        if (mpViewer != null) {
+          mpViewer.invariantMapSelection = initSelection(model.positionColumns!);
+          mpViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+        }
+        const mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+        if (mprViewer != null)
+          mprViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+        const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+        if (lstViewer != null) {
+          lstViewer.initClusterSelection({notify: true});
+          lstViewer.render();
+        }
+        wasEmptySelectionBefore = true;
+        //model.fireBitsetChanged();
+      }));
     }
-    return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
+
+    const model = dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
+
+    return model;
   }
 
   /**
@@ -407,7 +436,7 @@ export class PeptidesModel {
    * @return {DG.Accordion | null} - Accordion with analysis info based on current selection
    */
   createAccordion(): DG.Accordion | null {
-    const trueModel: PeptidesModel | undefined = grok.shell.t?.temp[PeptidesModel.modelName];
+    const trueModel: PeptidesModel | undefined = this.df?.temp[PeptidesModel.modelName];
     if (!trueModel)
       return null;
 
@@ -432,41 +461,43 @@ export class PeptidesModel {
     const selectedClusters: string = (trueLSTViewer === null ? [] :
       trueLSTViewer.clusterSelection[CLUSTER_TYPE.ORIGINAL].concat(trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM]))
       .join(', ');
-    if (selectedClusters.length !== 0) {
-      selectionDescription.push(ui.h1('Logo summary table selection'));
-      selectionDescription.push(ui.divText(`Selected clusters: ${selectedClusters}`));
+    const htmlTextEl = (t: string): HTMLElement => {
+      const el = ui.divText(t);
+      el.innerHTML = t;
+      return el;
     }
+    if (selectedClusters.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>Logo Summary Table</b> clusters: ${selectedClusters}`));
 
     // Monomer-Position viewer selection overview
     const trueMPViewer = trueModel.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const selectedMonomerPositions = getSelectionString(trueMPViewer?.invariantMapSelection ?? {});
     const selectedMutationCliffs = getSelectionString(trueMPViewer?.mutationCliffsSelection ?? {});
-    if (selectedMonomerPositions.length !== 0 || selectedMutationCliffs.length !== 0)
-      selectionDescription.push(ui.h1('Sequence Variabily Map viewer selection'));
+    // if (selectedMonomerPositions.length !== 0 || selectedMutationCliffs.length !== 0)
+    //   selectionDescription.push(ui.h1('Sequence Variabily Map viewer selection'));
 
 
     if (selectedMonomerPositions.length !== 0)
-      selectionDescription.push(ui.divText(`Selected monomer-positions: ${selectedMonomerPositions}`));
+      selectionDescription.push(htmlTextEl(`<b>Invariant map</b>: ${selectedMonomerPositions}`));
 
 
     if (selectedMutationCliffs.length !== 0)
-      selectionDescription.push(ui.divText(`Selected mutation cliffs pairs: ${selectedMutationCliffs}`));
+      selectionDescription.push(htmlTextEl(`<b>Mutation cliffs</b>: ${selectedMutationCliffs}`));
 
 
     // Most Potent Residues viewer selection overview
     const trueMPRViewer = trueModel.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const selectedMPRMonomerPositions = getSelectionString(trueMPRViewer?.mutationCliffsSelection ?? {});
-    if (selectedMPRMonomerPositions.length !== 0) {
-      selectionDescription.push(ui.h1('Most Potent Residues viewer selection'));
-      selectionDescription.push(ui.divText(`Selected monomer-positions: ${selectedMPRMonomerPositions}`));
-    }
+    if (selectedMPRMonomerPositions.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>Most potent residues</b>: ${selectedMPRMonomerPositions}`));
 
     // WebLogo selection overview
     const selectedMonomers = getSelectionString(trueModel.webLogoSelection);
-    if (selectedMonomers.length !== 0) {
-      selectionDescription.push(ui.h1('WebLogo selection'));
-      selectionDescription.push(ui.divText(`Selected monomers: ${selectedMonomers}`));
-    }
+    if (selectedMonomers.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>WebLogo</b>: ${selectedMonomers}`));
+
+    if (selectionDescription.length !== 0)
+      selectionDescription.unshift(ui.h1('Selection Sources'));
 
     const descritionsHost = ui.div(ui.divV(selectionDescription));
     acc.addTitle(ui.divV([
@@ -840,15 +871,23 @@ export class PeptidesModel {
 
     const selection = this.df.selection;
     const filter = this.df.filter;
-
+    let prevTimer: any = null;
     const showAccordion = (): void => {
       try {
+        if (prevTimer != null) {
+          clearTimeout(prevTimer);
+          prevTimer = null;
+        }
         const acc = this.createAccordion();
         if (acc === null)
           return;
 
-
+        // these shinanigans are needed to prevent frozen custom accordion from sticking
         grok.shell.o = acc.root;
+        prevTimer = setTimeout(() => {
+          if (grok.shell.o != acc.root)
+            grok.shell.o = acc.root;
+        }, 1500);
       } catch (e) {
         console.error(e);
       }
@@ -1138,6 +1177,8 @@ export class PeptidesModel {
     };
     const logoSummaryTable = await this.df.plot
       .fromType(VIEWER_TYPE.LOGO_SUMMARY_TABLE, viewerProperties) as LogoSummaryTable;
+    if (grok.shell.isInDemo)
+      this.analysisView.addViewer(logoSummaryTable);
     this.analysisView.dockManager.dock(logoSummaryTable, DG.DOCK_TYPE.RIGHT, null, VIEWER_TYPE.LOGO_SUMMARY_TABLE);
 
     logoSummaryTable.viewerGrid.invalidate();

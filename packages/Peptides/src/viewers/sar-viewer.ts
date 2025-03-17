@@ -882,6 +882,16 @@ export class MonomerPosition extends SARViewer {
       try {
         if (!gridCell || !gridCell.dart || !gridCell?.cell?.column?.name || this._monomerMetaColumns.has(gridCell.cell.column.name))
           return;
+        if (gridCell.gridRow === -1) {
+          if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+            this._invariantMapSelection = initSelection(this.positionColumns);
+          else
+            this._mutationCliffsSelection = initSelection(this.positionColumns);
+
+          this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
+          grid.invalidate();
+        }
+
         if (!this.keyPressed)
           return;
 
@@ -1265,6 +1275,13 @@ export class MostPotentResidues extends SARViewer {
     });
     DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
+        if (gridCell.gridRow === -1) {
+          this._mutationCliffsSelection = initSelection(this.positionColumns);
+          this.model.fireBitsetChanged(VIEWER_TYPE.MOST_POTENT_RESIDUES);
+          grid.invalidate();
+          return;
+        }
+
         if ((this.keyPressed && mprDf.currentCol.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE) || !this.keyPressed)
           return;
 
