@@ -50,5 +50,5 @@ export async function genomeFileBrowseHadnler(data: string) {
 //output: bool result
 export function checkGenomeConfig(content: string) {
   let jsonObj = JSON.parse(content);
-  return content.length < 1000000 && jsonObj.tracks && (jsonObj.assemblies || jsonObj.assembly);//megabyte
+  return !!(content.length < 1000000 && jsonObj.tracks && (jsonObj.assemblies || jsonObj.assembly));//megabyte
 }
