@@ -2264,7 +2264,7 @@ Resources:
                   - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}",
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
+              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": true,
               "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}", "adminDevKey": "${adminDevKey}",
               "queueSettings":{ 
                 "amqpHost":"${amqpHost}", 
