@@ -12,7 +12,7 @@ export const _package = new DG.Package();
 
 //name: CalculateRetroSynthesisPaths
 //meta.cache: all
-//meta.cache.invalidateOn: 0 * * * *
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
 //output: string paths
 export async function calculateRetroSynthesisPaths(molecule: string): Promise<string> {
