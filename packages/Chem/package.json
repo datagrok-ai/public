@@ -40,7 +40,7 @@
   "dependencies": {
     "datagrok-api": "../../js-api",
     "@datagrok-libraries/chem-meta": "^1.2.9",
-    "@datagrok-libraries/ml": "^6.7.6",
+    "@datagrok-libraries/ml": "../../libraries/ml",
     "@datagrok-libraries/math": "^1.2.5",
     "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/utils": "^4.4.2",
