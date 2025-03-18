@@ -536,16 +536,22 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 ### Matched molecular pairs
 
-The **Matched Molecular Pairs** (MMP) tool in Datagrok enables precise, data-driven exploration of molecular modifications within chemical datasets.
-By identifying small structural changes and quantifying their impact on key properties such as potency, solubility, permeability, and ADMET, MMP analysis guides lead optimization with actionable insights.
+The **Matched Molecular Pairs** (MMP) tool supports lead optimization by
+quantifying how specific structural changes affect potency, solubility,
+permeability, and ADMET properties across your dataset.
 
-MMP analysis identifies molecular pairs that differ by a single transformation while maintaining a common core. For each pair, it calculates changes in biological activity and physicochemical properties, revealing patterns that guide lead optimization. Statistical aggregation of multiple transformations highlights consistent trends, providing a deeper understanding of structure-activity relationships.
+MMP analysis automatically detects matched molecular pairs within your
+dataset, calculates the differences in their properties, and aggregates these
+results statistically. The mean property change derived from these
+transformations highlights consistent structure-activity relationships, indicating
+the expected effect of applying a similar modification to a new molecule.
 
-The results of the MMP analysis are presented in a series of tables and visualizations, allowing you to:
+The results of the MMP analysis are presented in a series of tables and
+visualizations, allowing you to:
 
-* View fragments and substitutions in your dataset that consistently enhance molecular properties
-* Analyze the effect of specific fragments on the chosen activity or property of a lead compound
-* Generate new molecules based on the transformations present in your dataset and view their predicted properties and activities.
+* Identify high-impact structural modifications that enhance target properties
+* Evaluate how specific chemical changes affect a compound's profile
+* Generate optimized molecules with predicted properties based on validated transformations
 
 ![MMP Demo](img/mmp-full.gif)
 
@@ -557,96 +563,85 @@ To run MMP analysis:
 1. In the **Top Menu**, select **Chem** > **Analyze** > **Matched Molecular
  Pairs...** to open the analysis dialog.
 2. In the dialog, configure the analysis by selecting:
-    * **Table**: The dataset you want to analyze.
-    * **Molecules**: The column containing molecules.
-    * **Activity**: The column(s) representing activity or property values.
-    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core.
-3. Click OK. An MMP section is added to the view with four tabs:
+    * **Table**: The dataset you want to analyze
+    * **Molecules**: The column containing molecules
+    * **Activity**: The column(s) representing activity or property values
+    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core
+3. Click OK. An MMP analysis is added to the view with four tabs:
 
 <Tabs>
 <TabItem value="substitutions" label="Substitutions" default> 
 
-The **Substitutions** tab has two tables:
+The **Substitutions** tab has two interactive tables:
 
-* **The upper table (Fragments)** shows all fragment substitutions found in the dataset. It includes the frequency of each substitution and the
- corresponding change in the analyzed activity or property. There are two modes to explore fragments dataset:
- - *All* shows all found fragment pairs at once
- - *Current* shows fragment pairs found for the current molecule in the initial dataset. Use *Current* mode and click any molecule in the initial dataset to filter corresponding substitutions.
- A message in the top-left corner of the table indicates the number of filtered rows.
- ![Fragments modes](img/mmp_fragments_modes.gif)
+1. **Fragments** table (upper): Shows all fragment substitutions found in your
+  dataset along with their frequency and mean change in activity or property. It
+  has two viewing modes:
+   * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
+your dataset that contain either fragment from a current substitution.
+   * **Current molecule**: Shows only fragment pairs relevant to the current
+molecule in your dataset, enabling exploration of molecule-specific
+substitutions. The number of corresponding substitutions appears in the top-left
+corner.
 
- Click any row in the **Fragments** table to show all molecule pairs with corresponding substitution in the **Molecule pairs** table. Molecules are sourced from the initial dataset.
- Use `Ctrl + click` in the Fragments table to select multiple substitutions. This highlights all molecules in the dataset that contain either the *From* or *To* fragment.
- ![Fragments selection](img/mmp_fragments_selection.gif)
+1. **Molecule pairs** table (lower): Shows pairs of molecules and their property changes corresponding to the current
+   substitution in the **Fragments** table. Clicking a row here pins the molecule pair at the top of your
+   dataset and shows the details about the pair in the **Context Panel**. 
 
+To select multiple rows in any table, use **Ctrl+click**. To open a table in a separate view, click the **+** icon above the corresponding table.
 
-* **The lower table (Molecule pairs)** shows all pairs of molecules associated with the
- substitution from the upper (Fragments) table. It provides details about the analyzed
- activity or property for each pair of molecules.
- Click any row in the **Fragments** table to filter molecule pairs with current substitution. If *Current* mode is selected on the **Fragments** table, then the pair containing the current molecule from the initial dataset will be on top.
- Corresponding fragments are highlighted in each molecule.
- Click any row in **Molecule pairs** table to pin corresponding *From* and *To* molecules in the initial dataset and to open **Context panel** with pair details.
- Select rows with `Ctrl` + click to select corresponding *From* and *To* molecules in the initial dataset.
- ![Molecule pairs](img/mmp_molecule_pairs_navigation.gif)
-
-Click **+** icon above the corresponding table to add it to the workspace.
+ ![Substitutions tab](img/mmp-tab-substitutions.gif)
 
 </TabItem>
 <TabItem value="fragments" label="Fragments">
 
-The **Fragments** tab has two components:
+The **Fragments** tab contains:
 
-* [Trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
-fragments on the x and y axes. Each intersection in the plot displays the change
-in the analyzed activity or property resulting from a fragment substitution.
+1. [Trellis plot](../../../../visualize/viewers/trellis-plot.md): Shows
+identified fragments along the _x_ and _y_ axes, with property changes shown at
+their intersections. Click a cell to filter corresponding molecule pairs in the
+table below. Use the filter icon to refine results, or sort fragments by
+frequency or molecular weight using the sorting icons on the axes.
 
-* **Molecule pairs** table. Functions identically to the one in the **Substitutions** tab, displaying molecule pairs associated with each substitution.
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution
+   and functions identically to the **Molecule pairs** table in the
+   **Substitutions** tab.
 
-Click on any non-empty cell on the trellis plot to filter molecule pairs with the corresponding substitution in the **Molecule pairs** table.
-![Fragments trellis plot](img/fragments_trellis_plot.gif)
-
-Filter the trellis plot using the filter icon above the viewer.
-![Filter Fragments trellis plot](img/filter_fragments_trellis_plot.gif)
-
-Sort trellis plot using sort icons on the axes. Two sorting options are available: fragment frequency and molecular weight.
-![Sort Fragments trellis plot](img/sort_fragments_trellis_plot.gif)
+![Sort Fragments trellis plot](img/mmp-tab-fragments.gif)
 
 
 </TabItem>
 <TabItem value="cliffs" label="Cliffs"> 
 
-The **Cliffs** tab has two components:
+The **Cliffs** tab includes:
 
-* [Scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
-molecules with similar structures but significant differences in the analyzed
-activity or property. Arrows connecting molecules represent changes in the
-specified activity or property, with the arrow pointing toward the molecule with
-the higher value.
+1. [Scatterplot](../../../../visualize/viewers/scatter-plot.md): Shows clusters
+of molecules with similar structures but significant differences in the activity
+or property. Arrows connecting molecules represent a property change, pointing
+toward the molecule with the higher value.
 
-* **Molecule pairs** table. The same as on **Substitutions** tab. Show or hide the table using **Show Pairs** checkbox above the scatterplot.
-Click any row to zoom to the corresponding molecule pair on the scatterplot and show details in the **Context Panel**.
-Navigation also works vice versa: click an arrow on a scatterplot to zoom in and highlight molecule pair in the **Molecule pairs** table.
-![Cliffs scatterplot](img/cliffs_scatter_plot.gif)
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution,
+identical to the table in the **Substitutions** tab. Clicking a row here zooms
+to that pair on the scatterplot and shows the pair's details in the **Context
+Panel**. Conversely, clicking an arrow on the scatterplot shows that pair in the
+table. Toggle the table's visibility with the **Show Pairs** checkbox above the
+scatterplot. 
 
-Use activity filters on a scatterplot to filter pairs by activity difference. The filter is reflected in the **Molecule pairs** table.
-![Filter Cliffs scatterplot](img/filter_cliffs_scatter_plot.gif)
-
+Use activity filters on the scatterplot to refine results in both views.
+![Filter Cliffs scatterplot](img/mmp-tab-cliffs.gif)
 
 </TabItem>
 <TabItem value="generation" label="Generation">
 
-In the **Generation** tab, transformation rules derived from the matched molecule pairs in
-your dataset are used to generate new molecules and predict their property and
-activity values. For every molecule in your dataset, the table shows each
-potential transformation, providing:
+The **Generation** tab uses transformation rules derived from your dataset
+to create and predict new molecules. For each molecule, the table shows:
 
-* Both the starting and new compounds.
-* The maximum common substructure for this pair and the substituted fragment.
-* Original and predicted values for one of the analyzed activities or
- properties.
-* Whether a new molecule already exists in the initial dataset or is newly generated
+* Original and transformed molecules
+* Molecule status (existing or newly generated)
+* Maximum common substructure and the substituted fragment for this pair
+* Original and predicted property or activity values
 
-The **Context Panel** includes a **scatterplot** comparing observed vs. predicted values for each activity or property, based on molecules from the initial dataset.
+The **Context Panel** shows a scatterplot comparing observed vs. predicted values based on your dataset molecules.
 
 ![MMP Generations](img/mmp-generations.gif)
 
