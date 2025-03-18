@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.9.0 (WIP)
+
+Activity cliffs: Fixed bug with browse view
+
 ## 6.8.3 (2025-03-07)
 
 Vector distance support on webGPU and without

@@ -150,7 +150,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
   const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
-  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
+  const view = grok.shell.getTableView(df.name);
   const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -387,7 +387,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
-  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
+  const view = grok.shell.getTableView(df.name);
 
   let sparseMatrixRes: SparseMatrixResult | null = null;
   if (seqSpaceOptions.useWebGPU) {
