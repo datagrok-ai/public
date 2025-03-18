@@ -745,7 +745,7 @@ export class AddNewColumnDialog {
         } else
           actualInputParamTypes[key] = 'dynamic';
       } else
-        actualInputParamTypes[key] = Array.isArray(value) && value.length !== 0 ? typeof value[0] : typeof value;
+        actualInputParamTypes[key] = Array.isArray(value) && value.length !== 0 ? typeof value[0] : value == null ? 'undefined' : typeof value; // temp for debug
     }
 
     //validate types for current function
