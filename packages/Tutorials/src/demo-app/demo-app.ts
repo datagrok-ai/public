@@ -26,7 +26,7 @@ export class DemoView extends DG.ViewBase {
   subCategories: string[] = [];
   // browseView: DG.BrowseView = grok.shell.view('Browse') as DG.BrowseView;
   tree: DG.TreeViewGroup;
-  DEMO_APP_PATH: string = 'browse/apps/Tutorials/Demo';
+  DEMO_APP_PATH: string = 'apps/Tutorials/Demo';
 
   constructor() {
     super();
