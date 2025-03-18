@@ -211,7 +211,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       [i]: {
         name: v.friendlyName,
         enabled: isViewerEnabled,
-        tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip,
+        tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName] ?
+          CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,
