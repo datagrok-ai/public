@@ -3,17 +3,29 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { getModelsSingle, performChemicalPropertyPredictions, runAdmetica, setProperties } from './utils/admetica-utils';
+import { getModelsSingle, performChemicalPropertyPredictions, runAdmeticaFunc, setProperties } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
+}
+
+//name: runAdmetica
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: string csvString
+//input: string queryParams
+//input: string addProbability
+//output: string result
+export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string> {
+  return (await runAdmeticaFunc(csvString, queryParams, addProbability))!;
 }
 
 //name: Biology | Admetica

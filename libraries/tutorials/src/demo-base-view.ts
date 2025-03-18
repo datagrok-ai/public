@@ -19,7 +19,6 @@ export abstract class BaseViewApp {
   sketcherDiv: HTMLElement = ui.div([], { classes: 'demo-content-container', style: { border: 'none' } });
   sketcherInstance: grok.chem.Sketcher = new grok.chem.Sketcher();
   sketcher?: HTMLElement;
-  view: DG.TableView = grok.shell.tv;
 
   filePath: string = '';
   addTabControl: boolean = true;
@@ -30,6 +29,7 @@ export abstract class BaseViewApp {
   sketched: number = 0;
   mode: string = 'sketch';
   tableName: string = 'Admetica';
+  target: DG.ChoiceInput<string | null> | null = null;
 
   sketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
   runningProcesses: (() => Promise<void>)[] = [];
@@ -51,13 +51,13 @@ export abstract class BaseViewApp {
   }
 
   async init(): Promise<void> {
-    const [name, smiles] = Object.entries(this.sketcherValue)[0]
-    this.sketcherInstance.setMolecule(smiles);
+    const [name, smiles] = Object.entries(this.sketcherValue)[0];
     this.sketcherInstance.onChanged.subscribe(async () => {
       const smiles: string = this.sketcherInstance.getSmiles();
       await this.onChanged(smiles);
     });
     this.sketcherInstance.molInput.value = name;
+    this.sketcherInstance.setSmiles(smiles);
     this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
   
@@ -70,6 +70,15 @@ export abstract class BaseViewApp {
     } else {
       this.mode = 'sketch';
       this.modeContainer.appendChild(this.createSketchPane());
+    }
+
+    if (this.tableName === 'Docking') {
+      const items = await grok.functions.call('Docking:getConfigFiles');
+      this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
+        await this.onChanged(this.sketcherInstance.getSmiles());
+      }});
+      this.target.root.style.cssText = 'flex-direction: row !important; ';
+      this.formContainer.insertBefore(this.target.root, this.formContainer.firstChild);
     }
 
     this.prepareTableView();
@@ -130,7 +139,7 @@ export abstract class BaseViewApp {
       this.tableView!._onAdded();
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      this.view = this.tableView!;
+      this.tableView!.path = '';
     }, 300);
   }
 
@@ -142,8 +151,13 @@ export abstract class BaseViewApp {
   }
 
   private clearForm() {
-    this.formContainer.innerHTML = '';
-  }
+    const secondChild = this.formContainer.children[1];
+    if (secondChild) {
+      secondChild.innerHTML = '';
+    } else {
+      this.formContainer.innerHTML = '';
+    }
+  }  
 
   private async onChanged(smiles: string) {
     if (!smiles) {
@@ -178,8 +192,9 @@ export abstract class BaseViewApp {
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       try {
         if (this.uploadCachedData && this.sketched === 0) {
+          const widget = await this.uploadCachedData();
           this.clearForm();
-          this.formContainer.appendChild(await this.uploadCachedData());
+          this.formContainer.appendChild(widget);
         } else if (this.formGenerator) {
           const form = await this.formGenerator(this.tableView!.dataFrame);
           if (form) {

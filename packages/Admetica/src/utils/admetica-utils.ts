@@ -30,7 +30,7 @@ async function sendRequestToContainer(containerId: string, path: string, params:
   }
 }
 
-export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
+export async function runAdmeticaFunc(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admeticaContainer = await getAdmeticaContainer();
   const params: RequestInit = {
     method: 'POST',
@@ -91,7 +91,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
   progressIndicator.update(10, 'Predicting...');
 
   try {
-    const admeticaResults = await runAdmetica(csvString, models, 'false');
+    const admeticaResults = await grok.functions.call('Admetica:runAdmetica', {csvString: csvString, queryParams: models, addProbability: 'false'});
     progressIndicator.update(80, 'Results are ready');
     const table = admeticaResults ? DG.DataFrame.fromCsv(admeticaResults) : null;
     const molColIdx = viewTable?.columns.names().findIndex((name) => name === molColumn.name);
@@ -416,7 +416,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const csvString = await runAdmetica(`smiles\n${smiles}`, queryParams.join(','), 'false');
+      const csvString = await grok.functions.call('Admetica:runAdmetica', {csvString: `smiles\n${smiles}`, queryParams: queryParams.join(','), addProbability: 'false'});
       ui.empty(result);
 
       const table = DG.DataFrame.fromCsv(csvString!);
@@ -489,7 +489,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
   const query = `smiles\n${parsedValue}`;
-  const result = await runAdmetica(query, params, 'false');
+  const result = await grok.functions.call('Admetica:runAdmetica', {csvString: query, queryParams: params, addProbability: 'false'});
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;

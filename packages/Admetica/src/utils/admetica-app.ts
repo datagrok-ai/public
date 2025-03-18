@@ -14,7 +14,6 @@ export class AdmeticaViewApp extends BaseViewApp {
 
     this.formGenerator = this.customFormGenerator;
     this.setFunction = () => this.performAdmetica();
-    this.view.path = 'browse/apps/Admetica';
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
     this.tableName = 'Admetica';
   }
@@ -53,7 +52,6 @@ export class AdmeticaViewApp extends BaseViewApp {
 
   private async customFormGenerator(): Promise<HTMLElement> {
     const models = await getQueryParams();
-
     await performChemicalPropertyPredictions(
       this.tableView!.dataFrame.getCol('smiles'),
       this.tableView!.dataFrame,
@@ -63,11 +61,14 @@ export class AdmeticaViewApp extends BaseViewApp {
       false,
       true
     );
-
+ 
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     
     const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
+    const ribbon = form.root.querySelector('.d4-ribbon');
+    if (ribbon)
+      ribbon.remove();
     return form.root;
   }
 
