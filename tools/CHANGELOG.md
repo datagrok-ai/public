@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.65 (2025-03-18)
+
+### Features
+
+* fixed func-gen-plugin for js packages 
+
 ## 4.13.64 (2025-02-27)
 
 ### Features
