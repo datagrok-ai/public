@@ -7,7 +7,7 @@ export class DockManagerContext {
     dockManager: DockManager;
     model: DockModel;
     documentManagerView: DocumentManagerContainer;
-    
+
     constructor(dockManager : DockManager) {
         this.dockManager = dockManager;
         this.model = new DockModel();
