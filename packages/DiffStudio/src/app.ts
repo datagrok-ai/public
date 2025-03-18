@@ -336,9 +336,7 @@ export class DiffStudio {
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations);
 
-    console.log(file.fullPath);
-
-    this.solverView.basePath = `f/${file.fullPath.replace(':', '.')}`;
+    this.solverView.basePath = `file/${file.fullPath.replace(':', '.')}`;
 
     this.toChangePath = true;
 
@@ -1624,7 +1622,7 @@ export class DiffStudio {
           grok.shell.addPreview(await solver.runSolverApp(
             equations,
             undefined,
-            `f/${file.fullPath.replace(':', '.')}`,
+            `file/${file.fullPath.replace(':', '.')}`,
           ) as DG.View);
 
           await this.saveModelToRecent(path, true);
