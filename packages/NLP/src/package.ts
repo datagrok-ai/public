@@ -205,7 +205,6 @@ export function computeEmbds(): void {
 }
 
 //name: Stem Column
-//tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Text
 //meta.supportedDistanceFunctions: Common Items
 //input: column col {semType: Text}
@@ -325,6 +324,20 @@ export function similar(query: string): DG.Widget {
   return new DG.Widget(ui.divV(uiElements));
 }
 
+//name: Sentence Embeddings
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Text
+//meta.supportedDistanceFunctions: Vector Cosine, Euclidean, Manhattan
+//input: column col {semType: Text}
+//input: string metric
+//output: object result
+export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
+  const embeddingsStr: string = await grok.functions.call('NLP: getEmbeddings', {sentences: col.toList()});
+  const embeddings: number[][] = JSON.parse(embeddingsStr);
+  return {entries: embeddings, options: {}};
+}
+
+
 //name: getEmbeddings
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
@@ -394,7 +407,7 @@ export function sentenceSearchViewer() {
   return new SentenceSimilarityViewer();
 }
 
-//top-menu: ML | Duplicate search
+//top-menu: ML | Sentence Similarity Search
 //name: sentenceSearch
 //output: viewer result
 export function sentenceSearchTopMenu(): void {
