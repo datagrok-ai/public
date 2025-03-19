@@ -322,8 +322,9 @@ export async function _demoActivityCliffs(): Promise<void> {
     Marker size corresponds to highest SALI value detected for the molecule.`, delay: 2000})
     .step('Explore activity cliffs', async () => {
       await delay(1000);
-      (Array.from(scatterPlot!.root.children)
-        .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
+      const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
+      if (link.length)
+        (link[0]  as HTMLElement).click();
       await delay(1000);
     }, {description: `Detected cliffs are available in a separate table. 
     Cliffs are pairs of molecules with similarity higher than cutoff. Cliffs are sorted by SALI value.`, delay: 2000})
@@ -344,6 +345,10 @@ export async function _demoActivityCliffs(): Promise<void> {
     .start();
 }
 
+export async function _demoActivityCliffs2(): Promise<void> {
+  const p = grok.dapi.projects.filter('activity_cliffs_demo_project');
+  grok.dapi.projects.open('activity_cliffs_demo_project');
+}
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');
