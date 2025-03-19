@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { loadProjectsList, loadIssues, loadIssueData, loadProjectData } from './api/data';
-import { JiraIssue, Project } from './api/objects';
+import { ErrorMessageResponse, JiraIssue, Project } from './api/objects';
 import { AuthCreds } from './api/objects';
 import { getJiraCreds } from './app/credentials';
 import { addJIRADetector } from './detectors';
@@ -58,11 +58,13 @@ export async function issueData(issueKey: string): Promise<JiraIssue | null> {
 
   queried.add(issueKey);
   const jiraCreds = await getJiraCreds();
-  const issue = await loadIssueData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), issueKey)
+  const issue = await loadIssueData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), issueKey);
+  if (!issue || (issue as ErrorMessageResponse)?.errorMessages)
+    return null;
   queried.delete(issueKey);
   cache.set(issueKey, issue);
 
-  return issue;
+  return (issue as JiraIssue);
 }
 
 //name: getJiraField
@@ -132,7 +134,7 @@ export async function getJiraTicketsByFilter(filter?: object): Promise<JiraIssue
   let startAt = 0;
   while (true) {
     const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
-    startAt, chunkSize, filter, undefined);
+      startAt, chunkSize, filter, undefined);
     if (loadedIssues != null) {
       total = loadedIssues.total;
       result = [...result, ...loadedIssues.issues]
