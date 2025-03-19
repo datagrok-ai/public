@@ -7,7 +7,7 @@ import { KnnResult, SparseMatrixService } from '@datagrok-libraries/ml/src/dista
 import { Subject } from 'rxjs';
 import { VectorMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 import { multiColWebGPUKNN } from '@datagrok-libraries/math/src/webGPU/multi-col-knn/multiCol-KNN'
-import { WEBGPUDISTANCE } from '@datagrok-libraries/math';
+import { WEBGPUDISTANCE } from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-multicol-distances';
 import { WEBGSLAGGREGATION } from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
 
 export class SentenceSimilarityViewer extends SearchBaseViewer {
