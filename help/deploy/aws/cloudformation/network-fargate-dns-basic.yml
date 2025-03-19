@@ -1199,10 +1199,9 @@ Resources:
         - Name: GROK_PARAMETERS
           Value:
             Fn::Sub:
-            - '{"capabilities": ["jupyter"], "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-              "isolatesCount": 4, "queuePluginSettings":{ "amqpHost":"${amqpHost}",
-              "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
-              "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }}'
+            - '{ "queueSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest",
+              "amqpPassword":"${amqpPassword}", "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}"
+              }}'
             - amqpHost:
                 Fn::Sub: rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               amqpPassword:
@@ -2542,10 +2541,16 @@ Resources:
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
               "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl":
-              false, "deployDemo": false, "deployTestDemo": false, "adminPassword":
-              "${adminPassword}", "adminDevKey": "${adminDevKey}", "queuePluginSettings":{
+              true, "deployDemo": false, "deployTestDemo": false, "adminPassword":
+              "${adminPassword}", "adminDevKey": "${adminDevKey}", "queueSettings":{
               "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
-              "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" } }'
+              "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }, "dockerSettings":{
+              "grokSpawnerApiKey":"test-x-api-key", "grokSpawnerHost":"${grokSpawnerHost}",
+              "grokSpawnerPort":8000, "imageBuildTimeoutMinutes":30, "proxyRequestTimeout":60000
+              }, "connectorsSettings":{ "dataframeParsingMode":"New Process", "externalDataFrameCompress":true,
+              "grokConnectHost":"${grokConnectHost}", "grokConnectPort":1234, "localFileSystemAccess":false,
+              "sambaSpaceEscape":"none", "sambaVersion":"3.0", "windowsSharesProxy":""
+              } }'
             - adminDevKey:
                 Fn::Sub:
                 - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
@@ -2593,11 +2598,15 @@ Resources:
                 Fn::GetAtt:
                 - DatagrokDB
                 - Endpoint.Address
+              grokConnectHost:
+                Fn::Sub: grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               grokPipeApiKey:
                 Fn::Sub:
                 - '{{resolve:secretsmanager:${secret}:SecretString:apikey}}'
                 - secret:
                     Ref: GrokPipeApiKeySecret
+              grokSpawnerHost:
+                Fn::Sub: grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               pipeHost:
                 Fn::Sub: pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         Essential: true
@@ -2844,6 +2853,13 @@ Resources:
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
+        Environment:
+        - Name: GROK_CONNECT_PORT
+          Value: 1234
+        - Name: CONNECTION_POOL_MAXIMUM_SIZE
+          Value: 50
+        - Name: CONNECTION_POOL_IDLE_TIMEOUT
+          Value: 300000
         Essential: true
         Image:
           Fn::Sub:
