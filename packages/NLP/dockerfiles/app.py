@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
@@ -18,6 +19,8 @@ logging.basicConfig(
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def get_sentence_embedding(text):
+    if not isinstance(text, str):
+        return np.zeros(384).tolist()
     return model.encode(text).tolist()
 
 @app.route('/get_embeddings', methods=['POST'])

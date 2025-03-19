@@ -3,7 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { SearchBaseViewer } from '@datagrok-libraries/ml/src/viewers/search-base-viewer';
+import { KnnResult, SparseMatrixService } from '@datagrok-libraries/ml/src/distance-matrix/sparse-matrix-service';
 import { Subject } from 'rxjs';
+import { VectorMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
+import { multiColWebGPUKNN } from '@datagrok-libraries/math/src/webGPU/multi-col-knn/multiCol-KNN'
+import { WEBGPUDISTANCE } from '@datagrok-libraries/math';
+import { WEBGSLAGGREGATION } from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
 
 export class SentenceSimilarityViewer extends SearchBaseViewer {
   curIdx: number = 0;
@@ -14,11 +19,12 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   targetMoleculeIdx: number = 0;
   computeCompleted = new Subject<boolean>();
   splashScreen: HTMLElement | null = null;
-  //threshold: number;
+  knn?: KnnResult;
+  kPrevNeighbors: number = 0;
+  sentenceCol: DG.Column<string> | null = null;
 
   constructor() {
     super('similarity', DG.SEMTYPE.TEXT);
-    //this.threshold = this.float('threshold', 0.8, {min: 0, max: 1});
   }
 
   init(): void {
@@ -50,18 +56,19 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         const embeddings = await grok.functions.call('NLP: getEmbeddings', { sentences: this.targetColumn.toList() });
 
         this.updateSplashScreen("Finding similar sentences...");
+        await this.compute(JSON.parse(embeddings));
 
-        const resDf = DG.DataFrame.fromCsv(await grok.functions.call('NLP: getSimilar', {embeddingsStr: embeddings, sentences: this.targetColumn.toList(), currentRow: this.targetMoleculeIdx}));
-        //resDf.rows.removeWhere((row) => row.get('score') < this.threshold);
-        resDf.rows.removeWhereIdx((idx) => idx > this.limit);
-
+        this.sentenceCol = DG.Column.string(this.targetColumnName,
+          this.idxs!.length).init((i) => this.targetColumn?.get(this.idxs?.get(i)));
+        this.sentenceCol.semType = DG.SEMTYPE.TEXT;
+        const resDf = DG.DataFrame.fromColumns([this.idxs!, this.sentenceCol!, this.scores!]);
         resDf.onCurrentRowChanged.subscribe((_: any) => {
-          this.dataFrame.currentRowIdx = resDf.col('idx')!.get(resDf.currentRowIdx);
+          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
           this.gridSelect = true;
         });
 
         const grid = resDf.plot.grid();
-        grid.col('idx')!.visible = false;
+        grid.col('indexes')!.visible = false;
 
         const view = grok.shell.v as DG.TableView;
         view.grid.root.addEventListener('click', (_event: MouseEvent) => {
@@ -76,6 +83,36 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         this.removeSplashScreen();
       }
     }
+  }
+
+  private async compute(embeddings: Array<Array<number>>) {
+    const len = this.targetColumn!.length;
+    const actualLimit = Math.min(this.limit, len - 1);
+
+    if (!this.knn || this.kPrevNeighbors !== actualLimit) {
+      try {
+        this.knn = await multiColWebGPUKNN(
+          embeddings, Math.min(this.limit, len - 1), [WEBGPUDISTANCE.COSINE], WEBGSLAGGREGATION.MANHATTAN,
+          [1], [{}]
+        ) as unknown as KnnResult;
+      } catch (e) {
+        console.error(e);
+      }
+      
+      if (!this.knn) {
+        this.kPrevNeighbors = actualLimit;
+        this.knn = await (new SparseMatrixService()
+          .getKNN(embeddings, VectorMetricsNames.Cosine, Math.min(this.limit, len - 1)));
+      }
+    }
+    const indexWScore = new Array(actualLimit).fill(0).map((_, i) => ({
+      idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
+      score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
+    }));
+    indexWScore.sort((a, b) => b.score - a.score);
+    indexWScore.unshift({idx: this.targetMoleculeIdx, score: DG.FLOAT_NULL});
+    this.idxs = DG.Column.int('indexes', actualLimit + 1).init((i) => indexWScore[i].idx);
+    this.scores = DG.Column.float('score', actualLimit + 1).init((i) => indexWScore[i].score);
   }
 
   private showSplashScreen(message: string): void {

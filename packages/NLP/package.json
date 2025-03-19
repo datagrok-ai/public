@@ -15,6 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok-libraries/ml": "../../libraries/ml",
+    "@datagrok-libraries/math": "1.2.6",
     "aws-sdk": "^2.762.0",
     "datagrok-api": "^1.21.1",
     "stemmer": "^2.0.1",
