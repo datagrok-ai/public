@@ -92,8 +92,8 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
     if (!this.knn || this.kPrevNeighbors !== actualLimit) {
       try {
         this.knn = await multiColWebGPUKNN(
-          embeddings, Math.min(this.limit, len - 1), [WEBGPUDISTANCE.COSINE], WEBGSLAGGREGATION.MANHATTAN,
-          [1], [{}]
+          [embeddings.map((c) => new Float32Array(c))], Math.min(this.limit, len - 1), [WEBGPUDISTANCE.VECTOR_COSINE], WEBGSLAGGREGATION.MANHATTAN,
+          [1], [{'preprocessingFuncArgs': {}}]
         ) as unknown as KnnResult;
       } catch (e) {
         console.error(e);
