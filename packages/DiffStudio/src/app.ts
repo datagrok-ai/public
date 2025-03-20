@@ -1655,15 +1655,8 @@ export class DiffStudio {
         const treeNodeY = panelRoot.scrollTop!;
 
         if (exist) {
-          const equations = await file.readAsString();
-
-          const solver = new DiffStudio(false);
-          grok.shell.addPreview(await solver.runSolverApp(
-            equations,
-            undefined,
-            `${PATH.FILE}/${file.fullPath.replace(':', '.')}`,
-          ) as DG.View);
-
+          const solver = new DiffStudio(false, true, true);
+          grok.shell.addPreview(await solver.getFilePreview(file, path));
           await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
@@ -1898,14 +1891,8 @@ export class DiffStudio {
 
       card.onclick = async () => {
         if (exist) {
-          const equations = await file.readAsString();
-
-          const solver = new DiffStudio(false);
-          grok.shell.addView(await solver.runSolverApp(
-            equations,
-            undefined,
-            `${PATH.FILE}/${file.fullPath.replace(':', '.')}`,
-          ) as DG.TableView);
+          const solver = new DiffStudio(false, true, true);
+          grok.shell.addPreview(await solver.getFilePreview(file, path));
 
           await this.saveModelToRecent(path, true);
         } else
