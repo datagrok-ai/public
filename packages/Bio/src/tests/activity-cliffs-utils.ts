@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
@@ -25,9 +25,10 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimRed
   })) as DG.Viewer | undefined;
   expect(scatterPlot != null, true);
 
-  const cliffsLink = Array.from(scatterPlot!.root.children).find((el) => {
-    const classList: string[] = el.className.split(' ');
-    return ['ui-btn', 'ui-btn-ok'].every((reqClassName) => classList.includes(reqClassName));
-  });
-  expect((cliffsLink as HTMLElement).innerText.toLowerCase(), `${tgtNumberCliffs} cliffs`);
+  await awaitCheck(() => {
+    const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
+    if (link.length)
+      return (link[0] as HTMLElement).innerText.toLowerCase() === `${tgtNumberCliffs} cliffs`;
+    return true;
+  }, 'incorrect cliffs link', 3000);
 }
