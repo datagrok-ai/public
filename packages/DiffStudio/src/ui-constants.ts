@@ -278,6 +278,7 @@ export enum PATH {
   HOME = 'Home',
   SYSTEM = 'System',
   FILE = 'file',
+  SLASH = '/',
 };
 
 /** UI time constants */

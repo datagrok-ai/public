@@ -332,7 +332,10 @@ export class DiffStudio {
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
     closeWindows();
     const equations = await file.readAsString();
-    await this.saveModelToRecent(file.fullPath, true);
+
+    if (file.fullPath.includes(PATH.SLASH)) // Check that current file is from platform files, not drag-n-dropped
+      await this.saveModelToRecent(file.fullPath, true);
+
     this.createEditorView(equations);
 
     this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
