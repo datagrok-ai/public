@@ -1881,7 +1881,7 @@ export class DiffStudio {
           grok.shell.addView(await solver.runSolverApp(
             equations,
             undefined,
-            `f/${file.fullPath.replace(':', '.')}`,
+            `file/${file.fullPath.replace(':', '.')}`,
           ) as DG.TableView);
 
           await this.saveModelToRecent(path, true);
@@ -2022,6 +2022,17 @@ export class DiffStudio {
           try {
             const equations = await file.readAsString();
             await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+            // const equations = await file.readAsString();
+
+            // const solver = new DiffStudio(false);
+            // grok.shell.addView(await solver.runSolverApp(
+            //   equations,
+            //   undefined,
+            //   `file/${file.fullPath.replace(':', '.')}`,
+            // ) as DG.TableView);
+
+            // await this.saveModelToRecent(path, true);
+
             await this.saveModelToRecent(path, true);
           } catch (err) {
             grok.shell.warning(`File not found: ${path}`);
