@@ -91,8 +91,15 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   } else
     path = window.location.href;
 
-  const solver = new DiffStudio(false, true, true);
-  return await solver.getFilePreview(file, path);
+  const proxiView = DG.View.create();
+
+  setTimeout(async () => {
+    proxiView.close();
+    const solver = new DiffStudio(false, true, true);
+    grok.shell.addPreview(await solver.getFilePreview(file, path));
+  }, 1000);
+
+  return proxiView;
 }
 
 //input: dynamic treeNode
