@@ -75,17 +75,16 @@ export async function runDiffStudioDemo(): Promise<void> {
   await solver.runSolverDemoApp();
 }
 
-//name: previewFoo
-//tags: fileViewer
-//meta.fileViewer: foo
-//input: file file
-//output: view preview
-export async function previewFoo(file: DG.FileInfo): Promise<DG.View> {
-  console.log('Foo files preview');
-  const content = await file.readAsString();
-  const view = DG.View.create();
-  view.append(ui.divText(content));
-  return view;
+//name: ivpFileHandler
+//tags: file-handler
+//input: string content
+//output: list tables
+//meta.ext: ivp
+export async function ivpFileHandler(content: string) {
+  const solver = new DiffStudio();
+  await solver.runSolverApp(content);
+
+  return [];
 }
 
 //name: previewIvp
