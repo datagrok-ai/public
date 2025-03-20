@@ -749,9 +749,7 @@ export class TestTrack extends DG.ViewBase {
               'name': 'Bug',
             },
             'labels': [
-              'TestTrack',
-              errorSeverityLevelJiraNames[errorTypeSelector.value],
-              this.version
+              'TestTrack'
             ],
             'priority': {
               'name': ticketPriorityLevel[errorTypeSelector.value]
