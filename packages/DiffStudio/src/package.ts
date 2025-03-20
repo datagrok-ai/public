@@ -44,8 +44,15 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //output: view v
 //meta.browsePath: Compute
 export async function runDiffStudio(): Promise<DG.ViewBase> {
-  const solver = new DiffStudio(false);
-  return await solver.runSolverApp();
+  const proxiView = DG.View.create();
+
+  setTimeout(async () => {
+    proxiView.close();
+    const solver = new DiffStudio(false);
+    grok.shell.addPreview(await solver.runSolverApp());
+  }, 1000);
+
+  return proxiView;
 }
 
 //name: Diff Studio Demo

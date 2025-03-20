@@ -458,8 +458,6 @@ export class DiffStudio {
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
 
-  private isAppRun: boolean = false;
-
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
     // this.solverView = toAddTableView ?
@@ -827,7 +825,7 @@ export class DiffStudio {
 
     // set path
     //this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
-    this.solverMainPath = `${this.isAppRun ? '' : PATH.APPS_DS}${stateToPath(state)}`;
+    this.solverMainPath = `${PATH.APPS_DS}${stateToPath(state)}`;
 
     // save model to recent
 
@@ -909,22 +907,8 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath) {
-        this.solverView.path = `${this.isAppRun ?
-          '' :
-          this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
-      }
-
-      const firstIdx = this.solverView.path.indexOf(PATH.APPS_DS);
-      const lastIdx = this.solverView.path.lastIndexOf(PATH.APPS_DS);
-
-      console.log(firstIdx, '  ', lastIdx);
-
-      if (firstIdx < lastIdx) {
-        console.log(this.solverView.path.slice(lastIdx));
-        this.solverView.path = this.solverView.path.slice(lastIdx);
-        console.log(this.solverView.path);
-      }
+      // if (this.toChangePath)
+      //   this.solverView.path = `${this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -2064,7 +2048,6 @@ export class DiffStudio {
   /** Run last called model */
   private async runLastCalledModel() {
     const lastModel = await this.getLastCalledModel();
-    this.isAppRun = true;
 
     if (lastModel.isCustom) {
       const equations = await getEquationsFromFile(lastModel.info);
