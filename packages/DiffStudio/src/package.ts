@@ -10,6 +10,7 @@ import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 import {DF_NAME} from './constants';
+import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
 
@@ -61,7 +62,7 @@ export async function runDiffStudio(): Promise<DG.ViewBase> {
 
     if (view !== null)
       grok.shell.addPreview(view);
-  }, 1000);
+  }, UI_TIME.APP_RUN_SOLVING);
 
   return proxiView;
 }
@@ -107,7 +108,7 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
     proxiView.close();
     const solver = new DiffStudio(false, true, true);
     grok.shell.addPreview(await solver.getFilePreview(file, path));
-  }, 1000);
+  }, UI_TIME.PREVIEW_RUN_SOLVING);
 
   return proxiView;
 }

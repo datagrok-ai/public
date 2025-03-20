@@ -243,7 +243,7 @@ export class DiffStudio {
     this.toChangePath = true;
 
     setTimeout(async () => {
-      if (content) {
+      if (content) { // Solve equations passed to the solver
         this.fromFileHandler = true;
 
         if (path) {
@@ -252,20 +252,20 @@ export class DiffStudio {
         } else
           this.entityPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
         await this.runSolving();
-      } else if (state) {
+      } else if (state) { // Set the passed state
         this.inBrowseRun = true;
         await this.setState(state);
-      } else {
+      } else { // Process starting URL
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
-        if (paramsIdx > -1) {
+        if (paramsIdx > -1) { // There are parameters in URL
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
-          if (MODELS.includes(model)) {
+          if (MODELS.includes(model)) { // Check & run built-in model
             this.startingInputs = new Map<string, number>();
 
-            if (modelIdx < paramsIdx) {
+            if (modelIdx < paramsIdx) { // Check correctness of URL & extract inputs
               try {
                 this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
                   const eqIdx = equality.indexOf(PATH.EQ);
@@ -277,23 +277,22 @@ export class DiffStudio {
             }
 
             await this.setState(model as EDITOR_STATE, false);
-          } else
+          } else // Unknown model, run last called model
             await this.runLastCalledModel();
-        } else {
+        } else { // Check folder with models
           const folderName = this.startingPath.slice(modelIdx);
           const node = this.appTree.items.find((node) => node.text === folderName);
 
-          if (node !== undefined) {
+          if (node !== undefined) { // Folder exists
             setTimeout(() => {
               node.root.click();
               this.solverView.close();
             }, UI_TIME.SWITCH_TO_FOLDER);
-          } else
+          } else // Run last called model
             await this.runLastCalledModel();
         }
       }
-    },
-    UI_TIME.APP_RUN_SOLVING);
+    }, UI_TIME.APP_RUN_SOLVING);
 
     return this.solverView;
   } // runSolverApp
@@ -302,12 +301,7 @@ export class DiffStudio {
   public async runSolverDemoApp(): Promise<void> {
     this.createEditorView(DEMO_TEMPLATE);
     closeWindows();
-
-    this.solverView.setRibbonPanels([
-      [this.openComboMenu, this.addNewWgt],
-      [this.refreshWgt, this.exportToJsWgt, this.openHelpInNewTabIcon, this.fittingWgt, this.sensAnWgt],
-      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
-    ]);
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
 
     this.toChangePath = false;
@@ -332,11 +326,13 @@ export class DiffStudio {
 
     this.createEditorView(equations);
 
+    // Set the "model from file" routing
     this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
     this.entityPath = '';
 
     this.toChangePath = true;
 
+    /** Save change button */
     const saveBtn = ui.button(TITLE.SAVE, async () => {
       const source = new DG.FileSource();
 
@@ -358,7 +354,7 @@ export class DiffStudio {
 
     this.updateRibbonWgts();
 
-    // routing
+    // Process URL & extract input values
     const paramsIdx = path.indexOf(PATH.PARAM);
     if (paramsIdx > -1) {
       try {
@@ -409,7 +405,7 @@ export class DiffStudio {
     }, UI_TIME.APP_RUN_SOLVING);
   } // handleContent
 
-  /** */
+  /** Set starting pass */
   public setStartingPath(path: string): void {
     this.startingPath = path;
   }
@@ -480,9 +476,6 @@ export class DiffStudio {
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
-    // this.solverView = toAddTableView ?
-    //   grok.shell.addTableView(this.solutionTable) :
-    //   DG.TableView.create(this.solutionTable, false);
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView)
       grok.shell.addPreview(this.solverView);
@@ -785,7 +778,7 @@ export class DiffStudio {
     const modelCode = this.editorView!.state.doc.toString();
     const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
     const login = grok.shell.user.project.name;
-    const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
+    const folder = login.charAt(0).toUpperCase() + login.slice(1) + `:${PATH.HOME}/`;
     const files = await grok.dapi.files.list(folder);
 
     // get model file names in from the user's folder
@@ -1099,6 +1092,7 @@ export class DiffStudio {
     }
 
     form.style.overflowY = 'hidden';
+    form.style.height = '100%';
 
     return form;
   } // getInputsForm
@@ -1524,7 +1518,6 @@ export class DiffStudio {
     };
     const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
 
-    //@ts-ignore
     maxTimeInput.onInput.subscribe(() => {
       if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
         this.secondsLimit = maxTimeInput.value;
@@ -1577,7 +1570,7 @@ export class DiffStudio {
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.project.name}:Home/`;
+        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1678,13 +1671,13 @@ export class DiffStudio {
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
-    const folder = `${grok.shell.user.project.name}:Home/`;
+    const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
     const files = await grok.dapi.files.list(folder);
     const names = files.map((file) => file.name);
     const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
 
     try {
-      if (names.includes(PATH.RECENT)) { // a file with reccent models exists
+      if (names.includes(PATH.RECENT)) { // a file with recent models exists
         const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
         const recentDf = dfs[0];
 
@@ -1772,7 +1765,7 @@ export class DiffStudio {
       const view = DG.View.create();
 
       try {
-        const folder = `${grok.shell.user.project.name}:Home/`;
+        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1903,7 +1896,7 @@ export class DiffStudio {
     const lastModel: LastModel = {info: TITLE.BASIC, isCustom: false};
 
     try {
-      const folder = `${grok.shell.user.project.name}:Home/`;
+      const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
       const files = await grok.dapi.files.list(folder);
       const names = files.map((file) => file.name);
 
