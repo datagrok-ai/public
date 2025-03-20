@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/gis",
   "friendlyName": "GIS",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "category": "Visualizations",
   "author": {
     "name": "Dmytro Kovalyov",
@@ -25,7 +25,9 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@types/d3": "^7.4.3",
+    "@types/topojson-specification": "^1.0.5"
   },
   "scripts": {
     "link-all": "",
