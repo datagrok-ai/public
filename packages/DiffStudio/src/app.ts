@@ -255,9 +255,9 @@ export class DiffStudio {
 
         if (path) {
           this.isRecentRun = true;
-          this.solverMainPath = path;
+          this.entityPath = path;
         } else
-          this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
+          this.entityPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
         await this.runSolving();
       } else if (state) {
         this.inBrowseRun = true;
@@ -335,7 +335,8 @@ export class DiffStudio {
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations);
 
-    this.solverView.basePath = `file/${file.fullPath.replace(':', '.')}`;
+    this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
+    this.entityPath = '';
 
     this.toChangePath = true;
 
@@ -353,11 +354,10 @@ export class DiffStudio {
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
 
-    this.solverView.setRibbonPanels([
-      [this.openComboMenu, this.addNewWgt],
-      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.downLoadIcon, this.appStateInputWgt, saveBtn],
-    ]);
+    const panels = this.getRibbonPanels();
+    panels[panels.length - 1].push(saveBtn);
+
+    this.solverView.setRibbonPanels(panels);
 
     this.updateRibbonWgts();
 
@@ -397,13 +397,32 @@ export class DiffStudio {
     return this.solverView;
   } // getFilePreview
 
+  /** Run Diff Studio with the specified content */
+  public async handleContent(content: string): Promise<void> {
+    console.log();
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
+    this.toChangePath = true;
+    this.solverView.basePath = PATH.APPS_DS;
+    this.entityPath = PATH.CUSTOM;
+
+    setTimeout(async () => {
+      await this.runSolving();
+    }, UI_TIME.APP_RUN_SOLVING);
+  } // handleContent
+
   static isStartingUriProcessed: boolean = false;
 
   private solutionTable = DG.DataFrame.create();
   private startingPath = window.location.href;
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
-  private solverMainPath: string = PATH.CUSTOM;
+
+  private entityPath: string = PATH.CUSTOM;
+  private mainPath: string = PATH.APPS_DS;
+
   private solutionViewer: DG.Viewer | null = null;
   private viewerDockNode: DG.DockNode | null = null;
   private toChangeSolutionViewerProps = false;
@@ -444,7 +463,7 @@ export class DiffStudio {
 
   private openComboMenu = this.getOpenComboMenu();
   private addNewWgt = this.getAddNewWgt();
-  private appStateInputWgt = this.getAppStateInput();
+  private appStateInputWgt = this.getEditToggle();
   private saveBtn = this.getSaveBtn();
   private downLoadIcon = this.getDownLoadIcon();
   private helpIcon = this.getHelpIcon();
@@ -510,6 +529,15 @@ export class DiffStudio {
     this.solverView.ribbonMenu = DG.Menu.create();
   }; // constructor
 
+  /** Return ribbon panels */
+  private getRibbonPanels(): HTMLElement[][] {
+    return [
+      [this.openComboMenu, this.addNewWgt],
+      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
+      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+    ];
+  } // getRibbonPanels
+
   /** Update ribbon panel widgets */
   private updateRibbonWgts() {
     this.sensAnWgt.hidden = this.isEditState;
@@ -565,8 +593,8 @@ export class DiffStudio {
     return wgt;
   }
 
-  /** Return the app state control widget */
-  private getAppStateInput(): HTMLElement {
+  /** Return the edit toggle widget */
+  private getEditToggle(): HTMLElement {
     const input = ui.input.toggle('', {value: this.isEditState});
 
     const span = ui.span([TITLE.EDIT]);
@@ -577,6 +605,8 @@ export class DiffStudio {
     ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
 
     wgt.onclick = (e) => {
+      console.log('Edit toggle clicked');
+
       e.stopImmediatePropagation();
       e.preventDefault();
 
@@ -598,7 +628,8 @@ export class DiffStudio {
     const wgt = ui.divH([ui.iconFA('plus'), span]);
     wgt.onclick = async () => {
       const solver = new DiffStudio();
-      await solver.runSolverApp(this.editorView!.state.doc.toString());
+      //await solver.runSolverApp(this.editorView!.state.doc.toString());
+      await solver.handleContent(this.editorView!.state.doc.toString());
     };
     ui.tooltip.bind(wgt, 'Open a copy of the current model in a new view');
 
@@ -691,8 +722,10 @@ export class DiffStudio {
       if (e.key !== HOT_KEY.RUN) {
         this.isModelChanged = true;
         this.toChangeInputs = true;
-        this.solverView.path = PATH.CUSTOM;
-        this.solverMainPath = PATH.CUSTOM;
+
+        if (!this.mainPath.includes(PATH.FILE))
+          this.entityPath = PATH.CUSTOM;
+
         this.startingInputs = null;
         this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
         this.isSolvingSuccess = false;
@@ -725,6 +758,8 @@ export class DiffStudio {
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         text = reader.result as string;
+        this.mainPath = PATH.APPS_DS;
+        this.entityPath = PATH.CUSTOM;
         this.setState(EDITOR_STATE.FROM_FILE, true, text);
         dlg.close();
       }, false);
@@ -824,11 +859,10 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    //this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
-    this.solverMainPath = `${PATH.APPS_DS}${stateToPath(state)}`;
+    if (state !== EDITOR_STATE.FROM_FILE)
+      this.entityPath = `${stateToPath(state)}`;
 
     // save model to recent
-
     switch (state) {
     case EDITOR_STATE.EMPTY:
       this.clearSolution();
@@ -907,8 +941,13 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      // if (this.toChangePath)
-      //   this.solverView.path = `${this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+      console.log(this.solverView.basePath);
+
+      if (this.toChangePath)
+        this.solverView.path = `${this.mainPath}${this.entityPath}${PATH.PARAM}${inputsPath}`;
+
+      // this.mainPath - file path or app/DiffStudio/...
+      // this.entityPath - nothing for files, model specification for other states
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -1622,7 +1661,7 @@ export class DiffStudio {
           grok.shell.addPreview(await solver.runSolverApp(
             equations,
             undefined,
-            `file/${file.fullPath.replace(':', '.')}`,
+            `${PATH.FILE}/${file.fullPath.replace(':', '.')}`,
           ) as DG.View);
 
           await this.saveModelToRecent(path, true);
@@ -1865,7 +1904,7 @@ export class DiffStudio {
           grok.shell.addView(await solver.runSolverApp(
             equations,
             undefined,
-            `file/${file.fullPath.replace(':', '.')}`,
+            `${PATH.FILE}/${file.fullPath.replace(':', '.')}`,
           ) as DG.TableView);
 
           await this.saveModelToRecent(path, true);
@@ -2005,6 +2044,8 @@ export class DiffStudio {
         menu.item(name, async () => {
           try {
             const equations = await file.readAsString();
+            this.mainPath = `${PATH.FILE}/${path}`;
+            this.entityPath = '';
             await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
             // const equations = await file.readAsString();
 
@@ -2059,7 +2100,7 @@ export class DiffStudio {
         });
 
         this.editorView!.setState(newState);
-        this.solverMainPath = PATH.CUSTOM;
+        this.entityPath = PATH.CUSTOM;
         await this.runSolving();
       } else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);

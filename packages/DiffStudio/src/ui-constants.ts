@@ -277,6 +277,7 @@ export enum PATH {
   MY_FILES = 'Myfiles',
   HOME = 'Home',
   SYSTEM = 'System',
+  FILE = 'file',
 };
 
 /** UI time constants */

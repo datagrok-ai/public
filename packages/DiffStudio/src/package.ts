@@ -64,16 +64,17 @@ export async function runDiffStudioDemo(): Promise<void> {
   await solver.runSolverDemoApp();
 }
 
-//name: ivpFileHandler
-//tags: file-handler
-//input: string content
-//output: list tables
-//meta.ext: ivp
-export async function ivpFileHandler(content: string) {
-  const solver = new DiffStudio();
-  await solver.runSolverApp(content);
-
-  return [];
+//name: previewFoo
+//tags: fileViewer
+//meta.fileViewer: foo
+//input: file file
+//output: view preview
+export async function previewFoo(file: DG.FileInfo): Promise<DG.View> {
+  console.log('Foo files preview');
+  const content = await file.readAsString();
+  const view = DG.View.create();
+  view.append(ui.divText(content));
+  return view;
 }
 
 //name: previewIvp
@@ -92,44 +93,6 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
 
   const solver = new DiffStudio(false, true, true);
   return await solver.getFilePreview(file, path);
-}
-
-//name: previewFoo
-//tags: fileViewer
-//meta.fileViewer: foo
-//input: file file
-//output: view preview
-export async function previewFoo(file: DG.FileInfo): Promise<DG.View> {
-  const content = await file.readAsString();
-  const view = DG.TableView.create(grok.data.demo.demog(10), false);
-  const div = ui.divV([
-    ui.divText(content),
-    ui.input.int('rows', {
-      value: 10,
-      min: 1,
-      max: 100,
-      showSlider: true,
-      onValueChanged: (val) => {
-        console.log('========================================');
-        console.log('Base path (BEFORE):', view.basePath);
-        console.log('Path (BEFORE):', view.path);
-
-        view.dataFrame = grok.data.demo.demog(val);
-
-        //view.path = `${view.basePath}?rows=${val}`;
-        view.path = `$?rows=${val}`;
-
-        console.log('Base path (AFTER):', view.basePath);
-        console.log('Path (AFTER):', view.path);
-      },
-    }),
-  ]);
-
-  setTimeout(()=>{
-    view.dockManager.dock(div, DG.DOCK_TYPE.LEFT, undefined, undefined, 0.4);
-  }, 2000);
-
-  return view;
 }
 
 //input: dynamic treeNode
