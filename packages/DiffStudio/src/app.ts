@@ -256,8 +256,6 @@ export class DiffStudio {
         this.inBrowseRun = true;
         await this.setState(state);
       } else {
-        console.log('Starting path processing:', this.startingPath);
-
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
@@ -283,12 +281,13 @@ export class DiffStudio {
             await this.runLastCalledModel();
         } else {
           const folderName = this.startingPath.slice(modelIdx);
-          await this.runLastCalledModel();
           const node = this.appTree.items.find((node) => node.text === folderName);
 
           if (node !== undefined) {
-            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
-            return DG.View.create();
+            setTimeout(() => {
+              node.root.click();
+              this.solverView.close();
+            }, UI_TIME.SWITCH_TO_FOLDER);
           } else
             await this.runLastCalledModel();
         }
@@ -418,7 +417,7 @@ export class DiffStudio {
   static isStartingUriProcessed: boolean = false;
 
   private solutionTable = DG.DataFrame.create();
-  private startingPath = window.location.href;
+  private startingPath = '';
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
 
@@ -628,7 +627,6 @@ export class DiffStudio {
     const wgt = ui.divH([ui.iconFA('plus'), span]);
     wgt.onclick = async () => {
       const solver = new DiffStudio();
-      //await solver.runSolverApp(this.editorView!.state.doc.toString());
       await solver.handleContent(this.editorView!.state.doc.toString());
     };
     ui.tooltip.bind(wgt, 'Open a copy of the current model in a new view');
@@ -2029,17 +2027,6 @@ export class DiffStudio {
             this.mainPath = `${PATH.FILE}/${path}`;
             this.entityPath = '';
             await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
-            // const equations = await file.readAsString();
-
-            // const solver = new DiffStudio(false);
-            // grok.shell.addView(await solver.runSolverApp(
-            //   equations,
-            //   undefined,
-            //   `file/${file.fullPath.replace(':', '.')}`,
-            // ) as DG.TableView);
-
-            // await this.saveModelToRecent(path, true);
-
             await this.saveModelToRecent(path, true);
           } catch (err) {
             grok.shell.warning(`File not found: ${path}`);

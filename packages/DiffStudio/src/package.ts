@@ -57,7 +57,10 @@ export async function runDiffStudio(): Promise<DG.ViewBase> {
     if (toSetStartingPath)
       solver.setStartingPath(path);
 
-    grok.shell.addPreview(await solver.runSolverApp());
+    const view = await solver.runSolverApp();
+
+    if (view !== null)
+      grok.shell.addPreview(view);
   }, 1000);
 
   return proxiView;
