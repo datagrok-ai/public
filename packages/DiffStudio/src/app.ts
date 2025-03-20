@@ -237,14 +237,7 @@ export class DiffStudio {
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     closeWindows();
     this.createEditorView(content);
-
-    const panels = [
-      [this.openComboMenu, this.addNewWgt],
-      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
-    ];
-
-    this.solverView.setRibbonPanels(panels);
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
 
     this.toChangePath = true;
@@ -263,6 +256,8 @@ export class DiffStudio {
         this.inBrowseRun = true;
         await this.setState(state);
       } else {
+        console.log('Starting path processing:', this.startingPath);
+
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
@@ -402,7 +397,6 @@ export class DiffStudio {
 
   /** Run Diff Studio with the specified content */
   public async handleContent(content: string): Promise<void> {
-    console.log();
     closeWindows();
     this.createEditorView(content);
     this.solverView.setRibbonPanels(this.getRibbonPanels());
@@ -415,6 +409,11 @@ export class DiffStudio {
       await this.runSolving();
     }, UI_TIME.APP_RUN_SOLVING);
   } // handleContent
+
+  /** */
+  public setStartingPath(path: string): void {
+    this.startingPath = path;
+  }
 
   static isStartingUriProcessed: boolean = false;
 
@@ -608,8 +607,6 @@ export class DiffStudio {
     ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
 
     wgt.onclick = (e) => {
-      console.log('Edit toggle clicked');
-
       e.stopImmediatePropagation();
       e.preventDefault();
 
@@ -944,13 +941,8 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      console.log(this.solverView.basePath);
-
       if (this.toChangePath)
         this.solverView.path = `${this.mainPath}${this.entityPath}${PATH.PARAM}${inputsPath}`;
-
-      // this.mainPath - file path or app/DiffStudio/...
-      // this.entityPath - nothing for files, model specification for other states
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;

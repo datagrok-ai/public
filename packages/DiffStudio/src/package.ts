@@ -44,11 +44,19 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //output: view v
 //meta.browsePath: Compute
 export async function runDiffStudio(): Promise<DG.ViewBase> {
+  const path = grok.shell.startUri;
+  const toSetStartingPath = (path === window.location.href);
+
   const proxiView = DG.View.create();
 
   setTimeout(async () => {
     proxiView.close();
+
     const solver = new DiffStudio(false);
+
+    if (toSetStartingPath)
+      solver.setStartingPath(path);
+
     grok.shell.addPreview(await solver.runSolverApp());
   }, 1000);
 
