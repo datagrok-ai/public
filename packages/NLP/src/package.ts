@@ -352,11 +352,9 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
     worker.onmessage = (event) => {
       const { error, embedding } = event.data;
       if (embedding) {
-        console.log("Embeddings:", embedding);
         resolve(JSON.stringify(embedding));
         worker.terminate();
       } else if (error) {
-        console.error("Error:", error);
         reject(new Error(error));
         worker.terminate();
       }
