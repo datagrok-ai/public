@@ -2,16 +2,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import AWS from 'aws-sdk';
+
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
-import '../css/stemming-search.css';
 import { SentenceSimilarityViewer } from './utils/sentence-similarity-viewer';
-import {vectorCosineDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+
+import '../css/stemming-search.css';
 
 export const _package = new DG.Package();
 
@@ -342,63 +344,32 @@ export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, me
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
 //input: list<string> sentences
-//output: string embeddings
-export async function getEmbeddings(sentences: string[]): Promise<string> {
-  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
-  
-  const body = {
-    sentences: sentences,
-  };
-
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {'Content-Type': 'application/json'},
-  });
-
-  const result = await response.json();
-  const embeddings = JSON.stringify(result.embeddings);
-  return embeddings;
-}
-
-//name: getSimilar
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-//input: string embeddingsStr
-//input: list<string> sentences
-//input: int currentRow
 //output: string result
-export async function getSimilar(embeddingsStr: string, sentences: string[], currentRow: number): Promise<string> {
-  const embeddings = JSON.parse(embeddingsStr);
-  const targetEmbedding = embeddings[currentRow];
+export async function getEmbeddings(sentences: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('minilm-feature-worker', import.meta.url));
 
-  const sentenceArr: string[] = new Array(embeddings.length - 1);
-  const distanceArr: number[] = new Array(embeddings.length - 1);
-  const indexArr: number[] = new Array(embeddings.length - 1);
+    worker.onmessage = (event) => {
+      const { error, embedding } = event.data;
+      if (embedding) {
+        console.log("Embeddings:", embedding);
+        resolve(JSON.stringify(embedding));
+        worker.terminate();
+      } else if (error) {
+        console.error("Error:", error);
+        reject(new Error(error));
+        worker.terminate();
+      }
+    };
 
-  let j = 0;
-  for (let i = 0; i < embeddings.length; i++) {
-    if (i !== currentRow) {
-      sentenceArr[j] = sentences[i];
-      distanceArr[j] = vectorCosineDistance(targetEmbedding, embeddings[i]);
-      indexArr[j] = i;
-      j++;
-    }
-  }
-  const sortedIndices = distanceArr
-    .map((dist, idx) => [dist, idx])
-    .sort((a, b) => a[0] - b[0])
-    .map(([_, idx]) => idx);
+    worker.onerror = (error) => {
+      reject(error);
+      worker.terminate();
+    };
 
-  const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('sentence', sortedIndices.map(idx => sentenceArr[idx])),
-    DG.Column.fromList(DG.TYPE.FLOAT, 'score', sortedIndices.map(idx => distanceArr[idx])),
-    DG.Column.fromList(DG.TYPE.INT, 'idx', sortedIndices.map(idx => indexArr[idx])),
-  ]);
-
-  return df.toCsv();
+    worker.postMessage({ sentences });
+  });
 }
-
 
 //name: Sentence Similarity Search
 //tags: viewer
