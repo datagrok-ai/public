@@ -250,7 +250,6 @@ export class DiffStudio {
     this.toChangePath = true;
 
     setTimeout(async () => {
-    // routing
       if (content) {
         this.fromFileHandler = true;
 
@@ -290,13 +289,13 @@ export class DiffStudio {
         } else {
           const folderName = this.startingPath.slice(modelIdx);
           await this.runLastCalledModel();
-          // const node = this.appTree.items.find((node) => node.text === folderName);
+          const node = this.appTree.items.find((node) => node.text === folderName);
 
-          // if (node !== undefined) {
-          //   setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
-          //   return DG.View.create();
-          // } else
-          //   await this.runLastCalledModel();
+          if (node !== undefined) {
+            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
+            return DG.View.create();
+          } else
+            await this.runLastCalledModel();
         }
       }
     },
@@ -459,11 +458,16 @@ export class DiffStudio {
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
 
+  private isAppRun: boolean = false;
+
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
-    this.solverView = toAddTableView ?
-      grok.shell.addTableView(this.solutionTable) :
-      DG.TableView.create(this.solutionTable, false);
+    // this.solverView = toAddTableView ?
+    //   grok.shell.addTableView(this.solutionTable) :
+    //   DG.TableView.create(this.solutionTable, false);
+    this.solverView = DG.TableView.create(this.solutionTable, false);
+    if (toAddTableView)
+      grok.shell.addPreview(this.solverView);
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
@@ -823,7 +827,7 @@ export class DiffStudio {
 
     // set path
     //this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
-    this.solverMainPath = `${PATH.APPS_DS}${stateToPath(state)}`;
+    this.solverMainPath = `${this.isAppRun ? '' : PATH.APPS_DS}${stateToPath(state)}`;
 
     // save model to recent
 
@@ -905,8 +909,22 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath)
-        this.solverView.path = `${this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+      if (this.toChangePath) {
+        this.solverView.path = `${this.isAppRun ?
+          '' :
+          this.solverView.basePath}${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+      }
+
+      const firstIdx = this.solverView.path.indexOf(PATH.APPS_DS);
+      const lastIdx = this.solverView.path.lastIndexOf(PATH.APPS_DS);
+
+      console.log(firstIdx, '  ', lastIdx);
+
+      if (firstIdx < lastIdx) {
+        console.log(this.solverView.path.slice(lastIdx));
+        this.solverView.path = this.solverView.path.slice(lastIdx);
+        console.log(this.solverView.path);
+      }
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -1521,9 +1539,7 @@ export class DiffStudio {
       this.appTree = browsing.treeNode;
     } else {
       this.browsePanel = grok.shell.browsePanel;
-
       const appsGroup = this.browsePanel.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-
       const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
       this.appTree = computeGroup.getOrCreateGroup(TITLE.DIF_ST);
     }
@@ -1732,7 +1748,7 @@ export class DiffStudio {
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
       grok.shell.addPreview(view, undefined, undefined, null);
-      view.basePath = 'browse/apps/DiffStudio/';
+      view.basePath = 'apps/DiffStudio/';
       view.path = `${title}`;
     });
 
@@ -1777,6 +1793,8 @@ export class DiffStudio {
 
         view.name = TITLE.RECENT;
         grok.shell.addPreview(view, undefined, undefined, null);
+        view.basePath = 'apps/DiffStudio/';
+        view.path = TITLE.RECENT;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
@@ -2035,6 +2053,7 @@ export class DiffStudio {
   /** Run last called model */
   private async runLastCalledModel() {
     const lastModel = await this.getLastCalledModel();
+    this.isAppRun = true;
 
     if (lastModel.isCustom) {
       const equations = await getEquationsFromFile(lastModel.info);
