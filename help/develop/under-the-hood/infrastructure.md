@@ -70,12 +70,12 @@ example [AWS EC2](https://aws.amazon.com/ec2/), on-premise Kubernetes cluster or
 for example [AWS EKS](https://aws.amazon.com/eks/), and container services in cloud provides, for
 example [AWS ECS](https://aws.amazon.com/ecs/).
 
-As [database](#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud solutions for
+As database Datagrok supports any PostgreSQL database out-of-the-box, including cloud solutions for
 PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/). We recommend to use scalable and highly
 reliable solutions for database and avoid single database instance setup to prevent datagrok internal information loss
 such as created users, created connections, etc. User data won't be affected anyhow on Datagrok database crash.
 
-For [persistent file storage](#storage) Datagrok supports Local File System, Network shares or cloud solutions, for
+For persistent file storage Datagrok supports Local File System, Network shares or cloud solutions, for
 example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage). We recommend
 to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
 information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
