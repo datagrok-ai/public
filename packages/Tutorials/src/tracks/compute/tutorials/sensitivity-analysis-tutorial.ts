@@ -85,7 +85,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     }
 
     const appView = grok.shell.view('Apps');
-    if (appView !== null)
+    if ((appView !== null) && (appView !== undefined))
       appView.close();
     
     await this.action(
