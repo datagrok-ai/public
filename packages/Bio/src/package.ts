@@ -967,20 +967,14 @@ export async function manageLibrariesApp(): Promise<DG.View> {
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode
-export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+//input: dynamic browsePanel
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
     const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
     const libNode = treeNode.item(nodeName);
     // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
     libNode.onSelected.subscribe(async () => {
-      const monomerManager = await MonomerManager.getNewInstance();
-      grok.shell.addPreview(await monomerManager.getViewRoot(libName, false));
-    });
-
-    libNode.root.addEventListener('dblclick', async (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
       const monomerManager = await MonomerManager.getInstance();
       await monomerManager.getViewRoot(libName, true);
       monomerManager.resetCurrentRowFollowing();

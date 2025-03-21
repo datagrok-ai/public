@@ -19,7 +19,7 @@
     "Developers"
   ],
   "dependencies": {
-    "datagrok-api": "^1.17.0",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5",
     "cash-dom": "^8.1.5"
   },

@@ -481,7 +481,7 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 
 //name: gisGeoJSONFileViewer
 //tags: fileViewer
-//meta.fileViewer: geojson, topojson, json
+//meta.fileViewer: geojson, topojson
 //input: file file
 //output: view result
 export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {
@@ -518,7 +518,7 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
 
 //name: gisGeoJSONFileHandler
 //tags: file-handler
-//meta.ext: geojson, topojson, json
+//meta.ext: geojson, topojson
 //input: string filecontent
 //output: list tables
 export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {

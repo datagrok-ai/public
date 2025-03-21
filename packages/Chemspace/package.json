@@ -14,8 +14,8 @@
     "directory": "packages/Chemspace"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",

@@ -1,7 +1,7 @@
 ### Adding
 1. Go to **Browse** > **Databases**.
 2. Expand the **MS SQL**.
-3. Right-click the `NorthwindTest` connection and select **Add query** from the context menu.
+3. Right-click the `NorthwindTest` connection and select **New query** from the context menu.
 4. Enter `test_query_ms_sql` to the Name field.
 5. Enter query: `select * from products`.
 6. On the top toolbar, click the **Play** button.

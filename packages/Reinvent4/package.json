@@ -9,10 +9,10 @@
   },
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.24.0",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.4.2",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "jszip": "3.10.1"
   },
   "devDependencies": {
