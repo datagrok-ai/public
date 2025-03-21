@@ -2,7 +2,7 @@
 title: "Deployment"
 ---
 
-To deploy Datagrok services, you can use [Docker containers](https://www.docker.com/resources/what-container/#:~:text=A%20Docker%20container%20image%20is,tools%2C%20system%20libraries%20and%20settings.). Datagrok consists of [core](../develop/under-the-hood/infrastructure.md#datagrok-components) containers, compute containers, a PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) to store metadata, and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) to store files.
+To deploy Datagrok services, you can use [Docker containers](https://www.docker.com/resources/what-container/#:~:text=A%20Docker%20container%20image%20is,tools%2C%20system%20libraries%20and%20settings.). Datagrok consists of [core](../develop/under-the-hood/infrastructure.md#1-core-components) containers, compute containers, a PostgreSQL database to store metadata, and [persistent file storage](../develop/under-the-hood/infrastructure.md#1-core-components) to store files.
 
 Using Docker containers, you can deploy Datagrok on many environments, such as container services in the cloud providers, for example, [AWS ECS](#aws-deployment), [Kubernetes](#kubernetes-deployment), [bare-metal machines](#regular-machine-deployment), [virtual machines](#regular-machine-deployment), and so on.
 
