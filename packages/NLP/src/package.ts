@@ -14,6 +14,7 @@ import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/const
 import { SentenceSimilarityViewer } from './utils/sentence-similarity-viewer';
 
 import '../css/stemming-search.css';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -346,13 +347,36 @@ export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, me
 //input: list<string> sentences
 //output: string result
 export async function getEmbeddings(sentences: string[]): Promise<string> {
+  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
+
+  if (!container.status.startsWith('started') && !container.status.startsWith('checking')) {
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+    await delay(5000);
+  }
+  
+  const body = {
+    sentences: sentences
+  };
+
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const result = await response.json();
+  const embeddings = JSON.stringify(result.embeddings);
+  return embeddings;
+}
+
+export async function getEmbeddingsUsingWorker(sentences: string[]) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('minilm-feature-worker', import.meta.url));
 
     worker.onmessage = (event) => {
       const { error, embedding } = event.data;
       if (embedding) {
-        resolve(JSON.stringify(embedding));
+        resolve(embedding);
         worker.terminate();
       } else if (error) {
         reject(new Error(error));

@@ -1,0 +1,13 @@
+name: myenv
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python=3.10
+  - flask
+  - flask-cors
+  - pip
+  - pip:
+    - sentence-transformers
+    - numpy

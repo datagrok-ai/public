@@ -43,33 +43,46 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
       return;
     }
 
-    this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
+    const currentRowIdx = this.dataFrame!.currentRowIdx;
+    this.curIdx = currentRowIdx === -1 ? 0 : currentRowIdx;
 
     if (computeData && !this.gridSelect) {
-      this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-
+      this.targetMoleculeIdx = currentRowIdx === -1 ? 0 : currentRowIdx;
       ui.empty(this.root);
-
       this.showSplashScreen("Getting embeddings ...");
 
       try {
         const embeddings = await grok.functions.call('NLP: getEmbeddings', { sentences: this.targetColumn.toList() });
 
         this.updateSplashScreen("Finding similar sentences...");
-        await this.compute(JSON.parse(embeddings));
+        await this.compute(JSON.parse(embeddings), computeData);
 
         const actualLimit = Math.min(this.limit, this.targetColumn!.length - 1);
-        this.idxs = DG.Column.int('indexes', actualLimit + 1).init((i) => this.indexWScore![i].idx);
-        this.scores = DG.Column.float('score', actualLimit + 1).init((i) => this.indexWScore![i].score);
-
-        this.sentenceCol = DG.Column.string(this.targetColumnName,
-          this.idxs!.length).init((i) => this.targetColumn?.get(this.idxs?.get(i)));
+        const idxsData = new Int32Array(actualLimit + 1);
+        const scoresData = new Float32Array(actualLimit + 1);
+        const sentencesData: string[] = new Array(actualLimit + 1);
+        
+        for (let i = 0; i <= actualLimit; i++) {
+          idxsData[i] = this.indexWScore![i].idx;
+          scoresData[i] = this.indexWScore![i].score;
+          sentencesData[i] = this.targetColumn?.get(idxsData[i]) || '';
+        }
+        
+        this.idxs = DG.Column.fromInt32Array('indexes', idxsData);
+        this.scores = DG.Column.fromFloat32Array('score', scoresData);
+        this.sentenceCol = DG.Column.fromStrings(this.targetColumnName, sentencesData);
         this.sentenceCol.semType = DG.SEMTYPE.TEXT;
 
-        const additionalColumns = this.additionalColumnNames ? this.additionalColumnNames.map((colName) => {
-          const col = this.dataFrame.columns.byName(colName);
-          return DG.Column.fromType(col.type, col.name, this.idxs!.length).init((i) => col.get(this.idxs!.get(i)));
-        }) : [];
+        const additionalColumns = this.additionalColumnNames
+          ? this.additionalColumnNames.reduce((acc: DG.Column[], colName: string) => {
+              if (colName !== this.targetColumnName) {
+                const col = this.dataFrame.columns.byName(colName);
+                acc.push(DG.Column.fromType(col.type, col.name, this.idxs!.length).init((i) => col.get(this.idxs!.get(i))));
+              }
+              return acc;
+            }, [])
+          : [];
+
         
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.sentenceCol!, this.scores!, ...additionalColumns]);
         resDf.onCurrentRowChanged.subscribe((_: any) => {
@@ -89,19 +102,17 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         this.updateDivInnerHTML(this.root, grid.root);
         this.computeCompleted.next(true);
       } catch (error) {
-        this.removeSplashScreen();
         this.showErrorMessage("An error occurred during the computation");
         console.error(error);
-      } finally {
-        this.removeSplashScreen();
       }
+      this.removeSplashScreen();
     }
   }
 
-  private async compute(embeddings: Array<Array<number>>) {
+  private async compute(embeddings: Array<Array<number>>, computeData: boolean) {
     const len = this.targetColumn!.length;
 
-    if (!this.knn) {
+    if (!this.knn || computeData) {
       try {
         this.knn = await multiColWebGPUKNN(
           [embeddings.map((c) => new Float32Array(c))], len - 1, [WEBGPUDISTANCE.VECTOR_COSINE], WEBGSLAGGREGATION.MANHATTAN,
@@ -116,7 +127,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
           .getKNN(embeddings, VectorMetricsNames.Cosine, len - 1));
       }
     }
-    this.indexWScore = new Array(len - 1).fill(0).map((_, i) => ({
+    this.indexWScore = Array.from({ length: len - 1 }, (_, i) => ({
       idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
       score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
     }));
@@ -138,7 +149,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   }
 
   private updateSplashScreen(message: string): void {
-    if (this.splashScreen) {
+    if (this.splashScreen && this.splashScreen.children[1]!.textContent !== message) {
       this.splashScreen.children[1]!.textContent = message;
     }
   }
