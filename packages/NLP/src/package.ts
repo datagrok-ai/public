@@ -11,10 +11,10 @@ import '../css/info-panels.css';
 import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
 import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
-import { SentenceSimilarityViewer } from './utils/sentence-similarity-viewer';
+import {SentenceSimilarityViewer} from './utils/sentence-similarity-viewer';
 
 import '../css/stemming-search.css';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -351,11 +351,11 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
 
   if (!container.status.startsWith('started') && !container.status.startsWith('checking')) {
     await grok.dapi.docker.dockerContainers.run(container.id, true);
-    await delay(5000);
+    await delay(8000);
   }
-  
+
   const body = {
-    sentences: sentences
+    sentences: sentences,
   };
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
@@ -374,7 +374,7 @@ export async function getEmbeddingsUsingWorker(sentences: string[]) {
     const worker = new Worker(new URL('minilm-feature-worker', import.meta.url));
 
     worker.onmessage = (event) => {
-      const { error, embedding } = event.data;
+      const {error, embedding} = event.data;
       if (embedding) {
         resolve(embedding);
         worker.terminate();
@@ -389,7 +389,7 @@ export async function getEmbeddingsUsingWorker(sentences: string[]) {
       worker.terminate();
     };
 
-    worker.postMessage({ sentences });
+    worker.postMessage({sentences});
   });
 }
 
@@ -404,7 +404,27 @@ export function sentenceSearchViewer() {
 //name: sentenceSearch
 //output: viewer result
 export function sentenceSearchTopMenu(): void {
-  const view = (grok.shell.v as DG.TableView);
-  const viewer = view.addViewer('Sentence Similarity Search');
-  view.dockManager.dock(viewer, 'down');
+  const view = grok.shell.tv;
+  const textColumns = view.dataFrame.columns.bySemTypeAll('Text');
+
+  const addViewer = (colName: string | null) => {
+    const viewer = view.addViewer('Sentence Similarity Search', {...(colName ? {targetColumnName: colName} : {})});
+    view.dockManager.dock(viewer, 'down');
+  };
+  if (textColumns.length === 0) {
+    grok.shell.error('No text columns found.');
+    return;
+  }
+  if (textColumns.length > 1) {
+    const selector = ui.input.column('Text Column', {
+      tooltipText: 'Select a text column to search for similar sentences', filter: (col) => col.semType === 'Text',
+      table: view.dataFrame,
+      value: textColumns[0],
+    });
+    ui.dialog('Select Text Column')
+      .add(selector)
+      .onOK(() => selector.value && addViewer(selector.value.name))
+      .show();
+  } else
+    addViewer(textColumns[0].name);
 }

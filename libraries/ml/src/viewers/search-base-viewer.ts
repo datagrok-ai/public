@@ -10,11 +10,13 @@ export class SearchBaseViewer extends DG.JsViewer {
   targetColumnName: string;
   initialized: boolean = false;
   gridSelect: boolean = false;
-
+  protected maxLimit: number = 100;
+  protected recomputeOnCurrentRowChange: boolean = true;
+  protected skipRecomputingProperies: string[] = [];
   constructor(name: string, semType: string) {
     super();
-    this.limit = this.int('limit', 10);
-    this.targetColumnName = this.string('targetColumnName');
+    this.limit = this.int('limit', 10, {min: 1, max: this.maxLimit});
+    this.targetColumnName = this.string('targetColumnName', null, {...(semType ? {semType: semType} : {})});
     this.name = name;
     this.semType = semType;
   }
@@ -43,9 +45,9 @@ export class SearchBaseViewer extends DG.JsViewer {
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe((_: any) => this.render(false)));
-      this.targetColumn = this.dataFrame.columns.bySemType(this.semType) as DG.Column<string>;
-      this.targetColumnName = this.targetColumn?.name;
-      this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
+      this.targetColumnName ??= this.dataFrame.columns.bySemType(this.semType)!.name;
+      this.targetColumn = this.dataFrame.col(this.targetColumnName)!;
+      this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
     }
     this.render();
   }
