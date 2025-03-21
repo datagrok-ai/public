@@ -819,15 +819,19 @@ export class TreeViewer extends EChartViewer {
       return;
 
     if (this.filter.trueCount >= CATEGORIES_NUMBER) {
-      this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+      this.eligibleHierarchyNames = this.hierarchyColumnNames ? this.hierarchyColumnNames.filter(
         (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-      );
+      ) : [];
     } else {
       this.eligibleHierarchyNames = this.hierarchyColumnNames;
     }
 
-    if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0)
+    if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0) {
+      utils.MessageHandler._showMessage(this.root, `The Tree viewer requires at least one categorical column with fewer than ${CATEGORIES_NUMBER} unique categories`, utils.ERROR_CLASS);
       return;
+    }
+
+    utils.MessageHandler._removeMessage(this.root, utils.ERROR_CLASS);
 
     const data = await this.getSeriesData();
     this.updateCollapsedState(data);
