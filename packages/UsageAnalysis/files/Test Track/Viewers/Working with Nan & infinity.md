@@ -10,7 +10,8 @@ x: 'height', y: 'weight',
 size: 'age',
 color: 'race',
 });
-t.col('height').getRawData()[0] = NaN; t.col('height').getRawData()[1] = Infinity;
+t.col('height').set(0, NaN); 
+t.col('weight').set(0, Infinity);
 plot.setOptions({
 showRegressionLine: true, markerType: 'square'
 });
