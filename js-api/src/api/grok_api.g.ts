@@ -1418,6 +1418,7 @@ export interface IDartApi {
   grok_FileInfo_Get_Connection(fi: any): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
+  grok_FileInfo_Get_ViewPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
   grok_FileInfo_Get_FileName(fi: any): any;
   grok_FileInfo_Get_Url(fi: any): any;
