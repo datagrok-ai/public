@@ -45,6 +45,8 @@ RUN set -ex ; \
 
 ENV PATH="/opt/conda/envs/myenv/bin:$PATH"
 
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 EXPOSE 8000

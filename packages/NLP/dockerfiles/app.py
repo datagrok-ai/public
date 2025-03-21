@@ -16,24 +16,30 @@ logging.basicConfig(
   ]
 )
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = None
 
 def get_sentence_embedding(text):
-    if not isinstance(text, str):
-        return np.zeros(384).tolist()
-    return model.encode(text).tolist()
+  if not isinstance(text, str):
+    return np.zeros(384).tolist()
+  return model.encode(text).tolist()
 
 @app.route('/get_embeddings', methods=['POST'])
 def get_embeddings():
-    data = request.json
-    sentences = data.get("sentences", [])
+  global model
+  if model is None:
+    logging.info("Loading model...")
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    logging.info("Model loaded successfully.")
 
-    if not sentences or not isinstance(sentences, list):
-        return jsonify({"error": "Invalid input. Provide a list of sentences."}), 400
+  data = request.json
+  sentences = data.get("sentences", [])
 
-    sentence_embeddings = [get_sentence_embedding(s) for s in sentences]
+  if not sentences or not isinstance(sentences, list):
+    return jsonify({"error": "Invalid input. Provide a list of sentences."}), 400
 
-    return jsonify({"embeddings": sentence_embeddings})
+  sentence_embeddings = [get_sentence_embedding(s) for s in sentences]
+
+  return jsonify({"embeddings": sentence_embeddings})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+  app.run(host='0.0.0.0', port=8000)
