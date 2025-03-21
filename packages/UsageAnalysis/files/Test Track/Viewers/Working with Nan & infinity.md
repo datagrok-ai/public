@@ -1,5 +1,5 @@
 1. SPGI_v2_infinity.csv - add viewers+layouts
-2. Run the script and add viewers+layouts
+2. Run the script and add viewers+layouts. For viewers, make sure 'height' and 'weight' columns are used
 
 
 ```js
