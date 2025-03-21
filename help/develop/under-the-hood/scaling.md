@@ -39,7 +39,6 @@ The recommended data storage engine for enterprises is S3, which is inherently s
 ### Computations
 
 CVM is used for scientific computations. For high loads, it should be deployed with the auto-scaling mode enabled.
-See [Compute Virtual Machine](infrastructure.md#compute-components) for details.
 
 ## Application
 
