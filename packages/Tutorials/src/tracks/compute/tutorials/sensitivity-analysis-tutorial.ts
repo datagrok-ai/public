@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE} from './utils';
 
 /** Monte Carlo viewers description */
 const monteCarloViewersInfo = [
@@ -83,6 +83,10 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       grok.shell.warning('Failed to open Apps');
       return;
     }
+
+    const appView = grok.shell.view('Apps');
+    if (appView !== null)
+      appView.close();
     
     await this.action(
       'Open Apps',
@@ -90,6 +94,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
+
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
     
     appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
 
