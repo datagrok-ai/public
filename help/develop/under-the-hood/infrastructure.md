@@ -54,40 +54,32 @@ There are different requirements for every component. In general:
 
 ## Deployment
 
-Datagrok is a web application, which means no deployment efforts per user once the server is set up. All following
-administration tasks could be performed via the web interface as well.
+Datagrok is a web application, which means no deployment is required per user once the server is set up. 
+All subsequent administration tasks can be performed via the web interface.
 
-Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
-internal data, and other features such as integration with the enterprise
-[authentication](../../govern/access-control/access-control.md#authentication) methods. Regarding Datagrok infrastructure it can be easily done. For
-more information check [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
-page.
+Enterprises typically prefer on-premise deployment for several reasons, including enhanced security, 
+easier access to internal data, and integration with enterprise [authentication](../../govern/access-control/access-control.md#authentication) methods. Datagrok supports this approach with minimal effort. 
+For more information, refer to the [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md).
 
-Datagrok consist of [Docker containers](https://hub.docker.com/u/datagrok) which can be installed on any platform
-including but not limited to bare-metal
-machine, on-premise virtual machine or virtual machine in cloud provider, for
-example [AWS EC2](https://aws.amazon.com/ec2/), on-premise Kubernetes cluster or Kubernetes service in cloud provider,
-for example [AWS EKS](https://aws.amazon.com/eks/), and container services in cloud provides, for
-example [AWS ECS](https://aws.amazon.com/ecs/).
+Datagrok runs as a set of [Docker containers](https://hub.docker.com/u/datagrok), which can be installed on any platform, including (but not limited to) a bare-metal machine,
+an on-premise virtual machine, or a virtual machine in a cloud provider (e.g., [AWS EC2](https://aws.amazon.com/ec2/)). It can also be deployed on an on-premise Kubernetes 
+cluster or a managed Kubernetes service such as [AWS EKS](https://aws.amazon.com/eks/), as well as on container services provided by cloud platforms, such as [AWS ECS](https://aws.amazon.com/ecs/).
 
-As database Datagrok supports any PostgreSQL database out-of-the-box, including cloud solutions for
-PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/). We recommend to use scalable and highly
-reliable solutions for database and avoid single database instance setup to prevent datagrok internal information loss
-such as created users, created connections, etc. User data won't be affected anyhow on Datagrok database crash.
+Datagrok supports any PostgreSQL-compatible database out-of-the-box, including cloud-hosted PostgreSQL solutions like AWS RDS. 
+We recommend using scalable and highly reliable database solutions and avoiding single-instance setups to prevent loss of internal Datagrok data, 
+such as created users and connections. User data will not be affected in the event of a Datagrok database failure.
 
-For persistent file storage Datagrok supports Local File System, Network shares or cloud solutions, for
-example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage). We recommend
-to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
-information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
+For persistent file storage, Datagrok supports local file systems, network shares, or cloud solutions such as [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage). 
+Again, we recommend using scalable and reliable storage solutions and avoiding local file system setups to prevent loss of internal Datagrok data, 
+including projects and settings. User data will remain unaffected in the event of storage loss.
 
-Check [How to deploy datagrok?](../../deploy/deploy.md) for details.
+For deployment instructions, refer to the guide: [How to deploy Datagrok?](../../deploy/deploy.md)
 
 ## Scalability
 
-All Docker containers are based on Ubuntu 20.04 and use the latest software available. Datagrok can be deployed in any cloud
-or on a regular machine. Components are easily scalable using cloud container services, for example [Amazon ECS](https://aws.amazon.com/ecs/),
-or [Kubernetes](https://kubernetes.io/) services. We provide full support to make application work stable under concurrent user load.
-
+All Docker containers are based on Ubuntu 20.04 and include the latest available software. Datagrok can be deployed in any cloud environment or on a physical or virtual machine. 
+The platform is highly scalable using container orchestration tools like [Amazon ECS](https://aws.amazon.com/ecs/) or [Kubernetes](https://kubernetes.io/).
+We provide full support to ensure the application runs reliably under concurrent user load.
 
 ## Useful links
 
