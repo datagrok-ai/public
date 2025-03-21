@@ -1091,7 +1091,6 @@ export class DiffStudio {
       }
     }
 
-    form.style.overflowY = 'hidden';
     form.style.height = '100%';
 
     return form;
