@@ -49,7 +49,7 @@
     "@datagrok-libraries/math": "^1.2.4",
     "@datagrok-libraries/ml": "../../libraries/ml",
     "@datagrok-libraries/tutorials": "../../libraries/tutorials",
-    "@datagrok-libraries/utils": "^4.4.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "datagrok-api": "../../js-api",
     "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
