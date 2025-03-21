@@ -15,7 +15,6 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   molCol: DG.Column | null = null;
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
-  gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
   computeCompleted = new Subject<boolean>();
   splashScreen: HTMLElement | null = null;
@@ -46,7 +45,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
     const currentRowIdx = this.dataFrame!.currentRowIdx;
     this.curIdx = currentRowIdx === -1 ? 0 : currentRowIdx;
 
-    if (computeData && !this.gridSelect) {
+    if (computeData) {
       this.targetMoleculeIdx = currentRowIdx === -1 ? 0 : currentRowIdx;
       ui.empty(this.root);
       this.showSplashScreen("Getting embeddings ...");
@@ -83,7 +82,6 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
             }, [])
           : [];
 
-        
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.sentenceCol!, this.scores!, ...additionalColumns]);
         resDf.onCurrentRowChanged.subscribe((_: any) => {
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);

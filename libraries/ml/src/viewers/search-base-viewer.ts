@@ -9,6 +9,7 @@ export class SearchBaseViewer extends DG.JsViewer {
   targetColumn?: DG.Column<string>;
   targetColumnName: string;
   initialized: boolean = false;
+  gridSelect: boolean = false;
 
   constructor(name: string, semType: string) {
     super();
@@ -34,7 +35,10 @@ export class SearchBaseViewer extends DG.JsViewer {
         .subscribe((_: any) => this.render(true)));
       const compute = this.name !== 'diversity';
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
-        .subscribe((_: any) => this.render(compute)));
+        .subscribe((_: any) => {
+          if (!this.gridSelect)
+            this.render(compute)
+        }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
