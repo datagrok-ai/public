@@ -3,7 +3,8 @@ title: "Release history"
 slug: develop/admin/releases/release-history
 position: 6 # float position is supported
 hide_search: true
-hide_sidebar: true 
+hide_sidebar: true
+unlisted: true
 ---
 
 ## Latest version
