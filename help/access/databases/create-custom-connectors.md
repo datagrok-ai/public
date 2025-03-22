@@ -1,6 +1,8 @@
 # Create custom connectors
 
-The Datagrok server uses the [Grok Connect](https://github.com/datagrok-ai/public/blob/master/connectors/README.md) service to connect and retrieve database data. You can extend Grok Connect using a [JVM language](https://www.oracle.com/technical-resources/articles/java/architect-languages.html).
+Datagrok server uses 
+[Grok Connect](https://github.com/datagrok-ai/public/blob/master/connectors/README.md) service to 
+query databases. You can extend Grok Connect by developing your own data connectors in Java.
 
 ## Adding a new connector
 
@@ -41,21 +43,7 @@ To add a new connector:
 
 3. Implement the provider:
 
-   1. Go to the _providers_ package in the _grok connect_ folder:
-
-      ```bash
-      cd public/connectors/grok_connect/src/main/java/grok_connect/providers
-      ```
-
-   2. Create a `.java` file and name using the standard naming convention. For example:
-
-      ```
-      OrientDbJdbcProvider.java
-      ```
-
-   3. In your code editor, open this JAVA file and create a Java class with the same name. Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java), which provides basic functionality for all JDBC providers. 
-
-      For our example, paste this code to your file:
+   1. Add a new connector class derived from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java):
 
       ```
       public class OrientDbJdbcProvider extends JdbcDataProvider {
@@ -66,7 +54,7 @@ To add a new connector:
 
       > Note: For simplicity, we omit all imports.
 
-   4. Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
+   2. Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
 
       ```
       driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
@@ -74,7 +62,7 @@ To add a new connector:
   
       > Note: To get the driver class name, use the documentation for your chosen JDBC driver.
 
-   5. In the constructor, configure the connection:
+   3. Configure the connection in the constructor:
 
       ```
       descriptor = new DataSource();
@@ -85,9 +73,7 @@ To add a new connector:
       descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
       ```
 
-   6. Override the `getConnectionStringImpl` method for your database.
-
-      For our example, add the following code to the class:
+   4. Specify how connection string is built by overriding the `getConnectionStringImpl` method:
 
       ```
       @Override
@@ -96,9 +82,7 @@ To add a new connector:
       }
       ```
 
-      To complete this step, you need to know how the JDBC connection string is built for your database. Refer to the appropriate documentation.
-
-   7. Register your provider class in [ProviderManager](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/utils/ProviderManager.java) by adding it to the `providersList` in the constructor.
+   5. Register your provider class in [ProviderManager](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/utils/ProviderManager.java) by adding it to the `providersList` in the constructor.
 
 4. Build Grok Connect: 
 
@@ -109,12 +93,6 @@ To add a new connector:
    ```
 
 ## Testing your connector
-
-:::info prerequisites
-
-A live instance of your chosen database.
-
-:::
 
 Testing options: 
 
