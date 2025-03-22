@@ -13,9 +13,9 @@ import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import { getMonomerLibHelper } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import { PeptideUtils } from '../peptideUtils';
-import { HelmTypes } from '@datagrok-libraries/bio/src/helm/consts';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {PeptideUtils} from '../peptideUtils';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 /**
  * Renders cell selection border.
@@ -113,22 +113,35 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.shadowBlur = 5;
   canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
-  const uniqueValues = new Set<number>();
-  const substitutions = viewer.mutationCliffs?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
-  if (substitutions !== null) {
-    for (const [key, value] of substitutions) {
-      uniqueValues.add(key);
-      for (const val of value)
-        uniqueValues.add(val);
+
+  if (viewer instanceof MonomerPosition) {
+    // in case of monomer position viewer (mutation cliffs mode), we render the number of substitution pairs
+    let substitutionParis = 0;
+    const substitutions = viewer.mutationCliffs?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
+    if (substitutions !== null) {
+      for (const [_key, value] of substitutions)
+        substitutionParis += (value.length ?? 0);
     }
+    if (substitutionParis !== 0)
+      canvasContext.fillText(substitutionParis.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
+  } else if (viewer instanceof MostPotentResidues) {
+    // in case of most potent residues viewer, we render the invariant of monomer-position. i.e. how many sequences there are with that monomer at that position
+    // same as in invariant map viewer
+    const positionStats = viewer.monomerPositionStats ?? viewer?.model?.monomerPositionStats;
+    const count = positionStats?.[currentPosition]?.[currentMonomer]?.count;
+    if (count)
+      canvasContext.fillText(count.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
   }
-  if (uniqueValues.size !== 0)
-    canvasContext.fillText(uniqueValues.size.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
 
-
-  const monomerSelection = viewer.mutationCliffsSelection[currentPosition];
-  if (monomerSelection && monomerSelection.includes(currentMonomer))
-    renderCellSelection(canvasContext, bounds);
+  if (viewer instanceof MonomerPosition) {
+    const monomerSelection = viewer.mutationCliffsSelection[currentPosition];
+    if (monomerSelection && monomerSelection.includes(currentMonomer))
+      renderCellSelection(canvasContext, bounds);
+  } else if (viewer instanceof MostPotentResidues) {
+    const monomerSelection = viewer.invariantMapSelection[currentPosition];
+    if (monomerSelection && monomerSelection.includes(currentMonomer))
+      renderCellSelection(canvasContext, bounds);
+  }
 }
 
 /**
@@ -392,20 +405,23 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
       if (monomerPosition === null) {
         if (!options.isSelectionTable && options.unhighlightCallback != null)
           options.unhighlightCallback();
-
-
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
       requestWebLogoAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
-    }
+    } else if (options.unhighlightCallback != null)
+      options.unhighlightCallback();
   };
 
   // The following events makes the barchart interactive
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseleave').subscribe(() => {
+    if (options.unhighlightCallback != null)
+      options.unhighlightCallback();
+  });
 }
 
 /**

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.21.7",
+  "version": "1.22.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -18,8 +18,8 @@
     "@datagrok-libraries/ml": "^6.8.2",
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "^4.4.0",
+    "datagrok-api": "^1.23.0",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
     "file-loader": "^6.2.0",

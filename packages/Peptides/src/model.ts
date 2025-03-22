@@ -29,6 +29,7 @@ import {
   getSelectionBitset,
   highlightMonomerPosition,
   initSelection,
+  isInDemo,
   modifySelection,
   mutationCliffsToMaskInfo,
   scaleActivity,
@@ -154,7 +155,7 @@ export class PeptidesModel {
         this._analysisView = grok.shell.addTableView(this.df);
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !grok.shell.isInDemo)
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !isInDemo())
       grok.shell.v = this._analysisView;
 
 
@@ -389,8 +390,10 @@ export class PeptidesModel {
           mpViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
         }
         const mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-        if (mprViewer != null)
+        if (mprViewer != null) {
           mprViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+          mprViewer.invariantMapSelection = initSelection(model.positionColumns!);
+        }
         const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
         if (lstViewer != null) {
           lstViewer.initClusterSelection({notify: true});
@@ -465,7 +468,7 @@ export class PeptidesModel {
       const el = ui.divText(t);
       el.innerHTML = t;
       return el;
-    }
+    };
     if (selectedClusters.length !== 0)
       selectionDescription.push(htmlTextEl(`<b>Logo Summary Table</b> clusters: ${selectedClusters}`));
 
@@ -487,7 +490,7 @@ export class PeptidesModel {
 
     // Most Potent Residues viewer selection overview
     const trueMPRViewer = trueModel.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    const selectedMPRMonomerPositions = getSelectionString(trueMPRViewer?.mutationCliffsSelection ?? {});
+    const selectedMPRMonomerPositions = getSelectionString(trueMPRViewer?.invariantMapSelection ?? {});
     if (selectedMPRMonomerPositions.length !== 0)
       selectionDescription.push(htmlTextEl(`<b>Most potent residues</b>: ${selectedMPRMonomerPositions}`));
 
@@ -703,8 +706,10 @@ export class PeptidesModel {
       colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper()),
       webLogoBounds: () => this.webLogoBounds,
       cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
-      highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
+      highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void => {
         highlightMonomerPosition(mp, df, mpStats),
+        this.isHighlighting = true;
+      },
       isSelectionTable: false,
       headerSelectedMonomers: () => this.webLogoSelectedMonomers,
     };
@@ -846,7 +851,7 @@ export class PeptidesModel {
     addMutationCliffsSelection(mpViewer?.mutationCliffsSelection ?? {}, mpViewer?.mutationCliffs ?? null);
 
     const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    addMutationCliffsSelection(mprViewer?.mutationCliffsSelection ?? {}, mprViewer?.mutationCliffs ?? null);
+    addInvariantMapSelection(mprViewer?.invariantMapSelection ?? {}, mprViewer?.monomerPositionStats ?? null);
 
     // Cluster selection
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
@@ -1177,7 +1182,7 @@ export class PeptidesModel {
     };
     const logoSummaryTable = await this.df.plot
       .fromType(VIEWER_TYPE.LOGO_SUMMARY_TABLE, viewerProperties) as LogoSummaryTable;
-    if (grok.shell.isInDemo)
+    if (isInDemo())
       this.analysisView.addViewer(logoSummaryTable);
     this.analysisView.dockManager.dock(logoSummaryTable, DG.DOCK_TYPE.RIGHT, null, VIEWER_TYPE.LOGO_SUMMARY_TABLE);
 
@@ -1219,7 +1224,7 @@ export class PeptidesModel {
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, viewerProperties) as MonomerPosition;
     // for browse mode, we need to add viewer to the analysis view before docking. remove with release of 1.25
-    if (grok.shell.isInDemo)
+    if (isInDemo())
       this.analysisView.addViewer(monomerPosition);
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
@@ -1243,7 +1248,7 @@ export class PeptidesModel {
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
-    if (grok.shell.isInDemo)
+    if (isInDemo())
       this.analysisView.addViewer(mostPotentResidues);
     const monomerPosition = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;

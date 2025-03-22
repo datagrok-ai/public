@@ -119,11 +119,11 @@ export function getActivityDistribution(
  * @return - Stats table map
  */
 export function getStatsTableMap(stats: StatsItem,
-  options: { fractionDigits?: number } = {},
+  options: { fractionDigits?: number, countName?: string } = {},
 ): StringDictionary {
   options.fractionDigits ??= 3;
   const tableMap: StringDictionary = {
-    'Count': `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
+    [options?.countName ?? 'Count']: `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
     'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
