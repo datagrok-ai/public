@@ -5,7 +5,7 @@ sidebar_position: 3
 
 [OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs, 
 allowing machines to read the document and use the service. Datagrok ingests OpenAPI specifications (v 2.x and 3.x) 
-and converts them to [functions](../datagrok/concepts/functions.md), making it easy to connect to webservices and execute queries via the
+and converts them to [functions](../datagrok/concepts/functions/functions.md), making it easy to connect to webservices and execute queries via the
 automatically built user interface.
 
 ## Connecting to a webservice
