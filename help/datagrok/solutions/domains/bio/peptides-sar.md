@@ -7,7 +7,7 @@ Datagrok provides the Peptides package to analyze peptide [structure-activity re
 From the computational and analytical point of view, peptides are an intermediate case between small molecules and
 large proteins. Analyzing peptides requires the use of different analytical methods with adequate precautions.
 
-Datagrok automatically detects peptide sequences from data and highlights hydrophobic/hydrophilic regions:
+Datagrok automatically detects biological sequences in various formats from data, highlights monomers and unlocks a toolkit for their processing:
 
 ![Representation of HELM sequence](img/helm-rendering.png)
 
@@ -19,37 +19,37 @@ options will appear. In the dialog, you can preview the composition analysis wit
 3. Choose the activity column, this can be any numeric column.
 4. Choose an activity scaling method. On the right of the inputs, you can find the distribution of the scaled
 activity.
-5. Optionally, choose a clusters column and a target column. The clusters column enables composition analysis and
-   useful statistics for each of the clusters.
+5. Optionally, choose a clusters column. The clusters column enables composition analysis and
+   useful statistics for each of the clusters. if left empty, the analysis will perform clustering based on Markov clustering algorithm.
+   Clustering parameters such as distance function and others can be configured through the dialog
 6. Click "OK" to start the analysis.
 
 ![Analyze Peptides dialog](img/analyze-peptides-dialog.png)
 
-# Analysis View
+## Analysis View
 
 The analysis view consists of 5 main parts:
 
-1. **Table view** contains sequences, activities and composition analysis.
-2. **Monomer-position viewer** is a matrix-like table with positions as columns and monomers as rows.
-The monomer-position viewer can work in two modes: Mutation Cliffs and Invariant Map.
-3. **Most Potent Residues viewer** attempts to build a sequence, using the most potent monomers for each position.
-4. **Logo Summary Table viewer** is a table with WebLogo, activity distribution and other statistics for each cluster.
-5. **Sequence Space viewer** is a scatter plot that shows embeddings of sequences.
+1. **Table view** on the top left contains split sequences at each position, activities and composition analysis on the column headers.
+2. **Sequence Variability Map viewer** on bottom left is a matrix-like table with positions as columns and monomers as rows.
+The Sequence Variability Map viewer can work in two modes: Mutation Cliffs and Invariant Map.
+3. **Most Potent Residues viewer** attempts to build a sequence, using the most potent monomers for each position based on invariance statistics.
+4. **Logo Summary Table viewer** is a table with WebLogo, activity distribution and other statistics or aggregations for each cluster.
+5. **MCL viewer** is a scatter plot that shows Markov clustering of sequences, with lines connecting similar sequences.
 
 ![Analysis view](img/analysis-view.png)
 
-## Table view
+   ### Table view
 
-The default table view contains a set of columns corresponding to the positions of sequences and a scaled activity
-column. The table contains hidden columns from the original data. Users can show, hide and reorder columns in the
-table view. Read more about column actions [here](../../../../visualize/viewers/grid.md#show-hide-or-reorder-columns).
+   The default table view contains a set of columns corresponding to the positions of sequences and a scaled activity
+   column. The table contains hidden columns from the original data. Users can show, hide and reorder columns in the
+   table view. Read more about column actions [here](../../../../visualize/viewers/grid.md#show-hide-or-reorder-columns).
 
 ![Table view](img/table-view.png)
 
 ### Monomer structure rendering
 
-The position columns contain monomers and render them according to amino acid residues classification highlighting
-hydrophobic/hydrophilic regions. You can hover over the monomer cells and the tooltip with its structure will pop up.
+The position columns contain monomers and render them according to amino acid residues from preconfigured monomer library. You can hover over the monomer cells and the tooltip with its chemical structure will pop up.
 The structure for non-natural amino acid residues is provided with a monomer library. More about the monomer library
 can be found [here](../bio/bio.md#manage-monomer-libraries).
 
