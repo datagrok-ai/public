@@ -146,7 +146,7 @@ function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: D
   const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection,
     options.peptideSelection));
   const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns),
-    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer, stats.mask.length)});
+    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, stats.mask.length)});
   const tableMap = getStatsTableMap(stats);
   const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
   const distributionRoot = getDistributionPanel(hist, resultMap, labelMap);

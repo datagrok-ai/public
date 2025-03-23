@@ -491,7 +491,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         continue;
 
 
-      const bsMask = DG.BitSet.fromBytes(bitArray.buffer.buffer, filteredDfRowCount);
+      const bsMask = DG.BitSet.fromBytes(bitArray.buffer.buffer as ArrayBuffer, filteredDfRowCount);
 
       const stats: StatsItem = isDfFiltered ? getStats(activityColData, bitArray) :
         this.clusterStats[CLUSTER_TYPE.CUSTOM][customClustCol.name];
@@ -552,7 +552,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         continue;
 
 
-      const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
+      const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer as ArrayBuffer, filteredDfRowCount);
       const stats = isDfFiltered ? getStats(activityColData, mask) :
         this.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
       for (let aggColIdx = 0; aggColIdx < aggStringColNames.length; ++aggColIdx) {
@@ -777,10 +777,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         ctrlPressed: ev.ctrlKey,
       });
       grid.invalidate();
-
-      _package.files.readAsText('help/logo-summary-table.md').then((text) => {
-        grok.shell.windows.help.showHelp(ui.markdown(text));
-      }).catch((e) => grok.log.error(e));
     });
     grid.onCellTooltip((gridCell, x, y) => {
       if (!gridCell.isTableCell) {
@@ -1003,7 +999,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       return null;
 
 
-    const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);
+    const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer as ArrayBuffer, rowCount);
     const distributionTable = getDistributionTable(activityCol, mask);
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);

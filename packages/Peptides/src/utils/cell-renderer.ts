@@ -13,7 +13,6 @@ import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {PeptideUtils} from '../peptideUtils';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 

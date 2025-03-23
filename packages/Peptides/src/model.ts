@@ -14,7 +14,6 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -790,7 +789,7 @@ export class PeptidesModel {
    * Sets tooltips to analysis grid
    */
   setTooltips(): void {
-    this.analysisView.grid.onCellTooltip((cell, x, y) => {
+    this.analysisView.grid.onCellTooltip((cell, _x, _y) => {
       if (cell.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER)
         return true;
 
@@ -862,7 +861,7 @@ export class PeptidesModel {
       }
     }
 
-    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer, combinedSelection.length);
+    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer as ArrayBuffer, combinedSelection.length);
   }
 
 

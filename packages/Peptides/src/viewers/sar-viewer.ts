@@ -572,7 +572,6 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
@@ -1008,8 +1007,6 @@ export class MonomerPosition extends SARViewer {
         }
       }
       grid.invalidate();
-
-      this.showHelp();
     });
 
     setViewerGridProps(grid);
@@ -1029,13 +1026,6 @@ export class MonomerPosition extends SARViewer {
     });
 
     return grid;
-  }
-
-  /** Shows viewer context help. */
-  showHelp(): void {
-    _package.files.readAsText('help/monomer-position.md').then((text) => {
-      grok.shell.windows.help.showHelp(ui.markdown(text));
-    }).catch((e) => grok.log.error(e));
   }
 
   /**
@@ -1074,7 +1064,6 @@ export class MonomerPosition extends SARViewer {
         invariantMapMode.value = false;
         mutationCliffsMode.value = true;
         this.mode = SELECTION_MODE.MUTATION_CLIFFS;
-        this.showHelp();
       });
       mutationCliffsMode.setTooltip('Statistically significant changes in activity');
       const invariantMapMode = ui.input.bool(SELECTION_MODE.INVARIANT_MAP, {value: this.mode === SELECTION_MODE.INVARIANT_MAP});
@@ -1082,7 +1071,6 @@ export class MonomerPosition extends SARViewer {
         mutationCliffsMode.value = false;
         invariantMapMode.value = true;
         this.mode = SELECTION_MODE.INVARIANT_MAP;
-        this.showHelp();
       });
       invariantMapMode.setTooltip('Number of sequences having monomer-position');
       const setDefaultProperties = (input: DG.InputBase): void => {
@@ -1136,7 +1124,6 @@ export class MostPotentResidues extends SARViewer {
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 
@@ -1361,10 +1348,6 @@ export class MostPotentResidues extends SARViewer {
 
       this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       grid.invalidate();
-
-      _package.files.readAsText('help/most-potent-residues.md').then((text) => {
-        grok.shell.windows.help.showHelp(ui.markdown(text));
-      }).catch((e) => grok.log.error(e));
     });
 
     setViewerGridProps(grid);
