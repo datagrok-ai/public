@@ -1,11 +1,9 @@
 import logging
 import numpy as np
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 
 app = Flask(__name__)
-CORS(app)
 
 logging.basicConfig(
   level=logging.DEBUG,
