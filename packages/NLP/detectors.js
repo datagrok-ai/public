@@ -34,6 +34,8 @@ class NlpPackageDetectors extends DG.Package {
   detectText(col) {
     if (col.type !== 'string')
       return null;
+    if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1, undefined, 0.5))
+      return null;
     const likelyTextColumnNames = ['question', 'comment', 'description', 'messige', 'text'];
     const isLikelyColumn = likelyTextColumnNames.some((name) => col.name.toLowerCase().includes(name));
     const ratio = isLikelyColumn ? 0.7 : 0.85;
