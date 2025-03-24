@@ -153,7 +153,7 @@ export abstract class BaseViewApp {
   private clearForm() {
     const secondChild = this.formContainer.children[1];
     if (secondChild) {
-      secondChild.innerHTML = '';
+      this.formContainer.removeChild(secondChild);
     } else {
       this.formContainer.innerHTML = '';
     }
