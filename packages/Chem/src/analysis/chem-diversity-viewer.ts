@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -37,16 +38,25 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         return;
       }
       let progressBar: DG.TaskBarProgressIndicator;
-      if (!this.tooltipUse)
-        progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+      try {
+        if (computeData) {
+          if (!this.tooltipUse)
+            progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
-      if (computeData) {
-        this.isComputing = true;
-        this.renderMolIds =
-          await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-            this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+          this.isComputing = true;
+          this.renderMolIds =
+            await chemDiversitySearch(
+              this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
+              this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+        }
+
+      } catch (e: any) {
+        grok.shell.error(e.message);
+        return;
+      } finally {
+        progressBar?.close();
       }
+
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
 
@@ -98,8 +108,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = ui.div(grids, { classes: 'd4-flex-wrap chem-diversity-search' });
       this.root.appendChild(ui.div(panel, { style: { margin: '5px' } }));
-      if (!this.tooltipUse)
-        progressBar!.close();
+      progressBar?.close();
     }
   }
 }
