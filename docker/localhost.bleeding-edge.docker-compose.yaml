@@ -149,13 +149,7 @@ services:
         aliases:
           - jupyter_kernel_gateway
     environment:
-      GROK_PARAMETERS: |
-        {
-          "isolatesCount": 1,
-          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"],
-          "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
-        }
+      GROK_PARAMETERS
     restart: unless-stopped
     depends_on:
       rabbitmq:

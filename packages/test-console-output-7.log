@@ -1,0 +1,126 @@
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/groups/464ff3a0-73f0-11ef-b22e-4fb1746b560f?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Pyodide/1.1.0/ksnKUx1kU5MQGc4YkM5AiKe0q8JBnTxd/2/dist/package.js
+CONSOLE LOG REQUEST: 404, https://release-ec2.datagrok.ai/api/connectors/proxy?url=https://community.datagrok.ai/latest.json
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG ERROR: Unexpected token 'N', "Not Found" is not valid JSON
+CONSOLE LOG ENTRY: Stack trace J3tWK
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 1772:17   wrapException
+	packages/$sdk/lib/convert/json.dart 494:36                          JsonDecoder.convert
+	packages/grok_shared/src/http_client/client_base.dart 12:40         GrokClientBase._getList
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 213:19  _wrapJsFunctionForAsync
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 237:5   _wrapJsFunctionForAsync.<anonymous function>
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 187:19  _awaitOnObject.<anonymous function>
+	packages/$sdk/lib/async/zone.dart 1128:37                           _rootRunUnary
+	packages/$sdk/lib/async/zone.dart 1012:12                           _CustomZone.runUnary
+	
+CONSOLE LOG ENTRY: Stack trace 9DFX1
+	packages/$sdk/lib/_internal/js_runtime/lib/core_patch.dart 680:36   StackTrace.current
+	packages/grok_shared/src/log.dart 190:40                            Logger.getCurrentStackTrace
+	packages/grok_shared/src/log.dart 130:12                            Logger.log
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 213:19  _wrapJsFunctionForAsync
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 237:5   _wrapJsFunctionForAsync.<anonymous function>
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 192:5   _awaitOnObject.<anonymous function>
+	packages/$sdk/lib/async/zone.dart 1140:37                           _rootRunBinary
+	packages/$sdk/lib/async/zone.dart 1023:12                           _CustomZone.runBinary
+	packages/$sdk/lib/async/future_impl.dart 142:14                     _FutureListener.handleError
+	packages/$sdk/lib/async/future_impl.dart 648:38                     _Future._propagateToListeners.handleError
+	
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Pyodide/1.1.0/ksnKUx1kU5MQGc4YkM5AiKe0q8JBnTxd/2/dist/package-test.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/UsageAnalysis/2.3.1.X/NnjdOttF0apdbGDdU1pBTokPWhQHxoO4/3/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/projects/recent?limit=5
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/properties/schemas?
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/images/datasets/no_picture.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/reports?limit=20&page=1&include=reporter
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/entities/picture/24bc7be0-73f0-11ef-c1aa-25a502bbd9f2
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/funcs?text=package.id%2520%253D%2520%2522c37e4e4d-e157-5735-bf9d-5b2259ea2027%2522
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started Auto Tests: Types category
+CONSOLE LOG ENTRY: Started Auto Tests: Types PyodideString
+CONSOLE LOG ENTRY: Stack trace 20d9V
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 1772:17   wrapException
+	packages/$sdk/lib/convert/json.dart 494:36                          JsonDecoder.convert
+	packages/grok_shared/src/http_client/client_base.dart 12:40         GrokClientBase._getList
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 213:19  _wrapJsFunctionForAsync
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 237:5   _wrapJsFunctionForAsync.<anonymous function>
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 187:19  _awaitOnObject.<anonymous function>
+	packages/$sdk/lib/async/zone.dart 1128:37                           _rootRunUnary
+	packages/$sdk/lib/async/zone.dart 1012:12                           _CustomZone.runUnary
+	
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Helm/2.8.1/wnaHKdZz7Enq70J6Jt4RAEpfL7hv9ix5/2/detectors.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chembl/1.2.2/2uAixIlq9eMDwaCEhRDZyh2OZV8GoSgF/2/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/SequenceTranslator/1.8.0/EFTFmEcJb8esbt1i404S0q2GYKjL5Zwp/2/detectors.js
+CONSOLE LOG REQUEST: 404, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-c2f169c2/cmTXEP5vcBZZmet0lVP2GGdJ3rB6oVEc/1/dist/package.js
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG ENTRY: Refused to execute script from 'https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/0.0.1.X-c2f169c2/cmTXEP5vcBZZmet0lVP2GGdJ3rB6oVEc/1/dist/package.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG REQUEST: 404, https://release-ec2.datagrok.ai/api/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG ENTRY: FormatException: SyntaxError: Unexpected end of JSON input
+Translating stack trace... Look below, ID = oMWVv
+CONSOLE LOG REQUEST: 404, https://release-ec2.datagrok.ai/api/packages/published/files/Curves/1.7.0.X/3P2MJ7N0gVQwt1hBaQW4UGCm8U2mlP5j/2/dist/package.js
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG ENTRY: Refused to execute script from 'https://release-ec2.datagrok.ai/api/packages/published/files/Curves/1.7.0.X/3P2MJ7N0gVQwt1hBaQW4UGCm8U2mlP5j/2/dist/package.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/codemirror/codemirror.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/PowerGrid/1.5.5/2c45VoX50mdvUaA34b8hFWehgkO9w2it/1/dist/package.js
+CONSOLE LOG ENTRY: Loading Pillow, cycler, fonttools, kiwisolver, matplotlib, matplotlib-pyodide, numpy, packaging, pandas, pyparsing, python-dateutil, pytz, six
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/codemirror/codemirror.css
+CONSOLE LOG ENTRY: Stack trace oMWVv
+	packages/$sdk/lib/_internal/js_runtime/lib/core_patch.dart 680:36  StackTrace.current
+	packages/grok_shared/src/log.dart 190:40                           Logger.getCurrentStackTrace
+	packages/grok_shared/src/log.dart 130:12                           Logger.log
+	packages/grok_shared/src/log.dart 127:7                            Logger.error
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 1521:16  Primitives.applyFunctionWithPositionalArguments
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 1489:11  Primitives.applyFunction
+	packages/$sdk/lib/js/dart2js/js_dart2js.dart 667:13                _convertDartFunctionFast
+	webpack://datagrok-api/dg.ts 63:19                                 <fn>
+	
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/DevTools/1.4.0/R1DftCwg29dDckgTsa7hzjWXFaLTcBeQ/4/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Arrow/1.2.0.X/gSCwP4lZJ3N7u677K5SABE61Ux4f5BYo/3/dist/package.js
+CONSOLE LOG ENTRY: Provider "Postgres" not found
+Translating stack trace... Look below, ID = DbCQI
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/openchemlib-full.js
+CONSOLE LOG ENTRY: Provider "Postgres" not found
+Translating stack trace... Look below, ID = 4EoLo
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chem/1.14.0/crGqe8Nyb4tlqLfw5xcuMwcrsI6TYe0P/2/dist/package.js
+CONSOLE LOG ENTRY: Loaded Pillow, cycler, fonttools, kiwisolver, matplotlib, matplotlib-pyodide, numpy, packaging, pandas, pyparsing, python-dateutil, pytz, six
+CONSOLE LOG ENTRY: Finished Auto Tests: Types PyodideString for 2193 ms
+CONSOLE LOG ENTRY: Stack trace DbCQI
+	packages/$sdk/lib/_internal/js_runtime/lib/core_patch.dart 680:36  StackTrace.current
+	packages/grok_shared/src/log.dart 190:40                           Logger.getCurrentStackTrace
+	packages/grok_shared/src/log.dart 130:12                           Logger.log
+	packages/grok_shared/src/log.dart 127:7                            Logger.error
+	packages/$sdk/lib/async/zone.dart 1140:37                          _rootRunBinary
+	packages/$sdk/lib/async/zone.dart 1023:12                          _CustomZone.runBinary
+	packages/$sdk/lib/async/future_impl.dart 142:14                    _FutureListener.handleError
+	packages/$sdk/lib/async/future_impl.dart 648:38                    _Future._propagateToListeners.handleError
+	packages/$sdk/lib/async/future_impl.dart 669:13                    _Future._propagateToListeners
+	
+CONSOLE LOG ENTRY: Stack trace 4EoLo
+	packages/$sdk/lib/_internal/js_runtime/lib/core_patch.dart 680:36      StackTrace.current
+	packages/grok_shared/src/log.dart 190:40                               Logger.getCurrentStackTrace
+	packages/grok_shared/src/log.dart 130:12                               Logger.log
+	packages/grok_shared/src/log.dart 127:7                                Logger.error
+	packages/$sdk/lib/async/zone.dart 1140:37                              _rootRunBinary
+	packages/$sdk/lib/async/zone.dart 1023:12                              _CustomZone.runBinary
+	packages/$sdk/lib/async/future_impl.dart 142:14                        _FutureListener.handleError
+	packages/$sdk/lib/async/future_impl.dart 648:38                        _Future._propagateToListeners.handleError
+	packages/$sdk/lib/async/future_impl.dart 669:13                        _Future._propagateToListeners
+	packages/$sdk/lib/async/future_impl.dart 486:5                         _Future._completeError
+	packages/$sdk/lib/async/future_impl.dart 536:7                         _Future._asyncCompleteError.<anonymous function>
+	packages/$sdk/lib/async/zone.dart 1120:12                              _rootRun
+	packages/$sdk/lib/async/zone.dart 1001:12                              _CustomZone.run
+	packages/$sdk/lib/async/zone.dart 928:20                               _CustomZone.bindCallback.<anonymous function>
+	packages/$sdk/lib/async/schedule_microtask.dart 41:5                   _microtaskLoop
+	packages/$sdk/lib/async/schedule_microtask.dart 50:5                   _startMicrotaskLoop
+	packages/$sdk/lib/_internal/js_runtime/lib/async_patch.dart 51:9       _AsyncRun._initializeScheduleImmediate.internalCallback
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 2456:48      invokeClosure.<anonymous function>
+	packages/$sdk/lib/_internal/js_runtime/lib/isolate_helper.dart 474:16  _IsolateContext.eval
+	packages/$sdk/lib/_internal/js_runtime/lib/isolate_helper.dart 59:16   _callInIsolate
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 2456:14      invokeClosure
+	packages/$sdk/lib/_internal/js_runtime/lib/js_helper.dart 2476:14      convertDartClosureToJS
+	
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Arrow/1.2.0.X/gSCwP4lZJ3N7u677K5SABE61Ux4f5BYo/3/dist/parquet_wasm_bg.wasm
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chem/1.14.0/crGqe8Nyb4tlqLfw5xcuMwcrsI6TYe0P/2//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG ENTRY: WebSocket connection to 'wss://release-ec2.datagrok.ai/api/connectors/preflight/stream' failed: Error during WebSocket handshake: Unexpected response code: 404
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true

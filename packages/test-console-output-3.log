@@ -1,0 +1,75 @@
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/groups/a4b45840-9a50-11e6-c537-6bf8e9ab02ee?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Pyodide/1.1.0/zGEdyZKVPx8MgBgqoVQCjyQWTSjENCfa/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/proxy?url=https://community.datagrok.ai/latest.json
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/projects/recent?limit=5
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Pyodide/1.1.0/zGEdyZKVPx8MgBgqoVQCjyQWTSjENCfa/1/dist/package-test.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/SequenceTranslator/1.8.0/FEdVnwswA3wED5GkO8SBonaPu1rdyJhD/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chembl/1.2.2/5WtJ1VhlFstvS3sy6DRLLxJyXNZTIjyg/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/projects?text=%2523demo&limit=5&include=relations.entity%2C
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/1.0.0/pri3Zncfho7zOmDOkcDzqGGa3NfR7Bdc/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/UsageAnalysis/2.3.1/A0FIEmNuqaTMDtRB53fjNwlVsit9QrUk/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/images/datasets/no_picture.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/PowerGrid/1.5.5/MBE62jXzli5kVufrTA2ZhBU6x5IoWrjb/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/entities/picture/1b7a44b0-e920-11ef-a54a-efbf9c2fc583
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/credentials/for/5965d362-ce46-5e59-8986-9152edfe200f?includeEntity=false
+CONSOLE LOG ENTRY: TypeError: Cannot read properties of undefined (reading 'parameters')
+Translating stack trace... Look below, ID = 6JAED
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/properties/schemas?
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/entities/picture/1b014420-e920-11ef-8a91-f16c3996c543
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/entities/picture/19a16600-e920-11ef-f27e-dfab73ed5fe4
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/funcs?text=package.id%2520%253D%2520%2522c37e4e4d-e157-5735-bf9d-5b2259ea2027%2522
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started Auto Tests: Types category
+CONSOLE LOG ENTRY: Started Auto Tests: Types PyodideDate
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/reports?limit=20&page=1&include=reporter
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/openchemlib-full.js
+CONSOLE LOG REQUEST: 200, https://lh3.googleusercontent.com/a/ACg8ocJPhWju4wtISgjhCfiPBVnHQnSLlY0_pYLDtURBGByPw98_F6A=s96-c
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections/System.AppData/file/Chembl%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=9
+CONSOLE LOG ENTRY: Loading Pillow, cycler, fonttools, kiwisolver, matplotlib, matplotlib-pyodide, numpy, packaging, pandas, pyparsing, python-dateutil, pytz, six
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Helm/2.8.1/wr2fLGxi8iulYUsX29w6lVsWtGi3rzFU/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/codemirror/codemirror.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Arrow/1.2.0/9f4voTI3YxMup0i3coSyZuVBuGvAqzsR/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/1.0.0/pri3Zncfho7zOmDOkcDzqGGa3NfR7Bdc/1/dist/1c6b2c88cdf173f007cc.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/js/common/codemirror/codemirror.css
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/1.0.0/pri3Zncfho7zOmDOkcDzqGGa3NfR7Bdc/1/dist/7e505dae909e20381529.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/1.0.0/pri3Zncfho7zOmDOkcDzqGGa3NfR7Bdc/1/dist/2687550222d9f7b56ceb.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Jiraconnect/1.0.0/pri3Zncfho7zOmDOkcDzqGGa3NfR7Bdc/1/dist/9f08ee9adf26bda60227.png
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/DevTools/1.4.0/OMUsmUuxYFLTvToWzKxH6dadsJ738A4k/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chem/1.14.0/4b2O6Z3DLHcrfob5WmFhtJ2j6dStIV3K/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections/0776533d-1fa6-59ee-b52f-7460503b006a/schema/columns?schema=public
+CONSOLE LOG ENTRY: Stack trace 6JAED
+	webpack://jiraconnect/src/app/credentials.ts 13:63  parameters
+	
+CONSOLE LOG ENTRY: Loaded Pillow, cycler, fonttools, kiwisolver, matplotlib, matplotlib-pyodide, numpy, packaging, pandas, pyparsing, python-dateutil, pytz, six
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Arrow/1.2.0/9f4voTI3YxMup0i3coSyZuVBuGvAqzsR/1/dist/parquet_wasm_bg.wasm
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections/0776533d-1fa6-59ee-b52f-7460503b006a/schema/relations?schema=public
+CONSOLE LOG ENTRY: CHEMBL object handlers registered
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/ApiTests/1.9.0/lc0J5VqnJNwXnOSRslCmEBPlbLEt623K/1/dist/package.js
+CONSOLE LOG ENTRY: Finished Auto Tests: Types PyodideDate for 2405 ms
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Chem/1.14.0/4b2O6Z3DLHcrfob5WmFhtJ2j6dStIV3K/1//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started Auto Tests: Types category
+CONSOLE LOG ENTRY: Started Auto Tests: Types PyodideDouble
+CONSOLE LOG ENTRY: Finished Auto Tests: Types PyodideDouble for 5 ms
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started Auto Tests: Types category
+CONSOLE LOG ENTRY: Started Auto Tests: Types PyodideEmptyDataframe
+CONSOLE LOG ENTRY: pandas already loaded from default channel
+CONSOLE LOG ENTRY: No new packages to load
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/reports/cbd793c9-ac6f-59d9-b7c4-a0802f3f9145/exists
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/connectors/connections/System.AppData/file/Pyodide%2Fempty.d42?&format=d42&flag=149
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/packages/published/files/Dbtests/1.1.3/Tc8U029AB2umKNTxx8fEv8xi9HEsWbS9/1/dist/package.js
+CONSOLE LOG ENTRY: Finished Auto Tests: Types PyodideEmptyDataframe for 1921 ms
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG REQUEST: 200, https://release-ec2.datagrok.ai/api/log/tests/package?benchmark=false&ciCd=true
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: Started Auto Tests: Types category
+CONSOLE LOG ENTRY: Started Auto Tests: Types PyodideInt
+CONSOLE LOG ENTRY: Finished Auto Tests: Types PyodideInt for 6 ms

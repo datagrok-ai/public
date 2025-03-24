@@ -4,21 +4,23 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: "Datagrok template to deploy all components to ECS Fargate in existing VPC"
 Metadata:
   AWS::CloudFormation::Interface:
+    # Groups parameters logically in the UI for better readability
     ParameterGroups:
       - Label:
           default: "Network configuration"
         Parameters:
-          - DatagrokVPC
-          - CIDR
-          - DatagrokPublicSubnet1
-          - DatagrokPublicSubnet2
-          - DatagrokPrivateSubnet1
-          - DatagrokPrivateSubnet2
-          - DatagrokDataSubnet1
-          - DatagrokDataSubnet2
-          - DatagrokS3VPCEndpoint
-          - DatagrokNatGatewayEIP
-          - InternetIngressAccess
+          - DatagrokVPC                    # The target VPC for deployment
+          - CIDR                           # The CIDR block used for VPC internal communication
+          - DatagrokPublicSubnet1          # First public subnet for Load Balancer
+          - DatagrokPublicSubnet2          # Second public subnet for Load Balancer
+          - DatagrokPrivateSubnet1         # First private subnet for app components
+          - DatagrokPrivateSubnet2         # Second private subnet for app components
+          - DatagrokDataSubnet1            # First data subnet for database
+          - DatagrokDataSubnet2            # Second data subnet for database
+          - DatagrokS3VPCEndpoint          # Optional: VPC Endpoint for S3 access
+          - DatagrokNatGatewayEIP          # Optional: EIP for NAT Gateway
+          - InternetIngressAccess          # Boolean: allow access from the internet
+    # Labels for each parameter shown in the CloudFormation Console
     ParameterLabels:
       DatagrokVPC:
         default: "VPC"
@@ -44,11 +46,17 @@ Metadata:
         default: "InternetIngressAccess: Access from internet"
       #      InternetEgressAccess:
       #        default: "InternetEgressAccess: Access to internet"
+  # Disable some warnings from the CloudFormation linter
   cfn-lint:
     config:
       ignore_checks:
         - W8001
         - W8003
+
+# ====================
+# Parameters Section
+# ====================
+# User-provided values to customize the stack
 Parameters:
   DatagrokVPC:
     Type: AWS::EC2::VPC::Id
@@ -97,27 +105,40 @@ Parameters:
   #      - 'true'
   #      - 'false'
   #    Description: Do you want Datagrok to be able to access internet? The access will be created using NAT Gateway. Either access to the internet from Datagrok or configured proxy are required to install Datagrok packages (https://datagrok.ai/help/develop#packages).
+
+# ====================
+# Conditions Section
+# ====================
 Conditions:
+  # Enables resources that depend on public access
   InternetIngressAccess:
     Fn::Equals:
       - Ref: InternetIngressAccess
       - 'true'
+  # Placeholder for future Internet Egress flag (currently hardcoded as true)
   InternetEgressAccess:
     Fn::Equals:
       #      - Ref: InternetEgressAccess
       - 'true'
       - 'true'
+  # Placeholder condition to determine whether to create a VPC or use existing
   CreateVPC:
     Fn::Equals:
       - 'choose'
       - 'create'
+  # Only use VPC endpoint if it was provided
   UseVPCEndpoint:
     Fn::Not:
       - Fn::Equals:
           - Ref: DatagrokS3VPCEndpoint
           - ''
+
+# ====================
+# Rules Section
+# ====================
 Rules:
   SubnetsInVPC:
+    # Validates that all subnets belong to the provided VPC
     Assertions:
       - Assert:
           'Fn::EachMemberEquals':
@@ -141,6 +162,7 @@ Rules:
                   - VpcId
             - Ref: DatagrokVPC
         AssertDescription: All subnets must in the VPC
+      # Validates that subnets are unique
       - Assert:
           Fn::Not:
             - Fn::Equals:
@@ -160,10 +182,12 @@ Rules:
                 - Ref: DatagrokPublicSubnet2
         AssertDescription: Public subnets must be unique
   InternetIngressAccess:
+    # Additional validation if internet access is enabled
     RuleCondition:
       Fn::Equals:
         - Ref: InternetIngressAccess
         - 'true'
+    # Ensure public and private subnets are not the same
     Assertions:
       - Assert:
           Fn::Not:
@@ -189,7 +213,12 @@ Rules:
                 - Ref: DatagrokPublicSubnet2
                 - Ref: DatagrokPrivateSubnet1
         AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet1 match)
+
+# ====================
+# Resources Section
+# ====================
 Resources:
+  # Placeholder handles for wait conditions if VPC is being created dynamically
   DatagrokPrivateSubnetRouteAssos1:
     Type: AWS::CloudFormation::WaitConditionHandle
     Condition: CreateVPC

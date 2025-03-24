@@ -1,5 +1,10 @@
 ---
+# Specifies the version of the AWS CloudFormation template format being used.
 AWSTemplateFormatVersion: '2010-09-09'
+
+
+# 'Mappings' section is used to define key-value pairs that can be reused throughout the template.
+# Useful for separating environment- or region-specific values (e.g., AMI IDs, Docker image repositories, etc.).
 Mappings:
   Images:
     Datagrok:

@@ -23,6 +23,10 @@ Metadata:
       ignore_checks:
         - W8001
         - W8003
+
+# ====================
+# Parameters
+# ====================
 Parameters:
   CIDR:
     Type: String
@@ -43,6 +47,10 @@ Parameters:
   #      - 'true'
   #      - 'false'
   #    Description: Do you want Datagrok to be able to access internet? The access will be created using NAT Gateway. Either access to the internet from Datagrok or configured proxy are required to install Datagrok packages (https://datagrok.ai/help/develop#packages).
+
+# ====================
+# Conditions
+# ====================
 Conditions:
   InternetIngressAccess:
     Fn::Equals:
@@ -65,7 +73,13 @@ Conditions:
     Fn::Equals:
       - 'create'
       - 'create'
+
+# ====================
+# Resources
+# ====================
 Resources:
+
+  # Main Virtual Private Cloud for Datagrok
   DatagrokVPC:
     Properties:
       CidrBlock:
@@ -80,6 +94,8 @@ Resources:
         - Key: datagrok.component
           Value: common
     Type: AWS::EC2::VPC
+
+  # Internet Gateway for internet access (ingress/egress)
   DatagrokInternetGateway:
     Condition: CreatePublicSubnets
     Type: AWS::EC2::InternetGateway
@@ -90,6 +106,8 @@ Resources:
             Fn::Sub: "${AWS::StackName} Datagrok Internet Gateway"
         - Key: datagrok.component
           Value: common
+
+  # Attach the Internet Gateway to the VPC
   DatagrokInternetGatewayAttach:
     Condition: CreatePublicSubnets
     Type: AWS::EC2::VPCGatewayAttachment
