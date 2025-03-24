@@ -362,7 +362,7 @@ export async function _demoChemicalSpace(): Promise<void> {
   await project.open();
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space');
   grok.functions.call('Dendrogram:HierarchicalClustering', {
-    df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo).dataFrame,
+    df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
     colNameList: ['molecule'],
     distance: 'euclidian',
     linkage: 'complete'

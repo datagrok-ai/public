@@ -572,7 +572,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   allowGenerate: boolean;
   applyFilter: boolean = true;
   summary: string;
+  title: string;
   scaffoldTreeId: number = scaffoldTreeId;
+  colorColumn: DG.Column | null = null;
 
   constructor() {
     super();
@@ -628,6 +630,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
     this.summary = this.string('summary', this.getFilterSum(), {userEditable: false});
+    this.title = this.string('title', 'Scaffold Tree');
     this._initMenu();
   }
 
@@ -1432,10 +1435,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else {
       updatedTag = checkedString;
     }
-    if (this.setHighlightTag) {
+    if (this.setHighlightTag)
       this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
-      this.assignScaffoldColors();
-    }
   }
 
   assignScaffoldColors() {
@@ -1443,16 +1444,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
   
     const rowCount = this.dataFrame.rowCount;  
-    const columnName = `Scaffold color_${this.moleculeColumnName}`;
-    let colorColumn = this.dataFrame.columns.byName(columnName);
-    const isNewColumn = !colorColumn;
+    const columnName = `${this.title}_${this.moleculeColumnName}_colors`;
+    this.colorColumn = this.dataFrame.columns.byName(columnName);
+    const isNewColumn = !this.colorColumn;
     
     // First, we create an auxiliary column by prefixing its name with '~'. 
     // This prevents unintended scrolling behavior when adding the column to the DataFrame.
     // After adding the column, we remove the '~' prefix to ensure it is recognized and used in the viewers.
-    if (!colorColumn) {
-      colorColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
-      colorColumn.name = columnName;
+    if (!this.colorColumn) {
+      this.colorColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
+      this.colorColumn.name = columnName;
     }
 
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
@@ -1483,9 +1484,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     }
 
-    colorColumn.init((i) => colorBuffer[i]);
-    colorColumn.meta.colors.setCategorical(Object.fromEntries(
-      colorColumn.categories.map(value => [value, value])
+    this.colorColumn.init((i) => colorBuffer[i]);
+    this.colorColumn.meta.colors.setCategorical(Object.fromEntries(
+      this.colorColumn.categories.map(value => [value, value])
     ));
   }
   
@@ -1911,6 +1912,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateUI();
     } else if (p.name === 'allowGenerate') {
       this.toggleTreeGenerationVisibility();
+    } else if (p.name === 'title') {
+      if (this.colorColumn)
+        this.colorColumn.name = `${this.title}_${this.moleculeColumnName}_colors`;
     }
   }
 
@@ -2069,6 +2073,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.clearFilters();
     this.setScaffoldTag(this.molColumn!, [], true);
+
+    if (this.colorColumn)
+      this.dataFrame.columns.remove(this.colorColumn.name);
     super.detach();
   }
 
@@ -2088,6 +2095,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
+    this.assignScaffoldColors();
   }
 
   selectGroup(group: DG.TreeViewNode) : void {

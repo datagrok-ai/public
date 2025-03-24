@@ -37,7 +37,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         this.closeWithError('Incorrect target column type');
         return;
       }
-      let progressBar: DG.TaskBarProgressIndicator;
+      let progressBar: DG.TaskBarProgressIndicator | null = null;
       try {
         if (computeData) {
           if (!this.tooltipUse)
