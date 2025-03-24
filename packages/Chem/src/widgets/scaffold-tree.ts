@@ -1447,8 +1447,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let colorColumn = this.dataFrame.columns.byName(columnName);
     const isNewColumn = !colorColumn;
     
-    if (!colorColumn)
-      colorColumn = this.dataFrame.columns.addNewString(columnName);
+    // First, we create an auxiliary column by prefixing its name with '~'. 
+    // This prevents unintended scrolling behavior when adding the column to the DataFrame.
+    // After adding the column, we remove the '~' prefix to ensure it is recognized and used in the viewers.
+    if (!colorColumn) {
+      colorColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
+      colorColumn.name = columnName;
+    }
 
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
     if (isNewColumn && gridColorColumn)
