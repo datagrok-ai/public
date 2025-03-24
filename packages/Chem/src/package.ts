@@ -62,7 +62,7 @@ import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemOverview, _demoMMPA,
+import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -1882,6 +1882,15 @@ export async function demoRgroupAnalysis(): Promise<void> {
 export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffsLayout();
 }
+
+//name: Demo Chemical Space
+//description: Maps the dataset to 2D plot based on similarity
+//meta.demoPath: Cheminformatics | Chemical space
+//meta.demoSkip: GROK-14320
+export async function demoChemicalSpace(): Promise<void> {
+  _demoChemicalSpace();
+}
+
 
 
 //name: Demo Scaffold Tree
