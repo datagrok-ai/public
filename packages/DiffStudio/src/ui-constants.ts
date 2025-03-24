@@ -302,7 +302,7 @@ export enum METHOD {
   ROS34PRw = 'ros34prw',
 };
 
-export const DOCK_RATIO = 0.3;
+export const DOCK_RATIO = 0.2;
 
 export const MAX_RECENT_COUNT = 10;
 

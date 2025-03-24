@@ -8,7 +8,8 @@ import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
-import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
+import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim,
+  PK_PD_MODEL} from './demo-models';
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
@@ -289,4 +290,15 @@ export async function solveODE(problem: string): Promise<DG.DataFrame> {
   await call.call();
 
   return call.outputs[DF_NAME];
+}
+
+//name: PK-PD (new)
+//tags: model
+//meta.icon: files/icons/pkpd.png
+export async function pkPdNew(): Promise<void> {
+  const solver = new DiffStudio(true, undefined, undefined, undefined, {
+    tabControl: 0.17,
+    toAddFacet: false,
+  });
+  await solver.handleContent(PK_PD_MODEL);
 }

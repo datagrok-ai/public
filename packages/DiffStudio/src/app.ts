@@ -231,6 +231,12 @@ type LastModel = {
   isCustom: boolean,
 };
 
+/** Docking options */
+type DockOptions = {
+  tabControl: number,
+  toAddFacet: boolean,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -474,11 +480,15 @@ export class DiffStudio {
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
 
+  private dockOtps: DockOptions | undefined = undefined;
+
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
-    browsing?: Browsing) {
+    browsing?: Browsing, dockOptions?: DockOptions) {
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView)
       grok.shell.addPreview(this.solverView);
+
+    this.dockOtps = dockOptions;
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
@@ -504,7 +514,7 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        DOCK_RATIO,
+        (dockOptions !== undefined) ? this.dockOtps.tabControl : DOCK_RATIO,
       );
 
       if (node.container.dart.elementTitle)
