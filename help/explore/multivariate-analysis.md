@@ -98,3 +98,9 @@ Compute the predictors representation by the latent factors:
 PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)). The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates this:
 
 ![add-to-workspace](multivariate-analysis/pls_vs_pca.png)
+
+## See also
+
+* [Dimensionality reduction](dim-reduction.md)
+* [Analysis of variances](anova.md)
+* [Tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/MultivariateAnalysis)
