@@ -4,63 +4,46 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {solveDefault} from './solver-tools';
-import '../css/app-styles.css';
-import {LINK} from './ui-constants';
+import {solveDefault} from '../solver-tools';
+import '../../css/app-styles.css';
+import {LINK} from '../ui-constants';
+import {DiffStudio, UiOptions} from '../app';
 
-enum PK_PD {
-  INITIAL = 0,
-  STEP = 0.12,
-  DEPOT = 0,
-  CENTRAL = 0,
-  PERIFERAL = 0,
-  EFFECT = 1,
-};
+/** Demo model  */
+export class DemoModel {
+  private model: string;
+  private uiOptions: UiOptions;
+  private info: string;
 
-export const PK_PD_MODEL = `#name: PK-PD
-#equations:
-  d(depot)/dt = -KA * depot
-  d(centr)/dt = KA * depot - CL * C2 - Q * C2 + Q * C3
-  d(peri)/dt  = Q * C2 - Q * C3
-  d(eff)/dt  = Rate - Rate * (1 - C2/(EC50 + C2)) * eff
+  constructor(model: string, uiOptions: UiOptions, info: string) {
+    this.model = model;
+    this.uiOptions = uiOptions;
+    this.info = info;
+  }
 
-#expressions:
-  C2 = centr / V2
-  C3 = peri / V3
+  private showHelpPanel(): void {
+    grok.shell.windows.help.visible = true;
+    const helpMD = ui.markdown(this.info);
+    helpMD.classList.add('diff-studio-demo-app-div-md');
+    const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
+    grok.shell.windows.help.showHelp(divHelp);
+    grok.shell.windows.context.visible = true;
+    grok.shell.windows.showContextPanel = false;
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.help.visible = true;
+  }
 
-#output:
-  t {caption: Time [h]}
-  depot {caption: Depot}
-  centr {caption: Central}
-  peri {caption: Periferal}
-  eff {caption: Effect}
-  C2 {caption: Central concentration}
-  C3 {caption: Peripheral concentration}
+  public async run(): Promise<void> {
+    const solver = new DiffStudio(true, undefined, undefined, undefined, this.uiOptions);
+    await solver.runModel(this.model);
+  }
 
-#loop:
-  count = 10 {caption: count; category: Dosing; min: 1; max: 20} [Number of doses]
-  depot += dose
-
-#argument: t
-  start = 0 {units: h; caption: begin; category: Misc; min: 0; max: 1} [Begin of dosing interval]
-  final = 12 {units: h; caption: interval; category: Dosing; min: 5; max: 15} [End of dosing interval]
-  step = 0.2 {units: h; caption: step; category: Misc; min: 0.1; max: 2} [Time step of simulation]  
-
-#inits:  
-  depot = 0 {category: Misc}
-  centr = 0 {caption: central; category: Misc}
-  peri = 0 {caption: peripheral; category: Misc}
-  eff = 0.2 {caption: init effect; category: Misc}
-
-#parameters:  
-  dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
-  KA = 0.3 {caption: rate constant; category: PK parameters; min: 0.1; max: 1}
-  CL = 2 {caption: clearance; category: PK parameters; min: 1; max: 5}
-  V2 = 4 {caption: central volume; category: PK parameters; min: 1; max: 10} [Central compartment volume]
-  Q = 1 {caption: inter rate; category: PK parameters; min: 0.1; max: 1} [Intercompartmental rate]
-  V3 = 30 {caption: peri volume; category: PK parameters; min: 20; max: 40} [Peripheral compartment volume]
-  EC50 = 8 {caption: effect; category: PD parameters; min: 1; max: 10}
-  Rate = 0.2 {category: PD parameters; min: 0.1; max: 0.5} [Effective rate]`;
+  public async runDemo(): Promise<void> {
+    const solver = new DiffStudio(true, undefined, undefined, undefined, this.uiOptions);
+    await solver.runModel(this.model);
+    this.showHelpPanel();
+  }
+}; // DemoModel
 
 /** Return dataframe with the Bioreactor simulation */
 export function getBioreactorSim(t0: number, t1: number, h: number, FFox: number, KKox: number, FFred: number,
@@ -161,96 +144,6 @@ export function getBioreactorSim(t0: number, t1: number, h: number, FFox: number
   return solveDefault(odes);
 } // getBioreactorSim
 
-/** Return dataframe with the PK-PD simulation */
-export function getPkPdSim(dose: number, count: number, interval: number, KA: number, CL: number, V2: number, Q: number,
-  V3: number, effect: number, EC50: number): DG.DataFrame {
-  let t0 = PK_PD.INITIAL;
-  let t1 = interval;
-  const h = PK_PD.STEP;
-  let depot = PK_PD.DEPOT;
-  let centr = PK_PD.CENTRAL;
-  let peri = PK_PD.PERIFERAL;
-  let eff = PK_PD.EFFECT;
-
-  // one stage solution
-  const oneStagePkPd = (t0: number, t1: number, h: number, depot: number, centr: number,
-    peri: number, eff: number, dose: number, KA: number, CL: number, V2: number, Q: number, V3: number,
-    EC50: number, Kin: number, Kout: number) => {
-    // the problem definition
-    const odes = {
-      name: 'PK-PD',
-      arg: {name: 't', start: t0, finish: t1, step: h},
-      initial: [depot, centr, peri, eff],
-      func: (t: number, y: Float64Array, output: Float64Array) => {
-        // extract function values
-        const depot = y[0];
-        const centr = y[1];
-        const peri = y[2];
-        const eff = y[3];
-
-        // evaluate expressions
-        const C2 = centr / V2;
-        const C3 = peri / V3;
-
-        // compute output
-        output[0] = -KA * depot;
-        output[1] = KA * depot - CL * C2 - Q * C2 + Q * C3;
-        output[2] = Q * C2 - Q * C3;
-        output[3] = Kin - Kout * (1 - C2/(EC50 + C2)) * eff;
-      },
-      tolerance: 1e-9,
-      solutionColNames: ['Depot', 'Central', 'Periferal', 'Effect'],
-    }; // odes
-
-    return solveDefault(odes);
-  }; // oneStagePkPd
-
-  // solution dataframe
-  const solution = DG.DataFrame.fromColumns([
-    DG.Column.fromFloat64Array('t', new Float64Array()),
-    DG.Column.fromFloat64Array('Depot', new Float64Array()),
-    DG.Column.fromFloat64Array('Central', new Float64Array()),
-    DG.Column.fromFloat64Array('Periferal', new Float64Array()),
-    DG.Column.fromFloat64Array('Effect', new Float64Array()),
-  ]);
-
-  let lastIdx = 0;
-
-  // solve the problem
-  for (let i = 0; i < count; ++i) {
-    depot += dose;
-    solution.append(oneStagePkPd(t0, t1, h, depot, centr, peri, eff, dose, KA, CL, V2, Q, V3, EC50, effect, effect),
-      true);
-    t0 = t1;
-    t1 += interval;
-    lastIdx = solution.rowCount - 1;
-    depot = solution.get('Depot', lastIdx);
-    centr = solution.get('Central', lastIdx);
-    peri = solution.get('Periferal', lastIdx);
-    eff = solution.get('Effect', lastIdx);
-  };
-
-  solution.col('t').name = 'Time [h]';
-
-  // expressions
-  const size = solution.rowCount;
-  const centrConcRaw = new Float64Array(size);
-  const periConcRaw = new Float64Array(size);
-
-  const centRaw = solution.col('Central').getRawData();
-  const periRaw = solution.col('Periferal').getRawData();
-
-  for (let i = 0; i < size; ++i) {
-    centrConcRaw[i] = centRaw[i] / V2;
-    periConcRaw[i] = periRaw[i] / V3;
-  }
-
-  solution.columns.add(DG.Column.fromFloat64Array('Central concentration', centrConcRaw));
-  solution.columns.add(DG.Column.fromFloat64Array('Peripheral concentration', periConcRaw));
-
-  return solution;
-} // getPkPdSim
-
 /** Bioreactor demo app info for the Help panel */
 const bioreactorInfo = `# Model
 Simulation of a controlled fab-arm exchange kinetic
@@ -269,7 +162,7 @@ enables the creation of complex models without writing code.
 * [Parameter optimization](${LINK.FITTING})`;
 
 /** Show info in the Help panel */
-function showHelpPanel(info: string): void {
+export function showHelpPanel(info: string): void {
   grok.shell.windows.help.visible = true;
   const helpMD = ui.markdown(info);
   helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -284,26 +177,6 @@ function showHelpPanel(info: string): void {
 /** Show Bioreactor help panel */
 export function showBioHelpPanel() {
   showHelpPanel(bioreactorInfo);
-}
-
-/** PK-PD demo app info for the Help panel */
-const pkpdInfo = `# Model
-Simulation of a two-compartment pharmacokinetic-pharmacodynamic
-([PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)).
-# Try
-Interactive results based on input changes.
-# Performance
-Nonlinear systems of differential equations are solved within milliseconds.
-# No-code
-[Diff Studio](${LINK.DIF_STUDIO})
-enables the creation of complex models without writing code.
-# Learn more
-* [Sensitivity analysis](${LINK.SENS_AN})
-* [Parameter optimization](${LINK.FITTING})`;
-
-/** Show PK-PD help panel */
-export function showPkPdHelpPanel() {
-  showHelpPanel(pkpdInfo);
 }
 
 /** Ball flight simulation tool */

@@ -8,8 +8,8 @@ import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
-import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim,
-  PK_PD_MODEL} from './demo-models';
+import {getBioreactorSim, showBioHelpPanel, getBallFlightSim} from './demo/demo-model';
+import {PK_PD_DEMO} from './demo/pk-pd';
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
@@ -173,67 +173,6 @@ export async function demoBioreactor(): Promise<any> {
   showBioHelpPanel();
 }
 
-//name: PK-PD
-//tags: model
-//description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
-//input: double dose = 10000 {caption: dose; category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
-//input: int count = 10 {caption: count; category: Dosing; min: 1; max: 15; step: 1} [Number of doses]
-//input: double interval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 48; step: 1} [Dosing interval]
-//input: double KA = 0.3 {caption: rate constant; category: PK parameters; min: 0.1; max: 2}
-//input: double CL = 2.0 {caption: clearance; category: PK parameters; min: 1; max: 10}
-//input: double V2 = 4.0 {caption: central volume; category: PK parameters; min: 1; max: 10} [Central compartment volume]
-//input: double Q = 1.0 {caption: intercompartmental rate; category: PK parameters; min: 1; max: 10}
-//input: double V3 = 30.0 {caption: peripheral volume; category: PK parameters; min: 1; max: 40} [Peripheral compartment volume]
-//input: double eff = 0.2 {caption: effective rate; category: PD parameters; min: 0.1; max: 2} [Effective compartment rate]
-//input: double EC50 = 8.0 {caption: EC50; category: PD parameters; min: 1; max: 10} [Effect]
-//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", block: 50) | Grid(block: 50) }
-//editor: Compute:RichFunctionViewEditor
-//sidebar: @compute
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//meta.features: {"sens-analysis": true, "fitting": true}
-//meta.icon: files/icons/pkpd.png
-export function pkPd(dose: number, count: number, interval: number, KA: number, CL: number, V2: number, Q: number,
-  V3: number, eff: number, EC50: number): DG.DataFrame {
-  return getPkPdSim(dose, count, interval, KA, CL, V2, Q, V3, eff, EC50);
-}
-
-//name: PK-PD demo
-//description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
-//input: double dose = 10000 {caption: dose; category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
-//input: int count = 10 {caption: count; category: Dosing; min: 1; max: 15; step: 1} [Number of doses]
-//input: double interval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 48; step: 1} [Dosing interval]
-//input: double KA = 0.3 {caption: rate constant; category: PK parameters; min: 0.1; max: 2}
-//input: double CL = 2.0 {caption: clearance; category: PK parameters; min: 1; max: 10}
-//input: double V2 = 4.0 {caption: central volume; category: PK parameters; min: 1; max: 10} [Central compartment volume]
-//input: double Q = 1.0 {caption: intercompartmental rate; category: PK parameters; min: 1; max: 10}
-//input: double V3 = 30.0 {caption: peripheral volume; category: PK parameters; min: 1; max: 40} [Peripheral compartment volume]
-//input: double eff = 0.2 {caption: effective rate; category: PD parameters; min: 0.1; max: 2} [Effective compartment rate]
-//input: double EC50 = 8.0 {caption: EC50; category: PD parameters; min: 1; max: 10} [Effect]
-//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", block: 100)}
-//editor: Compute:RichFunctionViewEditor
-//meta.runOnOpen: true
-//meta.runOnInput: true
-export function pkPdDemo(dose: number, count: number, interval: number, KA: number, CL: number, V2: number, Q: number,
-  V3: number, eff: number, EC50: number): DG.DataFrame {
-  return getPkPdSim(dose, count, interval, KA, CL, V2, Q, V3, eff, EC50);
-}
-
-//name: PK-PD Simulation Demo
-//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//meta.demoPath: Compute | PK-PD Modeling
-//test: demoSimPKPD() //wait: 100
-export async function demoSimPKPD(): Promise<any> {
-  const doeSimpleFunc: DG.Func = await grok.functions.eval('DiffStudio:pkPdDemo');
-  const doeSimpleFuncCall = doeSimpleFunc.prepare();
-
-  const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
-  const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
-  await openModelFuncCall.call();
-
-  showPkPdHelpPanel();
-}
-
 //name: Ball flight
 //tags: model
 //description: Ball flight simulation
@@ -292,13 +231,18 @@ export async function solveODE(problem: string): Promise<DG.DataFrame> {
   return call.outputs[DF_NAME];
 }
 
-//name: PK-PD (new)
+//name: PK-PD
 //tags: model
 //meta.icon: files/icons/pkpd.png
 export async function pkPdNew(): Promise<void> {
-  const solver = new DiffStudio(true, undefined, undefined, undefined, {
-    tabControl: 0.17,
-    toAddFacet: false,
-  });
-  await solver.handleContent(PK_PD_MODEL);
+  await PK_PD_DEMO.run();
+}
+
+
+//name: PK-PD Simulation Demo
+//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
+//meta.demoPath: Compute | PK-PD Modeling
+//test: demoSimPKPD() //wait: 100
+export async function demoSimPKPD(): Promise<any> {
+  await PK_PD_DEMO.runDemo();
 }

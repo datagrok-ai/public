@@ -232,9 +232,9 @@ type LastModel = {
 };
 
 /** Docking options */
-type DockOptions = {
-  tabControl: number,
-  toAddFacet: boolean,
+export type UiOptions = {
+  inputsTabDockRatio: number,
+  graphsDockRatio: number,
 };
 
 /** Solver of differential equations */
@@ -384,7 +384,7 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        DOCK_RATIO,
+        this.uiOpts.inputsTabDockRatio,
       );
 
       if (node.container.dart.elementTitle)
@@ -405,6 +405,19 @@ export class DiffStudio {
     this.toChangePath = true;
     this.solverView.basePath = PATH.APPS_DS;
     this.entityPath = PATH.CUSTOM;
+
+    setTimeout(async () => {
+      await this.runSolving();
+    }, UI_TIME.APP_RUN_SOLVING);
+  } // handleContent
+
+  /** Run Diff Studio with the specified content */
+  public async runModel(content: string): Promise<void> {
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels([[this.fittingWgt, this.sensAnWgt]]);
+    this.updateRibbonWgts();
+    this.toChangePath = false;
 
     setTimeout(async () => {
       await this.runSolving();
@@ -480,15 +493,18 @@ export class DiffStudio {
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
 
-  private dockOtps: DockOptions | undefined = undefined;
+  private uiOpts: UiOptions;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
-    browsing?: Browsing, dockOptions?: DockOptions) {
+    browsing?: Browsing, dockOptions?: UiOptions) {
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView)
       grok.shell.addPreview(this.solverView);
 
-    this.dockOtps = dockOptions;
+    this.uiOpts = dockOptions ?? {
+      inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
+      graphsDockRatio: DOCK_RATIO.GRAPHS,
+    };
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
@@ -514,7 +530,7 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        (dockOptions !== undefined) ? this.dockOtps.tabControl : DOCK_RATIO,
+        this.uiOpts.inputsTabDockRatio,
       );
 
       if (node.container.dart.elementTitle)
@@ -1004,6 +1020,7 @@ export class DiffStudio {
           DG.DOCK_TYPE.TOP,
           this.solverView.dockManager.findNode(this.solverView.grid.root),
           TITLE.MULTI_AXIS,
+          this.uiOpts.graphsDockRatio,
         );
 
         removeTitle(this.viewerDockNode);

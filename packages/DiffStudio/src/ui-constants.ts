@@ -302,7 +302,11 @@ export enum METHOD {
   ROS34PRw = 'ros34prw',
 };
 
-export const DOCK_RATIO = 0.2;
+/** Dock ratios */
+export enum DOCK_RATIO {
+  INPUTS_TAB = 0.2,
+  GRAPHS = 0.8,
+};
 
 export const MAX_RECENT_COUNT = 10;
 
