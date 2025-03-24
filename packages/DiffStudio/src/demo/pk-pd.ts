@@ -1,3 +1,5 @@
+/** PK-PD demo model */
+
 import {LINK} from '../ui-constants';
 import {DemoModel} from './demo-model';
 
@@ -16,7 +18,7 @@ const MODEL = `#name: PK-PD
   t {caption: Time [h]}
   depot {caption: Depot}
   centr {caption: Central}
-  peri {caption: Periferal}
+  peri {caption: Peripheral}
   eff {caption: Effect}
   C2 {caption: Central concentration}
   C3 {caption: Peripheral concentration}
