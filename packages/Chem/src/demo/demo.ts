@@ -186,8 +186,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search');
 }
 
 
