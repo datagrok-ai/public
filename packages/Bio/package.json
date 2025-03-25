@@ -109,7 +109,7 @@
     "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

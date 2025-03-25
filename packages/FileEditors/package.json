@@ -47,7 +47,7 @@
     "lint-fix": "eslint src --ext .ts --fix"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

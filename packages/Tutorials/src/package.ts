@@ -124,7 +124,7 @@ export function demoApp(path?: string, filter?: string): DG.ViewBase {
 //input: dynamic treeNode
 //input: view browseView
 export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
-  new DemoView();
+  new DemoView(false);
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {

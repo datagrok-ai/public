@@ -32,7 +32,7 @@
     "release-python-release": "webpack && grok publish release --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

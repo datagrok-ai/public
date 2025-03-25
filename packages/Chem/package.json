@@ -103,7 +103,7 @@
     "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

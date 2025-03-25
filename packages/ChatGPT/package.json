@@ -28,7 +28,7 @@
     "release-chatgpt-public": "webpack && grok publish public --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

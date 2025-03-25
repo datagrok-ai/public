@@ -54,7 +54,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

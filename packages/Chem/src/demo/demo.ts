@@ -186,8 +186,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search');
 }
 
 
@@ -345,9 +344,29 @@ export async function _demoActivityCliffs(): Promise<void> {
     .start();
 }
 
-export async function _demoActivityCliffs2(): Promise<void> {
-  const p = grok.dapi.projects.filter('activity_cliffs_demo_project');
-  grok.dapi.projects.open('activity_cliffs_demo_project');
+export async function _demoActivityCliffsLayout(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:ActivityCliffsDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');
+}
+
+
+export async function _demoChemicalSpace(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:ChemicalSpaceDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space');
+  grok.functions.call('Dendrogram:HierarchicalClustering', {
+    df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
+    colNameList: ['molecule'],
+    distance: 'euclidian',
+    linkage: 'complete'
+  });
 }
 
 export async function _demoScaffoldTree(): Promise<void> {

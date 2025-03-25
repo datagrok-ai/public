@@ -76,9 +76,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.closeWithError('Incorrect target column type');
         return;
       }
-      const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
+      let progressBar: DG.TaskBarProgressIndicator | null = null;
       this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
       if (computeData && (!this.gridSelect && this.followCurrentRow || this.isEditedFromSketcher)) {
+        progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
         this.isComputing = true;
         this.error = '';
         this.root.classList.remove(`chem-malformed-molecule-error`);
@@ -104,7 +105,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grok.shell.error(e.message);
           return;
         } finally {
-          progressBar.close();
+          progressBar?.close();
         }
       } else if (this.gridSelect)
         this.gridSelect = false;
@@ -176,7 +177,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       }
       panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
       this.root.appendChild(ui.panel([ui.divV(panel)]));
-      progressBar.close();
+      progressBar?.close();
     }
   }
 }
