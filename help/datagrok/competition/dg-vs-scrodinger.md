@@ -2,7 +2,7 @@
 title: "Datagrok and Schrödinger: Which one is right for you?"
 sidebar_label: Schrödinger
 format: mdx
-unlisted: true
+unlisted: false
 ---
 
 _Physical models vs. fully immersive exploration. Deep simulations vs. connected
