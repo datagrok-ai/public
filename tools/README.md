@@ -106,7 +106,9 @@ For more information on configuring connections, refer to the [Connections](http
   (applies the same options as `create`).
 - `test` runs package tests. First, it builds a package and publishes it (these
   steps can be skipped with flags `--skip-build` and `--skip-publish`
-  correspondingly).
+  correspondingly). Also, it can be used to debug tests by using(`gui` and `debug` flags).
+- `testall` runs tests from the packages directory. It works similarly to `test`, but this function allows tests to run 
+  from different packages in a specified order.
 
   ```shell
   cd <package-name>
