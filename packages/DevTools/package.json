@@ -59,10 +59,10 @@
     "common/codemirror/codemirror.css"
   ],
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "category": "Development",
   "meta": {

@@ -68,7 +68,7 @@
     "release-nmrium-release": "webpack && grok publish release --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

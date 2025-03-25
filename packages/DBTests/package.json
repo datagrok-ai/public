@@ -41,10 +41,10 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "category": "Development",
   "repository": {
