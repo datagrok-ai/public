@@ -1108,7 +1108,7 @@ export class Grid extends Viewer<IGridSettings> {
   get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
-
+  get onTooltipCreating(): Observable<GridTooltipArgs> { return __obs('d4-grid-show-tooltip', this.dart) };
   get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
 
   /** Returns currently visible cells */
@@ -1198,6 +1198,16 @@ export class GridCellRenderArgs extends EventData {
   get bounds(): Rect {
     return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
   }
+}
+
+export class GridTooltipArgs extends EventData {
+  constructor(dart: any) {
+    super(dart);
+  }
+  preventDefault(): void {
+    api.grok_EventData_PreventDefault(this.dart);
+  }
+
 }
 
 
