@@ -103,3 +103,7 @@ Both Compute and Datagrok engines should be accessible by users.
 The easiest way is to create DNS endpoints pointing to public IPs or load balancers in front of the
 services: `datagrok.example`
 and `cvm.example`.
+
+## Useful links
+
+* [Server configuration properties](../configuration.md)
