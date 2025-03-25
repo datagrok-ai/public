@@ -151,13 +151,11 @@ export abstract class BaseViewApp {
   }
 
   private clearForm() {
-    const secondChild = this.formContainer.children[1];
-    if (secondChild) {
-      this.formContainer.removeChild(secondChild);
-    } else {
-      this.formContainer.innerHTML = '';
-    }
-  }  
+    const choiceElement = this.formContainer.querySelector('.ui-input-choice.ui-input-root');
+    this.formContainer.innerHTML = '';
+    if (choiceElement)
+      this.formContainer.appendChild(choiceElement);
+  }
 
   private async onChanged(smiles: string) {
     if (!smiles) {
