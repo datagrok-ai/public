@@ -25,9 +25,9 @@ reflecting their desktop-first origins.
 **Datagrok**, on the other hand, takes a fundamentally different approach. It's
 **designed from the ground up to be all about data — and lots of it**. As the
 **pioneer in in-memory exploratory data analytics (EDA) for life sciences**,
-Datagrok combines a [lightning-fast in-memory engine](../../develop/under-the-hood/performance.md#in-memory-database), [interactive visualizations](../../visualize/viewers/viewers.md), and [modular architecture](../../develop/under-the-hood/architecture.md) with
-offerings spanning multiple domains - from [cheminformatics](../solutions/domains/chem/chem.md) and
-[bioinformatics](../solutions/domains/bio/bio.md) to clinical and [manufacturing](../../compute/diff-studio.md).
+Datagrok combines a [lightning-fast in-memory engine](../../../develop/under-the-hood/performance.md#in-memory-database), [interactive visualizations](../../../visualize/viewers/viewers.md), and [modular architecture](../../../develop/under-the-hood/architecture.md) with
+offerings spanning multiple domains - from [cheminformatics](../../solutions/domains/chem/chem.md) and
+[bioinformatics](../../solutions/domains/bio/bio.md) to clinical and [manufacturing](../../../compute/diff-studio.md).
 
 Let's break it down.
 
@@ -108,15 +108,15 @@ bottlenecks. Infinite possibilities.
 |Category<div style={{ width:120 }}></div>| Schrödinger<div style={{ width:150 }}></div>| Datagrok<div style={{ width:100 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
 |Performance with large datasets|Optimized for complex calculations on moderate datasets|Built for interactive exploration; supports 100M rows or 100K columns in-memory|**Datagrok** for exploratory analytics|
-|Data integration|APIs and connectors available; often require scripting, version control, or IT support|Connects to any data source (databases, web services, cloud, files, drag-and-drop)<br/>[_Learn more about data access_](../../access/access.md)|**Datagrok** for seamless integration|
-|Cross-domain analysis|Primarily chemistry-focused with some biologics capabilities. Cross-domain workflows typically require custom integration work|[Natively works with multiple modalities](../../access/files/supported-formats.md) and supports cross-functional workflows and general data science|**Datagrok** for cross-domain work and collaboration|
+|Data integration|APIs and connectors available; often require scripting, version control, or IT support|Connects to any data source (databases, web services, cloud, files, drag-and-drop)<br/>[_Learn more about data access_](../../../access/access.md)|**Datagrok** for seamless integration|
+|Cross-domain analysis|Primarily chemistry-focused with some biologics capabilities. Cross-domain workflows typically require custom integration work|[Natively works with multiple modalities](../../../access/files/supported-formats.md) and supports cross-functional workflows and general data science|**Datagrok** for cross-domain work and collaboration|
 
 ### Visualization, analytics, ML
 
 |Category<div style={{ width:120 }}></div>| Schrödinger<div style={{ width:220 }}></div>| Datagrok<div style={{ width:150 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
-|Data visualization|Chemistry-focused, optional Spotfire; separate tools|Integrated, [high-performance scientific viewers](../../visualize/viewers/viewers.md) optimized for analyzing large datasets|Tie.<br/><br/>**Datagrok** for breadth and power<br/>**Schrödinger** (PyMOL) for structural visualizations|
-|AI/ML<br/>Predictive modeling|External models via scripting|[Built-in ML and compute tools](../../learn/learn.md), no-code modeling; external models via scripting or [MLFlow integration](../../learn/mlflow.md); classical models (e.g., XGBoost); ChemProp for molecules |Comparable, different strengths.<br/><br/>**Schrödinger** for proprietary models<br/>**Datagrok** for flexibility, integrations, and interactive modeling|
+|Data visualization|Chemistry-focused, optional Spotfire; separate tools|Integrated, [high-performance scientific viewers](../../../visualize/viewers/viewers.md) optimized for analyzing large datasets|Tie.<br/><br/>**Datagrok** for breadth and power<br/>**Schrödinger** (PyMOL) for structural visualizations|
+|AI/ML<br/>Predictive modeling|External models via scripting|[Built-in ML and compute tools](../../../learn/learn.md), no-code modeling; external models via scripting or [MLFlow integration](../../../learn/mlflow.md); classical models (e.g., XGBoost); ChemProp for molecules |Comparable, different strengths.<br/><br/>**Schrödinger** for proprietary models<br/>**Datagrok** for flexibility, integrations, and interactive modeling|
 
 ### Scientific capabilities
 
@@ -125,7 +125,7 @@ bottlenecks. Infinite possibilities.
 |Comp. chemistry depth|Industry-leading QM, FEP+, etc.|Integrates RDKit and open-source tools|**Schrödinger** for advanced modeling|
 |Physics-based  molecular modeling|Physics-based suite|Integrates with third-party modeling|**Schrödinger** for structure-based modeling|
 |Structure-based design (SBDD)|Advanced docking and scoring|AutoDock, REINVENT4, Boltz-1 integration|**Schrödinger** for SBDD|
-|Cheminformatics|Canvas integrated into Maestro and LiveDesign; command-line tools & descriptors|RDKit-powered [Chem package & multiple other plugins](../solutions/domains/chem/chem.md)|Comparable, different strengths|
+|Cheminformatics|Canvas integrated into Maestro and LiveDesign; command-line tools & descriptors|RDKit-powered [Chem package & multiple other plugins](../../solutions/domains/chem/chem.md)|Comparable, different strengths|
 |Peptides |Limited biologics capabilities focused on antibody registration and HELM processing|[Peptide SAR](https://datagrok.ai/solutions/peptide-sar), MSA clustering, rich visualization|**Datagrok** for sequences and peptide SAR|
 
 ### Collaboration & user experience
@@ -179,8 +179,8 @@ MacroModel, etc.) integrate via API.
 #### You need a custom, fit-for-purpose solution
 
 * **Lego-style modular architecture** to mix Datagrok plugins,
-  [functions](../concepts/functions/functions.md), and your own extensions — all with an added benefit of
-  [auto-generated UI](../../compute/compute.md#autogenerated-ui).
+  [functions](../../concepts/functions/functions.md), and your own extensions — all with an added benefit of
+  [auto-generated UI](../../../compute/compute.md#autogenerated-ui).
 * **Developer-friendly platform** with full-code (JavaScript API), scripting,
   and auto-generated UIs — plus built-in developer tools, API samples, and
   documentation to accelerate custom development. Use cases include **functional
