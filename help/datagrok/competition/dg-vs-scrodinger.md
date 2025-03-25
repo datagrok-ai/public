@@ -98,14 +98,14 @@ bottlenecks. Infinite possibilities.
 
 ### Architecture & deployment
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:150 }}></div>| Schrödinger<div style={{ width:200 }}></div>| Datagrok<div style={{ width:150 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
 |Core architecture|Desktop-first with added web components|Browser-native, cross-platform|**Datagrok** for accessibility and deployment|
 |Deployment|Multiple desktop and server components; requires specialized setup|Lightweight container-based deployment; cross-platform|**Datagrok** for ease of deployment|
 
 ### Data handling & integration
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:120 }}></div>| Schrödinger<div style={{ width:150 }}></div>| Datagrok<div style={{ width:100 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
 |Performance with large datasets|Optimized for complex calculations on moderate datasets|Built for interactive exploration; supports 100M rows or 100K columns in-memory|**Datagrok** for exploratory analytics|
 |Data integration|APIs and connectors available; often require scripting, version control, or IT support|Connects to any data source (databases, web services, cloud, files, drag-and-drop)<br/>[_Learn more about data access_](../../access/access.md)|**Datagrok** for seamless integration|
@@ -113,14 +113,14 @@ bottlenecks. Infinite possibilities.
 
 ### Visualization, analytics, ML
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:120 }}></div>| Schrödinger<div style={{ width:220 }}></div>| Datagrok<div style={{ width:150 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
 |Data visualization|Chemistry-focused, optional Spotfire; separate tools|Integrated, [high-performance scientific viewers](../../visualize/viewers/viewers.md) optimized for analyzing large datasets|Tie.<br/><br/>**Datagrok** for breadth and power<br/>**Schrödinger** (PyMOL) for structural visualizations|
 |AI/ML<br/>Predictive modeling|External models via scripting|[Built-in ML and compute tools](../../learn/learn.md), no-code modeling; external models via scripting or [MLFlow integration](../../learn/mlflow.md); classical models (e.g., XGBoost); ChemProp for molecules |Comparable, different strengths.<br/><br/>**Schrödinger** for proprietary models<br/>**Datagrok** for flexibility, integrations, and interactive modeling|
 
 ### Scientific capabilities
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:100 }}></div>| Schrödinger<div style={{ width:100 }}></div>| Datagrok<div style={{ width:100 }}></div>| Advantage<div style={{ width:100 }}></div>|
 |---|---|---|---|
 |Comp. chemistry depth|Industry-leading QM, FEP+, etc.|Integrates RDKit and open-source tools|**Schrödinger** for advanced modeling|
 |Physics-based  molecular modeling|Physics-based suite|Integrates with third-party modeling|**Schrödinger** for structure-based modeling|
@@ -130,7 +130,7 @@ bottlenecks. Infinite possibilities.
 
 ### Collaboration & user experience
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:150 }}></div>| Schrödinger<div style={{ width:230 }}></div>| Datagrok<div style={{ width:100 }}></div>| Advantage<div style={{ width:140 }}></div>|
 |---|---|---|---|
 |Collaboration features|Available in LiveDesign|Collaboration across the entire platform, seamless sharing of data assets, metadata, and annotations|**Datagrok** for breadth and deeper insights|
 |User experience|Expert-oriented|Accessible for a broader audience|**Datagrok** for broader team adoption|
@@ -138,7 +138,7 @@ bottlenecks. Infinite possibilities.
 
 ### Extensibility & customization
 
-|Category| Schrödinger| Datagrok| Advantage|
+|Category<div style={{ width:150 }}></div>| Schrödinger<div style={{ width:220 }}></div>| Datagrok<div style={{ width:150 }}></div>| Advantage<div style={{ width:150 }}></div>|
 |---|---|---|---|
 |Scripting & APIs|Python scripting; less extensible outside the platform|Scripting (JS, Python, R, etc.), full-code via JS API, REST API for integrations|**Datagrok** for development flexibility|
 |User-defined functions and workflows|KNIME or external tools; batch-style|Write in 7 languages (Python, R, Matlab, Julia, etc.), automated scaling of computations, auto-generated UI|**Datagrok** for ease of use|
