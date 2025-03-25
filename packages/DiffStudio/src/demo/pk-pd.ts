@@ -3,6 +3,7 @@
 import {LINK} from '../ui-constants';
 import {DemoModel} from './demo-model';
 
+/** PK-PD model specification */
 const MODEL = `#name: PK-PD
 #equations:
   d(depot)/dt = -KA * depot
@@ -48,11 +49,13 @@ const MODEL = `#name: PK-PD
   EC50 = 8 {caption: effect; category: PD parameters; min: 1; max: 10}
   Rate = 0.2 {category: PD parameters; min: 0.1; max: 0.5} [Effective rate]`;
 
+/** UI options */
 const UI_OPTS = {
   inputsTabDockRatio: 0.17,
   graphsDockRatio: 0.85,
 };
 
+/** Info for help panel */
 const INFO = `# Model
 Simulation of a two-compartment pharmacokinetic-pharmacodynamic
 ([PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)).
@@ -67,4 +70,5 @@ enables the creation of complex models without writing code.
 * [Sensitivity analysis](${LINK.SENS_AN})
 * [Parameter optimization](${LINK.FITTING})`;
 
+/** PK-PD demo model */
 export const PK_PD_DEMO = new DemoModel(MODEL, UI_OPTS, INFO);

@@ -1,9 +1,10 @@
 /* eslint-disable max-len */
-/** PK-PD demo model */
+/** Bioreactor demo model */
 
 import {LINK} from '../ui-constants';
 import {DemoModel} from './demo-model';
 
+/** Bioreactor model specification */
 const MODEL = `#name: Bioreactor
 #tags: model
 #description: Bioreactor simulation
@@ -159,11 +160,13 @@ const MODEL = `#name: Bioreactor
 #meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]
 `;
 
+/** UI options */
 const UI_OPTS = {
   inputsTabDockRatio: 0.17,
   graphsDockRatio: 0.85,
 };
 
+/** Info for help panel */
 const INFO = `# Model
 Simulation of a controlled fab-arm exchange kinetic
 [mechanism](https://doi.org/10.1074/jbc.RA117.000303).
@@ -180,4 +183,5 @@ enables the creation of complex models without writing code.
 * [Sensitivity analysis](${LINK.SENS_AN})
 * [Parameter optimization](${LINK.FITTING})`;
 
+/** Bioreactor demo model */
 export const BIOREACTOR_DEMO = new DemoModel(MODEL, UI_OPTS, INFO);

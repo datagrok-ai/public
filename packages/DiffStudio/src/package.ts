@@ -8,7 +8,7 @@ import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
-import {getBallFlightSim} from './demo/demo-model';
+import {getBallFlightSim} from './demo/ball-flight';
 import {PK_PD_DEMO} from './demo/pk-pd';
 import {BIOREACTOR_DEMO} from './demo/bioreactor';
 import {DF_NAME} from './constants';
