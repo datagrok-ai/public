@@ -12,7 +12,8 @@ export class AdmeticaViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 
-    this.formGenerator = this.customFormGenerator;
+    this.formGenerator = () => this.customFormGenerator();
+    this.uploadCachedData = () => this.customFormGenerator(true);
     this.setFunction = () => this.performAdmetica();
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
     this.tableName = 'Admetica';
@@ -50,17 +51,27 @@ export class AdmeticaViewApp extends BaseViewApp {
     this.tableView!.grid.scrollToCell(molColName, 0);
   }
 
-  private async customFormGenerator(): Promise<HTMLElement> {
+  private async customFormGenerator(cached: boolean = false): Promise<HTMLElement> {
     const models = await getQueryParams();
-    await performChemicalPropertyPredictions(
-      this.tableView!.dataFrame.getCol('smiles'),
-      this.tableView!.dataFrame,
-      models,
-      undefined,
-      false,
-      false,
-      true
-    );
+    
+    if (cached) {
+      const datasetPath = 'System:AppData/Admetica/demo_files/sketcher-demo-app.csv';
+      const csvText = await grok.dapi.files.readAsText(datasetPath);
+      const sampleData = DG.DataFrame.fromCsv(csvText);
+      await grok.data.detectSemanticTypes(sampleData);
+      this.tableView!.dataFrame = sampleData;
+      this.tableView!.dataFrame.name = this.tableName;
+    } else {
+      await performChemicalPropertyPredictions(
+        this.tableView!.dataFrame.getCol('smiles'),
+        this.tableView!.dataFrame,
+        models,
+        undefined,
+        false,
+        false,
+        true
+      );
+    }
  
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);

@@ -113,6 +113,7 @@ export async function admeProperty(molecule: string, prop: string): Promise<any>
 //name: Admetica
 //tags: app
 //output: view v
+//meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
 export async function admeticaApp(): Promise<DG.ViewBase | null> {
   const parent = grok.functions.getCurrentCall();

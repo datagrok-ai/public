@@ -22,7 +22,7 @@ export abstract class BaseViewApp {
 
   filePath: string = '';
   addTabControl: boolean = true;
-  formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement | null>;
+  formGenerator?: () => Promise<HTMLElement | null>;
   setFunction?: () => Promise<void>;
   abort?: () => Promise<void>;
   uploadCachedData?: () => Promise<HTMLElement>;
@@ -191,13 +191,14 @@ export abstract class BaseViewApp {
       col.semType = DG.SEMTYPE.MOLECULE;
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
+      const sketcherSmiles = Object.values(this.sketcherValue)[0];
       try {
-        if (this.uploadCachedData && this.sketched === 0) {
+        if (this.uploadCachedData && (this.sketched === 0 || smiles === sketcherSmiles)) {
           const widget = await this.uploadCachedData();
           this.clearForm();
           this.formContainer.appendChild(widget);
         } else if (this.formGenerator) {
-          const form = await this.formGenerator(dataFrame);
+          const form = await this.formGenerator();
           if (form) {
             this.clearForm();
             this.formContainer.appendChild(form);

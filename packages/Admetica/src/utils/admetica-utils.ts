@@ -2,8 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
-
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary, AdmeticaResponse } from './constants';
 import { FormStateGenerator } from './admetica-form';
 import '../css/admetica.css';
@@ -16,7 +14,6 @@ let piechartIndex = 0;
 
 async function getAdmeticaContainer() {
   const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-  await ensureContainerRunning('admetica');
   return admeticaContainer;
 }
 
