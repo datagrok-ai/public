@@ -16,7 +16,7 @@ export class DocumentManagerContainer extends FillDockContainer {
 
     constructor(dockManager: DockManager) {
         super(dockManager, TabHostDirection.TOP);
-        
+
         this.minimumAllowedChildNodes = 0;
         this.element.classList.add('document-manager');
         this.tabHost.createTabPage = this._createDocumentTabPage;

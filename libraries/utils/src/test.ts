@@ -79,6 +79,8 @@ export class Test {
       return new Promise(async (resolve, reject) => {
         let result = '';
         try {
+          if (DG.Test.isInDebug)
+            debugger;
           result = await test();
         } catch (e: any) {
           reject(e);
@@ -470,24 +472,18 @@ export async function runTests(options?: TestExecutionOptions) {
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if (DG.Test.isInDebug)
-          debugger;
         if ((window as any).gc)
           (window as any).gc();
-        if (DG.Test.isProfiling)
-          console.profile(`${test.category}: ${test.name}`);
+
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
+
         if ((window as any).gc)
           (window as any).gc();
         if (testRun)
           res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: DG.Widget.getAll().length - widgetsBefore });
-        if (DG.Test.isProfiling)
-          console.profileEnd(`${test.category}: ${test.name}`);
+
         grok.shell.closeAll();
         DG.Balloon.closeAll();
-
-        if (DG.Test.isProfiling)
-          grok.shell.info(`${test.category}: ${test.name} finished \n You can find results in DevTools (F12) / Performance panel`);
       }
     } else {
       for (let i = 0; i < t.length; i++) {
@@ -495,22 +491,15 @@ export async function runTests(options?: TestExecutionOptions) {
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if (DG.Test.isInDebug)
-          debugger;
         if ((window as any).gc)
           (window as any).gc();
-        if (DG.Test.isProfiling)
-          console.profile(`${test.category}: ${test.name}`);
+
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
         if ((window as any).gc)
           (window as any).gc();
         if (testRun)
           res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
 
-        if (DG.Test.isProfiling) {
-          console.profileEnd(`${test.category}: ${test.name}`);
-          grok.shell.info(`${test.category}: ${test.name} finished \n You can find results in DevTools (F12) / Performance panel`);
-        }
       }
     }
     return res;
@@ -624,7 +613,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       r = { date: startDate, success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = testTimeout ?? STANDART_TIMEOUT;
+
+      if (DG.Test.isProfiling)
+        console.profile(`${t.category}: ${t.name}`);
+
       r = { date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+
+      if (DG.Test.isProfiling) {
+        console.profileEnd(`${t.category}: ${t.name}`);
+        grok.shell.info(`Profiling of ${t.category}: ${t.name} finished \n Please ensure that you have opened DevTools (F12) / Performance panel before test starts.`);
+      }
     }
   } catch (x: any) {
     stdError(x);

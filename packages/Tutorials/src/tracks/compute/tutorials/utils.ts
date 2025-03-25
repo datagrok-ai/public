@@ -10,6 +10,9 @@ const MAX_TIME = 60000;
 /** Timeout tick */
 const TICK = 100;
 
+/** Starting pause */
+export const PAUSE = 500;
+
 /** Wait for current view has element */
 export async function getViewWithElement(selector: string) {
   let view: DG.ViewBase | null = null;  

@@ -277,6 +277,8 @@ export enum PATH {
   MY_FILES = 'Myfiles',
   HOME = 'Home',
   SYSTEM = 'System',
+  FILE = 'file',
+  SLASH = '/',
 };
 
 /** UI time constants */
@@ -287,7 +289,7 @@ export enum UI_TIME {
   SOLV_DEFAULT_TIME_SEC = 5,
   SOLV_TIME_MIN_SEC = 1,
   BROWSING = APP_RUN_SOLVING + 500,
-  SWITCH_TO_FOLDER = 1,
+  SWITCH_TO_FOLDER = 100,
   WGT_CLICK = 10,
   FACET_DOCKING = 50,
   TITLE_REMOVING = 500,

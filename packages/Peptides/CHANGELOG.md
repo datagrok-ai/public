@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.22.0 (2025-03-22)
+
+* Fixed unhighlighting of header weblogo
+* Harmonization of selection and counts in monomer-position and MPR viewers
+* Added more comprehensive tooltips
+
 ## 1.21.7 (2025-03-17)
 
 * Fixes and improvements of Selection panel

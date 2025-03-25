@@ -13,7 +13,8 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 export type TooltipOptions = {
   fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number, monomerPosition: type.SelectionItem,
   mpStats: MonomerPositionStats, aggrColValues?: StringDictionary,
-  isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats']
+  isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats'],
+  postfixes?: StringDictionary, additionalStats?: StringDictionary
 };
 
 /**
@@ -50,6 +51,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
   options.isMostPotentResidues ??= false;
+  options.additionalStats ??= {};
   if (!options.cliffStats || !options.isMutationCliffs) {
     const stats = options
       .mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
@@ -57,7 +59,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
       return null;
 
 
-    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
     const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
     const tableMap = getStatsTableMap(stats);
     if (options.fromViewer) {
@@ -66,7 +68,11 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
         tableMap['p-value'] = `${tableMap['p-value']}${options.isMostPotentResidues ? ' (color)' : ''}`;
     }
     const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
-    const resultMap = {...tableMap, ...aggregatedColMap};
+    const resultMap = {...options.additionalStats, ...tableMap, ...aggregatedColMap};
+    for (const [key, value] of Object.entries(options.postfixes ?? {})) {
+      if (resultMap[key])
+        resultMap[key] = `${resultMap[key]}${value}`;
+    }
     const distroStatsElem = getDistributionPanel(hist, resultMap);
     ui.tooltip.show(distroStatsElem, options.x, options.y);
     return distroStatsElem;
@@ -76,16 +82,16 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
       ;
     if (!stats)
       return null;
-    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
     const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
-    const tableMap = getStatsTableMap(stats);
+    const tableMap = getStatsTableMap(stats, {countName: 'Unique count'});
     if (options.fromViewer) {
       tableMap['Mean difference'] = `${tableMap['Mean difference']}${' (Color)'}`;
-      if (tableMap['Count'])
-        tableMap['Count'] = `${tableMap['Count']}${' (Size)'}`;
+      if (tableMap['Unique count'])
+        tableMap['Unique count'] = `${tableMap['Unique count']}${' (Size)'}`;
     }
     const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
-    const resultMap = {...tableMap, ...aggregatedColMap};
+    const resultMap = {...options.additionalStats, ...tableMap, ...aggregatedColMap};
     const distroStatsElem = getDistributionPanel(hist, resultMap);
     ui.tooltip.show(distroStatsElem, options.x, options.y);
     return distroStatsElem;

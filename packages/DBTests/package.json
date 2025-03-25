@@ -9,7 +9,7 @@
   },
   "servicePackage": true,
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.4.1",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10"
@@ -41,10 +41,10 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "category": "Development",
   "repository": {

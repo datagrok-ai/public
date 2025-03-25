@@ -26,9 +26,9 @@ export class DemoView extends DG.ViewBase {
   subCategories: string[] = [];
   // browseView: DG.BrowseView = grok.shell.view('Browse') as DG.BrowseView;
   tree: DG.TreeViewGroup;
-  DEMO_APP_PATH: string = 'browse/apps/Tutorials/Demo';
+  DEMO_APP_PATH: string = 'apps/Tutorials/Demo';
 
-  constructor() {
+  constructor(initVisual: boolean = true) {
     super();
     // this.browseView.showTree = true;
     // this.tree = this.browseView.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Demo');
@@ -36,7 +36,8 @@ export class DemoView extends DG.ViewBase {
     this._initFunctions();
     if (this.tree.items.length === 0)
       this._initTree();
-    this._initContent();
+    if (initVisual)
+      this._initContent();
   }
 
   static findDemoFunc(demoPath: string): DG.Func {

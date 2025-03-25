@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement, getView} from './utils';
+import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement, PAUSE} from './utils';
 
 import '../../../../css/tutorial.css';
 
@@ -133,12 +133,18 @@ export class DifferentialEquationsTutorial extends Tutorial {
       return;
     }
 
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
+
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
+
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
     appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
 
@@ -175,7 +181,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
     await openModelFuncCall.call();
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
     // 3. Explore elements
     this.describe('We start with an incomplete model.');

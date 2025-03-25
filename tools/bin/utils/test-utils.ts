@@ -21,7 +21,8 @@ export const defaultLaunchParameters: utils.Indexable = {
   args: [
     '--disable-dev-shm-usage',
     '--disable-features=site-per-process',
-    '--window-size=1920,1080'
+    '--window-size=1920,1080',
+    '--js-flags=--expose-gc'
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
@@ -316,7 +317,6 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
     const browser: Browser = out.browser;
     const page: Page = out.page;
     const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
-
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;

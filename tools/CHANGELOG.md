@@ -1,5 +1,17 @@
 # Datagrok-tools changelog
 
+## 4.13.66 (2025-03-21)
+
+### Features
+
+* Added js-flag to puppeteer options
+
+## 4.13.65 (2025-03-18)
+
+### Features
+
+* Fixed func-gen-plugin for js packages 
+
 ## 4.13.64 (2025-02-27)
 
 ### Features

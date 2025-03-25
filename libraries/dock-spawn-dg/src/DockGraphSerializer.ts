@@ -1,53 +1,54 @@
-import {DockModel} from './DockModel.js';
-import {DockNode} from './DockNode.js';
-import {Dialog} from './Dialog.js';
-import {IPanelInfo} from './interfaces/IPanelInfo.js';
-import {INodeInfo} from './interfaces/INodeInfo.js';
-import {IState} from './interfaces/IState.js';
+import { DockModel } from "./DockModel.js";
+import { DockNode } from "./DockNode.js";
+import { Dialog } from "./Dialog.js";
+import { IPanelInfo } from "./interfaces/IPanelInfo.js";
+import { INodeInfo } from "./interfaces/INodeInfo.js";
+import { IState } from "./interfaces/IState.js";
 
 /**
  * The serializer saves / loads the state of the dock layout hierarchy
  */
 export class DockGraphSerializer {
-  serialize(model: DockModel) {
-    const graphInfo = this._buildGraphInfo(model.rootNode);
-    const dialogs = this._buildDialogsInfo(model.dialogs.sort((x, y)=><number><any>x.elementDialog.style.zIndex-<number><any>y.elementDialog.style.zIndex));
-    return JSON.stringify({graphInfo: graphInfo, dialogsInfo: dialogs});
-  }
 
-  _buildGraphInfo(node: DockNode): INodeInfo {
-    const nodeState: IState = {};
-    node.container.saveState(nodeState);
+    serialize(model: DockModel) {
+        let graphInfo = this._buildGraphInfo(model.rootNode);
+        let dialogs = this._buildDialogsInfo(model.dialogs.sort((x,y)=><number><any>x.elementDialog.style.zIndex-<number><any>y.elementDialog.style.zIndex));
+        return JSON.stringify({ graphInfo: graphInfo, dialogsInfo: dialogs });
+    }
 
-    const childrenInfo: INodeInfo[] = [];
-    node.children.forEach((childNode) => {
-      childrenInfo.push(this._buildGraphInfo(childNode));
-    });
+    _buildGraphInfo(node: DockNode): INodeInfo {
+        let nodeState: IState = {};
+        node.container.saveState(nodeState);
 
-    const nodeInfo: INodeInfo = {
-      containerType: node.container.containerType,
-      state: nodeState,
-      children: childrenInfo,
-    };
-    return nodeInfo;
-  }
+        let childrenInfo: INodeInfo[] = [];
+        node.children.forEach((childNode) => {
+            childrenInfo.push(this._buildGraphInfo(childNode));
+        });
 
-  _buildDialogsInfo(dialogs: Dialog[]): IPanelInfo[] {
-    const dialogsInfo: IPanelInfo[] = [];
-    dialogs.forEach((dialog) => {
-      const panelState: IState = {};
-      const panelContainer = dialog.panel;
-      panelContainer.saveState(panelState);
+        let nodeInfo: INodeInfo = {
+            containerType: node.container.containerType,
+            state: nodeState,
+            children: childrenInfo
+        };
+        return nodeInfo;
+    }
 
-      const panelInfo: IPanelInfo = {
-        containerType: panelContainer.containerType,
-        state: panelState,
-        position: dialog.getPosition(),
-        isHidden: dialog.isHidden,
-      };
-      dialogsInfo.push(panelInfo);
-    });
+    _buildDialogsInfo(dialogs: Dialog[]): IPanelInfo[] {
+        let dialogsInfo: IPanelInfo[] = [];
+        dialogs.forEach((dialog) => {
+            let panelState: IState = {};
+            let panelContainer = dialog.panel;
+            panelContainer.saveState(panelState);
 
-    return dialogsInfo;
-  }
+            let panelInfo: IPanelInfo = {
+            containerType: panelContainer.containerType,
+            state: panelState,
+            position: dialog.getPosition(),
+            isHidden: dialog.isHidden
+        }
+            dialogsInfo.push(panelInfo);
+        });
+
+        return dialogsInfo;
+    }
 }

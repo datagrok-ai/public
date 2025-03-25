@@ -9,10 +9,10 @@
   },
   "description": "Integrates Datagrok with Boltz-1",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.4.1",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "datagrok-tools": "4.13.64",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
     "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5"
@@ -40,7 +40,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

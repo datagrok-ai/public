@@ -16,7 +16,7 @@ export const _package = new DG.Package();
 //input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
 //output: string paths
 export async function calculateRetroSynthesisPaths(molecule: string): Promise<string> {
-  const container = await grok.dapi.docker.dockerContainers.filter('aizynthfinder').first();
+  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
   const startTime = performance.now();
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
     method: 'POST',
@@ -51,7 +51,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
 
-  const result = await grok.functions.call('Aizynthfinder:calculateRetroSynthesisPaths',
+  const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
     {molecule: molecule});
   const reactionData = JSON.parse(result) as ReactionData;
   if (reactionData.data?.length) {

@@ -13,8 +13,8 @@
     "directory": "packages/Retrosynthesis"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.2",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/chem-meta": "^1.2.9",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
@@ -43,7 +43,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

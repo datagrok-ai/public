@@ -8,10 +8,10 @@
   },
   "description": "Support for previewing and opening text file formats (PDF, DOCX)",
   "dependencies": {
-    "datagrok-api": "^1.16.5",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "pdfjs-dist": "4.2.67",
     "docx-preview": "^0.1.18",
     "rtf.js": "^3.0.9"
@@ -47,7 +47,7 @@
     "lint-fix": "eslint src --ext .ts --fix"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

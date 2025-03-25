@@ -41,6 +41,7 @@ import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {PeptideUtils} from '../peptideUtils';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -425,6 +426,47 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       this._mutationCliffsSelection = modifySelection(this.mutationCliffsSelection, monomerPosition, options);
   }
 
+  /**
+   * Modifies invariant map selection. If shift and ctrl keys are both pressed, it removes invariant map from
+   * selection. If only shift key is pressed, it adds invariant map to selection. If only ctrl key is pressed, it
+   * changes invariant map presence in selection. If none of the keys is pressed, it sets the invariant map as the
+   * only selected one.
+   * @param monomerPosition - monomer-position to modify selection with.
+   * @param options - selection options.
+   * @param notify - flag indicating if bitset changed event should fire.
+   */
+  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {
+    shiftPressed: false,
+    ctrlPressed: false,
+  }, notify: boolean = true): void {
+    if (notify)
+      this.invariantMapSelection = modifySelection(this.invariantMapSelection, monomerPosition, options);
+    else
+      this._invariantMapSelection = modifySelection(this.invariantMapSelection, monomerPosition, options);
+  }
+
+  /**
+   * Gets invariant map selection. Initializes it if it is null.
+   * @return - invariant map selection.
+   */
+  get invariantMapSelection(): type.Selection {
+    const tagSelection = this.dataFrame.getTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`);
+    this._invariantMapSelection ??= tagSelection === null ? initSelection(this.positionColumns) :
+      JSON.parse(tagSelection);
+    return this._invariantMapSelection!;
+  }
+
+  /**
+     * Sets invariant map selection and notifies the model.
+     * @param selection - selection to set.
+     */
+  set invariantMapSelection(selection: type.Selection) {
+    this._invariantMapSelection = selection;
+    this.dataFrame.setTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`, JSON.stringify(selection));
+    this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
+    this.model.analysisView.grid.invalidate();
+  }
+
   private resetTargetCategoryValue(): void {
     const colName = this.targetColumnName;
     const col = colName ? this.dataFrame.col(colName) : null;
@@ -530,7 +572,6 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
@@ -648,28 +689,6 @@ export class MonomerPosition extends SARViewer {
     // setTimeout(() => this.viewerGrid.invalidate(), 300);
   }
 
-  /**
-   * Gets invariant map selection. Initializes it if it is null.
-   * @return - invariant map selection.
-   */
-  get invariantMapSelection(): type.Selection {
-    const tagSelection = this.dataFrame.getTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`);
-    this._invariantMapSelection ??= tagSelection === null ? initSelection(this.positionColumns) :
-      JSON.parse(tagSelection);
-    return this._invariantMapSelection!;
-  }
-
-  /**
-   * Sets invariant map selection and notifies the model.
-   * @param selection - selection to set.
-   */
-  set invariantMapSelection(selection: type.Selection) {
-    this._invariantMapSelection = selection;
-    this.dataFrame.setTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`, JSON.stringify(selection));
-    this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
-    this.model.analysisView.grid.invalidate();
-  }
-
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
@@ -689,25 +708,6 @@ export class MonomerPosition extends SARViewer {
       grok.shell.warning(msg);
     }
     this.render();
-  }
-
-  /**
-   * Modifies invariant map selection. If shift and ctrl keys are both pressed, it removes invariant map from
-   * selection. If only shift key is pressed, it adds invariant map to selection. If only ctrl key is pressed, it
-   * changes invariant map presence in selection. If none of the keys is pressed, it sets the invariant map as the
-   * only selected one.
-   * @param monomerPosition - monomer-position to modify selection with.
-   * @param options - selection options.
-   * @param notify - flag indicating if bitset changed event should fire.
-   */
-  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {
-    shiftPressed: false,
-    ctrlPressed: false,
-  }, notify: boolean = true): void {
-    if (notify)
-      this.invariantMapSelection = modifySelection(this.invariantMapSelection, monomerPosition, options);
-    else
-      this._invariantMapSelection = modifySelection(this.invariantMapSelection, monomerPosition, options);
   }
 
   /**
@@ -865,16 +865,30 @@ export class MonomerPosition extends SARViewer {
       highlightMonomerPosition(monomerPosition, this.dataFrame, this.monomerPositionStats);
       this.model.isHighlighting = true;
       const columnEntries = this.getTotalViewerAggColumns();
+      const postfixes: StringDictionary = {};
+      const additionalStats: StringDictionary = {};
       if (this.mode === SELECTION_MODE.INVARIANT_MAP) {
-        if (this.colorColumnName && this.colorAggregation)
+        if (this.colorColumnName && this.colorAggregation && this.colorColumnName !== this.valueColumnName) {
           columnEntries.unshift([this.colorColumnName, this.colorAggregation as DG.AGG]);
+          postfixes[`${this.colorAggregation}(${this.colorColumnName})`] = ' (color)';
+        } else if (this.colorColumnName && this.colorAggregation && this.colorColumnName === this.valueColumnName)
+          postfixes['Mean activity'] = ' (color)';
         if (this.valueColumnName && this.valueAggregation && this.valueAggregation !== DG.AGG.VALUE_COUNT && this.valueAggregation !== DG.AGG.TOTAL_COUNT)
           columnEntries.unshift([this.valueColumnName, this.valueAggregation as DG.AGG]);
+      } else {
+        // in invariant map, show pairs count along with unique sequences count
+        const pairs = this.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType);
+        if (pairs) {
+          let pairsCount = 0;
+          for (const pair of pairs.values())
+            pairsCount += pair.length;
+          additionalStats['Pairs count'] = pairsCount.toString();
+        }
       }
       return showTooltip(this.model.df, this.getScaledActivityColumn(), columnEntries, {
         fromViewer: true,
         isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
-        mpStats: this.monomerPositionStats, cliffStats: this.cliffStats?.stats ?? undefined,
+        mpStats: this.monomerPositionStats, cliffStats: this.cliffStats?.stats ?? undefined, postfixes, additionalStats,
       });
     });
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
@@ -993,8 +1007,6 @@ export class MonomerPosition extends SARViewer {
         }
       }
       grid.invalidate();
-
-      this.showHelp();
     });
 
     setViewerGridProps(grid);
@@ -1014,13 +1026,6 @@ export class MonomerPosition extends SARViewer {
     });
 
     return grid;
-  }
-
-  /** Shows viewer context help. */
-  showHelp(): void {
-    _package.files.readAsText('help/monomer-position.md').then((text) => {
-      grok.shell.windows.help.showHelp(ui.markdown(text));
-    }).catch((e) => grok.log.error(e));
   }
 
   /**
@@ -1059,7 +1064,6 @@ export class MonomerPosition extends SARViewer {
         invariantMapMode.value = false;
         mutationCliffsMode.value = true;
         this.mode = SELECTION_MODE.MUTATION_CLIFFS;
-        this.showHelp();
       });
       mutationCliffsMode.setTooltip('Statistically significant changes in activity');
       const invariantMapMode = ui.input.bool(SELECTION_MODE.INVARIANT_MAP, {value: this.mode === SELECTION_MODE.INVARIANT_MAP});
@@ -1067,7 +1071,6 @@ export class MonomerPosition extends SARViewer {
         mutationCliffsMode.value = false;
         invariantMapMode.value = true;
         this.mode = SELECTION_MODE.INVARIANT_MAP;
-        this.showHelp();
       });
       invariantMapMode.setTooltip('Number of sequences having monomer-position');
       const setDefaultProperties = (input: DG.InputBase): void => {
@@ -1121,7 +1124,6 @@ export class MostPotentResidues extends SARViewer {
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 
@@ -1204,7 +1206,7 @@ export class MostPotentResidues extends SARViewer {
       meanData[i] = maxEntry![1].mean;
 
       const stats = this.monomerPositionStats[position][maxEntry![0]];
-      const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, this.model.df.col(this.activityColumnName)!.length);
+      const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, this.model.df.col(this.activityColumnName)!.length);
       for (let j = 0; j < aggColNames.length; j++) {
         const [colName, aggFn] = aggrColumnEntries[j];
         aggrColsData[j][i] = getAggregatedValue(this.model.df.getCol(colName), aggFn, mask);
@@ -1280,6 +1282,7 @@ export class MostPotentResidues extends SARViewer {
       try {
         if (gridCell.gridRow === -1) {
           this._mutationCliffsSelection = initSelection(this.positionColumns);
+          this._invariantMapSelection = initSelection(this.positionColumns);
           this.model.fireBitsetChanged(VIEWER_TYPE.MOST_POTENT_RESIDUES);
           grid.invalidate();
           return;
@@ -1292,7 +1295,7 @@ export class MostPotentResidues extends SARViewer {
         const monomerPosition = this.getMonomerPosition(gridCell);
         if (this.currentGridRowIdx !== null) {
           const previousMonomerPosition = this.getMonomerPosition(grid.cell('Diff', this.currentGridRowIdx));
-          this.modifyMutationCliffsSelection(previousMonomerPosition, {
+          this.modifyInvariantMapSelection(previousMonomerPosition, {
             shiftPressed: true,
             ctrlPressed: true,
           }, false);
@@ -1300,7 +1303,7 @@ export class MostPotentResidues extends SARViewer {
         const hasMutationCliffs = this.mutationCliffs?.get(monomerPosition.monomerOrCluster)
           ?.get(monomerPosition.positionOrClusterType)?.size;
         if (hasMutationCliffs)
-          this.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false});
+          this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false});
 
 
         grid.invalidate();
@@ -1320,7 +1323,7 @@ export class MostPotentResidues extends SARViewer {
       else if (ev.code === 'KeyA' && ev.ctrlKey) {
         for (let rowIdx = 0; rowIdx < mprDf.rowCount; ++rowIdx) {
           const monomerPosition = this.getMonomerPosition(grid.cell('Diff', rowIdx));
-          this.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
+          this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
         }
       } else
         return;
@@ -1337,18 +1340,14 @@ export class MostPotentResidues extends SARViewer {
 
 
       const monomerPosition = this.getMonomerPosition(gridCell);
-      const hasMutationCliffs = this.mutationCliffs?.get(monomerPosition.monomerOrCluster)
-        ?.get(monomerPosition.positionOrClusterType)?.size;
-      if (!hasMutationCliffs)
+
+      const hasInvariants = this.monomerPositionStats?.[monomerPosition.positionOrClusterType]?.[monomerPosition.monomerOrCluster]?.count;
+      if (!hasInvariants)
         return;
 
 
-      this.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+      this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       grid.invalidate();
-
-      _package.files.readAsText('help/most-potent-residues.md').then((text) => {
-        grok.shell.windows.help.showHelp(ui.markdown(text));
-      }).catch((e) => grok.log.error(e));
     });
 
     setViewerGridProps(grid);

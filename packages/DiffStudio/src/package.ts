@@ -10,6 +10,7 @@ import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 import {DF_NAME} from './constants';
+import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
 
@@ -44,8 +45,26 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //output: view v
 //meta.browsePath: Compute
 export async function runDiffStudio(): Promise<DG.ViewBase> {
-  const solver = new DiffStudio(false);
-  return await solver.runSolverApp();
+  const path = grok.shell.startUri;
+  const toSetStartingPath = (path === window.location.href);
+
+  const proxiView = DG.View.create();
+
+  setTimeout(async () => {
+    proxiView.close();
+
+    const solver = new DiffStudio(false);
+
+    if (toSetStartingPath)
+      solver.setStartingPath(path);
+
+    const view = await solver.runSolverApp();
+
+    if (view !== null)
+      grok.shell.addPreview(view);
+  }, UI_TIME.APP_RUN_SOLVING);
+
+  return proxiView;
 }
 
 //name: Diff Studio Demo
@@ -83,15 +102,21 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   } else
     path = window.location.href;
 
-  const solver = new DiffStudio(false, true, true);
-  return await solver.getFilePreview(file, path);
+  const proxiView = DG.View.create();
+
+  setTimeout(async () => {
+    proxiView.close();
+    const solver = new DiffStudio(false, true, true);
+    grok.shell.addPreview(await solver.getFilePreview(file, path));
+  }, UI_TIME.PREVIEW_RUN_SOLVING);
+
+  return proxiView;
 }
 
 //input: dynamic treeNode
-//input: view browseView
-export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  //console.log(treeNode);
-  new DiffStudio(false, false, false, {treeNode: treeNode, browseView: browseView});
+//input: view browsePanel
+export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
+  new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
 }
 
 //name: Bioreactor

@@ -18,10 +18,10 @@ export interface IDockContainer {
     name: string;
     tabPage?: TabPage;
 
-    /** 
+    /**
      * Indicates the minimum allowed child nodes a composite dock panel can have
      * If it's children fall below this value, the composite panel is destroyed
-     * and it's children are moved one level up 
+     * and it's children are moved one level up
      */
     readonly minimumAllowedChildNodes: number;
 }

@@ -587,7 +587,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
   clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
-  const tableView = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView :
+  const tableView =
     grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
@@ -967,21 +967,14 @@ export async function manageLibrariesApp(): Promise<DG.View> {
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode
-//input: view browseView
-export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+//input: dynamic browsePanel
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
     const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
     const libNode = treeNode.item(nodeName);
     // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
     libNode.onSelected.subscribe(async () => {
-      const monomerManager = await MonomerManager.getNewInstance();
-      browseView.preview = await monomerManager.getViewRoot(libName, false);
-    });
-
-    libNode.root.addEventListener('dblclick', async (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
       const monomerManager = await MonomerManager.getInstance();
       await monomerManager.getViewRoot(libName, true);
       monomerManager.resetCurrentRowFollowing();
