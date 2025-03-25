@@ -4,11 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '../../css/app-styles.css';
-import {DiffStudio, UiOptions} from '../app';
+import '../css/app-styles.css';
+import {DiffStudio, UiOptions} from './app';
 
-/** Demo model  */
-export class DemoModel {
+/** Diff Studio model  */
+export class Model {
   private model: string;
   private uiOptions: UiOptions;
   private info: string;
@@ -41,4 +41,4 @@ export class DemoModel {
     await solver.runModel(this.model);
     this.showHelpPanel();
   }
-}; // DemoModel
+}; // Model

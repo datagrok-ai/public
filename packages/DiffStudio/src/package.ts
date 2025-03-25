@@ -15,6 +15,7 @@ import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
+import {Model} from './model';
 
 export const _package = new DG.Package();
 
@@ -208,4 +209,18 @@ export async function Bioreactor(): Promise<void> {
 //test: demoBioreactor() //wait: 100
 export async function demoBioreactor(): Promise<any> {
   await BIOREACTOR_DEMO.runDemo();
+}
+
+//name: runModel
+//description: Run model with Diff Studio UI
+//input: string model
+//input: int inputsTabDockRatio
+//input: int graphsDockRatio
+export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number): Promise<void> {
+  const diffStudioModel = new Model(model, {
+    inputsTabDockRatio: inputsTabDockRatio,
+    graphsDockRatio: graphsDockRatio,
+  }, '');
+
+  await diffStudioModel.run();
 }

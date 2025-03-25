@@ -489,6 +489,8 @@ export class DiffStudio {
   private sensAnWgt = this.getSensAnWgt();
   private fittingWgt = this.getFitWgt();
 
+  private addToModelCatalogWgt = this.getAddToModelCatalogWgt();
+
   private facetGridDiv: HTMLDivElement | null = null;
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
@@ -554,7 +556,7 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+      [this.addToModelCatalogWgt, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ];
   } // getRibbonPanels
 
@@ -686,6 +688,19 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return the export to JavaScript widget */
+  private getAddToModelCatalogWgt(): HTMLElement {
+    const icon = ui.iconFA(
+      'layer-plus',
+      async () => await this.saveToModelCatalog(),
+      'Save to Model Catalog',
+    );
+
+    icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
+
+    return icon;
+  }
+
   /** Return the refresh solution widget */
   private getRefreshWgt(): HTMLElement {
     const span = ui.span(['Refresh']);
@@ -727,6 +742,12 @@ export class DiffStudio {
     this.exportToJsWgt.style.color = color;
   }
 
+  /** Update state of the save to Model Catalog widget */
+  private updateSaveToModelCatalogWidget(enabled: boolean) {
+    const color = this.getColor(enabled);
+    this.addToModelCatalogWgt.style.color = color;
+  }
+
   /** Create model editor */
   private createEditorView(content?: string): void {
     this.editorView = new EditorView({
@@ -752,6 +773,7 @@ export class DiffStudio {
         this.saveBtn.disabled = false;
         this.updateRefreshWidget(true);
         this.updateExportToJsWidget(true);
+        this.updateSaveToModelCatalogWidget(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -949,6 +971,40 @@ export class DiffStudio {
       this.processError(err);
     }
   }; // exportToJS
+
+  /** Get JS-script for solving the current IVP */
+  private async saveToModelCatalog(): Promise<void> {
+    try {
+      const model = this.editorView!.state.doc.toString();
+      const ivp = getIVP(model);
+      await this.tryToSolve(ivp);
+
+      let lines = [
+        `//name: ${ivp.name}`,
+        '//language: javascript',
+      ];
+
+      if (ivp.descr)
+        lines.push(`//description: ${ivp.descr}`);
+
+      lines = lines.concat([
+        '//tags: model',
+        '\n',
+        `const model = \`${model}\``,
+        `await grok.functions.call('DiffStudio:runModel', {`,
+        `  'model': model,`,
+        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
+        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
+        '});',
+      ]);
+
+      const script = DG.Script.create(lines.join('\n'));
+      grok.dapi.scripts.save(script);
+      grok.shell.info('Saved to Model Catalog');
+    } catch (err) {
+      this.processError(err);
+    }
+  }; // saveToModelCatalog
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
@@ -2118,6 +2174,7 @@ export class DiffStudio {
     this.isModelChanged = false;
     this.updateRefreshWidget(false);
     this.updateExportToJsWidget(false);
+    this.updateSaveToModelCatalogWidget(false);
   }
 
   /** Remove FacetGrid visualization */

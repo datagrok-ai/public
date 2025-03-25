@@ -2,7 +2,7 @@
 /** Bioreactor demo model */
 
 import {LINK} from '../ui-constants';
-import {DemoModel} from './demo-model';
+import {Model} from '../model';
 
 /** Bioreactor model specification */
 const MODEL = `#name: Bioreactor
@@ -184,4 +184,4 @@ enables the creation of complex models without writing code.
 * [Parameter optimization](${LINK.FITTING})`;
 
 /** Bioreactor demo model */
-export const BIOREACTOR_DEMO = new DemoModel(MODEL, UI_OPTS, INFO);
+export const BIOREACTOR_DEMO = new Model(MODEL, UI_OPTS, INFO);

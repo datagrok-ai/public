@@ -1,7 +1,7 @@
 /** PK-PD demo model */
 
 import {LINK} from '../ui-constants';
-import {DemoModel} from './demo-model';
+import {Model} from '../model';
 
 /** PK-PD model specification */
 const MODEL = `#name: PK-PD
@@ -71,4 +71,4 @@ enables the creation of complex models without writing code.
 * [Parameter optimization](${LINK.FITTING})`;
 
 /** PK-PD demo model */
-export const PK_PD_DEMO = new DemoModel(MODEL, UI_OPTS, INFO);
+export const PK_PD_DEMO = new Model(MODEL, UI_OPTS, INFO);
