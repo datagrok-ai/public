@@ -9,12 +9,16 @@ import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
-import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
+import {modifyMetric} from './stemming-tools/stemming-ui';
+import {multiColReduceDimensionality} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
 import {SentenceSimilarityViewer} from './utils/sentence-similarity-viewer';
 
 import '../css/stemming-search.css';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 
 export const _package = new DG.Package();
 
@@ -129,7 +133,6 @@ async function doTranslation() {
 }
 
 //name: Translation
-//tags: panel, widgets
 //input: file textfile
 //output: widget result
 //condition: isTextFile(textfile)
@@ -200,11 +203,35 @@ export async function initAWS() {
   //comprehendMedical = new AWS.ComprehendMedical();
 }
 
-//top-menu: ML | Text Embeddings...
+//top-menu: ML | Text Clustering...
 //name: Compute Text Embeddings
 //description: Compute text embeddings using UMAP
 export function computeEmbds(): void {
-  runTextEmdsComputing();
+  const table = grok.shell.t;
+  const textCols = table?.columns?.bySemTypeAll('Text');
+  if (!table || !textCols || textCols.length === 0) {
+    grok.shell.warning('Please open table with text columns');
+    return;
+  }
+  const colInput = ui.input.column('Text Column', {table: table, value: textCols[0], filter: (col) => col.semType === 'Text'});
+  const neiInput = ui.input.int('Neighbours', {value: 25, min: 1, max: 100, nullable: false});
+  const minDist = table.rowCount > 1000 ? 0.003 : 0.008;
+  const minDistInput = ui.input.float('Minimum Distance', {value: minDist, nullable: false});
+  ui.dialog('Cluster Text').add(ui.inputs([colInput, neiInput, minDistInput])).onOK(async () => {
+    await multiColReduceDimensionality(table as any, [colInput.value as any], DimReductionMethods.UMAP,
+      [VectorMetricsNames.Cosine],
+      [1], [DG.Func.find({package: 'NLP', name: 'sentenceEmbeddingsPreprocessingFunction'})[0] as any],
+      DistanceAggregationMethods.MANHATTAN,
+      true, false, {
+        dbScanEpsilon: minDistInput.value ?? 0.008, dbScanMinPts: 4, learningRate: 1, minDist: 0.3, nEpochs: 0,
+        nNeighbors: neiInput.value ?? 25, preprocessingFuncArgs: [{}], randomSeed: '0', spread: 1.5, useWebGPU: true,
+      }, {
+        fastRowCount: 1000,
+      }, DG.Func.find({package: 'Eda', name: 'dbscanPostProcessingFunction'})[0] as any, {
+        epsilon: minDistInput.value ?? 0.008,
+        minimumPoints: 4,
+      }, VectorMetricsNames.Cosine);
+  }).show();
 }
 
 //name: Stem Column
@@ -222,7 +249,6 @@ export function stemColumnPreprocessingFunction(col: DG.Column, metric: string, 
 }
 
 //name: Radial Coloring
-//tags: dim-red-postprocessing-function
 //input: column col1
 //input: column col2
 export function radialColoring(col1: DG.Column, col2: DG.Column) {
@@ -283,7 +309,6 @@ export function radialColoring(col1: DG.Column, col2: DG.Column) {
 }
 
 //name: Distance
-//tags: panel, widgets
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
@@ -303,7 +328,6 @@ export function distance(query: string): DG.Widget {
 }
 
 //name: Similar
-//tags: panel, widgets
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
@@ -337,7 +361,7 @@ export function similar(query: string): DG.Widget {
 export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
   const embeddingsStr: string = await grok.functions.call('NLP: getEmbeddings', {sentences: col.toList()});
   const embeddings: number[][] = JSON.parse(embeddingsStr);
-  return {entries: embeddings, options: {}};
+  return {entries: embeddings.map((a) => new Float32Array(a)), options: {}};
 }
 
 
@@ -380,6 +404,9 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
   });
 
   const result = await response.json();
+  if (!result.embeddings)
+    throw new Error('Embeddings docker returned an error');
+
   const embeddings = JSON.stringify(result.embeddings);
   return embeddings;
 }

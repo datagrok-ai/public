@@ -58,7 +58,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         this.updateSplashScreen('Finding similar sentences...');
         await this.compute(JSON.parse(embeddings));
 
-        const actualLimit = Math.min(this.limit, this.targetColumn!.length - 1);
+        const actualLimit = Math.min(Math.min(this.limit, this.targetColumn!.length - 1), this.indexWScore!.length - 1);
         const idxsData = new Int32Array(actualLimit + 1);
         const scoresData = new Float32Array(actualLimit + 1);
         const sentencesData: string[] = new Array(actualLimit + 1);
@@ -92,7 +92,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         });
 
         const grid = resDf.plot.grid();
-        grid.props.rowHeight = 50;
+        grid.props.rowHeight = 70;
         grid.col('indexes')!.visible = false;
 
         const view = grok.shell.v as DG.TableView;
@@ -136,6 +136,10 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
       score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
     }));
     this.indexWScore.sort((a, b) => b.score - a.score);
+    // knn can return non-meaningful indexes like -1 or 99999, so we need to filter them out
+    this.indexWScore = this.indexWScore
+      .filter((el) => el.idx != null && !isNaN(el.idx) && el.idx >= 0 &&
+        el.idx < this.targetColumn!.length && !isNaN(el.score) && el.score != null);
     this.indexWScore.unshift({idx: this.targetMoleculeIdx, score: DG.FLOAT_NULL});
     this.prevTargetColumnName = this.targetColumnName;
   }

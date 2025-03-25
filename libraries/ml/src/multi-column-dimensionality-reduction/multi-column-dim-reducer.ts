@@ -186,6 +186,20 @@ class UMAPReducer extends MultiColumnReducer {
             this.distanceFnArgs, this.weights, this.aggregationMethod);
       }
       console.timeEnd('knn graph');
+      if (!knnGraph)
+        throw new Error('Failed to compute KNN graph');
+
+      // go through KNN graph and remove -99999 or -1 and such values
+      const maxIndex = this.data[0].length;
+      for (let i = 0; i < knnGraph.knnIndexes.length; ++i) {
+        for (let j = 0; j < knnGraph.knnIndexes[i].length; ++j) {
+          if (knnGraph.knnIndexes[i][j] < 0 || knnGraph.knnIndexes[i][j] >= maxIndex || knnGraph.knnDistances[i][j] < 0 || knnGraph.knnDistances[i][j] > 10) {
+            knnGraph.knnIndexes[i][j] = j;
+            knnGraph.knnDistances[i][j] = 10;
+          }
+        }
+      }
+
       if (this.useWebGPU) {
         this.webGPUReducer = new WebGPUUMAP(this.vectors.length, {
           nComponents: this.reducer.nComponents,
