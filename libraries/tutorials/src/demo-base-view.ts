@@ -182,12 +182,15 @@ export abstract class BaseViewApp {
 
   private addNewProcess(smiles: string): () => Promise<void> {
     return async () => {
+      if (!this.tableView) return;
+
       this.clearTable();
-      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string');
-      if (!col) return;
-      col!.semType = DG.SEMTYPE.MOLECULE;
-      this.tableView?.dataFrame.set('smiles', 0, smiles);
-      await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+      const {dataFrame} = this.tableView;
+      const col = dataFrame.columns.getOrCreate('smiles', DG.TYPE.STRING);
+      await grok.data.detectSemanticTypes(dataFrame);
+
+      col.set(0, smiles);
+      col.semType = DG.SEMTYPE.MOLECULE;
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       try {
@@ -196,7 +199,7 @@ export abstract class BaseViewApp {
           this.clearForm();
           this.formContainer.appendChild(widget);
         } else if (this.formGenerator) {
-          const form = await this.formGenerator(this.tableView!.dataFrame);
+          const form = await this.formGenerator(dataFrame);
           if (form) {
             this.clearForm();
             this.formContainer.appendChild(form);
@@ -209,7 +212,7 @@ export abstract class BaseViewApp {
       }
 
       this.sketched += 1;
-      this.tableView?.grid.invalidate();
+      this.tableView.grid.invalidate();
     };
   }
 
