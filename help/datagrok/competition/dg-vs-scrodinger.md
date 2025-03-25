@@ -1,5 +1,5 @@
 ---
-title: "Datagrok vs. Schrödinger: Which one is right for you?"
+title: "Datagrok and Schrödinger: Which one is right for you?"
 sidebar_label: Schrödinger
 format: mdx
 unlisted: true
