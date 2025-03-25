@@ -40,7 +40,7 @@ class NlpPackageDetectors extends DG.Package {
     const isLikelyColumn = likelyTextColumnNames.some((name) => col.name.toLowerCase().includes(name));
     const ratio = isLikelyColumn ? 0.7 : 0.85;
     const minWordCount = isLikelyColumn ? 8 : 12;
-    const delimiters = ` ,;-()!?*&^%\$#@'"\n\r`;
+    const delimiters = ` ,`;
     const isText = (s) => {
       let wordStartIdx = -1;
       let maxLength = 0;

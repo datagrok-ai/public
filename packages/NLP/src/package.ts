@@ -378,19 +378,20 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     } catch (e) {
       // not an admin
-      // do a warmup fetch to avoid errors
-      try {
-        await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
-          method: 'POST',
-          body: JSON.stringify({sentences: ['some sentence']}),
-          headers: {'Content-Type': 'application/json'},
-        });
-      } catch (e2) {
-        _package.logger.error('Error warming up embeddings');
-        console.error(e);
-      }
     }
     await delay(5000);
+  }
+
+  // do a warmup fetch to avoid errors
+  try {
+    await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+      method: 'POST',
+      body: JSON.stringify({sentences: ['some sentence']}),
+      headers: {'Content-Type': 'application/json'},
+    });
+  } catch (e2) {
+    _package.logger.error('Error warming up embeddings');
+    console.error(e2);
   }
 
   const body = {
