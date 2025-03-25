@@ -349,6 +349,7 @@ export class DemoView extends DG.ViewBase {
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     // this.tree.root.focus();
     this.tree.rootNode.root.focus();
+    grok.shell.addView(view);
     // this.browseView.preview = view;
   }
 
@@ -441,6 +442,7 @@ export class DemoView extends DG.ViewBase {
       if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
 
+      this._closeAll();
       const panelRoot = this.tree.rootNode.root.parentElement!;
       treeNodeY = panelRoot.scrollTop!;
 
