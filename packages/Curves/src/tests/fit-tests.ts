@@ -41,7 +41,7 @@ category('fit', () => {
 		expect(logLinearFitFunc.name, FIT_FUNCTION_LOG_LINEAR);
 		expect(exponentialFitFunc.name, FIT_FUNCTION_EXPONENTIAL);
 		expect(polynomialFitFunc.name, 'Polynomial');
-		expectArray(sigmoidFitFunc.parameterNames, ['Top', 'Bottom', 'Slope', 'IC50']);
+		expectArray(sigmoidFitFunc.parameterNames, ['Top', 'Slope', 'IC50', 'Bottom']);
 		expectArray(linearFitFunc.parameterNames, ['Slope', 'Intercept']);
 		expectArray(logLinearFitFunc.parameterNames, ['Slope', 'Intercept']);
 		expectArray(exponentialFitFunc.parameterNames, ['Mantissa', 'Power']);
@@ -88,16 +88,16 @@ category('fit', () => {
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
 		const stop = Date.now();
 
-		expect(sigmoidFitSeries.fittedCurve(2.5), 1.7048618582775712);
-		expect(linearFitSeries.fittedCurve(2.5), 1.5337481647729874);
-		expect(logLinearFitSeries.fittedCurve(2.5), 1.4879121793209378);
-		expect(exponentialFitSeries.fittedCurve(0.00001345), 2.739771889293024);
-		expect(polynomialFitSeries.fittedCurve(3.99876), 6.449473383870631);
-		expectArray(sigmoidFitSeries.parameters, [1.7049071788787842, 1.569833517074585, 5.36868143081665, 0.2605934143066406]);
-		expectArray(linearFitSeries.parameters, [-0.21358928084373474, 2.067721366882324]);
-		expectArray(logLinearFitSeries.parameters, [-1.1107122898101807, 2.879371404647827]);
-		expectArray(exponentialFitSeries.parameters, [2.739849090576172, -2.0949888229370117]);
-		expectArray(polynomialFitSeries.parameters, [0.05000000074505806, -0.887523889541626, 2.861894130706787, 6]);
+		expect(sigmoidFitSeries.fittedCurve(2.5), 1.6903875076701773);
+		expect(linearFitSeries.fittedCurve(2.5), 1.5348530188202858);
+		expect(logLinearFitSeries.fittedCurve(2.5), 1.3696734183366701);
+		expect(exponentialFitSeries.fittedCurve(0.00001345), 2.005337264075174);
+		expect(polynomialFitSeries.fittedCurve(3.99876), 5.911350894323636);
+		expectArray(sigmoidFitSeries.parameters, [1.690911054611206, 1.1880898475646973, 5.402130603790283, 0.22163867950439453]);
+		expectArray(linearFitSeries.parameters, [-0.21431826055049896, 2.070648670196533]);
+		expectArray(logLinearFitSeries.parameters, [-0.6303421854972839, 2.1593427658081055]);
+		expectArray(exponentialFitSeries.parameters, [2.005340814590454, -0.13163800537586212]);
+		expectArray(polynomialFitSeries.parameters, [0.06199381500482559, -0.9554166793823242, 2.872941017150879, 5.736424446105957]);
 		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 
