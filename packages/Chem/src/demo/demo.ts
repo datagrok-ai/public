@@ -351,7 +351,8 @@ export async function _demoScaffoldTree(): Promise<void> {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
 
-    const scaffoldTree = new ScaffoldTreeViewer();
+    const {dataFrame} = tv;
+    const scaffoldTree = (await dataFrame.plot.fromType(DG.VIEWER.SCAFFOLD_TREE)) as unknown as ScaffoldTreeViewer;
     scaffoldTree.root.classList.add('d4-viewer', 'd4-scaffold-tree');
     const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
     const table: DG.DataFrame = tv.dataFrame;
@@ -359,12 +360,12 @@ export async function _demoScaffoldTree(): Promise<void> {
 
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
     scaffoldTree.dataFrame = table;
-    scaffoldTree.size = 'normal';
+    scaffoldTree.size = 'small';
 
-    tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
+    tv.dockManager.dock(scaffoldTree, DG.DOCK_TYPE.LEFT, null, 'Scaffold Tree', 0.42);
     await scaffoldTree.loadTreeStr(treeStr);
 
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
+    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
 }
