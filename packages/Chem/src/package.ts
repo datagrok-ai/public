@@ -63,7 +63,7 @@ import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
-  _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
+  _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -1868,10 +1868,9 @@ export async function demoMMPA(): Promise<void> {
 //name: Demo R Group Analysis
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R-Group Analysis
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoRgroupAnalysis(): Promise<void> {
-  _demoRgroupAnalysis();
+  _demoRGroups();
 }
 
 

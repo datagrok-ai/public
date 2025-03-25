@@ -168,3 +168,26 @@ LEFT JOIN research_companies r
 ON m.res_stem_id = r.res_stem_id
 WHERE md.chembl_id = @chemblId
 --end
+
+
+--name: FracClassificationWithSubstructure
+--friendlyName: Search | FRAC classification with substructure search
+--connection: Chembl 
+--input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
+--input: string level2 = 'C14-DEMETHYLASE IN STEROL BIOSYNTHESIS (ERG11/CYP51)' {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 = 'DMI-FUNGICIDES (DEMETHYLATION INHIBITORS) (SBI: CLASS I)' {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 = 'TRIAZOLES' {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string substructure = "Clc1ccccc1" {semType: Substructure}
+SELECT s.*, f.level1_description, f.level2_description, f.level3_description, f.level4_description
+FROM compound_structures s
+JOIN molecule_frac_classification m
+ON s.molregno = m.molregno
+JOIN frac_classification f
+ON m.frac_class_id = f.frac_class_id
+WHERE
+  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or f.level4_description = @level4) and
+ s.canonical_smiles::mol @>@substructure::qmol
+--end
