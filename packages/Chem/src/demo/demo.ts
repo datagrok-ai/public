@@ -353,6 +353,14 @@ export async function _demoActivityCliffsLayout(): Promise<void> {
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');
 }
 
+export async function _demoRGroups(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:RGroupsDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#r-groups-analysis');
+}
 
 export async function _demoChemicalSpace(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
@@ -365,8 +373,13 @@ export async function _demoChemicalSpace(): Promise<void> {
     df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
     colNameList: ['molecule'],
     distance: 'euclidian',
-    linkage: 'complete'
+    linkage: 'average'
   });
+  //for dendrogram to render correctly
+  const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
+    sub.unsubscribe();
+    setTimeout(() => grok.shell.tv.grid.invalidate());
+  })
 }
 
 export async function _demoScaffoldTree(): Promise<void> {
@@ -389,6 +402,6 @@ export async function _demoScaffoldTree(): Promise<void> {
     await scaffoldTree.loadTreeStr(treeStr);
 
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
+    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
 }
