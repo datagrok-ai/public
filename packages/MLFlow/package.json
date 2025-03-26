@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/mlflow",
-  "friendlyName": "MLFlow",
+  "friendlyName": "ML Flow",
   "version": "1.0.1",
   "description": "MLFlow Integration package",
   "author": {
