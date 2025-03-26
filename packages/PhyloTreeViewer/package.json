@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/phylo-tree-viewer",
   "fullName": "PhyloTreeViewer",
-  "friendlyName": "PhyloTreeViewer",
+  "friendlyName": "PhyloTree Viewer",
   "version": "1.3.0",
   "author": {
     "name": "Aleksandr Tanas",

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/jiraconnect",
-  "friendlyName": "JiraConnect",
+  "friendlyName": "Jira Connect",
   "version": "1.0.1",
   "description": "Pakcages for Jira integration into Datagrok",
   "author": {

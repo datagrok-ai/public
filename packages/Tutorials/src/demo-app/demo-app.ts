@@ -46,8 +46,11 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
-      .find((el) => el.classList.contains('d4-dock-container'))!;
+    const dockNodes = Array.from(grok.shell.dockManager.rootNode.children)
+      .filter((dockNode) => dockNode.container.containerElement.getElementsByClassName('tab-content').length > 0);
+    if (dockNodes.length === 0)
+      return;
+    const updateIndicatorRoot = dockNodes[0].container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -297,7 +300,7 @@ export class DemoView extends DG.ViewBase {
     view.name = viewName;
     view.append(resultContainer);
     // this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
-    grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+    view.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
 
     const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewName));
     const root = this._createViewRootElement(viewName);
@@ -345,7 +348,7 @@ export class DemoView extends DG.ViewBase {
 
     tree.root.classList.add('demo-app-group-view');
     const searchInput = this._createSearchInput(directionFuncs, tree);
-    view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
+    view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     // this.tree.root.focus();
     this.tree.rootNode.root.focus();
