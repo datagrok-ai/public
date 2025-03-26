@@ -34,17 +34,29 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
 
   grok.functions.onBeforeRunAction.subscribe((fc) => {
     if (fc.func.hasTag('model')) {
-      const view = options.ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
+      let view = options.ViewClass.findModelCatalogView(viewName);
+      if (!view) {
+        const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+        let mfc = mc.prepare();
+        mfc.callSync({processed: true, report: false});
+        view = mfc.outputs.v;
+      }
       const currentView = [...grok.shell.views].find(v => v === view);
       if (!currentView)
-        grok.shell.add(view);
-      ViewClass.bindModel(view, fc);
+        grok.shell.add(view!);
+      ViewClass.bindModel(view!, fc);
     } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
-      const view = options.ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
+      let view = options.ViewClass.findModelCatalogView(viewName);
+      if (!view) {
+        const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+        let mfc = mc.prepare();
+        mfc.callSync({processed: true, report: false});
+        view = mfc.outputs.v;
+      }
       const currentView = [...grok.shell.views].find(v => v === view);
       if (!currentView)
-        grok.shell.add(view);
-      ViewClass.bindModel(view, fc.inputs['call']);
+        grok.shell.add(view!);
+      ViewClass.bindModel(view!, fc.inputs['call']);
     }
   });
 
@@ -115,8 +127,7 @@ export function startModelCatalog(options: ModelCatalogConfig) {
   const view = ViewClass.findModelCatalogView(viewName);
 
   if (view) {
-    grok.shell.v = view;
-    return null;
+    return view;
   } else {
     const newView = ViewClass.createModelCatalogView(viewName, funcName, _package);
     return newView;
