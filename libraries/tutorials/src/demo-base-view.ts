@@ -10,6 +10,8 @@ interface ISplash {
   el: HTMLElement;
 }
 
+let idx = 0;
+
 export abstract class BaseViewApp {
   parentCall: DG.FuncCall;
   tableView?: DG.TableView;
@@ -28,7 +30,7 @@ export abstract class BaseViewApp {
   uploadCachedData?: () => Promise<HTMLElement>;
   sketched: number = 0;
   mode: string = 'sketch';
-  tableName: string = 'Admetica';
+  tableName: string = '';
   target: DG.ChoiceInput<string | null> | null = null;
 
   sketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
@@ -134,9 +136,13 @@ export abstract class BaseViewApp {
     this.tableView = DG.TableView.create(table, false);
     this.tableView.parentCall = this.parentCall;
     this.tableView.dataFrame.name = this.tableName;
+    const name = `${this.tableName}_${idx}`;
+    this.tableName = name;
+    ++idx;
     
     setTimeout(async () => {
       this.tableView!._onAdded();
+      this.tableView!.dataFrame.currentRowIdx = 0;
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
       this.tableView!.path = '';

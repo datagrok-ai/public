@@ -115,9 +115,10 @@ export async function admeProperty(molecule: string, prop: string): Promise<any>
 //output: view v
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
+//meta.demoPath: Cheminformatics | Admetica
 export async function admeticaApp(): Promise<DG.ViewBase | null> {
   const parent = grok.functions.getCurrentCall();
   const app = new AdmeticaViewApp(parent);
   await app.init();
-  return app.tableView!;
+  return grok.shell.addPreview(app.tableView!);
 }
