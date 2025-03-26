@@ -78,11 +78,11 @@ export type ActivityCliffsLines = {
 }
 
 const filterCliffsSubj = new Subject<string>();
-const LINES_DF_ACT_DIFF_COL_NAME = 'activity_difference';
-const LINES_DF_SALI_COL_NAME = 'SALI_index';
-const LINES_DF_SIM_COL_NAME = 'similarity';
-const LINES_DF_LINE_IND_COL_NAME = 'line_index';
-const LINES_DF_MOL_COLS_NAMES = ['1_molecule', '2_molecule'];
+const LINES_DF_ACT_DIFF_COL_NAME = '\u0394 activity';
+const LINES_DF_SALI_COL_NAME = 'SALI';
+const LINES_DF_SIM_COL_NAME = 'Similarity';
+const LINES_DF_LINE_IND_COL_NAME = 'line index';
+const LINES_DF_MOL_COLS_NAMES = ['From', 'To'];
 const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff

@@ -855,3 +855,17 @@
 .chem-mmp-show-pairs-checkbox label {
   margin-right: 3px!important;
 }
+
+.chem-activity-cliffs-tooltip {
+  font-weight: bold;
+  justify-content: space-between;
+}
+
+.chem-activity-cliffs-context-panel {
+  font-weight: bold;
+  gap: 180px;
+}
+
+.chem-activity-cliffs-context-panel-content {
+  gap: 8px;
+}

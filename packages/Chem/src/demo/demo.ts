@@ -347,7 +347,7 @@ export async function _demoActivityCliffs(): Promise<void> {
 export async function _demoActivityCliffsLayout(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showHelp = true;
-  const p  = await grok.functions.eval('Chem:ActivityCliffsDemo');
+  const p  = await grok.functions.eval('Chem:DemoActivityCliffs');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');

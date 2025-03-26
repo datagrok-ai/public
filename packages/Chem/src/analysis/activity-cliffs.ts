@@ -95,19 +95,18 @@ function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLEl
 
 function createElementTemplate(params: ITooltipAndPanelParams,
   drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[],
-  molIdx: number, idx: number) => void,
+  molIdx: number, idx: number, vertical?: boolean) => void,
   vertical: boolean, flexColNames: boolean, colNameStyle?: any) {
   const element = vertical ? ui.divH([]) : ui.divV([]);
   const columnNames = vertical ? ui.divV([]) : ui.divH([]);
   columnNames.append(colNameStyle ? ui.divText(params.seqCol.name, colNameStyle) : ui.divText(params.seqCol.name));
   columnNames.append(ui.divText(params.activityCol.name));
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.justifyContent = 'space-between';
+  columnNames.classList.add(vertical ? 'chem-activity-cliffs-tooltip' : 'chem-activity-cliffs-context-panel');
   if (flexColNames) columnNames.style.display = 'flex';
   element.append(columnNames);
   const hosts: HTMLDivElement[] = [];
   params.points.forEach((molIdx: number, idx: number) => {
-    drawFunc(params, element, hosts, molIdx, idx);
+    drawFunc(params, element, hosts, molIdx, idx, vertical);
   });
   findMcsAndUpdateDrawings(params, hosts);
   return element;
@@ -125,7 +124,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 }
 
 function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
-  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  hosts: HTMLDivElement[], molIdx: number, idx: number, vertical?: boolean) {
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
   activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
@@ -146,9 +145,12 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
       grok.shell.o = obj;
     }, 1000);
   };
-  element.append(ui.divH([
+  const content = ui.divH([
     molHost,
     activity,
-  ]));
+  ]);
+  if (!vertical)
+    content.classList.add('chem-activity-cliffs-context-panel-content');
+  element.append(content);
   hosts.push(molHost);
 }
