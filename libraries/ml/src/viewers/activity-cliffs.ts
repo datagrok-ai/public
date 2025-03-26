@@ -426,15 +426,20 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
 
-  const linesDfGrid = linesGridFunc ?
-    linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
-    linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+  const createLinesGrid = () => {
+    const linesGrid = linesGridFunc ?
+      linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
+      linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
 
-  if (linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME))
-    linesDfGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
-  df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
+    if (linesGrid.col(LINES_DF_LINE_IND_COL_NAME))
+      linesGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
+    df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
+    return linesGrid;
+  }
 
+  let linesDfGrid: DG.Grid | null = null;
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
+    linesDfGrid = createLinesGrid();
     const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
     if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
       view.addViewer(linesDfGrid);
@@ -485,7 +490,8 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   const viewerClosedSub = grok.events.onViewerClosed.subscribe((v) => {
     //@ts-ignore
     if (v.args.viewer === sp) {
-      view.dockManager.close(linesDfGrid.root);
+      if (linesDfGrid)
+        view.dockManager.close(linesDfGrid.root);
       viewerClosedSub.unsubscribe();
       view.subs = view.subs.filter((sub) => sub !== viewerClosedSub);
     }
@@ -556,7 +562,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
 
   df.onSelectionChanged.subscribe((e: any) => {
     if (df.selection.anyTrue === false && typeof e === 'number') { //catching event when initial df selection is reset by pushing Esc
-      if (!clickedSp)
+      if (!clickedSp && linesDfGrid?.dataFrame)
         resetSelectionOnEsc(linesDfGrid.dataFrame);
       else
         clickedSp = false;
@@ -579,8 +585,10 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
           }
           linesRes.linesDf.selection.copyFrom(savedSelection);
         }
-        const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
-        linesDfGrid.scrollToCell(LINES_DF_MOL_COLS_NAMES[0], order.indexOf(event.id));
+        if (linesDfGrid?.dataFrame) {
+          const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
+          linesDfGrid.scrollToCell(LINES_DF_MOL_COLS_NAMES[0], order.indexOf(event.id));
+        }
       }, 500);
     }
   });
