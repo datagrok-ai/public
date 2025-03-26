@@ -1,4 +1,11 @@
-#name: Bioreactor
+/* eslint-disable max-len */
+/** Bioreactor demo model */
+
+import {LINK} from '../ui-constants';
+import {Model} from '../model';
+
+/** Bioreactor model specification */
+const MODEL = `#name: Bioreactor
 #tags: model
 #description: Bioreactor simulation
 #comment: 
@@ -22,13 +29,13 @@
   d(FKox)/dt = E61 - E62
 
   d(MEAthiol)/dt = 2 * (-E11 + E12 - E21 + E22 + E31 + E41 - E32 - E42 - E62 - ktox * E71 * E72)
-			            - (MEAthiol + MA) * (Fin + Fper) / VL
+                   - (MEAthiol + MA) * (Fin + Fper) / VL
 
-  d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR	- 0.5 * ktox * E71 * E72
-			
+  d(CO2)/dt = (Fin * pO2sat * 0.0022 - 2 * Fper * CO2) / VL + OTR - 0.5 * ktox * E71 * E72
+
   d(yO2P)/dt = -OTR * (VL / (VTV - VL)) * R * T * P + yO2in * qin - yO2P * qout
 
-  d(CYST)/dt = ktox * E71 * E72	- krcyst * CYST * E0 - (Fin + Fper) * CYST / VL
+  d(CYST)/dt = ktox * E71 * E72 - krcyst * CYST * E0 - (Fin + Fper) * CYST / VL
 
   d(VL)/dt = Fin - Fper
 
@@ -80,10 +87,13 @@
 
   E72 = (E70 >= 0) ? sqrt(E70) : 0  
 
-#argument: t
-  t0 = 0.0   {units: min; caption: Initial; category: Time}                       [Initial time of simulation]
-  t1 = 1000  {units: min; caption: Final;   category: Time; min: 500; max: 1000}  [Final time of simulation]
-   h = 1     {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simulation]
+#argument: t, Reduction
+  t0 = 0.0   {units: min; caption: Initial; category: Misc}                       [Initial time of simulation]
+  t1 = 200   {units: min; caption: Reduction;   category: Duration; min: 200; max: 500}  [Time of reduction]
+   h = 0.5   {units: min; caption: Step;    category: Misc; min: 0.1; max: 2}     [Time step of simulation]
+
+#update:  Filtration
+  duration = filtration
 
 #inits:  
   FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [FF oxidized]
@@ -140,10 +150,38 @@
         R = 8.2e-2
 
 #parameters:
+  filtration = 300   {min: 100; max: 500; units: min; category: Duration} [Time of filtration]          
          qin =    1  {units: L/min; caption: Gas;         category: Parameters;  min: 0.5; max: 1.5}            [Gas to headspace]
        yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
            T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
-  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
-
+  switchTime =  135  {units: min;   caption: switch;   category: Misc;        min: 70;  max: 180; step: 10}  [Switch mode time]
+  
 #meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]
+`;
+
+/** UI options */
+const UI_OPTS = {
+  inputsTabDockRatio: 0.17,
+  graphsDockRatio: 0.85,
+};
+
+/** Info for help panel */
+const INFO = `# Model
+Simulation of a controlled fab-arm exchange kinetic
+[mechanism](https://doi.org/10.1074/jbc.RA117.000303).
+# Try
+Interactive results based on input changes.
+# Performance
+1000 times faster than the previous version.
+# Complexity
+Each time you change inputs, a system of 12 nonlinear ordinary differential equations is solved.
+# No-code
+[Diff Studio](${LINK.DIF_STUDIO})
+enables the creation of complex models without writing code.
+# Learn more
+* [Sensitivity analysis](${LINK.SENS_AN})
+* [Parameter optimization](${LINK.FITTING})`;
+
+/** Bioreactor demo model */
+export const BIOREACTOR_DEMO = new Model(MODEL, UI_OPTS, INFO);
