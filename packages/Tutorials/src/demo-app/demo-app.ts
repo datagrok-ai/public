@@ -122,9 +122,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _closeDemoScript(): void {
-    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container'))
-      grok.shell.dockManager.close(scriptDockNode);
+    const scriptDockNodes = Array.from(Array.from(grok.shell.dockManager.rootNode.children)[0].children)
+      .filter((dockNode) => dockNode.container.containerElement.classList.contains('tutorials-demo-script-container'));
+    scriptDockNodes.forEach((dockNode) => grok.shell.dockManager.close(dockNode));
   }
 
 
@@ -349,6 +349,7 @@ export class DemoView extends DG.ViewBase {
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     // this.tree.root.focus();
     this.tree.rootNode.root.focus();
+    grok.shell.addView(view);
     // this.browseView.preview = view;
   }
 
@@ -441,6 +442,7 @@ export class DemoView extends DG.ViewBase {
       if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
 
+      this._closeAll();
       const panelRoot = this.tree.rootNode.root.parentElement!;
       treeNodeY = panelRoot.scrollTop!;
 

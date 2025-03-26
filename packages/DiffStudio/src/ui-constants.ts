@@ -252,6 +252,9 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
+# Catalog
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Catalog**.
+
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
 * [Compute](${LINK.COMPUTE})`;
@@ -302,7 +305,11 @@ export enum METHOD {
   ROS34PRw = 'ros34prw',
 };
 
-export const DOCK_RATIO = 0.3;
+/** Dock ratios */
+export enum DOCK_RATIO {
+  INPUTS_TAB = 0.2,
+  GRAPHS = 0.8,
+};
 
 export const MAX_RECENT_COUNT = 10;
 

@@ -35,9 +35,15 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
   grok.functions.onBeforeRunAction.subscribe((fc) => {
     if (fc.func.hasTag('model')) {
       const view = options.ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
+      const currentView = [...grok.shell.views].find(v => v === view);
+      if (!currentView)
+        grok.shell.add(view);
       ViewClass.bindModel(view, fc);
     } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
       const view = options.ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
+      const currentView = [...grok.shell.views].find(v => v === view);
+      if (!currentView)
+        grok.shell.add(view);
       ViewClass.bindModel(view, fc.inputs['call']);
     }
   });
@@ -101,7 +107,6 @@ export function startModelCatalog(options: ModelCatalogConfig) {
 
   if (!getStartUriLoaded()) {
     const view = ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
-    grok.shell.addView(view);
     handleInitialUri(segment);
     setStartUriLoaded();
     return view;
@@ -111,10 +116,9 @@ export function startModelCatalog(options: ModelCatalogConfig) {
 
   if (view) {
     grok.shell.v = view;
-    return view;
+    return null;
   } else {
     const newView = ViewClass.createModelCatalogView(viewName, funcName, _package);
-    grok.shell.addView(newView);
     return newView;
   }
 }

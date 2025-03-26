@@ -1878,7 +1878,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 //description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.demoSkip: GROK-14320
-export async function demoActivityCliffs(): Promise<void> {
+export async function demoActivityCliffsFunc(): Promise<void> {
   _demoActivityCliffsLayout();
 }
 

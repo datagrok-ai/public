@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export async function _demoDatabasesChembl(): Promise<void> {
-  const query = await grok.functions.eval('Chembl:FracClassificationWithSubstructure');
+  const query: DG.DataQuery = await grok.functions.eval('Chembl:FracClassificationWithSubstructure');
   const funccall = query.prepare();
   const editor = await funccall.getEditor();
   const runButton = ui.bigButton('RUN', async () => {
@@ -26,7 +26,7 @@ export async function _demoDatabasesChembl(): Promise<void> {
   runButton.style.width = '150px';
   runButton.style.marginLeft = '80px';
 
-  const queryPanel = ui.input.textArea('', {value: query});
+  const queryPanel = ui.input.textArea('', {value: query.query});
   queryPanel.input.style.width = '100%';
   queryPanel.input.style.minHeight = '350px';
   const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});

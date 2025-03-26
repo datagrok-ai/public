@@ -174,9 +174,9 @@ WHERE md.chembl_id = @chemblId
 --friendlyName: Search | FRAC classification with substructure search
 --connection: Chembl 
 --input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 = 'C14-DEMETHYLASE IN STEROL BIOSYNTHESIS (ERG11/CYP51)' {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 = 'DMI-FUNGICIDES (DEMETHYLATION INHIBITORS) (SBI: CLASS I)' {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 = 'TRIAZOLES' {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
 --input: string substructure = "Clc1ccccc1" {semType: Substructure}
 SELECT s.*, f.level1_description, f.level2_description, f.level3_description, f.level4_description
 FROM compound_structures s

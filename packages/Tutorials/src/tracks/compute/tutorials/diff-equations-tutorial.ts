@@ -12,7 +12,7 @@ import '../../../../css/tutorial.css';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
-  EDIT_TOGGLE_IDX = 2,
+  EDIT_TOGGLE_IDX = 3,
   REFRESH_RIBBON_IDX = 1,
   REFRESH_ICN_IDX = 0,
 };
