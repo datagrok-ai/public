@@ -1,9 +1,9 @@
-import { DockManager } from "../DockManager.js";
-import { DockNode } from "../DockNode.js";
-import { Dialog } from "../Dialog.js";
-import { TabPage } from "../TabPage.js";
-import { IDockContainer } from "./IDockContainer.js";
-import { PanelContainer } from "../PanelContainer.js";
+import { DockManager } from "../DockManager";
+import { DockNode } from "../DockNode";
+import { Dialog } from "../Dialog";
+import { TabPage } from "../TabPage";
+import { IDockContainer } from "./IDockContainer";
+import { PanelContainer } from "../PanelContainer";
 
 export interface ILayoutEventListener {
     onDock?(dockManager: DockManager, dockNode: DockNode): void;

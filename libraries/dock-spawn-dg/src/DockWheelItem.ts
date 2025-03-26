@@ -1,6 +1,6 @@
-import { EventHandler } from "./EventHandler.js";
-import { DockWheel } from "./DockWheel.js";
-import { WheelTypes } from "./enums/WheelTypes.js";
+import { EventHandler } from "./EventHandler";
+import { DockWheel } from "./DockWheel";
+import { WheelTypes } from "./enums/WheelTypes";
 
 export class DockWheelItem {
 
