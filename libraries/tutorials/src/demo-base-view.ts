@@ -37,6 +37,8 @@ export abstract class BaseViewApp {
   runningProcesses: (() => Promise<void>)[] = [];
   subs: Subscription[] = [];
 
+  private debounceTimeout: number | null = null;
+
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
 
@@ -168,20 +170,26 @@ export abstract class BaseViewApp {
       this.clearForm();
       return;
     }
-
-    if (this.abort && this.runningProcesses.length > 0) {
-      await this.abort();
-      this.runningProcesses = [];
-    }
-
-    const newProcessAbort = this.addNewProcess(smiles);
-    this.runningProcesses.push(newProcessAbort);
     
-    try {
-      await newProcessAbort();
-    } finally {
-      this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout);
     }
+    
+    this.debounceTimeout = window.setTimeout(async () => {
+      if (this.abort && this.runningProcesses.length > 0) {
+        await this.abort();
+        this.runningProcesses = [];
+      }
+      
+      const newProcessAbort = this.addNewProcess(smiles);
+      this.runningProcesses.push(newProcessAbort);
+      
+      try {
+        await newProcessAbort();
+      } finally {
+        this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+      }
+    }, 1000);
   }
 
   private addNewProcess(smiles: string): () => Promise<void> {
