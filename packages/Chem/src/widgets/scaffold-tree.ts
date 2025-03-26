@@ -349,52 +349,41 @@ async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, 
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       let canvas = group.root.querySelector('.chem-canvas.modified');
-      if (canvas) {
-        resolve();
-        return;
-      }
-
-      canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
+      if (!canvas)
+        canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
 
       const { chosenColor, parentColor, smiles, colorOn } = gropVal;
-      if (chosenColor || parentColor) {
-        const parent = toJs(group.parent).value as ITreeNode;
-        const finalColor = chosenColor && colorOn ? chosenColor : parentColor;
+      const parent = toJs(group.parent).value as ITreeNode;
+      const finalColor = chosenColor && colorOn ? chosenColor : parentColor;
 
-        if (parent && !(finalColor === chosenColor && colorOn)) {
-          const substructure = chosenColor ? smiles : thisViewer.getParentSmilesIterative(group);
-          thisViewer.setColorToChildren([group], finalColor ?? null, substructure, false);
-        } else
-          thisViewer.setColorToHighlight(group, finalColor!, colorOn!, false);
-      } else {
-        const newMolHost = renderMolecule(smiles, thisViewer.sizesMap[thisViewer.size].width, thisViewer.sizesMap[thisViewer.size].height,
-          false, thisViewer, false);
-        const molCanvas = newMolHost.querySelector('.chem-canvas') as HTMLCanvasElement;
-        molCanvas.classList.add('modified');
-        canvas.replaceWith(molCanvas);
+      const substructure = chosenColor ? smiles : thisViewer.getParentSmilesIterative(group);
+      if (parent && !(finalColor === chosenColor && colorOn)) {
+        thisViewer.setColorToChildren([group], finalColor ?? null, substructure, false);
       }
+
+      const newMolHost = renderMolecule(smiles, thisViewer.sizesMap[thisViewer.size].width, thisViewer.sizesMap[thisViewer.size].height,
+        false, thisViewer, false, finalColor ?? null, substructure);
+      const molCanvas = newMolHost.querySelector('.chem-canvas') as HTMLCanvasElement;
+      molCanvas.classList.add('modified');
+      canvas.replaceWith(molCanvas);
 
       resolve();
     });
   });
 }
 
-
 export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
   const elementToGroupMap = new Map<HTMLElement, DG.TreeViewGroup>();
+  const visibleNodes = new Set<DG.TreeViewGroup>();
+  
   const nodes: DG.TreeViewGroup[] = [];
   fillVisibleNodes(thisViewer.tree, nodes, true);
+  
   nodes.forEach(group => {
     const element = group.root as HTMLElement;
     elementToGroupMap.set(element, group);
   });
 
-  const options = {
-    root: thisViewer.tree.root,
-    rootMargin: '50px',
-    threshold: 0
-  };
-  
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const element = entry.target as HTMLElement;
@@ -403,17 +392,24 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
       if (group) {
         const gropVal = value(group);
   
-        if (entry.intersectionRatio > 0) {
-          if (!element.querySelector('.chem-canvas.modified'))
-            renderMoleculeAsync(group, gropVal, thisViewer);
+        if (entry.isIntersecting) {
+          visibleNodes.add(group);
+          renderMoleculeAsync(group, gropVal, thisViewer);
           const updateBitset = thisViewer.updateBitset(group);
           updateLabel(thisViewer, group, updateBitset);
+        } else {
+          visibleNodes.delete(group);
         }
       }
     });
-  }, options);
+  }, {
+    root: thisViewer.tree.root,
+    rootMargin: '50px',
+    threshold: 0
+  });
 
   nodes.forEach((group) => observer.observe(group.root));
+  thisViewer.visibleNodes = visibleNodes;
 }
 
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
@@ -521,6 +517,7 @@ async function handleMalformedStructures(molColumn: DG.Column, smiles: string): 
 
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
+const MAX_MOL_NUMBER = 500;
 
 export class ScaffoldTreeViewer extends DG.JsViewer {
   static TYPE: string = 'Scaffold Tree';
@@ -573,6 +570,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   applyFilter: boolean = true;
   summary: string;
   scaffoldTreeId: number = scaffoldTreeId;
+  visibleNodes: Set<DG.TreeViewGroup> | null = null;
 
   constructor() {
     super();
@@ -1325,7 +1323,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         groupValue.parentColor = parentColor;
         if (parentColor === chosenColor && (!groupValue.chosenColor || (!groupValue.colorOn && groupValue.chosenColor))) {
           this.makeColorIconActiveOrInactive(group, chosenColor, true);
-          this.highlightCanvas(group, chosenColor, smiles);
+          if (this.visibleNodes?.has(group))
+            this.highlightCanvas(group, chosenColor, smiles);
         }
   
         if (group.children && iterate)
@@ -1353,7 +1352,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
             delete groupValue.parentColor;
             this.makeColorIconActiveOrInactive(group, null, false);
           }
-          this.highlightCanvas(group, color, smilesFinal);
+          if (this.visibleNodes?.has(group))
+            this.highlightCanvas(group, color, smilesFinal);
         }
 
         if (group.children)
@@ -1795,11 +1795,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   toggleTreeGenerationVisibility(): void {
     this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
-    this._generateLink!.style.pointerEvents = 'auto';
     const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.Table);
     const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
-    if (this.allowGenerate && isMolDataset) {
+    if (this.allowGenerate && isMolDataset && dataFrame && dataFrame.rowCount < MAX_MOL_NUMBER) {
       this._generateLink!.style.color = '';
+      this._generateLink!.style.pointerEvents = 'auto';
     }
   }
 
@@ -1822,11 +1822,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
   }
 
-  makeGenerateInactive() {
+  makeGenerateInactive(showMessage: boolean = true) {
     this.toggleTreeGenerationVisibility();
     this._generateLink!.style.pointerEvents = 'none';
     this._generateLink!.style.color = 'lightgrey';
-    this.message = NO_MOL_COL_ERROR_MSG;
+    if (showMessage)
+      this.message = NO_MOL_COL_ERROR_MSG;
     (this._iconAdd! as any).inert = true;
     this._iconAdd!.style.color = 'grey';
     this.moleculeColumnName = '';
@@ -1868,7 +1869,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else if (p.name === 'moleculeColumnName') {
       this.clear();
       this.summary = this.getFilterSum();
-      this.molCol = this.dataFrame.columns.byName(this.moleculeColumnName);      
+      this.molCol = this.dataFrame.columns.byName(this.moleculeColumnName);   
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
         return;
@@ -2033,8 +2034,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const isMolDataset = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null;
 
     if (!isMolDataset) {
-      this.Table = dataFrame.name;
       this.makeGenerateInactive();
+      return;
+    }
+
+    if (dataFrame.rowCount > MAX_MOL_NUMBER) {
+      this.makeGenerateInactive(false);
       return;
     }
 
@@ -2095,6 +2100,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   updateUI() {
     if (this.molColumn === null) {
       this.makeGenerateInactive();
+      return;
+    }
+
+    if (this.dataFrame.rowCount > MAX_MOL_NUMBER) {
+      this.makeGenerateInactive(false);
       return;
     }
 
