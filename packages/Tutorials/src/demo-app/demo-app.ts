@@ -122,9 +122,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _closeDemoScript(): void {
-    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container'))
-      grok.shell.dockManager.close(scriptDockNode);
+    const scriptDockNodes = Array.from(Array.from(grok.shell.dockManager.rootNode.children)[0].children)
+      .filter((dockNode) => dockNode.container.containerElement.classList.contains('tutorials-demo-script-container'));
+    scriptDockNodes.forEach((dockNode) => grok.shell.dockManager.close(dockNode));
   }
 
 
