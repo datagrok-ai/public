@@ -363,6 +363,7 @@ export interface IDartApi {
   grok_DockContainer_Get_ContainerElement(c: any): any;
   grok_DockContainer_Destroy(c: any): any;
   grok_DockContainer_Float(c: any): any;
+  grok_DockContainer_SetActiveChild(c: any, child: any): any;
   grok_DockManager_Dock(m: any, refNode: any, e: any, dockType: String, title: String, ratio: Num): any;
   grok_DockManager_DockDialog(m: any, refNode: any, e: any, dockType: String, title: String): any;
   grok_DockManager_Get_Element(m: any): any;
