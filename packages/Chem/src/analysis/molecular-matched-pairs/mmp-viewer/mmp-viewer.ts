@@ -413,6 +413,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     console.log(`created mmpa filters`);
 
     this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name);
+    //show scatter plot context menu instead of mmp viewer's context menu
+    this.subs.push(grok.events.onContextMenu.subscribe(e => {
+      if (e.causedBy && e.causedBy.target && this.sp.root.contains(e.causedBy.target)) {
+        e.causedBy.preventDefault();
+        e.causedBy.stopPropagation();
+        e.causedBy.stopImmediatePropagation();
+      }
+    }));
 
     const [linesEditor, chemSpaceParams] = runMmpChemSpace(this.parentTable!, this.moleculesCol!, this.sp, lines,
       linesIdxs, linesActivityCorrespondance, this.pairedGrids!.mmpGridTrans.dataFrame, this.mmpa!, this.rdkitModule!,
