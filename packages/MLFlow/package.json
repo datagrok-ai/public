@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/mlflow",
-  "friendlyName": "ML Flow",
+  "friendlyName": "MLflow",
   "version": "1.0.1",
-  "description": "MLFlow Integration package",
+  "description": "MLflow integration package",
   "author": {
     "name": "Konstantin Amelichev",
     "email": "kamelichev@datagrok.ai"
