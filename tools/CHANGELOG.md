@@ -1,5 +1,14 @@
 # Datagrok-tools changelog
 
+## 4.13.67 (2025-03-26)
+
+### Features
+
+* Updated grok link:
+*   Excluded diff-grok from linking
+*   Added verbose option
+*   Updated help
+
 ## 4.13.66 (2025-03-21)
 
 ### Features
