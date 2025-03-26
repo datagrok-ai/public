@@ -518,6 +518,7 @@ async function handleMalformedStructures(molColumn: DG.Column, smiles: string): 
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
 const MAX_MOL_NUMBER = 500;
+const EXCEED_MAX_MOL_ERROR_MSG = `The row count exceeds the maximum allowed number of ${MAX_MOL_NUMBER}. Generation has been disabled.`;
 
 export class ScaffoldTreeViewer extends DG.JsViewer {
   static TYPE: string = 'Scaffold Tree';
@@ -1822,14 +1823,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
   }
 
-  makeGenerateInactive(showMessage: boolean = true) {
+  makeGenerateInactive(message?: string) {
     this.toggleTreeGenerationVisibility();
     this._generateLink!.style.pointerEvents = 'none';
     this._generateLink!.style.color = 'lightgrey';
-    if (showMessage)
-      this.message = NO_MOL_COL_ERROR_MSG;
-    (this._iconAdd! as any).inert = true;
-    this._iconAdd!.style.color = 'grey';
+    this.message = message ?? NO_MOL_COL_ERROR_MSG;
+    if (!this.molColumn) {
+      (this._iconAdd! as any).inert = true;
+      this._iconAdd!.style.color = 'grey';
+    }
     this.moleculeColumnName = '';
   }
 
@@ -1837,7 +1839,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (p.name === 'Table') {
       this.clearTree();
       this.Table = p.get(this);
-      this.message = null;
     
       this.dataFrameSwitchgInProgress = true;
       this.clear();
@@ -1848,6 +1849,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.molColumns = df?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
         this.moleculeColumnName = this.molColumns[0]?.name ?? '';
         this.molCol = this.molColumns[0];
+        if (this.molCol)
+          this.message = null;
       }
     
       this.dataFrameSwitchgInProgress = false;
@@ -2039,7 +2042,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     if (dataFrame.rowCount > MAX_MOL_NUMBER) {
-      this.makeGenerateInactive(false);
+      this.makeGenerateInactive(EXCEED_MAX_MOL_ERROR_MSG);
       return;
     }
 
@@ -2100,11 +2103,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   updateUI() {
     if (this.molColumn === null) {
       this.makeGenerateInactive();
-      return;
-    }
-
-    if (this.dataFrame.rowCount > MAX_MOL_NUMBER) {
-      this.makeGenerateInactive(false);
       return;
     }
 
