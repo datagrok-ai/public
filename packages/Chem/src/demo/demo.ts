@@ -351,6 +351,23 @@ export async function _demoActivityCliffsLayout(): Promise<void> {
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');
+  let scatterPlot;
+  for (const i of grok.shell.tv.viewers) {
+    if (i.type == DG.VIEWER.SCATTER_PLOT)
+      scatterPlot = i;
+  }
+  let cliffsLink;
+  try {
+    await awaitCheck(() => {
+      const link = scatterPlot?.root.getElementsByClassName('scatter_plot_link');
+      if (link.length) {
+        cliffsLink = link[0];
+        return true;
+      }
+      return false;
+    }, '', 10000);
+    (cliffsLink as HTMLElement).click();
+  } catch (e) {}
 }
 
 export async function _demoRGroups(): Promise<void> {
