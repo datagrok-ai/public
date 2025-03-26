@@ -16,7 +16,7 @@ export async function demoSeqSpace() {
   const p = await grok.functions.eval('Bio:SeqSpaceDemo');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio/#sequence-space');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#sequence-space');
 }
 
 export async function demoBio01aUI() {
