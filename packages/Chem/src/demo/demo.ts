@@ -186,8 +186,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search');
 }
 
 
@@ -345,9 +344,59 @@ export async function _demoActivityCliffs(): Promise<void> {
     .start();
 }
 
-export async function _demoActivityCliffs2(): Promise<void> {
-  const p = grok.dapi.projects.filter('activity_cliffs_demo_project');
-  grok.dapi.projects.open('activity_cliffs_demo_project');
+export async function _demoActivityCliffsLayout(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:DemoActivityCliffs');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');
+  let scatterPlot: DG.Viewer | null = null;
+  for (const i of grok.shell.tv.viewers) {
+    if (i.type == DG.VIEWER.SCATTER_PLOT)
+      scatterPlot = i;
+  }
+  let cliffsLink;
+  try {
+    await awaitCheck(() => {
+      const link = scatterPlot?.root.getElementsByClassName('scatter_plot_link');
+      if (link?.length) {
+        cliffsLink = link[0];
+        return true;
+      }
+      return false;
+    }, '', 10000);
+    (cliffsLink as any as HTMLElement).click();
+  } catch (e) {}
+}
+
+export async function _demoRGroups(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:RGroupsDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#r-groups-analysis');
+}
+
+export async function _demoChemicalSpace(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:ChemicalSpaceDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space');
+  grok.functions.call('Dendrogram:HierarchicalClustering', {
+    df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
+    colNameList: ['molecule'],
+    distance: 'euclidian',
+    linkage: 'average'
+  });
+  //for dendrogram to render correctly
+  const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
+    sub.unsubscribe();
+    setTimeout(() => grok.shell.tv.grid.invalidate());
+  })
 }
 
 export async function _demoScaffoldTree(): Promise<void> {
@@ -370,6 +419,6 @@ export async function _demoScaffoldTree(): Promise<void> {
     await scaffoldTree.loadTreeStr(treeStr);
 
     grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
+    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
 }

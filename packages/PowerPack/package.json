@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/power-pack",
-  "friendlyName": "PowerPack",
+  "friendlyName": "Power Pack",
   "sources": [
     "css/power-pack.css"
   ],
@@ -77,7 +77,7 @@
     }
   ],
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

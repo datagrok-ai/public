@@ -1,24 +1,24 @@
-import { DockWheel } from "./DockWheel.js";
-import { Utils } from "./Utils.js";
-import { Point } from "./Point.js";
-import { DockManagerContext } from "./DockManagerContext.js";
-import { DockNode } from "./DockNode.js";
-import { DockLayoutEngine } from "./DockLayoutEngine.js";
-import { EventHandler } from "./EventHandler.js";
-import { Dialog } from "./Dialog.js";
-import { DockGraphSerializer } from "./DockGraphSerializer.js";
-import { DockGraphDeserializer } from "./DockGraphDeserializer.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { TabPage } from "./TabPage.js";
-import { SplitterDockContainer } from "./SplitterDockContainer.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { FillDockContainer } from "./FillDockContainer.js";
-import { ILayoutEventListener } from "./interfaces/ILayoutEventListener.js";
-import { DockModel } from "./DockModel.js";
-import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize.js";
-import { DockConfig } from "./DockConfig.js";
-import { PanelType } from "./enums/PanelType.js";
-import { IState } from "./interfaces/IState.js";
+import { DockWheel } from "./DockWheel";
+import { Utils } from "./Utils";
+import { Point } from "./Point";
+import { DockManagerContext } from "./DockManagerContext";
+import { DockNode } from "./DockNode";
+import { DockLayoutEngine } from "./DockLayoutEngine";
+import { EventHandler } from "./EventHandler";
+import { Dialog } from "./Dialog";
+import { DockGraphSerializer } from "./DockGraphSerializer";
+import { DockGraphDeserializer } from "./DockGraphDeserializer";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { TabPage } from "./TabPage";
+import { SplitterDockContainer } from "./SplitterDockContainer";
+import { PanelContainer } from "./PanelContainer";
+import { FillDockContainer } from "./FillDockContainer";
+import { ILayoutEventListener } from "./interfaces/ILayoutEventListener";
+import { DockModel } from "./DockModel";
+import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize";
+import { DockConfig } from "./DockConfig";
+import { PanelType } from "./enums/PanelType";
+import { IState } from "./interfaces/IState";
 
 /**
  * Dock manager manages all the dock panels in a hierarchy, similar to visual studio.

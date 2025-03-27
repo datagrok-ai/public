@@ -1,5 +1,6 @@
 {
   "name": "@datagrok/surechembl",
+  "friendlyName": "SureChEMBL",
   "version": "1.0.0",
   "description": "Performs patents searches through a locally deployed SureChEMBL database",
   "author": {
@@ -42,7 +43,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

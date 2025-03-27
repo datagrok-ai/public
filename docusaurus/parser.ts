@@ -40,7 +40,7 @@ class ProjectDGFunctionsParser {
     private wasConcatedString = false;
 
     private containerRegex = new RegExp("(?:export declare)[ ]*(?:namespace|class)[ ]*[^{|;]*(?:{|;)");
-    private containerNameRegex = new RegExp("(?<=export declare )(class|namespace) (\\w)+(?=\\s*(?:extends\\s+\\w+\\s+)?[{;]?)");
+    private containerNameRegex = new RegExp("(?<=export declare )(class|namespace) (\\w+)(?=\\s*(?:extends\\s+\\w+\\s+)?[{;]?)");
     private lastClass: string | undefined = undefined;
     private resultFunctionsObject: IIndexable = {};
 

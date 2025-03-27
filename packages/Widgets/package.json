@@ -13,10 +13,10 @@
     "directory": "packages/Widgets"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "dependencies": {
     "datagrok-api": "../../js-api",

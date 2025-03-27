@@ -198,6 +198,10 @@ const HELP_LINK = `
 Usage: grok link
 
 Link \`datagrok-api\` and libraries for local development
+
+Options:
+--dev               Links also dev dependencies
+--verbose           Prints detailed information about linked packages  
 `;
 
 // const HELP_MIGRATE = `

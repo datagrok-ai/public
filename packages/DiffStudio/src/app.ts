@@ -231,6 +231,12 @@ type LastModel = {
   isCustom: boolean,
 };
 
+/** Docking options */
+export type UiOptions = {
+  inputsTabDockRatio: number,
+  graphsDockRatio: number,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -378,7 +384,7 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        DOCK_RATIO,
+        this.uiOpts.inputsTabDockRatio,
       );
 
       if (node.container.dart.elementTitle)
@@ -399,6 +405,19 @@ export class DiffStudio {
     this.toChangePath = true;
     this.solverView.basePath = PATH.APPS_DS;
     this.entityPath = PATH.CUSTOM;
+
+    setTimeout(async () => {
+      await this.runSolving();
+    }, UI_TIME.APP_RUN_SOLVING);
+  } // handleContent
+
+  /** Run Diff Studio with the specified content */
+  public async runModel(content: string): Promise<void> {
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels([[this.fittingWgt, this.sensAnWgt]]);
+    this.updateRibbonWgts();
+    this.toChangePath = false;
 
     setTimeout(async () => {
       await this.runSolving();
@@ -470,15 +489,24 @@ export class DiffStudio {
   private sensAnWgt = this.getSensAnWgt();
   private fittingWgt = this.getFitWgt();
 
+  private addToModelCatalogWgt = this.getAddToModelCatalogWgt();
+
   private facetGridDiv: HTMLDivElement | null = null;
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
 
+  private uiOpts: UiOptions;
+
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
-    browsing?: Browsing) {
+    browsing?: Browsing, dockOptions?: UiOptions) {
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView)
       grok.shell.addPreview(this.solverView);
+
+    this.uiOpts = dockOptions ?? {
+      inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
+      graphsDockRatio: DOCK_RATIO.GRAPHS,
+    };
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
@@ -504,7 +532,7 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        DOCK_RATIO,
+        this.uiOpts.inputsTabDockRatio,
       );
 
       if (node.container.dart.elementTitle)
@@ -528,7 +556,7 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+      [this.addToModelCatalogWgt, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ];
   } // getRibbonPanels
 
@@ -660,6 +688,19 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return the export to JavaScript widget */
+  private getAddToModelCatalogWgt(): HTMLElement {
+    const icon = ui.iconFA(
+      'layer-plus',
+      async () => await this.saveToModelCatalog(),
+      'Save to Model Catalog',
+    );
+
+    icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
+
+    return icon;
+  }
+
   /** Return the refresh solution widget */
   private getRefreshWgt(): HTMLElement {
     const span = ui.span(['Refresh']);
@@ -701,6 +742,12 @@ export class DiffStudio {
     this.exportToJsWgt.style.color = color;
   }
 
+  /** Update state of the save to Model Catalog widget */
+  private updateSaveToModelCatalogWidget(enabled: boolean) {
+    const color = this.getColor(enabled);
+    this.addToModelCatalogWgt.style.color = color;
+  }
+
   /** Create model editor */
   private createEditorView(content?: string): void {
     this.editorView = new EditorView({
@@ -726,6 +773,7 @@ export class DiffStudio {
         this.saveBtn.disabled = false;
         this.updateRefreshWidget(true);
         this.updateExportToJsWidget(true);
+        this.updateSaveToModelCatalogWidget(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -924,6 +972,40 @@ export class DiffStudio {
     }
   }; // exportToJS
 
+  /** Get JS-script for solving the current IVP */
+  private async saveToModelCatalog(): Promise<void> {
+    try {
+      const model = this.editorView!.state.doc.toString();
+      const ivp = getIVP(model);
+      await this.tryToSolve(ivp);
+
+      let lines = [
+        `//name: ${ivp.name}`,
+        '//language: javascript',
+      ];
+
+      if (ivp.descr)
+        lines.push(`//description: ${ivp.descr}`);
+
+      lines = lines.concat([
+        '//tags: model',
+        '\n',
+        `const model = \`${model}\``,
+        `await grok.functions.call('DiffStudio:runModel', {`,
+        `  'model': model,`,
+        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
+        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
+        '});',
+      ]);
+
+      const script = DG.Script.create(lines.join('\n'));
+      grok.dapi.scripts.save(script);
+      grok.shell.info('Saved to Model Catalog');
+    } catch (err) {
+      this.processError(err);
+    }
+  }; // saveToModelCatalog
+
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
     if (this.toPreventSolving)
@@ -994,6 +1076,7 @@ export class DiffStudio {
           DG.DOCK_TYPE.TOP,
           this.solverView.dockManager.findNode(this.solverView.grid.root),
           TITLE.MULTI_AXIS,
+          this.uiOpts.graphsDockRatio,
         );
 
         removeTitle(this.viewerDockNode);
@@ -2091,6 +2174,7 @@ export class DiffStudio {
     this.isModelChanged = false;
     this.updateRefreshWidget(false);
     this.updateExportToJsWidget(false);
+    this.updateSaveToModelCatalogWidget(false);
   }
 
   /** Remove FacetGrid visualization */

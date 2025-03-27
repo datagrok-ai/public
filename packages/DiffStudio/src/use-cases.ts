@@ -368,6 +368,21 @@ const BIOREACTOR_MODEL = `#name: Bioreactor
   CYST     = 0     {units: mmol/L; category: Initial values}                                    [Cystamine]
   VL       = 7.2   {units: L;      category: Initial values}                                    [Liquid volume]
 
+#output:
+  t
+  FFox
+  KKox
+  FFred
+  KKred
+  Ffree
+  Kfree
+  FKred
+  FKox
+  MEAthiol
+  CO2
+  yO2P
+  CYST
+
 #constants:
    VLinit = 7.2
       VTV = 10

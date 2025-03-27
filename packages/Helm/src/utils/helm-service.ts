@@ -29,7 +29,7 @@ export class HelmService extends HelmServiceBase {
 
     this.hostDiv = ui.box();
     // this.hostDiv.style.display = 'none'; // Disables drawing at all
-    this.hostDiv.style.position = 'absolute';
+    this.hostDiv.style.position = 'fixed';
     this.hostDiv.style.left = '0px';
     this.hostDiv.style.right = '0px';
     this.hostDiv.style.width = '0px';

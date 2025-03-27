@@ -36,3 +36,7 @@ different [datagrok configuration](../configuration.md):
   "dbAdminPassword": "postgres"
 }
 ```
+
+See also:
+
+* [Server configuration properties](../configuration.md)

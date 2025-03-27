@@ -57,6 +57,12 @@ export class DemoScript {
   private _node?: DG.DockNode;
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
+  get scriptDockNode(): DG.DockNode {
+    const dockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    return dockNode.container.containerElement === document.getElementsByClassName('panel-base splitter-container-horizontal')[0] ?
+      dockNode : Array.from(dockNode.children)[0];
+  }
+
 
   constructor(name: string, description: string, isAutomatic: boolean = false,
     options?: {autoStartFirstStep?: boolean}) {
@@ -138,14 +144,7 @@ export class DemoScript {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    const scriptDockNode = Array.from(Array.from(grok.shell.dockManager.rootNode.children)[0].children)[0];
-
-    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, scriptDockNode, this.name);
-
-    if (scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild?.
-      classList.contains('tab-handle-list-container'))
-      scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild.remove();
-
+    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, this.scriptDockNode, this.name);
     this._node.container.containerElement.classList.add('tutorials-demo-script-container');
 
     this._addHeader();
@@ -362,8 +361,10 @@ export class DemoScript {
   /** Starts the demo script */
   async start(): Promise<void> {
     this._initRoot();
-    if (grok.shell.v.name === this.name)
+    if (grok.shell.v.name === this.name) {
       grok.shell.v.close();
+      this.scriptDockNode.parent.container.setActiveChild(this._node!.container);
+    }
     grok.shell.newView(this.name);
 
     if (this._isAutomatic) {

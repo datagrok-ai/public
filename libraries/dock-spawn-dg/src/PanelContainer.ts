@@ -1,18 +1,18 @@
-import { DockManager } from "./DockManager.js";
-import { Utils } from "./Utils.js";
-import { UndockInitiator } from "./UndockInitiator.js";
-import { ContainerType } from "./ContainerType.js";
-import { EventHandler } from "./EventHandler.js";
-import { ISize } from "./interfaces/ISize.js";
-import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize.js";
-import { IState } from "./interfaces/IState.js";
-import { Point } from "./Point.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { PanelType } from "./enums/PanelType.js";
-import { Dialog } from "./Dialog.js";
-import { TabPage } from './TabPage.js';
-import { Localizer } from "./i18n/Localizer.js";
-import { moveElementToNewBrowserWindow } from "./BrowserDialogHelper.js";
+import { DockManager } from "./DockManager";
+import { Utils } from "./Utils";
+import { UndockInitiator } from "./UndockInitiator";
+import { ContainerType } from "./ContainerType";
+import { EventHandler } from "./EventHandler";
+import { ISize } from "./interfaces/ISize";
+import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize";
+import { IState } from "./interfaces/IState";
+import { Point } from "./Point";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { PanelType } from "./enums/PanelType";
+import { Dialog } from "./Dialog";
+import { TabPage } from './TabPage';
+import { Localizer } from "./i18n/Localizer";
+import { moveElementToNewBrowserWindow } from "./BrowserDialogHelper";
 
 /**
  * This dock container wraps the specified element on a panel frame with a title bar and close button

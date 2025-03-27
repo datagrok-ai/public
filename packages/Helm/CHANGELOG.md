@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.8.2 (2025-03-26)
+
+Fix Helm Service editor moving datagrok page up
+
 ## 2.8.1 (2025-03-03)
 
 ### Bug fixes

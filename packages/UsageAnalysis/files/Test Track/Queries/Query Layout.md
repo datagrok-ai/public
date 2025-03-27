@@ -7,6 +7,11 @@
 6. Close All
 7. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest** and click the**PostgresAll** query - the preview should open with the new layout
 7. Run the query - the result should open with the new layout
+7. Add some new viewers
+7. Save the project
+7. Close All
+7. Open the project - check the layout
+6. Go to the Toolbox > File and click Refresh - the layout shouldn't change
 ---
 {
   "order": 11

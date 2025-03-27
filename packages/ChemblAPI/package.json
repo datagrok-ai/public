@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/chembl-api",
-  "friendlyName": "ChemblAPI",
+  "friendlyName": "ChEMBL API",
   "version": "1.1.4",
   "description": "Similarity and substructure search in ChEMBL using its API",
   "author": {
@@ -40,7 +40,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

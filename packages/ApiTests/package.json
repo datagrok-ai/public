@@ -60,7 +60,7 @@
     "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

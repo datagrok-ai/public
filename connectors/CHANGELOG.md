@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.3.29 (2025-02-17) WIP
+# 2.3.30 (2025-03-125) WIP
+
+* Memory leaks fixes
+
+# 2.3.29 (2025-02-17)
 
 * Postgres: Set uuid as object
 

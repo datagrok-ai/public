@@ -44,7 +44,7 @@
     "release-admetica-local2": "grok publish local2 --rebuild --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

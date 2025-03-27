@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
 
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -69,9 +69,12 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimReductionM
   })) as DG.Viewer | undefined;
   expect(scatterPlot != null, true);
 
-  const cliffsLink = Array.from(scatterPlot!.root.children).find((el) => {
-    const classList: string[] = el.className.split(' ');
-    return ['ui-btn', 'ui-btn-ok'].every((reqClassName) => classList.includes(reqClassName));
-  });
-  expect((cliffsLink as HTMLElement).innerText.toLowerCase(), `${tgtNumberCliffs} cliffs`);
+  const checkScatterPlotInitialized = () => {
+    const cliffsLink = scatterPlot!.root.getElementsByClassName('scatter_plot_link');
+    return cliffsLink.length > 0 &&
+      ((cliffsLink[0] as HTMLElement).innerText.toLowerCase() === `${tgtNumberCliffs} cliffs`);
+  };
+  await awaitCheck(() => {
+    return checkScatterPlotInitialized();
+  }, 'activity cliffs failed');
 }
