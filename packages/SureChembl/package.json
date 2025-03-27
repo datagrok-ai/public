@@ -14,7 +14,7 @@
     "directory": "packages/SureChembl"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
