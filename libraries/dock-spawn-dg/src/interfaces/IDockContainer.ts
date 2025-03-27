@@ -1,7 +1,7 @@
-import { ContainerType } from "../ContainerType.js";
-import { DockManager } from "../DockManager.js";
-import { IState } from "./IState.js";
-import { TabPage } from '../TabPage.js';
+import { ContainerType } from "../ContainerType";
+import { DockManager } from "../DockManager";
+import { IState } from "./IState";
+import { TabPage } from '../TabPage';
 
 export interface IDockContainer {
     readonly dockManager: DockManager;

@@ -1,7 +1,7 @@
-import { DockManager } from "../DockManager.js";
-import { PanelContainer } from "../PanelContainer.js";
-import { PanelType } from "../enums/PanelType.js";
-import { DockNode } from "../DockNode.js";
+import { DockManager } from "../DockManager";
+import { PanelContainer } from "../PanelContainer";
+import { PanelType } from "../enums/PanelType";
+import { DockNode } from "../DockNode";
 import { faStyle, style, style1, style2 } from "./styles";
 import { Observable, Subscriber, Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";

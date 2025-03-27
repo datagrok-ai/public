@@ -1,8 +1,8 @@
-import { SplitterDockContainer } from "./SplitterDockContainer.js";
-import { Utils } from "./Utils.js";
-import { DockManager } from "./DockManager.js";
-import { ContainerType } from "./ContainerType.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
+import { SplitterDockContainer } from "./SplitterDockContainer";
+import { Utils } from "./Utils";
+import { DockManager } from "./DockManager";
+import { ContainerType } from "./ContainerType";
+import { IDockContainer } from "./interfaces/IDockContainer";
 
 export class HorizontalDockContainer extends SplitterDockContainer {
 

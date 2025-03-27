@@ -1,7 +1,7 @@
-import { EventHandler } from "./EventHandler.js";
-import { Point } from "./Point.js";
-import { Dialog } from "./Dialog.js";
-import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent.js";
+import { EventHandler } from "./EventHandler";
+import { Point } from "./Point";
+import { Dialog } from "./Dialog";
+import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent";
 
 /**
  * Listens for events on the [element] and notifies the [listener]

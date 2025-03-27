@@ -332,7 +332,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?
-        DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
+        DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer as ArrayBuffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
@@ -347,7 +347,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
-  return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
+  return DG.BitSet.fromBytes(bitArray.getRawData().buffer as ArrayBuffer, bitArray.length);
 }
 
 
@@ -416,7 +416,7 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
-    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
+    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer as ArrayBuffer, molStringsColumn.length);
     return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
@@ -567,13 +567,61 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   }
 }
 
+//name: clusterMCSTopMenu
+//FriendlyName: Cluster MCS
+//top-menu: Chem | Calculate | Cluster MCS...
+//description: Calculates most common substructures for each cluster
+//input: dataframe table
+//input: column molCol {semType: Molecule}
+//input: column clusterCol {type: string}
+export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column): Promise<void> {
+  const c = await performClusterMCS(molCol, clusterCol);
+  c.name = table.columns.getUnusedName(c.name);
+  table.columns.add(c);
+}
+
+//name: clusterMCS
+//friendlyName: Cluster MCS
+//description: Calculates most common substructures for each cluster
+//meta.vectorFunc: true
+//input: column molCol {semType: Molecule}
+//input: column clusterCol {type: string}
+//output: column result {semType: Molecule}
+export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column): Promise<DG.Column> {
+  const PG = DG.TaskBarProgressIndicator.create('Most common substructures...');
+  const mcsCol = DG.Column.string('Cluster MCS', molCol.length);      
+  try {
+    const clusteredMols = new Array(clusterCol.categories.length).fill(null).map(() => [] as string[]);
+    const indexes = clusterCol.getRawData();
+    const mols = molCol.toList();
+    //optimization to avoid pushing to arrays
+    for (let i = 0; i < indexes.length; i++)
+      clusteredMols[indexes[i]].push(mols[i]);
+
+    const mcsResult = await (await chemCommonRdKit.getRdKitService()).clusterMCS(clusteredMols, true, true);
+    mcsCol.semType = DG.SEMTYPE.MOLECULE;
+    mcsCol.init((i) => mcsResult[indexes[i]]);
+    mcsCol.setTag('.structure-filter-type', 'Categorical');
+    mcsCol.setTag('.ignore-custom-filter', 'true');
+  } catch (e) {
+    grok.shell.error('Cluster MCS Error');
+    console.error(e);
+  }
+  PG.close();
+  return mcsCol;
+}
+
+
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall): void {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
+  const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
+  const editor = funcEditor.getEditor();
+  editor.appendChild(clusterMCS.root);
   const dialog = ui.dialog({title: 'Chemical space'})
-    .add(funcEditor.getEditor())
+    .add(editor)
     .onOK(async () => {
       const params = funcEditor.getParams();
       return call.func.prepare({
@@ -585,6 +633,7 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
         options: params.options,
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
+        clusterMCS: !!clusterMCS.value,
       }).call();
     });
   dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
@@ -625,11 +674,12 @@ export async function getFingerprints(
 //input: object options {optional: true}
 //input: func preprocessingFunction {optional: true}
 //input: bool clusterEmbeddings {optional: true}
+//input: bool clusterMCS {optional: true}
 //editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
-): Promise<DG.Viewer | undefined> {
+  clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -646,7 +696,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     preprocessingFunction: preprocessingFunction,
     clusterEmbeddings: clusterEmbeddings,
   }).call(undefined, undefined, {processed: false});
-  let res = funcCall.getOutputParamValue();
+  let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
     res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
@@ -655,8 +705,15 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
       if (res.props['labelColumnNames'].constructor.name == 'Array')
         res.setOptions({labelColumnNames: [molecules.name]});
     }
-    if (clusterEmbeddings)
+    if (clusterEmbeddings) {
       res.props.colorColumnName = clusterColName;
+      if (clusterMCS) {
+        const clusterCol = table.col(clusterColName)!;
+        const mcsCol = await performClusterMCS(molecules, clusterCol);
+        mcsCol.name = table.columns.getUnusedName(mcsCol.name);
+        table.columns.add(mcsCol);
+      }
+    }
   }
   return res;
 }

@@ -1,7 +1,7 @@
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { EventHandler } from "./EventHandler.js";
-import { Utils } from "./Utils.js";
-import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent.js";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { EventHandler } from "./EventHandler";
+import { Utils } from "./Utils";
+import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent";
 
 export class SplitterBar {
     previousContainer: IDockContainer;

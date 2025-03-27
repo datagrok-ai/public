@@ -1,12 +1,12 @@
-import { DockManager } from "./DockManager.js";
-import { DockNode } from "./DockNode.js";
-import { Utils } from "./Utils.js";
-import { HorizontalDockContainer } from "./HorizontalDockContainer.js";
-import { VerticalDockContainer } from "./VerticalDockContainer.js";
-import { FillDockContainer } from "./FillDockContainer.js";
-import { IRectangle } from "./interfaces/IRectangle.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { TabHandle } from "./TabHandle.js";
+import { DockManager } from "./DockManager";
+import { DockNode } from "./DockNode";
+import { Utils } from "./Utils";
+import { HorizontalDockContainer } from "./HorizontalDockContainer";
+import { VerticalDockContainer } from "./VerticalDockContainer";
+import { FillDockContainer } from "./FillDockContainer";
+import { IRectangle } from "./interfaces/IRectangle";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { TabHandle } from "./TabHandle";
 
 export class DockLayoutEngine {
 

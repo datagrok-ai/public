@@ -668,18 +668,17 @@
   position: absolute;
   z-index: 1;
   right: 0px;
-  padding-top: 30px;
+  margin-right: 10px;
 }
 
 .mmpa-slider-input {
   margin-left: 5px;
   padding-right: 5px;
-  width: 150px;
 }
 
 .mmpa-slider-input > .ui-input-label {
-  min-width: 50px;
-  max-width: 50px;
+  min-width: 80px;
+  max-width: 80px;
   margin-right: 0px !important;
 }
 
@@ -688,7 +687,7 @@
 }
 
 .mmpa-slider-input > .ui-input-options {
-  width: 40px;
+  width: 45px;
 }
 
 .mmp-pairs-grid-cliffs-tab.cliffs-closed {
