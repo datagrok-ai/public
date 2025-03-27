@@ -55,24 +55,25 @@ export class AdmeticaViewApp extends BaseViewApp {
     const models = await getQueryParams();
     
     if (cached) {
-      const datasetPath = 'System:AppData/Admetica/demo_files/sketcher-demo-app.csv';
-      const csvText = await grok.dapi.files.readAsText(datasetPath);
-      const sampleData = DG.DataFrame.fromCsv(csvText);
-      await grok.data.detectSemanticTypes(sampleData);
-      this.tableView!.dataFrame = sampleData;
-      this.tableView!.dataFrame.name = this.tableName;
+      await this.loadCachedData();
     } else {
-      await performChemicalPropertyPredictions(
-        this.tableView!.dataFrame.getCol('smiles'),
-        this.tableView!.dataFrame,
-        models,
-        undefined,
-        false,
-        false,
-        true
-      );
+      try {
+        await performChemicalPropertyPredictions(
+          this.tableView!.dataFrame.getCol('smiles'),
+          this.tableView!.dataFrame,
+          models,
+          undefined,
+          false,
+          false,
+          true,
+          true
+        );
+      } catch (e: any) {
+        const errorWidget = new DG.Widget(ui.divText(e, 'admetica-rdkit-error'));
+        return errorWidget.root;
+      }
     }
- 
+
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     
@@ -81,6 +82,16 @@ export class AdmeticaViewApp extends BaseViewApp {
     if (ribbon)
       ribbon.remove();
     return form.root;
+  }
+
+  private async loadCachedData(): Promise<void> {
+    const datasetPath = 'System:AppData/Admetica/demo_files/sketcher-demo-app.csv';
+    const csvText = await grok.dapi.files.readAsText(datasetPath);
+    const sampleData = DG.DataFrame.fromCsv(csvText);
+
+    await grok.data.detectSemanticTypes(sampleData);
+    this.tableView!.dataFrame = sampleData;
+    this.tableView!.dataFrame.name = this.tableName;
   }
 
   private async performAdmetica() {

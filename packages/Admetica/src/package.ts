@@ -8,7 +8,6 @@ import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
-import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -22,10 +21,10 @@ export function info() {
 //meta.cache.invalidateOn: 0 0 1 * *
 //input: string csvString
 //input: string queryParams
-//input: string addProbability
+//input: bool raiseException
 //output: string result
-export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string> {
-  return (await runAdmeticaFunc(csvString, queryParams, addProbability))!;
+export async function runAdmetica(csvString: string, queryParams: string, raiseException: boolean): Promise<string> {
+  return (await runAdmeticaFunc(csvString, queryParams, raiseException))!;
 }
 
 //name: Biology | Admetica
@@ -106,7 +105,7 @@ export async function admeticaMenu(
 //input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
 //output: double propValue
 export async function admeProperty(molecule: string, prop: string): Promise<any> {
-  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, 'false');
+  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, false);
   return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }
 
