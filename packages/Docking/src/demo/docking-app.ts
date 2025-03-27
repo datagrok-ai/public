@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 import { IAutoDockService } from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 
-import { getAutoDockService, getAutodockSingle, getConfigFiles, runDocking } from '../package';
+import { getAutoDockService, getAutodockSingle, runDocking } from '../package';
 
 export class DockingViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {

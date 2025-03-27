@@ -78,11 +78,17 @@ export abstract class BaseViewApp {
 
     if (this.tableName === 'Docking') {
       const items = await grok.functions.call('Docking:getConfigFiles');
+      const helpIcon = ui.icons.help(() => {
+        grok.shell.windows.showHelp = true;
+        grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
+      });
       this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
         await this.onChanged(this.sketcherInstance.getSmiles());
       }});
-      this.target.root.style.cssText = 'flex-direction: row !important; ';
-      this.formContainer.insertBefore(this.target.root, this.formContainer.firstChild);
+      this.target.root.style.cssText = 'width: 95%';
+      const container = ui.divH([this.target.root, helpIcon]);
+      container.style.cssText = 'overflow: visible !important; gap: 10px; align-items: baseline;';
+      this.formContainer.insertBefore(container, this.formContainer.firstChild);
     }
 
     this.prepareTableView();
@@ -159,7 +165,7 @@ export abstract class BaseViewApp {
   }
 
   private clearForm() {
-    const choiceElement = this.formContainer.querySelector('.ui-input-choice.ui-input-root');
+    const choiceElement = this.formContainer.querySelector('.d4-flex-row.ui-div');
     this.formContainer.innerHTML = '';
     if (choiceElement)
       this.formContainer.appendChild(choiceElement);
