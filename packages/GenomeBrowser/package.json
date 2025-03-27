@@ -95,5 +95,8 @@
   },
   "sideEffects": [
     "rxjs/operators"
+  ],  
+  "sources": [
+    "css/app-styles.css"
   ]
 }

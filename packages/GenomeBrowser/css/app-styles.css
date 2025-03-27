@@ -1,0 +1,11 @@
+html body .MuiPaper-root {
+    --Paper-shadow: none !important;
+    -webkit-transition: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    background: none !important;
+}
+
+.css-10rokvf-container{
+    display: none !important;
+}

@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import * as ReactDOM from "react-dom/client";
  
 
-export function getGenomeFileBrowserComponent(host: HTMLElement, config: string) { 
+export function getGenomeBrowserComponent(host: HTMLElement, config: string) { 
 
   const data : any = JSON.parse(config);
   if(data.assemblies?.length > 0)
