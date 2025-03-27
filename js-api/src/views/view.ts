@@ -4,7 +4,7 @@ import * as ui from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {Menu, ToolboxPage, TreeViewGroup} from '../widgets';
+import {DartWidget, Menu, ToolboxPage, TreeViewGroup} from '../widgets';
 import {ColumnInfo, Entity, Script, TableInfo} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable, MapProxy} from '../utils';
@@ -667,25 +667,14 @@ export class DockView extends View {
 }
 
 
-export class BrowseView extends View {
+export class BrowsePanel extends DartWidget {
   constructor(dart: any) {
     super(dart);
   }
-  // TODO: add static method to return browse view
-  get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
-  get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
 
-  get preview(): View | null { return toJs(api.grok_BrowseView_Get_Preview(this.dart)); }
-  set preview(preview: View | null) { api.grok_BrowseView_Set_Preview(this.dart, preview?.dart); }
+  get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
+  get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
 
-  get dockManager(): DockManager { return new DockManager(api.grok_BrowseView_Get_DockManager(this.dart)); }
-
-  get showTree(): boolean { return api.grok_BrowseView_Get_ShowTree(this.dart); }
-  set showTree(x: boolean) { api.grok_BrowseView_Set_ShowTree(this.dart, x); }
-
-  async setHomeView(): Promise<void> {
-    await api.grok_BrowseView_SetHomeView(this.dart);
-  }
 }
 
 

@@ -33,7 +33,7 @@ export const RFVApp = Vue.defineComponent({
     const sub = runRequests$.pipe(
       debounceTime(RUN_DEBOUNCE_TIME),
       withLatestFrom(isFormValid$),
-      switchMap(([,isValid]) => {
+      switchMap(([, isValid]) => {
         if (!isValid || currentCallState.value.isRunning)
           return of(null);
         return from(run());
@@ -52,9 +52,8 @@ export const RFVApp = Vue.defineComponent({
     const searchParams = useUrlSearchParams<{id?: string}>('history');
 
     const setViewName = (name: string = '') => {
-      if (props.view) {
+      if (props.view)
         props.view.name = name;
-      }
     };
 
     const setViewPath = (path: string = '') => {
@@ -72,11 +71,10 @@ export const RFVApp = Vue.defineComponent({
       searchParams.id = fc.author ? fc.id : undefined;
 
       const title = fc?.options?.['title'];
-      const modelName = fc?.func?.friendlyName ?? fc?.func?.name ;
+      const modelName = fc?.func?.friendlyName ?? fc?.func?.name;
 
       if (title) setViewName(`${modelName} - ${title}`);
       else setViewName(modelName);
-
     }, {immediate: true});
 
     Vue.watch(currentFuncCall, async () => {
@@ -93,7 +91,6 @@ export const RFVApp = Vue.defineComponent({
 
       const fc = await historyUtils.loadRun(loadingId);
       currentFuncCall.value = fc;
-
     }, {immediate: true});
 
 
@@ -113,7 +110,7 @@ export const RFVApp = Vue.defineComponent({
     const onInputChanged = () => {
       currentCallState.value.isOutputOutdated = true;
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
-      searchParams.id = undefined
+      searchParams.id = undefined;
       if (isRunningOnInput.value)
         runRequests$.next(true);
     };
@@ -134,7 +131,7 @@ export const RFVApp = Vue.defineComponent({
         Vue.triggerRef(currentFuncCall);
       });
       dialog.show({center: true, width: 500});
-    }
+    };
 
     const onUpdateForm = () => {
       if (isRunningOnInput.value && currentCallState.value.isOutputOutdated)
@@ -148,7 +145,7 @@ export const RFVApp = Vue.defineComponent({
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel view={currentView.value}>
-          {isRunningOnInput.value && !currentCallState.value.isOutputOutdated &&
+          {!isRunningOnInput.value && !currentCallState.value.isOutputOutdated &&
             <IconFA
               name='save'
               tooltip={'Save'}

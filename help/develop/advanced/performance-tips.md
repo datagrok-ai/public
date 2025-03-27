@@ -10,7 +10,7 @@ as an application programmer
 
 ## DataFrame
 
-DataFrame is a [highly optimized columnar data engine](../under-the-hood/infrastructure.md#in-memory-database) that is used for data ingestion and
+DataFrame is a [highly optimized columnar data engine](../under-the-hood/scaling.md#in-memory-database) that is used for data ingestion and
 transfer, data transformations, visualization, and analyses. To understand the
 
 * For maximum performance, use Column.getRawData() method

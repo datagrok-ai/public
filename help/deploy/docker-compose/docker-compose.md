@@ -107,3 +107,4 @@ All the data is saved in the [Docker volumes](https://docs.docker.com/storage/vo
 - [Advanced local machine deployment](docker-compose-advanced.md)
 - [All deployment options](../deploy.md)
 - [Infrastructure overview](../../develop/under-the-hood/infrastructure.md)
+- [Server configuration properties](../configuration.md)

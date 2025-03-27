@@ -21,14 +21,15 @@ enum ELEMENTS {
   SIMILARITY = 'similarity',
 }
 
-export function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null): DG.DataFrame | null {
-  const xmlhttp = new XMLHttpRequest();
-  xmlhttp.open("GET", `${BASE_URL}/${searchType}/${smiles}${searchType === SEARCH_TYPE.SUBSTRUCTURE ? '' : `/${score}`}`, false);
-  xmlhttp.send();
-  const xmlDoc = xmlhttp.responseXML;
-  if (xmlDoc === null)
-    return null;
-  const molecules = xmlDoc.getElementsByTagName("molecule");
+export async function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null):
+  Promise<DG.DataFrame | null> {
+  const response = await grok.dapi.fetchProxy(
+    `${BASE_URL}/${searchType}/${smiles}${searchType === SEARCH_TYPE.SUBSTRUCTURE ?'' :`/${score}`}`);
+
+  const responseText = await response.text();
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(responseText, 'text/xml');
+  const molecules = xmlDoc.getElementsByTagName('molecule');
   const rowCount = Math.min(molecules.length, 20);
 
   const df = DG.DataFrame.create(rowCount);
@@ -41,18 +42,18 @@ export function getData(searchType: SEARCH_TYPE, smiles: string, score: number |
     const chemblId = molecule.getElementsByTagName(ELEMENTS.CHEMBL_ID)[0];
     if (typeof chemblId === 'undefined')
       break;
-    let col = df.columns.getOrCreate(ELEMENTS.CHEMBL_ID, DG.TYPE.STRING, rowCount);
+    let col = df.columns.getOrCreate(ELEMENTS.CHEMBL_ID, DG.TYPE.STRING);
     grok.log.debug(`Chembl ID: ${chemblId}`);
     col.set(i, chemblId.textContent);
 
     const smiles = molecule.getElementsByTagName(ELEMENTS.SMILES)[0];
-    col = df.columns.getOrCreate(ELEMENTS.SMILES, DG.TYPE.STRING, rowCount);
+    col = df.columns.getOrCreate(ELEMENTS.SMILES, DG.TYPE.STRING);
     grok.log.debug(`SMILES: ${smiles}`);
     col.set(i, smiles.textContent);
 
     if (searchType === SEARCH_TYPE.SIMILARITY) {
       const similarity = molecule.getElementsByTagName(ELEMENTS.SIMILARITY)[0];
-      col = df.columns.getOrCreate(ELEMENTS.SIMILARITY, DG.TYPE.FLOAT, rowCount);
+      col = df.columns.getOrCreate(ELEMENTS.SIMILARITY, DG.TYPE.FLOAT);
       grok.log.debug(`Similarity: ${similarity}`);
       col.set(i, parseInt(similarity.textContent ?? '0') / 100);
     }
@@ -84,7 +85,7 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
     //   return null;
 
     // return df;
-    return getData(SEARCH_TYPE.SUBSTRUCTURE, mol);
+    return await getData(SEARCH_TYPE.SUBSTRUCTURE, mol);
   } catch (e: any) {
     console.error('In SubstructureSearch: ' + e.toString());
     throw e;
@@ -105,7 +106,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
     //   return null;
 
     // return df;
-    return getData(SEARCH_TYPE.SIMILARITY, molecule, 40);
+    return await getData(SEARCH_TYPE.SIMILARITY, molecule, 40);
   } catch (e: any) {
     console.error('In SimilaritySearch: ' + e.toString());
     throw e;
@@ -149,12 +150,10 @@ export async function chemblSearchWidget(mol: string, substructure: boolean = fa
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([]);
-      grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => {
-          molHost.append(res);
-          if (!substructure)
-            molHost.append(ui.divText(`Score: ${table.getCol(ELEMENTS.SIMILARITY).get(i)?.toFixed(2)}`));
-        });
+      const res = grok.chem.drawMolecule(moleculeCol.get(i), WIDTH, HEIGHT, true);
+      molHost.append(res);
+      if (!substructure)
+        molHost.append(ui.divText(`Score: ${table.getCol(ELEMENTS.SIMILARITY).get(i)?.toFixed(2)}`));
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${chemblIdCol.get(i)}\nClick to open in ChEMBL Database`));

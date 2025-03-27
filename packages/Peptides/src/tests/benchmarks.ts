@@ -17,7 +17,7 @@ const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   });
   for (const size of benchmarkDatasetSizes)
     test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 300000});
@@ -25,7 +25,7 @@ category('Benchmarks: Mutation Cliffs', () => {
 
 category('Benchmarks: Cluster stats', () => {
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
@@ -49,7 +49,7 @@ category('Benchmarks: Cluster stats', () => {
 
 category('Benchmarks: Monomer-Position stats', () => {
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
@@ -78,7 +78,7 @@ category('Benchmarks: Monomer-Position stats', () => {
 
 category('Benchmarks: Analysis start', () => {
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {

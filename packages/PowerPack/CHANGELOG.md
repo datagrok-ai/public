@@ -1,5 +1,30 @@
 # PowerPack changelog
 
+## 1.4.1  (2025-03-18)
+
+### Bug Fixes
+
+* GROK-17755: Failed to open "Add viewer" dialog
+
+## 1.4.0  (2025-02-24) - 1.3.0 (2024-12-24)
+
+### Features
+
+* [#2708](https://github.com/datagrok-ai/public/issues/2708): Formula lines: Changed "\$\{x\}" to "x" on Formula Lines
+* Updated validation, added tests for BinBySpecificLimits
+* Widgets visibility
+* PowerPack: Add new column dialog: Added code mirror border when not focused
+* Viewers gallery: Temporarily removed Shape map (until we reincarnate it)
+* Scrolling: Saved scrolling in tab mode for browse and other things
+
+### Bug Fixes
+
+* GROK-17109: Calculated columns: Fixed columns are not saved to project with data sync
+* Welcome: Widgets: not showing the "drag" cursor on the header since it's not working
+* Fixed table opening from powerSearch
+* Fixed widgetHost func
+* Fixed error, when returned widget is null
+
 ## 1.2.3 (2024-11-13)
 
 ### Bug Fixes

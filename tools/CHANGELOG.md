@@ -1,5 +1,45 @@
 # Datagrok-tools changelog
 
+## 4.13.67 (2025-03-26)
+
+### Features
+
+* Updated grok link:
+*   Excluded diff-grok from linking
+*   Added verbose option
+*   Updated help
+
+## 4.13.66 (2025-03-21)
+
+### Features
+
+* Added js-flag to puppeteer options
+
+## 4.13.65 (2025-03-18)
+
+### Features
+
+* Fixed func-gen-plugin for js packages 
+
+## 4.13.64 (2025-02-27)
+
+### Features
+
+* Test/TestAll opens inspector in debug mode
+
+## 4.13.63 (2025-02-27)
+
+### Features
+
+* Grok Link minor fixes
+
+## 4.13.62 (2025-02-27)
+
+### Features
+
+* No Sandbox mode for puppeteer removed
+* Added debug mode for test and testAll
+
 ## 4.13.61 (2025-01-27)
 
 ### Features

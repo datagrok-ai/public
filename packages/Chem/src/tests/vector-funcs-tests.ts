@@ -2,12 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, test, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { ensureContainersRunning } from './utils';
+import { CONTAINER_TIMEOUT} from './utils';
 
 category('vector functions', () => {
-
 
     before(async () => {
         grok.shell.closeAll();
@@ -15,7 +15,6 @@ category('vector functions', () => {
             chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
             await chemCommonRdKit.initRdKitModuleLocal();
         }
-        await ensureContainersRunning();
     });
 
     test('getMorganFingerprints', async () => {
@@ -24,9 +23,10 @@ category('vector functions', () => {
     });
 
     test('chemDescriptor', async () => {
+        await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
         await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
-    });
+    }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
     test('getInchis', async () => {
         await testVectorFunc('Chem:getInchis(${smiles})', 'Inchi', [0, 9],

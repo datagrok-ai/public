@@ -27,6 +27,7 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
 * Save model:
   * Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
   * Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor
+  * Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Catalog**
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load model:
@@ -236,18 +237,20 @@ The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance
 
 |Problem|Segment|Points|Tolerance|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
 |-|-|-|-|-|-|-|
-|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|125|1066|507|
-|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|626|931|489|
-|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|1124|2884|904|
-|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|947|1131|440|
-|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|24|52|18|
-|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|71|139|32|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|103|446|285|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|222|362|215|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|963|1576|760|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|381|483|199|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|14|17|8|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|36|50|23|
 
 This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 
-## Export to JavaScript script
+## Platform applications
 
-Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
+Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> icon on the top panel to save your model to **Model Catalog**.
+
+You can export your model to JavaScript script. To do so:
 
 1. Turn on the **Edit** toggle on the top panel
 2. Click **</>** icon. Script editor opens in a new view

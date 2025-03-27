@@ -172,6 +172,8 @@ export interface IPieChartSettings {
 
   startAngle: number;
 
+  maxRadius: number;
+
   shift: number;
 
   outlineLineWidth: number;
@@ -254,6 +256,7 @@ export interface IPieChartSettings {
 export enum RowGroupAction {
   Select = 'Select',
   Filter = 'Filter',
+  None = 'None',
 }
 
 export enum FlexAutoPosition {
@@ -431,7 +434,11 @@ export interface IScatterPlotSettings {
 
   /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
   /// Useful when multiple points fall on the same exact position.
+  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
   jitterSize: number;
+
+  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
+  jitterSizeY: number;
 
   markerDrawBorder: boolean;
 
@@ -651,7 +658,7 @@ export interface IBoxPlotSettings {
 
   labelOrientation: keyof typeof TextOrientation;
 
-  /// Display subcategories - category combibations in the x axis table.
+  /// Display subcategories - category combinations in the x axis table.
   showMinorCategories: boolean;
 
   value: string;
@@ -733,6 +740,8 @@ export interface IBoxPlotSettings {
   showMouseOverRowGroup: boolean;
 
   statistics: Array<string>;
+
+  viewport: string;
 
   autoLayout: boolean;
 
@@ -1174,6 +1183,9 @@ export interface ITrellisPlotSettings {
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  /// Action to be performed when you click on a trellis cell
+  onClick: keyof typeof RowGroupAction;
 
   packCategories: boolean;
 
@@ -3059,6 +3071,10 @@ export interface IPcPlotSettings {
   color: string;
   colorColumnName: string;
 
+  showColorSelector: boolean;
+
+  invertColorScheme: boolean;
+
   /// Determines the way a value is mapped to the vertical scale.
   /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
   /// FALSE: uses the same scale. This lets you compare values across columns
@@ -3092,6 +3108,10 @@ export interface IPcPlotSettings {
 
   labelsOrientation: keyof typeof TextOrientation;
 
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
   backColor: number;
 
   selectedRowsColor: number;
@@ -3115,6 +3135,10 @@ export interface IPcPlotSettings {
   maxCategories: number;
 
   horzMargin: number;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
 
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;

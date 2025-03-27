@@ -708,6 +708,42 @@ category('ComputeUtils: Driver links reactivity', async () => {
     });
   });
 
+  test('Run no inputs meta on init', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: [],
+        to: 'out1:step1/a',
+        type: 'meta',
+        handler({controller}) {
+          controller.setViewMeta('out1', {key: 'val'});
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]);
+      expectObservable((node.getItem().getStateStore() as FuncCallInstancesBridge).meta$.pipe(
+        switchMap((x) => x.a),
+      )).toBe('a', {
+        a: {
+          'key': 'val',
+        },
+      });
+    });
+  });
+
   test('Get and run pipeline validation actions', async () => {
     const s = new Subject<string>();
     const config3: PipelineConfiguration = {
@@ -1335,6 +1371,61 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable(node.getItem().getStateStore().getStateChanges('c')).toBe('a 200ms b', {a: undefined, b: 1});
       expectObservable(node.getItem().getStateStore().getStateChanges('d')).toBe('a 300ms b', {a: undefined, b: 1});
       expectObservable(node.getItem().getStateStore().getStateChanges('e')).toBe('a 400ms b', {a: undefined, b: 1});
+    });
+  });
+
+  test('Links optional match test', async () => {
+    const inputs$ = new Subject<Set<string>>();
+    const outputs$ = new Subject<Set<string>>();
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'pipelinePar',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'stepAdd',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'stepMul',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'stepAdd',
+            },
+          ],
+        },
+        {
+          id: 'step3',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: ['in1:pipelinePar/stepAdd/a', 'in2(optional):pipelinePar/stepMul/a'],
+        to: ['out1:step3/a', 'out2(optional):step2/a'],
+        handler({controller}) {
+          inputs$.next(controller.getMatchedInputs());
+          outputs$.next(controller.getMatchedOutputs());
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('a', 10);
+      });
+      expectObservable(inputs$, '^ 1000ms !').toBe('-a', {a: new Set(['in1'])});
+      expectObservable(outputs$, '^ 1000ms !').toBe('-a', {a: new Set(['out1'])});
     });
   });
 });

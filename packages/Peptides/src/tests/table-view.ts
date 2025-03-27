@@ -27,7 +27,7 @@ category('Table view', () => {
   const secondCluster = {monomerOrCluster: '1', positionOrClusterType: CLUSTER_TYPE.ORIGINAL, count: 3};
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);

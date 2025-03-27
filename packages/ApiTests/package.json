@@ -14,7 +14,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.4.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.1",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",
@@ -60,7 +60,7 @@
     "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

@@ -7,40 +7,106 @@ import Cpa from '@site/src/components/new/cpa.jsx';
 import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/components/new/ui-parts.jsx';
 
 <Header>
-{/* Header container. */}
-
-# Datagrok: Swiss army knife for data
-
-### Fast. Easy to use. Endlessly customizable
-
-Datagrok helps you unlock the value of your organization's complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and share these results.
-
-<br/>  
-<Button label="Get a Demo" type="outline" size="large"/> 
-<Button label="Try Now" type="primary" size="large"/>
-<br/>
-<Image src="/docusaurus_img/new/hero.gif" frame/>
+  {/* Header container */}
+  <div className="container-fluid">
+    {/* Main header and subheader centered at the top */}
+    <div className="text-center margin-bottom--xl">
+      <h1>Datagrok: The platform that powers your science</h1>
+      <h3>Everything connected. Everything possible.</h3>
+    </div>
+    
+    <div className="row" style={{ marginTop: "3rem", display: "flex", alignItems: "center" }}>
+      {/* Left column for text content - left-aligned */}
+      <div className="col col--5" style={{ 
+        textAlign: "left",
+        paddingRight: "6rem"
+      }}>
+        <div style={{ maxWidth: "600px" }}>
+          <p>The real bottleneck in R&D isn’t data, models, or talent — it’s fragmentation. When everything is siloed, you lose more than efficiency. You sacrifice the moments that move science forward.</p>
+                                   
+          <p>Our platform brings your entire research ecosystem together. Everything — from databases to molecules to metadata — is connected, composable, and instantly accessible.</p>
+          
+          <p>Screen assays, optimize compounds, run digital twins.<br/>Visualize, explore, enrich, compute, learn, and share.</p>
+          
+          <p>Datagrok shapes around your science, helping you find the answer exactly when it matters.</p>
+                    
+          <div className="button-container" style={{ marginTop: "2rem" }}>
+            <Button label="Get a Demo" type="outline" size="large" className="margin-right--md"/> 
+            <Button label="Try Now" type="primary" size="large"/>
+          </div>
+        </div>
+      </div>
+      
+      {/* Right column for the image */}
+      <div className="col col--7">
+        <Image 
+          src="/docusaurus_img/new/hero.gif" 
+          alt="Datagrok platform interface"
+          frame
+        />
+      </div>
+    </div>
+  </div>
 </Header>
+
+<Section className="quote-section" background="light">
+  <div className="container">
+    <div className="row" style={{ display: "flex", alignItems: "center" }}>
+      <div className="col col--2" style={{ textAlign: "center" }}>
+        <Image 
+          src="/docusaurus_img/authors/heinlein.jpg" 
+          alt="Robert A. Heinlein" 
+          style={{ 
+            width: "120px", 
+            height: "120px", 
+            borderRadius: "50%",
+            objectFit: "cover" 
+          }}
+        />
+      </div>
+      <div className="col col--10">
+        <p style={{ 
+          fontSize: "1.3rem", 
+          fontStyle: "italic", 
+          color: "#3A5A8C",
+          marginBottom: "0.5rem",
+          textAlign: "right"
+        }}><strong>Grok</strong>: To understand so thoroughly that you become a part of the observed</p>
+        <p style={{ 
+          fontSize: "1.1rem", 
+          color: "#667788",
+          textAlign: "right",
+          marginBottom: 0
+        }}><strong>Robert A. Heinlein</strong>, Stranger in a Strange Land (1961)</p>
+      </div>
+    </div>
+  </div>
+</Section>
 
 <Features>
 {/* Features container. */}
 
-# Features
-We have tools for all data tasks, from data access to advanced analytics and beyond. Need more? Easily integrate or add your own code. We eliminate the clutter of multiple apps, giving you a streamlined, efficient solution for every data challenge.
+# What you can do with Datagrok
+
+Our platform is all about data — and lots of it! It gives you the tools to move faster, think deeper, and work together — without losing context or switching apps
 
 <TabGroup>
 <Tab 
     name = "Access"
-    title = "Access"
-    description = "Get your data from anywhere - databases, web services, cloud storage, pipelines (or write your own script). If it's machine-readable, we can work with it!"
+    title = ""
+    description = "Get your data from anywhere - databases, web services, cloud storage, pipelines. If it's machine-readable, we can work with it!"
     slides = {[
         {
-            text: "40+ connectors to databases and file shares (or create your own)",
+            text: "40+ connectors (or create your own)",
             image: "/docusaurus_img/slides/access-db-connect.png"
         },
         {
-            text: "1,000+ services exposed via OpenAPI",
+            text: "Supports OpenAPI and access to public datasets",
             image: "/docusaurus_img/slides/access-open-api.png"
+        },
+        {
+            text: "20+ file formats, 30+ molecule structure formats. Drag-and-drop files to open",
+            image: "/docusaurus_img/slides/no-image.png"
         },
         {
             text: "Browse relational database schemas",
@@ -51,47 +117,23 @@ We have tools for all data tasks, from data access to advanced analytics and bey
             image: "/docusaurus_img/slides/no-image.png"
         },
         {
-            text: "Save query results as dynamic dashboards, no coding needed.",
+            text: "Annotate queries and save results as dynamic dashboards",
             image: "/docusaurus_img/slides/no-image.png"
         }
     ]}
     link = "https://datagrok.ai/help/#access"
 />
 <Tab 
-    name = "Govern"
-    title = "Govern"
-    description = "Use catalogs, data lineage tools, audit, and usage analysis to take control. Your data is FAIR and secure."
-    slides = {[
-        {
-            text: "Control who, what, where, and how: roles, groups, privileges, flexible authentication, secrets managers",
-            image: "/docusaurus_img/slides/no-image.png"
-        },
-        {
-            text: "Centralized, metadata-annotated catalog of entities. Manage everything: data, connections, projects, users, and more",
-            image: "/docusaurus_img/slides/govern-catalogue.gif"
-        },
-        {
-            text: "Secure by design",
-            image: "/docusaurus_img/slides/govern-secure-by-design.png"
-        },
-        {
-            text: "Built-in data provenance, data lineage, impact analysis, usage analysis, and audit tools.",
-            image: "/docusaurus_img/slides/no-image.png"
-        }
-    ]}
-    link = "https://datagrok.ai/help/#govern"
-/>
-<Tab 
     name = "Transform"
-    title = "Transform"
-    description = "Prep your data with clicks and drags. Choose from 500+ functions. Link, join, aggregate, address missing values, and more - visually or programmatically."
+    title = ""
+    description = "Prep your data with clicks and drags. Automatically generate macros from data transformations and use them on new datasets"
     slides = {[
         {
-            text: "Aggregate, join, filter, and edit data",
+            text: "Aggregate, join, filter, and edit data, from the UI or programmatically",
             image: "/docusaurus_img/slides/aggregate.gif"
         },
         {
-            text: "500+ available functions, or write your own in JavaScript, Python, R (or any other language that compiles to WASM)",
+            text: "Use 500+ available functions, or write your own in JavaScript, Python, R (or any other language that compiles to WASM)",
             image: "/docusaurus_img/slides/transform-functions.gif"
         },
         {
@@ -107,8 +149,8 @@ We have tools for all data tasks, from data access to advanced analytics and bey
 />
 <Tab 
     name = "Explore"
-    title = "Explore"
-    description = "Slice, dice, and visualize your data. Render millions of data points interactively and find patterns. Build dynamic dashboards in seconds. Loaded with automated statistical hypothesis testing, data enrichment, and contextual suggestions."
+    title = ""
+    description = "Slice, dice, and visualize your data. Render millions of data points interactively and find patterns. Build dynamic dashboards in seconds. Leverage metadata for automated data enrichment and contextual suggestions."
     slides = {[
         {
             text: "50+ interactive viewers for synchronized, dynamic dashboards",
@@ -123,7 +165,11 @@ We have tools for all data tasks, from data access to advanced analytics and bey
             image: "/docusaurus_img/slides/explore-statistics.png"
         },
         {
-            text: "Automatic detection of outliers, missing values, or incorrect data types.",
+            text: "Automatic detection of outliers, missing values, or incorrect data types",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Adaptive UI and data-specific suggestions",
             image: "/docusaurus_img/slides/no-image.png"
         }
     ]}
@@ -131,11 +177,11 @@ We have tools for all data tasks, from data access to advanced analytics and bey
 />
 <Tab 
     name = "Compute"
-    title = "Compute"
+    title = ""
     description = "Write in any language, annotate, publish, and apply scientific models, methods, and apps. Solve differential equations and run simulations for complex processes."
     slides = {[
         {
-            text: "500+ functions, or write your own in R, Python, or JavaScript",
+            text: "500+ functions, or write your own in R, Python, Matlab, Julia, Octave, or JavaScript",
             image: "/docusaurus_img/slides/transform-functions.gif"
         },
         {
@@ -147,7 +193,7 @@ We have tools for all data tasks, from data access to advanced analytics and bey
             image: "/docusaurus_img/slides/no-image.png"
         },
         {
-            text: "Auto-generated UI.",
+            text: "Auto-generated UI",
             image: "/docusaurus_img/slides/auto-ui-queries.png"
         }
     ]}
@@ -155,7 +201,7 @@ We have tools for all data tasks, from data access to advanced analytics and bey
 />
 <Tab 
     name = "Learn"
-    title = "Learn"
+    title = ""
     description = "No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included."
     slides = {[
         {
@@ -180,7 +226,7 @@ We have tools for all data tasks, from data access to advanced analytics and bey
 <Tab 
     name = "Collaborate"
     title = "Collaborate"
-    description = "Share anything with anyone. Collaborate on decision-making. Open source plugins are free to use under the MIT license."
+    description = "Share anything with anyone. Collaborate on decision-making. Use an open source ecosystem to save costs and innovate."
     slides = {[
         {
             text: "Share within Datagrok, as a URL link, or integrate: REST API, JS API, or embed as an iframe",
@@ -195,11 +241,36 @@ We have tools for all data tasks, from data access to advanced analytics and bey
             image: "/docusaurus_img/slides/share-forum.png"
         },
         {
-            text: "Community forum for ideas, support, and feedback.",
+            text: "Community forum for ideas, support, and feedback",
             image: "/docusaurus_img/slides/forum.png"
         }
     ]}
     link = "https://datagrok.ai/help/datagrok/#collaborate"
+/>
+<Tab 
+    name = "Govern"
+    title = "Govern"
+    description = "Use catalogs, data lineage tools, audit, and usage analysis to take control. Your data is FAIR and secure."
+    slides = {[
+        {
+            text: "Control who, what, where, and how: roles, groups, privileges, flexible authentication, secrets managers",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
+            text: "Centralized, metadata-annotated catalog of entities. Manage everything: data, connections, projects, users, and more",
+            image: "/docusaurus_img/slides/govern-catalogue.gif"
+        },
+
+        {
+            text: "Built-in data provenance, data lineage, impact analysis, usage analysis, and audit tools.",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+                {
+            text: "Global search",
+            image: "/docusaurus_img/slides/govern-secure-by-design.png"
+        }
+    ]}
+    link = "https://datagrok.ai/help/#govern"
 />
 <Tab 
     name = "Extend"
@@ -228,106 +299,243 @@ We have tools for all data tasks, from data access to advanced analytics and bey
 </TabGroup>
 </Features>
 
-<Section color="var(--ifm-color-gray-100)">
+<Features>
+{/* Solutions container. */}
 
-# Why Datagrok?
-### From data to great achievements
+# How Datagrok enables your teams
 
-<Row>
-<Slider
-    name = "slide-1"
+<TabGroup>
+<Tab 
+    name = "Chemists & medicinal chemists"
+    title = ""
+    description = ""
     slides = {[
-        { image: "/docusaurus_img/slides/no-image.png" },
+        {
+            text: [
+                  "Explore and edit chemical space — search, sketch, and filter compounds",
+                  "Analyze R-groups and scaffold trees, visualize SAR patterns with activity cliffs & matched molecular pairs",
+                  "Analyze protein-ligand docking poses",
+                  "Analyze screening plates with integrated dose-response curves",
+                  "Link computational predictions directly to your data with built-in models, including ChemProp, ADMET, and GenAI for drug design",
+                  "Connect with your registration systems",
+                  "Do retrosynthesis and order from your preferred supplier,",
+                  "Apps & integrations: Hit Design, Hit Triage, Curves, Admetica, AutoDock, REINVENT4, BioNeMo, Boltz-1",                  
+            ],
+            image: "/docusaurus_img/slides/no-image.png"
+        }
     ]}
-    link = {{
-        label: "Learn what makes it so fast",
-        href: "https://datagrok.ai/help/datagrok/#learn"
-    }}
->
-
-#### Explore at the speed of thought
-Picture this: exploring the entire CheMBL database right in your browser. This is the power of Datagrok. Designed for both speed and scale, it lets you analyze billions of data points interactively.
-</Slider>
-</Row>
-
-<Row>
-<Slider
-    name = "slide-2"
+    link = "https://datagrok.ai/help/datagrok/solutions/domains/chem/"
+/>
+<Tab 
+    name = "Biologists"
+    title = ""
+    description = ""
     slides = {[
-        { image: "/docusaurus_img/slides/no-image.png" },
+        {
+            text: [            
+                  "Analyze sequences and structures alongside experimental data. Convert between different notations or transform sequences into molecular structures",
+                  "Understand the impact of specific mutations on sequence activity. Identify activity cliffs, and calculate most potent residues for optimized peptide design",
+                  "Perform MSA, explore sequence space and variability, hierarchical clustering, and more",                  
+                  "Apps & integrations: Peptide SAR, HELM",                  
+            ],
+            image: "/docusaurus_img/new/peptides-demo-short.gif"
+        }                   
     ]}
->
-
-#### Built for any data, perfected for life sciences
-Datagrok works with all kinds of structured, tabular data. It automatically detects the semantics  (like molecules or zip codes) and instantly adapts the UI for a seamless user experience. Armed with biochemical intelligence, Datagrok is perfectly equipped to address the complexities of life science data. Have a custom data type? Create your own plugin.
-
-- Domain-specific menus and actions
-- Custom rendering and visualizations
-- Specialized interfaces for data editing and filtering
-- Calculations and data processing functions
-- Fit-for-purpose apps
-
-Learn about our solutions for <Link href="https://datagrok.ai/cheminformatics" label="cheminformatics"/> and <Link href="https://datagrok.ai/macromolecules" label="bioinformatics"/>
-
-</Slider>
-</Row>
-
-<Row>
-<Slider
-    name = "slide-3"
+    link = "https://datagrok.ai/help/datagrok/solutions/domains/bio/"
+/>
+<Tab 
+    name = "Process engineers"
+    title = ""
+    description = ""
     slides = {[
-        { image: "/docusaurus_img/slides/no-image.png" },
+        {
+            text: [
+                "Simulate complex interactions between variables for bioreactors, PK-PD models, and other processes in real time. Use fitting and sensitivity analysis for deeper insights",
+                "Share your work in the model hub",
+                "Apps & integrations: Diff Studio",
+            ],
+            image: "/docusaurus_img/slides/no-image.png"
+        },        
     ]}
-    link = {{
-        label: "Learn what makes it so flexible",
-        href: "https://datagrok.ai/help/datagrok/#what-makes-it-so-flexible"
-    }}
->
+    link = "https://datagrok.ai/help/compute/diff-studio"
+/>
+<Tab 
+    name = "Data scientists"
+    title = ""
+    description = ""
+    slides = {[
+        {
+            text: [ 
+                 "Explore your data with PCA, PLS, UMAP, ANOVA, or interactive no-code predictive modeling",
+                 "Write in Python / R / Matlab / Julia. Explore, visualize, and share big complex datasets",
+                 "Train, assess, deploy, share models",
+            ],
+            image: "/docusaurus_img/slides/no-image.png",
+         },
+    ]}
+    link = "https://datagrok.ai/help/learn/"
+/>
+<Tab 
+    name = "Data engineers"
+    title = ""
+    description = ""
+    slides = {[
+        {
+            text: [ 
+                "Extract, transform, and enrich data with 500+ functions (or write your own in any language)",
+                "Deliver dynamic dashboards in minutes",
+                "Provide answers with search-integrated queries and LLMs",
+            ],
+            image: "/docusaurus_img/slides/no-image.png"
+        },        
+    ]}
+    link = "https://datagrok.ai/help/access/databases/"
+/>
+<Tab 
+    name = "IT & developers"
+    title = ""
+    description = ""
+    slides = {[
+        {
+            text: [
+                "Eliminate tool sprawl — one fully integrated platform for all your data needs",
+                "Catalog and manage digital assets",
+                "Control access & maintain audit trail",
+                "Integrate & extend via JS API, REST API",
+                "Don't reinvent the wheel. Deliver production-grade applications in days or months, not years"
+            ],
+            image: "/docusaurus_img/slides/sno-image.png"
+        },        
+    ]}
+    link = "https://datagrok.ai/help/develop/"
+/>
+</TabGroup>
+</Features>
 
-#### Intelligent Data Ecosystem
-Datagrok is not yet another toolbox; it’s your data ecosystem. It seamlessly connects data from multiple sources and pairs it with matching assets, producing automated predictions, analyses, and smart visualization suggestions. The result? Deeper, richer insights and shared knowledge.
-
-</Slider>
-</Row>
+<Section className="cta-usecases" background="light" style={{ paddingTop: "4rem", paddingBottom: "4rem" }}>
+  <div className="container text-center">
+    <h2 style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>Trusted by the best</h2>
+    
+    <p style={{ fontSize: "1.1rem", maxWidth: "700px", margin: "0 auto" }}>
+      Join the leading teams in pharma, biotech, and research who use Datagrok to drive discovery and innovation.
+    </p>
+    <Image 
+      src="/docusaurus_img/new/trusted-by-logo.png" 
+      alt="Customer logos" 
+      style={{ maxWidth: "100%", height: "auto", opacity: 0.85 }}
+    />
+    <div className="button-container" style={{ marginTop: "2rem" }}>
+      <Button 
+        label="Explore customer use cases"
+        href="https://datagrok.ai/solutions"
+        type="primary"
+        size="large"
+      />
+    </div>
+  </div>
 </Section>
 
-<Section>
 
-# Who is it for?
-<Row>
-<Col col="col-lg-6">
+<Section className="rethinking-section" background="light" style={{ paddingTop: "4rem", paddingBottom: "4rem" }}>
+  <div className="container">
+    <h2 style={{ textAlign: "left", fontSize: "2.5rem", marginBottom: "3rem" }}>
+      Why tech matters.<br/>Rethinking scientific software
+    </h2>
 
-<Image src="/docusaurus_img/slides/no-image.png"/>
+    {/* Lane 1: Built from first principles */}
+    <Row style={{ alignItems: "center", marginBottom: "4rem" }}>
+      <Col col="col-lg-6">
+        <h3>Built from first principles</h3>
+        <p>
+          Unlike many platforms that grew through patchwork and acquisitions, Datagrok wasn't put together — it was architected. We started with a clean slate and a clear goal: to build a browser-native, modular platform for immersive data exploration. 
+        </p>
 
-</Col>
-<Col col="col-lg-6">
+        <p>
+          The platform's core is a high-performance engine that runs entirely in memory. It powers real-time analytics at scale, handling millions of data points right in the browser.
+        </p>
+        
+        <p>
+           To make it intuitive and flexible, our solution was: <em>everything is a function</em>. From databases to molecules to metadata — everything is connected, composable, and instantly accessible. Script in the languages you already use; extend with a full-code using JavaScript API; and integrate with the rest of your tools through REST. 
+        </p>
 
-#### Skillset
-Datagrok is for anyone who works with data:
-1. Chemists analyzing SAR tables? Perfect fit.
-2. Data scientists? Excellent for strategic planning.
-3. Researchers running complex simulations? Absolutely.
-4. Data engineers? Delight business with dynamic dashboards, no coding needed.
-5. Data analysts? Drag and drop your files to start analyzing.
-6. Developers? Quickly develop and test data-driven applications.
+        <p>
+           Datagrok gives you the speed, power, and flexibility.
+        </p>
 
-</Col>
+        <p>
+
+          
+
+        </p>
+
+      </Col>
+      <Col col="col-lg-6">
+        <Image
+          src="/docusaurus_img/new/dg-diagram.png"
+          alt="Datagrok Platform Architecture"
+          style={{ maxWidth: "100%", height: "auto" }}
+        />
+      </Col>
+    </Row>
+
+    {/* Lane 2: Perfected for life sciences */}
+    <Row style={{ alignItems: "center", marginBottom: "4rem" }}>
+  <Col col="col-lg-6">
+    <Image
+      src="/docusaurus_img/new/life-sciences.png"
+      alt="Life Sciences Use Cases"
+      style={{ maxWidth: "100%", height: "auto" }}
+    />
+  </Col>
+  <Col col="col-lg-6">
+    <h3>Perfected for life sciences</h3>
+
+    <p>
+      Life science data tells a complex story with layers of meaning.
+      That spreadsheet on your screen may actually be a molecular library or sequences with subtle mutations.
+      Context is everything — and we understand that.
+    </p>
+
+    <p>
+      Whether you are filtering compounds with a sketcher or analyzing binding motifs, Datagrok truly <em>groks</em> what you're working with. It adapts automatically, bringing forward the right tools and enriching your analysis with insights.  
+    </p>
+
+    <p>
+      And as your science evolves, so does Datagrok. Add new data types, tools, or apps — all on the same powerful foundation, without starting over.
+    </p>
+
+  </Col>
 </Row>
 
-<Row>
-<Col col="col-lg-6">
+    {/* Lane 3: Amplifies everything around it */}
+    <Row style={{ alignItems: "center", marginBottom: "4rem" }}>
+      <Col col="col-lg-6">
+        <h3>Amplifies everything around it</h3>
+        <p>
+          As scientists, we know drug efficacy depends on both compound and target. As developers, we understand that real value comes from how tools work together.
+        </p>
 
-#### Team size
-Datagrok is for individuals and teams of all sizes - from startups to large enterprises. The platform is <Link href="https://datagrok.ai/enterprise" label="enterprise-ready"/>, scalable, and ideal for sharing and collaboration.
+        <p>
+          Take a sketcher. In Datagrok, you can switch between multiple sketchers with a click — all support various notations, identifiers, and even common names like "aspirin." But each one also goes further: it's a filter, a structure search, and a model input — supporting SAR exploration, database search, compound triage, and analog design.
+        </p>
+          
+        <p>
+          In Datagrok, components and tools don't just coexist; they communicate, enhance one another, and unlock workflows that weren't previously possible.
+        </p>
 
-</Col>
-<Col col="col-lg-6">
-
-<Image src="/docusaurus_img/slides/no-image.png"/>
-
-</Col>
-</Row>
+      </Col>
+      <Col col="col-lg-6">
+        <Image
+          src="/docusaurus_img/new/no-image.png"
+          alt="Everything connected and amplified"
+          style={{ maxWidth: "100%", height: "auto" }}
+        />
+      </Col>
+    </Row>
+  </div>
 </Section>
+
+
 
 <Cpa>
 
@@ -336,3 +544,34 @@ Unlock the value of your organization's complex data by empowering non-technical
 
 <Button label='Get a Demo' href="#" size="large"/><Button label='Try Now' href="#" type="primary" size="large"/>
 </Cpa>
+
+
+<Section className="deeper-section" background="light">
+  <div className="container">
+    <div className="row" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="col col--12" style={{ textAlign: "center" }}>
+        <p style={{ 
+          fontSize: "1.5rem", 
+          marginBottom: "0.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          Want to go deeper? 
+          <a 
+            href="/docs/platform-philosophy"
+            style={{ 
+              color: "#3A5A8C", 
+              fontWeight: "300",
+              marginLeft: "0.5rem",
+              display: "inline-flex",
+              alignItems: "center"
+            }}
+          >
+            Discover the tech behind the platform →             
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</Section>

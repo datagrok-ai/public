@@ -6,7 +6,8 @@ import * as Vue from 'vue';
 import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {ID_COLUMN_NAME, EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
+import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
+import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, take} from 'rxjs/operators';
 import wu from 'wu';
@@ -63,7 +64,7 @@ export const History = Vue.defineComponent({
           props.func.name,
           [{author: grok.shell.user}],
           {},
-          ['session.user', 'options']
+          ['session.user', 'options'],
         );
         historicalRuns.value.clear();
 
@@ -73,25 +74,22 @@ export const History = Vue.defineComponent({
         }, historicalRuns.value);
         Vue.triggerRef(historicalRuns);
       } catch (e: any) {
-        grok.shell.error(e)
+        grok.shell.error(e);
       } finally {
         isLoading.value = false;
       }
-    }
+    };
 
-    Vue.watch(() => props.func.id, () => refresh(), { immediate: true });
+    Vue.watch(() => props.func.id, () => refresh(), {immediate: true});
 
     const defaultDf = DG.DataFrame.fromColumns([
-      DG.Column.bool(EXP_COLUMN_NAME, 0),
-      ...props.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
-      ...props.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+      DG.Column.fromStrings(ID_COLUMN_NAME, []),
       DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
       DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
       DG.Column.string(AUTHOR_COLUMN_NAME, 0),
       DG.Column.string(TAGS_COLUMN_NAME, 0),
       DG.Column.string(TITLE_COLUMN_NAME, 0),
       DG.Column.string(DESC_COLUMN_NAME, 0),
-      DG.Column.fromStrings(ID_COLUMN_NAME, []),
     ]);
 
     const getRunByIdx = (idx: number) => {
@@ -109,33 +107,24 @@ export const History = Vue.defineComponent({
       Vue.triggerRef(historicalRuns);
     };
 
-    const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
+    const showEditDialog = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
       const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
-
-      editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        if (!props.isHistory)
-          updateRun(funcCall);
-        else {
-          return ((editOptions.favorite !== 'same') ?
-            Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
-            Promise.resolve())
-            .then(() => historyUtils.loadRun(funcCall.id, false, false))
-            .then((fullCall) => {
-              if (editOptions.title) fullCall.options['title'] = editOptions.title;
-              if (editOptions.description) fullCall.options['description'] = editOptions.description;
-              if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-
-              return [historyUtils.saveRun(fullCall), fullCall] as const;
-            })
-            .then(([, fullCall]) => {
-              updateRun(fullCall);
-            })
-            .catch((err) => {
-              grok.shell.error(err);
-            });
-        }
-      });
       editDialog.show({center: true, width: 500});
+      const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
+      try {
+        if (!props.isHistory)
+          return updateRun(funcCall);
+        if (editOptions.favorite !== 'same')
+          await Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
+        if (editOptions.title) fullCall.options['title'] = editOptions.title;
+        if (editOptions.description) fullCall.options['description'] = editOptions.description;
+        if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+        await historyUtils.saveRun(fullCall);
+        updateRun(fullCall);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const onEditClick = (cell: DG.GridCell) => {
@@ -146,61 +135,50 @@ export const History = Vue.defineComponent({
       );
     };
 
-    const onFavoriteClick = (cell: DG.GridCell) => {
+    const onFavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, true).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, true);
+      updateRun(run);
     };
 
-    const onUnfavoriteClick = (cell: DG.GridCell) => {
+    const onUnfavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, false).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, false);
+      updateRun(run);
     };
 
     const deleteRun = async (id: string) => {
-      return historyUtils.loadRun(id, true, false)
-        .then(async (loadedRun) => {
-          return [
-            await (props.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
-            loadedRun,
-          ] as const;
-        })
-        .then(([, loadedRun]) => {
-          historicalRuns.value.delete(id);
-          Vue.triggerRef(historicalRuns);
-
-          return loadedRun;
-        })
-        .then((loadedRun) => {
-          Utils.saveIsFavorite(loadedRun, false);
-        })
-        .catch((e) => {
-          grok.shell.error(e);
-        });
+      try {
+        const loadedRun = await historyUtils.loadRun(id, true, false);
+        if (props.isHistory)
+          await historyUtils.deleteRun(loadedRun);
+        historicalRuns.value.delete(id);
+        Vue.triggerRef(historicalRuns);
+        await Utils.saveIsFavorite(loadedRun, false);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
-    const onDeleteClick = (cell: DG.GridCell) => {
+    const onDeleteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
       const setToDelete = new Set([run]);
       const deleteDialog = new HistoricalRunsDelete(setToDelete);
-
-      deleteDialog.onFuncCallDelete.pipe(
-        take(1),
-      ).subscribe(async () => {
-        try {
-          await Promise.all(
-            wu(setToDelete.values()).map(async (funcCall) => {
-              await deleteRun(funcCall.id);
-
-              return Promise.resolve();
-            }));
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      });
       deleteDialog.show({center: true, width: 500});
+
+      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      try {
+        await Promise.all(
+          wu(setToDelete.values()).map(async (funcCall) => {
+            await deleteRun(funcCall.id);
+          }));
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const historicalRunsDf = Vue.shallowRef(defaultDf);
+
     Vue.watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
         historicalRuns.value,
@@ -216,18 +194,15 @@ export const History = Vue.defineComponent({
       if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
     });
 
-    Vue.watch([showMetadata, showInputs], () => updateVisibleColumns());
+    const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
 
-    let currentGrid = null as null | DG.Grid;
     const updateVisibleColumns = () => {
-      if (!currentGrid) return;
+      if (!currentGrid.value) return;
 
-      const tagCol = currentGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
-      currentGrid.columns.setVisible([
-        ...historicalRunsDf.value.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
-        FAVORITE_COLUMN_NAME,
-        ACTIONS_COLUMN_NAME,
-        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
+      const tagCol = currentGrid.value.dataFrame.getCol(TAGS_COLUMN_NAME);
+      const cols = [
+        ID_COLUMN_NAME,
+        ...showMetadata.value ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]: [],
         ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
         ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
@@ -241,8 +216,12 @@ export const History = Vue.defineComponent({
             else
               return Utils.getColumnName(key);
           }): [],
-      ]);
+      ];
+      currentGrid.value.columns.setVisible(cols);
+      currentGrid.value.columns.setOrder(cols);
     };
+
+    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), {flush: 'post'});
 
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;
@@ -252,9 +231,9 @@ export const History = Vue.defineComponent({
         take(1),
       ).toPromise();
 
-      currentGrid = grid;
-
+      currentGrid.value = grid;
       grid.sort([STARTED_COLUMN_NAME], [false]);
+      grid.props.rowHeight = 46;
 
       for (let i = 0; i < grid.columns.length; i++) {
         const col = grid.columns.byIndex(i);
@@ -273,21 +252,27 @@ export const History = Vue.defineComponent({
         onUnfavoriteClick,
         true,
       );
-
-      updateVisibleColumns();
     };
 
-    const fallbackText = <div class='p-1'> {props.fallbackText} </div>;
+    const fallbackText = (
+      <div class='p-1'>
+        {props.fallbackText}
+        <IconFA
+          name='sync'
+          tooltip={'Refresh'}
+          onClick={refresh}
+          style={{alignContent: 'center', paddingLeft: '10px'}}
+        />
+      </div>
+    );
 
-    const currentFunc = Vue.computed(()=> props.func);
-    const isHistory = Vue.computed(()=> props.isHistory);
+    const currentFunc = Vue.computed(() => props.func);
+    const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;
       const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
 
       return [
-        ...showMetadata.value &&
-        currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
         ...showMetadata.value &&
         (currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],

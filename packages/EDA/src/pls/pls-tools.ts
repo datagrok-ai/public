@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
   DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
-import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
+import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
 
@@ -132,11 +132,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  //const view = grok.shell.tableView(input.table.name);
-
-  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
-    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
-    grok.shell.tableView(input.table.name);
+  const view = grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
   const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
@@ -168,8 +164,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     help: LINK.MODEL,
   }));
 
-  console.log(input.names?.name);
-
   if ((input.names !== undefined) && (input.names !== null))
     predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
 
@@ -194,7 +188,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    // @ts-ignore
     labelColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
@@ -217,14 +210,13 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     markerType: DG.MARKER_TYPE.CIRCLE,
     help: LINK.SCORES,
     showViewerFormulaLines: true,
+    labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
   });
 
-  if ((input.names !== undefined) && (input.names !== null))
-    scoresScatter.setOptions({labelColumnNames: [input.names?.name]});
 
-  // 4.3) create lines & circles
-  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
+  // 4.3) create lines & circles  
   view.addViewer(scoresScatter);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
 
   // 5. Explained Variances
 
@@ -275,26 +267,20 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   }));
 
   // emphasize viewers in the demo case
-  if (analysisType === PLS_ANALYSIS.DEMO) {
-    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar]
-      .map((viewer, idx) => {
-        return {
-          text: DEMO_RESULTS[idx].text,
-          showNextTo: viewer.root,
-        };
-      });
-
-    const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
-    wizard.helpUrl = LINK.MVA;
+  if (analysisType === PLS_ANALYSIS.DEMO) {    
     grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD));
+
+    describeElements(
+      [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
+      DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
+      ['left', 'left', 'right', 'right', 'left'],
+    );
   }
 } // performMVA
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
-    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
-    grok.shell.t;
+  const table = grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
@@ -399,8 +385,6 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
       dlg.close();
-
-      console.log(names);
 
       await performMVA({
         table: table,

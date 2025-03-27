@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
+
+export const CONTAINER_TIMEOUT = 900000;
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -65,26 +67,6 @@ export async function _testSearchSubstructureSARSmall(): Promise<void> {
 export async function _testSearchSubstructureAllParameters(foo: any): Promise<void> {
   await foo({});
   await foo();
-}
-
-export async function ensureContainersRunning() {
-  const [chempropContainer, chemContainer] = await Promise.all([
-    grok.dapi.docker.dockerContainers.filter('chemprop').first(),
-    grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first()
-  ]);
-
-  _package.logger.debug(`*************** chempropContainer ${chempropContainer.status}`);
-  _package.logger.debug(`*************** chemContainer ${chemContainer.status}`);
-
-  await Promise.all([
-    !(chemContainer.status.startsWith('started') || chemContainer.status.startsWith('checking')) 
-      ? grok.dapi.docker.dockerContainers.run(chemContainer.id, true) 
-      : Promise.resolve(),
-
-    !(chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking'))
-      ? grok.dapi.docker.dockerContainers.run(chempropContainer.id, true) 
-      : Promise.resolve()
-  ]);
 }
 
 export const malformedMolblock = `

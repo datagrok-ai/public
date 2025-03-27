@@ -77,7 +77,7 @@ the specified parameters.
 
 ### Multivariate analysis
 
-[Multivariate Analysis](../../../explore/multivariate-analysis/pls.md) plugin implements partial least squares (PLS)
+[Multivariate Analysis](../../../explore/multivariate-analysis.md) plugin implements partial least squares (PLS)
 algorithm. It is an easy-to-interpret, commonly used approach for multidimensional data analysis. It shows the following
 on the interactive viewers: scores, explained variance, correlation loadings, predicted vs. reference, and regression
 coefficients.

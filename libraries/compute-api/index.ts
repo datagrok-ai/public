@@ -22,10 +22,7 @@ export {
   makeValidationResult2, makeAdvice2, mergeValidationResults2,
 };
 
-export type {
-  PipelineConfiguration, IRuntimeLinkController, IRuntimeMetaController,
-  IRuntimeValidatorController, IRuntimePipelineMutationController,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];

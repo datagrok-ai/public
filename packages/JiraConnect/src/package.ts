@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { loadProjectsList, loadIssues, loadIssueData, loadProjectData } from './api/data';
-import { JiraIssue, Project } from './api/objects';
+import { ErrorMessageResponse, JiraIssue, Project } from './api/objects';
 import { AuthCreds } from './api/objects';
 import { getJiraCreds } from './app/credentials';
 import { addJIRADetector } from './detectors';
@@ -34,6 +34,8 @@ export async function _init(): Promise<void> {
 //output: object projects
 export async function projectsList(): Promise<Project[] | null> {
   const jiraCreds = await getJiraCreds();
+  if(!jiraCreds)
+    return null;
   const projects = await loadProjectsList(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey))
   return projects;
 }
@@ -43,6 +45,8 @@ export async function projectsList(): Promise<Project[] | null> {
 //output: object projects
 export async function projectData(projectKey: string): Promise<Project | null> {
   const jiraCreds = await getJiraCreds();
+  if(!jiraCreds)
+    return null;
   const project = await loadProjectData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), projectKey)
   return project;
 }
@@ -51,18 +55,22 @@ export async function projectData(projectKey: string): Promise<Project | null> {
 //input: string issueKey
 //output: object issue
 export async function issueData(issueKey: string): Promise<JiraIssue | null> {
-  if(!issueKey || issueKey?.length === 0)
+  const jiraCreds = await getJiraCreds();
+  if(!jiraCreds)
+    return null;
+  if (!issueKey || issueKey?.length === 0)
     return null;
   if (cache.has(issueKey))
     return cache.get(issueKey)!;
 
   queried.add(issueKey);
-  const jiraCreds = await getJiraCreds();
-  const issue = await loadIssueData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), issueKey)
+  const issue = await loadIssueData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), issueKey);
+  if (!issue || (issue as ErrorMessageResponse)?.errorMessages)
+    return null;
   queried.delete(issueKey);
   cache.set(issueKey, issue);
 
-  return issue;
+  return (issue as JiraIssue);
 }
 
 //name: getJiraField
@@ -72,6 +80,8 @@ export async function issueData(issueKey: string): Promise<JiraIssue | null> {
 //output: column result
 export async function getJiraField(ticketColumn: DG.Column, field: string): Promise<DG.Column | undefined> {
   const jiraCreds = await getJiraCreds();
+  if(!jiraCreds)
+    return undefined;
   const ticketsMap = new Map<string, string>()
   const keys = field.split(':');
   const ticketColumnList = ticketColumn.toList();
@@ -119,4 +129,30 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
     resultList.push(ticketsMap.get((ticket ?? '').trim()) ?? '');
 
   return DG.Column.fromStrings(field, resultList);
+}
+
+//name: getJiraTicketsByFilter 
+//input: object filter
+//output: object result
+export async function getJiraTicketsByFilter(filter?: object): Promise<JiraIssue[]> {
+  const jiraCreds = await getJiraCreds();
+  if(!jiraCreds)
+    return [];
+  let result: JiraIssue[] = [];
+  let total = -1;
+  const chunkSize = 100;
+  let startAt = 0;
+  while (true) {
+    const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+      startAt, chunkSize, filter, undefined);
+    if (loadedIssues != null) {
+      total = loadedIssues.total;
+      result = [...result, ...loadedIssues.issues]
+    }
+
+    if (total <= startAt)
+      break;
+    startAt += chunkSize;
+  }
+  return result;
 }

@@ -6,6 +6,8 @@ export interface IControllerBase {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   getAdditionalParam(name: string): any | undefined;
+  getMatchedInputs(): Readonly<Set<string>>;
+  getMatchedOutputs(): Readonly<Set<string>>;
 }
 
 export interface IRuntimeLinkController extends IControllerBase {

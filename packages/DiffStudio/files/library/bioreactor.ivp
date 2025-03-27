@@ -101,21 +101,20 @@
   VL       = 7.2   {units: L;      category: Initial values}                                    [Liquid volume]
 
 #output:
-  t  
-  FFox     {caption: FFox(t)} 
-  KKox     {caption: KKox(t)}
-  FFred    {caption: FFred(t)}
-  KKred    {caption: KKred(t)}
-  Ffree    {caption: Ffree(t)}
-  Kfree    {caption: Kfree(t)}
-  FKred    {caption: FKred(t)}
-  FKox     {caption: FKox(t)}
-  MEAthiol {caption: MEAthiol(t)}
-  CO2      {caption: CO2(t)}
-  yO2P     {caption: yO2P(t)}
-  CYST     {caption: CYST(t)}
-  VL       {caption: VL(t)}
-    
+  t
+  FFox
+  KKox
+  FFred
+  KKred
+  Ffree
+  Kfree
+  FKred
+  FKox
+  MEAthiol
+  CO2
+  yO2P
+  CYST
+
 #constants:
    VLinit = 7.2
       VTV = 10

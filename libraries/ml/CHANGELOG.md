@@ -1,5 +1,17 @@
 # ml changelog
 
+## 6.9.0 (WIP)
+
+Activity cliffs: Fixed bug with browse view
+
+## 6.8.3 (2025-03-07)
+
+Vector distance support on webGPU and without
+
+## 6.8.2 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
 ## 6.8.1 (2025-02-03)
 
 MCL: Add History support

@@ -1,5 +1,5 @@
 import { DataFrame } from "./dataframe";
-import {BrowseView, TableView, View, ViewBase} from "./views/view";
+import {BrowsePanel, TableView, View, ViewBase} from "./views/view";
 import { Project, User } from "./entities";
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
@@ -38,7 +38,6 @@ export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
   build: AppBuildInfo = new AppBuildInfo();
-  isInDemo: boolean = false;
 
   testError(s: String): void {
     return api.grok_Test_Error(s);
@@ -96,8 +95,8 @@ export class Shell {
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
   set o(x: any) { this.setCurrentObject(x, true); }
 
-  setCurrentObject(x: any, freeze: boolean) {
-    api.grok_Set_CurrentObject(toDart(x), freeze);
+  setCurrentObject(x: any, freeze: boolean, force?: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze, force ?? false);
   }
 
   /** Current viewer */
@@ -122,6 +121,10 @@ export class Shell {
   /** @type {HTMLDivElement} */
   get bottomPanel(): HTMLDivElement {
     return api.grok_Get_BottomPanel();
+  }
+
+  get browsePanel(): BrowsePanel {
+    return api.grok_Get_BrowsePanel();
   }
 
   /** Shows information message (green background)
@@ -179,20 +182,17 @@ export class Shell {
 
   /** Adds a view. */
   addView(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null, context: FuncCall | null = null): ViewBase {
-    if (api.grok_AddView == null) {
-      document.body.append(v.root);
-      v.root.style.width = '100vw';
-      v.root.style.height = '100vh';
-    } else {
-      if (context != null)
-        v.parentCall = context;
-      if (this.isInDemo && grok.shell.view('Browse') !== null) {
-        const bv = grok.shell.view('Browse') as BrowseView;
-        bv.preview = v as View;
-      }
-      else
-        api.grok_AddView(v.dart, dockType, width);
-    }
+    if (context != null)
+      v.parentCall = context;
+    api.grok_AddView(v.dart, dockType, width, false);
+    return v;
+  }
+
+  /** Adds a preview for current Browse Panel node. */
+  addPreview(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null, context: FuncCall | null = null): ViewBase {
+    if (context != null)
+      v.parentCall = context;
+    api.grok_AddView(v.dart, dockType, width, true);
     return v;
   }
 
@@ -213,20 +213,22 @@ export class Shell {
     return view;
   }
 
+  /** Adds a preview for the specified table.
+   * @param {DataFrame} table
+   * @param {DockType} dockType
+   * @param {number} width
+   * @returns {TableView} */
+  addTablePreview(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
+    return toJs(api.grok_AddTableView(table.dart, dockType, width, true));
+  }
+
   /** Adds a view for the specified table.
    * @param {DataFrame} table
    * @param {DockType} dockType
    * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
-    if (this.isInDemo && grok.shell.view('Browse') !== null) {
-      const tv = TableView.create(table, false);
-      const bv = grok.shell.view('Browse') as BrowseView;
-      bv.preview = tv;
-      return tv;
-    }
-    else
-      return toJs(api.grok_AddTableView(table.dart, dockType, width));
+    return toJs(api.grok_AddTableView(table.dart, dockType, width, false));
   }
 
   /**
@@ -384,6 +386,18 @@ export class Windows {
   get showToolbox(): boolean { return api.grok_Windows_Get_ShowToolbox(); }
   set showToolbox(x: boolean) { api.grok_Windows_Set_ShowToolbox(x); }
 
+  /** Controls the visibility of the browse. */
+  get showBrowse(): boolean { return api.grok_Windows_Get_ShowBrowse(); }
+  set showBrowse(x: boolean) { api.grok_Windows_Set_ShowBrowse(x); }
+
+  /** Controls the visibility of the Projects. */
+  get showProjects(): boolean { return api.grok_Windows_Get_ShowProjects(); }
+  set showProjects(x: boolean) { api.grok_Windows_Set_ShowProjects(x); }
+
+  /** Controls the visibility of the Favorites. */
+  get showFavorites(): boolean { return api.grok_Windows_Get_ShowFavorites(); }
+  set showFavorites(x: boolean) { api.grok_Windows_Set_ShowFavorites(x); }
+
   /** Controls the visibility of the status bar. */
   get showStatusBar(): boolean { return api.grok_Windows_Get_ShowStatusBar(); }
   set showStatusBar(x: boolean) { api.grok_Windows_Set_ShowStatusBar(x); }
@@ -452,16 +466,6 @@ export class Settings {
         return true;
       }
     });
-  }
-
-  /** Jupyter Notebook URL */
-  get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterNotebook();
-  }
-
-  /** Jupyter Notebook Token */
-  get jupyterNotebookToken(): string {
-    return api.grok_Settings_Get_JupyterNotebookToken();
   }
 }
 

@@ -8,13 +8,13 @@ import * as echarts from 'echarts';
 import { fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import _ from 'lodash';
+import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
 let sunburstId = 0;
-const ERROR_CLASS = 'd4-viewer-error';
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All'
@@ -85,7 +85,7 @@ export class SunburstViewer extends EChartViewer {
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
+        return columnValue == null ? segment === ' ' : columnValue.toString() === segment;
       });
     }, event);
   }
@@ -100,7 +100,7 @@ export class SunburstViewer extends EChartViewer {
       return path.every((expectedValue, i) => {
         const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
         const columnValue = row.get(this.eligibleHierarchyNames[i]);
-        const formattedValue = columnValue ?
+        const formattedValue = columnValue !== null ?
           (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
         return formattedValue === expectedValue;
       });
@@ -273,12 +273,6 @@ export class SunburstViewer extends EChartViewer {
     this.root.appendChild(errorDiv);
   }
 
-  _removeMessage(className: string) {
-    const divTextElement = this.root.getElementsByClassName(className)[0];
-    if (divTextElement)
-      this.root.removeChild(divTextElement);
-  }
-
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     return await TreeUtils.toForest(this.dataFrame, this.eligibleHierarchyNames, this.filter,
@@ -408,7 +402,7 @@ export class SunburstViewer extends EChartViewer {
       return;
     }
 
-    this._removeMessage(ERROR_CLASS);
+    MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     const data = await this.getSeriesData();
 

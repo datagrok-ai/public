@@ -45,7 +45,30 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key"}
+          "connectorsSettings": {
+            "dataframeParsingMode":"New Process",
+            "externalDataFrameCompress":true,
+            "grokConnectHost":"grok_connect",
+            "grokConnectPort":1234,
+            "localFileSystemAccess":false,
+            "sambaSpaceEscape":"none",
+            "sambaVersion":"3.0"
+            },
+          "dockerSettings": {
+            "grokSpawnerApiKey": "test-x-api-key",
+            "grokSpawnerHost": "grok_spawner",
+            "grokSpawnerPort": 8000,
+            "imageBuildTimeoutMinutes": 30,
+            "proxyRequestTimeout": 60000
+           },
+          "queueSettings": {
+            "amqpHost": "rabbitmq",
+            "amqpPassword": "guest",
+            "amqpPort": 5672,
+            "amqpUser": "guest",
+            "pipeHost": "grok_pipe",
+            "pipeKey": "test-key"
+             }
         }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
@@ -89,6 +112,10 @@ services:
       datagrok:
         aliases:
           - grok_connect
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     ports:
       - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped
@@ -116,7 +143,7 @@ services:
     profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
+    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge-cuda}
     networks:
       datagrok:
         aliases:
@@ -127,7 +154,7 @@ services:
           "isolatesCount": 1,
           "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "capabilities": ["jupyter"],
-          "queuePluginSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
+          "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
         }
     restart: unless-stopped
     depends_on:

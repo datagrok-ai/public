@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 
 import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
-import { BINDING_ENERGY_COL, CACHED_RESULTS, POSE_COL, PROPERTY_DESCRIPTIONS, setAffinity, setPose, TARGET_PATH } from './constants';
+import { BINDING_ENERGY_COL, CACHED_RESULTS, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
 
 export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
   const col = pdb.cell.column;
@@ -74,11 +74,11 @@ async function fetchPdbContent(pdbId: string, format: string = 'pdb'): Promise<s
   return '';
 }
 
-export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
+export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement, descriptions: { [colName: string]: string }) : HTMLElement {
   const addColumnIcon = ui.iconFA('plus', () => {
     const df = molecule.cell.dataFrame;
     propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
+    propertyCol.setTag(DG.TAGS.DESCRIPTION, descriptions[propertyCol.name]);
     df.columns.add(propertyCol);
   }, `Calculate ${propertyCol.name} for the whole table`);
 

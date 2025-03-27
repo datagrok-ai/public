@@ -3,12 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {HandlerBase} from '../config/PipelineConfiguration';
-import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
+import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, MatchInfo} from './link-matching';
+import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler, pathToUUID} from '../utils';
+import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
@@ -63,8 +63,8 @@ export class Link {
 
     const inputNames = Object.keys(this.matchInfo.inputs);
     const outputNames = Object.keys(this.matchInfo.outputs);
-    const inputSet = new Set(inputNames);
-    const outputSet = new Set(outputNames);
+    const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
+    const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
 
     const inputsChanges$ = this.makeInputsChanges(state);
     const baseNode = this.matchInfo.basePath ?
@@ -233,6 +233,22 @@ export class Link {
       return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+  }
+
+  private getOrderedIO(ioData: Record<string, MatchedNodePaths>) {
+    return Object.entries(ioData).sort(([, v1], [, v2]) => {
+      const p1 = this.getFirstMatch(v1);
+      const p2 = this.getFirstMatch(v2);
+      return BaseTree.compareAddresses(p1, p2);
+    }).map(([k]) => k);
+  }
+
+  private getFirstMatch(matchIO: readonly MatchedIO[]) {
+    const p0 = matchIO.reduce((acc, val) => {
+      const d = BaseTree.compareAddresses(acc, val.path);
+      return d < 0 ? val.path : acc;
+    }, [{idx: Infinity, id: ''}] as readonly NodePathSegment[] );
+    return p0;
   }
 
   private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController | FuncallActionController, state: BaseTree<StateTreeNode>) {

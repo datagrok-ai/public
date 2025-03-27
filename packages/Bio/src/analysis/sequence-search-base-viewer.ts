@@ -17,7 +17,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   moleculeColumn?: DG.Column<string>;
   moleculeColumnName: string;
   initialized: boolean = false;
-  tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
+  tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet, 'quality', 'cell.renderer'];
   preComputeDistanceMatrix: boolean = false;
 
   constructor(name: string) {
@@ -70,7 +70,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  /** For tests */ public computeRequested: boolean;
+  /** For tests */ public computeRequested: boolean = false;
   public renderPromise: Promise<void> = Promise.resolve();
 
   protected render(computeData = true): void {

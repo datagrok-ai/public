@@ -8,8 +8,8 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Datagrok has native support for relational databases 
-([30+ databases supported](connectors/connectors.md)), allowing to do the following:
+Datagrok can connect to most relational databases 
+([30+ databases supported](connectors/connectors.md)), enabling you to do the following:
 
 * Browse databases schemas, tables, and columns.
 * Create and edit queries visually.
@@ -85,8 +85,8 @@ it and select **Clone...**
 
 ## Database Manager
 
-**Database Manager** provides a hierarchical browsing interface for schemas and
-database objects, such as queries, tables, and table columns (if supported by
+**Database Manager** lets you brows database schemas and other
+objects, such as queries, tables, and table columns (if supported by
 the providers). You can perform various operations like adding new connections
 and queries, previewing data, running queries, and managing objects using
 context actions that are accessible through right-clicking an object. If you

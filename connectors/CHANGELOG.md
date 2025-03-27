@@ -1,6 +1,23 @@
 # Grok Connect changelog
 
-# 2.2.25 (2024-12-02) WIP
+# 2.3.30 (2025-03-125) WIP
+
+* Memory leaks fixes
+
+# 2.3.29 (2025-02-17)
+
+* Postgres: Set uuid as object
+
+# 2.3.28 (2025-02-12)
+
+* TableQuery: Order by support and having with aggregations
+* Bugs fixes and improvements
+
+## Requires
+
+* Datagrok >= 1.24.0
+
+# 2.2.25 (2024-12-02)
 
 * TableQuery: Join supports
 

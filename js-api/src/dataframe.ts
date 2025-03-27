@@ -19,7 +19,7 @@ import {SIMILARITY_METRIC} from "./const";
 import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
-import {Widget} from "./widgets";
+import {Color, Widget} from './widgets';
 import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
@@ -260,10 +260,15 @@ export class DataFrame {
   }
 
   /** Returns a {@link Column} with the specified name.
-   * @param {string} name - Column name.
+   * @param {string} nameOrIndex - Column name.
    * @returns {Column} */
-  col(name: string): Column | null {
-    return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
+  col(nameOrIndex: string | number): Column | null {
+    if (nameOrIndex == null)
+      return null;
+    if (typeof nameOrIndex === 'string')
+      return toJs(api.grok_DataFrame_ColumnByName(this.dart, nameOrIndex));
+    else
+      return this.columns.byIndex(nameOrIndex);
   }
 
   /** Returns a {@link Cell} with the specified row and column.
@@ -968,6 +973,11 @@ export class Column<T = any, TInit = T> {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
 
+  /** Returns whether all values in the columns are empty. */
+  get isEmpty(): boolean {
+    return this.stats.missingValueCount == this.length;
+  }
+
   /** Returns whether i-th value is missing.
    * @param {number} i - Row index.
    * @returns {boolean} */
@@ -1391,8 +1401,13 @@ export class ColumnList {
   }
 
   /** Removes column by name (case-insensitive).*/
-  remove(column: string, notify: boolean = true): ColumnList {
-    api.grok_ColumnList_Remove(this.dart, column, notify);
+  remove(column: string | number | Column, notify: boolean = true): ColumnList {
+    const columnName
+      = typeof column === 'string' ? column
+      : typeof column === 'number' ? this.byIndex(column).name
+      : column.name;
+
+    api.grok_ColumnList_Remove(this.dart, columnName, notify);
     return this;
   }
 
@@ -2474,12 +2489,19 @@ export class ColumnColorHelper {
     return DG.COLOR_CODING_TYPE.OFF;
   }
 
+  private _setOutOfRangeLinearColors(belowMinColor?: string, aboveMaxColor?: string): void {
+    if (belowMinColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_LINEAR_BELOW_MIN_COLOR] = belowMinColor;
+    if (aboveMaxColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_LINEAR_ABOVE_MAX_COLOR] = aboveMaxColor;
+  }
+
   /** Enables linear color-coding on a column.
    * @param range - list of palette colors (ARGB integers; see {@link Color}).
-   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
+   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling and the colors for values below the minimum and above the maximum.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, belowMinColor?: string, max?: number, aboveMaxColor?: string} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2487,6 +2509,24 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = `${options.min}`;
     if (options?.max != null)
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
+    this._setOutOfRangeLinearColors(options?.belowMinColor, options?.aboveMaxColor);
+  }
+
+  /** Enables linear color-coding on a column with absolute values.
+   * @param valueColors - dictionary of numerical values and hex-colors.
+   * @param options - list of additional parameters, such as the colors for values below the minimum and above the maximum.
+   *
+   * See samples: {@link https://public.datagrok.ai/js/samples/grid/color-coding/color-coding}}
+   */
+  setLinearAbsolute(valueColors: {[value: number]: string}, options: {belowMinColor?: string, aboveMaxColor?: string} | null = null): void {
+    this.column.tags[TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
+    const orderedEntries = Object.entries(valueColors).sort(([a], [b]) => +a - +b);
+    const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
+    const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
+    this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
+    this._setOutOfRangeLinearColors(options?.belowMinColor, options?.aboveMaxColor);
   }
 
   setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {

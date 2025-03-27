@@ -52,9 +52,11 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
     renderCard(x: DG.SemanticValue, context?: any): HTMLElement {
         return ui.wait(async () => {
             const issue = await issueData(x.value);
-            const creds = await getJiraCreds();
-            if (!issue)
+            if (!issue || issue === null)
                 return ui.divText('Issue not found');
+            const creds = await getJiraCreds();
+            if(!creds)
+                return ui.div('There is no any creds to get tickets\'s data');
 
             const object: Record<string, WithCalcButtonType> = {};
             const column = x && x.cell && x.cell.dart && x.cell.column ? x.cell.column : null; // need to check dart, sometimes its null

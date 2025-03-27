@@ -1,5 +1,34 @@
 # Peptides changelog
 
+## 1.22.0 (2025-03-22)
+
+* Fixed unhighlighting of header weblogo
+* Harmonization of selection and counts in monomer-position and MPR viewers
+* Added more comprehensive tooltips
+
+## 1.21.7 (2025-03-17)
+
+* Fixes and improvements of Selection panel
+
+## 1.21.6 (2025-03-13)
+
+* Fix demo and compatibility to older platform versions
+
+## 1.21.5 (2025-03-12)
+
+* Fix weblogo renderer with corrected colors and background corrections
+* Improved mutation cliffs preview window with horizontal splitter
+* Correct circle rendering in Monomer-Position viewer
+* Mutations groups column in mutation cliffs pairs panel 
+
+## 1.21.4 (2025-03-03)
+
+Fix SAR errors on nulling targets
+
+## 1.21.3 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
 ## 1.21.2 (2025-02-03)
 
 Correct Sizing of mutation cliff grids

@@ -1,20 +1,21 @@
 {
   "name": "@datagrok/surechembl",
-  "version": "0.0.1",
-  "description": "",
+  "friendlyName": "SureChEMBL",
+  "version": "1.0.0",
+  "description": "Performs patents searches through a locally deployed SureChEMBL database",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
   },
-  "fullName": "SureChembl",
+  "fullName": "SureChEMBL",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/SureChembl"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.2",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
@@ -42,7 +43,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

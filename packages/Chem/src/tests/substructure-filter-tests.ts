@@ -10,6 +10,7 @@ import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
 import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 import { Fingerprint } from '../utils/chem-common';
 import { SubstructureSearchType } from '../constants';
+import { sketchersWarmUp } from './sketcher-tests';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
@@ -137,6 +138,8 @@ category('substructure filters', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    const funcs = DG.Func.find({tags: ['moleculeSketcher']});
+    await sketchersWarmUp(funcs);
   });
 
   test('filterBy2Columns', async () => {
@@ -246,8 +249,8 @@ M  END
     await delay(500);
     //opening 2nd filter, sketching a molecule and waiting for filters to complete search
     filter2.sketcher.setSmiles(substr2);
-    await awaitCheck(() => df1.filter.trueCount === 462, 'df1 hasn\'t been filtered', 20000);
-    await awaitCheck(() => df2.filter.trueCount === 286, 'df2 hasn\'t been filtered', 20000);
+    await awaitCheck(() => df1.filter.trueCount === 462, 'df1 hasn\'t been filtered', 30000);
+    await awaitCheck(() => df2.filter.trueCount === 286, 'df2 hasn\'t been filtered', 30000);
     await delay(500); //for closing the progress bar
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
@@ -326,9 +329,7 @@ M  END
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles(substr);
-    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
-      expect(df.filter.trueCount, 5);
-    }, () => {}, 3000);
+    await awaitCheck(() => df.filter.trueCount === 5, `df hasn't been filtered during 5000 ms`, 5000);
     await delay(500);
     //check that filter structure is synchronized in second filter
     expect(filter2.sketcher.getSmiles(), 'C1CCCCC1', 'structure is not synchronized between filters');

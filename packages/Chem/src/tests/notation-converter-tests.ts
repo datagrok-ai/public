@@ -70,23 +70,26 @@ category('converters', async () => {
     _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
   });
   test('Names to SMILES', async () => {
-    const df = await readDataframe('tests/names_to_smiles.csv');
-    await namesToSmiles(df, df.col('Name')!);
-    await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
+    const chemblPackInstalled = DG.Func.find({ package: 'ChemblApi', name: 'getCompoundsIds' }).length;
+    if (chemblPackInstalled) {
+      const df = await readDataframe('tests/names_to_smiles.csv');
+      await namesToSmiles(df, df.col('Name')!);
+      await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
         `Column with names has not been converted to smiles`, 5000);
-    expect(df.get('canonical_smiles', 4) === '');
-    let mol1, mol2, smiles1, smiles2;
-    try {
-      mol1 = rdkitModule.get_mol(df.get('canonical_smiles', 3));
-      smiles1 = mol1.get_smiles();
-      mol2 = rdkitModule.get_mol('O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
-      smiles2 = mol1.get_smiles();
+      expect(df.get('canonical_smiles', 4) === '');
+      let mol1, mol2, smiles1, smiles2;
+      try {
+        mol1 = rdkitModule.get_mol(df.get('canonical_smiles', 3));
+        smiles1 = mol1.get_smiles();
+        mol2 = rdkitModule.get_mol('O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
+        smiles2 = mol1.get_smiles();
 
-    } finally {
-      mol1?.delete();
-      mol2?.delete();
+      } finally {
+        mol1?.delete();
+        mol2?.delete();
+      }
+      expect(smiles1 === smiles2);
     }
-    expect(smiles1 === smiles2);
   });
   test('Convert notations for column', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :

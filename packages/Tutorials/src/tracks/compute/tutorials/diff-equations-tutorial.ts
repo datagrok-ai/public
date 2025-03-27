@@ -6,13 +6,13 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement} from './utils';
+import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement, PAUSE} from './utils';
 
 import '../../../../css/tutorial.css';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
-  EDIT_TOGGLE_IDX = 2,
+  EDIT_TOGGLE_IDX = 3,
   REFRESH_RIBBON_IDX = 1,
   REFRESH_ICN_IDX = 0,
 };
@@ -119,21 +119,23 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', LINKS.LOTKA_VOLT).outerHTML}.`);
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-      grok.shell.v = DG.View.createByType('browse');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
     // 1. Open Apps
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    grok.shell.v = browseView;
-    browseView.showTree = true;
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
+    
+    const browsePanel = grok.shell.browsePanel;
 
-    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
+
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
 
     await this.action(
       'Open Apps',
@@ -142,9 +144,20 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run Diff Studio
-    const diffStudIcon = await getElement(browseView.root,'div[name="div-Diff-Studio"]');
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+
+    // 2. Run Diff Studio
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+
+    browseIcon.click();
+
+    const diffStudIcon = await getElement(galleryGrid, 'div[name="div-Diff-Studio"]');
     if (diffStudIcon === null) {
       grok.shell.warning('Diff Studio not found: install the Diff Studio package');
       return;
@@ -160,16 +173,16 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const viewToClose = await getViewWithElement('div.d4-line-chart');
     if (viewToClose === null) {
       grok.shell.warning('Failed to run Diff Studio');
-      return;      
+      return;
     }
-    viewToClose.close();  
+    viewToClose.close();
 
     const openModelFunc: DG.Func = await grok.functions.eval('DiffStudio:ivpFileHandler');
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
     await openModelFuncCall.call();
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
+
     // 3. Explore elements
     this.describe('We start with an incomplete model.');
 
@@ -188,7 +201,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Click "Next" to go to the next item.',
     );
 
-    // 4. Play with inputs    
+    // 4. Play with inputs
     let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
@@ -198,8 +211,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 5. Go to ODEs
-    this.describe('Explore the underlying mathematical model.');    
-    const ribbonPanels = dsView.getRibbonPanels();    
+    this.describe('Explore the underlying mathematical model.');
+    const ribbonPanels = dsView.getRibbonPanels();
     const editToggle = ribbonPanels[DS_CONSTS.EDIT_RIBBON_IDX][DS_CONSTS.EDIT_TOGGLE_IDX];
     await this.action(
       'Open equations editor',
@@ -232,7 +245,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
 
-    // 7. Complete 1st equation  
+    // 7. Complete 1st equation
     this.title('Improving models');
     this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
 
@@ -252,7 +265,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     ]);
 
     setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
-    
+
     await this.action(
       'Complete the first equation',
       interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == rawEquation)),
@@ -260,7 +273,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-    // 8. Complete 2nd equation    
+    // 8. Complete 2nd equation
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
@@ -295,10 +308,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 10. Check meaning
-    const description = '# Updates\n\nNow, the model takes into account:' + 
+    const description = '# Updates\n\nNow, the model takes into account:' +
       '\n* the effect of the presence of predators on the prey death rate' +
       '\n* the effect of the presence of prey on the predator\'s growth rate';
-    
+
     let okBtn = singleDescription(lineChartRoot, description, 'Go to the next step');
 
     await this.action(
@@ -331,7 +344,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
       'Reduce the initial value of the prey population.',
-    );    
+    );
 
     const deltaEditor = inputRoots[8].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(

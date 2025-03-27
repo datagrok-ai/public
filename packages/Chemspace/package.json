@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chemspace",
   "friendlyName": "Enamine ChemSpace",
-  "version": "1.1.4",
+  "version": "1.1.6",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -14,8 +14,8 @@
     "directory": "packages/Chemspace"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
@@ -28,7 +28,8 @@
     "typescript": "^5.6.3",
     "datagrok-tools": "latest",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@datagrok/chem": "^1.13.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -55,7 +56,7 @@
     "css/chemspace.css"
   ],
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

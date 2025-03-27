@@ -1,5 +1,25 @@
 # Diff Studio changelog
 
+## 1.2.6 (2025-03-10)
+
+* Fitting in webworkers for cyclic models
+* Updaed tests for pipelines
+
+## 1.2.5 (2025-03-06)
+
+* Fitting in webworkers for models with updates
+* Added tests for pipelines
+
+## 1.2.4 (2025-02-20)
+
+* Implemented the use of Diff Grok library
+* Updated compute-utils
+
+## 1.2.3 (2025-02-12)
+
+* Fixed the Open model menu
+* Updated performance info
+
 ## 1.2.2 (2025-02-10)
 
 * Implemented the use of Diff Studio Lib solvers

@@ -79,15 +79,10 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   applyFilter(): void {
     if (!this.dataFrame || !this.viewer.bitset || this.isDetached) return;
-    
-    const df = this.dataFrame; 
-    const bitset = this.viewer.bitset;
-
     this.viewer.setHighlightTag = true;
-    this.viewer.updateFilters(false, () => {
-      df.filter.and(bitset);
-      df.rows.addFilterState(this.saveState());
-    });
+    this.viewer.updateFilters(false);
+    this.dataFrame.filter.and(this.viewer.bitset);
+    this.dataFrame.rows.addFilterState(this.saveState());
   }
   
   detach(): void {

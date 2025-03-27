@@ -204,7 +204,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
     if (scaffoldStruct)
       substruct = scaffoldStruct;
     else {
-      let substructJson = scaffoldStruct ?? '{}';
+      let substructJson = '{}';
       scaffoldMol = scaffoldMolString == null ? null :
         (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
           getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));

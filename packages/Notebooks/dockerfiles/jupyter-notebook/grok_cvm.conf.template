@@ -1,0 +1,21 @@
+server {
+    listen 8090;
+
+    location /notebook/helper/ {
+        proxy_pass http://localhost:5005/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+
+    location /notebook/ {
+        proxy_pass http://localhost:8889/notebook/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+
+    location / {
+        return 204;
+    }
+}

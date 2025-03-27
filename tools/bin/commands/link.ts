@@ -6,6 +6,8 @@ import { runScript } from '../utils/utils';
 
 const repositoryDirNameRegex = new RegExp(path.join('1', '2')[1] + 'public$');
 
+const excludedPackages: string[] = ['@datagrok/diff-grok'];
+
 const curDir = process.cwd();
 let devMode = false;
 let repositoryDir = curDir;
@@ -17,6 +19,8 @@ while (path.dirname(repositoryDir) !== repositoryDir) {
   repositoryDir = path.dirname(repositoryDir);
 }
 
+let verbose = false;
+
 const apiDir = path.join(repositoryDir, 'js-api');
 const libDir = path.join(repositoryDir, 'libraries');
 const packageDir = path.join(repositoryDir, 'packages');
@@ -26,19 +30,22 @@ const libName = '@datagrok-libraries/';
 const packageName = '@datagrok/';
 
 export async function link(args: LinkArgs) {
+  verbose = args.verbose ?? false;
   localPackageDependencies = []
   packagesToLink = new Set<string>();
   if (args.dev !== undefined)
     devMode = args.dev;
   collectPackagesData(curDir);
   await linkPackages();
-  
+
   console.log('Package linked')
   return true;
 }
 
 function collectPackagesData(packagePath: string = curDir): string[] {
   const packageJsonPath = path.join(packagePath, 'package.json');
+  if (!fs.existsSync(packageJsonPath))
+    return [];
   const json = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
   let result: string[] = [];
   result = result.concat(collectPacakgeDataFromJsonObject(json.dependencies));
@@ -47,7 +54,7 @@ function collectPackagesData(packagePath: string = curDir): string[] {
   return result;
 }
 
-function collectPacakgeDataFromJsonObject(object: any): string[] { 
+function collectPacakgeDataFromJsonObject(object: any): string[] {
   let result: string[] = [];
   for (let dependencyName of Object.keys(object)) {
     let nameSplitted = dependencyName.split('/');
@@ -56,7 +63,7 @@ function collectPacakgeDataFromJsonObject(object: any): string[] {
     else if (dependencyName.includes(libName))
       result = result.concat(parsePackageDependencies(dependencyName, path.join(libDir, nameSplitted[nameSplitted.length - 1])));
     else if (dependencyName.includes(packageName))
-      result = result.concat(parsePackageDependencies(dependencyName, path.join(packageDir, toCamelCase(nameSplitted[nameSplitted.length - 1])))); 
+      result = result.concat(parsePackageDependencies(dependencyName, path.join(packageDir, toCamelCase(nameSplitted[nameSplitted.length - 1]))));
   }
   return result;
 }
@@ -81,12 +88,24 @@ function parsePackageDependencies(dependencyName: string, pathToLink: string): s
 
 async function linkPackages() {
   let anyChanges = true;
+  for (let element of excludedPackages)
+    packagesToLink.delete(element);
+
+  if (verbose) {
+    console.log('Packages to link:')
+    console.log(localPackageDependencies);
+  }
 
   while (anyChanges && packagesToLink.size > 0) {
     anyChanges = false;
-    let mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name));
-
+    let mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name) && !excludedPackages.includes(x.name));
+    if (mapElements.length === 0)
+      break;
     for (let element of mapElements) {
+
+      if (verbose) 
+        console.log(`Package ${element.name} linked`)
+      
       await runScript(`npm install`, element.packagePath);
       await runScript(`npm link ${element.dependencies.join(' ')}`, element.packagePath);
       await runScript(`npm link`, element.packagePath);
@@ -116,7 +135,6 @@ class PackageData {
 }
 
 interface LinkArgs {
-  local?: boolean,
-  npm?: boolean,
+  verbose?: boolean,
   dev?: boolean,
 }

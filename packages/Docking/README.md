@@ -5,24 +5,26 @@ is a plugin that integrates
 the [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) utility
 with the [Datagrok](https://datagrok.ai) platform.
 
+This package also provides a good example of Datagrok integration 
+with external utilities.
+You can find more in the 
+[Datagrok Docker container howto](https://datagrok.ai/help/develop/how-to/docker_containers).
+
+## AutoDock
+
 [Autodock](https://autodock.scripps.edu/)
 is widely used software for ligand-receptor docking 
 that allows researchers to predict the binding interactions between small molecules (ligands) and macromolecule 
 (receptor). 
 The **Autodock-GPU** is a GPU-accelerated version of the Autodock software.
 
-This package also provides a good example of Datagrok integration 
-with external utilities.
-You can find more in the 
-[Datagrok Docker container howto](https://datagrok.ai/help/develop/how-to/docker_containers).
-
-## How To
+### How To
 
 Setting up docking configurations can be challenging, but we've streamlined the process. Usually, someone familiar with the docking tool, like a cheminformatician, manages the complexity by identifying a pocket, preparing a configuration using the desktop Autodock application, naming it, and saving it on a server under the targets folder.
 
-### Prepare macromolecule (target)
+#### Prepare macromolecule (target)
 
-Autodock plugin contains several pre-created [targets](https://github.com/datagrok-ai/public/tree/master/packages/Docking/files/targets).
+Docking plugin contains several pre-created [targets](https://github.com/datagrok-ai/public/tree/master/packages/Docking/files/targets).
 To add your own macromolecule to the list of targets,
 prepare the macromolecule using 
 [AutoDock tools](https://ccsb.scripps.edu/mgltools/downloads/).
@@ -44,15 +46,15 @@ To run docking on a big ligand dataset, we suggest including all available atomi
 `A C HD N NA OA SA CL`.
 
 
-### Prepare data
+#### Prepare data
 
 Create or load a dataframe containing the ligands to be docked. 
 For demonstration purposes, consider using the provided demo data located under 
 **System:AppData/Docking/demo_files**.
 
-### Run docking
+#### Run docking
 
-1. Navigate to Chem > Autodock. A dialog appears.
+1. Navigate to Chem > Docking > Autodock. A dialog appears.
 2. Configure the parameters:
    * `Ligands`: Specify the column within the provided dataframe that contains the small molecules to be docked.
    * `Target`: Choose the folder containing the docking configurations and the macromolecule for simulation.
@@ -67,7 +69,7 @@ target will be much faster.
 
 ![docking simulations](help/docking-simulations.gif)
 
-### Analyze results
+#### Analyze results
 
 When the results are ready, you can:
 

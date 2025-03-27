@@ -337,7 +337,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const trellisSortState: TrellisSorting = {
       [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.Desc},
-      [TrellisAxis.To]: {property: TrellisSortByProp.None, type: TrellisSortType.Asc},
+      [TrellisAxis.To]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.Desc},
     };
 
 
@@ -385,6 +385,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], this.tp);
+    this.sortTrellis(TrellisAxis.To, trellisSortState[TrellisAxis.To], this.tp);
 
     const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridFrag, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
@@ -412,6 +413,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     console.log(`created mmpa filters`);
 
     this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name);
+    //show scatter plot context menu instead of mmp viewer's context menu
+    this.subs.push(grok.events.onContextMenu.subscribe(e => {
+      if (e.causedBy && e.causedBy.target && this.sp!.root.contains(e.causedBy.target)) {
+        e.causedBy.preventDefault();
+        e.causedBy.stopPropagation();
+        e.causedBy.stopImmediatePropagation();
+      }
+    }));
 
     const [linesEditor, chemSpaceParams] = runMmpChemSpace(this.parentTable!, this.moleculesCol!, this.sp, lines,
       linesIdxs, linesActivityCorrespondance, this.pairedGrids!.mmpGridTrans.dataFrame, this.mmpa!, this.rdkitModule!,

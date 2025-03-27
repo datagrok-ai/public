@@ -113,7 +113,10 @@ const config = {
                     path: '../help',
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
-                }
+                },
+                googleTagManager: {
+                    containerId: 'GTM-PV25ZPW',
+                },
             }),
         ],
     ],
@@ -187,7 +190,7 @@ const config = {
                         protocol: 'https',
                     }
                 ],
-                apiKey: 'hyoeYSu26w6jqpicj6C2A1Qy2X0nvv4l',
+                apiKey: 'jjq4uhJvQ9hqo7TcPTpDIKvn1EsoAb86',
             },
 
             // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters

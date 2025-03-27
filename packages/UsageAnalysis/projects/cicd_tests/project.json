@@ -6,17 +6,17 @@
     "tables": [
       {
         "path": "Tests.csv",
-        "creationScript": "Result = UsageAnalysis:TestsDashboard(null,5,null,null,false,false,false)",
+        "creationScript": "Result = UsageAnalysis:TestsDashboard('dev',5,null,null,false,false,false)",
         "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
       },
       {
         "path": "Benchmark.csv",
-        "creationScript": "Result = UsageAnalysis:BenchmarksDashboard(5,false,true,false)",
+        "creationScript": "Result = UsageAnalysis:BenchmarksDashboard('dev',5,false,true,false)",
         "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
       },
       {
         "path": "Stress_Tests.csv",
-      "creationScript": "Result = UsageAnalysis:StressTestsDashboard(5,false,false)",
+        "creationScript": "Result = UsageAnalysis:StressTestsDashboard(3)",
         "id": "48498f80-c210-11ef-9cb9-7bfcfe94b295"
       }, 
       {

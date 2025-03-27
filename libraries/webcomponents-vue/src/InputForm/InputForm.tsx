@@ -26,7 +26,7 @@ export const InputForm = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
-    skipInit:{
+    skipInit: {
       type: Boolean,
       default: true,
     },
@@ -55,7 +55,7 @@ export const InputForm = Vue.defineComponent({
     const validationStates = Vue.computed(() => props.validationStates);
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
-    const skipInit = Vue.computed(() => props.skipInit)
+    const skipInit = Vue.computed(() => props.skipInit);
 
     const states = Vue.reactive({
       meta: {} as Record<string, any>,
@@ -71,7 +71,7 @@ export const InputForm = Vue.defineComponent({
       );
     });
 
-    const currentForm = Vue.ref(undefined as undefined | DG.InputForm);
+    const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
     Vue.watchEffect(() => {
       if (!currentForm.value) return;
@@ -103,8 +103,29 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form!.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
-          if (paramItems && input.inputType === DG.InputType.Choice)
-            (input as DG.ChoiceInput<any>).items = paramItems;
+          if (input.inputType === DG.InputType.Choice) {
+            input.notify = false;
+            const currentValue = param.value;
+            try {
+              if (paramItems)
+                (input as DG.ChoiceInput<any>).items = paramItems;
+              else if (param.property.options.choices)
+                (input as DG.ChoiceInput<any>).items = JSON.parse(param.property.options.choices);
+            } catch(e) {
+              console.error(e);
+            } finally {
+              input.value = currentValue;
+              input.notify = true;
+            }
+          }
+          // TODO: FormApi
+          // const rangeMeta = meta[param.property.name]?.['range'];
+          //if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
+          const hideMeta = meta[param.property.name]?.['hidden'];
+          if (hideMeta)
+            input.root.style.display = 'none';
+          else
+            input.root.style.display = 'flex';
         });
     });
 

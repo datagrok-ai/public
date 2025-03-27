@@ -4,16 +4,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
-import { _demoDocking } from './demo/demo-docking';
+import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
+import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
 import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
+
+export const _package = new DG.Package();
 
 //name: info
 export function info() {
@@ -90,16 +91,7 @@ export async function prepareAutoDockData(
   };
 }
 
-function getTableView(tableName?: string): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : (tableName ? grok.shell.getTableView(tableName) : grok.shell.tv);
-  return tableView;
-}
-
-
-//top-menu: Chem | AutoDock...
+//top-menu: Chem | Docking | AutoDock...
 //name: Autodock
 //tags: HitTriageFunction
 //description: Autodock plugin UI
@@ -126,7 +118,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     for (let col of processedResults.columns)
       table.columns.add(col);
     
-    const {grid} = getTableView(table.name);
+    const {grid} = grok.shell.getTableView(table.name);
 
     addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
     grid.sort([BINDING_ENERGY_COL_UNUSED]);
@@ -154,17 +146,18 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
   }
 }
 
-//name: isApplicable
-//input: semantic_value molecule
+//name: isApplicableAutodock
+//input: string molecule
 //output: bool result
-export function isApplicable(molecule: DG.SemanticValue): boolean {
-  return molecule.cell.column.getTag(DockingTags.dockingRole) === DockingRole.ligand;
+export function isApplicableAutodock(molecule: string): boolean {
+  return molecule.includes('binding energy');
 }
 
 
 //name: AutoDock
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
+//condition: Docking:isApplicableAutodock(molecule)
 //output: widget result
 export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   return await getAutodockSingle(molecule);
@@ -178,7 +171,7 @@ export async function getAutodockSingle(
   if (value.toLowerCase().includes(ERROR_COL_NAME))
     return new DG.Widget(ui.divText(value));
 
-  const tableView = getTableView();
+  const tableView = grok.shell.tv;
   const currentTable = table ?? tableView.dataFrame;
   
   const addedToPdb = value.includes(BINDING_ENERGY_COL);
@@ -203,10 +196,10 @@ export async function getAutodockSingle(
 
   const result = ui.div();
   const map: { [_: string]: any } = {};
-  for (let i = 3; i < autodockResults!.columns.length; ++i) {
+  for (let i = 0; i < autodockResults!.columns.length; ++i) {
     const columnName = autodockResults!.columns.names()[i];
     const propertyCol = autodockResults!.col(columnName);
-    map[columnName] = prop(molecule, propertyCol!, result);
+    map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
   }
   result.appendChild(ui.tableFromMap(map));
   widget.root.append(result);

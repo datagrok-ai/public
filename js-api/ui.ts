@@ -464,8 +464,8 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
 /** Creates an html table based on [map].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
 */
-export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
-  return api.grok_UI_TableFromMap(map);
+export function tableFromMap(map: { [key: string]: any }, showCopyValue: boolean = false): HTMLTableElement {
+  return api.grok_UI_TableFromMap(map, showCopyValue);
 }
 
 /** Creates an editable html table for the specified items (rows) and properties (columns). */
@@ -728,6 +728,7 @@ export namespace input {
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
@@ -806,6 +807,10 @@ export namespace input {
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
+  }
+
+  export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
+    showOnlyColorBox?: boolean;
   }
 
   /** Set the table specifically for the column input */
@@ -932,7 +937,7 @@ export namespace input {
     return _create(d4.InputType.TextArea, name, options);
   }
 
-  export function color(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function color(name: string, options?: IColorInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Color, name, options);
   }
 

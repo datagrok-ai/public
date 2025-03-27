@@ -632,4 +632,4 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 - [Basic local machine deployment](docker-compose.md)
 - [All deployment options](../deploy.md)
 - [Infrastructure overview](../../develop/under-the-hood/infrastructure.md)
-- [Datagrok server configuration options](../configuration.md)
+- [Server configuration properties](../configuration.md)

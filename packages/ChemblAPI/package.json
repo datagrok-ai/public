@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/chembl-api",
-  "friendlyName": "ChemblAPI",
-  "version": "1.1.2",
+  "friendlyName": "ChEMBL API",
+  "version": "1.1.4",
   "description": "Similarity and substructure search in ChEMBL using its API",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "repository": {
     "type": "git",
@@ -13,9 +13,9 @@
     "directory": "packages/ChemblAPI"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.14.1",
+    "datagrok-api": "../../js-api",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
@@ -28,7 +28,8 @@
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@datagrok/chem": "^1.13.0"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -39,7 +40,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

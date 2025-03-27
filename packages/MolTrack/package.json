@@ -1,0 +1,43 @@
+{
+  "name": "molTrack",
+  "friendlyName": "MolTrack",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "../../js-api",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "../../libraries/utils"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-molTrack": "webpack && grok publish",
+    "release-molTrack": "webpack && grok publish --release",
+    "build-molTrack": "webpack",
+    "build": "webpack",
+    "debug-molTrack-dev": "webpack && grok publish dev",
+    "release-molTrack-dev": "webpack && grok publish dev --release",
+    "debug-molTrack-public": "webpack && grok publish public",
+    "release-molTrack-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/labs.git",
+    "directory": "users/askalkin/MolTrack/MolTrack"
+  }
+}

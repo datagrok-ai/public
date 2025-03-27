@@ -31,10 +31,10 @@ To add an image, double-click on the cell and choose the file. Supported extensi
 
 ### Linked images
 
-Datagrok automatically detects and visualizes images saved as URLs (those starting with "http://"
-or "https://", and ending with one of the supported image extensions). In case the image did not
-get automatically detected, click on the column, press `F2` to open the column properties, and set
-the following:
+Datagrok automatically detects and visualizes images from URLs (starting with "http://" or "https://" and ending with a
+supported image extension) as well as images stored as Datagrok paths (beginning with "System:" and ending with a
+supported image extension). If the image is not automatically detected, click on the column, press `F2` to open the
+column properties, and set the following:
 
 * `quality` to `ImageUrl`
 * `cell.renderer` to `ImageUrl`.

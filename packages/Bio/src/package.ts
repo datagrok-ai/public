@@ -47,11 +47,10 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
-import {demoBio01UI} from './demo/bio01-similarity-diversity';
-import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
+import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
+import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
-import {demoBio03UI} from './demo/bio03-atomic-level';
-import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
+import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
@@ -422,7 +421,7 @@ export function getRegion(
     start ?? null, end ?? null, name ?? null);
 }
 
-//top-menu: Bio | Convert | Get Region...
+//top-menu: Bio | Calculate | Get Region...
 //name: Get Region Top Menu
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table                           [Input data table]
@@ -587,7 +586,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
   clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
-  const tableView = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView :
+  const tableView =
     grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
@@ -607,14 +606,13 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   return res;
 }
 
-//top-menu: Bio | Convert | To Atomic Level...
+//top-menu: Bio | Transform | To Atomic Level...
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table [Input data table]
 //input: column seqCol {caption: Sequence; semType: Macromolecule}
 //input: bool nonlinear =false {caption: Non-linear; description: Slower mode for cycling/branching HELM structures}
 //input: bool highlight =false {caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
-//output:
 export async function toAtomicLevel(
   table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean = false
 ): Promise<void> {
@@ -628,6 +626,17 @@ export async function toAtomicLevel(
   } finally {
     pi.close();
   }
+}
+
+//name: To Atomic Level...
+//input: column seqCol {semType: Macromolecule}
+//meta.action: to atomic level
+export async function toAtomicLevelAction(seqCol: DG.Column) {
+  if (!seqCol?.dataFrame)
+    throw new Error('Sequence column is not found or its data frame is not empty');
+  const func = DG.Func.find({name: 'toAtomicLevel', package: 'Bio'})[0];
+  if (!func) throw new Error('To Atomic level Function not found');
+  func.prepare({table: seqCol.dataFrame, seqCol: seqCol}).edit();
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -743,37 +752,19 @@ export function importBam(fileContent: string): DG.DataFrame [] {
   return [];
 }
 
-//top-menu: Bio | Convert | Notation...
+//top-menu: Bio | Transform | Convert Notation...
 //name: convertDialog
 export function convertDialog() {
   const col: DG.Column<string> | undefined = getMacromoleculeColumns()[0];
   convert(col, _package.seqHelper);
 }
 
-//top-menu: Bio | Convert | TestConvert
-//name: convertSeqNotation
-//description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
-//input: string sequence {semType: Macromolecule}
-//input: string targetNotation
-//input: string separator
-//output: string result
-export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
-  try {
-    const col = DG.Column.fromStrings('sequence', [sequence]);
-    const _df = DG.DataFrame.fromColumns([col]);
-    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
-    if (semType)
-      col.semType = semType;
-    const converterSh = _package.seqHelper.getSeqHandler(col);
-    const newColumn = converterSh.convert(targetNotation, separator);
-    return newColumn.get(0);
-  } catch (err: any) {
-    const [errMsg, errStack] = errInfo(err);
-    _package.logger.error(errMsg, undefined, errStack);
-    throw err;
-  }
+//name: Convert Notation...
+//input: column col {semType: Macromolecule}
+//meta.action: Convert Notation...
+export function convertColumnAction(col: DG.Column) {
+  convert(col, _package.seqHelper);
 }
-
 
 //name: monomerCellRenderer
 //tags: cellRenderer
@@ -835,7 +826,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//top-menu: Bio | Convert | Split to Monomers...
+//top-menu: Bio | Transform | Split to Monomers...
 //name: Split to Monomers
 //input: dataframe table
 //input: column sequence { semType: Macromolecule }
@@ -975,20 +966,14 @@ export async function manageLibrariesApp(): Promise<DG.View> {
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode
-//input: view browseView
-export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+//input: dynamic browsePanel
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
-    const libNode = treeNode.item(libName);
+    const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
+    const libNode = treeNode.item(nodeName);
     // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
     libNode.onSelected.subscribe(async () => {
-      const monomerManager = await MonomerManager.getNewInstance();
-      browseView.preview = await monomerManager.getViewRoot(libName, false);
-    });
-
-    libNode.root.addEventListener('dblclick', async (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
       const monomerManager = await MonomerManager.getInstance();
       await monomerManager.getViewRoot(libName, true);
       monomerManager.resetCurrentRowFollowing();
@@ -1110,10 +1095,9 @@ export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
 //meta.demoPath: Bioinformatics | Similarity, Diversity
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoBioSimilarityDiversity(): Promise<void> {
-  await demoBio01UI();
+  await demoBioSimDiv();
 }
 
 // demoBio01a
@@ -1121,10 +1105,9 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 //meta.demoPath: Bioinformatics | Sequence Space
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoBioSequenceSpace(): Promise<void> {
-  await demoBio01aUI();
+  await demoSeqSpace();
 }
 
 // demoBio01b
@@ -1143,21 +1126,9 @@ export async function demoBioActivityCliffs(): Promise<void> {
 //meta.demoPath: Bioinformatics | Atomic Level
 //description: Atomic level structure of Macromolecules
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoBioAtomicLevel(): Promise<void> {
-  await demoBio03UI();
-}
-
-// demoBio05
-//name: demoBioHelmMsaSequenceSpace
-//meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
-//description: MSA and composition analysis on Helm data
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
-//meta.isDemoScript: True
-//meta.demoSkip: GROK-14320
-export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
-  await demoBio05UI();
+  await demoToAtomicLevel();
 }
 
 //name: SDF to JSON Library

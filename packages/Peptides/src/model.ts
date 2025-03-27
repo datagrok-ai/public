@@ -14,7 +14,6 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -29,6 +28,7 @@ import {
   getSelectionBitset,
   highlightMonomerPosition,
   initSelection,
+  isInDemo,
   modifySelection,
   mutationCliffsToMaskInfo,
   scaleActivity,
@@ -146,11 +146,15 @@ export class PeptidesModel {
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
       this._analysisView = this.id ? wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id) : undefined;
-      if (typeof this._analysisView === 'undefined')
+
+      if (!this._analysisView && (grok.shell.v as any)?.preview instanceof DG.TableView && (grok.shell.v as any)?.preview?.dataFrame === this.df)
+        this._analysisView = (grok.shell.v as any)!.preview as any as DG.TableView;
+
+      if (!this._analysisView)
         this._analysisView = grok.shell.addTableView(this.df);
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !grok.shell.isInDemo)
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !isInDemo())
       grok.shell.v = this._analysisView;
 
 
@@ -369,8 +373,39 @@ export class PeptidesModel {
       // this is important bit. settings are written by startAnalysis function or other viewers, but separate viewers will not init the peptides model
       if (settings)
         model.init(settings);
+
+      let wasEmptySelectionBefore = true;
+      model.subs.push(DG.debounce(dataFrame.onSelectionChanged, 10).subscribe((_) => {
+      //clear all selections if user cleared the selection.
+        if (wasEmptySelectionBefore || dataFrame.selection.anyTrue || !model._analysisView || !document.contains(model._analysisView.root) ||
+        model._analysisView.dataFrame !== dataFrame || !model.positionColumns) {
+          wasEmptySelectionBefore = !dataFrame?.selection?.anyTrue;
+          return;
+        }
+        model.webLogoSelection = initSelection(model.positionColumns!);
+        const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
+        if (mpViewer != null) {
+          mpViewer.invariantMapSelection = initSelection(model.positionColumns!);
+          mpViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+        }
+        const mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+        if (mprViewer != null) {
+          mprViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+          mprViewer.invariantMapSelection = initSelection(model.positionColumns!);
+        }
+        const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+        if (lstViewer != null) {
+          lstViewer.initClusterSelection({notify: true});
+          lstViewer.render();
+        }
+        wasEmptySelectionBefore = true;
+        //model.fireBitsetChanged();
+      }));
     }
-    return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
+
+    const model = dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
+
+    return model;
   }
 
   /**
@@ -403,7 +438,7 @@ export class PeptidesModel {
    * @return {DG.Accordion | null} - Accordion with analysis info based on current selection
    */
   createAccordion(): DG.Accordion | null {
-    const trueModel: PeptidesModel | undefined = grok.shell.t?.temp[PeptidesModel.modelName];
+    const trueModel: PeptidesModel | undefined = this.df?.temp[PeptidesModel.modelName];
     if (!trueModel)
       return null;
 
@@ -428,41 +463,43 @@ export class PeptidesModel {
     const selectedClusters: string = (trueLSTViewer === null ? [] :
       trueLSTViewer.clusterSelection[CLUSTER_TYPE.ORIGINAL].concat(trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM]))
       .join(', ');
-    if (selectedClusters.length !== 0) {
-      selectionDescription.push(ui.h1('Logo summary table selection'));
-      selectionDescription.push(ui.divText(`Selected clusters: ${selectedClusters}`));
-    }
+    const htmlTextEl = (t: string): HTMLElement => {
+      const el = ui.divText(t);
+      el.innerHTML = t;
+      return el;
+    };
+    if (selectedClusters.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>Logo Summary Table</b> clusters: ${selectedClusters}`));
 
     // Monomer-Position viewer selection overview
     const trueMPViewer = trueModel.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const selectedMonomerPositions = getSelectionString(trueMPViewer?.invariantMapSelection ?? {});
     const selectedMutationCliffs = getSelectionString(trueMPViewer?.mutationCliffsSelection ?? {});
-    if (selectedMonomerPositions.length !== 0 || selectedMutationCliffs.length !== 0)
-      selectionDescription.push(ui.h1('Sequence Variabily Map viewer selection'));
+    // if (selectedMonomerPositions.length !== 0 || selectedMutationCliffs.length !== 0)
+    //   selectionDescription.push(ui.h1('Sequence Variabily Map viewer selection'));
 
 
     if (selectedMonomerPositions.length !== 0)
-      selectionDescription.push(ui.divText(`Selected monomer-positions: ${selectedMonomerPositions}`));
+      selectionDescription.push(htmlTextEl(`<b>Invariant map</b>: ${selectedMonomerPositions}`));
 
 
     if (selectedMutationCliffs.length !== 0)
-      selectionDescription.push(ui.divText(`Selected mutation cliffs pairs: ${selectedMutationCliffs}`));
+      selectionDescription.push(htmlTextEl(`<b>Mutation cliffs</b>: ${selectedMutationCliffs}`));
 
 
     // Most Potent Residues viewer selection overview
     const trueMPRViewer = trueModel.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    const selectedMPRMonomerPositions = getSelectionString(trueMPRViewer?.mutationCliffsSelection ?? {});
-    if (selectedMPRMonomerPositions.length !== 0) {
-      selectionDescription.push(ui.h1('Most Potent Residues viewer selection'));
-      selectionDescription.push(ui.divText(`Selected monomer-positions: ${selectedMPRMonomerPositions}`));
-    }
+    const selectedMPRMonomerPositions = getSelectionString(trueMPRViewer?.invariantMapSelection ?? {});
+    if (selectedMPRMonomerPositions.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>Most potent residues</b>: ${selectedMPRMonomerPositions}`));
 
     // WebLogo selection overview
     const selectedMonomers = getSelectionString(trueModel.webLogoSelection);
-    if (selectedMonomers.length !== 0) {
-      selectionDescription.push(ui.h1('WebLogo selection'));
-      selectionDescription.push(ui.divText(`Selected monomers: ${selectedMonomers}`));
-    }
+    if (selectedMonomers.length !== 0)
+      selectionDescription.push(htmlTextEl(`<b>WebLogo</b>: ${selectedMonomers}`));
+
+    if (selectionDescription.length !== 0)
+      selectionDescription.unshift(ui.h1('Selection Sources'));
 
     const descritionsHost = ui.div(ui.divV(selectionDescription));
     acc.addTitle(ui.divV([
@@ -668,8 +705,10 @@ export class PeptidesModel {
       colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper()),
       webLogoBounds: () => this.webLogoBounds,
       cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
-      highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
+      highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void => {
         highlightMonomerPosition(mp, df, mpStats),
+        this.isHighlighting = true;
+      },
       isSelectionTable: false,
       headerSelectedMonomers: () => this.webLogoSelectedMonomers,
     };
@@ -750,7 +789,7 @@ export class PeptidesModel {
    * Sets tooltips to analysis grid
    */
   setTooltips(): void {
-    this.analysisView.grid.onCellTooltip((cell, x, y) => {
+    this.analysisView.grid.onCellTooltip((cell, _x, _y) => {
       if (cell.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER)
         return true;
 
@@ -811,7 +850,7 @@ export class PeptidesModel {
     addMutationCliffsSelection(mpViewer?.mutationCliffsSelection ?? {}, mpViewer?.mutationCliffs ?? null);
 
     const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    addMutationCliffsSelection(mprViewer?.mutationCliffsSelection ?? {}, mprViewer?.mutationCliffs ?? null);
+    addInvariantMapSelection(mprViewer?.invariantMapSelection ?? {}, mprViewer?.monomerPositionStats ?? null);
 
     // Cluster selection
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
@@ -822,7 +861,7 @@ export class PeptidesModel {
       }
     }
 
-    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer, combinedSelection.length);
+    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer as ArrayBuffer, combinedSelection.length);
   }
 
 
@@ -836,15 +875,23 @@ export class PeptidesModel {
 
     const selection = this.df.selection;
     const filter = this.df.filter;
-
+    let prevTimer: any = null;
     const showAccordion = (): void => {
       try {
+        if (prevTimer != null) {
+          clearTimeout(prevTimer);
+          prevTimer = null;
+        }
         const acc = this.createAccordion();
         if (acc === null)
           return;
 
-
+        // these shinanigans are needed to prevent frozen custom accordion from sticking
         grok.shell.o = acc.root;
+        prevTimer = setTimeout(() => {
+          if (grok.shell.o != acc.root)
+            grok.shell.o = acc.root;
+        }, 1500);
       } catch (e) {
         console.error(e);
       }
@@ -1134,6 +1181,8 @@ export class PeptidesModel {
     };
     const logoSummaryTable = await this.df.plot
       .fromType(VIEWER_TYPE.LOGO_SUMMARY_TABLE, viewerProperties) as LogoSummaryTable;
+    if (isInDemo())
+      this.analysisView.addViewer(logoSummaryTable);
     this.analysisView.dockManager.dock(logoSummaryTable, DG.DOCK_TYPE.RIGHT, null, VIEWER_TYPE.LOGO_SUMMARY_TABLE);
 
     logoSummaryTable.viewerGrid.invalidate();
@@ -1173,6 +1222,9 @@ export class PeptidesModel {
     };
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, viewerProperties) as MonomerPosition;
+    // for browse mode, we need to add viewer to the analysis view before docking. remove with release of 1.25
+    if (isInDemo())
+      this.analysisView.addViewer(monomerPosition);
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -1195,6 +1247,8 @@ export class PeptidesModel {
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
+    if (isInDemo())
+      this.analysisView.addViewer(mostPotentResidues);
     const monomerPosition = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
@@ -1327,7 +1381,7 @@ export class PeptidesModel {
       minClusterSize: mclParams.minClusterSize,
     } satisfies MCLSerializableOptions);
 
-    const tv = grok.shell.getTableView(this.df.name);
+    const tv = this.analysisView ?? grok.shell.getTableView(this.df.name);
     if (tv) {
       const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
       if (!func)

@@ -3,17 +3,18 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import { ensureContainersRunning, readDataframe } from './utils';
+import { CONTAINER_TIMEOUT, readDataframe } from './utils';
 
 category('server features', () => {
 
   before(async () => {
-    await ensureContainersRunning();
   });
   
   test('descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
@@ -33,7 +34,7 @@ category('server features', () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
     expect(result !== null, true);
   });
-});
+}, {timeout: 30000 + CONTAINER_TIMEOUT});
 
 
 category('chem exported', () => {

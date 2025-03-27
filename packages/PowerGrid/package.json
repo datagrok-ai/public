@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
-  "friendlyName": "PowerGrid",
-  "version": "1.5.4",
+  "friendlyName": "Power Grid",
+  "version": "1.5.5",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -15,7 +15,7 @@
   "dependencies": {
     "datagrok-tools": "latest",
     "@datagrok-libraries/gridext": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/wu": "^2.1.44",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
@@ -60,7 +60,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

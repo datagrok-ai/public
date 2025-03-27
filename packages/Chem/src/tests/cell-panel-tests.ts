@@ -2,10 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
-import {propertiesWidget} from '../widgets/properties';
+import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
 // import {SubstructureFilter} from '../widgets/chem-substructure-filter';
@@ -16,17 +17,19 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
-import {ensureContainersRunning, molV2000, molV3000} from './utils';
+import {molV2000, molV3000} from './utils';
 import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
+import { identifiers } from '../package';
+import { getDescriptorsPy } from '../scripts-api';
 
-const identifiers: {[key: string]: string} = {
-  'Smiles': 'CC(C)Cc1ccc(C(C)C(=O)N2CCCC2C(=O)OCCO)cc1',
-  'Inchi': 'InChI=1S/C20H29NO4/c1-14(2)13-16-6-8-17(9-7-16)15(3)19(23)21-10-4-5-18(21)20(24)25-12-11-22/h6-9,14-15,18,22H,4-5,10-13H2,1-3H3',
-  'Inchi key': 'UEEWWZTXTMHYOK-UHFFFAOYSA-N'};
+const identifiersVals: {[key: string]: string} = {
+  'Smiles': 'c1ccc2c(c1)CCNC2',
+  'Inchi': 'InChI=1S/C9H11N/c1-2-4-9-7-10-6-5-8(9)3-1/h1-4,10H,5-7H2',
+  'Inchi key': 'UWYZHKAOTLEWKK-UHFFFAOYSA-N'};
 
 const additionalIdentifiers: {[key: string]: string} = {
-  'Chembl': 'CHEMBL2262183', 'PubChem': '76330284', 'bindingdb': '50487960',
+  'Chembl': 'CHEMBL14346', 'PubChem': '7046', 'bindingdb': '13016',
 };
 
 category('cell panel', async () => {
@@ -34,60 +37,92 @@ category('cell panel', async () => {
   const molFormats = [CONST.SMILES, CONST.MOL2000, CONST.MOL3000, CONST.SMARTS, CONST.EMPTY];
   const molFormats_: {[key: string]: string} = {smiles: CONST.SMILES, molV2000: CONST.MOL2000,
     molV3000: CONST.MOL3000, smarts: CONST.SMARTS, empty: CONST.EMPTY};
+  const molsExt: {[key: string]: string} = {smiles: CONST.SMILES_EXTENDED, molV2000: CONST.MOL2000_EXTENDED,
+      molV3000: CONST.MOL3000_EXTENDED};
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    await ensureContainersRunning();
   });
 
   test('drug-likeness', async () => {
-    const dl = assessDruglikeness(molStr);
+    
     const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
 
-    expectFloat(dl[0], 7.210692227408717);
-    expect(JSON.stringify(dl[1]), expectedDescription);
+    for (const format of Object.keys(molFormats_)) {
+      if (format !== 'smarts' && format !== 'empty') {
+        const dl = assessDruglikeness(molFormats_[format]);
+        expectFloat(dl[0], -0.12433218410831226, undefined, `Error for ${format} format`);
+        expect(JSON.stringify(dl[1]), expectedDescription, `Error for ${format} format`);
+      }        
+    }
 
+    //check that widget doesn't throw errors
     for (const mol of molFormats)
       drugLikenessWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
 
   test('identifiers', async () => {
-    const res: any = await getIdentifiersSingle(molStr);
-    console.log(res);
-    for (const key of Object.keys(identifiers))
-      expect(res[key], identifiers[key]);
-    if (checkPackage('ChemblApi', 'getCompoundsIds')) {
-      Object.keys(additionalIdentifiers).forEach((it) => {
-        expect(res[it].innerText, additionalIdentifiers[it]);
-      });
+    for (const format of Object.keys(molFormats_)) {
+      if (format !== 'smarts' && format !== 'empty') {
+        const res: any = await getIdentifiersSingle(molFormats_[format]);
+        for (const key of Object.keys(identifiersVals))
+          expect(res[key], identifiersVals[key]);
+        if (checkPackage('ChemblApi', 'getCompoundsIds')) {
+          Object.keys(additionalIdentifiers).forEach((it) => {
+            expect(res[it].innerText, additionalIdentifiers[it]);
+          });
+        }
+        if (checkPackage('PubchemApi', 'GetIupacName'))
+          expect(Object.keys(res).includes('Name'), true);
+      }
     }
-    if (checkPackage('PubchemApi', 'GetIupacName'))
-      expect(Object.keys(res).includes('Name'), true);
-  });
+    //check that widget doesn't throw errors
+    for (const mol of molFormats)
+      identifiers(mol);
+  }, { timeout: 90000 });
 
   test('properties', async () => {
-    //commented out since the return type has changed - see if we still need it
-    //const propertiesMap = getPropertiesMap(molStr);
-    //const expectedPropertiesMap = await utils.loadFileAsText('tests/properties.json');
-    //expect(JSON.stringify(propertiesMap), expectedPropertiesMap);
+    const expectedRes: {[key: string]: any} = {
+      'MW': 133.089149,
+      'HBA': 1,
+      'HBD': 1,
+      'LogP': 1.1253999918699265,
+      'LogS': -1.8409999758005142,
+      'PSA': 12.029999732971191,
+      'Rotatable bonds': 0,
+      'Stereo centers': 0,
+      //'Molecule charge': 0,
+    };
+    for (const format of Object.keys(molFormats_)) {
+      if (format !== 'smarts' && format !== 'empty') {
+        const propertiesMap = getPropertiesMap(DG.SemanticValue.fromValueType(molFormats_[format], DG.SEMTYPE.MOLECULE));
+        Object.keys(expectedRes).forEach((prop) => expect(propertiesMap[prop].value, expectedRes[prop], `Error for ${format}, ${prop} property,
+          expected ${expectedRes[prop]}, got ${propertiesMap[prop].value}`));
+      }
+    }
 
+    //check that widget doesn't throw errors
     for (const mol of molFormats)
       propertiesWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
 
   test('structural-alerts', async () => {
-    const structuralAlerts = await getStructuralAlerts(molStr);
     const expectedStructuralAlerts = [1029, 1229];
-    expect(structuralAlerts.length, expectedStructuralAlerts.length);
-    for (const expectedSA of expectedStructuralAlerts)
-      expect(structuralAlerts.includes(expectedSA), true);
-
+    for (const format of Object.keys(molsExt)) {
+      if (format !== 'smarts' && format !== 'empty') {
+        const structuralAlerts = await getStructuralAlerts(molsExt[format]);
+        expect(structuralAlerts.length, expectedStructuralAlerts.length);
+        for (const expectedSA of expectedStructuralAlerts)
+          expect(structuralAlerts.includes(expectedSA), true);
+      }
+    }
+    //check that widget doesn't throw errors
     for (const mol of molFormats)
       await structuralAlertsWidget(mol);
-  });
+  }, { timeout: 60000 });
 
   for (const k of Object.keys(molFormats_)) {
     test('structure2d-widget.' + k, async () => {
@@ -103,15 +138,20 @@ category('cell panel', async () => {
 
 
   test('toxicity', async () => {
-    const risks = getRisks(molStr);
     const expectedRisks = {
       'Mutagenicity': 'None',
       'Tumorigenicity': 'None',
       'Irritating effects': 'Low',
       'Reproductive effects': 'High',
     };
-    expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
+    for (const format of Object.keys(molsExt)) {
+      if (format !== 'smarts' && format !== 'empty') {
+        const risks = getRisks(molsExt[format]);
+        expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
+      }        
+    }
 
+    //check that widget doesn't throw errors
     for (const mol of molFormats)
       toxicityWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
@@ -171,15 +211,20 @@ category('cell panel', async () => {
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
-    for (const mol of molFormats) {
-      const widget: DG.Widget = await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
-      if (mol === CONST.EMPTY) {
-        await awaitCheck(() => widget.root.innerText === EMPTY_MOLECULE_MESSAGE,
-          `empty data handled incorrectly`, 5000);
-      } else {
-        await awaitCheck(() => widget.root.querySelector('table') !== null,
-          `descriptors table hasn\'t been created for ${mol}`, 55000);
-      }
-    }
-  }, {timeout: 60000, stressTest: true});
+    await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
+    const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
+    const res: DG.DataFrame = await getDescriptorsPy(
+      'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
+      DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selesctedDesc)]),
+    );
+    expect(res.columns.names().length, 3);
+    expect(selesctedDesc.every((it => res.columns.names().includes(it))), true);
+    expect((res.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
+    expect(res.get('HeavyAtomCount', 0), 25);
+    expect(res.get('NHOHCount', 0), 1);
+
+    //check that widget doesn't throw errors
+    for (const mol of molFormats)
+      await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
+  }, {timeout: 60000 + utils.CONTAINER_TIMEOUT, stressTest: true});
 });

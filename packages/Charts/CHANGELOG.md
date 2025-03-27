@@ -1,5 +1,25 @@
 # Charts changelog
 
+## 1.5.0 (WIP)
+
+### Features
+
+* Added Multiplot viewer
+
+## 1.4.4 (2024-02-27)
+
+### Features
+
+* [#3249](https://github.com/datagrok-ai/public/issues/3249): Tree: Add cross-viewer selection
+
+### Bug Fixes
+
+* [3245](https://github.com/datagrok-ai/public/issues/3245): Tree: Usability issues:
+  * Combination "Row Source: All - On Click: Filter" works differently in several cases
+  * The viewer re-renders on every branch click, even when the row source remains unchanged
+  * Pressing ESC on the keyboard deselects rows in the table, but the highlighting remains on the viewer
+* GROK-17619: Charts | Tree viewer: Symbol size changes when aggregation function is set
+
 ## 1.4.3 (2024-01-30)
 
 ### Features

@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary, AdmeticaResponse } from './constants';
 import { FormStateGenerator } from './admetica-form';
@@ -16,28 +16,18 @@ let piechartIndex = 0;
 
 async function getAdmeticaContainer() {
   const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
+  await ensureContainerRunning('admetica');
   return admeticaContainer;
 }
 
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
   try {
-    const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
-    return JSON.parse(response!);
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
+    return await response.json();
   } catch (error) {
     //grok.log.error(error);
     return null;
   }
-}
-
-export async function healthCheck() {
-  const admeticaContainer = await getAdmeticaContainer();
-  const path = '/health_check';
-  const params: RequestInit = {
-    method: 'GET',
-  }
-  const response: AdmeticaResponse | null = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  if (!response?.success)
-    throw new Error('Health check failed.');
 }
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
@@ -45,7 +35,6 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   const params: RequestInit = {
     method: 'POST',
     headers: {
-      'Accept': 'text/csv',
       'Content-type': 'text/csv'
     },
     body: csvString
@@ -54,7 +43,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
   
-  if (!response && !admeticaContainer.status.startsWith('started')) {
+  if (!response && !admeticaContainer.status.startsWith('started') && !admeticaContainer.status.startsWith('checking')) {
     throwError('Container failed to start.');
   }
   
@@ -124,7 +113,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
 }
 
 export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string): void {
-  const tableView = getTableView(table);
+  const tableView = grok.shell.getTableView(table.name);
   if (!tableView && !showInPanel) return;
 
   for (const columnName of columnNames) {
@@ -223,7 +212,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 }
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
-  const tv = getTableView(table);
+  const tv = grok.shell.getTableView(table.name);;
   const {grid} = tv;
   if (!tv) return;
 
@@ -273,7 +262,7 @@ function getTooltipContent(model: any, value: any): string {
 }
 
 export function addCustomTooltip(table: DG.DataFrame): void {
-  const view = getTableView(table);
+  const view = grok.shell.getTableView(table.name);
   view.grid.onCellTooltip((cell, x, y) => {
     if (cell.isTableCell) {
       const subgroup = cell.tableColumn!.name;
@@ -287,14 +276,6 @@ export function addCustomTooltip(table: DG.DataFrame): void {
       return true;
     }
   });
-}
-
-function getTableView(dataFrame: DG.DataFrame): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : grok.shell.getTableView(dataFrame.name);
-  return tableView;
 }
 
 function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
@@ -374,7 +355,7 @@ export function addResultColumns(
     }
   }
 
-  const tableView = getTableView(viewTable);
+  const tableView = grok.shell.getTableView(viewTable.name);
   const {grid} = tableView;
   models.forEach((model: Model) => {
     const columnName = updatedModelNames.find((name) => name.includes(model.name));
@@ -501,7 +482,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const { cell, units } = semValue;
   const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
 
-  const view = getTableView(dataFrame);
+  const view = grok.shell.getTableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
@@ -527,6 +508,7 @@ export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: st
 
   ui.onSizeChanged(form.root).subscribe(() => {
     const containerWidth = form.root.clientWidth;
+    if (!containerWidth) return;
     const updatedFormState = generator.generateFormState(containerWidth);
     form.form.state = JSON.stringify(updatedFormState);
   });

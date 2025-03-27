@@ -18,6 +18,7 @@ sidebar_position: 1.2
 | Data format |[Arrow](https://github.com/datagrok-ai/public/tree/master/packages/Arrow)|Optional |Support for parquet and feather |Stable|
 | Data format |[FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors)|Optional |Support for PDF, DOCX |Stable|
 | Misc |[Alation](https://github.com/datagrok-ai/public/tree/master/packages/Alation)|Optional| Integration with [Alation](https://www.alation.com/) (commercial 3rd party license)|Stable|
+| Jira |[JiraConnect](https://github.com/datagrok-ai/public/tree/master/packages/JiraConnect)|Optional| Integration with Jira |Stable|
 
 ## Govern
 
@@ -32,10 +33,11 @@ sidebar_position: 1.2
 |------|-------|---------------|-----|--------------|
 |Spreadsheet |[PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Recommended| [Grid](../visualize/viewers/grid.md) viewer enhancements | Stable|
 |Viewers, misc |[Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)|Optional| Visualizations based on external libraries ([ECharts](https://echarts.apache.org/en/index.html), [D3.js](https://d3js.org/), [Circos](https://github.com/nicgirault/circosJS), and [three.js](https://threejs.org/))| Stable |
-| Curve fitting |[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Stable |
 | Trees |[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)|Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
 | Trees |[PhyloTreeViewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
 |GIS|[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)|Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
+|NMR data |[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)|Fit-for-purpose| Visualization of NMR diagram | Stable |
+|Spectral data |[SpectraViewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)|Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 <!--
 |Viewers |[Forms]||???|Beta|
 |Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
@@ -66,9 +68,8 @@ sidebar_position: 1.2
 |------|-------|------------|----------------------|---|
 |ML Toolkit |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)|Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
 |Jupyter Notebooks |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)|Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
-<!--
-|?? |[TensorFlow.js]|Optional|Support for training and applying TensorFlow.js-based predictive models|Labs|
--->
+|MLflow models |[MLflow](https://github.com/datagrok-ai/public/tree/master/packages/MLFlow)| Fit-for-purpose| Integrates MLflow models into the Datagrok platform|Beta|
+
 
 ## Develop
 
@@ -92,6 +93,7 @@ sidebar_position: 1.2
 | Database search |[ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI) | Optional| Webservice integration: ChEMBL | Stable|
 | Database search |[PubChemApi](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 | Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
+| Database search |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChEMBL)| Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
 | Virtual screening | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 | Virtual screening<br/>Hit to lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
 
@@ -110,10 +112,12 @@ sidebar_position: 1.2
 |Data format|[HELM](https://github.com/datagrok-ai/public/tree/master/packages/HELM)|Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
 | Visualization |[BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Recommended| Visualization of biological structures ([wiki](../visualize/viewers/biostructure.md)) |Stable|
 | SAR  | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Stable|
+| Curve fitting |[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Stable |
 | Oligonucleotides  |[SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Fit-for-purpose| App that converts oligonucleotides into various formats  |Stable|
 | Oligonucleotides  |[OligoBatchCalculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) |Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
 | ADMET | [Admetica](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) | Optional | App that lets you evaluate ADMET properties | Stable |
 | Docking | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Stable |
+|Protein structure prediction, docking | [BioNeMo](https://github.com/datagrok-ai/public/tree/master/packages/BioNeMo) | Fit-for-purpose | Integrates advanced models for protein structure prediction and molecular docking| Beta |
 
 ### NLP
 

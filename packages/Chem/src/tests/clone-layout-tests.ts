@@ -8,6 +8,7 @@ import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_SCAFFOLD_TAG, SubstructureSearchType} from '../constants';
+import { sketchersWarmUp } from './sketcher-tests';
 
 type FilterPanel = {
     filter: SubstructureFilter,
@@ -793,7 +794,7 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
 async function filterByStructure(df: DG.DataFrame, filter: SubstructureFilter, molfile: string, trueCount: number) {
   //setting structure and wait for results
   filter.sketcher.setMolFile(molfile);
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 10000);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'df hasn\'t been filtered', 20000);
 }
 
 async function useAsFilter(tv: DG.TableView, molfile: string, trueCount: number) {

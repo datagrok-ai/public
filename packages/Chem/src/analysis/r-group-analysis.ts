@@ -185,7 +185,7 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
         }).call(undefined, undefined, { processed: false });
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
-          const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(col.dataFrame.name);
+          const view = grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;

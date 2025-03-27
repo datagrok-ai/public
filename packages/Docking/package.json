@@ -11,9 +11,9 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.48.3",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "@datagrok-libraries/tutorials": "^1.5.2",
+    "@datagrok-libraries/tutorials": "^1.5.4",
     "@datagrok-libraries/compute-utils": "^1.40.1",
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "=1.11.10",
     "rxjs": "^6.5.5",
@@ -53,7 +53,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

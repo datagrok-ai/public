@@ -7,7 +7,6 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
-import $ from 'cash-dom';
 
 type onClickOptions = 'Select' | 'Filter';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -18,7 +17,7 @@ const aggregationMap = new Map<string, string[]>([
   // Aggregation for numeric columns: int, bigint, float, qnum
   ['int', Object.values(DG.AGG)],
   ['bigint', Object.values(DG.AGG)],
-  ['float', Object.values(DG.AGG)],
+  ['double', Object.values(DG.AGG)],
   ['qnum', Object.values(DG.AGG)],
 
   // Aggregation for string columns
@@ -29,10 +28,7 @@ const aggregationMap = new Map<string, string[]>([
 
   // Aggregation for datetime columns
   ['datetime', [
-    ...Object.values(DG.STAT_COUNTS), 
-    DG.AGG.MIN, 
-    DG.AGG.MAX, 
-    DG.AGG.AVG
+    ...Object.values(DG.STAT_COUNTS),
   ]],
 
   // Aggregation for virtual columns
@@ -82,8 +78,9 @@ export class TreeViewer extends EChartViewer {
   mouseOverLineColor: number;
   showMouseOverLine: boolean;
   
-  private clickedPath: string | null = null;
+  private filteredPath: string | null = null;
   private hoveredPath: string | null = null;
+  private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   constructor() {
     super();
@@ -150,7 +147,7 @@ export class TreeViewer extends EChartViewer {
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
+        return columnValue?.toString() === segment || ((columnValue === null || columnValue === '') && segment === ' ');
       });
     }, event.event);
   }
@@ -235,8 +232,12 @@ export class TreeViewer extends EChartViewer {
 
       if (targetPath) {
         handleChartClick(targetPath.split(' ||| '), params);
-        this.handleTreeClick(targetPath, this.selectedRowsColor);
-        this.clickedPath = targetPath;
+        if (this.onClick === 'Filter') {
+          this.handleTreeClick(targetPath, this.selectedRowsColor);
+          this.filteredPath = targetPath;
+          if (this.selectedPaths)
+            this.handleSelectionChange();
+        }
       }
     };
 
@@ -244,7 +245,7 @@ export class TreeViewer extends EChartViewer {
       if (!this.showMouseOverLine) return;
       const targetPath = this.getTargetPath(params);
 
-      if (targetPath && targetPath !== this.clickedPath) {
+      if (targetPath) {
         this.hoveredPath = targetPath;
         this.paintBranchByPath(targetPath, this.mouseOverLineColor);
       }
@@ -255,13 +256,23 @@ export class TreeViewer extends EChartViewer {
         this.cleanTree([this.hoveredPath]);
         this.hoveredPath = null;
 
-        if (this.clickedPath)
-          this.paintBranchByPath(this.clickedPath);
+        if (this.filteredPath)
+          this.paintBranchByPath(this.filteredPath);
+
+        if (this.selectedPaths) {
+          const treeData = this.getSelectionData();
+          const dict = this.addParentPaths(treeData);
+          this.paintBranchByPath(this.selectedPaths, null, dict);
+        }
       }
     };
   
     this.chart.on('mouseover', showTooltip);
     this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.on('click', (params: any) => {
+      if (params.componentType === 'series')
+        params.data.collapsed = !params.data.collapsed;
+    });
     this.chart.getZr().on('click', handleZrClick);
     this.chart.getZr().on('mouseover', handleZrHover);
     this.chart.getZr().on('mouseout', handleZrMouseOut);
@@ -327,11 +338,13 @@ export class TreeViewer extends EChartViewer {
   }
 
   handleTreeClick(pathString: string, color?: number): void {
-    this.cleanTree([this.clickedPath!]);
+    this.cleanTree([this.filteredPath!]);
+    if (this.selectedPaths)
+      this.cleanTree(this.selectedPaths);
     this.paintBranchByPath(pathString, color);
   }
   
-  paintBranchByPath(paths: string | string[], color?: number): void {
+  paintBranchByPath(paths: string | string[], color: number | null = null, selection: SelectionData | null = null): void {
     const hoverStyle = {
       lineStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
       itemStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
@@ -339,7 +352,7 @@ export class TreeViewer extends EChartViewer {
 
     const pathsArray = Array.isArray(paths) ? paths : [paths];
   
-    const updatedData = this.buildSeriesConfig(pathsArray, hoverStyle);
+    const updatedData = this.buildSeriesConfig(pathsArray, hoverStyle, null, selection);
     if (updatedData) {
       const updatedOption = {
         ...this.chart.getOption(),
@@ -374,10 +387,9 @@ export class TreeViewer extends EChartViewer {
     this.chart.setOption(updatedOption, false, true);
   }
   
-  buildSeriesConfig(paths: string[], hoverStyle: any, option?: any): any {
+  buildSeriesConfig(paths: string[], hoverStyle: any, option: any | null = null, selection: SelectionData | null = null): any {
     const originalTree = option ?? this.chart!.getOption()?.series?.[0]?.data?.[0];
     if (!originalTree) return undefined;
-    
     const cloneTree = echarts.util.clone(originalTree);
     
     const applyHoverStyle = (node: any) => {
@@ -393,10 +405,15 @@ export class TreeViewer extends EChartViewer {
             pathParts.every((part, index) => nodePathParts[index] === part)
           );          
         });
-        
-        if (isMatch) Object.assign(node, hoverStyle);
+
+        if (isMatch) {
+          if (selection) {
+            const countsMatch = selection[node.path] === node.value;
+            hoverStyle = { ...hoverStyle, lineStyle: { ...hoverStyle.lineStyle, type: countsMatch ? null : 'dashed' } };
+          }
+          Object.assign(node, hoverStyle);
+        }
       }
-      
       if (node.children) node.children.forEach(applyHoverStyle);
     };
     
@@ -434,7 +451,7 @@ export class TreeViewer extends EChartViewer {
       case 'table':
         this.updateTable();
         this.onTableAttached();
-        this.render();
+        this.render(false);
         break;
   
       case 'onClick':
@@ -443,7 +460,7 @@ export class TreeViewer extends EChartViewer {
   
       case 'hierarchyColumnNames':
         this.chart.clear();
-        this.render();
+        this.render(false);
         break;
   
       case 'colorColumnName':
@@ -473,7 +490,7 @@ export class TreeViewer extends EChartViewer {
   
       case 'initialTreeDepth':
         this.option.series[0].initialTreeDepth = p.get(this);
-        this.render();
+        this.render(false);
 
       case 'symbolSize':
         this.option.series[0].symbolSize = p.get(this);
@@ -490,8 +507,10 @@ export class TreeViewer extends EChartViewer {
         break;
 
       case 'selectedRowsColor':
-        if (this.clickedPath)
-          this.paintBranchByPath(this.clickedPath, this.selectedRowsColor);
+        if (this.filteredPath)
+          this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
+        if (this.selectedPaths)
+          this.handleSelectionChange(true);
         break;
   
       default:
@@ -545,6 +564,22 @@ export class TreeViewer extends EChartViewer {
     return this.dataFrame.columns.length >= 1;
   }
 
+  addParentPaths(data: SelectionData): SelectionData {
+    const result: SelectionData = { ...data };
+  
+    for (const path in data) {
+      const count = data[path];
+      const parts = path.split(" ||| ");
+
+      for (let i = 1; i < parts.length; i++) {
+        const parentPath = parts.slice(0, i).join(" ||| ");
+        result[parentPath] = (result[parentPath] || 0) + count;
+      }
+    }
+  
+    return result;
+  }
+
   addSubs() {
     if (!this.dataFrame) return;
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
@@ -557,22 +592,58 @@ export class TreeViewer extends EChartViewer {
       requestAnimationFrame(() => this.chart?.resize());
     }));
     this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.handleReset()));
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "Escape")
-        this.handleReset();
-    });
+    this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
+      this.handleSelectionChange();
+    }));
   }
 
-  handleReset(): void {
-    if (this.clickedPath) {
-      this.cleanTree([this.clickedPath]);
-      this.clickedPath = null;
+  handleReset() {
+    if (this.filteredPath) {
+      this.cleanTree([this.filteredPath]);
+      this.filteredPath = null;
     }
+    if (this.selectedPaths)
+      this.handleSelectionChange();
+  }
+
+  handleSelectionChange(changedProp: boolean = false): void {
+    this.setChartOption();
+    
+    if (this.selectedPaths && !changedProp) {
+      this.cleanTree(this.selectedPaths!);
+    }
+
+    if (this.filteredPath)
+      this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
+  
+    const treeData = this.getSelectionData();
+    const dict = this.addParentPaths(treeData);
+    this.selectedPaths = Object.keys(treeData);
+    this.paintBranchByPath(Object.keys(treeData), null, dict);
+  }
+
+  getSelectionData(): SelectionData {
+    const rowMask = this.dataFrame.selection.clone();
+    const selectionBuilder = this.dataFrame
+      .groupBy(this.eligibleHierarchyNames)
+      .count()
+      .whereRowMask(rowMask.and(this.filter));
+    const selectionAggregated = selectionBuilder.aggregate();
+    
+    const treeData: SelectionData = {};
+    for (let i = 0; i < selectionAggregated.rowCount; ++i) {
+      const path = selectionAggregated.columns.byNames(this.eligibleHierarchyNames)
+        .map((col) => col.getString(i))
+        .join(' ||| ');
+      treeData[path] = selectionAggregated.columns.byName('count').get(i);
+    }
+    return treeData;
   }
 
   onTableAttached() {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length);
+      col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name)
+    );    
 
     if (categoricalColumns.length < 1)
       return;
@@ -704,33 +775,70 @@ export class TreeViewer extends EChartViewer {
     return this.orient === 'BT' || this.orient === 'TB';
   }
 
+  syncCollapsedValues(newData: any, existingData: any) {
+    const pathMap = new Map<string, any>();
+
+    (function traverse(node: any) {
+        if (!node) return;
+        if (node.path !== null) pathMap.set(node.path, node);
+        node.children?.forEach(traverse);
+    })(existingData[0]);
+
+    (function update(node: any) {
+        if (node.path !== null && pathMap.has(node.path)) {
+            node.collapsed = pathMap.get(node.path).collapsed;
+        }
+        node.children?.forEach(update);
+    })(newData[0]);
+  }
+
+  updateCollapsedState(data: TreeDataType[]) {
+    const { initialTreeDepth } = this;
+  
+    const traverse = (node: TreeDataType, depth: number) => {
+      node.collapsed = depth > initialTreeDepth;
+      node.children?.length && node.children.forEach(child => traverse(child, depth + 1));
+    };
+  
+    data.forEach(rootNode => traverse(rootNode, 1));
+  }  
+
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
     super.detach();
   }
 
-  render(): void {
+  render(preserveCollapsed: boolean = true): void {
     this.renderQueue = this.renderQueue
-      .then(() => this._render());
+      .then(() => this._render(preserveCollapsed));
   }
 
-  async _render() {
+  async _render(preserveCollapsed: boolean = true) {
     if (!this.dataFrame)
       return;
 
     if (this.filter.trueCount >= CATEGORIES_NUMBER) {
-      this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+      this.eligibleHierarchyNames = this.hierarchyColumnNames ? this.hierarchyColumnNames.filter(
         (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-      );
+      ) : [];
     } else {
       this.eligibleHierarchyNames = this.hierarchyColumnNames;
     }
 
-    if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0)
+    if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0) {
+      utils.MessageHandler._showMessage(this.root, `The Tree viewer requires at least one categorical column with fewer than ${CATEGORIES_NUMBER} unique categories`, utils.ERROR_CLASS);
       return;
+    }
+
+    utils.MessageHandler._removeMessage(this.root, utils.ERROR_CLASS);
 
     const data = await this.getSeriesData();
+    this.updateCollapsedState(data);
+    const existingData = this.option.series[0].data || [];
+    
+    if (preserveCollapsed)
+      this.syncCollapsedValues(data, existingData);
 
     Object.assign(this.option.series[0], {
       data
@@ -757,11 +865,16 @@ export class TreeViewer extends EChartViewer {
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
 
-    if (this.clickedPath)
-      this.paintBranchByPath(this.clickedPath, this.selectedRowsColor);
+    if (this.filteredPath)
+      this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
+    if (this.selectedPaths)
+      this.handleSelectionChange(true);
   }
 }
 
 type layoutType = 'orthogonal' | 'radial';
 type orientation = 'LR' | 'RL' | 'TB' | 'BT';
 type symbolType = 'circle' | 'emptyCircle' | 'rect' | 'roundRect' | 'triangle' | 'diamond' | 'pin' | 'arrow' | 'none';
+type SelectionData = {
+  [path: string]: number;
+};

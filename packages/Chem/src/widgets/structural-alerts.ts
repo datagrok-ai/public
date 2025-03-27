@@ -57,7 +57,7 @@ async function loadSADataset(): Promise<void> {
 export async function structuralAlertsWidget(molecule: string): Promise<DG.Widget> {
   const colors = [NO_HIGHLIGHT].concat(DG.Color.categoricalPalette.slice(0, 10));
   rdKitModule ??= getRdKitModule();
-  let alerts = [];
+  let alerts: any[] = [];
   try {
     alerts = await getStructuralAlerts(molecule);
   } catch (e) {

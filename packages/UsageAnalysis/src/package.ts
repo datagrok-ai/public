@@ -2,21 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { UsageWidget } from './widgets/usage-widget';
-import { PackageUsageWidget } from './widgets/package-usage-widget';
+import {UsageWidget} from './widgets/usage-widget';
+import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
-import { ViewHandler } from './view-handler';
-import { TestTrack } from './test-track/app';
-import { ReportsWidget } from "./widgets/reports-widget";
-import { ReportingApp } from "./reporting/reporting_app";
-import { TestAnalysisManager } from './test-analysis/test-analysis-manager'; 
-import { getDate } from './utils';
-import dayjs from "dayjs";
+import {ViewHandler} from './view-handler';
+import {TestTrack} from './test-track/app';
+import {ReportsWidget} from "./widgets/reports-widget";
+import {ReportingApp} from "./reporting/reporting_app";
+import {TestAnalysisManager} from './test-analysis/test-analysis-manager';
+import {getDate} from './utils';
 import {ServiceLogsApp} from "./service_logs/service_logs";
-import { TestGridCellHandler } from './handlers/test-grid-cell-handler';
-import { initTestStickyMeta } from './test-analysis/sticky-meta-initialization';
-import { TestDashboardWidget } from './viewers/ua-test-dashboard-viewer';
+import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
+import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
+import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -92,11 +91,12 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //input: string packages {isOptional: true}
 //input: string tags {isOptional: true}
 //input: string categories {isOptional: true}
+//input: string projects {isOptional: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string): Promise<DG.ViewBase | null> {
+export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string): Promise<DG.ViewBase | null> {
   const handler = new ViewHandler();
-  await handler.init(date, groups, packages, tags, categories, path);
+  await handler.init(date, groups, packages, tags, categories, projects, path);
   return handler.view;
 }
 
@@ -127,6 +127,9 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   return app.view!;
 }
 
+
+let AVAILABLE_SERVICES: string[];
+
 //name: Service Logs
 //tags: app
 //meta.url: /service-logs
@@ -135,18 +138,69 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //input: map params {isOptional: true}
 //input: int limit {isOptional: true}
 //output: view v
-export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
-  const currentCall = grok.functions.getCurrentCall();
-  const services = await grok.dapi.docker.getAvailableServices();
-  const app = new ServiceLogsApp(currentCall, services, path, limit);
-  if (services.length > 0)
-    app.getLogs().then((_) => {});
-  return app;
+export function serviceLogsApp(path?: string, params?: any, limit?: number): DG.ViewBase {
+  if (path && path.startsWith('/'))
+    path = path.slice(1);
+  const view = DG.View.fromViewAsync(async () => {
+    const currentCall = grok.functions.getCurrentCall();
+    AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
+    const app = new ServiceLogsApp(currentCall, AVAILABLE_SERVICES, path, limit);
+    if (AVAILABLE_SERVICES.length > 0)
+      app.getLogs().then((_) => {});
+    //@ts-ignore
+    return app as DG.View;
+  });
+  view.name = ServiceLogsApp.APP_NAME;
+  return view;
 }
 
 //input: dynamic treeNode
 //input: view browseView
-export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {
+  const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
+  loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
+  const loaderItem = treeNode.item(loaderDiv);
+  try {
+    AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
+    const services = ['datagrok', 'grok_pipe', 'grok-pipe', 'rabbitmq', 'jkg', 'spawner', 'grok-connect', 'grok_connect'];
+
+    const getItem = (service: string) => {
+      let icon: HTMLElement;
+      if (services.some((s) => service.includes(s))) {
+        icon = ui.image('/images/entities/grok.png', 10, 10);
+      }
+      else
+        icon = ui.iconFA('server');
+      icon.style.marginRight = '3px';
+      const span = ui.span([icon, ' ', service]);
+      span.style.display = 'flex';
+      span.style.alignItems = 'center';
+      return span;
+    };
+
+    let currentView: DG.View;
+    for (const service of AVAILABLE_SERVICES) {
+      const node = treeNode.item(getItem(service));
+      node.onSelected.subscribe(async (_) => {
+        currentView?.close();
+        currentView= DG.View.fromViewAsync(async () => {
+          const app = new ServiceLogsApp(grok.functions.getCurrentCall(), AVAILABLE_SERVICES, service, ServiceLogsApp.DEFAULT_LIMIT, true);
+          await app.getLogs();
+          //@ts-ignore
+          return app as DG.View;
+        });
+        currentView.name = service;
+        grok.shell.addPreview(currentView);
+      });
+    }
+  } finally {
+    loaderItem.remove();
+  }
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {
   await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
   await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
 }

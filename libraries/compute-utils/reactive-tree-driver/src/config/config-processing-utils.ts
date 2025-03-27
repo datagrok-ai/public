@@ -129,13 +129,17 @@ async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
   const func = DG.Func.byName(nqName);
   const fc = func.prepare();
   const inputs = wu(fc.inputParams.values()).map((input) => (
-    {id: input.property.name, type: input.property.propertyType as any, direction: 'input' as const, nullable: false}
+    {id: input.property.name, type: input.property.propertyType as any, direction: 'input' as const, nullable: isOptional(input.property)}
   ));
   const outputs = wu(fc.outputParams.values()).map((output) => (
     {id: output.property.name, type: output.property.propertyType as any, direction: 'output' as const, nullable: false}
   ));
   const io = [...inputs, ...outputs];
   return io;
+}
+
+function isOptional(prop: DG.Property) {
+  return prop.options.optional === 'true';
 }
 
 function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {

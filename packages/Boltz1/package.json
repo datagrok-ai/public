@@ -1,0 +1,53 @@
+{
+  "name": "@datagrok/boltz1",
+  "friendlyName": "Boltz1",
+  "fullName": "Boltz1",
+  "version": "0.0.1",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "Integrates Datagrok with Boltz-1",
+  "dependencies": {
+    "@datagrok-libraries/utils": "../../libraries/utils",
+    "datagrok-tools": "4.13.64",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "=1.11.10",
+    "js-yaml": "^4.1.0",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/wu": "^2.1.44",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "9.4.2",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-boltz1": "webpack && grok publish",
+    "release-boltz1": "webpack && grok publish --release",
+    "build-boltz1": "webpack",
+    "build": "webpack",
+    "debug-boltz1-dev": "webpack && grok publish dev",
+    "release-boltz1-dev": "webpack && grok publish dev --release",
+    "debug-boltz1-local": "webpack && grok publish local",
+    "release-boltz1-local": "webpack && grok publish local --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Boltz1"
+  }
+}

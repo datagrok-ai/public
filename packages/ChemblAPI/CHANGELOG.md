@@ -1,5 +1,13 @@
 # ChemblAPI changelog
 
+## 1.1.4 (2025-03-06)
+
+Use fetchProxy to do requests. Updated tests.
+
+## 1.1.3 (2025-02-25)
+
+README updated
+
 ## 1.1.2 (2024-12-27)
 
 Added more tests
