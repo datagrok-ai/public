@@ -22,11 +22,10 @@ async function genomeFileBrowse(data: string, fileName : string = 'GenomeFileBro
 //name: previewGenomeFileBrowse
 //tags: fileViewer
 //meta.fileViewer: json
-//meta.fileViewerCheck: GenomeBrowse:checkGenomeConfig
+//meta.fileViewerCheck: GenomeBrowser:checkGenomeConfig
 //input: file file
 //output: view v
 export async function previewGenomeFileBrowse(fileData: DG.FileInfo): Promise<DG.View> {
-  let view = await genomeFileBrowse( await fileData.readAsString(), fileData.name);
-  grok.shell.addView(view);
-  return view;
+
+  return DG.View.fromViewAsync(async () => await genomeFileBrowse( await fileData.readAsString(), fileData.name));
 }

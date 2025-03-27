@@ -5,7 +5,13 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class GenomeFileBrowsePackageDetectors extends DG.Package {
+class GenomeBrowserPackageDetectors extends DG.Package {
+
+  //name: autostartChecker
+  //tags: autostart
+  autostartChecker() {
+    return;
+  }
   //name: checkGenomeConfig
   //input: string content
   //output: bool result
