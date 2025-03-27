@@ -445,7 +445,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
         
         if (model) {
           const units = model.units && model.units !== '-' ? model.units : '';
-          const value = `${firstValue.toFixed(3)} ${units}`;
+          const value = typeof firstValue === "string" ? firstValue : `${firstValue.toFixed(3)} ${units}`;
           map[param] = ui.divText(value, {
             style: { color: color ? DG.Color.toHtml(color) : 'black' }
           });
