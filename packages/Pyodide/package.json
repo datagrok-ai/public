@@ -41,7 +41,7 @@
   "canView": [
     "All users"
   ],
-  "category": "Scripting",
+  "category": "Compute",
   "meta": {
     "dartium": false,
     "browserFeatures": [
