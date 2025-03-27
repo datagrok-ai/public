@@ -2079,7 +2079,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clearFilters();
     this.setScaffoldTag(this.molColumn!, [], true);
 
-    if (this.colorColumn)
+    if (this.colorColumn && this.dataFrame)
       this.dataFrame.columns.remove(this.colorColumn.name);
     super.detach();
   }
