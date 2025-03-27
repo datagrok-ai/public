@@ -73,8 +73,8 @@ let initCompleted = false;
 const options = {
   _package,
   ViewClass: ModelCatalogView,
-  segment: 'Compute',
-  viewName: 'Model Catalog',
+  segment: 'Modelhub',
+  viewName: 'Model Hub',
   funcName: 'modelCatalog',
   setStartUriLoaded: () => startUriLoaded = true,
   getStartUriLoaded: () => startUriLoaded,

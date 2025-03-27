@@ -16,10 +16,37 @@ export interface ModelCatalogConfig {
   getStartUriLoaded: () => boolean,
 }
 
-export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
+function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
+  const {
+    funcName, _package
+  } = options;
+  if (!view!.parentCall) {
+    const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+    const mfc = mc.prepare();
+    view.parentCall = mfc;
+  }
+}
+
+function findOrCreateViewWithCore(options: ModelCatalogConfig) {
   const {
     viewName, funcName, _package, ViewClass
   } = options;
+  let view = ViewClass.findModelCatalogView(viewName);
+  if (!view) {
+    const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+    const mfc = mc.prepare();
+    mfc.callSync({processed: true, report: false});
+    view = mfc.outputs.v;
+  }
+  const currentView = [...grok.shell.views].find(v => v === view);
+  if (!currentView)
+    grok.shell.add(view!);
+
+  return view;
+}
+
+export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
+  const {ViewClass} = options;
 
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
@@ -34,28 +61,10 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
 
   grok.functions.onBeforeRunAction.subscribe((fc) => {
     if (fc.func.hasTag('model')) {
-      let view = options.ViewClass.findModelCatalogView(viewName);
-      if (!view) {
-        const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
-        let mfc = mc.prepare();
-        mfc.callSync({processed: true, report: false});
-        view = mfc.outputs.v;
-      }
-      const currentView = [...grok.shell.views].find(v => v === view);
-      if (!currentView)
-        grok.shell.add(view!);
+      const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc);
     } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
-      let view = options.ViewClass.findModelCatalogView(viewName);
-      if (!view) {
-        const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
-        let mfc = mc.prepare();
-        mfc.callSync({processed: true, report: false});
-        view = mfc.outputs.v;
-      }
-      const currentView = [...grok.shell.views].find(v => v === view);
-      if (!currentView)
-        grok.shell.add(view!);
+      const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc.inputs['call']);
     }
   });
@@ -114,30 +123,24 @@ function getCookie(name: string): string | undefined {
 
 export function startModelCatalog(options: ModelCatalogConfig) {
   const {
-    segment, viewName, funcName, _package, ViewClass, setStartUriLoaded, getStartUriLoaded
+    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded
   } = options;
+  const view = ViewClass.findOrCreateCatalogView(viewName);
 
   if (!getStartUriLoaded()) {
-    const view = ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
     handleInitialUri(segment);
     setStartUriLoaded();
-    return view;
   }
 
-  const view = ViewClass.findModelCatalogView(viewName);
+  fixParentCall(view, options);
 
-  if (view) {
-    return view;
-  } else {
-    const newView = ViewClass.createModelCatalogView(viewName, funcName, _package);
-    return newView;
-  }
+  return view;
 }
 
 function handleInitialUri(segment: string) {
   const url = new URL(grok.shell.startUri);
   const startPathSegments = url.pathname.split('/');
-  const catlogUriSegmentIdx = startPathSegments.findIndex(x => x === segment);
+  const catlogUriSegmentIdx = startPathSegments.findIndex(x => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
 
   if (catlogUriSegmentIdx > 0) {
     if (catlogUriSegmentIdx + 1 < startPathSegments.length) {

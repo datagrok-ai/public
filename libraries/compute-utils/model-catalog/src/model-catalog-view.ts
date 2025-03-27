@@ -9,19 +9,15 @@ import '../css/model-card.css';
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
     const modelsView = this.findModelCatalogView(viewName) ??
-      this.createModelCatalogView(viewName, funcName, currentPackage);
+      this.createModelCatalogView(viewName);
 
     return modelsView as ModelCatalogView;
   }
 
   static createModelCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
     const view = new this(viewName);
     return view;
@@ -44,7 +40,7 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   constructor(
-    private viewName: string,
+    viewName: string,
   ) {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
