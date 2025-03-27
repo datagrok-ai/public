@@ -989,8 +989,9 @@ export class DiffStudio {
 
       lines = lines.concat([
         '//tags: model',
-        '\n',
-        `const model = \`${model}\``,
+        '',
+        `const model = \`${model}\`;`,
+        '',
         `await grok.functions.call('DiffStudio:runModel', {`,
         `  'model': model,`,
         `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
