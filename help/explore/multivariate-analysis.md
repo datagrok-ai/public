@@ -27,17 +27,17 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
    * the [Regression Coefficients](#regression-coefficients) bar chart presenting parameters of the obtained linear model 
    * the [Explained Variance](#explained-variance) bar chart measuring how well the latent factors fit source data
 
-![add-to-workspace](multivariate-analysis/pls.gif)
+![add-to-workspace](multivariate-analysis/pls-run.gif)
 
 ### Observed vs. Predicted
 
-The **Observed vs. Predicted** scatterplot compares the response variable to its prediction:
+The **Observed vs. Predicted** scatterplot compares the response variable to its prediction. The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates the goodness of fit:
 
-![add-to-workspace](multivariate-analysis/predicted-vs-reference.png)
+![add-to-workspace](multivariate-analysis/pls-predicted-vs-reference.png)
 
 Combine it with the [Scores](#scores) scatterplot to explore data samples:
 
-![add-to-workspace](multivariate-analysis/model-n-scores.gif)
+![add-to-workspace](multivariate-analysis/pls-model-n-scores.gif)
 
 ### Scores
 
@@ -48,41 +48,39 @@ The **Scores** scatterplot shows the values of the latent factors for each obser
 
 It indicates correlations between observations (how observations related to each other, occurrence groups or trends).
 
-![add-to-workspace](multivariate-analysis/scores.png)
+![add-to-workspace](multivariate-analysis/pls-scores.png)
 
 Combine it with the [Observed vs. Predicted](#observed-vs-predicted) scatterplot to explore data samples:
 
-![add-to-workspace](multivariate-analysis/scores-n-model.gif)
+![add-to-workspace](multivariate-analysis/pls-scores-n-model.gif)
 
 ### Loadings
 
 The **Loadings** scatterplot visually represents the influence of each feature on the latent factors: high loadings indicate a strong influence.
 
-![add-to-workspace](multivariate-analysis/loadings.png)
+![add-to-workspace](multivariate-analysis/pls-loadings.png)
 
 Use it in combination with the [Regression Coefficients](#regression-coefficients) bar chart to explore features:
 
-![add-to-workspace](multivariate-analysis/loadings-n-regr-coeffs.gif)
+![add-to-workspace](multivariate-analysis/pls-loadings-n-regr-coeffs.gif)
 
 ### Regression coefficients
 
 The **Regression Coefficients** bar chart presents parameters of the obtained linear model (used with the original data scale):
 
-![add-to-workspace](multivariate-analysis/regr-coeffs.png)
+![add-to-workspace](multivariate-analysis/pls-regr-coeffs.png)
 
 Combine it with the [Loadings](#loadings) scatterplot to explore features:
 
-![add-to-workspace](multivariate-analysis/regr-coeffs-n-loadings.gif)
+![add-to-workspace](multivariate-analysis/pls-regr-coeffs-n-loadings.gif)
 
 ### Explained variance
 
-Bar chart with explained variance of variables by PLS-components, cumulative sum by each of components:
+The **Explained Variance** bar chart shows the explained variance of variables by PLS-components, cumulative sum by each of components.
 
-![add-to-workspace](multivariate-analysis/expl-vars.png)
+![add-to-workspace](multivariate-analysis/pls-expl-vars.png)
 
 Use it to explore how well the latent components fit source data: closer to one means better fit.
-
-![add-to-workspace](multivariate-analysis/expl-vars.gif)
 
 ## PLS components
 
