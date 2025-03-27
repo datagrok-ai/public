@@ -94,7 +94,7 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 * [Train, assess, apply, and share models](../learn/learn.md) (or integrate your own)
 * Native support for R, Python, Julia, Matlab, and Octave
 * Open any dataset with a [Jupyter notebook](../compute/jupyter-notebook.md)
-* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis/pls.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
+* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
 
 #### Collaborate
 
