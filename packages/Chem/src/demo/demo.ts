@@ -362,7 +362,7 @@ export async function _demoScaffoldTree(): Promise<void> {
     scaffoldTree.dataFrame = table;
     scaffoldTree.size = 'small';
 
-    tv.dockManager.dock(scaffoldTree, DG.DOCK_TYPE.LEFT, null, 'Scaffold Tree', 0.42);
+    tv.dockManager.dock(scaffoldTree, DG.DOCK_TYPE.LEFT, null, 'Scaffold Tree', 0.4);
     await scaffoldTree.loadTreeStr(treeStr);
 
     grok.shell.windows.showHelp = true;
