@@ -55,7 +55,7 @@ export async function _demoChemOverview(): Promise<void> {
     'HeavyAtomCount'];
 
   const demoScript = new DemoScript('Overview', 'Overview of Cheminformatics functionality',
-    undefined, {autoStartFirstStep: true});
+    undefined, {autoStartFirstStep: true, path: 'Cheminformatics/Overview'});
   let table: DG.DataFrame;
   let tv: DG.TableView;
   let propPanel: Element;
