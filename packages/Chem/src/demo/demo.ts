@@ -13,6 +13,7 @@ import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/view
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
+import { MatchedMolecularPairsViewer } from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -192,11 +193,55 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 export async function _demoMMPA(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
+  const filterStates = {
+    '2': {
+      "type": "histogram",
+      "column": "\u0394 CYP3A4",
+      "active": true,
+      "filterOutMissingValues": false,
+      "showMissingValuesOnly": false,
+      "min": 4.69,
+      "max": 7.40,
+      "showHistogram": true,
+      "showSlider": true,
+      "showMinMax": false,
+      "boolInput": null
+    },
+    '3': {
+      "type": "histogram",
+      "column": "\u0394 hERG_pIC50",
+      "active": true,
+      "filterOutMissingValues": false,
+      "showMissingValuesOnly": false,
+      "min": 0.89,
+      "max": 7,
+      "showHistogram": true,
+      "showSlider": true,
+      "showMinMax": false,
+      "boolInput": null
+    }
+  }
 
   _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
     tv.dataFrame.currentRowIdx = 0;
+    let mmpViewer: MatchedMolecularPairsViewer | null = null;
+    try {
+      await awaitCheck(() => {
+        for (const v of tv.viewers) {
+          console.log(v.type);
+          if (v.type === 'Matched Molecular Pairs Analysis') {
+            mmpViewer = v as MatchedMolecularPairsViewer;
+            return true;
+          }
+        }
+        return false;
+      }, '', 20000);
+    } catch (e) {};
+    mmpViewer!.defaultFragmentsFiltersStates = filterStates;
+    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids.fpGrid.dataFrame.filter.trueCount === 6;
+
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });

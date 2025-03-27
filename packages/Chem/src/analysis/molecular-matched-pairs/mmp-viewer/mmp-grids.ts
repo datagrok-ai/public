@@ -25,7 +25,6 @@ export class MmpPairedGrids {
   fpCatsFrom: string [];
   fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
-  fpMaskFragmentsTab: DG.BitSet; //mask for a number of cases filter
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
   mmpGridTransMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
@@ -75,7 +74,6 @@ export class MmpPairedGrids {
     this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid();
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
-    this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
@@ -102,6 +100,18 @@ export class MmpPairedGrids {
     });
   }
 
+  disableFiltersGroup() {
+    if (this.filters)
+      for (let f of this.filters.filters)
+        this.filters.setEnabled(f, false);
+  }
+
+  enableFiltersGroup() {
+    if (this.filters)
+      for (let f of this.filters.filters)
+        this.filters.setEnabled(f, true);
+  }
+
   updateInfoMessage(grid: DG.Grid, div: HTMLElement, compName: string) {
     DG.debounce(grid.dataFrame.onFilterChanged, 500).subscribe(() => {
       ui.empty(div);
@@ -126,21 +136,17 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    let filterPanelCreated = false;
     this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
-      //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
-      if (!filterPanelCreated) {
-        if (this.currentTab !== MMP_NAMES.TAB_FRAGMENTS && e.type === DG.VIEWER.HISTOGRAM) {
-          filterPanelCreated = true;
-          setTimeout(() => {
-            this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-            if (this.lastFragmentIdx)
-              this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
-          }, 10);
-        }
-      }
       //show error in case grid is empty
       this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
+    });
+
+    //when swithcing from Fragments to Substitutions tab the following steps are triggered:
+    //disable of filters from filters panel -> collaborative filtering -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask) -> 
+    // -> in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
+    this.fpGrid.dataFrame.onRowsFiltering.subscribe((_) => {
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
