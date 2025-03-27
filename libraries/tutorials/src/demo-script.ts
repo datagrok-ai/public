@@ -60,12 +60,6 @@ export class DemoScript {
   private _path?: string;
   DEMO_PATH: string = 'apps/Tutorials/Demo';
 
-  get scriptDockNode(): DG.DockNode {
-    const dockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
-    return dockNode.container.containerElement === document.getElementsByClassName('panel-base splitter-container-horizontal')[0] ?
-      dockNode : Array.from(dockNode.children)[0];
-  }
-
   private _setBreadcrumbsInViewName(): void {
     const path = ['Home', 'Demo', ...((this._path ?? '').split('/'))];
     const breadcrumbs = ui.breadcrumbs(path);
@@ -177,7 +171,8 @@ export class DemoScript {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, this.scriptDockNode, this.name);
+    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
+      grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
     this._node.container.containerElement.classList.add('tutorials-demo-script-container');
 
     this._addHeader();
@@ -406,7 +401,8 @@ export class DemoScript {
     this._initRoot();
     if (grok.shell.v.name === this.name) {
       grok.shell.v.close();
-      this.scriptDockNode.container.setActiveChild(this._node!.container);
+      grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
+        grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
     }
 
     if (this._isAutomatic) {
