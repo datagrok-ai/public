@@ -1,3 +1,4 @@
+import {_MultiPlotViewer} from './package.g';
 import {_WordCloudViewer} from './package.g';
 import {_TreeViewer} from './package.g';
 import {_TimelinesViewer} from './package.g';
@@ -107,3 +108,4 @@ export {_SurfacePlot};
 export {_TimelinesViewer};
 export {_TreeViewer};
 export {_WordCloudViewer};
+export {_MultiPlotViewer};

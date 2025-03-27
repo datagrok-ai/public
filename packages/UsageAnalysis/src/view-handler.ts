@@ -8,7 +8,8 @@ import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
-import {LogView} from './tabs/log'; 
+import {LogView} from './tabs/log';
+import {ProjectsView} from "./tabs/projects";
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
@@ -19,10 +20,10 @@ export class ViewHandler {
     this.view = new DG.MultiView({viewFactories: {}});
   }
 
-  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string,  path?: string): Promise<void> {
+  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string,  path?: string): Promise<void> {
     this.view.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct(this);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, ProjectsView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       this.view.addView(currentView.name, () => {
@@ -43,13 +44,16 @@ export class ViewHandler {
 
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
+    toolbox.toggleProjectsInput(urlTab == 'Projects');
+    toolbox.togglePackagesInput(urlTab !== 'Projects');
 
     const paramsHaveDate = date != undefined;
     const paramsHaveUsers = groups != undefined;
     const paramsHavePackages = packages != undefined;
     const paramsHaveTags = tags != undefined;
     const paramsHavePackagesCategories = categories != undefined;
-    if (paramsHaveDate || paramsHaveUsers || paramsHavePackages || paramsHavePackagesCategories) {
+    const paramsHaveProjects = projects != undefined;
+    if (paramsHaveDate || paramsHaveUsers || paramsHavePackages || paramsHavePackagesCategories || paramsHaveProjects) {
       if (paramsHaveDate)
         toolbox.setDate(date!);
       if (paramsHaveUsers)
@@ -60,6 +64,8 @@ export class ViewHandler {
         toolbox.setTags(tags!);
       if (paramsHavePackagesCategories)
         toolbox.setPackagesCategories(categories!);
+      if (paramsHaveProjects)
+        toolbox.setProjects(projects!);
       toolbox.applyFilter();
     }
     let helpShown = false;
@@ -113,6 +119,8 @@ export class ViewHandler {
       const view = this.view.currentView;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
+      toolbox.toggleProjectsInput(view.name == 'Projects');
+      toolbox.togglePackagesInput(view.name !== 'Projects');
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
       if (view instanceof UaView) {

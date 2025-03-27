@@ -3,8 +3,8 @@ title: "AWS Terraform"
 sidebar_position: 2
 ---
 
-The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files
 
 This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)

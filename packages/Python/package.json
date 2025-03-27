@@ -4,10 +4,10 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.21.3",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.6"
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
@@ -32,7 +32,7 @@
     "release-python-release": "webpack && grok publish release --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

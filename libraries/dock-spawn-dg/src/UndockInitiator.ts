@@ -1,7 +1,7 @@
-import { EventHandler } from "./EventHandler.js";
-import { Point } from "./Point.js";
-import { Dialog } from "./Dialog.js";
-import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent.js";
+import { EventHandler } from "./EventHandler";
+import { Point } from "./Point";
+import { Dialog } from "./Dialog";
+import { IMouseOrTouchEvent } from "./interfaces/IMouseOrTouchEvent";
 
 /**
  * Listens for events on the [element] and notifies the [listener]
@@ -155,7 +155,7 @@ export class UndockInitiator {
 
         let position = new Point(e.clientX, e.clientY);
         let dy = position.y - this.dragStartPosition.y;
-        
+
         if (dy > this.thresholdPixels || dy < -this.thresholdPixels) {
             this.enabled = false;
             this._requestUndock(e);
@@ -166,7 +166,7 @@ export class UndockInitiator {
         let top = 0;
         let left = 0;
         let currentElement = this.element;
-        
+
         do {
             top += currentElement.offsetTop || 0;
             left += currentElement.offsetLeft || 0;

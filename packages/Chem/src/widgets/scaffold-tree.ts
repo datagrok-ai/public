@@ -570,7 +570,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   allowGenerate: boolean;
   applyFilter: boolean = true;
   summary: string;
+  title: string;
   scaffoldTreeId: number = scaffoldTreeId;
+  colorColumn: DG.Column | null = null;
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
 
   constructor() {
@@ -627,6 +629,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
     this.summary = this.string('summary', this.getFilterSum(), {userEditable: false});
+    this.title = this.string('title', 'Scaffold Tree');
     this._initMenu();
   }
 
@@ -1434,6 +1437,57 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
   }
 
+  assignScaffoldColors() {
+    if (!this.dataFrame)
+      return;
+  
+    const rowCount = this.dataFrame.rowCount;  
+    const columnName = `${this.title}_${this.moleculeColumnName}_colors`;
+    this.colorColumn = this.dataFrame.columns.byName(columnName);
+    const isNewColumn = !this.colorColumn;
+    
+    // First, we create an auxiliary column by prefixing its name with '~'. 
+    // This prevents unintended scrolling behavior when adding the column to the DataFrame.
+    // After adding the column, we remove the '~' prefix to ensure it is recognized and used in the viewers.
+    if (!this.colorColumn) {
+      this.colorColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
+      this.colorColumn.name = columnName;
+    }
+
+    const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
+    if (isNewColumn && gridColorColumn)
+      gridColorColumn.visible = false;
+
+    const colorBuffer = new Array<string | null>(rowCount).fill(null);
+    const scaffoldColorMap = new Map(this.colorCodedScaffolds.map(scaffold => [scaffold.molecule, scaffold.color]));
+    const childNodeMap = new Map(this.tree.items.map(child => [value(child).smiles, child]));
+    
+    const childNodeColorPairs = this.colorCodedScaffolds.reduce((pairs, scaffold) => {
+      const childNode = childNodeMap.get(scaffold.molecule);
+      const color = scaffoldColorMap.get(scaffold.molecule);
+      if (childNode && color)
+        pairs.push({ childNode, color });
+      return pairs;
+    }, [] as { childNode: TreeViewNode<any>, color: string }[]);
+    
+    childNodeColorPairs.sort((a, b) => value(b.childNode).bitset!.trueCount - value(a.childNode).bitset!.trueCount);
+    for (const { childNode, color } of childNodeColorPairs) {
+      const bitset = value(childNode).bitset;
+      if (bitset && bitset.trueCount > 0) {
+        let index = bitset.findNext(-1, true);
+        while (index !== -1) {
+          colorBuffer[index] = color;
+          index = bitset.findNext(index, true);
+        }
+      }
+    }
+
+    this.colorColumn.init((i) => colorBuffer[i]);
+    this.colorColumn.meta.colors.setCategorical(Object.fromEntries(
+      this.colorColumn.categories.map(value => [value, value])
+    ));
+  }
+
   updateBitset(node: DG.TreeViewNode): boolean {
     return node ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
   }
@@ -1859,6 +1913,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateUI();
     } else if (p.name === 'allowGenerate') {
       this.toggleTreeGenerationVisibility();
+    } else if (p.name === 'title') {
+      if (this.colorColumn)
+        this.colorColumn.name = `${this.title}_${this.moleculeColumnName}_colors`;
     }
   }
 
@@ -2021,6 +2078,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.clearFilters();
     this.setScaffoldTag(this.molColumn!, [], true);
+
+    if (this.colorColumn)
+      this.dataFrame.columns.remove(this.colorColumn.name);
     super.detach();
   }
 
@@ -2040,6 +2100,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
+    this.assignScaffoldColors();
   }
 
   selectGroup(group: DG.TreeViewNode) : void {

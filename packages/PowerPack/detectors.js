@@ -17,6 +17,7 @@ class PowerPackPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: GROK-17759
   detectText(col) {
     if (col.type === DG.COLUMN_TYPE.STRING && col.name === 'Questions')
       col.semType = DG.SEMTYPE.TEXT;

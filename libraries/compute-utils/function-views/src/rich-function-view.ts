@@ -1718,12 +1718,13 @@ export class RichFunctionView extends FunctionView {
 
     if (!this.func) throw new Error('The correspoding function is not specified');
 
-    return richFunctionViewReport(
+    const [blob] = await richFunctionViewReport(
       format,
       this.func,
       this.lastCall,
       this.dfToViewerMapping,
     );
+    return blob;
   };
 
   richFunctionViewSupportedFormats() {

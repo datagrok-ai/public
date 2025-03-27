@@ -92,11 +92,12 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //input: string packages {isOptional: true}
 //input: string tags {isOptional: true}
 //input: string categories {isOptional: true}
+//input: string projects {isOptional: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string): Promise<DG.ViewBase | null> {
+export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string): Promise<DG.ViewBase | null> {
   const handler = new ViewHandler();
-  await handler.init(date, groups, packages, tags, categories, path);
+  await handler.init(date, groups, packages, tags, categories, projects, path);
   return handler.view;
 }
 
@@ -135,18 +136,25 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //input: map params {isOptional: true}
 //input: int limit {isOptional: true}
 //output: view v
-export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
-  const currentCall = grok.functions.getCurrentCall();
-  const services = await grok.dapi.docker.getAvailableServices();
-  const app = new ServiceLogsApp(currentCall, services, path, limit);
-  if (services.length > 0)
-    app.getLogs().then((_) => {});
-  return app;
+export function serviceLogsApp(path?: string, params?: any, limit?: number): DG.ViewBase {
+  if (path && path.startsWith('/'))
+    path = path.slice(1);
+  const view = DG.View.fromViewAsync(async () => {
+    const currentCall = grok.functions.getCurrentCall();
+    const services = await grok.dapi.docker.getAvailableServices();
+    const app = new ServiceLogsApp(currentCall, services, path, limit);
+    if (services.length > 0)
+      app.getLogs().then((_) => {});
+    //@ts-ignore
+    return app as DG.View;
+  });
+  view.name = ServiceLogsApp.APP_NAME;
+  return view;
 }
 
 //input: dynamic treeNode
 //input: view browseView
-export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {
   await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
   await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
 }

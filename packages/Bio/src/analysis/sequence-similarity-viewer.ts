@@ -5,13 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
-import {updateDivInnerHTML} from '../utils/ui-utils';
+import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {alignSequencePair} from '@datagrok-libraries/bio/src/utils/macromolecule/alignment';
 import {KnnResult, SparseMatrixService} from '@datagrok-libraries/ml/src/distance-matrix/sparse-matrix-service';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {MmcrTemps, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
@@ -31,6 +32,8 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   knn?: KnnResult;
   kPrevNeighbors: number = 0;
   demo?: boolean;
+  analysisGrid?: DG.Grid;
+  subInited: boolean = false;
 
   constructor(
     private readonly seqHelper: ISeqHelper,
@@ -54,10 +57,10 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     if (this.moleculeColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const sh = this.seqHelper.getSeqHandler(this.moleculeColumn!);
+        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == null || this.dataFrame!.currentRowIdx == -1 ?
+          0 : this.dataFrame!.currentRowIdx;
 
-        await (!sh.isHelm() ? this.computeByMM() : this.computeByChem());
+        await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.moleculeColumnName})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -65,21 +68,36 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
-        resDf.onCurrentRowChanged.subscribe((_: any) => {
+        await resDf.meta.detectSemanticTypes();
+        await grok.data.detectSemanticTypes(resDf);
+        this.molCol.temp[tempTAGS.referenceSequence] = this.moleculeColumn!.get(this.targetMoleculeIdx);
+        this.molCol.temp[MmcrTemps.maxMonomerLength] = 4;
+        let prevTimer: any = null;
+        const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
+          prevTimer && clearTimeout(prevTimer);
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
-          setTimeout(() => { this.createPropertyPanel(resDf); }, 1000);
+          prevTimer = setTimeout(() => { this.createPropertyPanel(resDf); }, 300);
           this.gridSelect = true;
         });
-        const grid = resDf.plot.grid();
-        grid.col('indexes')!.visible = false;
+        if (!this.analysisGrid) {
+          this.analysisGrid = resDf.plot.grid();
+          updateDivInnerHTML(this.root, this.analysisGrid.root);
+        } else {
+          this.analysisGrid.dataFrame = resDf;
+          this.analysisGrid.invalidate();
+        }
+        this.analysisGrid.col('indexes')!.visible = false;
+        adjustGridcolAfterRender(this.analysisGrid, this.molCol!.name, 450, 30, true);
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
-        const targetScoreCell = grid.cell('score', targetMolRow!);
+        const targetScoreCell = this.analysisGrid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        const view = this.demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.v as DG.TableView;
-        view.grid.root.addEventListener('click', (_event: MouseEvent) => {
-          this.gridSelect = false;
-        });
-        updateDivInnerHTML(this.root, grid.root);
+        const view = grok.shell.tv;
+        if (!this.subInited) {
+          view.grid.root.addEventListener('click', (_event: MouseEvent) => {
+            this.gridSelect = false;
+          });
+          this.subInited = true;
+        }
         this.computeCompleted.next(true);
       }
     }
@@ -133,7 +151,8 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
     const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
     const alignment = alignSequencePair(subParts1, subParts2);
-    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
+    const canvas =
+      createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

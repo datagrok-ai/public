@@ -3,11 +3,16 @@ title: "Webservices"
 sidebar_position: 3
 ---
 
-[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI and supports both major versions (OpenAPI 2.x and OpenAPI 3.x), making it easy to connect to webservices and execute queries using the platform's features.
+[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs, 
+allowing machines to read the document and use the service. Datagrok ingests OpenAPI specifications (v 2.x and 3.x) 
+and converts them to [functions](../datagrok/concepts/functions/functions.md), making it easy to connect to webservices and execute queries via the
+automatically built user interface.
 
 ## Connecting to a webservice
 
-To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. Datagrok detects different attributes of a Swagger file and automatically creates a data connection and associated queries:
+To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
+Datagrok detects different attributes of a Swagger file and automatically creates a data connection and
+associated queries:
 
 | Swagger file    | Datagrok                                             |
 |-----------------|------------------------------------------------------|
@@ -166,7 +171,11 @@ Datagrok can work with both parameterized queries and queries without parameters
 
 ### Credentials
 
-The Swagger file doesn't define access parameters for an OpenAPI service directly. Instead, it describes the types and access parameters in the `securityDefinitions:` section (for OpenAPI 2.x) and `securitySchemes` block under the `components` section (for OpenAPI 3.x). In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, following the provider's naming requirement:
+The Swagger file doesn't define access parameters for an OpenAPI service directly. 
+Instead, it describes the types and access parameters in the `securityDefinitions:` section 
+(for OpenAPI 2.x) and `securitySchemes` block under the `components` section (for OpenAPI 3.x). 
+In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, 
+following the provider's naming requirement:
 
 ```yaml
 securityDefinitions:
@@ -203,7 +212,9 @@ When Swagger files are stored in this manner, they are imported to Datagrok (and
 
 To edit the original Swagger file provided by the service or enhance the file with simpler queries not present in the original Swagger file, we recommend using [Postman](https://www.postman.com/). You can import a Swagger JSON/YAML file into Postman for introspection, manipulation, and pruning using the "Import" button. If you need to remove some Swagger items, do it directly in Datagrok after uploading or importing it.
 
-Usually, a Swagger file from the API service's Swagger UI works well with both Datagrok and Postman. Import issues, if any, usually arise due to Swagger version differences or parser inconsistencies. First, ensure the Swagger name is included under the `"info"` > `"title"` section. If import errors persist, consider these steps:
+Usually, a Swagger file from the API service's Swagger UI works well with both Datagrok and Postman.
+If you encounter import issues, fist make sure that the Swagger name is included under the `"info"` > `"title"` section.
+If this does not help, try the following:
 
 <details>
 <summary> Issue: Datagrok loads the Swagger file successfully but `basePath` or `host` are missing along with the Swagger icon </summary>

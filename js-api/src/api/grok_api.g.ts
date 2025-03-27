@@ -25,7 +25,7 @@ export interface IDartApi {
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
-  grok_Set_CurrentObject(x: any, freeze: Bool): any;
+  grok_Set_CurrentObject(x: any, freeze: Bool, force: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
   grok_Get_LastError(): Promise<any>;
@@ -306,7 +306,7 @@ export interface IDartApi {
   grok_Menu_Get_CloseOnClick(m: any): any;
   grok_Menu_Set_CloseOnClick(m: any, closeOnClick: Bool): any;
   grok_Menu_Items(m: any, items: any, onClick: any, isValid: any, isChecked: any, toString: any, describe: any, onMouseEnter: any, radioGroup: String): any;
-  grok_Menu_ColorPalette(m: any, colors: any, getInitial: any, onSelect: any, onPreview: any, asGroup: String, visible: Bool, categorical: Bool, resetColorMs: Num): any;
+  grok_Menu_ColorPalette(m: any, colors: any, getInitial: any, onSelect: any, onPreview: any, asGroup: String, visible: Bool, categorical: Bool, resetColorMs: Num, closeOnClick: Bool): any;
   grok_Menu_SingleColumSelector(m: any, dataFrame: any, initialValue: String, onChange: any, asGroup: String, nullable: Bool, visible: Bool, editable: Bool, closeOnClick: Bool, changeOnHover: Bool, columnFilter: any): any;
   grok_Menu_MultiColumSelector(m: any, dataFrame: any, initialValue: any, onChange: any, asGroup: String, visible: Bool, editable: Bool, columnFilter: any): any;
   grok_Menu_Header(m: any, text: String, onClick: any, hasHoverEffect: Bool, getDescription: any): any;
@@ -363,6 +363,7 @@ export interface IDartApi {
   grok_DockContainer_Get_ContainerElement(c: any): any;
   grok_DockContainer_Destroy(c: any): any;
   grok_DockContainer_Float(c: any): any;
+  grok_DockContainer_SetActiveChild(c: any, child: any): any;
   grok_DockManager_Dock(m: any, refNode: any, e: any, dockType: String, title: String, ratio: Num): any;
   grok_DockManager_DockDialog(m: any, refNode: any, e: any, dockType: String, title: String): any;
   grok_DockManager_Get_Element(m: any): any;
@@ -1171,6 +1172,7 @@ export interface IDartApi {
   grok_ColumnsInput_ChangeTable(input: any, table: any, predicate: any): any;
   grok_ColumnsInput_ChangeAvailableColumns(input: any, availableColumns: any): any;
   grok_ColumnsInput_ChangeCheckedColumns(input: any, checkedColumns: any): any;
+  grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
   grok_TreeViewNode_Tree(): any;
@@ -1417,6 +1419,7 @@ export interface IDartApi {
   grok_FileInfo_Get_Connection(fi: any): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
+  grok_FileInfo_Get_ViewPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
   grok_FileInfo_Get_FileName(fi: any): any;
   grok_FileInfo_Get_Url(fi: any): any;
@@ -1641,10 +1644,13 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4\lib\src\common\common.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4\lib\src\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
+  grok_InputType_Create(): any;
+
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1694,7 +1700,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1709,7 +1715,4 @@ export interface IDartApi {
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
-
-  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
-  grok_InputType_Create(): any;
 }

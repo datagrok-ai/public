@@ -7,9 +7,7 @@ title: "Enterprise evaluation FAQ"
   * [Deployment](../../../deploy/deploy.md)
 
 * Security
-  * [Security overview](../../../govern/access-control/access-control.md)
-  * [Authentication](../../../govern/access-control/access-control.md#authentication)
-  and [authorization](../../../govern/access-control/access-control.md#authorization)
+  * [Security, authentication, and authorization](../../../govern/access-control/access-control.md)
   * [Encryption at rest](#encryption-at-rest)
   and [encryption in transit](#encryption-in-transit)
 
@@ -115,3 +113,4 @@ Also, there are multiple advanced options to deploy application:
 * [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/deploy/terraform/terraform.tf)
 to deploy to
   AWS ECS
+  

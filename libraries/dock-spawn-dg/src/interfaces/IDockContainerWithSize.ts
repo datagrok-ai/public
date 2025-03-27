@@ -1,5 +1,5 @@
-import { ISize } from "./ISize.js";
-import { IDockContainer } from "./IDockContainer.js";
+import { ISize } from "./ISize";
+import { IDockContainer } from "./IDockContainer";
 
 export interface IDockContainerWithSize extends IDockContainer {
     state: ISize;

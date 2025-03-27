@@ -90,19 +90,10 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static async openHelp(func: DG.Func) {
     if (!func.options['readme']) return;
-
     const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
     const readmeExists = await grok.dapi.files.exists(path);
-
-    if (!readmeExists) return;
-
-    grok.shell.windows.help.syncCurrentObject = false;
-    grok.shell.windows.help.visible = true;
-    const readmeText = await grok.dapi.files.readAsText(path);
+    const readmeText = readmeExists ? await grok.dapi.files.readAsText(path) : "No help file";
     grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-    setTimeout(() => {
-      grok.shell.windows.help.syncCurrentObject = true;
-    }, 1000);
   }
 
   static openModel(x: DG.Func) {
@@ -199,12 +190,16 @@ export class ModelHandler extends DG.ObjectHandler {
 
   override renderPreview(x: DG.Func): DG.View {
     const v = super.renderPreview(x);
-    //@ts-ignore
+    v.name = (x.friendlyName ?? x.name) + ' description';
     return DG.View.fromViewAsync(async () => {
       const help = await ModelHandler.getHelp(x);
       const missingMandatoryGroups = await this.getMissingGroups(x);
       const startBtnDiv = missingMandatoryGroups.length ?
-        ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)]) :
+        ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
+          border: '2px solid var(--red-3)',
+          padding: '10px',
+          maxWidth: '400px',
+        }}) :
         ui.div([ui.bigButton('Launch', () => x.prepare().edit())]);
       v.append(
         ui.div(

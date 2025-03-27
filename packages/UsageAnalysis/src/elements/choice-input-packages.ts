@@ -21,7 +21,7 @@ export class ChoiceInputPackages extends ChoiceInputBase {
       searchChoices: true,
       itemSelectText: '',
     });
-    field.input.addEventListener('change', (event) =>
+    field.input.addEventListener('change', (_) =>
       (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
     const packages = (await grok.dapi.packages.list()).filter((value, index, self) =>
       index === self.findIndex((t) => (t.name === value.name)));

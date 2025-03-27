@@ -139,7 +139,8 @@ class NotebookView extends DG.ViewBase {
     if (this.html === null)
       this.html = await toHtml(this.notebook);
     let iframe = document.createElement('iframe');
-    iframe.src = 'data:text/html;base64,' + btoa(this.html.replace(/\u00a0/g, " "));
+    const blob = new Blob([this.html.replace(/\u00a0/g, " ")], { type: 'text/html' });
+    iframe.src = URL.createObjectURL(blob);
     iframe.classList.add('grok-notebook-view-iframe');
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(".grok-notebook-view-iframe {width: 100%; height:100%; border: none;display: flex;flex-grow: 1;}");

@@ -16,11 +16,27 @@ export const RUN_ERROR_PATH = 'RUN_ERROR';
 
 const CONFIG_PATH = 'PIPELINE_CONFIG';
 
+// TODO: probably move to core
+export function getFuncallDefaults(func: DG.Func) {
+  const defaultValues: Record<string, any> = {};
+  for (const prop of func.inputs) {
+    const name = prop.name;
+    if (prop.options.default) {
+      if (prop.propertyType === DG.TYPE.INT || prop.propertyType === DG.TYPE.FLOAT || prop.propertyType === DG.TYPE.BOOL)
+        defaultValues[name] = JSON.parse(prop.options.default);
+      else
+        defaultValues[name] = prop.options.default;
+    }
+  }
+  return defaultValues;
+}
+
 export async function makeFuncCall(
   nqName: string, isReadonly: boolean,
 ): Promise<AdapterInitData> {
   const func = DG.Func.byName(nqName);
-  const fc = func.prepare({});
+  const defaultValues = getFuncallDefaults(func);
+  const fc = func.prepare(defaultValues);
   fc.newId();
   const adapter = new FuncCallAdapter(fc, isReadonly);
   return {adapter, restrictions: {}, runError: undefined, isOutputOutdated: true};

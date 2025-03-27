@@ -186,8 +186,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search');
 }
 
 
@@ -322,8 +321,9 @@ export async function _demoActivityCliffs(): Promise<void> {
     Marker size corresponds to highest SALI value detected for the molecule.`, delay: 2000})
     .step('Explore activity cliffs', async () => {
       await delay(1000);
-      (Array.from(scatterPlot!.root.children)
-        .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
+      const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
+      if (link.length)
+        (link[0]  as HTMLElement).click();
       await delay(1000);
     }, {description: `Detected cliffs are available in a separate table. 
     Cliffs are pairs of molecules with similarity higher than cutoff. Cliffs are sorted by SALI value.`, delay: 2000})
@@ -344,6 +344,60 @@ export async function _demoActivityCliffs(): Promise<void> {
     .start();
 }
 
+export async function _demoActivityCliffsLayout(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:DemoActivityCliffs');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#activity-cliffs');
+  let scatterPlot: DG.Viewer | null = null;
+  for (const i of grok.shell.tv.viewers) {
+    if (i.type == DG.VIEWER.SCATTER_PLOT)
+      scatterPlot = i;
+  }
+  let cliffsLink;
+  try {
+    await awaitCheck(() => {
+      const link = scatterPlot?.root.getElementsByClassName('scatter_plot_link');
+      if (link?.length) {
+        cliffsLink = link[0];
+        return true;
+      }
+      return false;
+    }, '', 10000);
+    (cliffsLink as any as HTMLElement).click();
+  } catch (e) {}
+}
+
+export async function _demoRGroups(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:RGroupsDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#r-groups-analysis');
+}
+
+export async function _demoChemicalSpace(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  const p  = await grok.functions.eval('Chem:ChemicalSpaceDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space');
+  grok.functions.call('Dendrogram:HierarchicalClustering', {
+    df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
+    colNameList: ['molecule'],
+    distance: 'euclidian',
+    linkage: 'average'
+  });
+  //for dendrogram to render correctly
+  const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
+    sub.unsubscribe();
+    setTimeout(() => grok.shell.tv.grid.invalidate());
+  })
+}
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');

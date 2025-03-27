@@ -12,7 +12,7 @@ This feature is in Beta
 
 :::
 
-You can tag anything in Datagrok with custom metadata ("sticky meta"). This sticky meta can serve different purposes. For example, you can annotate a molecule or add arbitrary information about your users. The information about tagged objects and associated metadata are stored in a [Postgres database](../../develop/under-the-hood/infrastructure.md#database) and seamlessly integrated across the platform, including searching and filtering capabilities based on metadata parameters.
+You can tag anything in Datagrok with custom metadata ("sticky meta"). This sticky meta can serve different purposes. For example, you can annotate a molecule or add arbitrary information about your users. The information about tagged objects and associated metadata are stored in a [Postgres database](../../develop/under-the-hood/infrastructure.md#1-core-components) and seamlessly integrated across the platform, including searching and filtering capabilities based on metadata parameters.
 
 ## Configuring metadata
 
@@ -64,7 +64,7 @@ To create an entity type:
 
 ## Applying metadata
 
-Once metadata is configured, Datagrok shows parameters for the selected object in the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) under **Sticky Meta**. Here, you can enter or edit metadata as needed. All metadata entries are saved to the [Postgres database](../../develop/under-the-hood/infrastructure.md#database) in real time.
+Once metadata is configured, Datagrok shows parameters for the selected object in the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) under **Sticky Meta**. Here, you can enter or edit metadata as needed. All metadata entries are saved to the [Postgres database](../../develop/under-the-hood/infrastructure.md#1-core-components) in real time.
 
 ### Working with dataframes
 

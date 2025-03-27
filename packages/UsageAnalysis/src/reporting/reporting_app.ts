@@ -6,6 +6,7 @@ import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
+  static readonly APP_NAME = 'Reports';
   view?: DG.TableView;
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
@@ -35,7 +36,7 @@ export class ReportingApp {
     this.view = DG.TableView.create(table, false);
     this.view.parentCall = this.parentCall;
     this.view.path = '';
-    this.view.name = 'Reports';
+    this.view.name = ReportingApp.APP_NAME;
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
       await DG.UserReportsRule.showAddDialog())]]);
     setTimeout(async () => {
@@ -233,11 +234,12 @@ export class ReportingApp {
 
   updatePath(reportNumber: number): void {
     const segments = window.location.href.split('/');
-    const last = segments[segments.length - 1];
-    if (last === 'reports')
+    if (segments[segments.length - 1] === 'reports?browse=apps')
+      segments[segments.length - 1] = 'reports';
+    if (segments[segments.length - 1] === 'reports')
       segments.push(reportNumber.toString());
     else {
-      if (/^-?\d+$/.test(last))
+      if (/^-?\d+$/.test(segments[segments.length - 1]))
         segments[segments.length - 1] = reportNumber.toString();
       else
         return;

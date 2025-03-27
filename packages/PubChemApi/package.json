@@ -13,8 +13,8 @@
     "directory": "packages/PubChemApi"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "ts-loader": "^9.5.1",
@@ -45,7 +45,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

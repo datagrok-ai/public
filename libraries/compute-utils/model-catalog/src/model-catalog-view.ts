@@ -9,48 +9,38 @@ import '../css/model-card.css';
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
-    const modelsView = this.findModelCatalogView(funcName) ??
-      this.createModelCatalogView(viewName, funcName, currentPackage);
+    const modelsView = this.findModelCatalogView(viewName) ??
+      this.createModelCatalogView(viewName);
 
     return modelsView as ModelCatalogView;
   }
 
   static createModelCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
-    const mc: DG.Func = DG.Func.find({package: currentPackage.name, name: funcName})[0];
-    const fc = mc.prepare();
-    const view = new this(viewName, funcName);
-    view.parentCall = fc;
+    const view = new this(viewName);
     return view;
   }
 
   static findModelCatalogView(
-    funcName: string,
+    viewName: string,
   ): ModelCatalogView | undefined {
-    return wu(grok.shell.views).find((v) => v.parentCall?.func.name == funcName) as ModelCatalogView;
+    return wu(grok.shell.views).find((v) => v.name == viewName) as ModelCatalogView;
   }
 
-  public bindModel(fc: DG.FuncCall) {
+  static bindModel(view: DG.ViewBase, fc: DG.FuncCall) {
     fc.aux['showOnTaskBar'] = false;
 
-    const parentCall = this.parentCall;
+    const parentCall = view.parentCall;
     if (parentCall != null) {
-      parentCall.aux['view'] = ModelCatalogView.findModelCatalogView(this.funcName) ?? this;
+      parentCall.aux['view'] = view;
       fc.parentCall = parentCall;
     }
   }
 
-  private isHelpOpen = false;
-
   constructor(
     viewName: string,
-    private funcName: string,
   ) {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
@@ -59,6 +49,8 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.name = viewName;
     this.permanentFilter = '#model';
     this.renderMode = DG.RENDER_MODE.BRIEF;
+
+    // Smth is wrong with custom methods after getting an instance via grok.shell.views
 
     this.objectType = 'Func';
     this.categoryFilters = {
@@ -90,23 +82,6 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = this.isHelpOpen;
-
-    if (!ModelCatalogView.findModelCatalogView(this.funcName)) {
-      const bindSub = grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model'))
-          this.bindModel(fc);
-        else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model'))
-          this.bindModel(fc.inputs['call']);
-      });
-
-      const helpOpenSub = grok.events.onCurrentViewChanged.subscribe(async () => {
-        if (grok.shell.v === this)
-          grok.shell.windows.showHelp = this.isHelpOpen;
-      });
-
-      this.subs.push(bindSub, helpOpenSub);
-    }
   }
 
   initRibbon() {
