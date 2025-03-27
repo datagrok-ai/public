@@ -21,7 +21,7 @@ export function getMmpFilters(activities: string[], maxActs: number[]): MmpFilte
     //set activities filters to values a bit higher than 0.5 from max value: maxValue/1.7
     const sliderInput = ui.input.slider(activities[i],
       {value: maxActs[i] / 1.7, min: 0, max: maxActs[i]});
-    const sliderInputValueDiv = ui.divText(getSigFigs(sliderInput.value, 4).toString(), 'ui-input-description');
+    const sliderInputValueDiv = ui.divText(getSigFigs(sliderInput.value!, 4).toString(), 'ui-input-description');
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInput.root.classList.add('mmpa-slider-input');
     ui.tooltip.bind(sliderInput.captionLabel, `Select the cutoff by ${actName} difference`);

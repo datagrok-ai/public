@@ -415,7 +415,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name);
     //show scatter plot context menu instead of mmp viewer's context menu
     this.subs.push(grok.events.onContextMenu.subscribe(e => {
-      if (e.causedBy && e.causedBy.target && this.sp.root.contains(e.causedBy.target)) {
+      if (e.causedBy && e.causedBy.target && this.sp!.root.contains(e.causedBy.target)) {
         e.causedBy.preventDefault();
         e.causedBy.stopPropagation();
         e.causedBy.stopImmediatePropagation();
