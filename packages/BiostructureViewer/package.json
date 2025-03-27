@@ -26,7 +26,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
     "@rcsb/rcsb-api-tools": "2.3.1",
     "@rcsb/rcsb-molstar": "2.0.0-dev.8",
     "@rcsb/rcsb-saguaro": "2.0.0",
