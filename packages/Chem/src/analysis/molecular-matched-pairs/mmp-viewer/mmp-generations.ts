@@ -24,10 +24,10 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `Activity`, genRes.activityName));
-  cols.push(createColWithDescription('double', `Observed activity`, Array.from(genRes.allInitActivities)));
-  cols.push(createColWithDescription('double', `Predicted activity`, Array.from(genRes.prediction)));
-  cols.push(createColWithDescription('double', `\u0394 activity`,
+  cols.push(createColWithDescription('string', MMP_NAMES.PROPERTY_TYPE, genRes.activityName));
+  cols.push(createColWithDescription('double', MMP_NAMES.OBSERVED, Array.from(genRes.allInitActivities)));
+  cols.push(createColWithDescription('double', MMP_NAMES.PREDICTED, Array.from(genRes.prediction)));
+  cols.push(createColWithDescription('double', MMP_NAMES.DELTA_ACTIVITY,
     Array.from(genRes.prediction).map((val: number, idx: number) => val - genRes.allInitActivities[idx])));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
 

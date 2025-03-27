@@ -10,6 +10,7 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
 
 import {MMPA} from '../mmp-analysis/mmpa';
 import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP,
+  GENERATIONS_TAB_TOOLTIP,
   MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
   MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, SHOW_FRAGS_MODE,
   TrellisAxis, TrellisSortByProp, TrellisSortType} from './mmp-constants';
@@ -88,7 +89,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   generationsGrid: DG.Grid | null = null;
   corrGrid: DG.Grid | null = null;
   generationsGridDiv = ui.div();
-  generationsSp: DG.ScatterPlotViewer | null = null;
 
   rdkitModule: RDModule | null = null;
   currentTab = '';
@@ -111,12 +111,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   defaultFragmentsFiltersStates: {[key: number]: any} = {};
   filterStatesUpdatedCondition: () => boolean = () => true;
 
-  spCorrDiv = ui.div();
+  spCorrDiv = ui.divV([]);
   showFragmentsChoice: DG.InputBase | null = null;
   lastCurrentRowOnCliffsTab = - 1;
 
   constructor() {
     super();
+    this.helpUrl = '/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs';
     DG.debounce(this.onPropertyChangedObs, 50).subscribe(this.onPropertyChangedDebounced.bind(this));
     //properties
     this.molecules = this.string('molecules');
@@ -299,6 +300,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
     this.showFragmentsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
+    ui.tooltip.bind(this.showFragmentsChoice.input, `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, this.showFragmentsChoice.root);
@@ -625,34 +627,37 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
       ui.setUpdateIndicator(this.generationsGridDiv, false);
       ui.empty(this.generationsGridDiv);
-      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
+      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, GENERATIONS_TAB_TOOLTIP, ui.div()));
 
-      this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
-        x: 'Observed',
-        y: 'Predicted',
-        zoomAndFilter: 'no action',
-        color: 'Activity',
-        showXSelector: true,
-        showXAxis: true,
-        showYSelector: true,
-        showYAxis: true,
-        showColorSelector: true,
-        showSizeSelector: true,
-        markerDefaultSize: this.mmpa!.initData.molecules.length > 10000 ? 1 : 2,
-        markerType: 'circle',
-        showRegressionLine: true,
-      });
-
-      const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
-      this.generationsSp.root.prepend(header);
+      for (const activity of this.activities) {
+        const generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
+          x: 'Observed',
+          y: 'Predicted',
+          filter: `\${${MMP_NAMES.ACTIVITY}} == "${activity}" `,
+          zoomAndFilter: 'no action',
+          color: 'Activity',
+          showXSelector: true,
+          showXAxis: true,
+          showYSelector: true,
+          showYAxis: true,
+          showColorSelector: true,
+          showSizeSelector: true,
+          markerDefaultSize: this.mmpa!.initData.molecules.length > 10000 ? 1 : 2,
+          markerType: 'circle',
+          showRegressionLine: true,
+        });
+        const header = ui.h1(`${activity}: Observed vs Predicted`, 'chem-mmpa-generation-tab-cp-header');
+        generationsSp.root.prepend(header);
+        const spActivityCorrDiv = ui.div(ui.splitV([
+          ui.box(
+            ui.divH([header]),
+            {style: {maxHeight: '30px'}},
+          ),
+          generationsSp.root,
+        ]));
+        this.spCorrDiv.append(spActivityCorrDiv);
+      }
       ui.setUpdateIndicator(this.spCorrDiv, false);
-      this.spCorrDiv.append(ui.splitV([
-        ui.box(
-          ui.divH([header]),
-          {style: {maxHeight: '30px'}},
-        ),
-        this.generationsSp.root,
-      ], {style: {width: '100%', height: '100%'}}));
       this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
       grok.shell.windows.showContextPanel = true;
       grok.shell.o = this.spCorrDiv;
