@@ -439,11 +439,14 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
 
   let linesDfGrid: DG.Grid | null = null;
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    linesDfGrid = createLinesGrid();
+    //open cliffs grid in case it was closed or not opened yet
+    if (!linesDfGrid?.dataFrame) {
+      linesDfGrid = createLinesGrid();
     const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
     if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
       view.addViewer(linesDfGrid);
     view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+    }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
 
