@@ -124,20 +124,20 @@ For more information on configuring connections, refer to the [Connections](http
   instructions](https://datagrok.ai/help/develop/how-to/test-packages#local-testing).
 
   Table with all available flags:
-  | Flag           | Description                                                                                                                    |
-  |----------------|--------------------------------------------------------------------------------------------------------------------------------|
-  | catchUnhandled | Whether or not to catch unhandled exceptions during tests                                                                      |
-  | category       | Runs tests of a specific category                                                                                              |
-  | csv            | Saves tests run results as a CSV file in the package folder                                                                    |
-  | gui            | Disables the headless browser mode                                                                                             |
-  | host           | Specify server alias                                                                                                           |
-  | record         | Records the test execution process in mp4 format                                                                               |
-  | report         | Sends a report on test results                                                                                                 |
-  | skip-build     | Skips package build step                                                                                                       |
-  | skip-publish   | Skips package publish step                                                                                                     |
-  | verbose        | Prints detailed information about passed and skipped tests in the console                                                      |
-  | platform       | Runs only platform tests (applicable for ApiTests package only)                                                                |
-  | core           | Runs package & core tests (applicable  for DevTools package only)                                                              |
-  | debug          | Enables debug point on tests run, so testing would be stopped o debug before each test run (useless without gui mode)          |
+  | Flag           | Description                                                                                                                      |
+  |----------------|----------------------------------------------------------------------------------------------------------------------------------|
+  | catchUnhandled | Whether or not to catch unhandled exceptions during tests                                                                        |
+  | category       | Runs tests of a specific category                                                                                                |
+  | csv            | Saves tests run results as a CSV file in the package folder                                                                      |
+  | gui            | Disables the headless browser mode                                                                                               |
+  | host           | Specify server alias                                                                                                             |
+  | record         | Records the test execution process in mp4 format                                                                                 |
+  | report         | Sends a report on test results                                                                                                   |
+  | skip-build     | Skips package build step                                                                                                         |
+  | skip-publish   | Skips package publish step                                                                                                       |
+  | verbose        | Prints detailed information about passed and skipped tests in the console                                                        |
+  | platform       | Runs only platform tests (applicable for ApiTests package only)                                                                  |
+  | core           | Runs package & core tests (applicable  for DevTools package only)                                                                |
+  | debug          | Enables debug breakpoints during test execution, pausing the test run at each breakpoint. This feature is only useful in GUI mode|
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.
