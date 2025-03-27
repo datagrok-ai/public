@@ -58,6 +58,7 @@
   "canView": [
     "All users"
   ],
+  "category": "Cheminformatics",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
