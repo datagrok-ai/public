@@ -8,7 +8,7 @@
   },
   "description": "Support for previewing and opening text file formats (PDF, DOCX)",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "../../libraries/utils",
