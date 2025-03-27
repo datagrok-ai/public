@@ -1,5 +1,5 @@
 ---
-title: "Dimensionality reduction"
+title: "Multivariate analysis"
 sidebar_position: 3
 ---
 
