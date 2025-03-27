@@ -17,7 +17,7 @@
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok/charts": "../../packages/Charts",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
     "jstat": "^1.9.5",
     "moment": "^2.29.1"
   },
