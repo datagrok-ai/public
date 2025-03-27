@@ -12,7 +12,7 @@ category('Connections', () => {
     const browseButton = document.querySelector('.d4-tab-header[name="Browse"]') as HTMLElement;
     browseButton.click();
     await delay(100);
-    const browseView = grok.shell.view(DG.View.BROWSE) as DG.BrowseView;
+    const browseView = grok.shell.browsePanel;
     browseView.mainTree.expanded = true;
     const databases: DG.TreeViewGroup | undefined = browseView.mainTree.children.find((c) => c.text === 'Databases') as DG.TreeViewGroup;
     databases.expanded = true;
