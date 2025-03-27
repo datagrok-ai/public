@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
@@ -12,7 +13,6 @@ export class DockingViewApp extends BaseViewApp {
 
     this.formGenerator = this.generateCustomForm;
     this.uploadCachedData = this.loadCachedAutodockData.bind(this);
-    this.abort = this.terminateProcess;
     this.sketcherValue = {'(5~{S})-5-(1~{H}-indol-2-yl)pyrrolidin-2-one': 'c1ccc2c(c1)cc([nH]2)[C@@H]3CCC(=O)N3'};
     this.addTabControl = false;
     this.tableName = 'Docking';
@@ -22,11 +22,12 @@ export class DockingViewApp extends BaseViewApp {
     const smilesCell = this.tableView!.grid.cell('smiles', 0);
     const semValue = DG.SemanticValue.fromGridCell(smilesCell);
 
-    const molstarWidget = await runDocking(semValue, 'kras', 10);
+    const molstarWidget = await runDocking(semValue, this.target!.stringValue, 10);
     this.applyFullSizeStyles(molstarWidget?.root?.firstElementChild as HTMLElement);
 
-    if (molstarWidget)
+    if (molstarWidget) {
       return molstarWidget.root;
+    }
     return null;
   }
 

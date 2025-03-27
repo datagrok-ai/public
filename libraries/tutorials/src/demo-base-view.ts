@@ -10,6 +10,8 @@ interface ISplash {
   el: HTMLElement;
 }
 
+let idx = 0;
+
 export abstract class BaseViewApp {
   parentCall: DG.FuncCall;
   tableView?: DG.TableView;
@@ -19,21 +21,23 @@ export abstract class BaseViewApp {
   sketcherDiv: HTMLElement = ui.div([], { classes: 'demo-content-container', style: { border: 'none' } });
   sketcherInstance: grok.chem.Sketcher = new grok.chem.Sketcher();
   sketcher?: HTMLElement;
-  view: DG.TableView = grok.shell.tv;
 
   filePath: string = '';
   addTabControl: boolean = true;
-  formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement | null>;
+  formGenerator?: () => Promise<HTMLElement | null>;
   setFunction?: () => Promise<void>;
   abort?: () => Promise<void>;
   uploadCachedData?: () => Promise<HTMLElement>;
   sketched: number = 0;
   mode: string = 'sketch';
-  tableName: string = 'Admetica';
+  tableName: string = '';
+  target: DG.ChoiceInput<string | null> | null = null;
 
   sketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
   runningProcesses: (() => Promise<void>)[] = [];
   subs: Subscription[] = [];
+
+  private debounceTimeout: number | null = null;
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -51,13 +55,13 @@ export abstract class BaseViewApp {
   }
 
   async init(): Promise<void> {
-    const [name, smiles] = Object.entries(this.sketcherValue)[0]
-    this.sketcherInstance.setMolecule(smiles);
+    const [name, smiles] = Object.entries(this.sketcherValue)[0];
     this.sketcherInstance.onChanged.subscribe(async () => {
       const smiles: string = this.sketcherInstance.getSmiles();
       await this.onChanged(smiles);
     });
     this.sketcherInstance.molInput.value = name;
+    this.sketcherInstance.setSmiles(smiles);
     this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
   
@@ -70,6 +74,21 @@ export abstract class BaseViewApp {
     } else {
       this.mode = 'sketch';
       this.modeContainer.appendChild(this.createSketchPane());
+    }
+
+    if (this.tableName === 'Docking') {
+      const items = await grok.functions.call('Docking:getConfigFiles');
+      const helpIcon = ui.icons.help(() => {
+        grok.shell.windows.showHelp = true;
+        grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
+      });
+      this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
+        await this.onChanged(this.sketcherInstance.getSmiles());
+      }});
+      this.target.root.classList.add('demo-target-root');
+      const container = ui.divH([this.target.root, helpIcon]);
+      container.style.cssText = 'overflow: visible !important; gap: 10px; align-items: baseline;';
+      this.formContainer.insertBefore(container, this.formContainer.firstChild);
     }
 
     this.prepareTableView();
@@ -125,12 +144,16 @@ export abstract class BaseViewApp {
     this.tableView = DG.TableView.create(table, false);
     this.tableView.parentCall = this.parentCall;
     this.tableView.dataFrame.name = this.tableName;
+    const name = `${this.tableName}_${idx}`;
+    this.tableName = name;
+    ++idx;
     
     setTimeout(async () => {
       this.tableView!._onAdded();
+      this.tableView!.dataFrame.currentRowIdx = 0;
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      this.view = this.tableView!;
+      this.tableView!.path = '';
     }, 300);
   }
 
@@ -142,7 +165,10 @@ export abstract class BaseViewApp {
   }
 
   private clearForm() {
+    const choiceElement = this.formContainer.querySelector('.d4-flex-row.ui-div');
     this.formContainer.innerHTML = '';
+    if (choiceElement)
+      this.formContainer.appendChild(choiceElement);
   }
 
   private async onChanged(smiles: string) {
@@ -150,38 +176,49 @@ export abstract class BaseViewApp {
       this.clearForm();
       return;
     }
-
-    if (this.abort && this.runningProcesses.length > 0) {
-      await this.abort();
-      this.runningProcesses = [];
-    }
-
-    const newProcessAbort = this.addNewProcess(smiles);
-    this.runningProcesses.push(newProcessAbort);
     
-    try {
-      await newProcessAbort();
-    } finally {
-      this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout);
     }
+    
+    this.debounceTimeout = window.setTimeout(async () => {
+      if (this.abort && this.runningProcesses.length > 0) {
+        await this.abort();
+        this.runningProcesses = [];
+      }
+      
+      const newProcessAbort = this.addNewProcess(smiles);
+      this.runningProcesses.push(newProcessAbort);
+      
+      try {
+        await newProcessAbort();
+      } finally {
+        this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+      }
+    }, 1000);
   }
 
   private addNewProcess(smiles: string): () => Promise<void> {
     return async () => {
+      if (!this.tableView) return;
+
       this.clearTable();
-      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string');
-      if (!col) return;
-      col!.semType = DG.SEMTYPE.MOLECULE;
-      this.tableView?.dataFrame.set('smiles', 0, smiles);
-      await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+      const {dataFrame} = this.tableView;
+      const col = dataFrame.columns.getOrCreate('smiles', DG.TYPE.STRING);
+      await grok.data.detectSemanticTypes(dataFrame);
+
+      col.set(0, smiles);
+      col.semType = DG.SEMTYPE.MOLECULE;
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
+      const sketcherSmiles = Object.values(this.sketcherValue)[0];
       try {
-        if (this.uploadCachedData && this.sketched === 0) {
+        if (this.uploadCachedData && (this.sketched === 0 || smiles === sketcherSmiles)) {
+          const widget = await this.uploadCachedData();
           this.clearForm();
-          this.formContainer.appendChild(await this.uploadCachedData());
+          this.formContainer.appendChild(widget);
         } else if (this.formGenerator) {
-          const form = await this.formGenerator(this.tableView!.dataFrame);
+          const form = await this.formGenerator();
           if (form) {
             this.clearForm();
             this.formContainer.appendChild(form);
@@ -194,7 +231,7 @@ export abstract class BaseViewApp {
       }
 
       this.sketched += 1;
-      this.tableView?.grid.invalidate();
+      this.tableView.grid.invalidate();
     };
   }
 
