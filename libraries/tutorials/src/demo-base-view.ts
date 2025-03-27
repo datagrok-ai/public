@@ -85,7 +85,7 @@ export abstract class BaseViewApp {
       this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
         await this.onChanged(this.sketcherInstance.getSmiles());
       }});
-      this.target.root.style.cssText = 'width: 95%';
+      this.target.root.classList.add('demo-target-root');
       const container = ui.divH([this.target.root, helpIcon]);
       container.style.cssText = 'overflow: visible !important; gap: 10px; align-items: baseline;';
       this.formContainer.insertBefore(container, this.formContainer.firstChild);
