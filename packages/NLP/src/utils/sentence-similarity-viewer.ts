@@ -9,6 +9,7 @@ import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {multiColWebGPUKNN} from '@datagrok-libraries/math/src/webGPU/multi-col-knn/multiCol-KNN';
 import {WEBGPUDISTANCE} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-multicol-distances';
 import {WEBGSLAGGREGATION} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
+import {getEmbeddings} from '../package';
 
 export class SentenceSimilarityViewer extends SearchBaseViewer {
   curIdx: number = 0;
@@ -53,10 +54,8 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
       this.showSplashScreen('Getting embeddings ...');
 
       try {
-        const embeddings = await grok.functions.call('NLP: getEmbeddings', {sentences: this.targetColumn.toList()});
-
         this.updateSplashScreen('Finding similar sentences...');
-        await this.compute(JSON.parse(embeddings));
+        await this.compute();
 
         const actualLimit = Math.min(Math.min(this.limit, this.targetColumn!.length - 1), this.indexWScore!.length - 1);
         const idxsData = new Int32Array(actualLimit + 1);
@@ -110,16 +109,17 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
     }
   }
 
-  private async compute(embeddings: Array<Array<number>>) {
+  private async compute() {
     const len = Math.min(this.maxLimit, this.targetColumn!.length);
 
     const needsKnnRecompute = this.targetColumn && (!this.knn || this.targetColumnName !== this.prevTargetColumnName);
 
     if (needsKnnRecompute) {
+      const embeddings = await getEmbeddings(this.targetColumn!.toList());
       try {
         this.knn = await multiColWebGPUKNN(
           // eslint-disable-next-line max-len
-          [embeddings.map((c) => new Float32Array(c))], len - 1, [WEBGPUDISTANCE.VECTOR_COSINE], WEBGSLAGGREGATION.MANHATTAN,
+          [embeddings], len - 1, [WEBGPUDISTANCE.VECTOR_COSINE], WEBGSLAGGREGATION.MANHATTAN,
           [1], [{'preprocessingFuncArgs': {}}],
         ) as unknown as KnnResult;
       } catch (e) {

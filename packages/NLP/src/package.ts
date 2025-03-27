@@ -20,7 +20,43 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 
-export const _package = new DG.Package();
+export const SentenceEmbeddingInvalidationTime = 8 * 60 * 60 * 1000; // 8 hours
+class NLPPackage extends DG.Package {
+  sentenceEmbeddingsCache: { [key: string]: Float32Array } = {};
+  lastLoadTime?: number;
+
+  constructor() {
+    super();
+  }
+
+  async loadCachedEmbeddings() {
+    if (this.lastLoadTime && Date.now() - this.lastLoadTime < SentenceEmbeddingInvalidationTime)
+      return;
+    // check the file if it exists
+
+    if (await this.files.exists('cache/embeddingsCache.d42')) {
+      const file = (await this.files.readBinaryDataFrames('cache/embeddingsCache.d42'));
+      const df = file[0];
+      const sentences = df.col('s')!.toList();
+      const embeddings: Uint8Array[] = df.col('e')!.toList();
+      // conversion to temporary Uint8Array is needed because DG returns a view on arrayBuffer that is large and undeterministic
+      for (let i = 0; i < sentences.length; i++)
+        this.sentenceEmbeddingsCache[sentences[i]] = new Float32Array(new Uint8Array(embeddings[i]).buffer);
+    }
+    this.lastLoadTime = Date.now();
+  }
+
+  async saveCachedEmbeddings() {
+    const sentences = Object.keys(this.sentenceEmbeddingsCache);
+    const embeddings = Object.values(this.sentenceEmbeddingsCache);
+    const df = DG.DataFrame.create(sentences.length);
+    df.columns.add(DG.Column.fromStrings('s', sentences));
+    df.columns.add(DG.Column.fromList('byte_array', 'e', embeddings.map((e) => new Uint8Array(e.buffer, 0, e.length * 4))));
+    await this.files.writeBinaryDataFrames('cache/embeddingsCache.d42', [df]);
+  }
+}
+
+export const _package = new NLPPackage();
 
 // AWS service instances
 let translate: AWS.Translate;
@@ -359,18 +395,32 @@ export function similar(query: string): DG.Widget {
 //input: string metric
 //output: object result
 export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
-  const embeddingsStr: string = await grok.functions.call('NLP: getEmbeddings', {sentences: col.toList()});
-  const embeddings: number[][] = JSON.parse(embeddingsStr);
-  return {entries: embeddings.map((a) => new Float32Array(a)), options: {}};
+  const embeddings: Float32Array[] = await getEmbeddings(col.toList());
+  return {entries: embeddings, options: {}};
 }
 
 
 //name: getEmbeddings
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
 //input: list<string> sentences
 //output: string result
-export async function getEmbeddings(sentences: string[]): Promise<string> {
+export async function getEmbeddings(sentences: string[]): Promise<Float32Array[]> {
+  await _package.loadCachedEmbeddings();
+
+  const resultingEmbeddings = new Array<Float32Array>(sentences.length).fill(null as any).map((_) => new Float32Array(384));
+  const missingSentences: string[] = [];
+  const missingIndices: number[] = [];
+  for (let i = 0; i < sentences.length; i++) {
+    if (_package.sentenceEmbeddingsCache[sentences[i]])
+      resultingEmbeddings[i] = _package.sentenceEmbeddingsCache[sentences[i]];
+    else {
+      missingSentences.push(sentences[i]);
+      missingIndices.push(i);
+    }
+  }
+
+  if (missingSentences.length == 0)
+    return resultingEmbeddings;
+
   const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
 
   if (!container.status.startsWith('started') && !container.status.startsWith('checking')) {
@@ -395,7 +445,7 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
   }
 
   const body = {
-    sentences: sentences,
+    sentences: missingSentences,
   };
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
@@ -408,8 +458,14 @@ export async function getEmbeddings(sentences: string[]): Promise<string> {
   if (!result.embeddings)
     throw new Error('Embeddings docker returned an error');
 
-  const embeddings = JSON.stringify(result.embeddings);
-  return embeddings;
+  for (let i = 0; i < missingIndices.length; i++) {
+    // update cache
+    _package.sentenceEmbeddingsCache[missingSentences[i]] = new Float32Array(result.embeddings[i]);
+    resultingEmbeddings[missingIndices[i]] = new Float32Array(result.embeddings[i]);
+  }
+  _package.saveCachedEmbeddings(); // do this lazy style in the background.
+
+  return resultingEmbeddings;
 }
 
 export async function getEmbeddingsUsingWorker(sentences: string[]) {
