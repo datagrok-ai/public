@@ -26,8 +26,7 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
   console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
   const resJson = await response.json();
   if (resJson[1] !== 200) {
-    grok.shell.error(`Error occured during paths generation`);
-    return '';
+    throw new Error('Error occured during paths generation');
   }
   return resJson[0].result;
 }
@@ -51,18 +50,25 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
 
-  const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-    {molecule: molecule});
-  const reactionData = JSON.parse(result) as ReactionData;
-  if (reactionData.data?.length) {
-    const paths = reactionData.data[0].trees as Tree[];
-    if (paths?.length) {
-      const tabControl = createPathsTreeTabs(paths, false);
-      return new DG.Widget(tabControl.root);
-    } else
-      return new DG.Widget(ui.divText('No paths found for the molecule'));
-  } else
-    return new DG.Widget(ui.divText('No paths found for the molecule'));
+  // Call retrosynthesis function
+  let result: string;
+  try {
+    result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
+      {molecule: molecule});
+  } catch (e: any) {
+    return new DG.Widget(ui.divText(e));
+  }
+
+  // Parse and process reaction data
+  try {
+    const reactionData: ReactionData = JSON.parse(result);
+    const paths: Tree[] = reactionData?.data?.[0]?.trees;
+    return paths?.length
+      ? new DG.Widget(createPathsTreeTabs(paths, false).root)
+      : new DG.Widget(ui.divText('No paths found for the molecule'));
+  } catch {
+    return new DG.Widget(ui.divText('Error processing retrosynthesis data'));
+  }
 }
 
 

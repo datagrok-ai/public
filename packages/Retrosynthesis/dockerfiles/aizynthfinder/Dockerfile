@@ -23,21 +23,17 @@ RUN apt-get update && apt-get -y upgrade && \
 
 WORKDIR /app
 
-COPY . /app
-
 ENV PATH="/app/venv/bin:$PATH"
 
 RUN python3.10 -m venv /app/venv && \
     /app/venv/bin/pip install --upgrade pip && \
-    /app/venv/bin/pip install aizynthfinder[all]
+    /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors
 
 RUN mkdir ./aizynthcli_data
 
 RUN /app/venv/bin/python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', 'aizynthcli_data']; main()"
 
-RUN /app/venv/bin/pip install Flask
-
-RUN /app/venv/bin/pip install flask_cors
+COPY app.py /app/
 
 EXPOSE 8000
 
