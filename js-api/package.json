@@ -1,8 +1,8 @@
 {
   "name": "datagrok-api",
-  "version": "1.24.0",
+  "version": "1.25.0-rc.67f59864f9.dbf0afe06",
   "description": "",
-  "dependencies": {
+  "dependencies":   {
     "@datagrok-libraries/chem-meta": "^1.0.12",
     "@types/react": "^18.3.11",
     "@types/wu": "^2.1.44",
@@ -14,7 +14,7 @@
     "wu": "^2.1.0",
     "typeahead-standalone": "4.14.1"
   },
-  "devDependencies": {
+  "devDependencies":   {
     "typescript": "^4.2.3",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
@@ -31,7 +31,7 @@
     "babel-loader": "^9.1.2",
     "@babel/preset-env": "^7.21.4"
   },
-  "scripts": {
+  "scripts":   {
     "link": "npm link",
     "link-all": "npm link @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",

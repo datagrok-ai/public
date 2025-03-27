@@ -5,6 +5,21 @@ import {_package, toAtomicLevel} from '../package';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {adjustGridcolAfterRender} from '../utils/ui-utils';
+
+export async function demoToAtomicLevel(): Promise<void> {
+  const data = await _package.files.readCsv('samples/HELM_BI_CYCLIC.csv');
+  data.name = 'To Atomic Level';
+  await data.meta.detectSemanticTypes();
+  await grok.data.detectSemanticTypes(data);
+  const view = grok.shell.addTableView(data);
+  const seqCol = data.col('HELM')!;
+  await toAtomicLevel(data, seqCol, true, false);
+  adjustGridcolAfterRender(view.grid, 'molfile(HELM)', 500, 300, true);
+  adjustGridcolAfterRender(view.grid, 'HELM', 500, undefined, true);
+  grok.shell.info('Hover over monomers in HELM column to highlight them in molecular structure.', {timeout: 10});
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#get-atomic-level-structure');
+}
 
 export async function demoBio03UI(): Promise<void> {
   const dataFn: string = 'samples/HELM.csv';

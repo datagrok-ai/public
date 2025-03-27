@@ -1,6 +1,6 @@
-import { ContainerType } from "../ContainerType.js";
-import { Point } from "../Point.js";
-import { IState } from "./IState.js";
+import { ContainerType } from "../ContainerType";
+import { Point } from "../Point";
+import { IState } from "./IState";
 
 export interface IPanelInfo {
     containerType: ContainerType;

@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
-import {Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
+import {chemBeginCriticalSection, chemEndCriticalSection, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
@@ -36,6 +37,7 @@ export class RdKitService {
   parallelWorkers: RdKitServiceWorkerClient[] = [];
   segmentLength: number = 0;
   moleculesSegmentsLengths: Uint32Array;
+  webRoot?: string;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
@@ -44,6 +46,7 @@ export class RdKitService {
   }
 
   async init(webRoot: string): Promise<void> {
+    this.webRoot = webRoot;
     if (!this._initWaiters) {
       this._initWaiters = [];
       for (let i = 0; i < this.workerCount; ++i) {
@@ -578,5 +581,67 @@ export class RdKitService {
   async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
     // MCS does not support parallelization, so we will use the first worker
     return await this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch);
+  }
+
+  private async restartWorker(workerIndex: number) {
+    this.parallelWorkers[workerIndex].terminate();
+    const workerClient = new RdKitServiceWorkerClient();
+    this.parallelWorkers[workerIndex] = workerClient;
+    await workerClient.moduleInit(this.webRoot ?? '');
+  }
+  /**
+   * gets MCS for every cluster of molecules
+   * @param clusteredMolecules array of arrays of molecules per cluster
+   * @param exactAtomSearch 
+   * @param exactBondSearch 
+   */
+  async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
+    await chemBeginCriticalSection();
+    const nWorkers = this.parallelWorkers.length;
+    const res = new Array<string>(clusteredMolecules.length).fill('');
+    const lock = new LockedEntity(0);
+    const process = async (workerIndex: number, resolver: Function) => {
+      await lock.unlockPromise();
+      lock.lock();
+      const index = lock.value;
+      lock.value = index + 1;
+      lock.release();
+      if (index >= clusteredMolecules.length) {
+        console.log(index);
+        return
+      }
+      const mols = clusteredMolecules[index];
+      if (mols.length < 2)
+        res[index] = mols.length === 1 ? mols[0] : '';
+      else {
+        const t = setTimeout(async () => {
+          console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
+          this.restartWorker(workerIndex);
+          resolver(); // no point in waiting... its probably stuck
+        }, 45000); // if it is running for more than 30s, restart the worker
+        const r = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+        clearTimeout(t);
+        res[index] = r;
+      }
+      await process(workerIndex, resolver);
+    }
+
+    const promises = new Array(nWorkers).fill(null).map((_, i) => {
+      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve()});}) 
+    });
+
+    await Promise.all(promises);
+    chemEndCriticalSection();
+    return res.map((it) => {
+      if (!it)
+        return '';
+      try {
+        const qm = getQueryMolSafe(it, '', getRdKitModule());
+        const smiles = qm?.get_smiles();
+        qm?.delete();
+        return smiles ?? '';
+      } catch (_) {}
+      return '';
+    })
   }
 }

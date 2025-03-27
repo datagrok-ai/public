@@ -147,7 +147,7 @@ export class TreeViewer extends EChartViewer {
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
+        return columnValue?.toString() === segment || ((columnValue === null || columnValue === '') && segment === ' ');
       });
     }, event.event);
   }

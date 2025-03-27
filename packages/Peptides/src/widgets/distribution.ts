@@ -80,7 +80,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
       inputsArray[inputIdx].enabled = Object.entries(options.monomerPositionSelection).length !== 0;
   }
 
-  const inputsHost = ui.form(inputsArray);
+  const inputsHost = ui.form(inputsArray, {style: {flexDirection: 'row'}});
   // $(inputsHost).css('display', 'inline-flex');
   return ui.divV([inputsHost, distributionCategoriesHost]);
 }

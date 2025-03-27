@@ -1,9 +1,9 @@
-import { DockModel } from "./DockModel.js";
-import { DockNode } from "./DockNode.js";
-import { Dialog } from "./Dialog.js";
-import { IPanelInfo } from "./interfaces/IPanelInfo.js";
-import { INodeInfo } from "./interfaces/INodeInfo.js";
-import { IState } from "./interfaces/IState.js";
+import { DockModel } from "./DockModel";
+import { DockNode } from "./DockNode";
+import { Dialog } from "./Dialog";
+import { IPanelInfo } from "./interfaces/IPanelInfo";
+import { INodeInfo } from "./interfaces/INodeInfo";
+import { IState } from "./interfaces/IState";
 
 /**
  * The serializer saves / loads the state of the dock layout hierarchy

@@ -43,7 +43,7 @@
     "release-tensorflow-dev-local": "grok publish local --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

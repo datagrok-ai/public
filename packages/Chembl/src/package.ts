@@ -191,9 +191,12 @@ export async function chemblIdToSmilesTs(id: string): Promise<string> {
 }
 
 
-//name: Demo Databases 2
+//name: Database Queries
 //description: Running various queries to chemical databases using convenient input forms
-//meta.demoPath: Cheminformatics | Chemical Databases 2
+//meta.demoPath: Cheminformatics | Database Queries
 export async function demoDatabasesChembl(): Promise<void> {
   await _demoDatabasesChembl();
+  grok.shell.windows.showContextPanel = true;
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.showHelp('/help/access/databases/databases#parameterized-queries');
 }

@@ -23,10 +23,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
-    const mc: DG.Func = DG.Func.find({package: currentPackage.name, name: funcName})[0];
-    const fc = mc.prepare();
     const view = new this(viewName);
-    view.parentCall = fc;
     return view;
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/power-grid",
-  "friendlyName": "PowerGrid",
+  "friendlyName": "Power Grid",
   "version": "1.5.5",
   "author": {
     "name": "Andrew Skalkin",
@@ -60,7 +60,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

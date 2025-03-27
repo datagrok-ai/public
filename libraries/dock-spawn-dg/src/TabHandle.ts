@@ -1,11 +1,11 @@
-import { TabPage } from "./TabPage.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { UndockInitiator } from "./UndockInitiator.js";
-import { EventHandler } from "./EventHandler.js";
-import { Utils } from "./Utils.js";
-import { PanelType } from "./enums/PanelType.js";
-import { DockNode } from "./DockNode.js";
-import { Localizer } from "./i18n/Localizer.js";
+import { TabPage } from "./TabPage";
+import { PanelContainer } from "./PanelContainer";
+import { UndockInitiator } from "./UndockInitiator";
+import { EventHandler } from "./EventHandler";
+import { Utils } from "./Utils";
+import { PanelType } from "./enums/PanelType";
+import { DockNode } from "./DockNode";
+import { Localizer } from "./i18n/Localizer";
 
 /**
  * A tab handle represents the tab button on the tab strip
