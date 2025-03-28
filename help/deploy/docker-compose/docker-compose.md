@@ -1,6 +1,6 @@
 ---
 title: "Local machine"
-slug: /develop/admin/docker-compose
+slug: /deploy/docker-compose
 sidebar_position: 0
 format: 'mdx'
 ---
