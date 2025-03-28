@@ -26,6 +26,8 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   indexWScore: { idx: number; score: number; }[] | null = null;
   prevTargetColumnName: string | null = null;
   embeddings: Float32Array[] | null = null;
+  similarDf: DG.DataFrame | null = null;
+  similarGrid: DG.Grid | null = null;
 
   constructor() {
     super('similarity', DG.SEMTYPE.TEXT);
@@ -37,6 +39,22 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
 
   init(): void {
     this.initialized = true;
+  }
+
+  async onTableAttached(): Promise<void> {
+    super.onTableAttached();
+    this.sub(
+      grok.events.onContextMenu.subscribe((e) => {
+        if (e.causedBy && e.causedBy.target && this.similarGrid?.root?.contains(e.causedBy.target) &&
+        this.similarDf && e.args?.menu && e.args.menu.item) {
+          e.causedBy.preventDefault();
+          e.causedBy.stopPropagation();
+          e.causedBy.stopImmediatePropagation();
+          e.args.menu.item('Download Results',
+            () => DG.Utils.download('similar_sentences.csv', this.similarDf!.toCsv()));
+        }
+      }),
+    );
   }
 
   override async renderInt(computeData: boolean): Promise<void> {
@@ -86,22 +104,22 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
           }, []) :
           [];
 
-        const resDf = DG.DataFrame.fromColumns([this.idxs!, this.sentenceCol!, this.scores!, ...additionalColumns]);
-        resDf.onCurrentRowChanged.subscribe((_: any) => {
-          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
+        this.similarDf = DG.DataFrame.fromColumns([this.idxs!, this.sentenceCol!, this.scores!, ...additionalColumns]);
+        this.similarDf.onCurrentRowChanged.subscribe((_: any) => {
+          this.dataFrame.currentRowIdx = this.similarDf!.col('indexes')!.get(this.similarDf!.currentRowIdx);
           this.gridSelect = true;
         });
 
-        const grid = resDf.plot.grid();
-        grid.props.rowHeight = 70;
-        grid.col('indexes')!.visible = false;
+        this.similarGrid = this.similarDf.plot.grid();
+        this.similarGrid.props.rowHeight = 80;
+        this.similarGrid.col('indexes')!.visible = false;
 
         const view = grok.shell.v as DG.TableView;
         view.grid.root.addEventListener('click', (_event: MouseEvent) => {
           this.gridSelect = false;
         });
 
-        this.updateDivInnerHTML(this.root, grid.root);
+        this.updateDivInnerHTML(this.root, this.similarGrid.root);
         this.computeCompleted.next(true);
       } catch (error) {
         this.showErrorMessage('An error occurred during the computation');
