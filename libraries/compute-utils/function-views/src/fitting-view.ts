@@ -12,7 +12,9 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  DIFF_STUDIO_OUTPUT_IDX} from './fitting/constants';
+  DIFF_STUDIO_OUTPUT_IDX,
+  CATEGORY,
+  LINE_CHART_LINE_WIDTH} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
@@ -547,8 +549,7 @@ export class FittingView {
 
       nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
-      const rbnPanels = this.comparisonView.getRibbonPanels();
-      rbnPanels.push([this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]);
+      const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
       this.fittingSettingsDiv.hidden = true;
 
@@ -1434,72 +1435,44 @@ export class FittingView {
       const simArgCol = simDf.col(argColName);
       const expArgCol = expDf.col(argColName);
 
-      const configs = getPropViewers(prop).config;
-
       if ((simArgCol === null) || (expArgCol === null))
         throw new Error('Creating viewer fails: incorrect argument column name');
 
-      const simArgRaw = simArgCol.getRawData();
-      const indeces = getIndeces(expArgCol, simArgCol);
-      const rowCount = indeces.length;
-      const argVals = Array<number>(rowCount);
-      indeces.forEach((val, idx) => argVals[idx] = simArgRaw[val]);
+      // Create a table with results: experiment vs. simulation
+      const expCols = expDf.columns;
+      const expVsSimDf = simDf.clone(null, expCols.names());
 
-      // Line chart segments features
-      let segmentCol: DG.Column<DG.COLUMN_TYPE.STRING> | null = null;
+      // Add columns from a table with experiment
+      expVsSimDf.append(DG.DataFrame.fromColumns(expCols.toList().map((col) => {
+        // To avoid columns of different type
+        const simCol = expVsSimDf.col(col.name);
 
-      configs.filter((conf) => conf['type'] as string === DG.VIEWER.LINE_CHART)
-        .forEach((conf) => {
-          const segmentColName = conf['segmentColumnName'];
+        if (simCol === null)
+          throw new Error(`Inconsistent dataframes: no column "${col.name}" in output of of the function`);
 
-          if (segmentColName) {
-            const segmData = Array<string>(rowCount);
-            indeces.forEach((val, idx) => segmData[idx] = simDf.col(segmentColName as string)!.get(val));
-            segmentCol = DG.Column.fromStrings(segmentColName as string, segmData);
-          }
-        });
+        return col.convertTo(simCol.type);
+      })), true);
 
-      let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
-      let col: DG.Column | null;
+      // Add category column (for splitting data)
+      const categories = new Array<string>(simDf.rowCount).fill('Simulation').concat(new Array<string>(expDf.rowCount).fill('Target'));
+      expVsSimDf.columns.add(DG.Column.fromStrings(CATEGORY, categories));
 
-      // add viewers for each non-argument column of the target dataframe
-      expDf.columns.names().forEach((name) => {
-        if (name !== argColName) {
-          col = simDf.col(name);
-
-          if (col === null)
-            throw new Error(`Creating viewer fails: no '${name}' column in the output dataframe`);
-
-          rawBuf = col.getRawData();
-          const simVals = Array<number>(rowCount);
-          indeces.forEach((val, idx) => simVals[idx] = rawBuf[val]);
-
-          col = expDf.col(name);
-
-          if (col === null)
-            throw new Error(`Creating viewer fails: no '${name}' column in the target dataframe`);
-
-          rawBuf = col.getRawData();
-          const expVals = Array<number>(rowCount);
-          indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
-          const options: Partial<DG.ILineChartSettings> = {
-            multiAxis: true,
-            yGlobalScale: true,
-          };
-          const df = DG.DataFrame.fromColumns([
-            expArgCol,
-            DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
-            DG.Column.fromList(col.type, TITLE.TARGET, expVals),
-          ]);
-
-          if (segmentCol) {
-            df.columns.add(segmentCol);
-            options.segmentColumnName = segmentCol.name;
-          }
-
+      // Create linecharts
+      expVsSimDf.columns.names().forEach((name) => {
+        if ((name !== argColName) && (name !== CATEGORY)) {
           result.push({
             caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            root: DG.Viewer.lineChart(df, options).root,
+            root: DG.Viewer.lineChart(expVsSimDf, {
+              xColumnName: argColName,
+              yColumnNames: [name],
+              splitColumnName: CATEGORY,
+              showSplitSelector: false,
+              legendVisibility: 'Always',
+              legendPosition: 'Top',
+              showMarkers: 'Always',
+              lineWidth: LINE_CHART_LINE_WIDTH,
+              yGlobalScale: true,
+            }).root,
           });
         }
       });

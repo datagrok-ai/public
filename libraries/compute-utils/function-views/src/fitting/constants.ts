@@ -23,9 +23,9 @@ export const lossTooltip = new Map([
 /** Grid elements sizes */
 export enum GRID_SIZE {
   LOSS_COL_WIDTH = 60,
-  ROW_HEIGHT = 180,
-  LOSS_GRAPH_WIDTH = 360,
-  GOF_VIEWER_WIDTH = 240,
+  ROW_HEIGHT = 280,
+  LOSS_GRAPH_WIDTH = 320,
+  GOF_VIEWER_WIDTH = 320,
 }
 
 /** UI titles */
@@ -110,3 +110,6 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;
 
 export const DIFF_STUDIO_OUTPUT_IDX = 0;
+
+export const CATEGORY = '__Category__';
+export const LINE_CHART_LINE_WIDTH = 2;
