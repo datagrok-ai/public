@@ -1941,7 +1941,7 @@ export async function demoActivityCliffsFunc(): Promise<void> {
 
 //name: Demo Chemical Space
 //description: Maps the dataset to 2D plot based on similarity
-//meta.demoPath: Cheminformatics | Chemical space
+//meta.demoPath: Cheminformatics | Chemical Space
 //meta.demoSkip: GROK-14320
 export async function demoChemicalSpace(): Promise<void> {
   _demoChemicalSpace();
