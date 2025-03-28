@@ -780,6 +780,10 @@
   padding: 5px;
 }
 
+.chem-mmp-trellis-plot {
+  height: 100%!important;
+}
+
 .chem-mmp-trellis-plot div[name="viewer selector"] {
   display: none;
 }
@@ -792,6 +796,20 @@
   padding-left: 7px;
   padding-top: 4px;
 }
+
+.chem-mmp-trellis-filters-div {
+  height: 100%;
+  width: 100%;
+}
+
+.chem-mmp-trellis-filters-div.filters-closed {
+  display: none!important;
+}
+
+/* .chem-mmp-trellis-filters-div.filters-opened {
+  display: flex !important;
+  width: 100% !important;
+} */
 
 .mmp-trellis-summary-col-dlg select {
   display: none;

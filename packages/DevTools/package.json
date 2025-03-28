@@ -16,7 +16,7 @@
     "@datagrok-libraries/compute-api": "^0.3.2",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "codemirror": "^5.65.15",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

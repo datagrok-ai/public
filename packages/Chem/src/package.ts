@@ -1838,6 +1838,7 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
+  viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
 }
 
 //name: Scaffold Tree Filter
@@ -1941,7 +1942,7 @@ export async function demoActivityCliffsFunc(): Promise<void> {
 
 //name: Demo Chemical Space
 //description: Maps the dataset to 2D plot based on similarity
-//meta.demoPath: Cheminformatics | Chemical space
+//meta.demoPath: Cheminformatics | Chemical Space
 //meta.demoSkip: GROK-14320
 export async function demoChemicalSpace(): Promise<void> {
   _demoChemicalSpace();

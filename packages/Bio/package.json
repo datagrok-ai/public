@@ -50,7 +50,7 @@
     "@datagrok-libraries/ml": "../../libraries/ml",
     "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
     "ajv-errors": "^3.0.0",

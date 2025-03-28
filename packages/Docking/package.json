@@ -11,9 +11,9 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.48.3",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "@datagrok-libraries/tutorials": "^1.5.4",
+    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/compute-utils": "^1.40.1",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "=1.11.10",
     "rxjs": "^6.5.5",
@@ -58,6 +58,7 @@
   "canView": [
     "All users"
   ],
+  "category": "Cheminformatics",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

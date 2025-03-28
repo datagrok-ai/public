@@ -25,7 +25,6 @@ export class MmpPairedGrids {
   fpCatsFrom: string [];
   fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
-  fpMaskFragmentsTab: DG.BitSet; //mask for a number of cases filter
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
   mmpGridTransMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
@@ -75,12 +74,13 @@ export class MmpPairedGrids {
     this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid();
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
-    this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
 
-    subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
+    subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 100).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
-        this.refilterFragmentPairsByMolecule(true);
-        this.refreshMatchedPair();
+        withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
+          this.refilterFragmentPairsByMolecule(true);
+          await this.refreshMatchedPair();
+        })
       }
     }));
 
@@ -102,8 +102,20 @@ export class MmpPairedGrids {
     });
   }
 
+  disableFiltersGroup() {
+    if (this.filters)
+      for (let f of this.filters.filters)
+        this.filters.setEnabled(f, false);
+  }
+
+  enableFiltersGroup() {
+    if (this.filters)
+      for (let f of this.filters.filters)
+        this.filters.setEnabled(f, true);
+  }
+
   updateInfoMessage(grid: DG.Grid, div: HTMLElement, compName: string) {
-    DG.debounce(grid.dataFrame.onFilterChanged, 500).subscribe(() => {
+    DG.debounce(grid.dataFrame.onFilterChanged, 100).subscribe(() => {
       ui.empty(div);
       const num = grid.dataFrame.filter.trueCount;
       div.append(ui.divText(`Showing ${num} ${compName}${num === 1 ? '' : 's'} of ${grid.dataFrame.rowCount}`));
@@ -119,28 +131,24 @@ export class MmpPairedGrids {
 
     this.fpGrid.table.onCurrentRowChanged.subscribe(() => {
       if (this.fpGrid!.table.currentRowIdx !== -1)
-        this.refreshMatchedPair(false);
+        withTimedProgressIndicator('Refreshing pairs...', 200, () => this.refreshMatchedPair());
     });
 
     this.fpGrid.table.onSelectionChanged.subscribe(() => {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    let filterPanelCreated = false;
     this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
-      //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
-      if (!filterPanelCreated) {
-        if (this.currentTab !== MMP_NAMES.TAB_FRAGMENTS && e.type === DG.VIEWER.HISTOGRAM) {
-          filterPanelCreated = true;
-          setTimeout(() => {
-            this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-            if (this.lastFragmentIdx)
-              this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
-          }, 10);
-        }
-      }
       //show error in case grid is empty
       this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
+    });
+
+    //when swithcing from Fragments to Substitutions tab the following steps are triggered:
+    //disable of filters from filters panel -> collaborative filtering -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask) -> 
+    // -> in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
+    this.fpGrid.dataFrame.onRowsFiltering.subscribe((_) => {
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
@@ -226,13 +234,8 @@ export class MmpPairedGrids {
 
   /**
   * Prepares all the entities to show for selected pair.
-  * @param {RDModule} rdkitModule RDkit module instance
   */
-  async refreshMatchedPair(createProgressBar = true) : Promise<void> {
-    let progressBarPairs: DG.TaskBarProgressIndicator | null = null;
-    if (createProgressBar)
-      progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
-
+  async refreshMatchedPair() : Promise<void> {
     this.mmpMaskTrans.setAll(false);
 
     const [idxPairs] = this.findSpecificRule(this.fragsShowAllMode);
@@ -246,8 +249,6 @@ export class MmpPairedGrids {
     }
 
     this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
-
-    progressBarPairs?.close();
   }
 
   /**
@@ -440,4 +441,21 @@ function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
   addSubstructProvider(pairsToCol.temp, substructProviderTo);
 
   return pairedTransformations.plot.grid();
+}
+
+/** Creates progress indicator only when inner function is taking more than n ms.
+ */
+async function withTimedProgressIndicator(pgName: string, time: number, func: () => Promise<void>) {
+  let pg: DG.TaskBarProgressIndicator | null = null;
+  const timer = setTimeout(() => {
+    pg = DG.TaskBarProgressIndicator.create(pgName);
+  })
+  try {
+    await func();
+  } catch (e) {
+    console.error(e);
+  }
+  clearTimeout(timer);
+  if (pg)
+    (pg as unknown as DG.TaskBarProgressIndicator).close();
 }

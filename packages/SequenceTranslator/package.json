@@ -28,7 +28,7 @@
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",

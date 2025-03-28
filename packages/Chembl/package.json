@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",

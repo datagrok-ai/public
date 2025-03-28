@@ -9,19 +9,15 @@ import '../css/model-card.css';
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
     const modelsView = this.findModelCatalogView(viewName) ??
-      this.createModelCatalogView(viewName, funcName, currentPackage);
+      this.createModelCatalogView(viewName);
 
     return modelsView as ModelCatalogView;
   }
 
   static createModelCatalogView(
     viewName: string,
-    funcName: string,
-    currentPackage: DG.Package,
   ): ModelCatalogView {
     const view = new this(viewName);
     return view;
@@ -44,7 +40,7 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   constructor(
-    private viewName: string,
+    viewName: string,
   ) {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
@@ -88,17 +84,34 @@ export class ModelCatalogView extends DG.CustomCardView {
     grok.shell.windows.showProperties = false;
   }
 
-  initRibbon() {
-    // place additional icons here if necessary
+  async initRibbon() {
+    // not used rn
   }
 
-  initMenu() {
-    this.ribbonMenu
-      .group('Help')
-      .item('Compute Engine',
-        () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
-      .item('Developing Models',
-        () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
-      .endGroup();
+  async initMenu() {
+    const standardHelpItems: {name: string, link: string}[] = [
+      {
+        name: 'Compute Engine',
+        link: 'https://github.com/datagrok-ai/public/tree/master/packages/Compute',
+      }, {
+        name: 'Developing Models',
+        link: 'https://datagrok.ai/help/compute/scripting'
+      }
+    ];
+    const  customHelpItems = await this.getClientSpecificHelp();
+    let help = this.ribbonMenu.group('Help');
+    for (const item of [...standardHelpItems, ...customHelpItems])
+      help = help.item(item.name,  () => window.open(item.link, '_blank'));
+    help.endGroup();
+  }
+
+  private async getClientSpecificHelp(): Promise<{name: string, link: string}[]> {
+    // use private ModelHub package
+    const f: DG.Func = DG.Func.find({package: 'ModelHub', name: 'getHelpItems'})?.[0];
+    if (!f)
+      return [];
+    const fc = f.prepare();
+    await fc.call();
+    return fc.getOutputParamValue() ?? [];
   }
 }

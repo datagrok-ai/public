@@ -1,0 +1,2 @@
+smiles,Caco2,Lipophilicity,Solubility,PPBR,VDss,CYP1A2-Inhibitor,CYP2C19-Inhibitor,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate,CL-Hepa,CL-Micro,Half-Life,hERG,LD50
+CC(Oc1ccccc1C(O)=O)=O,-4.793,-2.158,-1.590,83.732,1.450,0.015,0.001,0.000,0.617,0.219,0.004,18.220,14.642,2.933,0.002,2.494

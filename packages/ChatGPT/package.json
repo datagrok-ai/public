@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "../../libraries/utils"

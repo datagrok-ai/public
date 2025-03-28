@@ -18,7 +18,7 @@
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok/compute": "^1.39.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0-rc.67f59864f9.dbf0afe06",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.13",
     "ts-loader": "^9.5.0"
   },
