@@ -9,6 +9,8 @@ import { Model, Subgroup } from './constants';
 import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
+  protected STORAGE_NAME: string = 'admetica-sketcher-values';
+
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 

@@ -8,12 +8,14 @@ import { IAutoDockService } from '@datagrok-libraries/bio/src/pdb/auto-dock-serv
 import { getAutoDockService, getAutodockSingle, runDocking } from '../package';
 
 export class DockingViewApp extends BaseViewApp {
+  protected STORAGE_NAME: string = 'docking-sketcher-values';
+
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 
     this.formGenerator = this.generateCustomForm;
     this.uploadCachedData = this.loadCachedAutodockData.bind(this);
-    this.sketcherValue = {'(5~{S})-5-(1~{H}-indol-2-yl)pyrrolidin-2-one': 'c1ccc2c(c1)cc([nH]2)[C@@H]3CCC(=O)N3'};
+    this.sketcherValue = {'(5~{S})-5-(1~{H}-indol-2-yl)pyrrolidin-2-one': 'O=C(CC1)N[C@@H]1c1cc2ccccc2[nH]1'};
     this.addTabControl = false;
     this.tableName = 'Docking';
   }

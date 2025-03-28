@@ -10,12 +10,12 @@ interface ISplash {
   el: HTMLElement;
 }
 
-const STORAGE_NAME = 'admetica-sketcher-values';
-const KEY = 'sketcherValue';
-
 let idx = 0;
 
 export abstract class BaseViewApp {
+  protected abstract STORAGE_NAME: string;
+  protected readonly KEY = 'sketcherValue';
+
   parentCall: DG.FuncCall;
   tableView?: DG.TableView;
   container: HTMLElement = ui.divH([], { classes: 'demo-app-container' });
@@ -57,14 +57,13 @@ export abstract class BaseViewApp {
   }
 
   async init(): Promise<void> {
-    const storedSmiles = grok.userSettings.getValue(STORAGE_NAME, KEY) ?? Object.values(this.sketcherValue)[0];
+    const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? Object.values(this.sketcherValue)[0];
     const [name] = Object.keys(this.sketcherValue);
     
     this.sketcherInstance.onChanged.subscribe(async () => {
       const newSmiles: string = this.sketcherInstance.getSmiles();
-      if (newSmiles !== storedSmiles)
-        this.sketcherInstance.molInput.value = '';
-      grok.userSettings.put(STORAGE_NAME, { [KEY]: newSmiles });
+      this.sketcherInstance.molInput.value = (newSmiles !== storedSmiles) ? '' : name;
+      grok.userSettings.put(this.STORAGE_NAME, { [this.KEY]: newSmiles });
       await this.onChanged(newSmiles);
     });
     
