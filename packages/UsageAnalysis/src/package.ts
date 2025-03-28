@@ -121,8 +121,8 @@ export function testTrackApp(): void {
 export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   const parent = grok.functions.getCurrentCall();
   const app = new ReportingApp(parent);
-  await app.init(path);
-  return app.view!;
+  app.init(path).catch((e) => console.log(e));
+  return app.empty;
 }
 
 
