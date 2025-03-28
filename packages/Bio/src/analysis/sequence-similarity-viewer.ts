@@ -70,7 +70,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
         await resDf.meta.detectSemanticTypes();
         await grok.data.detectSemanticTypes(resDf);
-        this.molCol.temp[tempTAGS.referenceSequence] = this.moleculeColumn!.get(this.targetMoleculeIdx);
+        this.molCol.temp[tempTAGS.referenceSequence] = this.targetColumn!.get(this.targetMoleculeIdx);
         this.molCol.temp[MmcrTemps.maxMonomerLength] = 4;
         let prevTimer: any = null;
         const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
