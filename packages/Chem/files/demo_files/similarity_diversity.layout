@@ -3,37 +3,38 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1147,
-      "height": 833
+      "width": 1194,
+      "height": 863
     },
     "children": [
       {
         "containerType": "vertical",
         "state": {
-          "width": 570,
-          "height": 833
+          "width": 579,
+          "height": 863
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 570,
-              "height": 410,
+              "width": 579,
+              "height": 415,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 570,
-                  "height": 410,
+                  "width": 579,
+                  "height": 415,
                   "element": {
-                    "id": "d5a3c6c0-e920-11ef-fdaa-5909b354599e",
+                    "id": "4745f060-e920-11ef-c0e5-8b28065a865d",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
                       "showAddNewRowIcon": true,
                       "addNewRowOnLastRowEdit": true,
+                      "colHeaderHeight": 39,
                       "rowHeight": 100,
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
@@ -64,31 +65,17 @@
                           }
                         },
                         {
-                          "width": 186,
-                          "columnName": "NumSaturatedHeterocycles",
+                          "isColorCoded": true,
+                          "width": 70,
+                          "columnName": "RingCount",
                           "cellType": "number",
+                          "colorCodingType": "Linear",
                           "headerCellStyle": {
                             "textWrap": "words"
                           }
                         },
                         {
-                          "width": 181,
-                          "columnName": "NumAliphaticHeterocycles",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 177,
-                          "columnName": "NumAliphaticCarbocycles",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 78,
+                          "width": 65,
                           "columnName": "NOCount",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -96,7 +83,55 @@
                           }
                         },
                         {
-                          "width": 143,
+                          "width": 49,
+                          "columnName": "NHOHCount",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 52,
+                          "columnName": "NumHDonors",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 65,
+                          "columnName": "NumHAcceptors",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 99,
+                          "columnName": "NumSaturatedHeterocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 95,
+                          "columnName": "NumAliphaticHeterocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 94,
+                          "columnName": "NumAliphaticCarbocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 96,
                           "columnName": "NumSaturatedRings",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -104,7 +139,7 @@
                           }
                         },
                         {
-                          "width": 178,
+                          "width": 94,
                           "columnName": "NumAromaticCarbocycles",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -113,22 +148,6 @@
                         },
                         {
                           "width": 96,
-                          "columnName": "NHOHCount",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 86,
-                          "columnName": "RingCount",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 146,
                           "columnName": "NumRotatableBonds",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -136,7 +155,7 @@
                           }
                         },
                         {
-                          "width": 183,
+                          "width": 93,
                           "columnName": "NumAromaticHeterocycles",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -144,7 +163,7 @@
                           }
                         },
                         {
-                          "width": 182,
+                          "width": 98,
                           "columnName": "NumSaturatedCarbocycles",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -152,7 +171,7 @@
                           }
                         },
                         {
-                          "width": 129,
+                          "width": 77,
                           "columnName": "NumHeteroatoms",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -160,7 +179,7 @@
                           }
                         },
                         {
-                          "width": 138,
+                          "width": 90,
                           "columnName": "NumAliphaticRings",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -168,17 +187,17 @@
                           }
                         },
                         {
-                          "width": 105,
+                          "width": 62,
                           "columnName": "FractionCSP3",
                           "customFormat": "0.00000",
                           "cellType": "number",
-                          "format": "0.00000",
+                          "format": "2 significant digits",
                           "headerCellStyle": {
                             "textWrap": "words"
                           }
                         },
                         {
-                          "width": 127,
+                          "width": 82,
                           "columnName": "HeavyAtomCount",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -186,24 +205,8 @@
                           }
                         },
                         {
-                          "width": 139,
+                          "width": 95,
                           "columnName": "NumAromaticRings",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 122,
-                          "columnName": "NumHAcceptors",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 104,
-                          "columnName": "NumHDonors",
                           "cellType": "number",
                           "headerCellStyle": {
                             "textWrap": "words"
@@ -212,8 +215,9 @@
                         {
                           "width": 93,
                           "columnName": "Embed_X_1",
+                          "customFormat": "0.000000000",
                           "cellType": "number",
-                          "format": "0.000000000",
+                          "format": "3 significant digits",
                           "headerCellStyle": {
                             "textWrap": "words"
                           }
@@ -221,8 +225,9 @@
                         {
                           "width": 92,
                           "columnName": "Embed_Y_1",
+                          "customFormat": "0.000000000",
                           "cellType": "number",
-                          "format": "0.000000000",
+                          "format": "3 significant digits",
                           "headerCellStyle": {
                             "textWrap": "words"
                           }
@@ -248,16 +253,16 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 570,
-              "height": 422,
+              "width": 579,
+              "height": 447,
               "element": {
-                "id": "d5a3edd0-e920-11ef-b474-494d866f7c48",
+                "id": "47461770-e920-11ef-cf13-23df80d80094",
                 "type": "Scatter plot",
                 "look": {
                   "#type": "ScatterPlotLook",
                   "xColumnName": "Embed_X_1",
                   "yColumnName": "Embed_Y_1",
-                  "colorColumnName": "HeavyAtomCount",
+                  "colorColumnName": "FractionCSP3",
                   "sizeColumnName": "RingCount",
                   "markerMinSize": 3,
                   "markerMaxSize": 20,
@@ -277,17 +282,17 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 575,
-          "height": 833
+          "width": 614,
+          "height": 863
         },
         "children": [
           {
             "containerType": "panel",
             "state": {
-              "width": 575,
-              "height": 336,
+              "width": 614,
+              "height": 348,
               "element": {
-                "id": "d5a414e0-e920-11ef-9d0c-1b4c4d3606e0",
+                "id": "47463e80-e920-11ef-a87b-9937fd95f8ff",
                 "type": "Chem Similarity Search",
                 "look": {
                   "#type": "JsViewerHostLook",
@@ -309,10 +314,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 575,
-              "height": 134,
+              "width": 614,
+              "height": 138,
               "element": {
-                "id": "d5a43bf0-e920-11ef-cacc-e365fdb89ac7",
+                "id": "47463e80-e920-11ef-92f3-110d4baf7761",
                 "type": "Markup",
                 "look": {
                   "#type": "MarkupViewerLook",
@@ -326,10 +331,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 575,
-              "height": 361,
+              "width": 614,
+              "height": 375,
               "element": {
-                "id": "d5a43bf0-e920-11ef-daae-8f8e0d03dab2",
+                "id": "47463e80-e920-11ef-d171-f56e6b0f6333",
                 "type": "Chem Diversity Search",
                 "look": {
                   "#type": "JsViewerHostLook",
@@ -350,126 +355,141 @@
       }
     ],
     "floating": [],
-    "tableId": "980871d0-e920-11ef-ba8c-f3500454b2eb",
-    "tableName": "Table"
+    "tableId": "55fb0100-e920-11ef-c770-af2db608d60c",
+    "tableName": "Table (2)"
   },
   "columns": [
     {
       "name": "Embed_X_1",
       "type": "double",
-      "id": "d5a48a10-e920-11ef-eb4e-3107fa855efb",
+      "id": "4746b3b0-e920-11ef-b844-fd03e882f196",
       "friendlyName": "Embed_ X_1",
       "entityTags": [
         {
           "tag": "format",
-          "id": "d5a48a10-e920-11ef-b2ea-1fbc5f32b631"
+          "id": "4746b3b0-e920-11ef-ae68-8d4290582a83"
         },
         {
           "tag": ".source-precision",
-          "id": "d5a48a10-e920-11ef-fa32-279e04bcd4db"
+          "id": "4746b3b0-e920-11ef-e311-57d181cc03c3"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "d5a48a10-e920-11ef-e3a4-5135c7ada2b6"
+          "id": "4746b3b0-e920-11ef-d9b3-612a41b2e43c"
         }
       ],
       "metaParams": {
-        "format": "0.000000000",
+        "format": "3 significant digits",
         ".source-precision": "9",
-        ".semantic-detection-duration": "1"
+        ".semantic-detection-duration": "3"
       }
     },
     {
       "name": "Embed_Y_1",
       "type": "double",
-      "id": "d5a4d830-e920-11ef-b8b3-87d6d18dd4bd",
+      "id": "4746dac0-e920-11ef-a6b2-3183d205724b",
       "friendlyName": "Embed_ Y_1",
       "entityTags": [
         {
           "tag": "format",
-          "id": "d5a4b120-e920-11ef-e29f-3306e655d78c"
+          "id": "4746dac0-e920-11ef-d0d1-55d6d3729d9e"
         },
         {
           "tag": ".source-precision",
-          "id": "d5a4b120-e920-11ef-fc7a-ebf8c2441ee5"
+          "id": "4746dac0-e920-11ef-a2cd-dfdad0980e22"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "d5a4b120-e920-11ef-f6ed-8b874ef8bd16"
+          "id": "4746dac0-e920-11ef-9988-e966cbce48cd"
         }
       ],
       "metaParams": {
-        "format": "0.000000000",
+        "format": "3 significant digits",
         ".source-precision": "9",
-        ".semantic-detection-duration": "6"
+        ".semantic-detection-duration": "8"
       }
     },
     {
-      "name": "HeavyAtomCount",
-      "type": "int",
-      "id": "d5a4d830-e920-11ef-9bb2-099a78070c45",
-      "friendlyName": "Heavy Atom Count",
+      "name": "FractionCSP3",
+      "type": "double",
+      "id": "474701d0-e920-11ef-b20e-2da8c777836b",
+      "friendlyName": "Fraction CS P3",
       "entityTags": [
         {
+          "tag": "format",
+          "id": "4746dac0-e920-11ef-8cac-1bc5871c4fd3"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "4746dac0-e920-11ef-b08b-15f3929bf3bd"
+        },
+        {
           "tag": ".semantic-detection-duration",
-          "id": "d5a4d830-e920-11ef-fbfe-272e17cbab4a"
+          "id": "474701d0-e920-11ef-bd97-65dcb66d9c97"
         }
       ],
       "metaParams": {
+        "format": "2 significant digits",
+        ".source-precision": "5",
         ".semantic-detection-duration": "2"
       }
     },
     {
       "name": "RingCount",
       "type": "int",
-      "id": "d5a4ff40-e920-11ef-99fe-e75bc9dc458d",
+      "id": "474701d0-e920-11ef-cdde-9f8f4e93a82f",
       "friendlyName": "Ring Count",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "d5a4d830-e920-11ef-b6e6-db0df36eaf24"
+          "id": "474701d0-e920-11ef-f129-03a47d90d45b"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "474701d0-e920-11ef-ffde-7f598f038fcc"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "2"
+        ".semantic-detection-duration": "5",
+        ".color-coding-type": "Linear"
       }
     },
     {
       "name": "canonical_smiles",
       "type": "string",
       "semType": "Molecule",
-      "id": "d5a4ff40-e920-11ef-9cc8-fd6982deaee3",
+      "id": "474728e0-e920-11ef-cc04-3b8073dfdd00",
       "friendlyName": "Canonical_smiles",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "d5a4ff40-e920-11ef-f7b1-0159698df741"
+          "id": "474701d0-e920-11ef-a29b-332760977cca"
         },
         {
           "tag": "units",
-          "id": "d5a4ff40-e920-11ef-c0f0-6190a1450eab"
+          "id": "474701d0-e920-11ef-d068-450ee8f576fe"
         },
         {
           "tag": "quality",
-          "id": "d5a4ff40-e920-11ef-9523-336f63336d82"
+          "id": "474728e0-e920-11ef-8130-77383f87c9f3"
         },
         {
           "tag": "cell.renderer",
-          "id": "d5a4ff40-e920-11ef-990a-97a5bd6b817c"
+          "id": "474728e0-e920-11ef-dfbc-79b9e9d16f83"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "20",
+        ".semantic-detection-duration": "14",
         "units": "smiles",
         "quality": "Molecule",
         "cell.renderer": "Molecule"
       }
     }
   ],
-  "name": "Table",
-  "friendlyName": "Table",
+  "name": "Table2",
+  "friendlyName": "Table (2)",
   "author": {
     "id": "cb276bc0-6280-11ee-82f7-8dc8dd5df45b"
   },
-  "createdOn": "2025-03-24T17:10:06.889Z"
+  "createdOn": "2025-03-28T13:33:48.003Z"
 }
