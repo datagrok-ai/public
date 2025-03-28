@@ -14,7 +14,7 @@
     "directory": "packages/Chemspace"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.a7f9d3e9f2.c8334048b",
     "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
