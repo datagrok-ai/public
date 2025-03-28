@@ -376,7 +376,7 @@ def on_request(ch, method, properties, body):
     log_info(f"Processing request with correlation ID: {properties.correlation_id}")
     
     # Setup the WebSocket URI
-    uri = f'{os.environ['DATAGROK_PIPE_HOST']}:{os.environ['DATAGROK_PIPE_PORT']}/{properties.correlation_id}'
+    uri = f'ws://{os.environ['DATAGROK_PIPE_HOST']}:{os.environ['DATAGROK_PIPE_PORT']}/{properties.correlation_id}'
     
     # Get the event loop for this thread
     loop = get_event_loop()
