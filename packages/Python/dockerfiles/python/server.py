@@ -243,8 +243,7 @@ def get_event_loop():
         asyncio.set_event_loop(thread_local.loop)
     return thread_local.loop
 
-
-async def process_request_async(uri, request):
+async def process_request_async(ch, uri, request):
     """Process a request asynchronously."""
     websocket = None
     try:
@@ -253,8 +252,9 @@ async def process_request_async(uri, request):
         outputParam = None
         outputType = None
         inputs = {}
-        inputs_types = {}
-        
+        inputs_types = {}      
+        has_pipe_params = False
+
         for param in params:
             if param.get('isInput', True) == False:
                 outputParam = param['name']
@@ -262,33 +262,14 @@ async def process_request_async(uri, request):
             else:
                 inputs[param['name']] = None
                 inputs_types[param['name']] = param['propertyType']
-        
+            if param['propertyType'] == 'blob' or param['propertyType'] == 'file' or param['propertyType'] == 'dataframe' or param['propertyType'] == 'graphics':
+              has_pipe_params = True
+
         for param, paramValue in request.get('parameterValues', {}).items():
             if paramValue is not None:
                 inputs[param] = paramValue
         
-        log_info(f"Connecting to websocket at {uri}")
-        # Create websocket connection for param handling
-        async with websockets.connect(uri, 
-                                       additional_headers={"Authorization": 'test-key', 'x-member-name': 'python_docker'},
-                                       ping_interval=10,  # Keep connection alive
-                                       ping_timeout=30,   # Wait longer for pong
-                                       close_timeout=5) as websocket:  # Wait for close frame
-            log_info("WebSocket connected")
-            
-            # Handle params that need to be retrieved from the websocket
-            for param, paramType in inputs_types.items():
-                if paramType in ['blob', 'dataframe', 'file'] and param in inputs:
-                    log_info(f"Getting parameter {param} of type {paramType}")
-                    try:
-                        inputs[param] = await get_script_param(websocket, param)
-                        log_info(f"Successfully retrieved {param}, got data of size: {len(inputs[param]) if inputs[param] is not None else 'None'}")
-                        if paramType == 'dataframe':
-                            inputs[param] = pd.read_csv(BytesIO(inputs[param]))
-                    except Exception as e:
-                        log_error(f"Error getting parameter {param}: {str(e)}")
-                        raise
-            
+        def run_code():
             # Execute the code
             log_info("Executing code")
             response = execute_code(code, inputs, outputParam, outputType)
@@ -304,44 +285,75 @@ async def process_request_async(uri, request):
             else:
                 request['status'] = 'Error'
                 request['errorMessage'] = str(response['error'])
+            return response
+
+        if has_pipe_params:
+            log_info(f"Connecting to websocket at {uri}")
+            # Create websocket connection for param handling
+            async with websockets.connect(uri, 
+                                          additional_headers={"Authorization": 'test-key', 'x-member-name': 'python_docker'},
+                                          ping_interval=10,  # Keep connection alive
+                                          ping_timeout=30,   # Wait longer for pong
+                                          close_timeout=5) as websocket:  # Wait for close frame
+                log_info("WebSocket connected")
             
-            # Prepare to send the result
-            result = request
-            
-            # Handle sending large output parameters via the param protocol
-            if outputType in ['file', 'dataframe', 'blob']:
-                output_data = response['output']
-                # For dataframe, use CSV or PARQUET format
-                param_id = outputParam
-                param_type = 'blob'
-                if outputType == 'dataframe':
-                    use_parquet = result.get('options', {}).get('IS_PARQUET_KEY', False)
-                    param_type = "parquet" if use_parquet else "csv"
-                    for param in params:
-                        if param['name'] == outputParam:
-                            param_id = param['id']
+                # Handle params that need to be retrieved from the websocket
+                for param, paramType in inputs_types.items():
+                    if paramType in ['blob', 'dataframe', 'file'] and param in inputs:
+                        log_info(f"Getting parameter {param} of type {paramType}")
+                        try:
+                            inputs[param] = await get_script_param(websocket, param)
+                            log_info(f"Successfully retrieved {param}, got data of size: {len(inputs[param]) if inputs[param] is not None else 'None'}")
+                            if paramType == 'dataframe':
+                                inputs[param] = pd.read_csv(BytesIO(inputs[param]))
+                        except Exception as e:
+                            log_error(f"Error getting parameter {param}: {str(e)}")
+                            raise
                 
-                log_info(f"Sending output parameter {outputParam}")
-                result['parameterValues'][outputParam] = param_id
-                try:
-                    await post_script_param(
-                        websocket, 
-                        outputParam, 
-                        output_data, 
-                        param_type=param_type,
-                        param_id=param_id
-                    )
-                    log_info(f"Successfully sent output parameter {outputParam}")
-                except Exception as e:
-                    log_error(f"Error sending parameter: {str(e)}")
-                    raise       
-
-            # Send response over websocket
-            log_info("Sending CALL message with results")
-            await websocket.send('CALL ' + json.dumps(result))
-            log_info('SENT CALL message')
-
-            return result
+                result = run_code()    
+            
+                # Handle sending large output parameters via the param protocol
+                if outputType in ['file', 'dataframe', 'blob']:
+                    output_data = result['output']
+                    # For dataframe, use CSV or PARQUET format
+                    param_id = outputParam
+                    param_type = 'blob'
+                    if outputType == 'dataframe':
+                        use_parquet = request.get('options', {}).get('IS_PARQUET_KEY', False)
+                        param_type = "parquet" if use_parquet else "csv"
+                        for param in params:
+                            if param['name'] == outputParam:
+                                param_id = param['id']
+                    
+                    log_info(f"Sending output parameter {outputParam}")
+                    request['parameterValues'][outputParam] = param_id
+                    try:
+                        await post_script_param(
+                            websocket, 
+                            outputParam, 
+                            output_data, 
+                            param_type=param_type,
+                            param_id=param_id
+                        )
+                        log_info(f"Successfully sent output parameter {outputParam}")
+                    except Exception as e:
+                        log_error(f"Error sending parameter: {str(e)}")
+                        raise       
+                
+                # Send updated func call over websocket
+                response = request
+                log_info("Sending CALL message with results")
+                await websocket.send('CALL ' + json.dumps(response))
+                log_info('SENT CALL message')
+        else:
+            result = run_code()
+            ch.basic_publish(
+                exchange='calls_fanout',
+                routing_key='',
+                properties=pika.BasicProperties(type='call', correlation_id=request['id']),
+                body=json.dumps(request)
+            )
+        return result
             
     except Exception as e:
         log_error(f"Error in process_request_async: {str(e)}")
@@ -383,7 +395,7 @@ def on_request(ch, method, properties, body):
     
     # Run the async processing in the event loop
     try:
-        response = loop.run_until_complete(process_request_async(uri, request))
+        response = loop.run_until_complete(process_request_async(ch, uri, request))
     except Exception as e:
         log_error(f"Error in async processing: {str(e)}")
         request['status'] = 'Error'
