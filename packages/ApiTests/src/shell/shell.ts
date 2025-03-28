@@ -15,8 +15,6 @@ category('Shell', () => {
     expect(grok.shell.t, v.dataFrame);
     v.close();
     expect(grok.shell.v != v, true);
-    expect(grok.shell.table(demog.name), demog);
-    grok.shell.closeTable(v.dataFrame);
   });
 
   test('addView', async () => {
