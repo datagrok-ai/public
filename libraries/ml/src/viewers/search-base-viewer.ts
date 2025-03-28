@@ -61,7 +61,17 @@ export class SearchBaseViewer extends DG.JsViewer {
       if (col.semType === this.semType)
         this.targetColumn = col;
     }
-    this.render();
+    this.debouncedRender();
+  }
+
+  private debounceTimer: any = null;
+  private debouncedRender (computeData = true) {
+    if (this.debounceTimer)
+      clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.render(computeData);
+      this.debounceTimer = null;
+    }, 100);
   }
 
   /** For tests */ public computeRequested: boolean = false;

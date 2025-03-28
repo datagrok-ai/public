@@ -10,6 +10,7 @@ import {multiColWebGPUKNN} from '@datagrok-libraries/math/src/webGPU/multi-col-k
 import {WEBGPUDISTANCE} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-multicol-distances';
 import {WEBGSLAGGREGATION} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
 import {getEmbeddings} from '../package';
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 
 export class SentenceSimilarityViewer extends SearchBaseViewer {
   curIdx: number = 0;
@@ -24,6 +25,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   additionalColumnNames: string[];
   indexWScore: { idx: number; score: number; }[] | null = null;
   prevTargetColumnName: string | null = null;
+  embeddings: Float32Array[] | null = null;
 
   constructor() {
     super('similarity', DG.SEMTYPE.TEXT);
@@ -109,13 +111,22 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
     }
   }
 
+  async getEmbeddings(): Promise<Float32Array[]> {
+    if (!this.embeddings || this.targetColumnName !== this.prevTargetColumnName)
+      this.embeddings = await getEmbeddings(this.targetColumn!.toList());
+    return this.embeddings;
+  }
+
   private async compute() {
+    if (!this.targetColumn)
+      return;
     const len = Math.min(this.maxLimit, this.targetColumn!.length);
 
     const needsKnnRecompute = this.targetColumn && (!this.knn || this.targetColumnName !== this.prevTargetColumnName);
-
-    if (needsKnnRecompute) {
-      const embeddings = await getEmbeddings(this.targetColumn!.toList());
+    // if data is more than 10000 rows, KNN computation can take a long time, so we will compute on fly
+    const calulateOnTheFly = this.targetColumn.length > 5000;
+    if (needsKnnRecompute && !calulateOnTheFly) {
+      const embeddings = await this.getEmbeddings();
       try {
         this.knn = await multiColWebGPUKNN(
           // eslint-disable-next-line max-len
@@ -130,16 +141,29 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
         this.knn = await (new SparseMatrixService()
           .getKNN(embeddings, VectorMetricsNames.Cosine, len - 1));
       }
+    } else if (calulateOnTheFly) {
+      const embeddings = await this.getEmbeddings();
+      const localNN = await (new SparseMatrixService()
+        .multiColumnSingleValueKNN([embeddings], this.targetMoleculeIdx,
+          [VectorMetricsNames.Cosine], this.maxLimit, [{}], [1], DistanceAggregationMethods.MANHATTAN,
+        ));
+      this.indexWScore = Array.from({length: localNN.knnDistances.length}, (_, i) => ({
+        idx: localNN!.knnIndexes[i],
+        score: 1 - localNN!.knnDistances[i],
+      }));
+    } else if (this.knn) {
+      this.indexWScore = Array.from({length: len - 1}, (_, i) => ({
+        idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
+        score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
+      }));
     }
-    this.indexWScore = Array.from({length: len - 1}, (_, i) => ({
-      idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
-      score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
-    }));
+    this.indexWScore ??= [];
     this.indexWScore.sort((a, b) => b.score - a.score);
     // knn can return non-meaningful indexes like -1 or 99999, so we need to filter them out
     this.indexWScore = this.indexWScore
       .filter((el) => el.idx != null && !isNaN(el.idx) && el.idx >= 0 &&
-        el.idx < this.targetColumn!.length && !isNaN(el.score) && el.score != null);
+        el.idx < this.targetColumn!.length && !isNaN(el.score) && el.score != null &&
+        el.idx !== this.targetMoleculeIdx);
     this.indexWScore.unshift({idx: this.targetMoleculeIdx, score: DG.FLOAT_NULL});
     this.prevTargetColumnName = this.targetColumnName;
   }
