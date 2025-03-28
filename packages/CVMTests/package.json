@@ -46,7 +46,7 @@
     "Administrators"
   ],
   "canView": [
-    "All users"
+    "Administrators"
   ],
   "category": "Development",
   "repository": {
