@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "../../libraries/utils",
     "aws-sdk": "^2.762.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.a7f9d3e9f2.c8334048b",
     "stemmer": "^2.0.1",
     "umap-js": "^1.3.3",
     "util": "^0.12.3"
