@@ -336,9 +336,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const filterIcon = ui.icons.filter(() => {
       filteresOpened = !filteresOpened;
       if (filteresOpened)
-        this.pairedGrids!.filters.root.classList.remove('filters-closed');
+        this.pairedGrids!.filters!.root.classList.remove('filters-closed');
       else
-        this.pairedGrids!.filters.root.classList.add('filters-closed');
+        this.pairedGrids!.filters!.root.classList.add('filters-closed');
     }, 'Toggle fragments filters');
     filterIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
@@ -412,10 +412,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (defaultFiltersStates.length) {
       const lastFilterIdx = defaultFiltersStates[defaultFiltersStates.length - 1];
       try {
-        awaitCheck(() => this.pairedGrids!.filters.filters.length >= parseInt(lastFilterIdx) - 1, '', 10000).then(async () => {
+        awaitCheck(() => this.pairedGrids!.filters!.filters.length >= parseInt(lastFilterIdx) - 1, '', 10000).then(async () => {
           ui.setUpdateIndicator(tpDiv, true, 'Applying filters');
           for (let key of defaultFiltersStates)
-            this.pairedGrids!.filters.updateOrAdd(this.defaultFragmentsFiltersStates[key], key === lastFilterIdx);
+            this.pairedGrids!.filters!.updateOrAdd(this.defaultFragmentsFiltersStates[key as any], key === lastFilterIdx);
           try {
             await awaitCheck(this.filterStatesUpdatedCondition, '', 20000)
           } catch (e) {
@@ -442,7 +442,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.setupFilters(this.mmpFilters, linesActivityCorrespondance);
     console.log(`created mmpa filters`);
 
-    this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name, this.activitiesCols.byIndex(0).name);
+    this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name, this.activitiesCols!.byIndex(0).name);
     //show scatter plot context menu instead of mmp viewer's context menu
     this.subs.push(grok.events.onContextMenu.subscribe(e => {
       if (e.causedBy && e.causedBy.target && this.sp!.root.contains(e.causedBy.target)) {
@@ -629,7 +629,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, GENERATIONS_TAB_TOOLTIP, ui.div()));
 
-      for (const activity of this.activities) {
+      for (const activity of this.activities!) {
         const generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
           x: 'Observed',
           y: 'Predicted',
@@ -645,6 +645,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           markerDefaultSize: this.mmpa!.initData.molecules.length > 10000 ? 1 : 2,
           markerType: 'circle',
           showRegressionLine: true,
+          legendVisibility: 'Never',
         });
         const header = ui.h1(`${activity}: Observed vs Predicted`, 'chem-mmpa-generation-tab-cp-header');
         generationsSp.root.prepend(header);

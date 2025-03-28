@@ -240,7 +240,7 @@ export async function _demoMMPA(): Promise<void> {
       }, '', 20000);
     } catch (e) {};
     mmpViewer!.defaultFragmentsFiltersStates = filterStates;
-    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids.fpGrid.dataFrame.filter.trueCount === 6;
+    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 6;
     grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
 
     // grok.shell.windows.showHelp = true;
