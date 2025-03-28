@@ -20,7 +20,7 @@
     "@deck.gl/core": "8.8.12",
     "@phylocanvas/phylocanvas.gl": "1.44.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.a7f9d3e9f2.c8334048b",
     "deck.gl": "8.8.12",
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
