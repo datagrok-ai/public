@@ -10,6 +10,9 @@ interface ISplash {
   el: HTMLElement;
 }
 
+const STORAGE_NAME = 'admetica-sketcher-values';
+const KEY = 'sketcherValue';
+
 let idx = 0;
 
 export abstract class BaseViewApp {
@@ -28,7 +31,6 @@ export abstract class BaseViewApp {
   setFunction?: () => Promise<void>;
   abort?: () => Promise<void>;
   uploadCachedData?: () => Promise<HTMLElement>;
-  sketched: number = 0;
   mode: string = 'sketch';
   tableName: string = '';
   target: DG.ChoiceInput<string | null> | null = null;
@@ -55,13 +57,19 @@ export abstract class BaseViewApp {
   }
 
   async init(): Promise<void> {
-    const [name, smiles] = Object.entries(this.sketcherValue)[0];
+    const storedSmiles = grok.userSettings.getValue(STORAGE_NAME, KEY) ?? Object.values(this.sketcherValue)[0];
+    const [name] = Object.keys(this.sketcherValue);
+    
     this.sketcherInstance.onChanged.subscribe(async () => {
-      const smiles: string = this.sketcherInstance.getSmiles();
-      await this.onChanged(smiles);
+      const newSmiles: string = this.sketcherInstance.getSmiles();
+      if (newSmiles !== storedSmiles)
+        this.sketcherInstance.molInput.value = '';
+      grok.userSettings.put(STORAGE_NAME, { [KEY]: newSmiles });
+      await this.onChanged(newSmiles);
     });
+    
     this.sketcherInstance.molInput.value = name;
-    this.sketcherInstance.setSmiles(smiles);
+    this.sketcherInstance.setSmiles(storedSmiles);
     this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
   
@@ -213,7 +221,7 @@ export abstract class BaseViewApp {
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       const sketcherSmiles = Object.values(this.sketcherValue)[0];
       try {
-        if (this.uploadCachedData && (this.sketched === 0 || smiles === sketcherSmiles)) {
+        if (this.uploadCachedData && smiles === sketcherSmiles) {
           const widget = await this.uploadCachedData();
           this.clearForm();
           this.formContainer.appendChild(widget);
@@ -229,8 +237,7 @@ export abstract class BaseViewApp {
       } finally {
         splashScreen.close();
       }
-
-      this.sketched += 1;
+      
       this.tableView.grid.invalidate();
     };
   }
