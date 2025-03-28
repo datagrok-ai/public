@@ -29,7 +29,7 @@ export enum MMP_NAMES {
   GENERATIONS = 'Generation',
   NEW_MOLECULE = 'Predicted molecule',
   OBSERVED = 'Observed',
-  PREDICTED = 'Ppedicted',
+  PREDICTED = 'Predicted',
   PROPERTY_TYPE = 'Property type',
   DELTA_ACTIVITY = '\u0394 activity',
 }
@@ -39,39 +39,28 @@ export enum SHOW_FRAGS_MODE {
   Current = 'Current molecule'
 }
 
-export const FRAGMENTS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const FRAGMENTS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
   [MMP_NAMES.PAIRS_COUNT]: 'Number of substitutions identified in a dataset',
 };
 
-export const PAIRS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const PAIRS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial molecule',
   [MMP_NAMES.TO]: 'Molecule after substitution',
 };
 
-export const GENERATIONS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const GENERATIONS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.STRUCTURE]: 'Structure from initial dataset',
   [MMP_NAMES.CORE]: 'Conservative fragment',
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
   [MMP_NAMES.NEW_MOLECULE]: 'New molecule obtained with fragments substitution',
-  [MMP_NAMES.ACTIVITY]: 'Property type',
+  [MMP_NAMES.PROPERTY_TYPE]: 'Property type',
   [MMP_NAMES.OBSERVED]: 'Observed activity value',
   [MMP_NAMES.PREDICTED]: 'Predicted activity value based on MMP rules (initial activity + mean difference)',
   [MMP_NAMES.DELTA_ACTIVITY]: 'Activity difference',
-  [MMP_NAMES.PREDICTION]: 'Molecule does not exists in the initial dataset',
-};
-
-export const columnsDescriptions: {[key: string]: string} = {
-  [MMP_NAMES.CORE]: 'Common core',
-  [MMP_NAMES.FROM]: 'Original fragment',
-  [MMP_NAMES.TO]: 'Replacement fragment',
-  [MMP_NAMES.PAIRS_COUNT]: 'Total number of pairs',
-  'Generation': 'Transformed molecule',
-  'Activity': 'Analyzed Activity/Property',
-  'Initial value': 'Initial analyzed activity/property value',
-  'Prediction': 'Predicted analyzed activity/property value',
+  [MMP_NAMES.PREDICTION]: 'True if molecule does not exists in the initial dataset',
 };
 
 export enum TrellisAxis {From = 'From', To = 'To'};

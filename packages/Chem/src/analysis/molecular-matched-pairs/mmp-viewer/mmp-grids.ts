@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {FRAGMENTS_GRID_HEADER_TOOLTIPS, MMP_NAMES, PAIRS_GRID_HEADER_TOOLTIPS,
-  columnsDescriptions} from './mmp-constants';
+import {FRAGMENTS_GRID_HEADER_DESCRIPTIONS, MMP_NAMES, PAIRS_GRID_HEADER_DESCRIPTIONS} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
@@ -170,20 +169,16 @@ export class MmpPairedGrids {
       this.showEmptyPairsWarningEvent.next(this.mmpGridTrans.dataFrame.filter.trueCount === 0);
     });
 
-    this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS, true);
-    this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS);
+    this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_DESCRIPTIONS);
+    this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_DESCRIPTIONS);
 
     this.mmpMaskTrans.setAll(true);
   }
 
-  createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, mean?: boolean) {
+  createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}) {
     grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
-      if (cell.isColHeader && cell.tableColumn) {
-        let tooltip = '';
-        if (tooltips[cell.tableColumn.name])
-          tooltip = tooltips[cell.tableColumn.name];
-        else
-          tooltip = cell.tableColumn.name.replace('\u0394', mean ? 'Mean difference in' : 'Difference in');
+      if (cell.isColHeader && cell.tableColumn && cell.tableColumn.semType === DG.SEMTYPE.MOLECULE) {
+        let tooltip = tooltips[cell.tableColumn.name] ?? '';
         ui.tooltip.show(ui.divText(tooltip), x, y);
         return true;
       } else
@@ -377,18 +372,14 @@ export class MmpPairedGrids {
 }
 
 function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid {
-  const fromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.rulesBased.fromFrag);
-  const toCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.rulesBased.toFrag);
-  const occasionsCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRS_COUNT, mmpa.rulesBased.occasions);
-  occasionsCol.setTag('description', columnsDescriptions[MMP_NAMES.PAIRS_COUNT]);
-  fromCol.semType = DG.SEMTYPE.MOLECULE;
-  toCol.semType = DG.SEMTYPE.MOLECULE;
-  occasionsCol.semType = DG.TYPE.INT;
+  const fromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.rulesBased.fromFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const toCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.rulesBased.toFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const occasionsCol = createColWithDescription('', MMP_NAMES.PAIRS_COUNT, mmpa.rulesBased.occasions, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'int32', undefined, true);
 
   const fpCols = [fromCol, toCol];
 
   for (let i = 0; i < activityMeanNames.length; i++)
-    fpCols.push(DG.Column.fromFloat32Array(activityMeanNames[i], mmpa.rulesBased.meanDiffs[i]));
+    fpCols.push(createColWithDescription('', activityMeanNames[i], mmpa.rulesBased.meanDiffs[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, true));
   fpCols.push(occasionsCol);
 
   const colorsPal = new Int32Array(fromCol.length);
@@ -405,8 +396,8 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
 }
 
 function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
-  const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.allCasesBased.molFrom);
-  const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo);
+  const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.allCasesBased.molFrom, PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo, PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM, mmpa.allCasesBased.pairNum);
   const pairNumberSortCol = DG.Column.bool(MMP_NAMES.PAIR_SORT, mmpa.allCasesBased.pairNum.length);
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, mmpa.allCasesBased.molNumFrom);
@@ -419,15 +410,14 @@ function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
 
   pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsToCol.semType = DG.SEMTYPE.MOLECULE;
 
   const allTransformationsCols = [pairsFromCol, pairsToCol, pairNumberCol, pairNumberFromCol, pairNumberToCol,
     pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol, pairNumberSortCol, coreNumCol];
 
   for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.DIFF + ' ' + mmpa.initData.activitiesNames[i];
-    allTransformationsCols.push(DG.Column.fromFloat32Array(name, mmpa.allCasesBased.diffs[i]));
+    const actCol = createColWithDescription('', name, mmpa.allCasesBased.diffs[i], PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false)
+    allTransformationsCols.push(actCol);
   }
 
   const pairedTransformations = DG.DataFrame.fromColumns(allTransformationsCols);
