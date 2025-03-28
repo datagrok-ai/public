@@ -13,7 +13,7 @@ export function info() {
 async function genomeBrowser(data: string, fileName: string = 'GenomeBrowser'): Promise<DG.View> {
   let viewerHost = ui.div();
   getGenomeBrowserComponent(viewerHost, data);
-  viewerHost.classList.add('testClass');
+  viewerHost.classList.add('genome-browser');
   let view = DG.View.fromRoot(viewerHost);
   view.name = fileName;
   return view;

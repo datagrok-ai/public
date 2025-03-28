@@ -1,4 +1,4 @@
-html body .MuiPaper-root {
+.genome-browser .MuiPaper-root {
     --Paper-shadow: none !important;
     -webkit-transition: none !important;
     transition: none !important;
@@ -6,6 +6,6 @@ html body .MuiPaper-root {
     background: none !important;
 }
 
-.css-10rokvf-container{
+.genome-browser>div:first-child>div:first-child>div:first-child>div:first-child {
     display: none !important;
 }
