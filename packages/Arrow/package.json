@@ -16,7 +16,7 @@
     "@datagrok-libraries/utils": "../../libraries/utils",
     "apache-arrow": "^15",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.a7f9d3e9f2.c8334048b",
     "dayjs": "^1.10.6",
     "file-loader": "^6.2.0",
     "parquet-wasm": "0.6.1"
