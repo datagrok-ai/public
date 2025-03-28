@@ -14,7 +14,7 @@
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/webcomponents": "^0.0.7",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0-rc.a7f9d3e9f2.c8334048b",
     "dayjs": "=1.11.10",
     "deep-equal": "^2.2.1",
     "fflate": "^0.8.2",
