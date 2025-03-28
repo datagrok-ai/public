@@ -494,6 +494,7 @@ export class TestManager extends DG.ViewBase {
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
       this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+      this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
       // if (res.col('package') == null || this.verboseCheckBox.value)
@@ -501,6 +502,7 @@ export class TestManager extends DG.ViewBase {
       // if (!this.verboseCheckBox.value)
       // this.removeTestRow(t.packageName, t.test.category, t.test.name);
       res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+      res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
@@ -642,7 +644,7 @@ export class TestManager extends DG.ViewBase {
     const obj = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType),
       nodeType, false, unhandled, isAggrTest);
     const grid = obj.info;
-    const resultPanel = ui.divV([this.verboseCheckBox, grid]);
+    const resultPanel = ui.divV([grid]);
     const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), { style: { userSelect: 'text' } }), true);
     const res = acc.addPane('Results', () => ui.div(resultPanel, { style: { width: '100%' } }), true);
