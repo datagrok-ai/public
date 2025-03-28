@@ -241,7 +241,11 @@ export async function _demoMMPA(): Promise<void> {
     } catch (e) {};
     mmpViewer!.defaultFragmentsFiltersStates = filterStates;
     mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 6;
-    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
+    mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    setTimeout(()=> {
+      grok.shell.windows.showHelp = true;
+      grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
+    }, 1000);
 
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');

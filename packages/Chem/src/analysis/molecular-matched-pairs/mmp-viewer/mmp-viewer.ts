@@ -117,7 +117,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    this.helpUrl = '/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs';
     DG.debounce(this.onPropertyChangedObs, 50).subscribe(this.onPropertyChangedDebounced.bind(this));
     //properties
     this.molecules = this.string('molecules');
