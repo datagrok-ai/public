@@ -124,7 +124,7 @@ export function demoApp(path?: string, filter?: string): DG.ViewBase {
 //input: dynamic treeNode
 //input: view browseView
 export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
-  new DemoView();
+  new DemoView(false);
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {
@@ -281,7 +281,7 @@ export async function _networkDiagramDemo() {
 //description: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five-number summary: minimum, first quartile, median, third quartile, and maximum.
 //meta.demoPath: Visualization | Statistical | Box Plot
 export async function _boxPlotDemo() {
-  await viewerDemo(DG.VIEWER.BOX_PLOT);
+  await viewerDemo(DG.VIEWER.BOX_PLOT, {categoryColumnNames: ['DIS_POP', 'SEX']});
 }
 
 //name: treeMapDemo

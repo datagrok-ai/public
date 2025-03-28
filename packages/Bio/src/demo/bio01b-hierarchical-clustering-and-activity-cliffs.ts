@@ -28,7 +28,7 @@ export async function demoBio01bUI() {
 
   try {
     const demoScript = new DemoScript('Activity Cliffs', 'Activity Cliffs analysis on Macromolecules data', false,
-      {autoStartFirstStep: true});
+      {autoStartFirstStep: true, path: 'Bioinformatics/Activity Cliffs'});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;

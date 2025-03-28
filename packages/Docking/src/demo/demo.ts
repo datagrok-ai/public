@@ -10,19 +10,19 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   return grok.shell.addTableView(table);
 }
 
-export function showHelpPanel(info: string) {
-  grok.shell.windows.help.visible = true;
-  grok.shell.windows.help.showHelp(ui.markdown(info));
+export function showHelpPanel() {
+  grok.shell.windows.showContextPanel = true;
+   grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
   
   grok.shell.windows.context.visible = true;  
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showProperties = true;
-  grok.shell.windows.help.visible = true;
 }
 
 export async function _demoDocking(): Promise<void> {
-  await demo('docking', ['Autodock poses', 'DiffDock poses']);
-  showHelpPanel(HELP_DOCKING);
+  await demo('docking', ['Autodock poses']);
+  showHelpPanel();
 }
 
 async function demo(type: "docking", columnNames: string[]): Promise<void> {
@@ -40,18 +40,9 @@ async function demo(type: "docking", columnNames: string[]): Promise<void> {
     const name = columnNames[i];
     const column = dataFrame.getCol(name);
     column.semType = DG.SEMTYPE.MOLECULE3D;
+    column.meta.units = 'pdb';
     column.setTag('docking.role', 'ligand');
   }
 
   dataFrame.currentCell = dataFrame.cell(0, columnNames[0]);
-}
-
-export const HELP_DOCKING = `# Docking Demo  
-
-This demo showcases **AutoDock** and **DiffDock**, powerful tools for molecular docking and interaction prediction.   
-
-To run docking for the entire column:  
-  - Select **Chem | Docking | AutoDock** or **Chem | Docking | DiffDock** from the top menu.  
-  - This will apply the selected tool to all molecules in the chosen column.  
-
-Click on any predicted structure to view details such as binding poses, confidence scores, and other relevant characteristics.`;  
+} 

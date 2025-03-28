@@ -11,11 +11,11 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "rxjs": "^6.5.5",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
@@ -38,7 +38,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

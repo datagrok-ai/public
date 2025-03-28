@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {isViewerPresent, uploadProject, findViewer} from '../gui-utils';
+import {isViewerPresent, uploadProject, findViewer, showToolbox} from '../gui-utils';
 
 
 category('Viewers: Histogram', () => {
@@ -12,6 +12,7 @@ category('Viewers: Histogram', () => {
   let demog: DG.DataFrame;
 
   before(async () => {
+    showToolbox();
     demog = grok.data.demo.demog(1000);
   });
 

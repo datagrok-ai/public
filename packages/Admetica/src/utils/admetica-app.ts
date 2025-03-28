@@ -9,12 +9,13 @@ import { Model, Subgroup } from './constants';
 import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
+  protected STORAGE_NAME: string = 'admetica-sketcher-values';
+
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 
-    this.formGenerator = this.customFormGenerator;
-    this.setFunction = () => this.performAdmetica();
-    this.browseView.path = 'browse/apps/Admetica';
+    this.formGenerator = () => this.customFormGenerator();
+    this.uploadCachedData = () => this.customFormGenerator(true);
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
     this.tableName = 'Admetica';
   }
@@ -51,27 +52,50 @@ export class AdmeticaViewApp extends BaseViewApp {
     this.tableView!.grid.scrollToCell(molColName, 0);
   }
 
-  private async customFormGenerator(): Promise<HTMLElement> {
+  private async customFormGenerator(cached: boolean = false): Promise<HTMLElement> {
     const models = await getQueryParams();
-
-    await performChemicalPropertyPredictions(
-      this.tableView!.dataFrame.getCol('smiles'),
-      this.tableView!.dataFrame,
-      models,
-      undefined,
-      false,
-      false,
-      true
-    );
+    
+    if (cached) {
+      await this.loadCachedData();
+    } else {
+      try {
+        await performChemicalPropertyPredictions(
+          this.tableView!.dataFrame.getCol('smiles'),
+          this.tableView!.dataFrame,
+          models,
+          undefined,
+          false,
+          false,
+          true,
+          true
+        );
+      } catch (e: any) {
+        const errorWidget = new DG.Widget(ui.divText(e, 'admetica-rdkit-error'));
+        return errorWidget.root;
+      }
+    }
 
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+    const ribbon = form.root.querySelector('.d4-ribbon');
+    if (ribbon)
+      ribbon.remove();
     return form.root;
   }
 
-  private async performAdmetica() {
+  private async loadCachedData(): Promise<void> {
+    const datasetPath = 'System:AppData/Admetica/demo_files/sketcher-demo-app.csv';
+    const csvText = await grok.dapi.files.readAsText(datasetPath);
+    const sampleData = DG.DataFrame.fromCsv(csvText);
+
+    await grok.data.detectSemanticTypes(sampleData);
+    this.tableView!.dataFrame = sampleData;
+    this.tableView!.dataFrame.name = this.tableName;
+  }
+
+  protected async setFunction() {
     const models = await getQueryParams();
     await performChemicalPropertyPredictions(
       this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!,

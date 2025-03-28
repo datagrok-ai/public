@@ -5,12 +5,13 @@ import * as grok from 'datagrok-api/grok';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import {updateDivInnerHTML} from '../utils/ui-utils';
+import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   diverseColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
@@ -41,9 +42,16 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         resCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => resCol.setTag(tag, this.targetColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
-        resDf.onCurrentRowChanged.subscribe(
-          (_: any) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
-        updateDivInnerHTML(this.root, resDf.plot.grid().root);
+        resCol.temp[MmcrTemps.maxMonomerLength] = 4;
+
+        const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
+          this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx];
+        });
+
+        const grid = resDf.plot.grid();
+        adjustGridcolAfterRender(grid, resCol.name, 450, 30);
+
+        updateDivInnerHTML(this.root, grid.root);
         this.computeCompleted.next(true);
       }
     }

@@ -904,7 +904,10 @@ export interface IMenuColorPaletteOptions {
   allowPreview?: boolean;
 
   /** Delay when color value reset to default after leaving hovered item. */
-  resetColorMs: number;
+  resetColorMs?: number;
+
+  /** Whether to close the menu after color is selected. */
+  closeOnClick?: boolean;
 }
 
 /** See {@link IMenuSingleColumnSelectorOptions} and {@link IMenuMultiColumnSelectorOptions} */
@@ -1090,7 +1093,7 @@ export class Menu {
    * @returns {Menu} `this` menu itself. */
   colorPalette(colors: number[][], options?: IMenuColorPaletteOptions): Menu {
     return toJs(api.grok_Menu_ColorPalette(this.dart, colors, options?.getInitialValue, options?.onSelect,
-      options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200));
+      options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200, options?.closeOnClick ?? true));
   }
 
   /** Adds single-column selector to menu.

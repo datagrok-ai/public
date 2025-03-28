@@ -9,17 +9,25 @@
 #input: int particles
 #input: int iterations
 #input: string smi
+#input: string api_key
 #output: string response
+
 import requests
 
-invoke_url = "https://health.api.nvidia.com/v1/biology/nvidia/molmim/generate"
+def get_query_url_and_headers(api_key):
+  if api_key.strip():
+    return (
+      "https://health.api.nvidia.com/v1/biology/nvidia/molmim/generate",
+      {"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+    )
+  return (
+    "http://0.0.0.0:8000/generate",
+    {"Content-Type": "application/json"},
+  )
 
-headers = {
-    "Authorization": "Bearer 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",
-    "Accept": "application/json",
-}
+query_url, headers = get_query_url_and_headers(api_key)
 
-payload = {
+data = {
   "algorithm": algorithm,
   "num_molecules": num_molecules,
   "property_name": property_name,
@@ -27,11 +35,7 @@ payload = {
   "min_similarity": min_similarity,
   "particles": particles,
   "iterations": iterations,
-  "smi": smi
+  "smi": smi,
 }
 
-session = requests.Session()
-response = session.post(invoke_url, headers=headers, json=payload)
-response.raise_for_status()
-response_body = response.json()
-response = response_body
+response = requests.post(query_url, headers=headers, json=data).json()

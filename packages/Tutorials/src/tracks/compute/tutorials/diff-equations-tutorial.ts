@@ -6,13 +6,13 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement} from './utils';
+import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement, PAUSE} from './utils';
 
 import '../../../../css/tutorial.css';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
-  EDIT_TOGGLE_IDX = 2,
+  EDIT_TOGGLE_IDX = 3,
   REFRESH_RIBBON_IDX = 1,
   REFRESH_ICN_IDX = 0,
 };
@@ -119,21 +119,23 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', LINKS.LOTKA_VOLT).outerHTML}.`);
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-      grok.shell.v = DG.View.createByType('browse');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
     // 1. Open Apps
-    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    // grok.shell.v = browseView;
-    // browseView.showTree = true;
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
+    
+    const browsePanel = grok.shell.browsePanel;
 
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
+
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
 
     await this.action(
       'Open Apps',
@@ -142,9 +144,20 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run Diff Studio
-    const diffStudIcon = await getElement(grok.shell.browsePanel.root,'div[name="div-Diff-Studio"]');
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+
+    // 2. Run Diff Studio
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+
+    browseIcon.click();
+
+    const diffStudIcon = await getElement(galleryGrid, 'div[name="div-Diff-Studio"]');
     if (diffStudIcon === null) {
       grok.shell.warning('Diff Studio not found: install the Diff Studio package');
       return;
@@ -168,7 +181,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
     await openModelFuncCall.call();
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
     // 3. Explore elements
     this.describe('We start with an incomplete model.');

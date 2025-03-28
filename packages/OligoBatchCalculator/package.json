@@ -13,9 +13,9 @@
     "directory": "packages/OligoBatchCalculator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
@@ -46,7 +46,7 @@
     "css/style.css"
   ],
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

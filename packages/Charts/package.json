@@ -14,18 +14,20 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.2.9",
-    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.0",
     "circos": "^2.1.0",
     "d3": "^7.8.1",
     "d3-sankey": "^0.12.3",
-    "datagrok-api": "^1.22.0",
+    "datagrok-api": "../../js-api",
     "echarts": "^5.0.0",
     "echarts-gl": "^2.0.9",
     "echarts-wordcloud": "^2.0.0",
     "rxjs": "6.5.5",
     "three": "^0.148.0",
-    "three-globe": "^2.24.13"
+    "three-globe": "^2.24.13",
+    "chokidar": "^3.5.2",
+    "ws": "^7.5.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -42,7 +44,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

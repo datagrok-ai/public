@@ -56,7 +56,7 @@ Analyze your model:
 * [Parameter Optimization](function-analysis.md#parameter-optimization): Click the **Fit** icon on the top panel to find input conditions that satisfy output constraints.
 * [Sensitivity Analysis](function-analysis.md#sensitivity-analysis): Click the **Sensitivity** icon to explore the relationship between inputs and outputs of your model.
 
-![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
+![Run Sens Analysis](pics/diff-studio-run-fitting.gif)
 
 ## Creating models
 
@@ -314,13 +314,17 @@ Use this syntax to define the ODE solver configuration and improve performance:
 
 You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
-* Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
 * Add your models to a Model Catalog.
+* Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
 
-Steps:
+Click the <i class="fas fa-layer-plus"></i> **Save to Model Catalog** icon on the top panel to add your model to Model Catalog:
+
+ ![table-lookups](pics/diff-studio-model-catalog.gif)
+
+Export your model to JavaScript script:
 
 1. Toggle **Edit** and click the `</>` icon
-1. Add metadata for catalog:
+2. Add metadata for catalog:
   
    ```python
    #name: Model name
@@ -328,7 +332,7 @@ Steps:
    #description: Brief description
    ```
 
-1. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
+3. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
 
 ## Syntax reference
 

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.21.4",
+  "version": "1.22.1",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -74,7 +74,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

@@ -18,7 +18,7 @@ category('Viewers: Basic', () => {
   let df: DG.DataFrame;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     await delay(500);

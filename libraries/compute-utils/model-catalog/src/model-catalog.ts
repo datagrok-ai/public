@@ -10,76 +10,153 @@ export interface ModelCatalogConfig {
   segment: string,
   viewName: string,
   funcName: string,
-  startUriLoaded: boolean,
   _package: DG.Package,
   ViewClass: typeof ModelCatalogView,
-  HandlerCass: typeof ModelHandler
+  setStartUriLoaded: () => void,
+  getStartUriLoaded: () => boolean,
 }
 
-export function makeModelCatalog(options: ModelCatalogConfig, setStartUrlLoaded: Function) {
+function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
   const {
-    segment, viewName, funcName, startUriLoaded, _package, ViewClass, HandlerCass,
+    funcName, _package
   } = options;
+  if (!view!.parentCall) {
+    const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+    const mfc = mc.prepare();
+    view.parentCall = mfc;
+  }
+}
 
-  // Separately process direct link access
-  const startOptionalPart = grok.shell.startUri.indexOf('?');
-  const startPathSegments = grok.shell.startUri
-    .substring('https://'.length, startOptionalPart > 0 ? startOptionalPart: undefined)
-    .split('/');
+function findOrCreateViewWithCore(options: ModelCatalogConfig) {
+  const {
+    viewName, funcName, _package, ViewClass
+  } = options;
+  let view = ViewClass.findModelCatalogView(viewName);
+  if (!view) {
+    const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
+    const mfc = mc.prepare();
+    mfc.callSync({processed: true, report: false});
+    view = mfc.outputs.v;
+  }
+  const currentView = [...grok.shell.views].find(v => v === view);
+  if (!currentView)
+    grok.shell.add(view!);
 
-  if (!startUriLoaded && startPathSegments.includes(segment)) {
-    const view = ViewClass.findOrCreateCatalogView(viewName, funcName, _package);
+  return view;
+}
 
-    grok.shell.addView(view);
-    setStartUrlLoaded();
+export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
+  const {ViewClass} = options;
 
-    if (startPathSegments.length > 3) {
-      grok.dapi.functions.filter(`shortName = "${startPathSegments[3]}" and #model`).list().then((lst) => {
+  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+    const ent = acc.context;
+    if (ent == null)
+      return;
+    if (ent.type != 'script')
+      return;
+    const restPane = acc.getPane('REST');
+    if (!restPane)
+      acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
+  });
+
+  grok.functions.onBeforeRunAction.subscribe((fc) => {
+    if (fc.func.hasTag('model')) {
+      const view = findOrCreateViewWithCore(options);
+      ViewClass.bindModel(view!, fc);
+    } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
+      const view = findOrCreateViewWithCore(options);
+      ViewClass.bindModel(view!, fc.inputs['call']);
+    }
+  });
+
+  grok.events.onCurrentViewChanged.subscribe(async () => {
+    let prevSyncState = true;
+    if (grok.shell.v?.name === options.viewName) {
+      prevSyncState = grok.shell.windows.help.syncCurrentObject;
+      grok.shell.windows.help.syncCurrentObject = false;
+    } else
+      grok.shell.windows.help.syncCurrentObject = prevSyncState;
+  });
+}
+
+export function setModelCatalogHandler() {
+  if (!(DG.ObjectHandler.list().find((handler) => handler.type === 'Model')))
+    DG.ObjectHandler.register(new ModelHandler());
+}
+
+export async function renderRestPanel(func: DG.Func): Promise<DG.Widget> {
+  const params: object = {};
+  func.inputs.forEach((i) => (<any>params)[i.name] = null);
+  const curl = `
+curl --location --request POST '${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run' \\
+--header 'Authorization: ${getCookie('auth')}' \\
+--header 'Content-Type: application/json' \\
+--data-raw '${JSON.stringify(params)}'`;
+  const js = `
+var myHeaders = new Headers();
+myHeaders.append("Authorization", "${getCookie('auth')}");
+myHeaders.append("Content-Type", "applicati4on/json");
+
+var raw = JSON.stringify(${JSON.stringify(params)});
+
+var requestOptions = {
+  method: 'POST',
+  headers: myHeaders,
+  body: raw,
+  redirect: 'follow'
+};
+
+fetch("${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run", requestOptions)
+  .then(response => response.text())
+  .then(result => console.log(result))
+  .catch(error => console.log('error', error));`;
+  const tabs = ui.tabControl({'CURL': ui.div([ui.divText(curl)]), 'JS': ui.div([ui.divText(js)])});
+  return DG.Widget.fromRoot(tabs.root);
+}
+
+function getCookie(name: string): string | undefined {
+  const matches = document.cookie.match(new RegExp(
+    '(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)',
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
+export function startModelCatalog(options: ModelCatalogConfig) {
+  const {
+    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded
+  } = options;
+  const view = ViewClass.findOrCreateCatalogView(viewName);
+
+  if (!getStartUriLoaded()) {
+    handleInitialUri(segment);
+    setStartUriLoaded();
+  }
+
+  fixParentCall(view, options);
+
+  return view;
+}
+
+function handleInitialUri(segment: string) {
+  const url = new URL(grok.shell.startUri);
+  const startPathSegments = url.pathname.split('/');
+  const catlogUriSegmentIdx = startPathSegments.findIndex(x => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
+
+  if (catlogUriSegmentIdx > 0) {
+    if (catlogUriSegmentIdx + 1 < startPathSegments.length) {
+      const shortName = startPathSegments[catlogUriSegmentIdx + 1];
+      grok.dapi.functions.filter(`shortName = "${shortName}" and #model`).list().then((lst) => {
         if (lst.length == 1)
-          HandlerCass.openModel(lst[0]);
+          ModelHandler.openModel(lst[0]);
       });
     }
-
-    return;
-  }
-
-  const optionalPart = window.location.href.indexOf('?');
-  const pathSegments = window.location.href
-    .substring('https://'.length, optionalPart > 0 ? optionalPart: undefined)
-    .split('/');
-
-  if (pathSegments.includes('browse')) {
-    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
-
-    // If there is existing view, then switch on it
-    if (view)
-      grok.shell.v = view;
-
-
-    // Always return new with no subscribtions to show in Browse tree
-    const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
-    return newView;
-  }
-
-  // Separately process double-clicking on Model Catalog card
-  if (pathSegments.includes('apps')) {
-    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
-
-    // If there is existing view, then switch on it
-    if (view)
-      grok.shell.v = view;
-    else {
-      const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
-      grok.shell.addView(newView);
-    }
   }
 }
 
-export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup) {
   const NO_CATEGORY = 'Uncategorized' as const;
 
-  const modelSource = grok.dapi.functions.filter('(#model)');
-  const modelList = await modelSource.list();
+  const modelList = await grok.dapi.functions.filter('(#model)').list();
   const departments = modelList.reduce((acc, model) => {
     if (model.options.department)
       acc.add(model.options.department);

@@ -1,7 +1,15 @@
-# nmrium
+# NMRium
 
-`nmrium` is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that will allow preview of NMR Data.
+NMRium is a file viewer for NMR data, built on top of the awesome 
+[NMRium library](https://github.com/cheminfo/nmrium). 
 
-## to build and run:
+Just click on the .jdx file in the browse tree, and the
+interactive analysis appears in the preview pane.
 
+![](nmrium.png)
+
+## To build:
+
+```
 npm i && npm run build && grok publish
+```

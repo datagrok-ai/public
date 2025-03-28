@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { getModelsSingle, performChemicalPropertyPredictions, runAdmetica, setProperties } from './utils/admetica-utils';
+import { getModelsSingle, performChemicalPropertyPredictions, runAdmeticaFunc, setProperties } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
@@ -14,6 +14,17 @@ export const _package = new DG.Package();
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
+}
+
+//name: runAdmetica
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: string csvString
+//input: string queryParams
+//input: bool raiseException
+//output: string result
+export async function runAdmetica(csvString: string, queryParams: string, raiseException: boolean): Promise<string> {
+  return (await runAdmeticaFunc(csvString, queryParams, raiseException))!;
 }
 
 //name: Biology | Admetica
@@ -94,17 +105,19 @@ export async function admeticaMenu(
 //input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
 //output: double propValue
 export async function admeProperty(molecule: string, prop: string): Promise<any> {
-  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, 'false');
+  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, false);
   return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }
 
 //name: Admetica
 //tags: app
 //output: view v
+//meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
+//meta.demoPath: Cheminformatics | Admetica
 export async function admeticaApp(): Promise<DG.ViewBase | null> {
   const parent = grok.functions.getCurrentCall();
   const app = new AdmeticaViewApp(parent);
   await app.init();
-  return app.tableView!;
+  return grok.shell.addPreview(app.tableView!);
 }

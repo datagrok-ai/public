@@ -38,12 +38,12 @@
     }
   ],
   "dependencies": {
-    "datagrok-api": "^1.24.0",
+    "datagrok-api": "../../js-api",
     "@datagrok-libraries/chem-meta": "^1.2.9",
-    "@datagrok-libraries/ml": "^6.7.6",
+    "@datagrok-libraries/ml": "../../libraries/ml",
     "@datagrok-libraries/math": "^1.2.5",
-    "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.4.2",
+    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/pako": "^2.0.3",
     "typescript-lru-cache": "^2.0.0",
     "cash-dom": "^8.1.5",
@@ -103,7 +103,7 @@
     "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

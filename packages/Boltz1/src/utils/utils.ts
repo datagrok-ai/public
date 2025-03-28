@@ -53,11 +53,3 @@ export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: H
   const idx = molecule.cell.rowIndex;
   return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
 }
-
-export function getTableView(tableName?: string): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : (tableName ? grok.shell.getTableView(tableName) : grok.shell.tv);
-  return tableView;
-}

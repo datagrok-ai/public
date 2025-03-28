@@ -252,6 +252,9 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
+# Catalog
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Catalog**.
+
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
 * [Compute](${LINK.COMPUTE})`;
@@ -277,6 +280,8 @@ export enum PATH {
   MY_FILES = 'Myfiles',
   HOME = 'Home',
   SYSTEM = 'System',
+  FILE = 'file',
+  SLASH = '/',
 };
 
 /** UI time constants */
@@ -287,7 +292,7 @@ export enum UI_TIME {
   SOLV_DEFAULT_TIME_SEC = 5,
   SOLV_TIME_MIN_SEC = 1,
   BROWSING = APP_RUN_SOLVING + 500,
-  SWITCH_TO_FOLDER = 1,
+  SWITCH_TO_FOLDER = 100,
   WGT_CLICK = 10,
   FACET_DOCKING = 50,
   TITLE_REMOVING = 500,
@@ -300,7 +305,11 @@ export enum METHOD {
   ROS34PRw = 'ros34prw',
 };
 
-export const DOCK_RATIO = 0.3;
+/** Dock ratios */
+export enum DOCK_RATIO {
+  INPUTS_TAB = 0.2,
+  GRAPHS = 0.8,
+};
 
 export const MAX_RECENT_COUNT = 10;
 

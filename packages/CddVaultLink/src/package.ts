@@ -3,12 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows} from "./cdd-vault-api";
+import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch} from "./cdd-vault-api";
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
 
 export const _package = new DG.Package();
+const CDD_HOST = 'https://app.collaborativedrug.com/';
 
 //tags: app
 //name: CDD Vault
@@ -43,10 +44,16 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
       const molecules = await queryMolecules(vault.id, { page_size: 100 });
       console.log(molecules);
       const df = DG.DataFrame.fromObjects(molecules.data!.objects!)!;
+      const idCol = df.col('id');
+      if (idCol) {
+        const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
+          const id = idCol.get(i);
+          return `[${id}](${`${CDD_HOST}vaults/${vault.id}/molecules/${id}/`})`;
+        });
+        df.columns.replace(idCol, linkIdsCol);
+      }
       await grok.data.detectSemanticTypes(df);
-      const tv = DG.TableView.create(df, false);
-      browseView.preview = tv;
-      
+      grok.shell.addTablePreview(df);     
     });
 
     const searchNode = vaultNode.item('Search');
@@ -71,7 +78,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
         runButton,
         gridDiv
       ]));
-      browseView.preview = view;
+      grok.shell.addPreview(view);
     });
 
    // searchNode.onSelected.subscribe(async (_) => {
@@ -147,8 +154,53 @@ export function molColumnPropertyPanel(molecule: string): DG.Widget {
     if (!cddMols.data?.objects?.length)
       return ui.divText('Not found');
 
-    return ui.tableFromMap(cddMols.data.objects[0]);
-  }))
+    return createCDDContextPanel(cddMols.data.objects[0], vaultId);
+  }));
+}
+
+function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): HTMLElement {
+  const keys = Object.keys(obj);
+  const resDiv = ui.divV([], 'cdd-context-panel');
+  const accordions = ui.divV([]);
+  const dictForTableView: {[key: string]: any} = {};
+  for(const key of keys) {
+    if (key === 'batches') {
+      const batchesAcc = ui.accordion(key);
+      const batches = (obj as Molecule)[key] as Batch[];
+      batchesAcc.addPane(key, () => {
+        const innerbatchesAcc = ui.accordion();
+        for (const batch of batches) {
+          innerbatchesAcc.addPane(batch.id.toString(), () => createCDDContextPanel(batch));
+        }
+        return innerbatchesAcc.root;
+      });
+      accordions.append(batchesAcc.root);
+    } else if (key === 'collections' || key === 'projects' || key === 'source_files' || key === 'batch_fields') {
+      const acc = ui.accordion(key);
+      acc.addPane(key, () => {
+        const div = ui.divV([]);
+        ((obj as any)[key] as any[]).forEach((it) => div.append(ui.tableFromMap(it, true)));
+        return div;
+      });
+      accordions.append(acc.root);
+    } else if (key === 'molecule_fields' || key === 'udfs' || key === 'stoichiometry') {
+      const acc = ui.accordion(key);
+      acc.addPane(key, () => ui.tableFromMap((obj as any)[key] as any, true));
+      accordions.append(acc.root);
+    } else {
+      const initialValue = (obj as any)[key];
+      let value: any | null = null;
+      if (key === 'id' && vaultId)
+        value = ui.link(initialValue, () => window.open(`${CDD_HOST}vaults/${vaultId}/molecules/${initialValue}/`));
+      else
+        value = initialValue instanceof Array ? initialValue.join(', ') : initialValue;
+      dictForTableView[key] = value;
+    }
+  }
+  resDiv.append(ui.tableFromMap(dictForTableView, true));
+  resDiv.append(accordions);
+
+  return resDiv;
 }
 
 //name: CDDVaultSearchEditor
@@ -198,7 +250,7 @@ export async function cDDVaultSearch2(vaultId?: number, structure?: string, stru
   molQueryParams.page_size = 1000;
   const cddMols = await queryMolecules(vaultId, molQueryParams);
   if (cddMols.data?.objects && cddMols.data?.objects.length) {
-    //in case we had both protocol and structure conditions - combine them together
+    //in case we had both protocol and structure conditions - combine results together
     const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
     const df = DG.DataFrame.fromObjects(molsRes)!;
     await grok.data.detectSemanticTypes(df);

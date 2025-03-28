@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {GENERATIONS_GRID_HEADER_TOOLTIPS, MMP_NAMES, columnsDescriptions} from './mmp-constants';
+import {GENERATIONS_GRID_HEADER_DESCRIPTIONS, MMP_NAMES} from './mmp-constants';
 import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
@@ -19,23 +19,23 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 
   const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
   const cols = [];
-  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `Activity`, genRes.activityName));
-  cols.push(createColWithDescription('double', `Original activity`, Array.from(genRes.allInitActivities)));
-  cols.push(createColWithDescription('double', `New activity`, Array.from(genRes.prediction)));
-  cols.push(createColWithDescription('double', `\u0394 activity`,
-    Array.from(genRes.prediction).map((val: number, idx: number) => val - genRes.allInitActivities[idx])));
+  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.PROPERTY_TYPE, genRes.activityName, GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  cols.push(createColWithDescription('double', MMP_NAMES.OBSERVED, Array.from(genRes.allInitActivities), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  cols.push(createColWithDescription('double', MMP_NAMES.PREDICTED, Array.from(genRes.prediction), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  cols.push(createColWithDescription('double', MMP_NAMES.DELTA_ACTIVITY,
+    Array.from(genRes.prediction).map((val: number, idx: number) => val - genRes.allInitActivities[idx]), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
 
   grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
-    if (cell.isColHeader && cell.tableColumn) {
+    if (cell.isColHeader && cell.tableColumn && cell.tableColumn.semType === DG.SEMTYPE.MOLECULE) {
       let tooltip = '';
-      if (GENERATIONS_GRID_HEADER_TOOLTIPS[cell.tableColumn.name])
-        tooltip = GENERATIONS_GRID_HEADER_TOOLTIPS[cell.tableColumn.name];
+      if (GENERATIONS_GRID_HEADER_DESCRIPTIONS[cell.tableColumn.name])
+        tooltip = GENERATIONS_GRID_HEADER_DESCRIPTIONS[cell.tableColumn.name];
       ui.tooltip.show(ui.divText(tooltip), x, y);
       return true;
     } else
@@ -53,11 +53,16 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   return [grid, gridCorr];
 }
 
-export function createColWithDescription(colType: any, colName: string, list: any[], semType?: DG.SemType): DG.Column {
-  const col = DG.Column.fromList(colType, colName, list);
-  if (columnsDescriptions[colName])
-    col.setTag('description', columnsDescriptions[colName]);
-  if (semType)
+export function createColWithDescription(colType: any, colName: string, list: any, descriptions: {[key: string]: string}, type: string,
+  semType?: DG.SemType, mean?: boolean): DG.Column {
+  const col = type === 'int32' ? DG.Column.fromInt32Array(colName, list) : type === 'float32' ?
+    DG.Column.fromFloat32Array(colName, list) : DG.Column.fromList(colType, colName, list);
+  if (!semType) {
+    if (descriptions[colName])
+      col.setTag('description', descriptions[colName]);
+    else if (colName.includes('\u0394'))
+      col.setTag('description', colName.replace('\u0394', mean ? 'Mean difference in' : 'Difference in'));
+  } else
     col.semType = semType;
   return col;
 }
@@ -65,6 +70,7 @@ export function createColWithDescription(colType: any, colName: string, list: an
 export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
   const moleculesSet = new Set(molecules);
   const boolCol = DG.Column.bool(MMP_NAMES.PREDICTION, generation.length).init((i) => !moleculesSet.has(generation[i]));
+  boolCol.setTag('description', GENERATIONS_GRID_HEADER_DESCRIPTIONS[MMP_NAMES.PREDICTION]);
   grid.dataFrame.columns.add(boolCol);
   grid.col(boolCol.name)!.editable = false;
   grid.invalidate();
@@ -98,11 +104,11 @@ function getCorGrid(mmpa: MMPA): DG.Grid {
   }
 
   const colsCorr = [];
-  colsCorr.push(createColWithDescription('string', MMP_NAMES.CORE, initialMol, DG.SEMTYPE.MOLECULE));
-  colsCorr.push(createColWithDescription('string', MMP_NAMES.FROM, initialFragment, DG.SEMTYPE.MOLECULE));
-  colsCorr.push(createColWithDescription('string', MMP_NAMES.TO, endFragment, DG.SEMTYPE.MOLECULE));
-  colsCorr.push(createColWithDescription('string', MMP_NAMES.ACTIVITY, activity));
-  colsCorr.push(createColWithDescription('double', 'Observed', observed));
-  colsCorr.push(createColWithDescription('double', 'Predicted', predicted));
+  colsCorr.push(createColWithDescription('string', MMP_NAMES.CORE, initialMol, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', MMP_NAMES.FROM, initialFragment, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', MMP_NAMES.TO, endFragment, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', MMP_NAMES.ACTIVITY, activity, GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  colsCorr.push(createColWithDescription('double', 'Observed', observed, GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  colsCorr.push(createColWithDescription('double', 'Predicted', predicted, GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
   return DG.DataFrame.fromColumns(colsCorr).plot.grid();
 }

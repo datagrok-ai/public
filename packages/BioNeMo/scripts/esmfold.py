@@ -4,6 +4,7 @@
 #meta.cache: all
 #meta.cache.invalidateOn: 0 * * * *
 #input: string sequence
+#input: string api_key
 #output: string response
 
 import requests
@@ -11,7 +12,7 @@ import requests
 invoke_url = "https://health.api.nvidia.com/v1/biology/nvidia/esmfold"
 
 headers = {
-    "Authorization": "Bearer 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",
+    "Authorization": f"Bearer {api_key}",
     "Accept": "application/json",
 }
 

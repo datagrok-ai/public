@@ -7,8 +7,8 @@ format: 'mdx'
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files
 
 This document contains instructions to deploy Datagrok using [CloudFormation](https://aws.amazon.com/cloudformation/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)

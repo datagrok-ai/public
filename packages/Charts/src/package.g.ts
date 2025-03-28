@@ -1,6 +1,7 @@
 import {ChordViewer} from './viewers/chord/chord-viewer';
 import {GlobeViewer} from './viewers/globe/globe-viewer';
 import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
+import {MultiPlotViewer} from './viewers/multiplot/multiplot';
 import {RadarViewer} from './viewers/radar/radar-viewer';
 import {SankeyViewer} from './viewers/sankey/sankey';
 import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
@@ -34,6 +35,14 @@ export function _GlobeViewer() {
 //meta.icon: icons/groupanalysis-viewer.svg
 export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
+}
+
+//name: Multiplot
+//description: Creates a multiplot viewer
+//tags: viewer
+//output: viewer result
+export function _MultiPlotViewer() {
+  return new MultiPlotViewer();
 }
 
 //name: Radar

@@ -43,7 +43,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

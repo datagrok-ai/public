@@ -36,7 +36,7 @@ export async function initPeptides(): Promise<void> {
   try {
     monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
     treeHelper ??= await getTreeHelper();
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   } catch (e) {
     grok.log.error(e as string);
   }
@@ -177,9 +177,9 @@ export function manualAlignment(_monomer: string): DG.Widget {
 }
 
 // --- Demo ---
-//name: Macromolecule SAR Analysis
-//description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
-//meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
+//name: Peptide SAR
+//description: Peptide SAR Analysis demo on peptide sequences in FASTA format
+//meta.demoPath: Bioinformatics | Peptide SAR
 //meta.demoSkip: GROK-14320
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return await macromoleculeSarFastaDemoUI();

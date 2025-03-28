@@ -1,13 +1,13 @@
 {
   "name": "cddvaultlink",
-  "friendlyName": "CddVaultLink",
+  "friendlyName": "CDD Vault Link",
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.21.3",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.6"
+    "@datagrok-libraries/utils": "../../libraries/utils"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
@@ -19,6 +19,7 @@
     "typescript": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "link-all": "grok link",
     "debug-cddvaultlink": "webpack && grok publish",
     "release-cddvaultlink": "webpack && grok publish --release",
@@ -30,7 +31,7 @@
     "release-cddvaultlink-public": "webpack && grok publish public --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

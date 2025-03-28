@@ -1,5 +1,11 @@
 # PowerPack changelog
 
+## 1.4.1  (2025-03-18)
+
+### Bug Fixes
+
+* GROK-17755: Failed to open "Add viewer" dialog
+
 ## 1.4.0  (2025-02-24) - 1.3.0 (2024-12-24)
 
 ### Features

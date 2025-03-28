@@ -214,36 +214,36 @@ export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInf
   return getPlatesFolderPreview(files);
 }
 
-//name: Plates
-//tags: app
-//meta.browsePath: Chem
-export function plateApp() {
-  const plateFileInput = ui.input.file('Plate file', {nullable: false});
-  ui.dialog('Select Plate File').add(plateFileInput).onOK(async () => {
-    const file = plateFileInput.value;
-    if (!file || file.extension !== 'xlsx') {
-      grok.shell.warning('Please, select an Excel file with plates');
-      return;
-    }
-
-    try {
-      const plate = await Plate.fromExcelFileInfo(file);
-      const pw = PlateWidget.analysisView(plate);
-      const view = DG.View.fromRoot(pw.root);
-      view.name = file.name;
-      grok.shell.addView(view);
-    } catch (e) {
-      grok.shell.error('Error parsing plate file');
-      _package.logger.error(e);
-    }
-  }).show();
-  // if (file.extension !== 'xlsx') {
-  //   grok.shell.warning('Please, select an Excel file with plates');
-  //   return;
-  // }
-  // console.log(file);
-  // const plate = Plate.fromExcel(file.fullPath);
-}
+// //name: Plates
+// //tags: app
+// //meta.browsePath: Chem
+// export function plateApp() {
+//   const plateFileInput = ui.input.file('Plate file', {nullable: false});
+//   ui.dialog('Select Plate File').add(plateFileInput).onOK(async () => {
+//     const file = plateFileInput.value;
+//     if (!file || file.extension !== 'xlsx') {
+//       grok.shell.warning('Please, select an Excel file with plates');
+//       return;
+//     }
+//
+//     try {
+//       const plate = await Plate.fromExcelFileInfo(file);
+//       const pw = PlateWidget.analysisView(plate);
+//       const view = DG.View.fromRoot(pw.root);
+//       view.name = file.name;
+//       grok.shell.addView(view);
+//     } catch (e) {
+//       grok.shell.error('Error parsing plate file');
+//       _package.logger.error(e);
+//     }
+//   }).show();
+//   // if (file.extension !== 'xlsx') {
+//   //   grok.shell.warning('Please, select an Excel file with plates');
+//   //   return;
+//   // }
+//   // console.log(file);
+//   // const plate = Plate.fromExcel(file.fullPath);
+// }
 
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate

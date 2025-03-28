@@ -193,7 +193,12 @@ export const TreeNode = Vue.defineComponent({
       >
         { status.value && progressIcon(status.value, props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
-        <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
+        <span
+          class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
+          style={{
+            opacity: (props.stat.children.length === 0 && props.stat.data.type !== 'funccall') ? 0.5 : 1.0,
+          }}
+        >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { ...isHovered.value ? [

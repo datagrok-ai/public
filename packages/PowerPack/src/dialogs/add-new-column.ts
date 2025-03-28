@@ -702,7 +702,7 @@ export class AddNewColumnDialog {
     const unmatchedCols: string[] = [];
     for (const colName of columnNames) {
       const unescapedMatch = grok.functions.handleOuterBracketsInColName(colName, false);
-        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
+        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()) && !unmatchedCols.includes(colName))
           unmatchedCols.push(colName);
     }
     if (unmatchedCols.length)

@@ -273,6 +273,7 @@ export class Utils {
 
       df.changeColumnType('result', COLUMN_TYPE.STRING);
       df.changeColumnType('logs', COLUMN_TYPE.STRING);
+      df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
         resultDF = df;      
@@ -848,6 +849,7 @@ export namespace Test {
   export let isReproducing = false;
   export let isInDebug = false;
   export let isCiCd = false;
+  export let isProfiling = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

@@ -1,5 +1,19 @@
 # Usage Analysis changelog
 
+
+# 2.3.2 (2025-03-24)
+
+* Tests Dashboards: improvements for gathering of benchmarks
+
+# 2.3.1 (2025-03-13)
+
+* Dependency: datagarok-api >= 1.24.0*
+
+### Features
+
+* Tests Dashboards: improvements and bug fixes
+* Stress tests dashboards revisited 
+
 # 2.3.0 (2025-02-18)
 
 * Dependency: datagarok-api >= 1.24.0*

@@ -20,10 +20,10 @@
     "directory": "packages/Alation"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
@@ -51,7 +51,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

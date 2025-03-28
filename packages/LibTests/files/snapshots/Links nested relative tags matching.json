@@ -1,0 +1,615 @@
+[
+  [
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipelinePar",
+          "idx": 0
+        },
+        {
+          "id": "stepAdd",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "stepAdd",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested1",
+                "idx": 2
+              },
+              {
+                "id": "stepAdd",
+                "idx": 1
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipelinePar",
+          "idx": 0
+        },
+        {
+          "id": "pipelineNested1",
+          "idx": 2
+        },
+        {
+          "id": "stepAdd",
+          "idx": 1
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested1",
+                "idx": 2
+              },
+              {
+                "id": "stepAdd",
+                "idx": 1
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "stepAdd",
+                "idx": 3
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipelinePar",
+          "idx": 0
+        },
+        {
+          "id": "stepAdd",
+          "idx": 3
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "stepAdd",
+                "idx": 3
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested2",
+                "idx": 5
+              },
+              {
+                "id": "stepAdd",
+                "idx": 0
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipelinePar",
+          "idx": 0
+        },
+        {
+          "id": "pipelineNested2",
+          "idx": 5
+        },
+        {
+          "id": "stepAdd",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested2",
+                "idx": 5
+              },
+              {
+                "id": "stepAdd",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested2",
+                "idx": 5
+              },
+              {
+                "id": "stepAdd",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipelinePar",
+          "idx": 0
+        },
+        {
+          "id": "pipelineNested2",
+          "idx": 5
+        },
+        {
+          "id": "stepAdd",
+          "idx": 2
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "pipelineNested2",
+                "idx": 5
+              },
+              {
+                "id": "stepAdd",
+                "idx": 2
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipelinePar",
+                "idx": 0
+              },
+              {
+                "id": "stepAdd",
+                "idx": 7
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ]
+]

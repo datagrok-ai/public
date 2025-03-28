@@ -80,7 +80,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
       inputsArray[inputIdx].enabled = Object.entries(options.monomerPositionSelection).length !== 0;
   }
 
-  const inputsHost = ui.form(inputsArray);
+  const inputsHost = ui.form(inputsArray, {style: {flexDirection: 'row'}});
   // $(inputsHost).css('display', 'inline-flex');
   return ui.divV([inputsHost, distributionCategoriesHost]);
 }
@@ -119,11 +119,11 @@ export function getActivityDistribution(
  * @return - Stats table map
  */
 export function getStatsTableMap(stats: StatsItem,
-  options: { fractionDigits?: number } = {},
+  options: { fractionDigits?: number, countName?: string } = {},
 ): StringDictionary {
   options.fractionDigits ??= 3;
   const tableMap: StringDictionary = {
-    'Count': `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
+    [options?.countName ?? 'Count']: `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
     'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
@@ -146,7 +146,7 @@ function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: D
   const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection,
     options.peptideSelection));
   const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns),
-    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer, stats.mask.length)});
+    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, stats.mask.length)});
   const tableMap = getStatsTableMap(stats);
   const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
   const distributionRoot = getDistributionPanel(hist, resultMap, labelMap);

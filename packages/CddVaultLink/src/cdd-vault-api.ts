@@ -30,13 +30,18 @@ interface Collection {
   id: number;
 }
 
+interface SourceFile {
+  name: string;
+  id: number;
+}
+
 interface DataSet {
   name: string;
   id: number;
 }
 
 
-interface Batch {
+export interface Batch {
   id: number;
   class: 'batch';
   created_at: string;
@@ -56,7 +61,7 @@ interface Batch {
   };
 }
 
-interface Molecule {
+export interface Molecule {
   id: number;
   class: 'molecule';
   name: string;
@@ -96,6 +101,7 @@ interface Molecule {
   batches: Batch[];
   udfs?: Record<string, any>;
   molecule_fields?: Record<string, any>;
+  source_files: SourceFile[];
 }
 
 interface MoleculesQueryResult {

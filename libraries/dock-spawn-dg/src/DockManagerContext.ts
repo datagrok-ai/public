@@ -1,13 +1,13 @@
-import { DockModel } from "./DockModel.js";
-import { DockManager } from "./DockManager.js";
-import { DocumentManagerContainer } from "./DocumentManagerContainer.js";
+import { DockModel } from "./DockModel";
+import { DockManager } from "./DockManager";
+import { DocumentManagerContainer } from "./DocumentManagerContainer";
 
 export class DockManagerContext {
 
     dockManager: DockManager;
     model: DockModel;
     documentManagerView: DocumentManagerContainer;
-    
+
     constructor(dockManager : DockManager) {
         this.dockManager = dockManager;
         this.model = new DockModel();
