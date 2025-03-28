@@ -193,66 +193,68 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
     get cellType(): string { return 'JIRA Ticket'; }
     get defaultWidth(): number | null { return 100; }
 
-    setOfTickets = new Set<string>();
-    setOfGrids = new Set<DG.Grid>();
     currentTimeout: any = null;
-    isRunning: boolean = false;
-    onTimeoutComplete: Map<string, DG.Grid[]> = new Map<string, DG.Grid[]>();
+    isRunning: boolean = false; 
+    loadedTickets: Set<string> = new Set<string>();
+    cellsToLoad: DG.GridCell[] = [];
+    cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
 
-    loadData(ticket: string, grid: DG.Grid) {
-        this.setOfTickets.add(ticket);
-        this.setOfGrids.add(grid);
+    loadData( gridCell: DG.GridCell) {
+        let found = this.cellsToLoad.filter((e) => {
+            return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn.name === gridCell.gridColumn.name && e.gridRow === gridCell.gridRow
+        }) ?? [];
 
         if (this.isRunning) {
-            if(this.onTimeoutComplete.has(ticket))
-                this.onTimeoutComplete.get(ticket)?.push(grid);
-            else
-                this.onTimeoutComplete.set(ticket, [grid])
+            if (found.length === 0)
+                this.cellsToLoadOnTimeoutComplete.push(gridCell)
             return;
         }
 
+        if (found.length === 0)
+            this.cellsToLoad.push(gridCell)
+
         if (this.currentTimeout)
-            clearTimeout(this.currentTimeout); 
-        
+            clearTimeout(this.currentTimeout);
+
         this.currentTimeout = setTimeout(async () => {
             this.isRunning = true;
             const jiraCreds = await getJiraCreds();
             if (!jiraCreds) {
-                this.setOfTickets.forEach((x) => {
-                    cache.set(x, null);
-                })
+                this.cellsToLoad.forEach((x) => {
+                    cache.set(x.cell.valueString, null);
+                });
                 return;
             }
             const chunkSize = 100;
-            const ticketKeys = Array.from(this.setOfTickets.keys());
+            const ticketKeys = this.cellsToLoad.map((e)=> e.cell.valueString);
             let index = 0;
             while (index < ticketKeys.length) {
-                const keysToLoad = ticketKeys.slice(index, index + chunkSize); 
+                const keysToLoad = ticketKeys.slice(index, index + chunkSize);
                 try {
                     const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
                         0, chunkSize, undefined, keysToLoad);
                     for (let issue of loadedIssues?.issues ?? []) {
-                        cache.set(issue.key, issue)
-                        this.setOfTickets.delete(issue.key)
+                        cache.set(issue.key, issue);
+                        this.loadedTickets.add(issue.key);
                     }
                 } catch (error) {
                     console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
                 }
                 index += chunkSize;
             }
-            this.setOfTickets.forEach((x) => {
-                cache.set(x, null);
-            })
+            this.cellsToLoad.forEach((x) => {
+                if(!this.loadedTickets.has(x.cell.valueString))
+                    cache.set(x.cell.valueString, null);
+                x.grid.invalidate();
+            }) 
 
-            for (let grid of this.setOfGrids)
-                grid.invalidate();
-            this.setOfGrids.clear();
-            this.setOfTickets.clear();
+            this.loadedTickets.clear();
+            this.cellsToLoad = []
             this.currentTimeout = null;
             this.isRunning = false;
-            if(this.onTimeoutComplete.size > 0)
-                this.onTimeoutComplete.forEach((grids, key)=>{ grids.forEach((grid)=>this.loadData(key, grid))})
-            this.onTimeoutComplete.clear();
+            if (this.cellsToLoadOnTimeoutComplete.length > 0)
+                this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.loadData(cell) })
+            this.cellsToLoadOnTimeoutComplete = [];
         }, 300);
     }
 
@@ -274,9 +276,8 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
             }
         };
 
-        if (!cache.has(key)) {
-            this.loadData(key, gridCell.grid);
-        }
+        if (!cache.has(key)) 
+            this.loadData(gridCell);        
         else {
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
