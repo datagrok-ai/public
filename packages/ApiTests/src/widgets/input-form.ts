@@ -88,8 +88,8 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
     expect(inputs['with_choices'].value, '0');
-  });
-}, {skipReason: 'Skipped for 1.25.0'});
+  }, {skipReason: 'Skipped for 1.25.0'});
+});
 
 category('Widgets: InputForm API', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -274,8 +274,8 @@ category('Widgets: InputForm API', () => {
     expect(newForm2.getInput('choiceInput').value, '1');
     expect(newFuncCall2.inputs['tableInput'], null);
     expect(newForm2.getInput('tableInput').value, null);
-  });
-}, {skipReason: 'Skipped for 1.25.0'});
+  }, {skipReason: 'Skipped for 1.25.0'});
+});
 
 
 category('Widgets: InputForm w/ custom input', () => {

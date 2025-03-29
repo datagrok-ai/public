@@ -364,5 +364,5 @@ category('Dapi: functions', async () => {
     await grok.dapi.functions.calls.allPackageVersions().save(fc);
     await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(fc.id);
-  });
-}, {skipReason: 'Skipped for 1.25.0'});
+  }, {skipReason: 'Skipped for 1.25.0'});
+});
