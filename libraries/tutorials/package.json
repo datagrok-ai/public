@@ -8,13 +8,13 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.40.1",
     "@datagrok-libraries/utils": "^4.3.12",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10",
     "rxjs": "6.6.7"
   },
