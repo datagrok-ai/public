@@ -22,9 +22,9 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
 
 1. Install and launch the latest Docker Desktop application for your operating system:
 
-   - [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
-   - [Docker Desktop for MacOS](https://docs.docker.com/desktop/install/mac-install/)
-   - [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
+    - [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+    - [Docker Desktop for MacOS](https://docs.docker.com/desktop/install/mac-install/)
+    - [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
 
 2. Download the installation script based on your operating system:
 
@@ -33,13 +33,6 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
 
    Right-click
    on [this link](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.cmd) and
-   select "Save Link As..."
-
-   </TabItem>
-   <TabItem value="bash" label="MacOS(Apple Silicon)">
-
-   Right-click
-   on [this link](https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/docker/datagrok-install-local-macos-silicon.sh) and
    select "Save Link As..."
 
    </TabItem>
@@ -58,19 +51,9 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    <TabItem value="win" label="Windows" default>
 
    Double-click the downloaded script to begin the installation.
-
+   
    </TabItem>
-   <TabItem value="bash" label="MacOS (Apple Silicon)">
-
-   Open the command-line interface and navigate to the directory where you saved the script. Then, run
-   the following command:
-
-   ```shell
-   bash datagrok-install-local-macos-silicon.sh
-   ```
-
-   </TabItem>
-   <TabItem value="bash" label="MacOS/Linux (Intel)">
+   <TabItem value="bash" label="MacOS/Linux">
 
    Open the command-line interface and navigate to the directory where you saved the script. Then, run
    the following command:
@@ -79,7 +62,7 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    chmod +x datagrok-install-local.sh
    bash datagrok-install-local.sh
    ```
-
+   
    </TabItem>
    </Tabs>
 
