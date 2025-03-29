@@ -17,7 +17,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:1.0.0
+    image: datagrok/grok_pipe:1.0.1
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -33,7 +33,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:bleeding-edge
+    image: datagrok/datagrok:1.25.0
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
@@ -109,7 +109,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:bleeding-edge
+    image: datagrok/grok_connect:2.3.30
     platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50
@@ -164,7 +164,7 @@ services:
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:12.20
+    image: postgres:17.4
     platform: linux/amd64
     environment:
       POSTGRES_USER: postgres
