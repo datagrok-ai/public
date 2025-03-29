@@ -1,5 +1,9 @@
 # GIS changelog
 
+## 1.2.1 (2024-03-20)
+
+* Remove JSON handling leaving only geo/topo json. 
+
 ## 1.1.5 (2024-03-01)
 
 ### Bug Fixes

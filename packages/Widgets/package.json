@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/widgets",
   "friendlyName": "Widgets",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -13,13 +13,13 @@
     "directory": "packages/Widgets"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "dependencies": {
-    "datagrok-api": "^1.17.0",
+    "datagrok-api": "^1.25.0",
     "rxjs": "^6.5.5",
     "cash-dom": "^8.1.5"
   },

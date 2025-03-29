@@ -1,5 +1,13 @@
 # HitTriage changelog
 
+## 1.5.0 (2025-03-01)
+
+* Add caching to loaded campaigns.
+* Parallel loading of campaigns.
+* Lazy loading of function dialogs.
+* Fixes to url logic.
+* Working with new browse version.
+
 ## 1.4.4 (2025-02-07)
 
 * Fix permission check for admin members

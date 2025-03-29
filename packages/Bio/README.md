@@ -20,7 +20,7 @@ To convert sequences, go to **Bio** > **Convert** > **Notation...** and configur
 
 ![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
-See:
+See: 
 
 * [detectMacromolecule()](../Bio/detectors.js)
 * [class SeqHandler](../../libraries/bio/src/utils/seq-handler.ts)
@@ -111,7 +111,7 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 | positionMargin       | 0 or 4   | 4 - for sequences of multichar monomers, 0 - single char                                                                |
 | positionHeight       | '100%'   | choices: ['100%', 'Entropy'] The way to calculate overall monomers stack height at position                             |
 
-![Web Logo](../../help/visualize/viewers/web-logo-properties.gif "Web Logo")
+![Web Logo](../../help/visualize/viewers/img/web-logo-properties.gif "Web Logo")
 
 See also:
 

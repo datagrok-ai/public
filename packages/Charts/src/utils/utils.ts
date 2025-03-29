@@ -1,5 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
+export const ERROR_CLASS = 'd4-viewer-error';
 
 export namespace ts {
   /** A type guard function.
@@ -40,5 +42,17 @@ export namespace data {
       first: 'dataframe.getCol(columnName).get(0)',
     };
     return ts.hasProp(stats, aggregation) ? eval(stats[aggregation]) : null;
+  }
+}
+
+export namespace MessageHandler {
+  export function _showMessage(root: HTMLElement, msg: string, className: string) {
+    root.appendChild(ui.divText(msg, className));
+  }
+
+  export function _removeMessage(root: HTMLElement, className: string) {
+    const divTextElement = root.getElementsByClassName(className)[0];
+    if (divTextElement)
+      root.removeChild(divTextElement);
   }
 }

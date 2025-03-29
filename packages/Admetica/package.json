@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -13,10 +13,10 @@
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
-    "@datagrok-libraries/utils": "^4.4.2",
+    "@datagrok-libraries/tutorials": "^1.6.0",
+    "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
@@ -44,9 +44,10 @@
     "release-admetica-local2": "grok publish local2 --rebuild --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "category": "Cheminformatics"
 }

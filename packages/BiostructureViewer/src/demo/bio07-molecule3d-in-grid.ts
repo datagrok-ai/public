@@ -43,6 +43,7 @@ export async function demoBio07NoScript(): Promise<void> {
     const pdbStr: string = df.currentCell.value;
     const viewer = (await df.plot.fromType('Biostructure', {
       pdb: pdbStr,
+      biostructureIdColumnName: pdbColName,
     })) as unknown as MolstarViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.5);
 

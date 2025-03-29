@@ -25,7 +25,7 @@ export const richFunctionViewReport = async (
   format: string,
   func: DG.Func,
   lastCall: DG.FuncCall,
-  dfToViewerMapping: {[key: string]: DG.Viewer[]},
+  dfToViewerMapping: {[key: string]: (DG.Viewer | undefined)[]},
 ) => {
   const sheetNamesCache = {} as Record<string, string>;
 
@@ -66,10 +66,12 @@ export const richFunctionViewReport = async (
 
       const plotToSheet = async (
         sheet: ExcelJS.Worksheet,
-        viewer: DG.Viewer,
+        viewer: DG.Viewer | undefined,
         columnForImage: number, rowForImage = 0,
         options?: { heightInCells?: number, widthInCells?: number, widthToRender: number, heightToRender: number},
       ) => {
+        if (!viewer || !viewer.dataFrame)
+          return;
         const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
         newViewer.copyViewersLook(viewer);
 
@@ -152,9 +154,9 @@ export const richFunctionViewReport = async (
       }
 
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
-        const nonGridViewers = dfToViewerMapping[inputProp.name]
-          .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+        const nonGridViewers = (dfToViewerMapping[inputProp.name] ?? [])
+          .filter((viewer) => viewer && viewer.type !== DG.VIEWER.GRID)
+          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer!.type));
 
         if (nonGridViewers.length === 0) continue;
 
@@ -173,9 +175,9 @@ export const richFunctionViewReport = async (
       }
 
       for (const outputProp of func.outputs.filter((prop) => isDataFrame(prop))) {
-        const nonGridViewers = dfToViewerMapping[outputProp.name]
-          .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+        const nonGridViewers = (dfToViewerMapping[outputProp.name] ?? [])
+          .filter((viewer) => viewer && viewer.type !== DG.VIEWER.GRID)
+          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer!.type));
 
         if (nonGridViewers.length === 0) continue;
 
@@ -183,6 +185,8 @@ export const richFunctionViewReport = async (
         const currentDf = lastCall.outputs[outputProp.name];
 
         for (const [index, viewer] of nonGridViewers.entries()) {
+          if (!viewer)
+            continue;
           if (viewer.type === DG.VIEWER.STATISTICS) {
             const length = currentDf.columns.length;
             const stats = DG.DataFrame.fromColumns([
@@ -198,7 +202,7 @@ export const richFunctionViewReport = async (
               exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
               stats,
               currentDf.columns.length + 2,
-              (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+              (index > 0 && nonGridViewers[index-1]) ? Math.ceil(nonGridViewers[index-1]!.root.clientHeight / 20) + 1 : 0,
             );
           } else {
             await plotToSheet(
@@ -214,7 +218,9 @@ export const richFunctionViewReport = async (
 
       const buffer = await exportWorkbook.xlsx.writeBuffer();
 
-      return new Blob([buffer], {type: BLOB_TYPE});
+      const blob =  new Blob([buffer], {type: BLOB_TYPE});
+
+      return [blob, exportWorkbook] as const;
     } catch (e) {
       console.log(e);
     } finally {
@@ -225,6 +231,15 @@ export const richFunctionViewReport = async (
 
   throw new Error('Format is not supported');
 };
+
+export const reportFuncCallExcel = async(funccall: DG.FuncCall) => {
+  return richFunctionViewReport(
+    'Excel',
+    funccall.func,
+    funccall,
+    dfToViewerMapping(funccall),
+  );
+}
 
 export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
   const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
@@ -1048,7 +1063,9 @@ export const scalarsToSheet =
   };
 
 let dfCounter = 0;
-export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
+export const dfToSheet = (sheet: ExcelJS.Worksheet, df?: DG.DataFrame, column?: number, row?: number) => {
+  if (!df)
+    return;
   const columnKey = sheet.getColumn(column ?? 1).letter;
   const tableConfig = {
     name: `ID_${dfCounter.toString()}`,
@@ -1101,7 +1118,7 @@ const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_F
 export const dfToViewerMapping = (funcCall: DG.FuncCall) => {
   const func = funcCall.func;
 
-  const mapping = {} as Record<string, DG.Viewer[]>;
+  const mapping = {} as Record<string, (DG.Viewer | undefined)[]>;
   Promise.all(func.inputs
     .filter((output) => isDataFrame(output))
     .map(async (p) => {
@@ -1123,7 +1140,9 @@ export const dfToViewerMapping = (funcCall: DG.FuncCall) => {
   return mapping;
 };
 
-const configToViewer = async (df: DG.DataFrame, config: Record<string, any>) => {
+const configToViewer = async (df: DG.DataFrame | undefined, config: Record<string, any>) => {
+  if (!df)
+    return;
   const type = config['type'];
   const viewer = await df.plot.fromType(type) as DG.Viewer;
   viewer.setOptions(config);

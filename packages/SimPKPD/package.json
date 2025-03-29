@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/simpkpd",
   "friendlyName": "SimPKPD",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "PKPD simulations tools",
   "author": {
     "name": "Viktor Makarichev",
@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "^4.5.0",
     "@datagrok/compute": "^1.39.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.20.1",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "ts-loader": "^9.5.0"
   },
@@ -43,7 +43,7 @@
     "test-local": "grok test --host localhost"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

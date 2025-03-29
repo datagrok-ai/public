@@ -407,31 +407,31 @@ export const RichFunctionView = Vue.defineComponent({
       const currentMeta = callMeta.value;
       for (const inputParam of currentCall.value.inputParams.values()) {
         const meta$ = currentMeta?.[inputParam.name];
-        const range: RangeDescription  = {...(meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {})};
+        const range: RangeDescription = {...(meta$?.value?.[specificRangeName] ?? meta$?.value?.['range'] ?? {})};
         if (range.default == null)
           range.default = inputParam.value;
         ranges[inputParam.name] = range ?? {};
       }
       return ranges;
-    }
+    };
 
     const getTargets = () => {
       const targets: Record<string, TargetDescription> = {};
       const currentMeta = callMeta.value;
       for (const outputParam of currentCall.value.outputParams.values()) {
         const meta$ = currentMeta?.[outputParam.name];
-        const target: RangeDescription  = {...(meta$?.value?.['targetFitting'] ?? {})};
+        const target: RangeDescription = {...(meta$?.value?.['targetFitting'] ?? {})};
         if (target.default == null)
           target.default = outputParam.value;
         targets[outputParam.name] = target ?? {};
       }
       return targets;
-    }
+    };
 
     const runSA = () => {
       const ranges = getRanges('rangeSA');
       SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
-    }
+    };
 
     const isLocked = Vue.ref(false);
 
@@ -451,7 +451,7 @@ export const RichFunctionView = Vue.defineComponent({
       } finally {
         isLocked.value = false;
       }
-    }
+    };
 
     return () => {
       let lastCardLabel = null as string | null;
@@ -528,20 +528,18 @@ export const RichFunctionView = Vue.defineComponent({
             </RibbonMenu>)
           }
           <RibbonPanel view={currentView.value}>
-            { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
-              caption={ui.iconFA('arrow-to-bottom')}
-              items={['Excel']}
-              onSelected={({item: format}) => {
-                Utils.richFunctionViewReport(
-                  format,
+            { isReportEnabled.value && !isOutputOutdated.value && <IconFA
+              name='arrow-to-bottom'
+              onClick={async () => {
+                const [blob] = await Utils.richFunctionViewReport(
+                  'Excel',
                   currentCall.value.func,
                   currentCall.value,
                   Utils.dfToViewerMapping(currentCall.value),
-                ).then((blob) =>
-                  DG.Utils.download(`${currentCall.value.func.nqName} -
-                  ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
+                );
+                DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
               }}
-              tooltip='Generate a report for the current step'
+              tooltip='Generate standard report for the current step'
             />}
             { isSAenabled.value && <IconFA
               name='analytics'

@@ -867,6 +867,9 @@ export class FileInfo extends Entity {
   /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv` */
   get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.dart); }
 
+  /** Returns URL path, i.e. `Demo.TestJobs.Files.DemoFiles/geo/dmv_offices.csv` */
+  get viewPath(): string { return api.grok_FileInfo_Get_ViewPath(this.dart); }
+
   /** Returns file extension, i.e. `csv` */
   get extension(): string { return api.grok_FileInfo_Get_Extension(this.dart); }
 

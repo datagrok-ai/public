@@ -12,9 +12,6 @@ export interface IBarChartSettings {
   /// Determines what happens when you click on a bar.
   onClick: keyof typeof RowGroupAction;
 
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
-
   /// Value column. See *Value Aggr Type* for aggregation options.
   value: string;
   valueColumnName: string;
@@ -246,7 +243,7 @@ export interface IBoxPlotSettings {
 
   labelOrientation: keyof typeof TextOrientation;
 
-  /// Display subcategories - category combibations in the x axis table.
+  /// Display subcategories - category combinations in the x axis table.
   showMinorCategories: boolean;
 
   value: string;
@@ -329,6 +326,8 @@ export interface IBoxPlotSettings {
 
   statistics: Array<string>;
 
+  viewport: string;
+
   autoLayout: boolean;
 
   plotStyle: string;
@@ -387,7 +386,10 @@ export interface IBoxPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -450,7 +452,10 @@ export interface ICalendarSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -549,7 +554,10 @@ export interface IConfusionMatrixSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -608,7 +616,10 @@ export interface ICorrelationPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -701,7 +712,10 @@ export interface IDensityPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -1104,7 +1118,10 @@ export interface IGridSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -1335,7 +1352,10 @@ export interface IHistogramSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -1599,7 +1619,10 @@ export interface ILineChartSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -1691,7 +1714,10 @@ export interface IMapViewerSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -1801,7 +1827,10 @@ export interface IMatrixPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2093,7 +2122,10 @@ export interface IPcPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2155,9 +2187,6 @@ export interface IPieChartSettings {
   /// Action to be performed when you click on a pie
   onClick: keyof typeof RowGroupAction;
 
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
-
   startAngle: number;
 
   maxRadius: number;
@@ -2206,7 +2235,10 @@ export interface IPieChartSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2264,7 +2296,10 @@ export interface IPivotViewerSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2316,7 +2351,10 @@ export interface IRocCurveSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2548,9 +2586,6 @@ export interface IScatterPlotSettings {
 
   mouseDrag: string;
 
-  /// Determines whether viewer exists in a trellis plot as an innerViewer
-  isInTrellisPlot: boolean;
-
   /// When true, lasso area selector is used instead of the rectangular one.
   /// Toggle this option by pressing L.
   lassoTool: boolean;
@@ -2636,7 +2671,10 @@ export interface IScatterPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2740,7 +2778,10 @@ export interface IScatterPlot3dSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2835,7 +2876,10 @@ export interface IStatsViewerSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -2957,7 +3001,10 @@ export interface ITileViewerSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -3039,7 +3086,10 @@ export interface ITreeMapSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
@@ -3135,7 +3185,10 @@ export interface ITrellisPlotSettings {
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;

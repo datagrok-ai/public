@@ -735,7 +735,7 @@ export class TestTrack extends DG.ViewBase {
         errorLabel = 'Blocker'
       if (errorTypeSelector.value === MINORFAIL)
         errorLabel = 'MinorError'
-      console.log(ticketPriorityLevel[errorTypeSelector.value]);
+      console.log(ticketPriorityLevel[errorLabel]);
       console.log(errorTypeSelector.value);
       grok.functions.call('UsageAnalysis:JiraCreateIssue', {
         'createRequest': JSON.stringify({
@@ -749,9 +749,7 @@ export class TestTrack extends DG.ViewBase {
               'name': 'Bug',
             },
             'labels': [
-              'TestTrack',
-              errorSeverityLevelJiraNames[errorTypeSelector.value],
-              this.version
+              'TestTrack'
             ],
             'priority': {
               'name': ticketPriorityLevel[errorTypeSelector.value]

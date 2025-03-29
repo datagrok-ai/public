@@ -1,8 +1,8 @@
-import { TabHost } from "./TabHost.js";
-import { TabPage } from "./TabPage.js";
-import { Utils } from "./Utils.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { PanelContainer } from "./PanelContainer.js";
+import { TabHost } from "./TabHost";
+import { TabPage } from "./TabPage";
+import { Utils } from "./Utils";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { PanelContainer } from "./PanelContainer";
 
 /**
  * Specialized tab page that doesn't display the panel's frame when docked in a tab page

@@ -17,22 +17,24 @@ import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
-  parentTable: DG.DataFrame, axesColsNames: string[], labelsColName: string) : DG.ScatterPlotViewer {
+  parentTable: DG.DataFrame, axesColsNames: string[], labelsColName: string, colorByActivityName: string) : DG.ScatterPlotViewer {
   parentTable.columns.addNewFloat(axesColsNames[0]);
   parentTable.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(parentTable, {
     x: axesColsNames[0],
     y: axesColsNames[1],
     zoomAndFilter: 'no action',
-    //color: activities.name,
+    color: colorByActivityName,
     showXSelector: false,
     showXAxis: false,
     showYSelector: false,
     showYAxis: false,
-    showColorSelector: false,
+    showColorSelector: true,
     showSizeSelector: false,
-    markerDefaultSize: 7,
+    markerDefaultSize: 4,
     displayLabels: 'Auto',
+    markerType: 'circle',
+    jitterSize: 5,
   });
   //temporary fix (to save backward compatibility) since labels
   //option type has been changed from string to array in 1.23 platform version

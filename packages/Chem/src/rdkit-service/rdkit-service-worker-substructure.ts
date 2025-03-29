@@ -161,6 +161,50 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
+  async beautifyMoleculesV3K(molecules: string[]) {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules!.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item) {
+        results[i] = '';
+        continue;
+      }
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else {
+        isInCache = true;
+      }
+      if (rdMol) {
+        try {
+          rdMol.set_new_coords();
+          rdMol.normalize_depiction(1);
+          rdMol.straighten_depiction(true);
+          results[i] = rdMol.get_v3Kmolblock();
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   async convertMolNotation(molecules: string[], targetNotation: string): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
@@ -220,7 +264,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       }
     }
-    console.log('Finished Worker ' + results.length);
     return results;
   }
 

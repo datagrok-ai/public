@@ -2489,12 +2489,19 @@ export class ColumnColorHelper {
     return DG.COLOR_CODING_TYPE.OFF;
   }
 
+  private _setOutOfRangeLinearColors(belowMinColor?: string, aboveMaxColor?: string): void {
+    if (belowMinColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_LINEAR_BELOW_MIN_COLOR] = belowMinColor;
+    if (aboveMaxColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_LINEAR_ABOVE_MAX_COLOR] = aboveMaxColor;
+  }
+
   /** Enables linear color-coding on a column.
    * @param range - list of palette colors (ARGB integers; see {@link Color}).
-   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
+   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling and the colors for values below the minimum and above the maximum.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, belowMinColor?: string, max?: number, aboveMaxColor?: string} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2502,23 +2509,24 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = `${options.min}`;
     if (options?.max != null)
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
+    this._setOutOfRangeLinearColors(options?.belowMinColor, options?.aboveMaxColor);
   }
 
   /** Enables linear color-coding on a column with absolute values.
-   * @param colorMap - dictionary of values (either string or number) and colors (hex-values).
+   * @param valueColors - dictionary of numerical values and hex-colors.
+   * @param options - list of additional parameters, such as the colors for values below the minimum and above the maximum.
    *
-   * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats}}
+   * See samples: {@link https://public.datagrok.ai/js/samples/grid/color-coding/color-coding}}
    */
-  setLinearAbsolute(colorMap: {[index: number | string]: string} | null = null): void {
+  setLinearAbsolute(valueColors: {[value: number]: string}, options: {belowMinColor?: string, aboveMaxColor?: string} | null = null): void {
     this.column.tags[TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
-    if (colorMap != null) {
-      const orderedEntries = Object.entries(colorMap).sort(([a], [b]) => +a - +b);
-      const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
-      const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
-      this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
-      this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
-      this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
-    }
+    const orderedEntries = Object.entries(valueColors).sort(([a], [b]) => +a - +b);
+    const colors = orderedEntries.map(([_, value]) => Color.fromHtml(value));
+    const stringifiedObj = '{' + orderedEntries.map(([key, value]) => `"${key}":"${value}"`).join(',') + '}';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE] = 'true';
+    this.column.tags[TAGS.COLOR_CODING_LINEAR_ABSOLUTE] = stringifiedObj;
+    this.column.tags[TAGS.COLOR_CODING_LINEAR] = JSON.stringify(colors);
+    this._setOutOfRangeLinearColors(options?.belowMinColor, options?.aboveMaxColor);
   }
 
   setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {

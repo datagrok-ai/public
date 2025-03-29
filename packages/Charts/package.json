@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Oleksandra Serhiienko",
@@ -14,18 +14,20 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.2.9",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.0",
     "circos": "^2.1.0",
     "d3": "^7.8.1",
     "d3-sankey": "^0.12.3",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "echarts": "^5.0.0",
     "echarts-gl": "^2.0.9",
     "echarts-wordcloud": "^2.0.0",
     "rxjs": "6.5.5",
     "three": "^0.148.0",
-    "three-globe": "^2.24.13"
+    "three-globe": "^2.24.13",
+    "chokidar": "^3.5.2",
+    "ws": "^7.5.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -42,7 +44,7 @@
     "test": "grok test"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

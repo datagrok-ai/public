@@ -273,6 +273,7 @@ export class Utils {
 
       df.changeColumnType('result', COLUMN_TYPE.STRING);
       df.changeColumnType('logs', COLUMN_TYPE.STRING);
+      df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
         resultDF = df;      

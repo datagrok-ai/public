@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {filter, take} from 'rxjs/operators';
+import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
   ComputationView as ComputationViewInst,
@@ -23,12 +23,11 @@ export {
   makeAdvice as makeAdvice2,
   mergeValidationResults as mergeValidationResults2,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
-import {ModelCatalogView, ModelHandler, makeModelCatalog, makeModelTreeBrowser} from '@datagrok-libraries/compute-utils/model-catalog';
+import {ModelCatalogView, ModelHandler, startModelCatalog, makeModelTreeBrowser, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
 
-let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
 //name: openModelFromFuncall
@@ -64,42 +63,70 @@ export function PipelineStepEditor(call: DG.FuncCall) {
 //name: renderRestPanel
 //input: func func
 //output: widget panel
-export async function renderRestPanel(func: DG.Func): Promise<DG.Widget> {
-  const params: object = {};
-  func.inputs.forEach((i) => (<any>params)[i.name] = null);
-  const curl = `
-curl --location --request POST '${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run' \\
---header 'Authorization: ${getCookie('auth')}' \\
---header 'Content-Type: application/json' \\
---data-raw '${JSON.stringify(params)}'`;
-  const js = `
-var myHeaders = new Headers();
-myHeaders.append("Authorization", "${getCookie('auth')}");
-myHeaders.append("Content-Type", "application/json");
-
-var raw = JSON.stringify(${JSON.stringify(params)});
-
-var requestOptions = {
-  method: 'POST',
-  headers: myHeaders,
-  body: raw,
-  redirect: 'follow'
-};
-
-fetch("${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run", requestOptions)
-  .then(response => response.text())
-  .then(result => console.log(result))
-  .catch(error => console.log('error', error));`;
-  const tabs = ui.tabControl({'CURL': ui.div([ui.divText(curl)]), 'JS': ui.div([ui.divText(js)])});
-  return DG.Widget.fromRoot(tabs.root);
+export async function renderPanel(func: DG.Func): Promise<DG.Widget> {
+  return renderRestPanel(func);
 }
 
-function getCookie(name: string): string | undefined {
-  const matches = document.cookie.match(new RegExp(
-    '(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)',
-  ));
-  return matches ? decodeURIComponent(matches[1]) : undefined;
+let startUriLoaded = false;
+let initCompleted = false;
+
+const options = {
+  _package,
+  ViewClass: ModelCatalogView,
+  segment: 'Modelhub',
+  viewName: 'Model Hub',
+  funcName: 'modelCatalog',
+  setStartUriLoaded: () => startUriLoaded = true,
+  getStartUriLoaded: () => startUriLoaded,
 }
+
+//tags: init
+export function init() {
+  if (initCompleted)
+    return;
+
+  setModelCatalogHandler();
+  setModelCatalogEventHandlers(options);
+
+  initCompleted = true;
+}
+
+//name: Model Hub
+//tags: app
+//output: view v
+export function modelCatalog() {
+  return startModelCatalog(options);
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
+  await makeModelTreeBrowser(treeNode);
+}
+
+////
+// Compute-utils API section
+///
+
+export const testPipeline = testPipelineInst;
+export const CompView = ComputationViewInst;
+export const RFV = RichFunctionViewInst;
+export const CFV = CustomFunctionViewInst;
+export const Pipeline = PipelineViewInst;
+export const makeValidationResult = makeValidationResultInst;
+export const makeAdvice = makeAdviceInst;
+export const makeRevalidation = makeRevalidationInst;
+export const mergeValidationResults = mergeValidationResultsInst;
+export const fileInput = UiUtils.fileInput;
+export const historyInput = UiUtils.historyInput;
+export const historyInputJSON = UiUtils.historyInputJSON;
+export const historyPanel = UiUtils.historyPanel;
+
+
+////
+// For testing only
+///
+
 
 //name: CustomDataUploader
 //input: func func
@@ -160,48 +187,6 @@ export function CustomCustomizer(params: {defaultView: DG.TableView}) {
     'yColumnName': 'Time to cool',
   });
 }
-
-//tags: init
-export function init() {
-  if (initCompleted)
-    return;
-
-  if (!(DG.ObjectHandler.list().find((handler) => handler.type === 'Model')))
-    DG.ObjectHandler.register(new ModelHandler());
-
-
-  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-    const ent = acc.context;
-    if (ent == null)
-      return;
-    if (ent.type != 'script')
-      return;
-    const restPane = acc.getPane('REST');
-    if (!restPane)
-      acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
-  });
-
-  initCompleted = true;
-}
-
-let startUriLoaded = false;
-
-//name: Model Catalog
-//tags: app
-//output: view v
-//meta.browsePath: Compute
-export function modelCatalog() {
-  return makeModelCatalog({
-    _package,
-    ViewClass: ModelCatalogView,
-    HandlerCass: ModelHandler,
-    segment: 'Compute',
-    viewName: 'Model Catalog',
-    funcName: 'modelCatalog',
-    startUriLoaded,
-  }, () => startUriLoaded = true);
-}
-
 
 //name: SimTimeValidator
 //input: object params
@@ -299,25 +284,3 @@ export function ObjectCoolingSelector(params: any) {
     'ObjectCooling',
   );
 }
-
-//input: dynamic treeNode
-//input: view browseView
-export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  await makeModelTreeBrowser(treeNode, browseView);
-}
-
-//// Compute-utils API section
-
-export const testPipeline = testPipelineInst;
-export const CompView = ComputationViewInst;
-export const RFV = RichFunctionViewInst;
-export const CFV = CustomFunctionViewInst;
-export const Pipeline = PipelineViewInst;
-export const makeValidationResult = makeValidationResultInst;
-export const makeAdvice = makeAdviceInst;
-export const makeRevalidation = makeRevalidationInst;
-export const mergeValidationResults = mergeValidationResultsInst;
-export const fileInput = UiUtils.fileInput;
-export const historyInput = UiUtils.historyInput;
-export const historyInputJSON = UiUtils.historyInputJSON;
-export const historyPanel = UiUtils.historyPanel;

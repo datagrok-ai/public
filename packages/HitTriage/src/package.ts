@@ -5,15 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from './app/hit-triage-app';
 import {HitDesignApp} from './app/hit-design-app';
 import {GasteigerPngRenderer} from './pngRenderers';
-import {loadCampaigns} from './app/utils';
-import {AppName} from './app';
+import {loadCampaigns, timeoutOneTimeEventListener} from './app/utils';
+import {AppName, CampaignsType} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
-import {PeptiHitHelmColName} from './app/consts';
+import {CampaignJsonName, PeptiHitHelmColName} from './app/consts';
 import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
 export class HTPackage extends DG.Package {
   molToSmilesLruCache = new DG.LruCache<string, string>(2000);
+  campaignsCache: {[key in AppName]?: {[name: string]: CampaignsType[key]}} = {}
 
   convertToSmiles(mol: string): string {
     if (!mol)
@@ -22,28 +23,58 @@ export class HTPackage extends DG.Package {
       (mol) => grok.chem.convert(mol, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles),
     );
   }
+
+  async loadCampaigns<T extends AppName>(appName: T, deletedCampaigns?: string[]) {
+    if (!this.campaignsCache[appName]) {
+      this.campaignsCache[appName] = (await loadCampaigns(appName, deletedCampaigns ?? [])) as typeof this.campaignsCache[T];
+    }
+    return this.campaignsCache[appName]! as { [name: string]: CampaignsType[T] };
+  }
+
+  async saveCampaignJson<T extends AppName>(appName: T, campaign: CampaignsType[T]) {
+    const path = `${appName}/campaigns/${campaign.name}/${CampaignJsonName}`;
+    await grok.dapi.files.writeAsText(path, JSON.stringify(campaign));
+    (this.campaignsCache[appName] as { [name: string]: CampaignsType[T] })[campaign.name] = campaign as any;
+  }
+
 }
 
 export const _package = new HTPackage();
 
-async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
+async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel, name: AppName) {// TODO: DG.BrowseView
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
   const loaderItem = treeNode.item(loaderDiv);
-  const camps = await loadCampaigns(name, []);
+  const camps = (await _package.loadCampaigns(name, []));
+  let prevTable: DG.TableView | null = null;
+  let firstTemplate = true;
 
   for (const [_, camp] of Object.entries(camps)) {
-    const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
-    if (!savePath || !(await grok.dapi.files.exists(savePath)))
-      continue;
+    
     const templateName = camp.templateName ?? camp.template?.name;
-    const templateGroup = templateName ? treeNode.getOrCreateGroup(templateName) : treeNode;
+    const templateGroup = templateName ? treeNode.getOrCreateGroup(templateName, null, firstTemplate) : treeNode;
+    firstTemplate = false;
     const node = templateGroup.item(camp.friendlyName ?? camp.name);
-    node.onSelected.subscribe(async (_) => {
+    
+    node.root.addEventListener('dblclick', (e) => {
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      e.preventDefault();
+
+    });
+
+    DG.debounce(node.onSelected, 200).subscribe(async (_) => {
+      console.log('selected');
       try {
+        const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
+      if (!savePath || !(await grok.dapi.files.exists(savePath))) {
+        grok.shell.error('File not found: ' + savePath);
+        return;
+      }
         const df = await grok.dapi.files.readCsv(savePath);
         if (!df)
           return;
+        df.name = camp.friendlyName ?? camp.name;
         const semtypeInfo = camp.columnSemTypes;
         if (semtypeInfo) {
           for (const [colName, semType] of Object.entries(semtypeInfo)) {
@@ -58,11 +89,41 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
             }
           }
         }
-        const tv = DG.TableView.create(df, false);
-        browseView.preview = tv;
-        const layout = camp.layout;
-        if (layout)
-          tv.loadLayout(DG.ViewLayout.fromViewState(layout));
+        const activeElement = document.activeElement;
+        let clicked = false;
+        function resetActiveElement() {
+          setTimeout(() => {
+            if (!clicked && activeElement && document.activeElement !== activeElement)
+              activeElement && 'focus' in activeElement && (activeElement as HTMLElement).focus();
+          })
+        }
+        window.addEventListener('focusout', resetActiveElement);
+        try {
+          if (prevTable)
+            prevTable.close();
+        } catch (e) {}
+        //timeoutOneTimeEventListener(activeElement as HTMLElement, 'focusout', () => resetActiveElement())
+        try {
+          prevTable = grok.shell.addTableView(df);
+          const layout = camp.layout;
+          if (layout)
+            prevTable.loadLayout(DG.ViewLayout.fromViewState(layout));
+        } catch (e) {
+          console.error(e);
+        }
+        function removeListeners() {
+          window.removeEventListener('focusout', resetActiveElement);
+        }
+        function clickListener() {
+          removeListeners();
+          clicked = true;
+        }
+        window.addEventListener('click', clickListener, {once: true});
+
+        setTimeout(() => {
+          removeListeners();
+          window.removeEventListener('click', clickListener);
+        }, 5000);
       } catch (e) {
         console.error(e);
       }
@@ -73,20 +134,20 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
 
 //input: dynamic treeNode
 //input: view browseView
-export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
-  await hitAppTB(treeNode, browseView, 'Hit Triage');
+export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browsePanel, 'Hit Triage');
 }
 
 //input: dynamic treeNode
 //input: view browseView
-export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
-  await hitAppTB(treeNode, browseView, 'Hit Design');
+export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browsePanel, 'Hit Design');
 }
 
 //input: dynamic treeNode
 //input: view browseView
-export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
-  await hitAppTB(treeNode, browseView, 'PeptiHit');
+export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browsePanel, 'PeptiHit');
 }
 
 //tags: app

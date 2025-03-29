@@ -3,37 +3,38 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1211,
-      "height": 582
+      "width": 1194,
+      "height": 863
     },
     "children": [
       {
         "containerType": "vertical",
         "state": {
-          "width": 602,
-          "height": 582
+          "width": 579,
+          "height": 863
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 602,
-              "height": 287,
+              "width": 579,
+              "height": 415,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 602,
-                  "height": 287,
+                  "width": 579,
+                  "height": 415,
                   "element": {
-                    "id": "008b6c10-ed50-11ed-d222-bf9906e2bbe2",
+                    "id": "4745f060-e920-11ef-c0e5-8b28065a865d",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
                       "showAddNewRowIcon": true,
                       "addNewRowOnLastRowEdit": true,
+                      "colHeaderHeight": 39,
                       "rowHeight": 100,
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
@@ -42,123 +43,202 @@
                           "width": 44,
                           "backgroundColor": 4294440951,
                           "customName": "",
-                          "cellType": "row header"
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
                           "width": 89,
                           "columnName": "molregno",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
                           "width": 200,
                           "columnName": "canonical_smiles",
-                          "cellType": "Molecule"
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 186,
-                          "columnName": "NumSaturatedHeterocycles",
-                          "cellType": "number"
+                          "isColorCoded": true,
+                          "width": 70,
+                          "columnName": "RingCount",
+                          "cellType": "number",
+                          "colorCodingType": "Linear",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 181,
-                          "columnName": "NumAliphaticHeterocycles",
-                          "cellType": "number"
-                        },
-                        {
-                          "width": 177,
-                          "columnName": "NumAliphaticCarbocycles",
-                          "cellType": "number"
-                        },
-                        {
-                          "width": 78,
+                          "width": 65,
                           "columnName": "NOCount",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 143,
-                          "columnName": "NumSaturatedRings",
-                          "cellType": "number"
+                          "width": 49,
+                          "columnName": "NHOHCount",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 178,
-                          "columnName": "NumAromaticCarbocycles",
-                          "cellType": "number"
+                          "width": 52,
+                          "columnName": "NumHDonors",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 65,
+                          "columnName": "NumHAcceptors",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 99,
+                          "columnName": "NumSaturatedHeterocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 95,
+                          "columnName": "NumAliphaticHeterocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 94,
+                          "columnName": "NumAliphaticCarbocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
                           "width": 96,
-                          "columnName": "NHOHCount",
-                          "cellType": "number"
+                          "columnName": "NumSaturatedRings",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 86,
-                          "columnName": "RingCount",
-                          "cellType": "number"
+                          "width": 94,
+                          "columnName": "NumAromaticCarbocycles",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 146,
+                          "width": 96,
                           "columnName": "NumRotatableBonds",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 183,
+                          "width": 93,
                           "columnName": "NumAromaticHeterocycles",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 182,
+                          "width": 98,
                           "columnName": "NumSaturatedCarbocycles",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 129,
+                          "width": 77,
                           "columnName": "NumHeteroatoms",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 138,
+                          "width": 90,
                           "columnName": "NumAliphaticRings",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 105,
+                          "width": 62,
                           "columnName": "FractionCSP3",
                           "customFormat": "0.00000",
                           "cellType": "number",
-                          "format": "0.00000"
+                          "format": "2 significant digits",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 127,
+                          "width": 82,
                           "columnName": "HeavyAtomCount",
-                          "cellType": "number"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
-                          "width": 139,
+                          "width": 95,
                           "columnName": "NumAromaticRings",
-                          "cellType": "number"
-                        },
-                        {
-                          "width": 122,
-                          "columnName": "NumHAcceptors",
-                          "cellType": "number"
-                        },
-                        {
-                          "width": 104,
-                          "columnName": "NumHDonors",
-                          "cellType": "number"
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~canonical_smilesMorganFingerprints"
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
                           "width": 93,
                           "columnName": "Embed_X_1",
-                          "cellType": "number"
+                          "customFormat": "0.000000000",
+                          "cellType": "number",
+                          "format": "3 significant digits",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         },
                         {
                           "width": 92,
                           "columnName": "Embed_Y_1",
-                          "cellType": "number"
+                          "customFormat": "0.000000000",
+                          "cellType": "number",
+                          "format": "3 significant digits",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~canonical_smiles.Morgan",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         }
                       ]
                     },
@@ -173,18 +253,23 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 602,
-              "height": 294,
+              "width": 579,
+              "height": 447,
               "element": {
-                "id": "008bba30-ed50-11ed-8d00-dffe5444f3f1",
+                "id": "47461770-e920-11ef-cf13-23df80d80094",
                 "type": "Scatter plot",
                 "look": {
                   "#type": "ScatterPlotLook",
                   "xColumnName": "Embed_X_1",
                   "yColumnName": "Embed_Y_1",
+                  "colorColumnName": "FractionCSP3",
+                  "sizeColumnName": "RingCount",
                   "markerMinSize": 3,
                   "markerMaxSize": 20,
-                  "viewport": "",
+                  "labelColumnNames": [
+                    "canonical_smiles"
+                  ],
+                  "legendPosition": "Right",
                   "title": "Chem space"
                 },
                 "title": "Chem space"
@@ -197,17 +282,17 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 608,
-          "height": 582
+          "width": 614,
+          "height": 863
         },
         "children": [
           {
             "containerType": "panel",
             "state": {
-              "width": 608,
-              "height": 235,
+              "width": 614,
+              "height": 348,
               "element": {
-                "id": "008c0850-ed50-11ed-cc83-d1cdb1b30947",
+                "id": "47463e80-e920-11ef-a87b-9937fd95f8ff",
                 "type": "Chem Similarity Search",
                 "look": {
                   "#type": "JsViewerHostLook",
@@ -215,9 +300,9 @@
                   "limit": 12,
                   "distanceMetric": "Tanimoto",
                   "size": "small",
+                  "rowSource": "All",
                   "moleculeColumnName": "canonical_smiles",
                   "moleculeProperties": [],
-                  "applyColorTo": "background",
                   "cutoff": 0.01,
                   "followCurrentRow": true
                 },
@@ -229,10 +314,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 608,
-              "height": 94,
+              "width": 614,
+              "height": 138,
               "element": {
-                "id": "008c7d80-ed50-11ed-da62-63d126bd074a",
+                "id": "47463e80-e920-11ef-92f3-110d4baf7761",
                 "type": "Markup",
                 "look": {
                   "#type": "MarkupViewerLook",
@@ -246,10 +331,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 608,
-              "height": 251,
+              "width": 614,
+              "height": 375,
               "element": {
-                "id": "008c7d80-ed50-11ed-a1b2-8d39e43907e5",
+                "id": "47463e80-e920-11ef-d171-f56e6b0f6333",
                 "type": "Chem Diversity Search",
                 "look": {
                   "#type": "JsViewerHostLook",
@@ -257,9 +342,9 @@
                   "limit": 12,
                   "distanceMetric": "Tanimoto",
                   "size": "small",
+                  "rowSource": "All",
                   "moleculeColumnName": "canonical_smiles",
-                  "moleculeProperties": [],
-                  "applyColorTo": "background"
+                  "moleculeProperties": []
                 },
                 "title": "Chem Diversity Search"
               }
@@ -270,96 +355,141 @@
       }
     ],
     "floating": [],
-    "tableId": "42992bc0-ed50-11ed-d640-bd8759dd83d2",
-    "tableName": "Table"
+    "tableId": "55fb0100-e920-11ef-c770-af2db608d60c",
+    "tableName": "Table (2)"
   },
   "columns": [
     {
-      "name": "canonical_smiles",
-      "type": "string",
-      "semType": "Molecule",
-      "id": "4299ef10-ed50-11ed-d685-f121e513c6b3",
-      "friendlyName": "Canonical_smiles",
-      "entityTags": [
-        {
-          "tag": ".id",
-          "id": "008ccba0-ed50-11ed-da36-59840a545729"
-        },
-        {
-          "tag": "units",
-          "id": "008ccba0-ed50-11ed-f7b5-a5e1ad50f185"
-        },
-        {
-          "tag": "quality",
-          "id": "008cf2b0-ed50-11ed-9d26-6f3bbec3239e"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "008cf2b0-ed50-11ed-83eb-f572c3946119"
-        },
-        {
-          "tag": "cell.renderer",
-          "id": "008cf2b0-ed50-11ed-a2af-4b992d2f0ed3"
-        },
-        {
-          "tag": ".invalideted.for.version",
-          "id": "008cf2b0-ed50-11ed-9b0e-e7fb0f59072d"
-        },
-        {
-          "tag": ".Morgan.Column",
-          "id": "008d19c0-ed50-11ed-c0b1-e79faba5c7bb"
-        },
-        {
-          "tag": ".Morgan.Version",
-          "id": "008d19c0-ed50-11ed-8a03-816debaf9db0"
-        }
-      ],
-      "metaParams": {
-        ".id": "4299ef10-ed50-11ed-d685-f121e513c6b3",
-        "units": "smiles",
-        "quality": "Molecule",
-        ".semantic-detection-duration": "162",
-        "cell.renderer": "Molecule",
-        ".invalideted.for.version": "9",
-        ".Morgan.Column": "~canonical_smilesMorganFingerprints",
-        ".Morgan.Version": "9"
-      }
-    },
-    {
       "name": "Embed_X_1",
       "type": "double",
-      "id": "008d40d0-ed50-11ed-b3c0-430f40050dfd",
+      "id": "4746b3b0-e920-11ef-b844-fd03e882f196",
       "friendlyName": "Embed_ X_1",
       "entityTags": [
         {
+          "tag": "format",
+          "id": "4746b3b0-e920-11ef-ae68-8d4290582a83"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "4746b3b0-e920-11ef-e311-57d181cc03c3"
+        },
+        {
           "tag": ".semantic-detection-duration",
-          "id": "008d40d0-ed50-11ed-ba8d-e5040aab1d68"
+          "id": "4746b3b0-e920-11ef-d9b3-612a41b2e43c"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "0"
+        "format": "3 significant digits",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "3"
       }
     },
     {
       "name": "Embed_Y_1",
       "type": "double",
-      "id": "008d67e0-ed50-11ed-bf53-6d52077059ab",
+      "id": "4746dac0-e920-11ef-a6b2-3183d205724b",
       "friendlyName": "Embed_ Y_1",
       "entityTags": [
         {
+          "tag": "format",
+          "id": "4746dac0-e920-11ef-d0d1-55d6d3729d9e"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "4746dac0-e920-11ef-a2cd-dfdad0980e22"
+        },
+        {
           "tag": ".semantic-detection-duration",
-          "id": "008d67e0-ed50-11ed-cf47-9500b214a90a"
+          "id": "4746dac0-e920-11ef-9988-e966cbce48cd"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "0"
+        "format": "3 significant digits",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "8"
+      }
+    },
+    {
+      "name": "FractionCSP3",
+      "type": "double",
+      "id": "474701d0-e920-11ef-b20e-2da8c777836b",
+      "friendlyName": "Fraction CS P3",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "4746dac0-e920-11ef-8cac-1bc5871c4fd3"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "4746dac0-e920-11ef-b08b-15f3929bf3bd"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "474701d0-e920-11ef-bd97-65dcb66d9c97"
+        }
+      ],
+      "metaParams": {
+        "format": "2 significant digits",
+        ".source-precision": "5",
+        ".semantic-detection-duration": "2"
+      }
+    },
+    {
+      "name": "RingCount",
+      "type": "int",
+      "id": "474701d0-e920-11ef-cdde-9f8f4e93a82f",
+      "friendlyName": "Ring Count",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "474701d0-e920-11ef-f129-03a47d90d45b"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "474701d0-e920-11ef-ffde-7f598f038fcc"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5",
+        ".color-coding-type": "Linear"
+      }
+    },
+    {
+      "name": "canonical_smiles",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "474728e0-e920-11ef-cc04-3b8073dfdd00",
+      "friendlyName": "Canonical_smiles",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "474701d0-e920-11ef-a29b-332760977cca"
+        },
+        {
+          "tag": "units",
+          "id": "474701d0-e920-11ef-d068-450ee8f576fe"
+        },
+        {
+          "tag": "quality",
+          "id": "474728e0-e920-11ef-8130-77383f87c9f3"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "474728e0-e920-11ef-dfbc-79b9e9d16f83"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "14",
+        "units": "smiles",
+        "quality": "Molecule",
+        "cell.renderer": "Molecule"
       }
     }
   ],
-  "name": "Table",
-  "friendlyName": "Table",
+  "name": "Table2",
+  "friendlyName": "Table (2)",
   "author": {
-    "id": "17e48710-7820-11ed-e531-353563a9ca73"
+    "id": "cb276bc0-6280-11ee-82f7-8dc8dd5df45b"
   },
-  "createdOn": "2023-05-12T19:48:43.981Z"
+  "createdOn": "2025-03-28T13:33:48.003Z"
 }

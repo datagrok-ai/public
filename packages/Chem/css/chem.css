@@ -668,18 +668,17 @@
   position: absolute;
   z-index: 1;
   right: 0px;
-  padding-top: 30px;
+  margin-right: 10px;
 }
 
 .mmpa-slider-input {
   margin-left: 5px;
   padding-right: 5px;
-  width: 150px;
 }
 
 .mmpa-slider-input > .ui-input-label {
-  min-width: 50px;
-  max-width: 50px;
+  min-width: 80px;
+  max-width: 80px;
   margin-right: 0px !important;
 }
 
@@ -688,7 +687,7 @@
 }
 
 .mmpa-slider-input > .ui-input-options {
-  width: 40px;
+  width: 45px;
 }
 
 .mmp-pairs-grid-cliffs-tab.cliffs-closed {
@@ -781,6 +780,10 @@
   padding: 5px;
 }
 
+.chem-mmp-trellis-plot {
+  height: 100%!important;
+}
+
 .chem-mmp-trellis-plot div[name="viewer selector"] {
   display: none;
 }
@@ -793,6 +796,20 @@
   padding-left: 7px;
   padding-top: 4px;
 }
+
+.chem-mmp-trellis-filters-div {
+  height: 100%;
+  width: 100%;
+}
+
+.chem-mmp-trellis-filters-div.filters-closed {
+  display: none!important;
+}
+
+/* .chem-mmp-trellis-filters-div.filters-opened {
+  display: flex !important;
+  width: 100% !important;
+} */
 
 .mmp-trellis-summary-col-dlg select {
   display: none;
@@ -854,4 +871,18 @@
 
 .chem-mmp-show-pairs-checkbox label {
   margin-right: 3px!important;
+}
+
+.chem-activity-cliffs-tooltip {
+  font-weight: bold;
+  justify-content: space-between;
+}
+
+.chem-activity-cliffs-context-panel {
+  font-weight: bold;
+  gap: 180px;
+}
+
+.chem-activity-cliffs-context-panel-content {
+  gap: 8px;
 }

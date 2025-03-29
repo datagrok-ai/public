@@ -122,7 +122,7 @@ export const History = Vue.defineComponent({
         if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
         await historyUtils.saveRun(fullCall);
         updateRun(fullCall);
-      } catch(e: any) {
+      } catch (e: any) {
         grok.shell.error(e);
       }
     };
@@ -155,7 +155,7 @@ export const History = Vue.defineComponent({
         historicalRuns.value.delete(id);
         Vue.triggerRef(historicalRuns);
         await Utils.saveIsFavorite(loadedRun, false);
-      } catch(e: any) {
+      } catch (e: any) {
         grok.shell.error(e);
       }
     };
@@ -221,7 +221,7 @@ export const History = Vue.defineComponent({
       currentGrid.value.columns.setOrder(cols);
     };
 
-    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), { flush: 'post' });
+    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), {flush: 'post'});
 
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;

@@ -144,7 +144,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
 
   const changeFuncCall = (uuid: string, call: DG.FuncCall) => {
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
-  }
+  };
 
   return {
     // driver,

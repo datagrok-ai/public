@@ -4,6 +4,7 @@ import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import type ExcelJS from 'exceljs';
 
 //
 // Pipeline public configuration
@@ -38,8 +39,11 @@ export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutation
 export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
 export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
-// TODO: utils and utils typings
-export type PipelineExport = HandlerBase<{ utils: any, state: PipelineState }, void>;
+
+export type ExportUtils = {
+  reportFuncCallExcel: (fc: DG.FuncCall) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+}
+export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<void>;
 
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
@@ -132,7 +136,6 @@ export type PipelineStepConfiguration<P, S> = {
 };
 
 export interface CustomExport {
-  format: string,
   name: string,
   handler: PipelineExport,
 }

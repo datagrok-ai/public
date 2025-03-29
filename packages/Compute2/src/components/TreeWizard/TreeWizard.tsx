@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
-  StepFunCallState,
+  PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
@@ -29,6 +29,7 @@ import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
 import {DBSchema} from 'idb';
 import {useLayoutDb} from '../../composables/use-layout-db';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -92,7 +93,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
-      changeFuncCall
+      changeFuncCall,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
     const runActionWithConfirmation = (uuid: string) => {
@@ -268,10 +269,7 @@ export const TreeWizard = Vue.defineComponent({
 
     let pendingStepPath: string | null = null;
 
-    Vue.watch(treeState, (treeState) => {
-      if (!treeState)
-        return;
-
+    const processPendingStepPath = (treeState: PipelineState) => {
       if (pendingStepPath) {
         const nodeWithPath = findTreeNodeByPath(
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
@@ -283,6 +281,15 @@ export const TreeWizard = Vue.defineComponent({
           if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
           if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
         }
+      }
+    };
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        processPendingStepPath(treeState);
         return;
       }
 
@@ -291,13 +298,21 @@ export const TreeWizard = Vue.defineComponent({
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
+      globalThis.initialURLHandled = true;
+
       const loadingId = startUrl.searchParams.get('id');
-      if (loadingId) {
-        globalThis.initialURLHandled = true;
-        pendingStepPath = startUrl.searchParams.get('currentStep');
+      pendingStepPath = startUrl.searchParams.get('currentStep');
+      if (loadingId)
         loadPipeline(loadingId);
-      }
+      else if (pendingStepPath)
+        processPendingStepPath(treeState);
     }, {immediate: true});
+
+    const exports = Vue.computed(() => {
+      if (!treeState.value || isFuncCallState(treeState.value))
+        return [];
+      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+    });
 
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
@@ -470,8 +485,8 @@ export const TreeWizard = Vue.defineComponent({
 
     const onFuncCallChange = (call: DG.FuncCall) => {
       if (chosenStepUuid.value)
-        changeFuncCall(chosenStepUuid.value, call)
-    }
+        changeFuncCall(chosenStepUuid.value, call);
+    };
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
@@ -510,12 +525,20 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={saveEntireModelState}
           /> }
-          {isTreeReady.value && isTreeReportable.value && <IconFA
-            name='arrow-to-bottom'
-            tooltip='Report all steps'
-            onClick={async () => reportStep(treeState.value) }
-          /> }
         </RibbonPanel>
+        {isTreeReady.value && isTreeReportable.value &&
+          <RibbonMenu groupName='Export' view={currentView.value}>
+            {
+              exports.value.map(({name, handler}) =>
+                <span onClick={() => (treeState.value)
+                  ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
+                  : null}>
+                  <div> {name} </div>
+                </span>,
+              )
+            }
+          </RibbonMenu>
+        }
         {treeState.value &&
         <DockManager class='block h-full'
           ref={dockRef}

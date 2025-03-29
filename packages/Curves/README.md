@@ -1,7 +1,10 @@
 # Curves
 
-**Curves** provides support for fitted curves (such as dose-response curves),
-including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.
+**Curves** provides support for dose-response curves,
+including charts in cells, interactivity, and automatic fitting.
+Also, it integrates with assay plates, allowing you to 
+[read data directly from instruments](#plate-readers), and visualize
+[dose-response curves from assay plates](#integration-with-assay-plates).
 
 - Fitting: computing parameters of the specified function to best fit the data
   - For dose-response curves, we are typically fitting the sigmoid function
@@ -21,11 +24,13 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
 - Ability to overlay curves from multiple grid cells (special viewer)
 - Work with series stored in multiple formats (binary for performance, JSON for flexibility, etc.)
 
-## Rendering fitted curves using JSON format
+## Data format
 
-To render a fitted curve based on series points, you need to write it in the following JSON format:
+To render a fitted curve, the cell has to contain a string in the following JSON format:
 
-```json
+<details>
+<summary> Example of the JSON chart cell </summary>
+<pre>
 {
   "series": [
     {
@@ -76,7 +81,8 @@ To render a fitted curve based on series points, you need to write it in the fol
     "showColumnLabel": true
   }
 }
-```
+</pre>
+</details>
 
 Each series has its own parameters, such as:
 
@@ -93,7 +99,7 @@ Each series has its own parameters, such as:
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid, linear, log-linear function or a
-[custom-defined function](/README.md#creating-custom-fit-function).
+[custom-defined function](#creating-a-custom-fit-function).
 - `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
 sigmoid function is: `max, tan, IC50, min`.
 - `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
@@ -146,9 +152,31 @@ returns the result of the fit function. These functions are written as JavaScrip
 
 ## Multi Curve Viewer
 
-You can overlay curves from multiple cells on one chart with the Multi Curve Viewer:
+To compare dose-response curves from multiple cells, put them on the Multi Curve Viewer::
 
 ![](img/multi-curve-viewer.gif)
+
+## Integration with assay plates
+
+For a number of commonly used formats representing assay plates, Curves automatically detects
+layout, concentration, and activity layers, and shows you plate content in the form of automatically
+fitted dose-response curves.
+
+While typically such functionality gets integrated into custom apps (for instance, for doing
+the quality control, registering experiments to ELN, etc), this is quite useful for
+previewing plates. In this picture, excel files are recognized as containing assay plate data,
+and we can see dose-response curves in the file preview. 
+
+![](img/plate-dose-response-series.gif)
+
+## Plate readers
+
+The package provides support for some of the common plate formats produced by instruments, such 
+as **BMG Pherastar**, **Delfia Envision**, and **Spectramax**. The detection / parsing mechanism
+is extensible, so you can easily write your own reader - [see examples](src/plate/plate-reader.ts).
+
+
+![](img/plate-readers.gif)
 
 See also:
 

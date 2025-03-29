@@ -1,17 +1,17 @@
 {
   "name": "@datagrok/mlflow",
-  "friendlyName": "MLFlow",
-  "version": "1.0.1",
-  "description": "MLFlow Integration package",
+  "friendlyName": "MLflow",
+  "version": "1.1.0",
+  "description": "MLflow integration package",
   "author": {
     "name": "Konstantin Amelichev",
     "email": "kamelichev@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.20.0",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "@datagrok-libraries/utils": "^4.5.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
@@ -40,7 +40,7 @@
     "lint-fix": "eslint src --ext .ts --fix"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"
@@ -49,5 +49,6 @@
     "type": "git",
     "url": "ssh://git@github.com/datagrok-ai/public.git",
     "directory": "packages/MLFlow"
-  }
+  },
+  "category": "Machine Learning"
 }

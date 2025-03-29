@@ -41,14 +41,10 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   simpleAlignedSeqCol.meta.units = NOTATION.FASTA;
   simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
-  const clustersCol = DG.Column.string('Cluster', simpleTable.rowCount).init('0');
-  const alignedCol: DG.Column<string> = await grok.functions.call('Bio:alignSequences', {
-    sequenceCol: simpleAlignedSeqCol,
-    clustersCol,
-  });
   const mclSettings = new MCLSettings();
   mclSettings.threshold = 94;
-  const model: PeptidesModel = await startAnalysis(simpleActivityCol, alignedCol, null, simpleTable, simpleScaledCol,
+  const model: PeptidesModel = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol,
+    null, simpleTable, simpleScaledCol,
     C.SCALING_METHODS.MINUS_LG, {addMCL: true, useEmbeddingsClusters: true, mclSettings: mclSettings}) as PeptidesModel;
   // model.modifyWebLogoSelection({monomerOrCluster: 'D', positionOrClusterType: '13'});
 }

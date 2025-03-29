@@ -116,6 +116,10 @@ services:
       datagrok:
         aliases:
           - grok_connect
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     ports:
       - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped

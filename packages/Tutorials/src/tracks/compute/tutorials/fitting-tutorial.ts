@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, singleDescription, closeWindows, describeElements} from './utils';
+import {getElement, getView, singleDescription, closeWindows, describeElements, PAUSE} from './utils';
 
 /** Fitting results info */
 const fittingInfo = [
@@ -51,22 +51,23 @@ export class FittingTutorial extends Tutorial {
     this.describe('Consider ball flight simulation.');
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-          grok.shell.v = DG.View.createByType('browse');
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
-        // 1. Open Apps
-    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    // grok.shell.v = browseView;
-    // browseView.showTree = true;
-
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    // 1. Open Apps
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
+    
+    const browsePanel = grok.shell.browsePanel;    
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
 
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
+        
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
@@ -74,16 +75,28 @@ export class FittingTutorial extends Tutorial {
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run Diff Studio
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
+        
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+    
+    // 2. Run Model catalog
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+    
+    browseIcon.click();
+    
     let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
+    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
-
+    
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
-
+    
     await this.action(
       `Run ${name}`,
       fromEvent(modelCatalogIcn, 'dblclick'),

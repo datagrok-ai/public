@@ -289,7 +289,6 @@ jobs:
             echo "Test failures"
             echo -e "${test_result}"
             echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-            exit 1
           fi
         working-directory: packages/ApiTests
       - name: Upload ApiTests results

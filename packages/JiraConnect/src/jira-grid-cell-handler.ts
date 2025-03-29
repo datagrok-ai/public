@@ -3,7 +3,7 @@ import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import { loadIssueData } from "./api/data";
+import { loadIssueData, loadIssues } from "./api/data";
 import { _package } from "./package-test";
 import { AuthCreds, JiraIssue } from "./api/objects";
 import { getJiraCreds } from "./app/credentials";
@@ -52,9 +52,11 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
     renderCard(x: DG.SemanticValue, context?: any): HTMLElement {
         return ui.wait(async () => {
             const issue = await issueData(x.value);
-            const creds = await getJiraCreds();
-            if (!issue)
+            if (!issue || issue === null)
                 return ui.divText('Issue not found');
+            const creds = await getJiraCreds();
+            if (!creds)
+                return ui.div('There is no any creds to get tickets\'s data');
 
             const object: Record<string, WithCalcButtonType> = {};
             const column = x && x.cell && x.cell.dart && x.cell.column ? x.cell.column : null; // need to check dart, sometimes its null
@@ -191,8 +193,77 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
     get cellType(): string { return 'JIRA Ticket'; }
     get defaultWidth(): number | null { return 100; }
 
+    currentTimeout: any = null;
+    isRunning: boolean = false; 
+    loadedTickets: Set<string> = new Set<string>();
+    cellsToLoad: DG.GridCell[] = [];
+    cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
+
+    loadData( gridCell: DG.GridCell) {
+        let found = this.cellsToLoad.filter((e) => {
+            return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn.name === gridCell.gridColumn.name && e.gridRow === gridCell.gridRow
+        }) ?? [];
+
+        if (this.isRunning) {
+            if (found.length === 0)
+                this.cellsToLoadOnTimeoutComplete.push(gridCell)
+            return;
+        }
+
+        if (found.length === 0)
+            this.cellsToLoad.push(gridCell)
+
+        if (this.currentTimeout)
+            clearTimeout(this.currentTimeout);
+
+        this.currentTimeout = setTimeout(async () => {
+            this.isRunning = true;
+            const jiraCreds = await getJiraCreds();
+            if (!jiraCreds) {
+                this.cellsToLoad.forEach((x) => {
+                    cache.set(x.cell.valueString, null);
+                });
+                return;
+            }
+            const chunkSize = 100;
+            const ticketKeys = this.cellsToLoad.map((e)=> e.cell.valueString);
+            let index = 0;
+            while (index < ticketKeys.length) {
+                const keysToLoad = ticketKeys.slice(index, index + chunkSize);
+                try {
+                    const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+                        0, chunkSize, undefined, keysToLoad);
+                    for (let issue of loadedIssues?.issues ?? []) {
+                        cache.set(issue.key, issue);
+                        this.loadedTickets.add(issue.key);
+                    }
+                } catch (error) {
+                    console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
+                }
+                index += chunkSize;
+            }
+            this.cellsToLoad.forEach((x) => {
+                if(!this.loadedTickets.has(x.cell.valueString))
+                    cache.set(x.cell.valueString, null);
+                x.grid.invalidate();
+            }) 
+
+            this.loadedTickets.clear();
+            this.cellsToLoad = []
+            this.currentTimeout = null;
+            this.isRunning = false;
+            if (this.cellsToLoadOnTimeoutComplete.length > 0)
+                this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.loadData(cell) })
+            this.cellsToLoadOnTimeoutComplete = [];
+        }, 300);
+    }
+
     render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
         const key = gridCell.cell.valueString;
+
+        if (!key || key.length == 0)
+            return;
+
         const stRen = DG.GridCellRenderer.byName('string')!;
         const keyHeight = Math.min(25, h);
         const ticket = cache.get(key);
@@ -205,17 +276,15 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
             }
         };
 
-        if (!cache.has(key) && key && key.length > 0) {
-            issueData(key).then((_) => gridCell.render());
-            renderKey();
-        }
+        if (!cache.has(key)) 
+            this.loadData(gridCell);        
         else {
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
 
             if (ticket && props) {
                 g.fillStyle = '#4d5261';
-                g.textAlign =  "left";
+                g.textAlign = "left";
 
                 if (w > 150) {
                     g.fillText(props.Summary, x + 20, y + 30);

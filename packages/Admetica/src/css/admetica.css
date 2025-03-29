@@ -52,6 +52,15 @@
   visibility: hidden;
 }
 
+.admetica-rdkit-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  color: red; 
+}
+
 .d4-flex-col.ui-div.admetica-input-form .ui-input-textarea.ui-input-root {
   resize: none;
   overflow: hidden;
