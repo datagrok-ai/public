@@ -108,6 +108,10 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     networks:
       datagrok:
         aliases:
@@ -150,10 +154,8 @@ services:
           - jupyter_kernel_gateway
     environment:
       GROK_PARAMETERS: |
-        {
-          "isolatesCount": 1,
-          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"],
+        {           
+          "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
         }
     restart: unless-stopped
