@@ -36,7 +36,14 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    select "Save Link As..."
 
    </TabItem>
-   <TabItem value="bash" label="MacOS/Linux">
+   <TabItem value="silicon" label="MacOS - Apple Silicon">
+
+   Right-click
+   on [this link](https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/docker/datagrok-install-local-macos-silicon.sh) and
+   select "Save Link As..."
+
+   </TabItem>
+   <TabItem value="intel" label="MacOS/Linux - Intel">
 
    Right-click
    on [this link](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.sh) and
@@ -53,7 +60,18 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    Double-click the downloaded script to begin the installation.
    
    </TabItem>
-   <TabItem value="bash" label="MacOS/Linux">
+   <TabItem value="silicon" label="MacOS - Apple Silicon">
+
+   Open the command-line interface and navigate to the directory where you saved the script. Then, run
+   the following command:
+
+   ```shell
+   chmod +x datagrok-install-local.sh
+   bash datagrok-install-local-macos-silicon.sh
+   ```
+
+   </TabItem>
+   <TabItem value="intel" label="MacOS/Linux">
 
    Open the command-line interface and navigate to the directory where you saved the script. Then, run
    the following command:
@@ -62,7 +80,7 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    chmod +x datagrok-install-local.sh
    bash datagrok-install-local.sh
    ```
-   
+
    </TabItem>
    </Tabs>
 
