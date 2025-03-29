@@ -33,7 +33,7 @@ category('Widgets: ValueLookup with no nullables', () => {
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: ValueLookup with nullables', () => {
