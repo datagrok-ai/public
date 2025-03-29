@@ -49,5 +49,6 @@
     "type": "git",
     "url": "ssh://git@github.com/datagrok-ai/public.git",
     "directory": "packages/MLFlow"
-  }
+  },
+  "category": "Machine Learning"
 }

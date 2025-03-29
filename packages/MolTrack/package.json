@@ -39,5 +39,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/labs.git",
     "directory": "users/askalkin/MolTrack/MolTrack"
-  }
+  },
+  "category": "Cheminformatics"
 }

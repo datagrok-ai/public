@@ -49,5 +49,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Boltz1"
-  }
+  },
+  "category": "Bioinformatics"
 }
