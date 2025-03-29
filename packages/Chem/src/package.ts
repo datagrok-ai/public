@@ -2184,3 +2184,11 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
 }
+
+//name: beautifyMols
+//description: Beautifies the list of molecules and returns the list of beautified molecules
+//input: list<string> mols
+//output: list<string> result
+export async function beautifyMols(mols: string[]): Promise<string[]> {
+  return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+}
