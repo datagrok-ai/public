@@ -253,7 +253,7 @@ Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> 
 You can export your model to JavaScript script. To do so:
 
 1. Turn on the **Edit** toggle on the top panel
-2. Click **</>** icon. Script editor opens in a new view
+2. Click `</>` icon. Script editor opens in a new view
 3. Click **SAVE** button
 4. Script is created, and can be found in the "Scripts" section of the platform
 

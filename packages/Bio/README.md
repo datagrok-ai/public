@@ -20,7 +20,7 @@ To convert sequences, go to **Bio** > **Convert** > **Notation...** and configur
 
 ![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
-See:
+See: 
 
 * [detectMacromolecule()](../Bio/detectors.js)
 * [class SeqHandler](../../libraries/bio/src/utils/seq-handler.ts)

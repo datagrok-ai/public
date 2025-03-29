@@ -13,7 +13,7 @@ Now only the *Newick* tree format is supported.
 of PhylocanvasGL javascript library component to use within Datagrok. It exposes the most of [the properties
 of the Phylocanvas.gl](https://www.phylocanvas.gl/docs/properties.html).
 
-![Newick handler and PhylocanvasGlViewer](../../help/visualize/viewers/phylocanvas-gl-viewer.gif)
+![Newick handler and PhylocanvasGlViewer](../../help/visualize/viewers/img/phylocanvas-gl-viewer.gif)
 
 The viewer expects dataFrame with the tag '.newick'
 
