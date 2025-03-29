@@ -314,7 +314,7 @@ To sort a dataset by similarity, right-click your reference molecule and select 
 
 To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
-<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
+![Similarity and diversity search](similarity-and-diversity-search.gif)
 
 <details>
 <summary>How to use</summary>
@@ -380,7 +380,7 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
+![R-Group Analysis](img/new_r_group_analysis.gif)
 
 <details>
 <summary> How to use </summary>
