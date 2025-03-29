@@ -1,7 +1,7 @@
 {
   "name": "cddvaultlink",
   "friendlyName": "CDD Vault Link",
-  "version": "0.0.2,
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
     "datagrok-api": "^1.25.0",
