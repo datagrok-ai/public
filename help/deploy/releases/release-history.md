@@ -20,6 +20,151 @@ unlisted: true
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2025-03-29 1.25.0
+
+### Addressed Issues
+
+* (Bug) GROK-15099: #2715: PadLeft and PadRight do not seem to work 
+* (Bug) GROK-17463: Grid: Cannot open grid properties after closing  
+* GROK-17385: Automatic analysis of tests result 
+* (Bug) GROK-16985: Pinned Column: Text not visible when editing in Pinned Column 
+* (Improvement) GROK-17514: Diff Studio: Introduce the use of DS lib 
+* (Bug) GROK-16479: Line Chart: Multi Axis Legend Position errors 
+* (Bug) GROK-17519: Line chart: freezes in certain cases when too many splits are applied (WIP)
+* (Bug) GROK-17511: ChemProp: Error when training a model 
+* (Improvement) GROK-17202: VisualQuery: Tooltips and helper (WIP)
+* (Bug) GROK-17521: Report: Scatterplot: error on setting the Table 
+* (Bug) GROK-17441: Grid: Column Group colors disappear after saving and reopening the project 
+* (Improvement) GROK-17402: Usage Analysis: Ability to filter functions usage by function tag 
+* (Bug) GROK-17466: Line chart with `whiskersType` and `aggrType` throws errors 
+* (Bug) GROK-17468: Report: Admetica App run errors on dev (WIP)
+* (Bug) GROK-17470: Line chart: Setting area chart and saving layout doesn't save everything (WIP)
+* (Bug) GROK-17555: Filter Panel: reset filter causes errors in some cases 
+* (Bug) GROK-17538: Column rename causes errors in some cases (WIP)
+* (Bug) GROK-17569: FIlter Panel: Checkbox state mismatch on the cloned view 
+* (Bug) GROK-17550: Summary Column: error when saving to project in some cases 
+* (Bug) GROK-17566: Trellis Plot: Full-Screen toggle not working as expected 
+* (Improvement) [#3249](https://github.com/datagrok-ai/public/issues/3249): Tree viewer: add cross-viewer selection 
+* (Bug) GROK-17529: Browse: My files: error when opening a folder 
+* (Bug) GROK-17559: Release: Api Samples are not shown 
+* (Bug) GROK-17192: Report: ApiSamples: viewers/filters/custom-filters breaks (WIP)
+* (Bug) GROK-17553: Diff Studio: Clicking Open Model-> My Models-> None causes error 
+* (Bug) GROK-17471: Chem: Incorrect filter UI when adding filter via 'Use as filter'  or 'Add filter' (WIP)
+* (Bug) GROK-17583: Release: File storage: Renaming a file deletes It (WIP)
+* (Bug) GROK-17585: Api Sample: RELEASE: errors for viewers/trellis-plot-with-summary-viewer (WIP)
+* (Bug) GROK-17253: Chem: make tests await sketcher initialization to avoid flapping errors (WIP)
+* (Bug) GROK-17578: Viewers: Line Chart: Splits: Sometimes difficult to choose split \- the list closes on mouse move 
+* (Bug) GROK-17565: Trellis Plot: Unable to remove duplicate columns from axis settings (WIP)
+* (Bug) GROK-17099: Forms: Hyperlinked cells issues 
+* (Improvement) GROK-17599: Sparklines: Make all sparklines have different normalizations and render properly in the context panel 
+* (Improvement) GROK-17600: Sparklines: Add `zeroScale` for sparklines so we can base them either at zero or at some minimum 
+* (Bug) GROK-17558: Release: Table Manager: Second "Show all" doesn't work 
+* (Bug) GROK-17602: EDA: MVA demo: Invisible widgets fix 
+* (Improvement) GROK-17592: Scatterplot: improve the jittering function 
+* (Improvement) GROK-17560: Diff Studio: Reduce resources, when running Sens.Analysis & Parameters Optimization  (WIP)
+* (Improvement) GROK-17607: Pie chart: Add max pie circle size property 
+* (Bug) GROK-13202: Trellis plot | Scatter plot: Incorrect behavior on setting/deleting Min Max 
+* (Bug) GROK-13561: PC plot: points from the plot are drawn over the sidebar 
+* (Improvement) GROK-17608: PC plot improvements: Add legend and column coloring 
+* (Bug) GROK-17597: Chem: Wrong filtering when opening the project 
+* (Bug) GROK-14436: TextInput:  pressing Enter doesn't start a new paragraph 
+* (Improvement) GROK-17267: #3199: Pivot table: ability to open data in new workspace 
+* (Improvement) GROK-17598: Trellis plot: Filter on cell click 
+* (Bug) GROK-17612: Bar Chart: Broken tooltip for Y axis as molecule column (WIP)
+* (Bug) GROK-17611: VisualQuery: Order by: incorrect column can be selected causing an error 
+* (Bug) GROK-17216: #3193: Scatterplot: coloring formula dialog: keep (remember) the previous state 
+* (Bug) GROK-17532: Bar chart: error when filtering 
+* (Bug) GROK-17539: Charts: Word cloud tooltip located incorrectly 
+* (Bug) GROK-17540: Charts: Word cloud gets rerendered even when just clicking 
+* (Bug) GROK-17605: Tabs reset to previous order after adding a view 
+* null 
+* (Bug) GROK-17619: Charts: Tree viewer: Symbol size changes for some aggregation functions 
+* GROK-17625: File Viewers: ability to associate file viewer based on file content 
+* (Improvement) GROK-17452: Diff Studio: In-webworker solving equations 
+* (Improvement) GROK-17631: Harmonize server settings 
+* GROK-17622: New browse UX (WIP)
+* (Bug) GROK-17658: New browse UX: "Favorites" and ''Recent'' tabs have no name 
+* (Bug) GROK-17651: The "Recent" view doesn't have a name. Also, alignment seems off. Some other views are also missing names (e.g., specific shcemas under Sticky meta)  
+* (Bug) GROK-17663: Browse: Apps: Admin: Reports:  Reports: error when hovering or clicking a report 
+* (Bug) GROK-17647: Browse: can't create a files hierarchy 
+* (Bug) GROK-17652: Adding a new view 
+* (Bug) GROK-17666: Browse: Databases: Datagrok: double Refresh tabs on the Toolbox after opening the parametrized query 
+* (Bug) GROK-17669: Table not closed even though it's invisible in the view 
+* (Bug) GROK-17655: Random duplication of views when browsing files 
+* (Improvement) GROK-17672: Unable to open the same file more than once by double-clicking 
+* (Bug) GROK-17665: Browse: error when opening a project that was drag'n'dropped to the Spaces 
+* (Improvement) GROK-17421: Viewers: Mini-legend icon 
+* (Bug) GROK-17648: Chem: Scaffold tree: Test fails due to env is not generated 
+* (Improvement) GROK-17680: ImageUrl: Support images with Datagrok paths 
+* (Bug) GROK-17676:   New browse UX: Close all error "method not found: 'garo' Receiver: Closure 'aEm' of Instance of 'ce'" 
+* (Bug) GROK-17654: File preview for multiple non-csv formats don't work (I''ve tried PDB, CIF, ELN, MOL, etc.) seems to be a parser error though it only gave me an error for MOL files   
+* (Bug) GROK-17670: Incorrect behaviour when swapping Toolbox and Browse 
+* GROK-17627: Retrosynthesis plugin: POC (WIP)
+* (Bug) GROK-17694: New Browse UX: no tab names for some Apps 
+* (Bug) GROK-17691: Browse: Context Panel: error in the Preview tab on some formats 
+* (Bug) GROK-17685: Browse: Pressing Home causes errors: Mapping for Datagrok exists 
+* (Bug) GROK-17678: Toolbox: File tab: error when clicking the Share icon > File 
+* (Improvement) GROK-17641: DbTable routing 
+* (Bug) GROK-17689: Usage Analysis: Report sent baloon: pressing link causes errors, UA doen not open 
+* (Bug) GROK-17362: Browse: RDA/RDS formats do not open  
+* (Bug) GROK-17701: Browse: Top panel: impossible to pick drop-down variants 
+* (Bug) GROK-17695: Browse: Apps: Admetica run causes errors 
+* (Improvement) GROK-17705: Tests dashboards: Jira tickets Blockers section \- needed styles improvements 
+* (Bug) GROK-17697: Browse: empty table opens after closing/reopening it 
+* (Bug) GROK-17698: Browse: the table closes although it has open views 
+* (Bug) GROK-17702: CloseAll: throws errors after closing the project 
+* (Bug) GROK-17700: Projects: can't save a project after renaming in Dashboards 
+* (Improvement) GROK-17623: Files folder for Spaces 
+* (Improvement) [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: add the ability to apply Scaffold tree colors to Scatterplot or other viewers (WIP)
+* (Bug) GROK-17711: Trellis plot: 'On click = FIlter' doesn't work from the Context Panel 
+* (Bug) GROK-17710: Trellis plot: Scatterplot: selection works only for clicking the scatterplot not the cell 
+* (Bug) GROK-17714: Trellis plot: On-Click>Select resets to default previously set "show more/less configuration" 
+* (Bug) GROK-17457: Browse: Error in ContPanel>Properties for MyFiles: "Operation caused an exception" 
+* GROK-17629: CDD Vault: First integration implementation (WIP)
+* (Improvement) GROK-16723: #3077: Coloring: Ability to define colors for the linear coloring (min, max, inflection point) 
+* (Bug) GROK-17454: Error when going through Test Track Peptides/Info panels 
+* (Bug) GROK-17727: Docking: Boltz-1: Protein>Sequence expand broken style 
+* (Improvement) [#3213](https://github.com/datagrok-ai/public/issues/3213): #3213: UsageAnalysis: Add a new Projects tab (WIP)
+* (Improvement) GROK-17735: Browse: Folder preview: Show README.md if present 
+* (Improvement) GROK-17338: Stress Tests: support testing of platform on arbitrary configuration  (WIP)
+* (Improvement) GROK-17336: Layouts: Formula columns persisting with the layout 
+* (Bug) GROK-17731: Scaffold tree: Scaffold color column: remember previous hide/show state 
+* (Bug) GROK-17690: Apps: Diff Studio: errors after opening the app 
+* (Bug) GROK-17740: EDA: Multivariate analysis demo 
+* (Bug) GROK-17732: Admetica: Prediction attempt failed.   
+* (Bug) GROK-17751: Color coding: 'Use absolute values' causes errors on columns with negative values 
+* (Bug) GROK-17755: Browse: Failed to open "Add viewer" dialog 
+* (Bug) GROK-17754: PC plot: there is a white space for the legend after switching the column's coloring 
+* (Bug) GROK-17758: Browse: table opening issues 
+* (Bug) GROK-17761: Demo: Chem: Activity cliffs: Viewer initialization function failed   
+* (Bug) GROK-17750: Browse: Can't "find path" from the demo table opened from /Demo 
+* (Bug) GROK-17757: Favorites: double-click doesn't run an app 
+* (Bug) [#3288](https://github.com/datagrok-ai/public/issues/3288): Line chart: more detailed explanation for “to many categories” 
+* (Bug) GROK-17764: Project: cannot remove project using context menu 
+* (Bug) GROK-17763: Databases: errors on Get All, Get top 100, New Visual Query 
+* (Improvement) [#3292](https://github.com/datagrok-ai/public/issues/3292): Box plot: add visualizations zoom saving for layouts 
+* (Bug) GROK-17800: Apps: Chemspace: App start errors "No such column: undefined" (WIP)
+* (Bug) GROK-17802: Toolbox: incorrect IU for the query results (WIP)
+* (Bug) GROK-17765: Projects: Can reopen a project only after 'close all' 
+* (Bug) GROK-17809: Sharing a project: no notification is received by email 
+* (Bug) GROK-17821: Custom file previewer: Warning raises 
+* (Bug) GROK-17771: Tile viewer: Edited form can't be applied using button or automatically 
+* (Bug) GROK-17774: Scripts: Signature editor: Broken docking 
+* (Bug) GROK-17801: Unsupported operation: NaN.toInt() 
+* (Bug) GROK-17817:  New Visual query doesn't save the name in some cases 
+* (Bug) GROK-17814: Files: Add balloon for Invalid cron expression for path "System.DemoFiles/Folder cache test/" 
+* (Bug) GROK-17828: Layouts: Viewer position gets broken so others event can't be displayed 
+* (Bug) GROK-17833: Query Layout is not applied anymore 
+* (Bug) GROK-17781: Tree: Unhandled error exception opening city_gps dataset 
+* (Bug) GROK-17769: Layouts: failed to load old layout, error "method not found: 'columns' on null" 
+* (Bug) GROK-17835: Line chart: 'Invalid argument: 0' error 
+* (Bug) GROK-17819: Radar viewer: Console contains many msg-s 
+* (Bug) GROK-17851: Browse: picture file preview not working 
+* (Bug) GROK-17850: Queries: Insufficient privileges to save ViewLayout created by another user 
+* (Bug) GROK-17868: Line chart: incorrect structure rendering in some cases 
+* (Bug) GROK-17877: Queries: default values of dependent parameters are not reset correctly 
+
+
 
 
 ## 2025-02-18 Datagrok 1.24.0 release
