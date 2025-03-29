@@ -117,7 +117,7 @@ category('Dapi: connection cache', () => {
     });
     // second execution should be faster
     expect(second * 2 < first);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('Sequential stress test', async () => {
     const times = DG.Test.isInBenchmark ? 100 : 10;

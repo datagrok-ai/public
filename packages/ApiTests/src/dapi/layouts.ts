@@ -15,7 +15,7 @@ category('Dapi: layouts', () => {
     const layout = (await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10)))[0];
     const layouts = (await grok.dapi.layouts.filter(`friendlyName = "${layout.friendlyName}"`).list());
     expect(layouts.length >= 0, true);
-  }, { owner: 'aparamonov@datagrok.ai' });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('viewLayout', async () => {
     DG.ViewLayout

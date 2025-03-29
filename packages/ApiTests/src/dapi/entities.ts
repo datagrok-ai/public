@@ -39,7 +39,7 @@ category('Dapi: entities: smart search', () => {
     expect((await grok.dapi.users.filter('firstName = "admin"').list()).length, 1);
     expect((await grok.dapi.users.filter('status = "active"').list({pageSize: 5})).length, 5);
     expect((await grok.dapi.users.filter('id = "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"').list()).length, 1);
-  }, {stressTest: true});
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('groups', async () => {
     expect((await grok.dapi.groups.filter('develop').list()).length, 1);

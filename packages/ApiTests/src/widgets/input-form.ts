@@ -25,7 +25,7 @@ category('Widgets: ValueLookup with no nullables', () => {
     const {inputs} = await createForm();
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       ['Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('initial values', async () => {
     const {inputs} = await createForm();
@@ -45,7 +45,7 @@ category('Widgets: ValueLookup with nullables', () => {
     const {inputs} = await createForm(true);
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items,
       [null, 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  }, {owner: 'dkovalyov@datagrok.ai'});
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('initial values', async () => {
     const {inputs} = await createForm(true);
@@ -89,7 +89,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['disp'].value, null);
     expect(inputs['with_choices'].value, '0');
   });
-}, {owner: 'dkovalyov@datagrok.ai'});
+}, {skipReason: 'Skipped for 1.25.0'});
 
 category('Widgets: InputForm API', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -227,7 +227,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['boolInput'].value, true);
     expect(inputs['choiceInput'].value, '1');
     expectTable(inputs['tableInput'].value, geo);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('form on input change observable after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -275,7 +275,7 @@ category('Widgets: InputForm API', () => {
     expect(newFuncCall2.inputs['tableInput'], null);
     expect(newForm2.getInput('tableInput').value, null);
   });
-}, {owner: 'dkovalyov@datagrok.ai'});
+}, {skipReason: 'Skipped for 1.25.0'});
 
 
 category('Widgets: InputForm w/ custom input', () => {

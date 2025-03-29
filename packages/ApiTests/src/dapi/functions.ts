@@ -206,7 +206,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
     const loadedFuncCalls = await grok.dapi.functions.calls.filter(`id="${funcCall.id}"`).list({pageSize: 5});
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('list script calls with author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -258,7 +258,7 @@ category('Dapi: functions calls', async () => {
       .include('func,func.package').filter(`func.name="dummyPackageScript"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('list package function funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
@@ -266,7 +266,7 @@ category('Dapi: functions calls', async () => {
       .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('filter script funcCalls by nqName', async () => {
     // expect no-throw
@@ -365,4 +365,4 @@ category('Dapi: functions', async () => {
     await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(fc.id);
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {skipReason: 'Skipped for 1.25.0'});

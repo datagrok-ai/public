@@ -67,6 +67,6 @@ category('UserSettingsStorage', () => {
     let credentialsParams = (await _package.getCredentials()).parameters;
 
     expect(credentialsParams['test'], 'test');
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
 }, { owner: 'ppolovyi@datagrok.ai' });

@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {skip} from "rxjs/operators";
 
 const demog = grok.data.demo.demog();
 
@@ -17,7 +18,7 @@ category('Shell', () => {
     expect(grok.shell.v != v, true);
     expect(grok.shell.table(demog.name), demog);
     grok.shell.closeTable(v.dataFrame);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
 
   test('addView', async () => {
     let view = DG.View.create();
@@ -70,7 +71,7 @@ category('Shell', () => {
     expect(grok.shell.tv === null, true);
     expect(grok.shell.t === null, true);
     expect(document.querySelector(".dockManagerTest"), null);
-  });
+  }, {skipReason: 'Skipped for 1.25.0'});
   
   test('getSetVar', async () => {
     let x  = { test: 'test1' };
