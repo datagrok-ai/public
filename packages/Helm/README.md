@@ -35,5 +35,5 @@ that is used in this integration.
 
 See also:
 
-* <https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview>
-* <https://github.com/PistoiaHELM/HELMWebEditor>
+* [HELM overview](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview)
+* [HELM Web Editor](https://github.com/PistoiaHELM/HELMWebEditor)
