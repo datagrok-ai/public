@@ -13,7 +13,7 @@
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.41.1",
+    "@datagrok-libraries/compute-utils": "^1.42.0",
     "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
