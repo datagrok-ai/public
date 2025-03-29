@@ -69,7 +69,7 @@
     "Administrators"
   ],
   "canView": [
-    "All users"
+    "Administrators"
   ],
   "repository": {
     "type": "git",
