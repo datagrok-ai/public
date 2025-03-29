@@ -67,9 +67,11 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       const runButton = ui.bigButton('SEARCH', async () => {
         ui.setUpdateIndicator(gridDiv, true);
         const params = funcEditor.getParams();
-        //!!!!!!!!!!!!!!!!!!!TODO!!!!!!!!!!!!!! Call function using funcCall
-        const df = await cDDVaultSearch2(vault.id, params.structure, params.structure_search_type, params.structure_similarity_threshold,
-          params.protocol, params.run);
+        const df = await grok.functions.call('CDDVaultLink:cDDVaultSearch2',
+          {
+            vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+            structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
+          });
         ui.empty(gridDiv);
         gridDiv.append(df.plot.grid().root);
         ui.setUpdateIndicator(gridDiv, false);
