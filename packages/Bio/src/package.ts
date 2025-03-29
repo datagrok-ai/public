@@ -49,7 +49,7 @@ import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
-import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
+import {demoActivityCliffsCyclic} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
@@ -1115,10 +1115,9 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //meta.demoPath: Bioinformatics | Activity Cliffs
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoBioActivityCliffs(): Promise<void> {
-  await demoBio01bUI();
+  await demoActivityCliffsCyclic();
 }
 
 // demoBio03

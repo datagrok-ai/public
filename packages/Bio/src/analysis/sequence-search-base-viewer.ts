@@ -13,7 +13,7 @@ export class SequenceSearchBaseViewer extends SearchBaseViewer {
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
   fingerprintChoices = ['Morgan', 'Pattern'];
-  tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
+  tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet, 'cell.renderer'];
   preComputeDistanceMatrix: boolean = false;
 
   constructor(name: string, semType: string) {

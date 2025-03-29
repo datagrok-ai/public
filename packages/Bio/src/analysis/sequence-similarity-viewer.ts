@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
-import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
@@ -57,8 +56,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     if (this.targetColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const sh = this.seqHelper.getSeqHandler(this.targetColumn!);
+        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx;
 
         await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
@@ -101,23 +99,6 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         this.computeCompleted.next(true);
       }
     }
-  }
-
-  private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.targetColumn!, this.seqHelper);
-    //need to create df to calculate fingerprints
-    const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
-    const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
-      df: this.dataFrame,
-      col: monomericMols,
-      molecule: monomericMols.get(this.targetMoleculeIdx),
-      metricName: this.distanceMetric,
-      limit: this.limit,
-      minScore: this.cutoff,
-      fingerprint: this.fingerprint,
-    });
-    this.idxs = df.getCol('indexes');
-    this.scores = df.getCol('score');
   }
 
   private async computeByMM() {
