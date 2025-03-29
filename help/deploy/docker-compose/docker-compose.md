@@ -71,7 +71,7 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    ```
 
    </TabItem>
-   <TabItem value="intel" label="MacOS/Linux">
+   <TabItem value="intel" label="MacOS/Linux - Intel">
 
    Open the command-line interface and navigate to the directory where you saved the script. Then, run
    the following command:
