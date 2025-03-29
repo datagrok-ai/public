@@ -2,7 +2,7 @@
   "name": "@datagrok/docking",
   "friendlyName": "Docking",
   "fullName": "Docking",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -10,10 +10,10 @@
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
   "dependencies": {
     "@datagrok-libraries/bio": "^5.48.3",
-    "@datagrok-libraries/utils": "../../libraries/utils",
-    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
+    "@datagrok-libraries/utils": "^4.5.0",
+    "@datagrok-libraries/tutorials": "^1.6.0",
     "@datagrok-libraries/compute-utils": "^1.40.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "=1.11.10",
     "rxjs": "^6.5.5",

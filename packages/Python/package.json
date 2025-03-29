@@ -1,13 +1,13 @@
 {
   "name": "python",
   "friendlyName": "Python",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "../../libraries/utils"
+    "@datagrok-libraries/utils": "^4.5.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
