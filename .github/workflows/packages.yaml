@@ -516,10 +516,10 @@ jobs:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
         run: |
           npm list -g --depth=0 --json
-          if [ "${{ matrix.package }}" == "Charts" ]; then
-            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
-          else
+          if [ "${{ matrix.package }}" == "DevTools" ]; then
             npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+          else
+            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
