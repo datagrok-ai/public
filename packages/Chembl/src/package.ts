@@ -198,5 +198,5 @@ export async function demoDatabasesChembl(): Promise<void> {
   await _demoDatabasesChembl();
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.showHelp('/help/access/databases/databases#parameterized-queries');
+  setTimeout(() => grok.shell.windows.help.showHelp('/help/access/databases/databases#parameterized-queries'), 1000);
 }
