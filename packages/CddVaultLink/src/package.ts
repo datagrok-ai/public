@@ -81,7 +81,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
         acc,
         runButton,
         gridDiv
-      ]));
+      ], {style: {height: '100%'}}));
       grok.shell.addPreview(view);
     });
 
