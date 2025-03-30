@@ -83,8 +83,10 @@ services:
       db:
         condition: service_healthy
         restart: false
-      rabbitmq
-      grok_pipe        
+      rabbitmq: 
+        restart: true
+      grok_pipe:
+        restart: true
     volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
@@ -141,8 +143,10 @@ services:
         }
     restart: unless-stopped
     depends_on:
-      rabbitmq
-      grok_pipe
+      rabbitmq:
+        restart: true
+      grok_pipe:
+        restart: true
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
