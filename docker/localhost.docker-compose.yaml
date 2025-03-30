@@ -33,7 +33,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:1.25.1
+    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
@@ -125,7 +125,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:1.14.0
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
     platform: linux/amd64
     networks:
       datagrok:
