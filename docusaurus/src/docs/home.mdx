@@ -22,15 +22,17 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
         <div style={{ maxWidth: "600px", fontSize: "1.125rem", lineHeight: "1.75rem", color: "#2e5374" }}>
           <p>
             Everything starts with data. But discovery — real, repeatable discovery — demands more.
-            You must <em>see</em> patterns, <em>grasp</em> context, <em>learn</em> from signals, and <em>build on</em> shared insight.
+            You need to <em>see</em> patterns, <em>understand</em> context, <em>learn</em> from signals, and <em>build on</em> shared insight.
+            
             That's what Datagrok was built for.
           </p>
           <p>
             In Datagrok, data is more than strings or integers — it's molecules, plates, and biomarkers.
             Alive. Interactive. Contextual.
             
-            Design, model, test, and analyze — all in one environment. On a platform that was purpose-built for how science actually works.
-            A platform that doesn't ask your science to bend, but shapes around it — and amplifies it.
+            Design, model, test, and analyze — all in one environment, built for the way science actually happens. 
+            
+            This platform doesn't ask your science to bend — it adapts to it. And then, it amplifies it.
             
             As it should be.
           </p>
@@ -72,7 +74,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
         <p
           style={{
             fontSize: "1.5rem",
-            fontStyle: "italic",
+            fontStyle: "",
             color: "#2e5374",
             fontWeight: 500,
             marginBottom: "0.5rem",
@@ -88,7 +90,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
             marginBottom: 0,
           }}
         >
-          <strong>Robert A. Heinlein</strong>, <em>Stranger in a Strange Land</em> (1961)
+          <strong>— Robert A. Heinlein</strong>, <em>Stranger in a Strange Land</em> (1961)
         </p>
         <p
           style={{
@@ -98,7 +100,6 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
             marginBottom: 0,
           }}
         >
-                It's not just a name. It's our philosophy.
         </p>
       </div>
     </div>
@@ -113,7 +114,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
       What you can do with Datagrok
     </h2>
     <p className="text-center" style={{ fontSize: "1.125rem", color: "#2e5374", maxWidth: "760px", margin: "0 auto 2.5rem" }}>
-      Datagrok delivers what matters most: speed, context, and control — even with complex, multimodal data. Explore millions of points in real time, enrich with metadata, and collaborate seamlessly across teams and applications
+     It gives you speed, context, control — even with complex, multimodal data. Explore millions of data points in real time. Enrich with metadata. Collaborate across disciplines — all without switching tools or losing context 
     </p>
     <div style={{ padding: "0 1rem" }}>
 
@@ -121,7 +122,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Access"
     title = ""
-    description = "Get your data from anywhere - databases, web services, cloud storage, pipelines. If it's machine-readable, we can work with it!"
+    description = "Get your data from anywhere — databases, web services, cloud storage, pipelines. If it's machine-readable, we can work with it!"
     slides = {[
         {
             text: "40+ connectors (or create your own)",
@@ -153,7 +154,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Transform"
     title = ""
-    description = "Prep your data with clicks and drags. Automatically generate macros from data transformations and use them on new datasets"
+    description = "Prep data visually — or programmatically. Record transformations as macros and apply them across datasets. Clean, join, and enrich — fast, reproducible, and fully traceable"
     slides = {[
         {
             text: "Aggregate, join, filter, and edit data, from the UI or programmatically",
@@ -177,7 +178,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Explore"
     title = ""
-    description = "Slice, dice, and visualize your data. Render millions of data points interactively and find patterns. Build dynamic dashboards in seconds. Leverage metadata for automated data enrichment and contextual suggestions."
+    description = "Slice, dice, and visualize your data. Render millions of data points interactively. Leverage metadata for automated data enrichment and contextual suggestions"
     slides = {[
         {
             text: "50+ interactive viewers for synchronized, dynamic dashboards",
@@ -205,7 +206,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Compute"
     title = ""
-    description = "Write in any language, annotate, publish, and apply scientific models, methods, and apps. Solve differential equations and run simulations for complex processes."
+    description = "Write in any language. Annotate, publish, and apply models, methods, and apps"
     slides = {[
         {
             text: "500+ functions, or write your own in R, Python, Matlab, Julia, Octave, or JavaScript",
@@ -220,6 +221,10 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
             image: "/docusaurus_img/slides/no-image.png"
         },
         {
+            text: "ODE solver. Parameter optimization and fitting",
+            image: "/docusaurus_img/slides/no-image.png"
+        },
+        {
             text: "Auto-generated UI",
             image: "/docusaurus_img/slides/auto-ui-queries.png"
         }
@@ -229,7 +234,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Learn"
     title = ""
-    description = "No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included."
+    description = "No-code modeling. State-of-the-art cheminformatics engines and ML toolkit included"
     slides = {[
         {
             text: "Train, assess, apply, and share models (or integrate your own)",
@@ -244,7 +249,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
             image: "/docusaurus_img/slides/jupyter-notebooks.gif"
         },
         {
-            text: "ML toolkit: statistical hypothesis testing, multivariate analysis, dimensionality reduction, clustering, variance analysis.",
+            text: "ML toolkit: statistical hypothesis testing, multivariate analysis, dimensionality reduction, clustering, variance analysis. GenAI for chemistry",
             image: "/docusaurus_img/slides/no-image.png"
         }
     ]}
@@ -253,7 +258,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Collaborate"
     title = ""
-    description = "Share anything with anyone. Collaborate on decision-making. Use an open source ecosystem to save costs and innovate."
+    description = "Share anything with anyone. Collaborate on decision-making"
     slides = {[
         {
             text: "Share within Datagrok, as a URL link, or integrate: REST API, JS API, or embed as an iframe",
@@ -277,7 +282,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Govern"
     title = ""
-    description = "Use catalogs, data lineage tools, audit, and usage analysis to take control. Your data is FAIR and secure."
+    description = "Use catalogs, data lineage tools, audit, and usage analysis to take control. Your data is FAIR and secure"
     slides = {[
         {
             text: "Control who, what, where, and how: roles, groups, privileges, flexible authentication, secrets managers",
@@ -302,7 +307,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 <Tab 
     name = "Extend"
     title = ""
-    description = "Customize anything, from context actions to UI elements. Fast development and deployment time with seamless integration."
+    description = "Customize anything, from context actions to UI elements. Fast development and deployment time with seamless integration"
     slides = {[
         {
             text: "JavaScript API for extending Datagrok",
@@ -332,10 +337,10 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
   <div className="container text-center">
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <h3 style={{ fontSize: "1.75rem", fontWeight: 600, color: "#2e5374", marginBottom: "1.5rem" }}>
-        These capabilities are powerful on their own — but transformative together
+        Each capability is powerful on its own. Together, they're transformative — enabling workflows no single tool could support
       </h3>
       <p style={{ fontSize: "1.2rem", lineHeight: "1.75", color: "#4B5563" }}>
-        Here's how domain experts across disciplines use Datagrok to solve real-world problems.
+        Here's how domain experts across disciplines use Datagrok to solve real-world problems
       </p>
       <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem" }}>
         <div style={{ width: "50px", height: "4px", backgroundColor: "#2e5374", borderRadius: "2px" }}></div>
@@ -360,7 +365,8 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
             text: [
                   "Sketch, search, and filter compounds across chemical space. Analyze R-groups, matched molecular pairs, activity cliffs, and SAR patterns — in context and at scale",
                   "Examine screening plates with integrated dose-response curves. Visualize docking poses. Predict ADMET properties and apply GenAI models directly to your data",
-                  "When you're ready to move forward, connect to your registration system, run retrosynthesis, and place orders — without leaving the platform",
+                  "Move seamlessly from ideation to execution. Connect to your registration system. Run retrosynthesis. Place orders — all without leaving the platform",
+                  "Datagrok brings it all together so you can focus on what matters", //Value proposition - should be separate below the bullet points
                                 
             ],
             image: "/docusaurus_img/slides/no-image.png"
@@ -378,7 +384,8 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
                   "Analyze sequences, their structure and composition side-by-side with experimental data. Convert between notations or transform sequences into molecular structures",
                   "Assess the impact of specific mutations on activity. Identify activity cliffs and pinpoint residues driving potency for peptide optimization",
                   "Align, cluster, and explore sequence space and variability",                  
-                  "Define and manage monomer libraries to ensure consistency across analyses and applications",               
+                  "Define and manage monomer libraries to ensure consistency across analyses and applications",
+                  "Datagrok makes it easy to explore how sequence, structure, and activity intersect — all in one place, with tools that speak the same language.", //Value proposition - should be separate below the bullet points             
             ],
             image: "/docusaurus_img/new/peptides-demo-short.gif"
         }                   
@@ -392,9 +399,10 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
     slides = {[
         {
             text: [
-                  "Build and solve systems of ODEs directly in the browser — no code required. Datagrok autogenerates the UI and turns them into live, interactive simulations for real-time exploration",
-                  "Create digital twins for PK/PD models, bioreactors, and other complex processes. Run parameter sweeps and sensitivity analyses to understand system behavior",
-                  "Share models and keep them FAIR  — with full version control, audit trails, and documentation",
+                  "Build and solve systems of ODEs — directly in the browser, no code required. Datagrok autogenerates an interactive UI from your equations, turning them into live simulations you can explore in real time",
+                  "Create digital twins for PK/PD models, bioreactors, and other complex processes. Run parameter sweeps and sensitivity analyses to understand system behaviors",
+                  "Share models across teams — fully documented, versioned, and FAIR by design",
+                  "From early development through optimization, Datagrok helps you model what matters — so decisions are grounded in reproducible science", //Value proposition - should be separate below the bullet points
             ],
             image: "/docusaurus_img/slides/no-image.png"
         }
@@ -408,12 +416,12 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
     slides = {[
         {
             text: [ 
-                 "Explore high-dimensional datasets using PCA, PLS, UMAP, clustering, ANOVA, and other multivariate methods — interactively and at scale",
-                 "Build models using a no-code interface or write your own in Python, R, Julia, or Matlab",
+                 "Explore high-dimensional datasets using PCA, PLS, UMAP, clustering, ANOVA, and other multivariate techniques — interactively and at scale",
+                 "Build models with a no-code interface or write your own in Python, R, Julia, or Matlab",
                  "Visualize model outputs alongside chemical, biological, and experimental context",
-                 "Train, assess, deploy, share models in Datagrok (for lightweight stuff)",
-                 "Deploy lightweight models directly in Datagrok — or use MLflow and bring them in seamlessly for native integration",
+                 "Train, assess, and deploy lightweight models directly in Datagrok, or integrate seamlessly with MLflow",
                  "Share notebooks, scripts, and dashboards in one environment — reproducible and team-friendly",
+                 "Datagrok streamlines your workflow — from exploration to deployment — in a single, integrated environment. Models are easier to build, interpret, and share. Insights are delivered in context, not in isolation. And your impact scales across domains", //Value proposition - should be separate below the bullet points
             ],
             image: "/docusaurus_img/slides/no-image.png"
          },
@@ -427,11 +435,12 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
     slides = {[
         {
             text: [
-                "Pull data from across systems — prep, clean, and structure it using reusable functions, or write your own in the language of your choice",
-                "Save transformations as macros and apply them to new datasets",
-                "Build dynamic dashboards in minutes without code or workarounds",
-                "Annotate functions — including queries and dashboards — with user-friendly search terms (for example, activity for Shigella) to surface them through global search",
-                "Register custom identifiers (for example, compound ID) to expose everything linked to that entity — structures, assays, models — directly from datasets, dashboards, or the Datagrok home page"
+                "Pull data from across systems — prep, clean, and structure it with reusable functions, or write your own in the language of your choice",
+                "Save transformations as macros and apply them to new datasets with zero rework",
+                "Build dynamic dashboards in minutes — without code and fragile workarounds",
+                "Annotate queries and dashboards with user-friendly search terms (e.g., activity for <em>Shigella</em>) to surface them through global search",
+                "Register custom identifiers (like, <em>compound ID</em>) so that everything linked to it — structure, experiments, patents — appear automatically in the context of your data",
+                "With Datagrok, your work product scales — reusable across teams, discoverable through search, and adaptable to new needs. Scientists are empowered to explore independently, and you gain time to focus on building what's next", //Value proposition - should be separate below the bullet points
             ],                 
             image: "/docusaurus_img/slides/no-image.png"
         }
@@ -440,17 +449,17 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 />
 <Tab 
     name = "R&D IT"
-    title = "Transform your R&D IT from a cost center to innovation engine"
+    title = "From a cost center to an innovation engine"
     description = "App Marketplace, permissions framework, data and entity catalogs, audit logs, Usage Analysis"
     slides = {[
         {
             text: [
                 "Eliminate tool sprawl. Unify data, simplify infrastructure, automate transfers, and cut redundant processes",
-                "Enable self-service analytics and discovery — while maintaining full control over access, roles, and permissions",
-                "Extend and customize the platform via scripts and JavaScripts, integrate existing tools via REST API",
-                "Support new workflows, data types, and tech — all without breaking the UI your teams already know",
-                "Deliver results faster - build and ships new apps in weeks",                               
-                "Scale from individual projects to enterprise-wide roll-outs",
+                "Enable self-service analytics across departments — while keeping full control over access, roles, and permissions",
+                "Extend and customize the platform via scripts and JavaScript API. Integrate existing tools via REST API",
+                "Support new data types, workflows, and apps — all using the UI your teams already know",
+                "Deploy faster. Build and ship new apps in quarters, not years. Scale from individual projects to enterprise-wide roll-outs",                               
+                "Datagrok gives you the control you need — and the flexibility scientists want — in one unified platform that grows with your R&D", //Value proposition - should be separate below the bullet points
             ],
             image: "/docusaurus_img/slides/no-image.png"
         },        
@@ -464,11 +473,12 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
     slides = {[
         {
             text: [
-                  "Add new libraries, visualizations, or logic using the same APIs we use internally",
-                  "Build apps that integrate directly with Datagrok's core — from fit-for-purpose tools to full domain packages like chem or bio",
-                  "Define UI components, context actions, data types, and menu items",
-                  "Package plugins in Docker — including their own databases if needed — and distribute via GitHub or internal repositories to surface them in the Datagrok app marketplace",
-                  "Develop, inspect, and debug in the browser with DevTools and Inspector console, or connect to your IDE",                              
+                  "Add custom logic, visualizations, or libraries using the same APIs we use internally",
+                  "Build apps that integrate directly with Datagrok's core — from lightweight tools to full domain packages like chem or bio",
+                  "Define new data types, UI components, and context actions",
+                  "Package plugins — even with their own databases — in Docker containers and distribute them via GitHub or internal registries. They appear in the Datagrok App Marketplace, ready to use",
+                  "Inspect and debug in the browser with DevTools and Inspector",
+                  "With Datagrok, you're not just customizing — you're composing a platform that fits your domain, your data, and your teams", //Value proposition - should be separate below the bullet points                            
             ],
             image: "/docusaurus_img/slides/no-image.png"
         }
@@ -532,8 +542,8 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
       </h3>
       
       <p style={{ fontSize: "1.125rem", lineHeight: "1.75", color: "#4B5563" }}>
-        It's not just about what the platform does — it's how it's built. Fast, flexible, and grounded in first principles.
-        Ready for the science they're doing now — and what comes next.
+        It's not just what Datagrok does — it's how it's built. Grounded in first principles. Architected for performance and scale. Designed to grok, adapt, and amplify
+        
       </p>
       
       <div style={{ 
@@ -578,22 +588,22 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
       <Col col="col-lg-6">
         <h3 style={{ fontSize: "1.5rem", fontWeight: 600, marginBottom: "1rem" }}>Built from first principles</h3>
         <p>
-          Most platforms grow reactively — shaped by niche use cases, acquisitions, or architectural constraints.
-          Datagrok was meticulously architected from the ground up, guided by our mission:
-
-          to build a platform that helps scientists understand their data — and act on it.
-
-          At the core is a high-performance, in-memory data engine built for interactive exploration on millions of data points — right in the browser.
-          Visualizations are context-aware, GPU-accelerated, modular, and tightly coupled with the engine.
+          Most platforms evolve reactively — shaped by narrow use cases, legacy constraints, and fragmented decisions.
           
-          A compute engine manages execution across languages and systems.
-          You can run computations in Python, R, Julia, JavaScript, or Octave — locally or remotely.
+          Datagrok is different. It wasn't assembled — it was meticulously architected from first principles, guided by our mission:
 
-          Everything is a function — from queries to predictive models to scripts.
-          Functions are first-class entities — searchable, parameterized, annotated, and reusable across tools and workflows.          
+          Help scientists not just work with data — but understand it. And make breakthroughs.
 
-          Because the platform is modular by design, it adapts naturally.
-          You can extend functionality, integrate with your stack, or build new tools — without ever breaking what's already there.
+          At the core is a high-performance, in-memory data engine — built for interactive exploration on millions of data points, in the browser.
+          Visualizations are GPU-accelerated, context-aware, and deeply integrated with the engine.
+          
+          A cross-language compute engine scales well and runs seamlessly across systems, whether local or remote.
+
+          Everything is a function — queries, predictive models, scripts.
+          Functions are first-class entities — parameterized, annotated, scriptable, searchable, and reusable across tools and workflows.          
+
+          The platform itself is modular by design.
+          You can add new functionality, build domain-specific tools, integrate with your stack — without breaking what's already working.
           
           Datagrok is built to scale with your science — and evolve alongside it.
         </p>
@@ -630,24 +640,26 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
       <Col col="col-lg-6">
         <h3 style={{ fontSize: "1.5rem", fontWeight: 600, marginBottom: "1rem" }}>Perfected for life sciences</h3>
         <p>
-          Life science data isn't just rows and columns — it tells complex stories that can't be uncovered by generic tools.
-          It requires not only processing power, but also context.         
+          Life sciences data tells complex stories — stories generic tools can't uncover.
+          Stories that demands not just the processing power, but also context.         
         </p>
         <p>
-          In Datagrok, data has meaning through semantic types — it's not strings, it's molecules and curves.
+          In Datagrok, data has semantics: molecules, sequences, curves.
+          Not just values — meaning.
           
           Functions build on these types, unlocking infinite possibilities. 
-          A sketcher filters a dataset by substructure.
-          A toxicity model transforms molecules into predictions that appear in tooltips, info panes, or as calculated columns.
-          Visualizations become scientific tools: scatterplots show activity cliffs, spreadsheets are DMTA dashboards.
-          The entire interface transforms - presenting just the right menus, insights, and tools when you need them. 
+          Sketchers filter your dataset by substructure.
+          Toxicity models surface predictions — in info panes, tooltips, or as calculated columns.
+          Scatterplots reveal activity cliffs, not just correlations. Spreadsheets transform into DMTA dashboards.
+          
+          Every function understands your data, so the entire interface adapts — surfacing the right tools, at the right moment. 
                     
-          But we take it further - plugins seamlessly add support for new data types, models, and specialized workflows.
-          Everything runs at scale — UMAP on 100K sequences completes in seconds, exploration happens at the speed of thought.
-                                               
+          And it scales. SAR exploration happens at the speed of thought.
+          UMAP on 100,000 molecules runs in seconds. Plugins seamlessly extend the platform with new data types, models, and domain-specific workflows.      
+                                                         
         </p>
         <p>
-          Built on a powerful foundation, Datagrok doesn't just handle life science data, it helps you <em>grok</em> it.
+          Built on this powerful foundation, Datagrok doesn't just handle life science data — it helps you <em>grok</em> it.
         </p>
       </Col>
     </Row>
@@ -657,22 +669,25 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
       <Col col="col-lg-6">
         <h3 style={{ fontSize: "1.5rem", fontWeight: 600, marginBottom: "1rem" }}>Amplifies everything around it</h3>
         <p>
-          In science and technology, breakthroughs emerge from synergy, not isolation.
-          Just as a drug's efficacy depends on precise compound-target interaction, Datagrok's power comes from how its components amplify each other.
+          In science, breakthroughs rarely happen in isolation.
+          The same is true for software — real power comes from synergy.
         </p>
         <p>
-          Datagrok doesn't just assemble tools — it orchestrates them through a unified architecture where every component connects, informs, and enhances the rest.
+          Datagrok doesn't just assemble tools — it orchestrates them.
+          Each component connects, informs, and enhances the other.
           
-          A sketcher, for example, isn't just for drawing molecules. It filters datasets, builds queries, and feeds models.
-          The structure you sketch becomes the starting point for property predictions, SAR analysis, and synthesis planning.
+          Sketch a structure - and it filters your dataset, feeds models, builds queries.
+          That one action sets off ten other - toxicity alerts, drug likeness scores, and similarity searches.
+          
+          That's amplification.
         </p>
         <p>
-          This principle runs throughout the platform. 
-           A scatterplot reveals chemical space, activity cliffs, and matched pairs.
-           A model becomes part of a decision-making loop.
-           Data from one domain augments another — creating insights neither could provide alone.
+          This principle runs throughout the platform.
+          
+          Visualizations become scientific tools: scatterplots reveal chemical space, matched molecular pairs, and activity cliffs.
+          Data from one domain augments another - peptide sequences display alongside their molecular structures, SAR insights inform hit design downstream.
 
-          The result is more than efficiency. It's those aha moments that move science forward.          
+          It's not just efficiency. It's acceleration — those moments when something clicks, and science moves forward.          
           </p>
       </Col>
       <Col col="col-lg-6">
@@ -703,7 +718,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
           alignItems: "center",
           justifyContent: "center"
         }}>
-          Want to go deeper? 
+          Curious to explore further? 
           <a 
             href="https://datagrok.ai/help/datagrok/"
             style={{ 
@@ -724,7 +739,7 @@ import {Button, Image, TabGroup, Tab, Slider, Link, Col, Row} from '@site/src/co
 
 <Cpa>
 
-# Ready to grok your data?<br/>Discover what happens when your data, tools, and science finally converge
+# Ready to grok your data?<br/>See what happens when everything aligns — data, tools, and insight — in one platform built for discovery
 
 <Button label='Book a demo' href="#" size="large"/><Button label='Try now' href="#" type="primary" size="large"/>
 </Cpa>
