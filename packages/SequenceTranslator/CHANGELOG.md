@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.9.1 (2025-03-31)
+
+* Combination of sequence sets dialog.
+
 ## 1.8.0 (2025-02-20)
 
 * Support for enumeration in all notations
