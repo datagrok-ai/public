@@ -21,6 +21,7 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
 ---
 
 ```mdx-code-block
@@ -753,6 +754,14 @@ To view the chemical scripts you've created or those shared with you, open the [
 For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
+
+## Retrosynthesis
+
+Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
+commercially available starting materials and the synthetic reactions needed to reach the target.
+
+To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
 
 ## Utilities
 
