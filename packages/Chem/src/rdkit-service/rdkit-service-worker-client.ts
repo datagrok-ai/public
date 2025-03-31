@@ -56,4 +56,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
   ): Promise<string> =>
     this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
+  
+  beautifyMols = async (molecules: string[]): Promise<string[]> =>
+    this.call(WORKER_CALL.BEAUTIFY_MOLS, [molecules]);
 }

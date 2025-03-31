@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "Hit Triage",
-  "version": "1.4.4",
+  "version": "1.6.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -17,10 +17,10 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.39.0",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
     "css-loader": "^6.5.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.5.1",

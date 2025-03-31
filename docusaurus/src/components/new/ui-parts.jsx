@@ -13,7 +13,8 @@ export function Button({label, type, size}){
     }
     size != undefined ? btnClass+= " btn-"+size : ""
     return(<a className={btnClass} type="submit" href="">{label}</a>);
-}
+  }
+  
 
 export function Image({src, frame}){
     if (frame)
@@ -38,87 +39,115 @@ export function Tab({name, title, description, link, slides, indicators}){
     const list = slides.length ? Array.from(slides) : [slides];   
     const [activeIndex, setActiveIndex] = useState(0);
     return (
-            <div className='row'>
-                <div className="col-lg-6 col-xs-10 text-left">
+        <div className='row'>
+            <div className="col-lg-6 col-xs-10 text-left">
+                <div style={{ background: '#F9FAFB', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     <div className='h4' style={{fontWeight: 600}}>{title}</div>
                     <p style={{color: "var(--ifm-color-gray-700)"}}>{description}</p>
                     <ul className='nav flex-column accesscarousel py-3'>
-                    { list.map((item, index) => {
-                        return (
+                        {list.map((item, index) => (
                             <li className='nav-item' key={index}>
-                                <a className={index === activeIndex ? 'nav-link active' : 'nav-link'} data-target={"#accesscarousel-"+String(name).toLocaleLowerCase()} data-slide-to={index}
-                                onClick={() => setActiveIndex(index)}
-                                >{item.text}</a>
+                                <a
+                                    className={index === activeIndex ? 'nav-link active' : 'nav-link'}
+                                    data-target={`#accesscarousel-${String(name).toLocaleLowerCase()}`}
+                                    data-slide-to={index}
+                                    onClick={() => setActiveIndex(index)}
+                                >
+                                    {Array.isArray(item.text) ? (
+                                        <ul style={{
+                                            paddingLeft: "1.25rem",
+                                            margin: 0,
+                                            listStyleType: "disc",
+                                            color: "#374151",
+                                            fontSize: "1rem",
+                                            lineHeight: "1.6"
+                                        }}>
+                                            {item.text.map((line, i) => (
+                                                <li key={i} style={{ marginBottom: "0.5rem" }}>{line}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <span style={{ color: "#374151", fontSize: "1rem", lineHeight: "1.6" }}>{item.text}</span>
+                                    )}
+                                </a>
                             </li>
-                        )
-                    })}
+                        ))}
                     </ul>
-                    {
-                        link != undefined 
-                            ? <a href={link} className='tab-body-link'>Learn more </a> 
-                            : null
-                    }
+                    {link !== undefined && (
+                        <a href={link} className='tab-body-link'>Learn more </a>
+                    )}
                 </div>
-                <div className="col-lg-6 col-xs-10">
-                    <div id={"accesscarousel-"+String(name).toLocaleLowerCase()} className="accesscarousel carousel p-3 m-3 slide carousel-fade" data-ride="carousel" data-interval="false">
-                    <ol className={indicators != undefined ? "carousel-indicators": "d-none"}>{list.map((item, index)=>{return(<li data-target={"#accesscarousel-"+String(name).toLocaleLowerCase()} data-slide-to={index} className={index == 0 ? "active": ''}></li>)})}</ol>
-                        <div className="carousel-inner">
-                            { list.map((item, index) => {
-                                return (
-                                    <div className={index == 0 ? "carousel-item active" : "carousel-item"} key={index}>
-                                        <Image src={item.image}/>
-                                    </div>
-                                )
-                            })}
-                        </div>
+            </div>
+            <div className="col-lg-6 col-xs-10">
+                <div
+                    id={`accesscarousel-${String(name).toLocaleLowerCase()}`}
+                    className="accesscarousel carousel slide carousel-fade"
+                    data-ride="carousel"
+                    data-interval="false"
+                >
+                    <ol className={indicators !== undefined ? "carousel-indicators" : "d-none"}>
+                        {list.map((item, index) => (
+                            <li
+                                data-target={`#accesscarousel-${String(name).toLocaleLowerCase()}`}
+                                data-slide-to={index}
+                                className={index === 0 ? "active" : ""}
+                            ></li>
+                        ))}
+                    </ol>
+                    <div className="carousel-inner">
+                        {list.map((item, index) => (
+                            <div className={index === 0 ? "carousel-item active" : "carousel-item"} key={index}>
+                                <Image src={item.image} />
+                            </div>
+                        ))}
                     </div>
-                
-                </div> 
-            </div> 
-    )
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function TabGroup({children}){
     const tabs = children.length ? Array.from(children) : [children];
     return (
         <>
-        <ul className="nav nav-tabs nav-pills my-3 mt-5 " id="features-nav-tab" role="tablist">
-            { tabs.map((item, index) => { 
-                return (
-                    <li className='nav-item' key = {index}>
-                        <a className={index == 0 ? 'brand-btn btn-outline btn nav-link active' : 'brand-btn btn-outline btn nav-link nav-link' } 
-                            id={item.props.name} 
-                            data-toggle="tab" 
+            <ul className="nav nav-tabs nav-pills my-3 mt-5 " id="features-nav-tab" role="tablist">
+                {tabs.map((item, index) => (
+                    <li className='nav-item' key={index}>
+                        <a
+                            className={index === 0 ? 'brand-btn btn-outline btn nav-link active' : 'brand-btn btn-outline btn nav-link'}
+                            id={item.props.name}
+                            data-toggle="tab"
                             role="tab"
-                            aria-controls={item.props.name+'-content'} 
-                            href={'#'+item.props.name+'-content'}>
+                            aria-controls={`${item.props.name}-content`}
+                            href={`#${item.props.name}-content`}
+                        >
                             {item.props.name}
                         </a>
                     </li>
-                )
-            })}
-        </ul>
-        <div className="tab-content text-left container py-4" id="features-nav-tab-content">
-            { tabs.map((item, index) => {
-                return (
-                    <div 
-                    className = {index == 0 ? "tab-pane fade show active": "tab-pane fade"} 
-                    id = {item.props.name+'-content'} 
-                    role = "tabpanel"
-                    key = {index} 
-                    aria-labelledby = {item.props.name}>
-                        <Tab 
-                            name = {item.props.name}
-                            title = {item.props.title}
-                            description = {item.props.description}
-                            slides = {item.props.slides}
-                            link = {item.props.link}
+                ))}
+            </ul>
+            <div className="tab-content text-left container py-4" id="features-nav-tab-content">
+                {tabs.map((item, index) => (
+                    <div
+                        className={index === 0 ? "tab-pane fade show active" : "tab-pane fade"}
+                        id={`${item.props.name}-content`}
+                        role="tabpanel"
+                        key={index}
+                        aria-labelledby={item.props.name}
+                    >
+                        <Tab
+                            name={item.props.name}
+                            title={item.props.title}
+                            description={item.props.description}
+                            slides={item.props.slides}
+                            link={item.props.link}
                         />
-                </div>)
-            })}
-        </div>
+                    </div>
+                ))}
+            </div>
         </>
-    )
+    );
 }
 
 export function Link({label, href, arrow}){

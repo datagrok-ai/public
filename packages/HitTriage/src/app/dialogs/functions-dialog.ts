@@ -41,43 +41,44 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
         args: template?.compute?.queries?.find((ts) => ts.id === q.id)?.args ?? {}});
     });
 
-  let useDescriptors = !!template?.compute?.descriptors?.enabled || dialog;
   const host = ui.div([], {classes: 'hit-triage-compute-dialog-host'});
   const descriptorItems: DG.TreeViewNode[] = [];
   const descriptorsGroup = ui.tree();
-  try {
-  // tree groups
-    const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
-    descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
-
-    function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
-      const res = treeNode.group(name, null, false);
-      res.enableCheckBox(false);
-      return res;
-    };
-
-    // const descriptorsGroup = createTreeGroup('Descriptors', tree);
-    const keys = Object.keys(descriptorsTree);
-    const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
-    for (const groupName of keys) {
-      const group = createTreeGroup(groupName, descriptorsGroup);
-
-      for (const descriptor of descriptorsTree[groupName].descriptors) {
-        const item = group.item(descriptor.name, descriptor);
-        descriptorItems.push(item);
-        item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
+  const descriptorsGroupHost = ui.wait(async () => {
+    try {
+      // tree groups
+        const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
+        descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
+    
+        function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
+          const res = treeNode.group(name, null, false);
+          res.enableCheckBox(false);
+          return res;
+        };
+    
+        // const descriptorsGroup = createTreeGroup('Descriptors', tree);
+        const keys = Object.keys(descriptorsTree);
+        const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
+        for (const groupName of keys) {
+          const group = createTreeGroup(groupName, descriptorsGroup);
+    
+          for (const descriptor of descriptorsTree[groupName].descriptors) {
+            const item = group.item(descriptor.name, descriptor);
+            descriptorItems.push(item);
+            item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
+          }
+        };
+        return descriptorsGroup.root;
+      } catch (e) {
+        console.error(e);
       }
-    };
-  } catch (e) {
-    console.error(e);
-    useDescriptors = false;
-  }
-
+      return ui.divText('Failed to load descriptors');
+  })
+  
   const descriptorsName = 'Descriptors';
   const funcNamesMap: {[key: string]: string} = {[descriptorsName]: descriptorsName};
   // if compute is in dialog form, we need to show all the functions
-  const tabControlArgs: {[key: string]: HTMLElement} =
-  useDescriptors ? {[descriptorsName]: descriptorsGroup.root} : {};
+  const tabControlArgs: {[key: string]: HTMLElement} = {[descriptorsName]: descriptorsGroupHost};
   const funcInputsMap: {[funcName: string]: DG.FuncCall} = {};
   const calculatedFunctions: {[key: string]: boolean} = {[descriptorsName]: false};
   calculatedFunctions[descriptorsName] =
@@ -92,7 +93,23 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
           `${HTScriptPrefix}:${f.name ?? ''}:${f.id}` : `${HTQueryPrefix}:${f.name ?? ''}:${f.id}`;
       funcInputsMap[keyName] = funcCall;
       const editor = ui.div();
-      const inputs = await funcCall.buildEditor(editor, {condensed: false});
+      ui.setUpdateIndicator(editor, true);
+      // deffered action to not wait for the editor to be built
+      funcCall.buildEditor(editor, {condensed: false}).then((inputs) => {
+        inputs?.[0]?.root && (inputs[0].root.style.display = 'none'); // table input
+        // for queries we don't have column input, we only have one input for the list of molecules
+        inputs?.[1]?.root && f.type !== funcTypeNames.query && (inputs[1].root.style.display = 'none'); // column input
+
+        inputs.forEach((input) => {
+          if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
+            input.value = func.args[input.property.name];
+          input.fireChanged();
+        });
+      }).catch((e) => {
+        console.error(e);
+        ui.setUpdateIndicator(editor, false);
+        editor.appendChild(ui.divText('Failed to build function editor'));
+      }).finally(() => ui.setUpdateIndicator(editor, false));
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
       editor.style.removeProperty('max-width');
@@ -103,15 +120,6 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
         f.name === func.func.name && f.package === func.func.package?.name) ||
           template?.compute?.scripts?.some((s) => s.id === f.id) ||
           template?.compute?.queries?.some((s) => s.id === f.id)) ?? false;
-
-      (editor.children[0] as HTMLElement).style.display = 'none'; // table input
-      // for queries we don't have column input, we only have one input for the list of molecules
-      f.type !== funcTypeNames.query && ((editor.children[1] as HTMLElement).style.display = 'none'); // column input
-      inputs.forEach((input) => {
-        if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
-          input.value = func.args[input.property.name];
-        input.fireChanged();
-      });
     } catch (e) {
       console.error(e);
       continue;
@@ -130,9 +138,9 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
         calculatedFunctions[funcNamesMap[pane.name]] = !!value;
         if (!value)
-          $(pane.content).find('input').attr('disabled', 'true');
+          $(pane.content).find('input')?.attr('disabled', 'true');
         else
-          $(pane.content).find('input').removeAttr('disabled');
+          $(pane.content).find('input')?.removeAttr('disabled');
       }});
     functionCheck.setTooltip('Toggle calculation of this function');
     pane.header.appendChild(functionCheck.root);

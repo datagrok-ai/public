@@ -138,6 +138,6 @@ For more information on configuring connections, refer to the [Connections](http
   | verbose        | Prints detailed information about passed and skipped tests in the console                                                             |
   | platform       | Runs only platform tests (applicable for ApiTests package only)                                                                       |
   | core           | Runs package & core tests & autotests                                                                                                 |
-  | debug          | Enables a debug breakpoint before each test execution, causing all tests to run in debug mode. This feature is only useful in GUI mode|
+  | debug          | Sets a debug breakpoint before each test execution, allowing you to debug the test. Only works in `gui` mode                          |
 
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.

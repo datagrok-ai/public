@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { _package } from './package';
 
-//TODO: properly handle
-const apiKey = '';
+const API_KEY_PARAM_NAME = 'apiKey';
+let apiKey = '';
 
 interface ApiResponse<T> {
   count?: number;
@@ -13,6 +14,7 @@ interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
+  errorCode?: number;
 }
 
 interface Vault {
@@ -303,6 +305,14 @@ async function request<T>(
   body?: any
 ): Promise<ApiResponse<T>> {
   try {
+    if (apiKey === '') {
+      const credentials = await _package.getCredentials();
+      if (!credentials)
+        throw new Error('API key is not set in package credentials');
+      if (!credentials.parameters[API_KEY_PARAM_NAME])
+        throw new Error('API key is not set in package credentials');
+      apiKey = credentials.parameters[API_KEY_PARAM_NAME];
+    }
     const headers: any = {
       'X-CDD-Token': apiKey,
       'Accept': 'application/json',
@@ -316,15 +326,17 @@ async function request<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
     }
 
-    const data = await response.json();
     return { data };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'An unknown error occurred',
+      errorCode: error instanceof Error ? error.cause as number : undefined
     };
   }
 }

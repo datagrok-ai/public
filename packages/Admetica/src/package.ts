@@ -109,15 +109,26 @@ export async function admeProperty(molecule: string, prop: string): Promise<any>
   return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }
 
+async function initializeAdmeticaApp(addPath: boolean = true): Promise<DG.ViewBase | null> {
+  const parent = grok.functions.getCurrentCall();
+  const app = new AdmeticaViewApp(parent);
+  app.addPath = addPath;
+  await app.init();
+  return grok.shell.addPreview(app.tableView!);
+}
+
 //name: Admetica
 //tags: app
 //output: view v
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
-//meta.demoPath: Cheminformatics | Admetica
 export async function admeticaApp(): Promise<DG.ViewBase | null> {
-  const parent = grok.functions.getCurrentCall();
-  const app = new AdmeticaViewApp(parent);
-  await app.init();
-  return grok.shell.addPreview(app.tableView!);
+  return await initializeAdmeticaApp();
+}
+
+//name: Admetica Demo
+//meta.demoPath: Cheminformatics | Admetica
+//description: Evaluating ADMET properties
+export async function admeticaDemo(): Promise<DG.ViewBase | null> {
+  return await initializeAdmeticaApp(false);
 }

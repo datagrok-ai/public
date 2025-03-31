@@ -589,7 +589,7 @@ export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, 
 //output: column result {semType: Molecule}
 export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column): Promise<DG.Column> {
   const PG = DG.TaskBarProgressIndicator.create('Most common substructures...');
-  const mcsCol = DG.Column.string('Cluster MCS', molCol.length);      
+  const mcsCol = DG.Column.string('Cluster MCS', molCol.length);
   try {
     const clusteredMols = new Array(clusterCol.categories.length).fill(null).map(() => [] as string[]);
     const indexes = clusterCol.getRawData();
@@ -1505,6 +1505,10 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+  if (!value || !value.cell || !value.cell.dart ||!value.cell.column) {
+    grok.shell.error('Sorting by similarity requires a valid table cell');
+    return;
+  }
   const molCol = value.cell.column;
   const tableRowIdx = value.cell.rowIndex;
   const dframe = molCol.dataFrame;
@@ -1541,7 +1545,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw new Error('Requires an open table view.');
 
-  const molCol = value.cell.column;
+  const molCol = value.cell?.column;
   const molecule = value.value;
   if (molCol == null)
     throw new Error('Molecule column not found.');
@@ -1936,7 +1940,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 //description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.demoSkip: GROK-14320
-export async function demoActivityCliffsFunc(): Promise<void> {
+export async function demoMoleculeActivityCliffs(): Promise<void> {
   _demoActivityCliffsLayout();
 }
 
@@ -2183,4 +2187,12 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   const col = DG.Column.fromStrings('deprotected', res);
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
+}
+
+//name: beautifyMols
+//description: Beautifies the list of molecules and returns the list of beautified molecules
+//input: list<string> mols
+//output: list<string> result
+export async function beautifyMols(mols: string[]): Promise<string[]> {
+  return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
 }

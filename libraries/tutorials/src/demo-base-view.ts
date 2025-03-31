@@ -26,11 +26,8 @@ export abstract class BaseViewApp {
   sketcher?: HTMLElement;
 
   filePath: string = '';
+  addPath: boolean = true;
   addTabControl: boolean = true;
-  formGenerator?: () => Promise<HTMLElement | null>;
-  setFunction?: () => Promise<void>;
-  abort?: () => Promise<void>;
-  uploadCachedData?: () => Promise<HTMLElement>;
   mode: string = 'sketch';
   tableName: string = '';
   target: DG.ChoiceInput<string | null> | null = null;
@@ -56,13 +53,37 @@ export abstract class BaseViewApp {
     this.container.appendChild(this.formContainer);
   }
 
+  /** Generate a form based on user input. */
+  protected async formGenerator(): Promise<HTMLElement | null> {
+    return null;
+  }
+  
+  /** Called when a file is processed. */
+  protected async setFunction(): Promise<void> {}
+  
+  /** Aborts any ongoing processing. */
+  protected async abort(): Promise<void> {}
+  
+  /** Uploads cached data if available. */
+  protected async uploadCachedData(): Promise<HTMLElement | null> {
+    return null;
+  }
+
+  protected cached(): boolean {
+    return true;
+  }
+  
+  /** Adds custom elements to the form. */
+  protected async customInit(): Promise<void> {}    
+
   async init(): Promise<void> {
-    const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? Object.values(this.sketcherValue)[0];
-    const [name] = Object.keys(this.sketcherValue);
-    
+    await grok.functions.call('Chem:initChemAutostart');
+    const [name, defaultSmiles] = Object.entries(this.sketcherValue)[0];
+    const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? defaultSmiles;
+
     this.sketcherInstance.onChanged.subscribe(async () => {
       const newSmiles: string = this.sketcherInstance.getSmiles();
-      this.sketcherInstance.molInput.value = (newSmiles !== storedSmiles) ? '' : name;
+      this.sketcherInstance.molInput.value = (newSmiles !== defaultSmiles) ? '' : name;
       grok.userSettings.put(this.STORAGE_NAME, { [this.KEY]: newSmiles });
       await this.onChanged(newSmiles);
     });
@@ -83,21 +104,7 @@ export abstract class BaseViewApp {
       this.modeContainer.appendChild(this.createSketchPane());
     }
 
-    if (this.tableName === 'Docking') {
-      const items = await grok.functions.call('Docking:getConfigFiles');
-      const helpIcon = ui.icons.help(() => {
-        grok.shell.windows.showHelp = true;
-        grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
-      });
-      this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
-        await this.onChanged(this.sketcherInstance.getSmiles());
-      }});
-      this.target.root.classList.add('demo-target-root');
-      const container = ui.divH([this.target.root, helpIcon]);
-      container.style.cssText = 'overflow: visible !important; gap: 10px; align-items: baseline;';
-      this.formContainer.insertBefore(container, this.formContainer.firstChild);
-    }
-
+    await this.customInit();
     this.prepareTableView();
     this.addSubs();
   }
@@ -145,7 +152,6 @@ export abstract class BaseViewApp {
     return this.createFileInputPane();
   }
 
-
   private prepareTableView() {
     const table = DG.DataFrame.create(1);
     this.tableView = DG.TableView.create(table, false);
@@ -160,7 +166,8 @@ export abstract class BaseViewApp {
       this.tableView!.dataFrame.currentRowIdx = 0;
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      this.tableView!.path = '';
+      if (this.addPath)
+        this.tableView!.path = '';
     }, 300);
   }
 
@@ -178,7 +185,7 @@ export abstract class BaseViewApp {
       this.formContainer.appendChild(choiceElement);
   }
 
-  private async onChanged(smiles: string) {
+  async onChanged(smiles: string) {
     if (!smiles) {
       this.clearForm();
       return;
@@ -216,19 +223,21 @@ export abstract class BaseViewApp {
 
       col.set(0, smiles);
       col.semType = DG.SEMTYPE.MOLECULE;
+      dataFrame.currentCell = dataFrame.cell(0, 'smiles');
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       const sketcherSmiles = Object.values(this.sketcherValue)[0];
       try {
-        if (this.uploadCachedData && smiles === sketcherSmiles) {
+        if (this.uploadCachedData && smiles === sketcherSmiles && this.cached()) {
           const widget = await this.uploadCachedData();
           this.clearForm();
-          this.formContainer.appendChild(widget);
+          this.formContainer.appendChild(widget!);
         } else if (this.formGenerator) {
           const form = await this.formGenerator();
           if (form) {
             this.clearForm();
             this.formContainer.appendChild(form);
+            this.tableView.grid.invalidate();
           }
         } else {
           console.warn('No form generator provided.');

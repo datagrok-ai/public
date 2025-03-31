@@ -8,7 +8,6 @@
   
 .demo-content-container {
   flex: 1;
-  height: 100%;
   background-color: #fff;
   padding: 10px;
   display: flex;
@@ -79,4 +78,8 @@
 
 .demo-target-root {
   width: 95%;
+}
+
+.demo-content-container .ketcher-host.ui-div {
+  width: 100% !important;
 }

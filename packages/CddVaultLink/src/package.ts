@@ -32,9 +32,12 @@ export async function cddVaultApp(): Promise<DG.ViewBase> {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {
+export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   const vaults = await getVaults();
-  console.log(vaults);
+  if (vaults.error) {
+    grok.shell.error(vaults.error);
+    return;
+  }
 
   for (const vault of vaults.data!) {
     const vaultNode = treeNode.group(vault.name);
@@ -64,79 +67,30 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
       const runButton = ui.bigButton('SEARCH', async () => {
         ui.setUpdateIndicator(gridDiv, true);
         const params = funcEditor.getParams();
-        //!!!!!!!!!!!!!!!!!!!TODO!!!!!!!!!!!!!! Call function using funcCall
-        const df = await cDDVaultSearch2(vault.id, params.structure, params.structure_search_type, params.structure_similarity_threshold,
-          params.protocol, params.run);
+        const df = await grok.functions.call('CDDVaultLink:cDDVaultSearch2',
+          {
+            vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+            structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
+          });
         ui.empty(gridDiv);
         gridDiv.append(df.plot.grid().root);
         ui.setUpdateIndicator(gridDiv, false);
       });
       const gridDiv = ui.div('', 'cdd-vault-search-res-div');
       runButton.classList.add('cdd-vault-run-search-button');
+      view.name = 'Search CDD Vault'
       view.root.append(ui.divV([
         acc,
         runButton,
         gridDiv
-      ]));
+      ], {style: {height: '100%'}}));
       grok.shell.addPreview(view);
     });
 
-   // searchNode.onSelected.subscribe(async (_) => {
-      // const searchView = DG.View.create();
-      // const searchTypesAcc = ui.accordion(`search_${vault.name}`);
-      // searchView.append(searchTypesAcc);
-      // const searchTypeInput = ui.input.choice('', {
-      //   value: CDD_SEARCH_TYPES[0], items: CDD_SEARCH_TYPES, onValueChanged: () => {
-      //     searchTypeInput.value === CDDVaultSearchType.SIMILARITY ?
-      //       searchOptionsDiv.classList.add('cdd-vault-similarity-search') :
-      //       searchOptionsDiv.classList.remove('cdd-vault-similarity-search');
-      //   }
-      // });
-
-      // const property =
-      // {
-      //   'name': 'lim',
-      //   'type': DG.TYPE.FLOAT,
-      //   'showSlider': true,
-      //   'min': 0,
-      //   'max': 1,
-      //   'nullable': false,
-      // };
-      // const slider = DG.Property.fromOptions(property);
-      // const initialCutOff = { lim: 0.8 };
-      // const similarityCutOffInput = ui.input.forProperty(slider, initialCutOff);
-      // similarityCutOffInput.classList.add('cdd-vault-search-similarity-limit');
-
-      // const searchOptionsDiv = ui.divH([searchTypeInput.root, similarityCutOffInput.root]);
-
-      // const sketcher = new DG.chem.Sketcher(grok.chem.SKETCHER_MODE.EXTERNAL);
-      // sketcher.root.classList.add('cdd-vault-search-sketcher-root');
-
-      // const runButton = ui.bigButton('SEARCH', async () => {
-      //   const cddMols = await queryMolecules(vaults.data![0].id, { structure: sketcher.getMolFile(), structure_search_type: "substructure"});
-      //   ui.empty(resultsGridDiv);
-      //   const df = DG.DataFrame.fromObjects(cddMols.data!.objects!)!;
-      //   await grok.data.detectSemanticTypes(df);
-      //   resultsGridDiv.append(df.plot.grid().root);
-      // });
-      // runButton.classList.add('cdd-vault-run-search-button');
-
-      // const resultsGridDiv = ui.div();
-
-      // searchTypesAcc.addPane('By Structure', () => ui.divV([
-      //   searchOptionsDiv,
-      //   ui.div(sketcher.root, 'cdd-vault-search-sketcher-div'),
-      //   runButton,
-      //   resultsGridDiv        
-      // ], 'cdd-vault-search-panel'));
-
-
-   // });
-
-
-    vaultNode.group('Protocols');
-    vaultNode.group('Plates');
-    vaultNode.group('Assays');
+   //TODO! unlock other tabs
+   // vaultNode.group('Protocols');
+   // vaultNode.group('Plates');
+   // vaultNode.group('Assays');
   }
 }
 
@@ -148,6 +102,9 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
 export function molColumnPropertyPanel(molecule: string): DG.Widget {
   return DG.Widget.fromRoot(ui.wait(async () => {
     const vaults = await getVaults();
+    if (vaults.error) {
+      return ui.divText(vaults.error);
+    }
     const vaultId = vaults.data![0].id;
     const cddMols = await queryMolecules(vaultId, { structure: molecule, structure_search_type: "exact"});
 
@@ -208,6 +165,10 @@ function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): HTMLEle
 //input: funccall call
 export async function CDDVaultSearchEditor(call: DG.FuncCall): Promise<void> {
   const vaults = await getVaults();
+  if (vaults.error) {
+    grok.shell.error(vaults.error);
+    return;
+  }
   const vaultId = vaults.data![0].id;
   const funcEditor = new SeachEditor(vaultId);
   const dialog = ui.dialog({title: 'CDD search'})
@@ -220,6 +181,8 @@ export async function CDDVaultSearchEditor(call: DG.FuncCall): Promise<void> {
 }
 
 //name: CDD Vault search 2
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: int vaultId {nullable: true}
 //input: string structure {category: Structure; nullable: true; semType: Molecule} [SMILES; cxsmiles or mol string]
 //input: string structure_search_type {category: Structure; nullable: true; choices: ["exact", "similarity", "substructure"]} [SMILES, cxsmiles or mol string]
@@ -232,6 +195,10 @@ export async function cDDVaultSearch2(vaultId?: number, structure?: string, stru
   structure_similarity_threshold?: number, protocol?: number, run?: number): Promise<DG.DataFrame> {
   if (!vaultId) {
     const vaults = await getVaults();
+    if (vaults.error) {
+      grok.shell.error(vaults.error);
+      return DG.DataFrame.create();
+    }
     vaultId = vaults.data![0].id;
   }
   //collecting molecule ids according to protocol query params

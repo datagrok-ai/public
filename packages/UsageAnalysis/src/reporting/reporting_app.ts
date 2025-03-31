@@ -7,6 +7,7 @@ import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
   static readonly APP_NAME = 'Reports';
+  empty: DG.View = DG.View.create();
   view?: DG.TableView;
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
@@ -15,6 +16,13 @@ export class ReportingApp {
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
+    this.empty.name = ReportingApp.APP_NAME;
+    const loader: HTMLElement = ui.loader();
+    loader.style.flexGrow = 'initial!important';
+    this.empty.root.append(loader);
+    this.empty.root.style.display = 'flex';
+    this.empty.root.style.alignItems = 'center';
+    this.empty.root.style.justifyContent = 'center';
   }
 
   async init(path?: string): Promise<void> {
@@ -39,6 +47,7 @@ export class ReportingApp {
     this.view.name = ReportingApp.APP_NAME;
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
       await DG.UserReportsRule.showAddDialog())]]);
+    this.empty.root.replaceWith(this.view.root);
     setTimeout(async () => {
       this.view!._onAdded();
       await this.refresh(table, this.view!.grid);

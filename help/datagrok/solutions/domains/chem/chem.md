@@ -21,6 +21,8 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
+  - patents search
 ---
 
 ```mdx-code-block
@@ -314,7 +316,7 @@ To sort a dataset by similarity, right-click your reference molecule and select 
 
 To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
-<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
+![Similarity and diversity search](similarity-and-diversity-search.gif)
 
 <details>
 <summary>How to use</summary>
@@ -380,7 +382,7 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
+![R-Group Analysis](img/new_r_group_analysis.gif)
 
 <details>
 <summary> How to use </summary>
@@ -753,6 +755,36 @@ To view the chemical scripts you've created or those shared with you, open the [
 For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
+
+## Retrosynthesis
+
+Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
+commercially available starting materials and the synthetic reactions needed to reach the target.
+
+To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
+
+## Integration with SureChEMBL
+
+SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
+
+<details>
+<summary> How to use </summary>
+
+* select cell with molecule structure in the grid
+* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
+* change the number in the *Molecules limit* field to search for more or fewer molecules
+* change the similarity cutoff using the *Similarity cutoff* slider
+* click the *plus* icon to add all patents found for molecules in the results as a table view
+
+![surechembl search parameters](img/surechembl_search_params.gif)
+
+Search results are shown under the *Substructure Search*/*Similarity Search* tab. Similarity search results are sorted by similarity score and the score is indicated above the molecule.
+Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
+
+![surechembl search results](img/surechembl_search_results.gif)
+
+</details>
 
 ## Utilities
 

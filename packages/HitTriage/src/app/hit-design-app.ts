@@ -122,7 +122,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   _initViewSubs() {
     this.multiView.subs.push(grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
-        if (grok.shell.v?.name === this.currentDesignViewId) {
+        if (grok.shell.v === this._designView) {
           grok.shell.windows.showHelp = false;
 
           this.setBaseUrl();
@@ -134,6 +134,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
             this._infoView.init();
             sub.unsubscribe();
           });
+        } else if (grok.shell.v === this.mainView) {
+          this.setBaseUrl();
         }
       } catch (e) {
         console.error(e);
@@ -396,6 +398,14 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     if (ribbons) {
       const hasSubmit = checkRibbonsHaveSubmit(ribbons);
       if (!hasSubmit) {
+        setTimeout(() => {
+          const {sub} = addBreadCrumbsToRibbons(view, this.appName, view.name, () => {
+            grok.shell.v = this.mainView;
+            view?.close();
+            this._infoView.init();
+            sub.unsubscribe();
+          });
+        }, 1000);
         const getComputeDialog = async () => {
           chemFunctionsDialog(this, async (resultMap) => {
             const oldDescriptors = this.template!.compute.descriptors.args;
@@ -996,8 +1006,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       campaign.layout = newLayout.viewState;
     campaign.template = this.template;
 
-    await _package.files.writeAsText(campaignPath,
-      JSON.stringify(campaign));
+    await _package.saveCampaignJson(this.appName, campaign);
     notify && grok.shell.info('Campaign saved successfully.');
     !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;

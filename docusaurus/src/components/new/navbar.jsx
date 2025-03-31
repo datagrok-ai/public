@@ -139,8 +139,8 @@ export default function navbar(current){
                    <NavItems current={current.page}/>
                 </ul>
                 <div className='mb-xs-4 d-none d-lg-block'>
-                    <button className="btn brand-btn btn-outline mr-2" type="submit">Get a Demo</button>
-                    <button className="btn brand-btn brand-btn-primary" type="submit">Try Now</button>
+                    <button className="btn brand-btn btn-outline mr-2" type="submit">Book a demo</button>
+                    <button className="btn brand-btn brand-btn-primary" type="submit">Try now</button>
                 </div>
             </div>
         </nav>

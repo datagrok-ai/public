@@ -1,6 +1,7 @@
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
+    platform: linux/amd64
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -16,7 +17,8 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:1.0.0
+    image: datagrok/grok_pipe:1.0.1
+    platform: linux/amd64
     container_name: grok_pipe
     ports:
       - "3000:3000"
@@ -32,6 +34,7 @@ services:
   datagrok:
     privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
         {
@@ -45,8 +48,31 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key"}
-        }
+          "connectorsSettings": {
+            "dataframeParsingMode":"New Process",
+            "externalDataFrameCompress":true,
+            "grokConnectHost":"grok_connect",
+            "grokConnectPort":1234,
+            "localFileSystemAccess":false,
+            "sambaSpaceEscape":"none",
+            "sambaVersion":"3.0"
+          },
+          "dockerSettings": {
+            "grokSpawnerApiKey": "test-x-api-key",
+            "grokSpawnerHost": "grok_spawner",
+            "grokSpawnerPort": 8000,
+            "imageBuildTimeoutMinutes": 30,
+            "proxyRequestTimeout": 60000
+          },
+          "queueSettings": {
+            "amqpHost": "rabbitmq",
+            "amqpPassword": "guest",
+            "amqpPort": 5672,
+            "amqpUser": "guest",
+            "pipeHost": "grok_pipe",
+            "pipeKey": "test-key"
+            }
+          }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
     networks:
@@ -65,6 +91,7 @@ services:
 
   grok_spawner:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-latest}
+    platform: linux/amd64
     user: root
     environment:
       X_API_KEY: test-x-api-key
@@ -82,7 +109,12 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
+    image: datagrok/grok_connect:2.3.30
+    platform: linux/amd64
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     networks:
       datagrok:
         aliases:
@@ -92,29 +124,9 @@ services:
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
-  cvm_nginx:
-    image: datagrok/cvm_nginx:latest
-    ports:
-      - "${DATAGROK_CVM_PORT:-8090}:8090/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - cvm
-          - nginx_cvm
-    restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "jupyter_notebook", "notebook" ]
-
-  jupyter_notebook:
-    image: datagrok/jupyter_notebook:${GROK_JUPYTER_NOTEBOOK_VERSION:-latest}
-    networks:
-      datagrok:
-        aliases:
-          - jupyter_notebook
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
-
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    platform: linux/amd64
     networks:
       datagrok:
         aliases:
@@ -122,16 +134,25 @@ services:
     environment:
       GROK_PARAMETERS: |
         {
-          "isolatesCount": 1,
-          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"],
-          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
+          "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
+          "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_started
+        restart: true
+      grok_pipe:
+        condition: service_started
+        restart: false
+      datagrok:
+        condition: service_started
+        restart: false
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:12.20
+    image: postgres:17.4
+    platform: linux/amd64
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

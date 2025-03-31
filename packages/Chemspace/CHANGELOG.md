@@ -1,5 +1,13 @@
 # Chemspace changelog
 
+## 1.2.1 (2025-03-29)
+
+Moved application under Chem section in browse tree
+
+## 1.2.0 (2025-03-29)
+
+Datagrok api >= 1.25.0
+
 ## 1.1.6 (2025-02-25)
 
 Updated README
