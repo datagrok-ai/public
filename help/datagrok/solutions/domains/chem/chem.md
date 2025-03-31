@@ -21,6 +21,7 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
 ---
 
 ```mdx-code-block
@@ -755,7 +756,10 @@ For a full list of chemical scripts, along with details on their implementation 
 :::
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> e5a07c209 (Help: Added retrosynthesis app)
 ## Retrosynthesis
 
 Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
@@ -764,6 +768,7 @@ commercially available starting materials and the synthetic reactions needed to 
 To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
 ![Retrosynthesis panel](img/retrosynthesis-panel.png)
 
+<<<<<<< HEAD
 ## Integration with SureChEMBL
 
 SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
@@ -787,6 +792,8 @@ Under each molecule, there is a tab with a number indicating in how many patents
 </details>
 
 >>>>>>> 454bc64ee (Help: Added SureChembl help)
+=======
+>>>>>>> e5a07c209 (Help: Added retrosynthesis app)
 ## Utilities
 
 Datagrok offers [multiple ways to transform and enrich your data](../../../../transform/transform.md). For example, you can link tables, extract values, or add metadata to annotate your dataset with experimental conditions or assay results<!--need a link out to how to add metadata-->. You can also use [chemical scripts](#chemical-scripts) to execute operations on chemical data, including calculation of fingerprints and descriptors, toxicity prediction, and more.
