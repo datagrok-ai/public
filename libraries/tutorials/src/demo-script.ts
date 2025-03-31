@@ -401,7 +401,7 @@ export class DemoScript {
     this._initRoot();
     if (grok.shell.v.name === this.name) {
       grok.shell.v.close();
-      grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
+      this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
         grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
     }
 
