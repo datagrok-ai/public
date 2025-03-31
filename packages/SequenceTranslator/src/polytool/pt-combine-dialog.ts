@@ -115,7 +115,7 @@ export async function getPTCombineDialog() {
                 }
             }
             dfs('', 0);
-            const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Combined', result)]);
+            const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Combined Sequences', result)]);
             df.name = 'Combined Sequences';
             await df.meta.detectSemanticTypes();
             await grok.data.detectSemanticTypes(df);
