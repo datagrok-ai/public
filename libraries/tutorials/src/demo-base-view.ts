@@ -76,6 +76,7 @@ export abstract class BaseViewApp {
   protected async customInit(): Promise<void> {}    
 
   async init(): Promise<void> {
+    await grok.functions.call('Chem:initChemAutostart');
     const [name, defaultSmiles] = Object.entries(this.sketcherValue)[0];
     const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? defaultSmiles;
 
