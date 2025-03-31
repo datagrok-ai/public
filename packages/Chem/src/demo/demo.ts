@@ -64,29 +64,22 @@ export async function _demoChemOverview(): Promise<void> {
   await demoScript
     .step('Load molecules', async () => {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
-      tv.grid.columns.setOrder(firstCols.concat(lastCols));
+      const layoutString = await _package.files.readAsText('demo_files/Overview_demo.layout');
+      const layout = DG.ViewLayout.fromJson(layoutString);
+      await delay(100);
+      tv.loadLayout(layout);
       grok.shell.windows.showHelp = false;
       grok.shell.windows.context.visible = true;
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
-      const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
-      table.currentCell = table.cell(0, molColumnName);
-      await delay(1000);
-      grok.shell.windows.showHelp = false; //for some reason help panel appears again, need to hide it
       propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
       closeAllAccordionPanes(propPanel!);
-      const structurePaneContent = getAccordionPane('Structure', propPanel!);
-      getAccordionPane('3D Structure', structurePaneContent!);
-      const biologyPaneContent = getAccordionPane('Biology', propPanel!);
-      getAccordionPane('Toxicity', biologyPaneContent!);
-      await delay(3000);
-      grok.shell.windows.showHelp = false;
-      table.currentRowIdx = 5;
-      grok.shell.windows.showHelp = false;
-      await delay(3000);
-      table.currentRowIdx = 3;
-    }, {description: 'Molecules properties are re-calculating when changing current molecule', delay: 3000})
+      const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+      table.currentCell = table.cell(0, molColumnName);
+    }, {description: `Open any pane on the context panel on the right to calculate corresponding properties. For instance, open 'Structure' -> '3D Structure' and 'Biology' -> 'Toxicity'.
+      Click on any other molecule in dataset to re-calculate properties.
+      `, delay: 3000})
     .step('Fast rendering', async () => {
       await delay(1000);
       canvas = tv.grid.root.getElementsByTagName('canvas')[2];
@@ -99,12 +92,9 @@ export async function _demoChemOverview(): Promise<void> {
       const sketcherDlg = await openSketcher(filters.root, 'sketch-link');
       const sketcherInput = sketcherDlg!
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
-      await delay(2000);
       sketcherInput.value = 'C1CCCCC1';
-      const progressBar = DG.TaskBarProgressIndicator.create(`Sketcher initialization in progress...`);
-      await delay(3000);
-      progressBar.close();
       sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+      await delay(3000);
       Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Filtering dataset by substructure', delay: 2000})
     .step('Align by scaffold', async () => {

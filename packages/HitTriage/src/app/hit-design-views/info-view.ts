@@ -9,8 +9,7 @@ import $ from 'cash-dom';
 import {CampaignGroupingType, CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
-  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping,
-  loadCampaigns, modifyUrl, popRibbonPannels,
+  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, modifyUrl, popRibbonPannels,
   processGroupingTable,
   setSavedCampaignsGrouping} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
@@ -64,32 +63,43 @@ export class HitDesignInfoView
       const campaignsTable = await this.getCampaignsTable();
       const tableRoot = ui.div([campaignsTable], {style: {position: 'relative'}});
 
+      const refreshTable = async () => {
+        ui.setUpdateIndicator(tableRoot, true);
+        try {
+          const t = await this.getCampaignsTable();
+          ui.setUpdateIndicator(tableRoot, false);
+          ui.empty(tableRoot);
+          tableRoot.appendChild(t);
+        } catch (e) {
+          grok.shell.error('Failed to update campaigns table');
+          console.error(e);
+        } finally {
+          ui.setUpdateIndicator(tableRoot, false);
+        }
+      }
+      // grouping via different campaign properties
       const sortIcon = ui.iconFA('sort', () => {
         const menu = DG.Menu.popup();
         Object.values(CampaignGroupingType).forEach((i) => {
           menu.item(i, async () => {
             setSavedCampaignsGrouping(i as CampaignGroupingType);
-            ui.setUpdateIndicator(tableRoot, true);
-            try {
-              const t = await this.getCampaignsTable();
-              ui.setUpdateIndicator(tableRoot, false);
-              ui.empty(tableRoot);
-              tableRoot.appendChild(t);
-            } catch (e) {
-              grok.shell.error('Failed to update campaigns table');
-              console.error(e);
-            } finally {
-              ui.setUpdateIndicator(tableRoot, false);
-            }
+            await refreshTable();
           });
           menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
         });
       });
-      sortIcon.style.marginBottom = '12px';
-      sortIcon.style.marginLeft = '5px';
+      sortIcon.style.marginBottom = '9px';
+      sortIcon.style.marginLeft = '8px';
       sortIcon.style.fontSize = '15px';
       ui.tooltip.bind(sortIcon, () => `Group Campaigns. Current: ${this.currentSorting}`);
-      const sortingHeader = ui.divH([continueCampaignsHeader, sortIcon], {style: {alignItems: 'center'}});
+
+      const refreshIcon = ui.iconFA('sync', async () => {
+        await refreshTable();
+      });
+      refreshIcon.style.marginBottom = '9px';
+      refreshIcon.style.marginLeft = '8px';
+      ui.tooltip.bind(refreshIcon, () => 'Refresh campaigns table');
+      const sortingHeader = ui.divH([continueCampaignsHeader, sortIcon, refreshIcon], {style: {alignItems: 'center'}});
       $(this.root).empty();
       this.root.appendChild(ui.div([
         ui.divV([appHeader, sortingHeader], {style: {marginLeft: '10px'}}),
@@ -98,7 +108,6 @@ export class HitDesignInfoView
         contentDiv,
       ]));
       await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
-      this.app.resetBaseUrl();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -211,7 +220,7 @@ export class HitDesignInfoView
   }
 
   private async getCampaignsTable() {
-    const campaignNamesMap = await loadCampaigns(this.app.appName, this.deletedCampaigns);
+    const campaignNamesMap = await _package.loadCampaigns(this.app.appName, this.deletedCampaigns);
     const grouppingMode = getSavedCampaignsGrouping();
     const grouppedCampaigns = getGroupedCampaigns<HitDesignCampaign>(Object.values(campaignNamesMap), grouppingMode);
     this.currentSorting = grouppingMode;
@@ -232,8 +241,7 @@ export class HitDesignInfoView
           try {
             info.permissions = res;
             info.authorUserId ??= grok.shell.user.id;
-            await _package.files.writeAsText(
-              `${this.app.appName}/campaigns/${info.name}/${CampaignJsonName}`, JSON.stringify(info));
+            await _package.saveCampaignJson(this.app.appName, info);
             grok.shell.info('Permissions updated for campaign ' + info.name);
           } catch (e) {
             grok.shell.error('Failed to update permissions for campaign ' + info.name);

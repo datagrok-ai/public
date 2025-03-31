@@ -94,6 +94,7 @@ export function init() {
 //name: Model Hub
 //tags: app
 //output: view v
+//meta.browsePath: Compute
 export function modelCatalog() {
   return startModelCatalog(options);
 }

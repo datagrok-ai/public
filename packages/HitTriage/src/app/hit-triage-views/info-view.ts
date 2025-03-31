@@ -7,8 +7,7 @@ import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, checkEditPermissions, checkViewPermissions,
-  loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, checkEditPermissions, checkViewPermissions, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
@@ -61,7 +60,6 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
         templatesDiv,
         campaignAccordionDiv,
       ]));
-      this.app.resetBaseUrl();
     } catch (e) {
       ui.setUpdateIndicator(this.root, false);
       throw e;
@@ -141,7 +139,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   private async getCampaignsTable() {
-    const campaignNamesMap = await loadCampaigns('Hit Triage', this.deletedCampaigns);
+    const campaignNamesMap = await _package.loadCampaigns('Hit Triage', this.deletedCampaigns);
 
     const deleteCampaignIcon = (info: HitTriageCampaign) => {
       const icon = ui.icons.delete(async () => {

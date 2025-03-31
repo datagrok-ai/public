@@ -92,7 +92,8 @@ export class DemoView extends DG.ViewBase {
   }
 
 
-  private _setBreadcrumbsInViewName(viewPath: string[]): void {
+  private _setBreadcrumbsInViewName(viewPath: string[], view?: DG.View): void {
+    const usedView = view ? view === grok.shell.v ? view : null : grok.shell.v;
     const path = ['Home', 'Demo', ...viewPath.filter((v) => v !== 'Home' && v !== 'Demo')];
     const breadcrumbs = ui.breadcrumbs(path);
 
@@ -103,7 +104,7 @@ export class DemoView extends DG.ViewBase {
       this.tree.currentItem = actualItem === 'Demo' ? this.tree : this.tree.items.find((item) => item.text === actualItem)!;
     });
 
-    if (grok.shell.v) {
+    if (usedView) {
       if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
         const homeIcon = ui.iconFA('home', () => {
           grok.shell.v.close();
@@ -112,7 +113,7 @@ export class DemoView extends DG.ViewBase {
         homeIcon.classList.add('demo-breadcrumbs-home-element');
         breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
       }
-      const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+      const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
       if (viewNameRoot) {
         viewNameRoot.textContent = '';
         viewNameRoot.appendChild(breadcrumbs.root);
@@ -228,6 +229,10 @@ export class DemoView extends DG.ViewBase {
 
     const searchInput = this._createSearchInput(this.funcs, tree);
     this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
+    this.subs.push(grok.events.onViewAdded.subscribe((view) => {
+      if (view.name === 'Demo app')
+        setTimeout(() => this._setBreadcrumbsInViewName([], view), 100); // we need this because sometimes view is added one more time
+    }));
   }
 
   private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {

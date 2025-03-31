@@ -125,8 +125,8 @@ export async function curveFitDemo(): Promise<void> {
 //description: Assasy plates with concentration, layout and readout data
 //meta.demoPath: Curves | Assay Plates
 export async function assayPlatesDemo(): Promise<void> {
-  const plateFiles = await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates');
-  grok.shell.addView(await getPlatesFolderPreview(plateFiles) as DG.ViewBase);
+  const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
+  grok.shell.addView(await previewPlateXlsx(plateFile) as DG.ViewBase);
 }
 
 //tags: init

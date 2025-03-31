@@ -120,14 +120,14 @@ export async function loadCampaigns<T extends AppName>(
   const campaignFolders = (await _package.files.list(`${appName}/campaigns`))
     .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
   const campaignNamesMap: {[name: string]: CampaignsType[T]} = {};
-  for (const folder of campaignFolders) {
+  const campaignPromises = campaignFolders.map(async (folder) => {
     try {
       const campaignJson: CampaignsType[T] = JSON.parse(await _package.files
         .readAsText(`${appName}/campaigns/${folder.name}/${CampaignJsonName}`));
       if (campaignJson.authorUserId && campaignJson.permissions &&
         !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
       )
-        continue;
+        return null;
       if (campaignJson.authorUserId && !campaignJson.authorUserFriendlyName) {
         const user = await grok.dapi.users.find(campaignJson.authorUserId);
         if (user)
@@ -135,9 +135,11 @@ export async function loadCampaigns<T extends AppName>(
       }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
-      continue;
+      console.error(e);
     }
-  }
+    return null;
+  })
+  await Promise.all(campaignPromises);
   return campaignNamesMap;
 }
 
@@ -338,6 +340,16 @@ export async function checkFileExists(path: string) {
   return true;
 }
 
+export function timeoutOneTimeEventListener(element: HTMLElement, eventName: string, callback: () => void, timeout = 4000) {
+  function listener() {
+    callback();
+    element.removeEventListener(eventName, listener);
+  };
+  element.addEventListener(eventName, listener);
+  setTimeout(() => {
+    element.removeEventListener(eventName, listener);
+  }, timeout);
+}
 
 // //name: Demo Design with reinvent
 // //input: int numberOfMolecules

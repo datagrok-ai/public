@@ -108,6 +108,10 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
+    environment:
+      CONNECTION_POOL_MAXIMUM_SIZE: 50
+      CONNECTION_POOL_IDLE_TIMEOUT: 300000
+      GROK_CONNECT_PORT: 1234
     networks:
       datagrok:
         aliases:
@@ -121,27 +125,6 @@ services:
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
-  cvm_nginx:
-    image: datagrok/cvm_nginx:bleeding-edge
-    ports:
-      - "${DATAGROK_CVM_PORT:-8090}:8090/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - cvm
-          - nginx_cvm
-    restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "jupyter_notebook", "notebook" ]
-
-  jupyter_notebook:
-    image: datagrok/jupyter_notebook:${GROK_JUPYTER_NOTEBOOK_VERSION:-bleeding-edge}
-    networks:
-      datagrok:
-        aliases:
-          - jupyter_notebook
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
-
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge-cuda}
     networks:
@@ -150,10 +133,8 @@ services:
           - jupyter_kernel_gateway
     environment:
       GROK_PARAMETERS: |
-        {
-          "isolatesCount": 1,
-          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
-          "capabilities": ["jupyter"],
+        {           
+          "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
         }
     restart: unless-stopped

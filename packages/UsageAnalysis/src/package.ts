@@ -104,8 +104,6 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //tags: app
 //meta.url: /tests/manager
 //meta.browsePath: Admin
-//input: string path {isOptional: true; meta.url: true}
-//input: map params {isOptional: true}
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
@@ -123,8 +121,8 @@ export function testTrackApp(): void {
 export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   const parent = grok.functions.getCurrentCall();
   const app = new ReportingApp(parent);
-  await app.init(path);
-  return app.view!;
+  app.init(path).catch((e) => console.log(e));
+  return app.empty;
 }
 
 

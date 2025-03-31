@@ -67,7 +67,8 @@ export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
     value: existingStudiesNames[0],
     nullable: false,
   });
-  const runButton = ui.bigButton('RUN', () => {
+  const runButton = ui.bigButton('RUN', async () => {
+    studies[studyChoices.value] = new ClinicalStudy(studyChoices.value);
     createClinicalCaseViews(existingStudies[studyChoices.value]);
   });
   runButton.classList.add('clinical-case-run-app-button');

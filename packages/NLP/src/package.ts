@@ -2,16 +2,61 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import AWS from 'aws-sdk';
+
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
-import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
+import {modifyMetric} from './stemming-tools/stemming-ui';
+import {multiColReduceDimensionality} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
-import '../css/stemming-search.css';
+import {SentenceSimilarityViewer} from './utils/sentence-similarity-viewer';
 
-export const _package = new DG.Package();
+import '../css/stemming-search.css';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+
+export const SentenceEmbeddingInvalidationTime = 8 * 60 * 60 * 1000; // 8 hours
+class NLPPackage extends DG.Package {
+  sentenceEmbeddingsCache: { [key: string]: Float32Array } = {};
+  lastLoadTime?: number;
+
+  constructor() {
+    super();
+  }
+
+  async loadCachedEmbeddings() {
+    if (this.lastLoadTime && Date.now() - this.lastLoadTime < SentenceEmbeddingInvalidationTime)
+      return;
+    // check the file if it exists
+
+    if (await this.files.exists('cache/embeddingsCache.d42')) {
+      const file = (await this.files.readBinaryDataFrames('cache/embeddingsCache.d42'));
+      const df = file[0];
+      const sentences = df.col('s')!.toList();
+      const embeddings: Uint8Array[] = df.col('e')!.toList();
+      // conversion to temporary Uint8Array is needed because DG returns a view on arrayBuffer that is large and undeterministic
+      for (let i = 0; i < sentences.length; i++)
+        this.sentenceEmbeddingsCache[sentences[i]] = new Float32Array(new Uint8Array(embeddings[i]).buffer);
+    }
+    this.lastLoadTime = Date.now();
+  }
+
+  async saveCachedEmbeddings() {
+    const sentences = Object.keys(this.sentenceEmbeddingsCache);
+    const embeddings = Object.values(this.sentenceEmbeddingsCache);
+    const df = DG.DataFrame.create(sentences.length);
+    df.columns.add(DG.Column.fromStrings('s', sentences));
+    df.columns.add(DG.Column.fromList('byte_array', 'e', embeddings.map((e) => new Uint8Array(e.buffer, 0, e.length * 4))));
+    await this.files.writeBinaryDataFrames('cache/embeddingsCache.d42', [df]);
+  }
+}
+
+export const _package = new NLPPackage();
 
 // AWS service instances
 let translate: AWS.Translate;
@@ -124,7 +169,6 @@ async function doTranslation() {
 }
 
 //name: Translation
-//tags: panel, widgets
 //input: file textfile
 //output: widget result
 //condition: isTextFile(textfile)
@@ -195,15 +239,38 @@ export async function initAWS() {
   //comprehendMedical = new AWS.ComprehendMedical();
 }
 
-//top-menu: ML | Text Embeddings...
+//top-menu: ML | Text Clustering...
 //name: Compute Text Embeddings
 //description: Compute text embeddings using UMAP
 export function computeEmbds(): void {
-  runTextEmdsComputing();
+  const table = grok.shell.t;
+  const textCols = table?.columns?.bySemTypeAll('Text');
+  if (!table || !textCols || textCols.length === 0) {
+    grok.shell.warning('Please open table with text columns');
+    return;
+  }
+  const colInput = ui.input.column('Text Column', {table: table, value: textCols[0], filter: (col) => col.semType === 'Text'});
+  const neiInput = ui.input.int('Neighbours', {value: 25, min: 1, max: 100, nullable: false});
+  const minDist = table.rowCount > 1000 ? 0.003 : 0.008;
+  const minDistInput = ui.input.float('Minimum Distance', {value: minDist, nullable: false});
+  ui.dialog('Cluster Text').add(ui.inputs([colInput, neiInput, minDistInput])).onOK(async () => {
+    await multiColReduceDimensionality(table as any, [colInput.value as any], DimReductionMethods.UMAP,
+      [VectorMetricsNames.Cosine],
+      [1], [DG.Func.find({package: 'NLP', name: 'sentenceEmbeddingsPreprocessingFunction'})[0] as any],
+      DistanceAggregationMethods.MANHATTAN,
+      true, false, {
+        dbScanEpsilon: minDistInput.value ?? 0.008, dbScanMinPts: 4, learningRate: 1, minDist: 0.3, nEpochs: 0,
+        nNeighbors: neiInput.value ?? 25, preprocessingFuncArgs: [{}], randomSeed: '0', spread: 1.5, useWebGPU: true,
+      }, {
+        fastRowCount: 1000,
+      }, DG.Func.find({package: 'Eda', name: 'dbscanPostProcessingFunction'})[0] as any, {
+        epsilon: minDistInput.value ?? 0.008,
+        minimumPoints: 4,
+      }, VectorMetricsNames.Cosine);
+  }).show();
 }
 
 //name: Stem Column
-//tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Text
 //meta.supportedDistanceFunctions: Common Items
 //input: column col {semType: Text}
@@ -218,7 +285,6 @@ export function stemColumnPreprocessingFunction(col: DG.Column, metric: string, 
 }
 
 //name: Radial Coloring
-//tags: dim-red-postprocessing-function
 //input: column col1
 //input: column col2
 export function radialColoring(col1: DG.Column, col2: DG.Column) {
@@ -279,7 +345,6 @@ export function radialColoring(col1: DG.Column, col2: DG.Column) {
 }
 
 //name: Distance
-//tags: panel, widgets
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
@@ -299,7 +364,6 @@ export function distance(query: string): DG.Widget {
 }
 
 //name: Similar
-//tags: panel, widgets
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
@@ -321,4 +385,145 @@ export function similar(query: string): DG.Widget {
   }
 
   return new DG.Widget(ui.divV(uiElements));
+}
+
+//name: Sentence Embeddings
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Text
+//meta.supportedDistanceFunctions: Vector Cosine, Euclidean, Manhattan
+//input: column col {semType: Text}
+//input: string metric
+//output: object result
+export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
+  const embeddings: Float32Array[] = await getEmbeddings(col.toList());
+  return {entries: embeddings, options: {}};
+}
+
+
+//name: getEmbeddings
+//input: list<string> sentences
+//output: string result
+export async function getEmbeddings(sentences: string[]): Promise<Float32Array[]> {
+  await _package.loadCachedEmbeddings();
+
+  const resultingEmbeddings = new Array<Float32Array>(sentences.length).fill(null as any).map((_) => new Float32Array(384));
+  const missingSentences: string[] = [];
+  const missingIndices: number[] = [];
+  for (let i = 0; i < sentences.length; i++) {
+    if (_package.sentenceEmbeddingsCache[sentences[i]])
+      resultingEmbeddings[i] = _package.sentenceEmbeddingsCache[sentences[i]];
+    else {
+      missingSentences.push(sentences[i]);
+      missingIndices.push(i);
+    }
+  }
+
+  if (missingSentences.length == 0)
+    return resultingEmbeddings;
+
+  const container = await grok.dapi.docker.dockerContainers.filter('nlp').first();
+
+  if (!container.status.startsWith('started') && !container.status.startsWith('checking')) {
+    try {
+      await grok.dapi.docker.dockerContainers.run(container.id, true);
+    } catch (e) {
+      // not an admin
+    }
+    await delay(5000);
+  }
+
+  // do a warmup fetch to avoid errors
+  try {
+    await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+      method: 'POST',
+      body: JSON.stringify({sentences: ['some sentence']}),
+      headers: {'Content-Type': 'application/json'},
+    });
+  } catch (e2) {
+    _package.logger.error('Error warming up embeddings');
+    console.error(e2);
+  }
+
+  const body = {
+    sentences: missingSentences,
+  };
+
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/get_embeddings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const result = await response.json();
+  if (!result.embeddings)
+    throw new Error('Embeddings docker returned an error');
+
+  for (let i = 0; i < missingIndices.length; i++) {
+    // update cache
+    _package.sentenceEmbeddingsCache[missingSentences[i]] = new Float32Array(result.embeddings[i]);
+    resultingEmbeddings[missingIndices[i]] = new Float32Array(result.embeddings[i]);
+  }
+  _package.saveCachedEmbeddings(); // do this lazy style in the background.
+
+  return resultingEmbeddings;
+}
+
+export async function getEmbeddingsUsingWorker(sentences: string[]) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('minilm-feature-worker', import.meta.url));
+
+    worker.onmessage = (event) => {
+      const {error, embedding} = event.data;
+      if (embedding) {
+        resolve(embedding);
+        worker.terminate();
+      } else if (error) {
+        reject(new Error(error));
+        worker.terminate();
+      }
+    };
+
+    worker.onerror = (error) => {
+      reject(error);
+      worker.terminate();
+    };
+
+    worker.postMessage({sentences});
+  });
+}
+
+//name: Sentence Similarity Search
+//tags: viewer
+//output: viewer result
+export function sentenceSearchViewer() {
+  return new SentenceSimilarityViewer();
+}
+
+//top-menu: ML | Sentence Similarity Search
+//name: sentenceSearch
+//output: viewer result
+export function sentenceSearchTopMenu(): void {
+  const view = grok.shell.tv;
+  const textColumns = view.dataFrame.columns.bySemTypeAll('Text');
+
+  const addViewer = (colName: string | null) => {
+    const viewer = view.addViewer('Sentence Similarity Search', {...(colName ? {targetColumnName: colName} : {})});
+    view.dockManager.dock(viewer, 'down');
+  };
+  if (textColumns.length === 0) {
+    grok.shell.error('No text columns found.');
+    return;
+  }
+  if (textColumns.length > 1) {
+    const selector = ui.input.column('Text Column', {
+      tooltipText: 'Select a text column to search for similar sentences', filter: (col) => col.semType === 'Text',
+      table: view.dataFrame,
+      value: textColumns[0],
+    });
+    ui.dialog('Select Text Column')
+      .add(selector)
+      .onOK(() => selector.value && addViewer(selector.value.name))
+      .show();
+  } else
+    addViewer(textColumns[0].name);
 }

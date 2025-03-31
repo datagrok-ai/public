@@ -1,5 +1,13 @@
 # Compute changelog
 
+## 1.42.1 (2025-03-31)
+
+- Fix browser tree path
+
+## 1.42.0 (2025-03-30)
+
+- Rewrite to better support browse view.
+
 ## 1.41.1 (2025-02-20)
 
 - FittingView: in-webworker parameters optimization of Diff Studio models

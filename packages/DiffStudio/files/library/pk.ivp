@@ -1,5 +1,4 @@
 #name: PK
-#tags: model
 #description: Pharmacokinetic (PK) simulation: one-compartment model
 #equations:
   d(depot)/dt = -KA * depot

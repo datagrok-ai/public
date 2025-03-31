@@ -1,7 +1,7 @@
 {
   "name": "cruddydemo",
   "friendlyName": "CruddyDemo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "author": {
     "name": "Andrew Skalkin",
@@ -11,11 +11,11 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "rxjs": "^6.5.5",
-    "@datagrok-libraries/utils": "../../libraries/utils"
+    "@datagrok-libraries/utils": "^4.5.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",

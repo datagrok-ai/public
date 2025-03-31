@@ -1,0 +1,306 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1147,
+      "height": 863,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1147,
+          "height": 863,
+          "element": {
+            "id": "0328c6c0-e920-11ef-8457-ab784dae1c1f",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "colHeaderHeight": 43,
+              "rowHeight": 100,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 52,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 200,
+                  "columnName": "smiles",
+                  "cellType": "Molecule",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 64,
+                  "columnName": "MolWt",
+                  "cellType": "number",
+                  "format": "three digits after comma",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 58,
+                  "columnName": "ExactMolWt",
+                  "cellType": "number",
+                  "format": "three digits after comma",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 76,
+                  "columnName": "HeavyAtomMolWt",
+                  "cellType": "number",
+                  "format": "three digits after comma",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 62,
+                  "columnName": "NOCount",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 72,
+                  "columnName": "RingCount",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 50,
+                  "columnName": "NHOHCount",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 51,
+                  "columnName": "NumHDonors",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 79,
+                  "columnName": "NumRadicalElectrons",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 76,
+                  "columnName": "MinPartialCharge",
+                  "cellType": "number",
+                  "format": "3 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 94,
+                  "columnName": "MaxAbsPartialCharge",
+                  "cellType": "number",
+                  "format": "3 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 101,
+                  "columnName": "NumSaturatedCarbocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 90,
+                  "columnName": "NumAliphaticHeterocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 73,
+                  "columnName": "FpDensityMorgan1",
+                  "cellType": "number",
+                  "format": "4 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 94,
+                  "columnName": "NumAromaticHeterocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 83,
+                  "columnName": "NumValenceElectrons",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 93,
+                  "columnName": "NumRotatableBonds",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 95,
+                  "columnName": "NumAromaticCarbocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 90,
+                  "columnName": "NumAliphaticCarbocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 73,
+                  "columnName": "FpDensityMorgan3",
+                  "cellType": "number",
+                  "format": "4 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 93,
+                  "columnName": "NumAromaticRings",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 95,
+                  "columnName": "NumSaturatedRings",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 65,
+                  "columnName": "NumHAcceptors",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 79,
+                  "columnName": "NumHeteroatoms",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 98,
+                  "columnName": "NumSaturatedHeterocycles",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 90,
+                  "columnName": "NumAliphaticRings",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 77,
+                  "columnName": "MaxPartialCharge",
+                  "cellType": "number",
+                  "format": "3 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 69,
+                  "columnName": "FpDensityMorgan2",
+                  "cellType": "number",
+                  "format": "4 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 62,
+                  "columnName": "FractionCSP3",
+                  "cellType": "number",
+                  "format": "3 significant digits",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 80,
+                  "columnName": "HeavyAtomCount",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                }
+              ]
+            },
+            "title": "Table (2)",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "ffd96a20-e920-11ef-c66f-b11f8ebee0c8",
+    "tableName": "Table (2)"
+  },
+  "name": "Table2",
+  "friendlyName": "Table (2)",
+  "author": {
+    "id": "cb276bc0-6280-11ee-82f7-8dc8dd5df45b"
+  },
+  "createdOn": "2025-03-28T13:53:22.218Z"
+}

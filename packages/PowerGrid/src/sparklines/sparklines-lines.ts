@@ -72,7 +72,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width,
     gridCell.bounds.height).inflate(-3, -2);
 
-  const cols = df.columns.byNames(settings.columnNames);
+  const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
   const getPosConstants: getPosConstants = {
     b: b,
     settings: settings,

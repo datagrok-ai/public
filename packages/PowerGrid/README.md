@@ -60,7 +60,7 @@ The viewer also works together with the grid:
 * To go to a particular cell in a grid, click on a field
 * To make a column current, click on the column name.
 
-![Forms viewer](../../help/visualize/viewers/forms.gif)
+![Forms viewer](../../help/visualize/viewers/img/forms.gif)
 
 See also:
 

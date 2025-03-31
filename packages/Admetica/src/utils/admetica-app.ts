@@ -16,7 +16,6 @@ export class AdmeticaViewApp extends BaseViewApp {
 
     this.formGenerator = () => this.customFormGenerator();
     this.uploadCachedData = () => this.customFormGenerator(true);
-    this.setFunction = () => this.performAdmetica();
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
     this.tableName = 'Admetica';
   }
@@ -79,7 +78,7 @@ export class AdmeticaViewApp extends BaseViewApp {
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
     const ribbon = form.root.querySelector('.d4-ribbon');
     if (ribbon)
       ribbon.remove();
@@ -96,7 +95,7 @@ export class AdmeticaViewApp extends BaseViewApp {
     this.tableView!.dataFrame.name = this.tableName;
   }
 
-  private async performAdmetica() {
+  protected async setFunction() {
     const models = await getQueryParams();
     await performChemicalPropertyPredictions(
       this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!,

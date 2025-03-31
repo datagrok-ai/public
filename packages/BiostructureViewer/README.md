@@ -1,4 +1,4 @@
-# BiostructureViewer
+# Biostructure Viewer
 
 BiostructureViewer is a [package](https://datagrok.ai/help/develop/#packages) for
 the [Datagrok](https://datagrok.ai/) platform that enables visualization of biological structures.
@@ -33,14 +33,14 @@ properties of the 'Data' category:
 2. A PDB string value of the data frame tag named of 'pdbTag' property.
 3. A PDB string value of the data frame '.pdb' tag in case 'pdbTag' property is not specified.
 
-### <a  name="NglViewer">NglViewer</a>
+### NglViewer
 
 [NglViewer](./src/viewers/ngl-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the NGL Viewer [nglviewer.org](https://nglviewer.org/) library developed by Alexander Rose.
 
 ![ngl-viewer](../../help/uploads/gifs/ngl-viewer-open-PDB.gif)
 
-### <a name="BiostructureViewer">BiostructureViewer</a>
+### BiostructureViewer
 
 [BiostructureViewer](./src/viewers/molstar-viewer/molstar-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the [RCSB PDB implementation](https://github.com/molstar/rcsb-molstar) of

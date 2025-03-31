@@ -40,7 +40,7 @@ export async function runAdmeticaFunc(csvString: string, queryParams: string, ra
 
   const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
 
-  if (!response && !admeticaContainer.status.startsWith('started') && !admeticaContainer.status.startsWith('checking'))
+  if (!response || (!admeticaContainer.status.startsWith('started') && !admeticaContainer.status.startsWith('checking')))
     throwError('Container failed to start.');
 
   if (!response?.success) {

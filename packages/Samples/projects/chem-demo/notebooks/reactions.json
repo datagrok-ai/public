@@ -1454,7 +1454,7 @@
     ],
     "metadata": {
       "datagrok": {
-        "host": "http://localhost:8888/api",
+        "host": "http://host.docker.internal:8888/api",
         "id": "e3a4c751-e132-5368-9bc2-cd8d23b6ffda",
         "session_token": "",
         "user_id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"

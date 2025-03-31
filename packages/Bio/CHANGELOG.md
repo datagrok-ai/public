@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.20.1 (2025-03-29)
+
+* Improve Activity cliffs demo
+* Fix Sim/Div viewers
+
 ## 2.19.0 (2025-02-20)
 
 * Correct conversion and highlighting of toAtomicLevel
