@@ -1,5 +1,13 @@
 # Tutorials changelog
 
+## 1.8.1 (2025-03-31)
+
+Updated the Scientific Computing tutorials with respect to new Model Hub UI
+
+## 1.8.0 (2025-03-29)
+
+Updated demo features and the Scientific Computing tutorials with respect to new Browse UX
+
 ## 1.7.3 (2025-01-10)
 
 Added scientific computing tutorials:
