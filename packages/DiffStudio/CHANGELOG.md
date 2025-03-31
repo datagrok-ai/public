@@ -1,9 +1,15 @@
 # Diff Studio changelog
 
+## 1.3.0 (2025-03-29)
+
+* Implemented the "Save to Model Catalog" feature
+* Updated the Bioreactor and PK-PD models and demos
+* Updated with respect to new Browse UX
+
 ## 1.2.6 (2025-03-10)
 
 * Fitting in webworkers for cyclic models
-* Updaed tests for pipelines
+* Updated tests for pipelines
 
 ## 1.2.5 (2025-03-06)
 
