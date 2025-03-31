@@ -1183,20 +1183,13 @@ export class FileSource {
 
   /**
    * Reads the entire contents of a folder and returns an object.
-   * The resulting object's keys are the file names relative to the folder path. The corresponding values are determined based on the file's MIME type:
-   *
-   * text/plain: The file content is returned as a string.
-   *
-   * application/octet-stream: The file content is returned as an ArrayBuffer.
-   *
-   * application/json: The file content is parsed and returned as an object.
-   *
-   * @param {FileInfo | string} file - folder
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are of the Blob type.
+   * @param {FileInfo | string} folder
    * @param recursive - whether to read files in folders recursively
    * @param ext - files extension
    */
-  async readFolder(file: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: any}> {
-    const folderPath = this.setRoot(file);
+  async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
+    const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
     let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
     if (ext) {
@@ -1207,30 +1200,53 @@ export class FileSource {
     const response = await fetch(url);
     const formData: FormData = await response.formData();
     const files: {[key: string]: any} = {};
-    const filePromises: Promise<void>[] = [];
-    formData.forEach((value: Blob | string, filename) => {
-      if (value instanceof Blob) {
-        const fileProcessing = (async () => {
-          const isJson = value.type.startsWith('application/json');
-          let content = value.type.startsWith("text/") || isJson || value.type === '' ?
-              await value.text() : await value.arrayBuffer();
-          if (isJson) {
-            try {
-              content = JSON.parse(content as string);
-            } catch (_) {}
-          }
-          files[filename] = content;
-        })();
 
-        filePromises.push(fileProcessing);
-      }
-      else
+    formData.forEach((value: Blob | string, filename) => {
+      if (value instanceof Blob)
         files[filename] = value;
     });
 
-    await Promise.all(filePromises);
     return files;
   }
+
+  /**
+   * Reads the entire contents of a folder and returns an object.
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are JSON objects.
+   * If conversion to a JSON fails, the file will be skipped.
+   * @param {FileInfo | string} folder
+   * @param recursive - whether to read files in folders recursively
+   * @param ext - files extension
+   */
+  async readFilesAsJson(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: any}> {
+    const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
+    const jsons: {[key: string]: any} = {};
+    for (const [name, blob] of Object.entries(filesBlobs)) {
+      try {
+        jsons[name] = JSON.parse(await blob.text());
+      } catch (_) {}
+    }
+    return jsons;
+  }
+
+  /**
+   * Reads the entire contents of a folder and returns an object.
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are strings.
+   * If conversion to a string fails, the file will be skipped.
+   * @param {FileInfo | string} folder
+   * @param recursive - whether to read files in folders recursively
+   * @param ext - files extension
+   */
+  async readFilesAsString(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: string}> {
+    const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
+    const files: {[key: string]: string} = {};
+    for (const [name, blob] of Object.entries(filesBlobs)) {
+      try {
+        files[name] = await blob.text();
+      } catch (_) {}
+    }
+    return files;
+  }
+
 
   /** Reads a file as string.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
