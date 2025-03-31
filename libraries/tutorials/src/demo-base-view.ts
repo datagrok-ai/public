@@ -26,6 +26,7 @@ export abstract class BaseViewApp {
   sketcher?: HTMLElement;
 
   filePath: string = '';
+  addPath: boolean = true;
   addTabControl: boolean = true;
   mode: string = 'sketch';
   tableName: string = '';
@@ -165,7 +166,8 @@ export abstract class BaseViewApp {
       this.tableView!.dataFrame.currentRowIdx = 0;
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      this.tableView!.path = '';
+      if (this.addPath)
+        this.tableView!.path = '';
     }, 300);
   }
 
@@ -221,6 +223,7 @@ export abstract class BaseViewApp {
 
       col.set(0, smiles);
       col.semType = DG.SEMTYPE.MOLECULE;
+      dataFrame.currentCell = dataFrame.cell(0, 'smiles');
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       const sketcherSmiles = Object.values(this.sketcherValue)[0];
