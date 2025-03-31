@@ -79,3 +79,7 @@
 .demo-target-root {
   width: 95%;
 }
+
+.demo-content-container .ketcher-host.ui-div {
+  width: 100% !important;
+}
