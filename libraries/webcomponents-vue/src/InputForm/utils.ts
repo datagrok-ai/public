@@ -10,11 +10,14 @@ import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/Validat
 
 export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {
   const icon = new (customElements.get('dg-validation-icon')!)() as ValidationIcon;
-  t.addOptions(icon);
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
-
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
   icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
+
+  const wrapper = ui.element('i') as HTMLElement;
+  wrapper.classList.add('rfv2-validation-icon');
+  wrapper.appendChild(icon);
+  t.addOptions(wrapper);
 
   function setStatus(status: {
     validation?: ValidationResult,
