@@ -314,22 +314,21 @@ Use this syntax to define the ODE solver configuration and improve performance:
 
 You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
-* Add your models to a Model Catalog.
+* Add your models to a Model Hub.
 * Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
 
-Click the <i class="fas fa-layer-plus"></i> **Save to Model Catalog** icon on the top panel to add your model to Model Catalog:
+Click the <i class="fas fa-layer-plus"></i> **Save to Model Hub** icon on the top panel to add your model to Model Hub:
 
- ![table-lookups](pics/diff-studio-model-catalog.gif)
+ ![table-lookups](pics/diff-studio-model-hub.gif)
 
 Export your model to JavaScript script:
 
 1. Toggle **Edit** and click the `</>` icon
 2. Add metadata for catalog:
   
-   ```python
-   #name: Model name
-   #tags: model
-   #description: Brief description
+   ```javascript
+   //tags: model
+   //description: Brief description
    ```
 
 3. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
@@ -354,7 +353,6 @@ Diff Studio lets you define model in a declarative form using simple syntax:
 |**#meta.inputs**|CSV file with inputs [lookup table](#user-interface-options)|[Bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
 |**#meta.solver**|ODEs solver [settings](#solver-configuration)|[Pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
 |**#comment**|Explanations, notes, remarks, etc.|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template|
-|**#tags**|The platform [script](#platform-integration) tags|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 |**#description**|The platform [script](#platform-integration) tooltip|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 
 To improve UI, annotate model inputs using:
