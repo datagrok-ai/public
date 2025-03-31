@@ -1,8 +1,13 @@
 # Diff Studio changelog
 
+## 1.3.1 (2025-03-31)
+
+* Updated tags
+* Updated built-in models
+
 ## 1.3.0 (2025-03-29)
 
-* Implemented the "Save to Model Catalog" feature
+* Implemented the "Save to Model Hub" feature
 * Updated the Bioreactor and PK-PD models and demos
 * Updated with respect to new Browse UX
 
