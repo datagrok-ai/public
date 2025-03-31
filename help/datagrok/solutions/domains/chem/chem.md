@@ -22,6 +22,7 @@ keywords:
   - admetox
   - admet
   - retrosynthesis
+  - patents search
 ---
 
 ```mdx-code-block
