@@ -27,7 +27,7 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
 * Save model:
   * Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
   * Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor
-  * Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Catalog**
+  * Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load model:
@@ -116,7 +116,6 @@ Use the following sections to specify various problems:
 |```#parameters```|Parameters specification|
 |```#expressions```|Defines auxiliary compuations|
 |```#output```|Defines output columns and their captions|
-|```#tags```|Specifies tags (`model`, `app`, etc.)|
 |```#description```|Defines description of the model|
 |```#comment```|Specifies comments block|
 |```#meta.solver```|Defines the solver settings|
@@ -248,7 +247,7 @@ This table compares the efficiency of the methods when solving each test problem
 
 ## Platform applications
 
-Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> icon on the top panel to save your model to **Model Catalog**.
+Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> icon on the top panel to save your model to **Model Hub**.
 
 You can export your model to JavaScript script. To do so:
 
@@ -256,14 +255,6 @@ You can export your model to JavaScript script. To do so:
 2. Click `</>` icon. Script editor opens in a new view
 3. Click **SAVE** button
 4. Script is created, and can be found in the "Scripts" section of the platform
-
-Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
-
-```python
-#name: Bioreaction
-#tags: model
-#description: Complex bioreaction simulation
-```
 
 Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 

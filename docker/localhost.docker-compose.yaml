@@ -83,12 +83,6 @@ services:
       db:
         condition: service_healthy
         restart: false
-      rabbitmq:
-        condition: service_started
-        restart: true
-      grok_pipe:
-        condition: service_started
-        restart: false
     volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg

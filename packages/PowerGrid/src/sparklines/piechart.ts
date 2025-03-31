@@ -268,7 +268,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const settings = getSettings(gridCell.gridColumn);
     let row: number = gridCell.cell.row.idx;
-    let cols = df.columns.byNames(settings.columnNames);
+    let cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {

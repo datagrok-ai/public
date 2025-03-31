@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "Lib Tests",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -36,8 +36,6 @@
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "vite": "^5.4.8",
-    "vite-plugin-css-injected-by-js": "^3.5.2",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },

@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.4.2 (2025-03-31)
+
+* Fixed error in demo when result is null
+
 ## 1.4.1 (2025-03-29)
 
 * Correct help display in Database Queries demo

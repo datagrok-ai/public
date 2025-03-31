@@ -25,10 +25,10 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
   });
   console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
   const resJson = await response.json();
-  if (resJson[1] !== 200)
+  if (!resJson['success'])
     throw new Error('Error occured during paths generation');
 
-  return resJson[0].result;
+  return resJson['result'];
 }
 
 

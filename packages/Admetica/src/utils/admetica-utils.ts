@@ -29,7 +29,7 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmeticaFunc(csvString: string, queryParams: string, raiseException: boolean): Promise<string | null> {
-  const admeticaContainer = await getAdmeticaContainer();
+  let admeticaContainer = await getAdmeticaContainer();
 
   const path = `/predict?models=${queryParams}&raiseException=${raiseException}`;
   const params: RequestInit = {
@@ -40,7 +40,10 @@ export async function runAdmeticaFunc(csvString: string, queryParams: string, ra
 
   const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
 
-  if (!response && !admeticaContainer.status.startsWith('started') && !admeticaContainer.status.startsWith('checking'))
+  admeticaContainer = await grok.dapi.docker.dockerContainers.find(admeticaContainer.id);
+  const started = admeticaContainer.status.startsWith('started') || admeticaContainer.status.startsWith('checking');
+
+  if (!response || !started)
     throwError('Container failed to start.');
 
   if (!response?.success) {

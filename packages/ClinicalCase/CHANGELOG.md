@@ -1,6 +1,12 @@
 # ClinicalCase changelog
 
-## 1.3.0 (2025-03-14)
+## 1.3.1 (2025-03-31)
+
+### Bug fixes
+
+* GROK-17804: Apps: Clinical case: Run error: "properties of undefined (reading 'initCompleted')"
+
+## 1.3.0 (2025-03-31)
 
 * Dependency: datgarok-api >= 1.25.0
 

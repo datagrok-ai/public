@@ -26,6 +26,7 @@ export abstract class BaseViewApp {
   sketcher?: HTMLElement;
 
   filePath: string = '';
+  addPath: boolean = true;
   addTabControl: boolean = true;
   mode: string = 'sketch';
   tableName: string = '';
@@ -76,6 +77,7 @@ export abstract class BaseViewApp {
   protected async customInit(): Promise<void> {}    
 
   async init(): Promise<void> {
+    await grok.functions.call('Chem:initChemAutostart');
     const [name, defaultSmiles] = Object.entries(this.sketcherValue)[0];
     const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? defaultSmiles;
 
@@ -164,7 +166,8 @@ export abstract class BaseViewApp {
       this.tableView!.dataFrame.currentRowIdx = 0;
       this.tableView!.grid.root.style.visibility = 'hidden';
       await this.refresh(table, this.container, 0.99);
-      this.tableView!.path = '';
+      if (this.addPath)
+        this.tableView!.path = '';
     }, 300);
   }
 
@@ -220,6 +223,7 @@ export abstract class BaseViewApp {
 
       col.set(0, smiles);
       col.semType = DG.SEMTYPE.MOLECULE;
+      dataFrame.currentCell = dataFrame.cell(0, 'smiles');
 
       const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
       const sketcherSmiles = Object.values(this.sketcherValue)[0];

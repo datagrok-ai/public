@@ -1,6 +1,7 @@
 import subprocess
 import os
 import logging
+import threading
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -17,17 +18,22 @@ logging.basicConfig(
   ]
 )
 
+process_lock = threading.Lock()
+current_process = None
+
 @app.route('/aizynthfind', methods=['POST'])
 def aizynthfind():
+  global current_process
+
   try:
     config_content = request.json.get('config')
     smiles = request.json.get('smiles')
 
     output_dir = os.getcwd()
-    config_path = f"{output_dir}/aizynthcli_data/config.yml"
-    smiles_file_path = f"{output_dir}/smiles.txt"
+    config_path = os.path.join(output_dir, "aizynthcli_data/config.yml")
+    smiles_file_path = os.path.join(output_dir, "smiles.txt")
 
-    if (config_content):
+    if config_content:
       with open(config_path, "w") as config_file:
         config_file.write(config_content)
 
@@ -38,40 +44,41 @@ def aizynthfind():
       "aizynthcli",
       "--config", config_path,
       "--smiles", smiles_file_path,
-      "--output", f"{output_dir}/trees.json"
+      "--output", os.path.join(output_dir, "trees.json")
     ]
 
     logging.info(f"Running command: {' '.join(command)}")
 
-    process = subprocess.Popen(
-      command,
-      stdout=subprocess.PIPE,
-      stderr=subprocess.PIPE,
-      text=True
-    )
-    
-    stdout, stderr = process.communicate()
+    with process_lock:
+      if current_process and current_process.poll() is None:
+        logging.info(f"Terminating previous process (PID: {current_process.pid})")
+        current_process.terminate()
+        current_process.wait()
+      
+      current_process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+      )
 
-    if (process.returncode == 0):
-      logging.info(f"return code {process.returncode}")
+    stdout, stderr = current_process.communicate()
+
+    if current_process.returncode == 0:
+      logging.info(f"Process completed successfully. Return code: {current_process.returncode}")
       logging.info(stdout)
-      result_file_path = os.path.join(output_dir, 'trees.json')
+
+      result_file_path = os.path.join(output_dir, "trees.json")
       with open(result_file_path, 'r') as result_file:
         result_content = result_file.read()
-      return jsonify({
-        "result": result_content,
-        "success": True
-      }, 200)
+      return jsonify({"result": result_content, "success": True}), 200
     else:
-      logging.info(f"return code {process.returncode}")
-      logging.info(stdout)
-      logging.info(stderr)
-      return jsonify({
-        "success": False,
-        "error": stderr
-      }, 500)
+      logging.error(f"Process failed. Return code: {current_process.returncode}")
+      logging.error(stderr)
+      return jsonify({"success": False, "error": stderr}), 500
+
   except Exception as e:
-    logging.info(f"Unexpected error: {str(e)}")
+    logging.exception("Unexpected error occurred")
     return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
