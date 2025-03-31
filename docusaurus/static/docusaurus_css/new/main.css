@@ -270,7 +270,7 @@
 .new .browser > .browser-header > .dot:first-child {background-color: #ED594A;}
 .new .browser > .browser-header > .dot:last-child {background-color: #5AC05A;}
 
-.new #features-nav-tab {
+.new .features-nav-tab {
     justify-content: center;
     border: none;
     gap:.5rem;
