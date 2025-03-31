@@ -1505,6 +1505,10 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+  if (!value || !value.cell || !value.cell.dart ||!value.cell.column) {
+    grok.shell.error('Sorting by similarity requires a valid table cell');
+    return;
+  }
   const molCol = value.cell.column;
   const tableRowIdx = value.cell.rowIndex;
   const dframe = molCol.dataFrame;
@@ -1541,7 +1545,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw new Error('Requires an open table view.');
 
-  const molCol = value.cell.column;
+  const molCol = value.cell?.column;
   const molecule = value.value;
   if (molCol == null)
     throw new Error('Molecule column not found.');
