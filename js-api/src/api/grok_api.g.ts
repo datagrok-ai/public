@@ -235,6 +235,7 @@ export interface IDartApi {
   grok_FilesView_Set_ShowTree(v: any, x: Bool): any;
   grok_FilesView_Get_ShowSearch(v: any): any;
   grok_FilesView_Set_ShowSearch(v: any, x: Bool): any;
+  grok_FilesView_Get_Tree(v: any): any;
   grok_ProjectsView(params: any): any;
   grok_ScriptsView(params: any): any;
   grok_ScriptView(script: any): any;
