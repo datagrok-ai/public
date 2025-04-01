@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { ChatGptAssistant } from './gpt-base';
+import {powerSearchQueryTable, processPowerSearchTableView} from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
 
 export const _package = new DG.Package();
 
@@ -40,12 +42,11 @@ export async function chatGpt(chatRequest: any): Promise<any> {
   return data.choices[0];
 }
 
-
 //input: string question
 //output: string answer
 export async function ask(question: string): Promise<string> {
   let result = await chatGpt({
-    model: 'gpt-4', // Or whichever model you want to use
+    model: 'gpt-4o-mini', // Or whichever model you want to use
     messages: [{ role: 'user', content: question }],
     max_tokens: 100,
     temperature: temperature
@@ -54,105 +55,70 @@ export async function ask(question: string): Promise<string> {
   return result.message.content;
 }
 
-async function executeFunction(functionName: string, parameters: any) {
-  const func = DG.Func.find({name: functionName})[0];
-  if (func) {
-    const result = await func.apply(parameters);
-    return result;
-  }
-  throw new Error(`Function ${functionName} not found`);
+function createTableQueryWidget(func: DG.Func, inputParams: any): DG.Widget {
+  return DG.Widget.fromRoot(ui.wait(async () => {
+    try {
+      const fc = func.prepare(inputParams);
+      const resFuncCall = await fc.call();
+      const views = resFuncCall.getResultViews();
+      const tv = views[0] as DG.TableView;
+      const container = ui.divV([]);
+
+      const editor = await resFuncCall.getEditor();
+      if (editor) container.appendChild(editor);
+
+      setTimeout(() => {
+        processPowerSearchTableView(tv);
+        tv._onAdded();
+      }, 200);
+
+      container.appendChild(tv.root);
+      return container;
+    } catch (e) {
+      console.error('Error executing query function:', e);
+      return ui.divText('Error executing query function');
+    }
+  }));
 }
 
+//tags: search
 //input: string question
-//output: object result
-export async function askMultiStep(question: string) {
-  function getType(type: string): string {
-    switch (type) {
-      case DG.TYPE.STRING: return 'string';
-      case DG.TYPE.INT: return 'integer';
-      case DG.TYPE.FLOAT: return 'number';
-      case DG.TYPE.BOOL: return 'boolean';
-      default: return 'object';
-    }
-  }
-
-  function getProperties(f: DG.Func): ChatGptFuncParams {
-    const props: ChatGptFuncParams = {};
-    for (const p of f.inputs) {
-      props[p.name] = {
-        type: getType(p.propertyType),
-        description: p.description
-      };
-    }
-    return props;
-  }
-
-  const packages = ['Chem', 'Chembl'];
-
-  const functions = packages.flatMap((pkg) =>
-    DG.Func.find({ package: pkg })
-      .filter((f) => (pkg === 'Chembl' && f.name !== 'detectChemblId') || (pkg === 'Chem' && f.name === 'ChemistryGasteigerPartialCharges'))
-      .map((f) => ({
-        name: f.name,
-        description: f.description || '',
-        parameters: {
-          type: 'object',
-          properties: getProperties(f),
-        },
-      }))
-  );
-
-  const messages: Message[] = [
-    { role: 'system', content: 'You are a helpful assistant that can call JavaScript functions when needed to calculate results.' },
-    { role: 'user', content: question },
-  ];
-
-  let intermediateResult;
-  let isComplete = false;
-  let resultLog;
-
-  while (!isComplete) {
-    const result = await chatGpt({
-      model: 'gpt-4',
-      messages: messages,
-      functions: functions,
-      function_call: "auto",
-    });
-
-    if (result.message.function_call) {
-      const { name, arguments: args } = result.message.function_call;
-      const parameters = JSON.parse(args);
+//output: widget w
+export async function askMultiStep(question: string): Promise<DG.Widget> {
+  return DG.Widget.fromRoot((() => {
+    const container = ui.divV([]);
+    const button = ui.button('Ask AI', async () => {
+      ui.empty(container);
+      const loader = ui.loader();
+      container.appendChild(loader);
 
       try {
-        const functionResult = await executeFunction(name, parameters);
-        intermediateResult = functionResult;
-        const isString = typeof functionResult === 'string';
-        const isHtml = functionResult instanceof HTMLElement;
+        const gptAssistant = new ChatGptAssistant(apiKey);
+        const response = await gptAssistant.askMultiStep(question);
 
-        messages.push(
-          { role: 'assistant', content: null, function_call: result.message.function_call },
-          { role: 'function', name: name, content: isString ? functionResult : isHtml ? 'HTML Object generated' : "Object generated" }
-        );
+        ui.empty(container);
 
-      } catch (error: any) {
-        console.log(`Error executing function "${name}": ${error.message}`);
-        return `Error: ${error.message}`;
+        const func = DG.Func.find({ name: response.function })[0];
+
+        if (!func) {
+          container.appendChild(ui.divText(`Function "${response.function}" not found.`));
+          return;
+        }
+
+        if (func.type === 'data-query') {
+          const inputParams = response.arguments;
+          container.appendChild(createTableQueryWidget(func, inputParams).root);
+        } else if (func.type === 'script') {
+          container.appendChild(response.result);
+        }
+      } catch (error) {
+        ui.empty(container);
+        container.appendChild(ui.divText('Error while processing request.'));
       }
-    } else {
-      isComplete = true;
-      if (result.message.content)
-        resultLog = result.message.content;
-    }
-  }
+    });
+    
+    const wrapper = ui.divV([button, container], { style: { gap: '10px' } });
 
-  if (intermediateResult instanceof HTMLElement && intermediateResult.style.backgroundImage) {
-    const backgroundImageUrl = intermediateResult.style.backgroundImage;
-    let base64Data = backgroundImageUrl.split('data:image/png;base64,')[1];
-    base64Data = base64Data.slice(0, -2);
-    return ui.image(`data:image/png;base64,${base64Data}`, 200, 300);
-  } else if (typeof intermediateResult === 'string') {
-    return ui.divText(resultLog);
-  }
-
-  return resultLog;
+    return wrapper;
+  })());
 }
