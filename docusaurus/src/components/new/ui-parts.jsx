@@ -41,7 +41,7 @@ export function Tab({name, title, description, link, slides, indicators}){
     return (
         <div className='row'>
             <div className="col-lg-6 col-xs-10 text-left">
-                <div style={{ background: '#F9FAFB', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                <div style={{ background: '#F9FAFB', borderTopLeftRadius: '0.5rem', borderBottomLeftRadius: '0.5rem', borderBottomRightRadius: '0.5rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     <div className='h4' style={{fontWeight: 600}}>{title}</div>
                     <p style={{color: "var(--ifm-color-gray-700)"}}>{description}</p>
                     <ul className='nav flex-column accesscarousel py-3'>
@@ -195,7 +195,7 @@ export function Slider({name, children, link, slides, indicators}){
 export function Col({children, color, col}){
     return(
         <div className={col+ " px-2"} >
-            <div className='d-flex text-left p-3 h-100 flex-column justify-content-center'style={{backgroundColor: color != undefined ? color : 'white', borderRadius:"8px"}}>
+            <div className='d-flex text-left p-3 pb-4 h-100 flex-column justify-content-center'style={{backgroundColor: color != undefined ? color : 'white', borderRadius:"8px"}}>
             {children}
         </div>
         </div>
@@ -204,7 +204,7 @@ export function Col({children, color, col}){
 
 export function Row({children, color}){
     return(
-        <div className="container p-5 section" style={{backgroundColor: color != undefined ? color : null}}> 
+        <div className="container p-4 section" style={{backgroundColor: color != undefined ? color : null}}>
             <div className="row">
                 {children}
             </div>
