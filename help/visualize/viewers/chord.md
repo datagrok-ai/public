@@ -70,4 +70,4 @@ doesn't impact the representation of the chord viewer.
 
 * [Viewers](../viewers/viewers.md)
 * [Network viewer](network-diagram.md)
-* Sankey viewer
+* [Sankey viewer](sankey.md)
