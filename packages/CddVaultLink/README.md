@@ -4,6 +4,7 @@
 provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
 
 To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
+CDD Vault api key should be set in package credentials manager under 'apiKey' key.
 
 To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
 List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
