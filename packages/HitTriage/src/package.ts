@@ -33,7 +33,7 @@ export class HTPackage extends DG.Package {
 
   async saveCampaignJson<T extends AppName>(appName: T, campaign: CampaignsType[T]) {
     const path = `${appName}/campaigns/${campaign.name}/${CampaignJsonName}`;
-    await grok.dapi.files.writeAsText(path, JSON.stringify(campaign));
+    await this.files.writeAsText(path, JSON.stringify(campaign));
     (this.campaignsCache[appName] as { [name: string]: CampaignsType[T] })[campaign.name] = campaign as any;
   }
 
