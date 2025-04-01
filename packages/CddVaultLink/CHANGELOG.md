@@ -1,3 +1,5 @@
 # CddVaultLink changelog
 
-## 0.0.1 (2025-02-16)
+## 1.0.0 (2025-04-01)
+
+Integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
