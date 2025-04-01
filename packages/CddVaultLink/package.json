@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cddvaultlink",
   "friendlyName": "CDD Vault Link",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Integration with CDD Vault registration system",
   "author": {
     "name": "Maria Dolotova",

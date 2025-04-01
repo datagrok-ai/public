@@ -237,6 +237,8 @@ export async function cDDVaultSearch2(vaultId: number, structure?: string, struc
     //in case we had both protocol and structure conditions - combine results together
     const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
     const df = DG.DataFrame.fromObjects(molsRes)!;
+    if (!df)
+      return DG.DataFrame.create();
     await grok.data.detectSemanticTypes(df);
     return df;
   }
@@ -255,6 +257,8 @@ export async function getMolecules(vaultId: number): Promise<DG.DataFrame> {
     return DG.DataFrame.create();
   }
   const df = DG.DataFrame.fromObjects(molecules.data!.objects!)!;
+  if (!df)
+    return DG.DataFrame.create();
   const idCol = df.col('id');
   if (idCol) {
     const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
@@ -370,6 +374,8 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
 
   const cddMols = await queryMolecules(vaultId, params);
   const df = DG.DataFrame.fromObjects(cddMols.data!.objects!)!;
+  if (!df)
+    return DG.DataFrame.create();
   if (params.fields_search) {
     for (const moleculeUDF of params.fields_search) {
       const colType = moleculeUDF.text_value ? DG.TYPE.STRING : moleculeUDF.float_value ? DG.TYPE.FLOAT : moleculeUDF.date_value ? DG.TYPE.DATE_TIME : null;
@@ -423,7 +429,7 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 
       const dfs = await grok.functions.call('Chem:importSdf', {bytes: resultResponse.data});
       
-      return !dfs.length ? DG.DataFrame.create() : dfs[0];
+      return !dfs?.length ? DG.DataFrame.create() : dfs[0];
     }
 
     // Wait for 2 seconds before next check
