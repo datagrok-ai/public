@@ -85,6 +85,12 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Databases',
 				},
 				{
+					name: 'OpenAPI',
+				},
+				{
+					name: 'Python',
+				},
+				{
 					name: 'Table Linking',
 				},
 			]
