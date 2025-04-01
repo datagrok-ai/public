@@ -3,6 +3,10 @@
   "friendlyName": "CDD Vault Link",
   "version": "1.0.0",
   "description": "Integration with CDD Vault registration system",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "dependencies": {
     "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
