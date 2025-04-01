@@ -2,7 +2,7 @@
   "name": "@datagrok/reinvent4",
   "friendlyName": "Reinvent4",
   "fullName": "Reinvent4",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -12,7 +12,7 @@
     "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.5.0",
+    "@datagrok-libraries/utils": "^4.4.0",
     "jszip": "3.10.1"
   },
   "devDependencies": {
