@@ -5,7 +5,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.48.2",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/tutorials": "^1.4.2",
+    "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.5.0",
     "datagrok-api": "^1.25.0",
     "@rcsb/rcsb-api-tools": "2.3.1",
