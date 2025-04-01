@@ -1,5 +1,9 @@
 # Clinical Case changelog
 
+## 1.3.2 (2025-04-01)
+
+* Modified application initial view
+
 ## 1.3.1 (2025-03-31)
 
 ### Bug fixes
