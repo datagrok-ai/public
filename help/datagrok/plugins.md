@@ -97,6 +97,7 @@ sidebar_position: 1.2
 | Virtual screening | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 | Virtual screening<br/>Hit to lead |[Hit Triage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
 | Synthetic planning | [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Optional |Creates retrosynthesis paths for the selected molecule | Beta |
+| Registration system integration | [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)| Optional |Provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system | Beta |
 <!--
 | Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
 
