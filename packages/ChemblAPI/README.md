@@ -1,8 +1,8 @@
-# ChemblAPI
+# ChEMBL API
 
-ChemblAPI is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
+ChEMBL API is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
 It showcases the ability to access data from external sources using provided restful api on the illustrative example of [ChEMBL](https://www.ebi.ac.uk/chembl/). The package provides an ability to perform similarity and substructure searches in ChEMBL for a single molecular structure. These features are added to a propert panel for any type of chemical data.
-Note that package queries external source, the structure you are searching with is sent to CHEMBL as a query parameter.
+Note that package queries external source, the structure you are searching with is sent to ChEMBL as a query parameter.
 
 See also:
 

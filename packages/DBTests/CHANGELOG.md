@@ -1,4 +1,4 @@
-# DBTests changelog
+# DB Tests changelog
 
 ## 1.1.3 (2025-02-18)
 

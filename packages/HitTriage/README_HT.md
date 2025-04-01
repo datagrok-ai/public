@@ -1,16 +1,16 @@
-# HitTriage
+# Hit Triage
 
-HitTriage is a dynamic application designed for chemists and biologists to streamline the process of selecting molecular hits. It facilitates collaboration by allowing users to load datasets, calculate molecular properties, filter based on these properties or substructure search, select hits, save campaigns, and share their work with others. The application is built around templates and campaigns, providing a structured yet flexible approach to hit triage process.
+Hit Triage is a dynamic application designed for chemists and biologists to streamline the process of selecting molecular hits. It facilitates collaboration by allowing users to load datasets, calculate molecular properties, filter based on these properties or substructure search, select hits, save campaigns, and share their work with others. The application is built around templates and campaigns, providing a structured yet flexible approach to hit triage process.
 
 ## Templates
 
-Templates in HitTriage contain essential configurations for conducting a campaign. template configuration includes:
+Templates in Hit Triage contain essential configurations for conducting a campaign. template configuration includes:
 
 - **Name** : Identifies the template.
 
 - **Campaign Prefix** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
 
-- **Data Ingestion Settings** : Controls how molecular data is ingested into the template. Users can choose between file upload or a query option. For the query, HitTriage searches for functions in any Datagrok package tagged with `HitTriageDataSource` and queries with same tag. For example, a package can export the following function:
+- **Data Ingestion Settings** : Controls how molecular data is ingested into the template. Users can choose between file upload or a query option. For the query, Hit Triage searches for functions in any Datagrok package tagged with `HitTriageDataSource` and queries with same tag. For example, a package can export the following function:
 
 ```//name: Demo File Ingestion
 //input: int numberOfMolecules [Molecules count]
@@ -68,7 +68,7 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
 }
 ```
 
-This function will go through every molecule in the dataframe, convert them to canonical smiles and call the query from Chembl database, that will retrieve the molregno number. The result will be added as a new column to the dataframe. If this function is defined in the `Chembl` package, after building and deploying it to stand, it will be automatically added to the compute functions list in HitDesign.
+This function will go through every molecule in the dataframe, convert them to canonical smiles and call the query from Chembl database, that will retrieve the molregno number. The result will be added as a new column to the dataframe. If this function is defined in the `Chembl` package, after building and deploying it to stand, it will be automatically added to the compute functions list in Hit Design.
 
 Datagrok scripts can also be used as compute functions. For example, you can create a js script that adds a new column to the dataframe. This script also needs to have `HitTriageFunction` tag and should accept `Dataframe` `table` and `Column` `molecules` as first two inputs:
 

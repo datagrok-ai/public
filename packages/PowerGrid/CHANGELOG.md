@@ -1,4 +1,4 @@
-# PowerGrid changelog
+# Power Grid changelog
 
 ## 1.5.5 (2025-03-07)
 

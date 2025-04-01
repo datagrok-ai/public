@@ -1,4 +1,4 @@
-# LibTests changelog
+# Lib Tests changelog
 
 ## 1.7.0 (2025-03-30)
 

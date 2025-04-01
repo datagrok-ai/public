@@ -1,4 +1,4 @@
-# CddVaultLink changelog
+# CDD Vault Link changelog
 
 ## 1.0.0 (2025-04-01)
 

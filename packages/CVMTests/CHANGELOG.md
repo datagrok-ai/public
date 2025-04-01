@@ -1,4 +1,4 @@
-# CVMTests changelog
+# CVM Tests changelog
 
 # 1.2.0
 

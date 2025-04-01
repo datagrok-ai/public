@@ -1,4 +1,4 @@
-# Chembl changelog
+# ChEMBL changelog
 
 ## 1.4.2 (2025-03-31)
 

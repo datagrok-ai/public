@@ -1,4 +1,4 @@
-# PowerPack changelog
+# Power Pack changelog
 
 ## 1.4.1  (2025-03-18)
 

@@ -1,4 +1,4 @@
-# ClinicalCase changelog
+# Clinical Case changelog
 
 ## 1.3.1 (2025-03-31)
 
