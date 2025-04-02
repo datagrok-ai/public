@@ -31,6 +31,7 @@ interface Category extends Options {
   children: (TestCase | Category)[];
   status: Status | null;
   icon: HTMLElement;
+  filepath: string;
 }
 
 interface Options {
@@ -53,6 +54,7 @@ export class TestTrack extends DG.ViewBase {
   testCaseDiv: HTMLDivElement;
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
   map: { [key: string]: (Category | TestCase) } = {};
+  loadingFiles: { [key: string]: (Category | TestCase) } = {};
   nodes: { [key: string]: (DG.TreeViewNode<any>) } = {};
 
   jiraBaseUrl = 'https://reddata.atlassian.net/browse/';
@@ -65,6 +67,8 @@ export class TestTrack extends DG.ViewBase {
   nameDiv: HTMLDivElement = ui.divH([], { id: 'tt-name' });
   testingName: string;
   searchInput: DG.InputBase = ui.input.search('');
+  filesToLoad: Map<string, DG.FileInfo[]> = new Map<string, DG.FileInfo[]>();
+  folderNode: DG.TreeViewGroup[] = [];
 
   testDescription: Map<string, string> = new Map<string, string>();
   dataSetsToOpen: string[] = [];
@@ -268,15 +272,24 @@ export class TestTrack extends DG.ViewBase {
     }
 
     const files = await filesP;
-    const p: Promise<void>[] = [];
     for (const file of files) {
       if (file.isDirectory)
         this.processDir(file);
-      else
-        p.push(this.processFile(file));
+      else {
+        let filepath = file.path.substring(0, file.path.lastIndexOf('/'));
+        if (!this.filesToLoad.has(filepath))
+          this.filesToLoad.set(filepath, []);
+        this.filesToLoad.get(filepath)!.push(file)
+      }
     }
-    await Promise.all(p);
     this.list.forEach((c) => this.sortCategoryRecursive(c));
+    let onExpandingSubscription = this.tree.onChildNodeExpanding.subscribe(async (node: DG.TreeViewGroup) => {
+      node.root.children[0].appendChild(ui.loader());
+      await this.loadFilesByNode(node);
+      if (this.filesToLoad.size === 0)
+        onExpandingSubscription.unsubscribe();
+      node.root.children[0].lastChild!.remove()
+    });
     this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
     this.tree.children.forEach((c) => this.updateGroupStatusRecursiveDown(c as DG.TreeViewGroup));
     this.setContextMenu();
@@ -312,7 +325,16 @@ export class TestTrack extends DG.ViewBase {
     }, 'Open test data');
     this.loadBtn.classList.add('disabled');
     this.loadBtn.classList.add('tt-ribbon-button');
-    const report = ui.button(getIcon('tasks', { style: 'fas' }), () => {
+    let isReportGenerating = false;
+    const report = ui.button(getIcon('tasks', { style: 'fas' }), async () => {
+      if(isReportGenerating)
+        return;
+      isReportGenerating = true;
+      if(this.filesToLoad.size > 0){
+        for(let folder of this.folderNode){
+          await this.loadFilesByNode(folder);
+        }
+      }
       const list: { name: string, category: string, status: Status | null, reason: string }[] = [];
       Object.values(this.map).forEach((el) => {
         if (el && 'children' in el) return;
@@ -330,6 +352,8 @@ export class TestTrack extends DG.ViewBase {
 
       if (this.currentNode !== this.tree && this.currentNode?.value?.path !== null)
         this.UpdateReportAccordingTestTrackSelection(this.currentNode);
+      
+      isReportGenerating = false;
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
     const ec = ui.button(getIcon('sort', { style: 'fas' }), () => {
@@ -406,6 +430,25 @@ export class TestTrack extends DG.ViewBase {
     grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
 
     this.isInitializing = false;
+  }
+
+  private async loadFilesByNode(node: DG.TreeViewGroup){
+    let nodePath = this.getNodePath(node).join('/');
+      if (this.filesToLoad.has(nodePath)) {
+        const p: Promise<void>[] = [];
+        this.loadingFiles = {};
+        for (let file of this.filesToLoad.get(nodePath)!)
+          p.push(this.processFile(file));
+        await Promise.all(p);
+        for (const key in  this.loadingFiles) {          
+          this.addTestCaseNode(this.loadingFiles[key] as TestCase, node);
+          let category = this.list.filter((e)=>e.filepath ===nodePath)[0] ?? undefined;
+          if(category)
+            category.children.push(this.loadingFiles[key] as TestCase);
+          node.value.children.push(this.loadingFiles[key]);
+        }
+      }
+      this.filesToLoad.delete(nodePath);
   }
 
   private addOnTestTrackCaseSubscription() {
@@ -571,7 +614,7 @@ export class TestTrack extends DG.ViewBase {
   }
 
   processDir(dir: DG.FileInfo): void {
-    const el: Category = { name: dir.name, children: [], status: null, icon: ui.div() };
+    const el: Category = { name: dir.name, children: [], status: null, icon: ui.div(), filepath: dir.fullPath };
     const pathL = dir.path.split('/').slice(2);
     if (pathL.length > 1) {
       const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
@@ -585,12 +628,11 @@ export class TestTrack extends DG.ViewBase {
     const pathL = file.path.replace(/\.[^.]+$/, '').split('/').slice(2);
     if (pathL.length < 2)
       grok.shell.error('Root test case');
-    const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category
     const [textS, jsonS] = (await _package.files.readAsText(file)).split('---', 3);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
     const name = file.name.replace(/\.[^.]+$/, '');
-    const elOld: TestCase | undefined = this.map[path] as TestCase;
+    const elOld: TestCase | undefined = this.loadingFiles[path] as TestCase;
     let el: TestCase;
     if (elOld)
       el = { ...elOld, name, text };
@@ -602,7 +644,7 @@ export class TestTrack extends DG.ViewBase {
     }
     if (jsonS)
       el = { ...el, ...JSON.parse(jsonS) };
-    parent.children.push(el);
+    this.loadingFiles[path] = el;
     this.map[path] = el;
   }
 
@@ -623,26 +665,31 @@ export class TestTrack extends DG.ViewBase {
     cats.forEach((c) => this.sortCategoryRecursive(c));
   }
 
+  addTestCaseNode(obj: TestCase, parent: DG.TreeViewGroup) {
+    const node = parent.item(obj.name, obj);
+    node.value.reason.oncontextmenu = (e: PointerEvent) => {
+      this.showNodeDialog(node, node.value.status, true);
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    };
+    node.captionLabel.after(node.value.reason);
+    node.captionLabel.after(node.value.history);
+    node.captionLabel.after(node.value.icon);
+
+    this.nodes[obj.path] = node;
+    return;
+  }
 
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
     if ('text' in obj) {
-      const node = parent.item(obj.name, obj);
-      node.value.reason.oncontextmenu = (e: PointerEvent) => {
-        this.showNodeDialog(node, node.value.status, true);
-        e.stopImmediatePropagation();
-        e.preventDefault();
-      };
-      node.captionLabel.after(node.value.reason);
-      node.captionLabel.after(node.value.history);
-      node.captionLabel.after(node.value.icon);
-
-      this.nodes[obj.path] = node;
+      this.addTestCaseNode(obj as TestCase, parent);
       return;
     }
 
     const group = parent.getOrCreateGroup(obj.name, obj, false);
     group.captionLabel.after(group.value.icon);
-    for (const child of obj.children)
+    this.folderNode.push(group);
+    for (const child of (obj as Category).children)
       this.initTreeGroupRecursive(child, group);
   }
 
@@ -691,7 +738,23 @@ export class TestTrack extends DG.ViewBase {
     window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/Test Track/${node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
   }
 
+
+  getNodePath(node: DG.TreeViewNode): string[] {
+    const path: string[] = [];
+    let currentNode = node;
+    while (currentNode.parent) {
+      path.unshift(currentNode.value.name);
+      currentNode = currentNode.parent;
+    }
+    path.unshift('Test Track');
+    path.unshift('UsageAnalysis');
+    return path;
+  }
+
   updateGroupStatus(group: DG.TreeViewGroup): void {
+    let groupPath = this.getNodePath(group).join('/');
+    if (this.filesToLoad.has(groupPath))
+      return;
     group.value.icon.innerHTML = '';
     const statuses = group.value.children.map((el: TestCase | Category) => el.status);
     let status: typeof PASSED | typeof MINORFAIL | typeof CRITICALFAIL | typeof BLOCKFAIL | typeof SKIPPED = statuses.includes(BLOCKFAIL) ? BLOCKFAIL : statuses.includes(CRITICALFAIL) ? CRITICALFAIL : statuses.includes(MINORFAIL) ? MINORFAIL : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
@@ -827,8 +890,8 @@ export class TestTrack extends DG.ViewBase {
     const oldTickets: string[] = oldReason.match(/GROK-\d{1,6}/g) || [];
     const combinedTickets = new Set([...newTickets, ...oldTickets]);
     const finalTickets = newTickets.some((ticket) => oldTickets.includes(ticket)) ||
-                         newTickets.every((ticket) => oldTickets.includes(ticket))
-                                   ? newTickets : Array.from(combinedTickets);
+      newTickets.every((ticket) => oldTickets.includes(ticket))
+      ? newTickets : Array.from(combinedTickets);
     let nameColumn = DG.Column.fromStrings('name', ['Test Track: ' + params.category + ': ' + params.name]);
     nameColumn.semType = 'autotest';
     grok.dapi.stickyMeta.getAllValues(testSchema, nameColumn).then((df) => {
@@ -841,13 +904,13 @@ export class TestTrack extends DG.ViewBase {
         }
       }
       const ticketsToSave = Array.from(new Set(finalTickets.filter((ticket: string) => ticket !== '')));
-      grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn, 
+      grok.dapi.stickyMeta.setAllValues(testSchema, nameColumn,
         DG.DataFrame.fromColumns([DG.Column.fromStrings('tickets', [ticketsToSave.join(',')])]));
     });
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {
-    if(!node)
+    if (!node)
       return;
     const value = node?.value;
     if (value.status) {
@@ -1189,7 +1252,7 @@ export class TestTrack extends DG.ViewBase {
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `${this.testingName}` });
 
     for (const row of history.rows) {
-      
+
       const reason: string = row.get('reason').trim();
       const uid: string = row.get('uid');
 
