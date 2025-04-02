@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.6.1",
+    "@datagrok-libraries/tutorials": "^1.6.2",
     "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
