@@ -11,23 +11,29 @@ const navItems = [
                 name: "Cheminformatics",
                 href: "/cheminformatics",
                 iconFA: 'hexagon',
-            }, 
+            },
             {
                 name: "Bioinformatics",
-                href: "/bioinformatics",
+                href: "/macromolecules",
                 iconFA: 'dna',
             },
             {
                 name: "Data Science",
                 href: "/data-science",
                 iconFA: 'chart-bar'
-            }, 
+            },
             {
                 name: "Enterprise IT",
                 href: "/enterprise",
                 iconFA: "building"
-            }, 
-            ]
+            },
+            {
+                name: "Academia",
+                href: "/solutions/academia",
+                iconFA: "university"
+            },
+
+        ]
     },
     {
         name: "Company",
@@ -139,7 +145,9 @@ export default function navbar(current){
                    <NavItems current={current.page}/>
                 </ul>
                 <div className='mb-xs-4 d-none d-lg-block'>
-                    <button className="btn brand-btn btn-outline mr-2" type="submit">Book a demo</button>
+                    <Link to="mailto:sales@datagrok.ai" target="_blank" rel="noopener noreferrer">
+                      <button className="btn brand-btn btn-outline mr-2" type="submit">Book a demo</button>
+                    </Link>
                     <Link to="https://public.datagrok.ai" target="_blank" rel="noopener noreferrer">
                       <button className="btn brand-btn brand-btn-primary" type="submit">Try now</button>
                     </Link>
