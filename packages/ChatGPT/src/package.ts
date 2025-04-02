@@ -113,7 +113,7 @@ export async function askMultiStep(question: string): Promise<DG.Widget> {
             container.appendChild(
               createTableQueryWidget(func, inputParams).root
             );
-          } else if (func.type === 'script') {
+          } else {
             container.appendChild(response.result);
           }
         } catch (error) {
