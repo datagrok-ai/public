@@ -23,10 +23,19 @@ const url = 'https://api.openai.com/v1/chat/completions';
 export async function init() {
   // @ts-ignore
   apiKey = (await _package.getSettings())['apiKey'];
+  // this is cheating but hey :D
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = `
+  .power-pack-widget-host:has(.ask-ai-widget-container) {
+    height: unset!important;
+  }
+  `;
+  document.head.appendChild(styleElement);
+
 }
 
 export async function chatGpt(chatRequest: any): Promise<any> {
-  const response = await fetch(url, {
+  const response = await grok.dapi.fetchProxy(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -55,30 +64,55 @@ export async function ask(question: string): Promise<string> {
   return result.message.content;
 }
 
-function createTableQueryWidget(func: DG.Func, inputParams: any): DG.Widget {
-  return DG.Widget.fromRoot(ui.wait(async () => {
+async function createTableQueryWidget(func: DG.Func, inputParams: any): Promise<DG.Widget> {
+
+  const container = ui.divV([]);
+  container.style.minHeight = '30px';
+  const fc = func.prepare(inputParams);
+  let firstTime = true;
+  Array.from(fc.inputParams.values()).forEach((i) => {
+  DG.debounce(i.onChanged, 1000).subscribe(() => {
+      perform();
+    });
+  })
+  const editor = await fc.getEditor();
+  editor.style.width = '100%';
+  const tableContainer = ui.div([], {style: {width: '100%', height: '100%'}});
+  if (editor) container.appendChild(editor);
+  container.appendChild(tableContainer);
+      
+  const perform = async () => {
+    ui.empty(tableContainer);
+    ui.setUpdateIndicator(tableContainer, true);
     try {
-      const fc = func.prepare(inputParams);
       const resFuncCall = await fc.call();
       const views = resFuncCall.getResultViews();
       const tv = views[0] as DG.TableView;
-      const container = ui.divV([]);
-
-      const editor = await resFuncCall.getEditor();
-      if (editor) container.appendChild(editor);
-
-      setTimeout(() => {
-        processPowerSearchTableView(tv);
+      
+      if (tv) {
+        tableContainer.appendChild(tv.root);
+        container.style.height = 'calc(100vh - 300px)';
+        container.style.width = '100%';
         tv._onAdded();
-      }, 200);
-
-      container.appendChild(tv.root);
-      return container;
+        if (firstTime) {
+          setTimeout(() => {
+            processPowerSearchTableView(tv);
+          }, 100);
+          firstTime = false;
+        }
+      }
     } catch (e) {
       console.error('Error executing query function:', e);
-      return ui.divText('Error executing query function');
+      ui.empty(tableContainer);
+      tableContainer.appendChild(ui.divText('Error executing query function'));
     }
-  }));
+    ui.setUpdateIndicator(tableContainer, false);
+  }
+
+  perform();
+
+  return DG.Widget.fromRoot(container);
+  
 }
 
 //tags: search
@@ -87,7 +121,7 @@ function createTableQueryWidget(func: DG.Func, inputParams: any): DG.Widget {
 export async function askMultiStep(question: string): Promise<DG.Widget> {
   return DG.Widget.fromRoot(
     (() => {
-      const container = ui.divV([]);
+      const container = ui.divV([], {classes: 'ask-ai-widget-container', style: {alignItems: 'center', minHeight: '30px'}});
       
       const button = ui.button('Ask AI', async () => {
         ui.empty(container);
@@ -108,20 +142,31 @@ export async function askMultiStep(question: string): Promise<DG.Widget> {
             return;
           }
 
-          if (func.type === 'data-query') {
+          if (func.type === 'data-query' && !(func.outputs.length == 1 && func.outputs[0].propertyType === 'string')) {
             const inputParams = response.arguments;
             container.appendChild(
-              createTableQueryWidget(func, inputParams).root
+              (await createTableQueryWidget(func, inputParams)).root
             );
           } else {
-            container.appendChild(response.result);
+            const result = response.result;
+            if (typeof result === 'string') {
+              if (grok.chem.checkSmiles(result)) {
+                container.appendChild(grok.chem.drawMolecule(result, 300,300));
+              } else {
+                container.appendChild(ui.divText(result, { style: { textAlign: 'center' } }));
+              }
+            } else if (result instanceof HTMLElement) {
+              container.appendChild(result);
+            } else {
+              container.appendChild(ui.divText('Unsupported result type: ' + typeof result , { style: { textAlign: 'center' } }));
+            }
           }
         } catch (error) {
           ui.empty(container);
           container.appendChild(ui.divText('Error while processing request.', { style: { textAlign: 'center' } }));
         }
       });
-
+      container.style.paddingTop = '10px';
       const wrapper = ui.divV([button, container]);
       return wrapper;
     })()

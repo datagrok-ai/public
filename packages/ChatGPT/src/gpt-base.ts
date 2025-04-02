@@ -94,7 +94,7 @@ export class ChatGptAssistant {
         )
         .map((f) => ({
           name: f.name,
-          description: f.description || '',
+          description: (f.nqName || f.package.name) + ": " + (f.description || f.options['description'] || f.friendlyName || f.name),
           parameters: { type: 'object', properties: this.getProperties(f) },
         }))
     );
@@ -116,7 +116,7 @@ export class ChatGptAssistant {
     let executedFunction;
     let functionArguments = {};
     let executionCount = 0;
-    const maxExecutions = 1;
+    const maxExecutions = 2;
   
     while (!isComplete && executionCount < maxExecutions) {
       const result = await this.chatGpt({
