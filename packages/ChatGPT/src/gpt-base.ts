@@ -67,8 +67,18 @@ export class ChatGptAssistant {
 
   private applyDefaultValues(params: any, properties: ChatGptFuncParams): any {
     const filledParams: any = {};
-    for (const key in properties)
-      filledParams[key] = params[key] !== undefined ? params[key] : properties[key].default;
+    for (const key in properties) {
+      let value = params[key] !== undefined ? params[key] : properties[key].default;
+      // If value is a string and wrapped in extra quotes, parse it safely
+      if (typeof value === 'string' && value.startsWith('"') && value.endsWith('"')) {
+        try {
+          value = JSON.parse(value);
+        } catch {
+
+        }
+      }
+      filledParams[key] = value;
+    }
     return filledParams;
   }
 
