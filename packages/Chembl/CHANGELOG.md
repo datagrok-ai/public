@@ -1,5 +1,9 @@
 # ChEMBL changelog
 
+## 1.4.3 (2025-04-01)
+
+* Fixed MolregnoInfo panel
+
 ## 1.4.2 (2025-03-31)
 
 * Fixed error in demo when result is null

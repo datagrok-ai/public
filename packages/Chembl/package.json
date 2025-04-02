@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chembl",
   "friendlyName": "ChEMBL",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "ChEMBL integration, commonly used queries and browser",
   "author": {
     "name": "Maria Dolotova",

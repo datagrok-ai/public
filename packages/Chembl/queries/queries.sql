@@ -140,7 +140,7 @@ WHERE chembl_id IN (
 --name: MolregnoInfo
 --connection: Chembl
 --tags: panel, widget
---input: string molregno {semType: molregno}
+--input: int molregno {semType: molregno}
 SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
 FROM compound_structures s
 LEFT JOIN drug_mechanism d
