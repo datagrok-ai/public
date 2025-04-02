@@ -14,6 +14,7 @@ limit @maxRows
 
 --name: patternSimilaritySearchWithThreshold
 --friendlyName: Search | Pattern Similarity With Threshold
+--meta.description: Search for a given pattern in the ChEMBL database with a specified threshold of similarity.
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
@@ -25,6 +26,7 @@ select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 
 --name: patternSubstructureSearch
 --friendlyName: Search | Substructure
+--meta.description: Search for a given substructure in the ChEMBL database.
 --connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
