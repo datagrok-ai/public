@@ -50,7 +50,7 @@ export const RibbonPanel = Vue.defineComponent({
     });
 
     const addElement = (el: Element | null | any, idx: number) => {
-      const content = el;
+      const content = el ? Vue.markRaw(el) : undefined;
       if (content) {
         (content).RibbonPanelUUID = uuid;
         elements.set(idx, content);

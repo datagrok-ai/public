@@ -103,6 +103,7 @@ const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
 };
 
 export const TreeNode = Vue.defineComponent({
+  name: 'TreeNode',
   props: {
     stat: {
       type: Object as Vue.PropType<AugmentedStat>,
@@ -137,12 +138,12 @@ export const TreeNode = Vue.defineComponent({
     },
   },
   emits: {
-    addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
-    removeNode: () => {},
-    toggleNode: () => {},
-    runSubtree: (startUuid: string, rerunWithConsistent?: boolean) => {},
-    runStep: (uuid: string) => {},
-    saveStep: (uuid: string) => {},
+    addNode: (_data: {itemId: string, position: number}) => true,
+    removeNode: () => true,
+    toggleNode: () => true,
+    runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
+    runStep: (_uuid: string) => true,
+    saveStep: (_uuid: string) => true,
   },
   setup(props, {emit}) {
     const openIcon = () => <OpenIcon
@@ -171,7 +172,7 @@ export const TreeNode = Vue.defineComponent({
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
 
-    const treeNodeRef = Vue.ref(null as null | HTMLElement);
+    const treeNodeRef = Vue.shallowRef(null as null | HTMLElement);
     const isHovered = useElementHover(treeNodeRef);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 

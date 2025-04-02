@@ -51,6 +51,7 @@
     "debug-compute2": "webpack && grok publish",
     "release-compute2": "webpack && grok publish --release",
     "build-compute2": "webpack",
+    "debug-vue-dev-tools": "webpack --env enable_vue_dev_tools && grok publish local --release",
     "build": "webpack",
     "lint": "eslint . --ext .ts,.tsx",
     "lint-fix": "eslint . --ext .ts,.tsx --fix",
@@ -62,9 +63,6 @@
     "release-compute2-release": "webpack && grok publish release --release",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/webcomponents-vue run build && npm run build"
   },
-  "sources": [
-    "common/vue.js"
-  ],
   "canEdit": [
     "Administrators"
   ],

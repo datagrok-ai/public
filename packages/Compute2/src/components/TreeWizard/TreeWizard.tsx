@@ -356,8 +356,7 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-
-    const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
+    const treeInstance = Vue.shallowRef(null as InstanceType<typeof Draggable> | null);
 
     let oldClosed = new Set<string>();
 

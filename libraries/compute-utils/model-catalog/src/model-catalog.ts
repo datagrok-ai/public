@@ -18,7 +18,7 @@ export interface ModelCatalogConfig {
 
 function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
   const {
-    funcName, _package
+    funcName, _package,
   } = options;
   if (!view!.parentCall) {
     const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
@@ -29,7 +29,7 @@ function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
 
 function findOrCreateViewWithCore(options: ModelCatalogConfig) {
   const {
-    viewName, funcName, _package, ViewClass
+    viewName, funcName, _package, ViewClass,
   } = options;
   let view = ViewClass.findModelCatalogView(viewName);
   if (!view) {
@@ -38,7 +38,7 @@ function findOrCreateViewWithCore(options: ModelCatalogConfig) {
     mfc.callSync({processed: true, report: false});
     view = mfc.outputs.v;
   }
-  const currentView = [...grok.shell.views].find(v => v === view);
+  const currentView = [...grok.shell.views].find((v) => v === view);
   if (!currentView)
     grok.shell.add(view!);
 
@@ -123,7 +123,7 @@ function getCookie(name: string): string | undefined {
 
 export function startModelCatalog(options: ModelCatalogConfig) {
   const {
-    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded
+    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded,
   } = options;
   const view = ViewClass.findOrCreateCatalogView(viewName);
 
@@ -140,7 +140,7 @@ export function startModelCatalog(options: ModelCatalogConfig) {
 function handleInitialUri(segment: string) {
   const url = new URL(grok.shell.startUri);
   const startPathSegments = url.pathname.split('/');
-  const catlogUriSegmentIdx = startPathSegments.findIndex(x => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
+  const catlogUriSegmentIdx = startPathSegments.findIndex((x) => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
 
   if (catlogUriSegmentIdx > 0) {
     if (catlogUriSegmentIdx + 1 < startPathSegments.length) {

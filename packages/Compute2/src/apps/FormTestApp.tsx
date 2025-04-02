@@ -18,7 +18,7 @@ export const FormTestApp = Vue.defineComponent({
       const nfc = fc.value?.func.nqName === 'Compute2:SimpleInputs2' ?
         DG.Func.byName('Compute2:ObjectCooling2').prepare():
         DG.Func.byName('Compute2:SimpleInputs2').prepare();
-      fc.value = nfc;
+      fc.value = Vue.markRaw(nfc);
       Vue.triggerRef(fc);
     };
 

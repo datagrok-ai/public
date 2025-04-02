@@ -24,20 +24,20 @@ export const DockManager = Vue.defineComponent({
     default?: Vue.VNode[],
   }>,
   emits: {
-    'panelClosed': (element: HTMLElement) => element,
-    'update:activePanelTitle': (newPanel: string | null, prevPanel: string | null) => {},
-    'initFinished': () => {},
+    'panelClosed': (_element: HTMLElement) => true,
+    'update:activePanelTitle': (_newPanel: string | null, _prevPanel: string | null) => true,
+    'initFinished': () => true,
   },
   methods: {
     //@ts-ignore
     getLayout: (): string | null => {},
-    useLayout: async (layout: string) => {},
+    useLayout: async (_layout: string) => {},
   },
   setup(props, {slots, emit, expose}) {
-    const dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
+    const dockSpawnRef = Vue.shallowRef(null as DockSpawnTsWebcomponent | null);
 
     const inited = Vue.ref(false);
-    Vue.watch(inited, async () => {
+    Vue.watch(inited, () => {
       dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
         let aimSlot = null as null | HTMLElement;
 
@@ -63,6 +63,7 @@ export const DockManager = Vue.defineComponent({
     const useLayout = async (layout: string) => {
       await dockSpawnRef.value?.useLayout(layout);
     };
+
     expose({
       'getLayout': getLayout,
       'useLayout': useLayout,

@@ -21,14 +21,14 @@ export const Viewer = Vue.defineComponent({
     options: Object as Vue.PropType<Record<string, string | boolean | string[]>>,
   },
   emits: {
-    viewerChanged: (v: DG.Viewer<any> | undefined) => v,
+    viewerChanged: (_v: DG.Viewer<any> | undefined) => true,
   },
   setup(props, {emit}) {
     const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
     const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
     const type = Vue.computed(() => props.type);
     const viewerChangedCb = (event: any) => {
-      emit('viewerChanged', event.detail);
+      emit('viewerChanged', event.detail ? Vue.markRaw(event.detail) : undefined);
     };
     return () => <Vue.KeepAlive>
       <dg-viewer

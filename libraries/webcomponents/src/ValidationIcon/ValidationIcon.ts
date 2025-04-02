@@ -54,7 +54,7 @@ export class ValidationIcon extends HTMLElement {
   }
 
   requestAction(id: string) {
-    this.dispatchEvent(new CustomEvent('action-request', { detail: id }));
+    this.dispatchEvent(new CustomEvent('action-request', {detail: id}));
   }
 
   update() {
@@ -204,7 +204,6 @@ export class ValidationIcon extends HTMLElement {
       'text-wrap': 'pretty',
     });
   }
-
 }
 
 export interface ValidationIconT extends ValidationIcon {};

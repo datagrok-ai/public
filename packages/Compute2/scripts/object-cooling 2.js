@@ -1,4 +1,4 @@
-//name: Object Cooling (Compute 2 Test)
+//name: ObjectCooling2
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
 //tags: simulation, demo, test
