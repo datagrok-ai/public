@@ -37,11 +37,11 @@ export function reinventEditor(call: DG.FuncCall): void {
 
 //name: runReinvent
 //meta.cache: all
-//meta.cache.invalidateOn: 0 * * * *
+//meta.cache.invalidateOn: 0 0 1 * *
 //input: string ligand {semType: Molecule}
 //input: string optimize
-//output: dataframe result
-export async function runReinvent(ligand: string, optimize: string): Promise<DG.DataFrame> {
+//output: string result
+export async function runReinvent(ligand: string, optimize: string): Promise<string> {
   const container = await grok.dapi.docker.dockerContainers.filter('reinvent').first();
   const files = (await grok.dapi.files.list(`${TARGET_PATH}/${optimize}`));
 
@@ -57,11 +57,10 @@ export async function runReinvent(ligand: string, optimize: string): Promise<DG.
     body: formData,
   });
 
-  const resultDf = DG.DataFrame.fromJson(await response.text());
-  return resultDf;
+  const resultText = await response.text();
+  return resultText;
 }
 
-//top-menu: Chem | Generate molecules...
 //name: Reinvent
 //tags: HitDesignerFunction
 //input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
@@ -78,7 +77,7 @@ export async function reinvent(
   const schemas = await grok.dapi.stickyMeta.getSchemas();
   const lineageSchema = schemas.find((s) => s.name === 'Lineage');
 
-  const resultDf: DG.DataFrame = await resultDfPromise;
+  const resultDf: DG.DataFrame = DG.DataFrame.fromJson(await resultDfPromise);
 
   if (lineageSchema) {
     const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
@@ -111,6 +110,16 @@ export async function reinvent(
     scoreColumn.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
 
   return resultDf;
+}
+
+//top-menu: Chem | Generate molecules...
+//name: reinventTopMenu
+//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule}
+//input: string optimize {choices: Reinvent4:getFolders}
+//editor: Reinvent4: ReinventEditor
+export async function reinventTopMenu(ligand: string, optimize: string) {
+  const generatedDf = await reinvent(ligand, optimize);
+  grok.shell.addTableView(generatedDf);
 }
 
 function generateStickyDf(role: string): DG.DataFrame {

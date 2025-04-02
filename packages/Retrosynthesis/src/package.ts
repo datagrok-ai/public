@@ -18,9 +18,11 @@ export const _package = new DG.Package();
 export async function calculateRetroSynthesisPaths(molecule: string): Promise<string> {
   const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
   const startTime = performance.now();
+  const currentUser = await grok.dapi.users.current();
+  const userId = currentUser.id;
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
     method: 'POST',
-    body: JSON.stringify({smiles: molecule}),
+    body: JSON.stringify({smiles: molecule, id: userId}),
     headers: {'Content-Type': 'application/json'},
   });
   console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);

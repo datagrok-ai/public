@@ -23,6 +23,7 @@ keywords:
   - admet
   - retrosynthesis
   - patents search
+  - cdd vault integration
 ---
 
 ```mdx-code-block
@@ -783,6 +784,33 @@ Search results are shown under the *Substructure Search*/*Similarity Search* tab
 Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
 
 ![surechembl search results](img/surechembl_search_results.gif)
+
+</details>
+
+## Integration with CDD Vault
+
+CDDVaultLInk plugin provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
+
+<details>
+<summary> How to use </summary>
+
+To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
+CDD Vault api key should be set in package credentials manager under 'apiKey' key.
+
+To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
+List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
+
+* *Molecules* - the list of all available molecules in the vault. *Id* column contains links to the corresponding molecules in your vault.
+![Molecules tab](img/cdd_molecules.png)
+
+* *Search* - basic search through you vault containing similarity and diversity searches.
+![Search tab](img/cdd_search.png)
+
+* *Saved searches* - open tab to see the list of all saved searches in your vault. Click any search in the list to open the search results.
+![Saved search](img/cdd_saved_search.png)
+
+There is also a tab in the context panel. To use, click or sketch a molecule, and expand the *Databases* -> *CDD Vault* context panel on the right:
+![Context panel](img/cdd_context_panel.png)
 
 </details>
 

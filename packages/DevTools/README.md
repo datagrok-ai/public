@@ -1,6 +1,6 @@
-# DevTools
+# Dev Tools
 
-DevTools is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
+Dev Tools is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through
 familiarizing developers with Datagrok's [object](https://datagrok.ai/help/datagrok/concepts/objects) model and providing them
 with reproducible code snippets that fit their data. This approach allows to explore the key functionality from the

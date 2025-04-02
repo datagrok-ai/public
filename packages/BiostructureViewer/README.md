@@ -1,6 +1,6 @@
 # Biostructure Viewer
 
-BiostructureViewer is a [package](https://datagrok.ai/help/develop/#packages) for
+Biostructure Viewer is a [package](https://datagrok.ai/help/develop/#packages) for
 the [Datagrok](https://datagrok.ai/) platform that enables visualization of biological structures.
 
 ## Supported Formats
@@ -14,18 +14,18 @@ Note: The [Chem](../Chem/README.md) package opens formats 'mol2', 'sdf', 'mol' f
 
 ## Semantic Types
 
-The BiostructureViewer package enables detection and handling of the Molecule3D semantic type.
+The Biostructure Viewer package enables detection and handling of the Molecule3D semantic type.
 
 ## Cell Renderers
 
 Grid cells of columns with the Molecule3D semantic type are drawn using a designated NGL-based cell renderer. Clicking
-on a cell opens a BiostructureViewer to explore the structure details.
+on a cell opens a Biostructure Viewer to explore the structure details.
 
 ![pdb_data](../../help/uploads/gifs/biostructure-viewer-pdb-data.gif)
 
 ## Viewers
 
-Both [BiostructureViewer](#BiostructureViewer) and [NglViewer](#NglViewer) use the same method to obtain
+Both [Biostructure Viewer](#BiostructureViewer) and [NGL Viewer](#NglViewer) use the same method to obtain
 a structural data into the viewer from different sources (in order of priority) controlled by
 properties of the 'Data' category:
 
@@ -33,16 +33,16 @@ properties of the 'Data' category:
 2. A PDB string value of the data frame tag named of 'pdbTag' property.
 3. A PDB string value of the data frame '.pdb' tag in case 'pdbTag' property is not specified.
 
-### NglViewer
+### NGL Viewer
 
-[NglViewer](./src/viewers/ngl-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
+[NGL Viewer](./src/viewers/ngl-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the NGL Viewer [nglviewer.org](https://nglviewer.org/) library developed by Alexander Rose.
 
 ![ngl-viewer](../../help/uploads/gifs/ngl-viewer-open-PDB.gif)
 
-### BiostructureViewer
+### Biostructure Viewer
 
-[BiostructureViewer](./src/viewers/molstar-viewer/molstar-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
+[Biostructure Viewer](./src/viewers/molstar-viewer/molstar-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the [RCSB PDB implementation](https://github.com/molstar/rcsb-molstar) of
 [Mol*](https://github.com/molstar/molstar). Documentation for
 the Mol project can be found [here](https://molstar.org/docs/).
@@ -59,7 +59,7 @@ ball+stick, licorice, hyperball, and surface.
 
 ## File previews and File handlers
 
-Files with handled extensions are previewed and opened with the [BiostructureViewer](#BiostructureViewer).
+Files with handled extensions are previewed and opened with the [Biostructure Viewer](#BiostructureViewer).
 
 This package implements file viewers for supported file types. This is how it looks in action:
 

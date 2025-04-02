@@ -32,7 +32,7 @@ import {demoStudyId, domainsToValidate, StudyJsonName} from './constants/constan
 import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {u2} from '@datagrok-libraries/utils/src/u2';
 
 export const _package = new DG.Package();
 
@@ -60,26 +60,37 @@ let cliniclaCaseLaunched = false;
 //meta.browsePath: Clinical
 //output: view v
 export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
+  const appHeader = u2.appHeader({
+    iconPath: _package.webRoot + '/img/clin_case_icon.png',
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
+    description:
+    '-  Visualize and explore your SDTM data\n' +
+    '-  Find patterns and trends in your data\n' +
+    '-  Explore data on patient specific and trial specific levels\n' +
+    '-  Browse through AEs and related data\n' +
+    '-  Validate your SDTM data',
+  });
+
+  const studiesHeader = ui.h1('Studies');
   const existingStudies = await loadStudies([]);
   const existingStudiesNames = Object.keys(existingStudies);
-  const studyChoices = ui.input.choice('Study id', {
-    items: existingStudiesNames,
-    value: existingStudiesNames[0],
-    nullable: false,
-  });
-  const runButton = ui.bigButton('RUN', async () => {
-    studies[studyChoices.value] = new ClinicalStudy(studyChoices.value);
-    createClinicalCaseViews(existingStudies[studyChoices.value]);
-  });
-  runButton.classList.add('clinical-case-run-app-button');
+  const studiesDiv = ui.divV([]);
+  for (const studyName of existingStudiesNames) {
+    const studyLink = ui.link(studyName, async () => {
+      studies[studyName] = new ClinicalStudy(studyName);
+      createClinicalCaseViews(existingStudies[studyName]);
+    }, 'Click to run the study');
+    studyLink.style.paddingBottom = '10px';
+    studiesDiv.append(studyLink);
+  }
   const view = DG.View.create();
   view.name = 'Clinical Case';
   view.path = CLINICAL_CASE_APP_PATH;
   view.root.append(ui.divV([
-    ui.h1('Select study'),
-    studyChoices,
-    ui.divH([runButton]),
-  ], {style: {width: '200px'}}));
+    appHeader,
+    studiesHeader,
+    studiesDiv,
+  ]));
   cliniclaCaseLaunched = true;
   return view;
 }

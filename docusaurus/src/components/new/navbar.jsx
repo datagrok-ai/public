@@ -1,6 +1,6 @@
 import Markdown from 'markdown-to-jsx';
 import React, { useEffect, useState, Component } from 'react';
-
+import Link from '@docusaurus/Link';
 
 const navItems = [
     {
@@ -9,25 +9,31 @@ const navItems = [
         items: [
             {
                 name: "Cheminformatics",
-                href: "#",
+                href: "/cheminformatics",
                 iconFA: 'hexagon',
-            }, 
+            },
             {
                 name: "Bioinformatics",
-                href: "#",
+                href: "/macromolecules",
                 iconFA: 'dna',
             },
             {
                 name: "Data Science",
-                href: "#",
+                href: "/data-science",
                 iconFA: 'chart-bar'
-            }, 
+            },
             {
                 name: "Enterprise IT",
-                href: "#",
+                href: "/enterprise",
                 iconFA: "building"
-            }, 
-            ]
+            },
+            {
+                name: "Academia",
+                href: "/solutions/academia",
+                iconFA: "university"
+            },
+
+        ]
     },
     {
         name: "Company",
@@ -35,17 +41,17 @@ const navItems = [
         items: [
             {
                 name: "Careers",
-                href: "#",
+                href: "/company/careers",
                 iconFA: "briefcase"
             }, 
             {
                 name: "Team",
-                href: "#",
+                href: "/company/team",
                 iconFA: "users"
             },
             {
                 name: "Customer Stories",
-                href: "#",
+                href: "/solutions",
                 iconFA: "comment-alt-smile"
             }]
     },
@@ -55,27 +61,27 @@ const navItems = [
         items: [
             {
                 name: "Wiki",
-                href: "#",
+                href: "/help",
                 iconFA: "book"
             }, 
             {
                 name: "JS-API",
-                href: "#",
+                href: "/js-api",
                 iconFA: "cog"
             }, 
             {
                 name: "Community",
-                href: "#",
+                href: "https://community.datagrok.ai",
                 iconFA: "comments-alt"
             }, 
             {
                 name: "Youtube",
-                href: "#",
+                href: "https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg",
                 iconFA: "play"
             }, 
             {
                 name: "User Meetings",
-                href: "#",
+                href: "https://us02web.zoom.us/meeting/register/up0vfuCrpjgpHNzi371YEJIQ4GkMpTm4disW#/registration",
                 iconFA: "users-class"
             }]
     }
@@ -139,8 +145,12 @@ export default function navbar(current){
                    <NavItems current={current.page}/>
                 </ul>
                 <div className='mb-xs-4 d-none d-lg-block'>
-                    <button className="btn brand-btn btn-outline mr-2" type="submit">Book a demo</button>
-                    <button className="btn brand-btn brand-btn-primary" type="submit">Try now</button>
+                    <Link to="mailto:sales@datagrok.ai" target="_blank" rel="noopener noreferrer">
+                      <button className="btn brand-btn btn-outline mr-2" type="submit">Book a demo</button>
+                    </Link>
+                    <Link to="https://public.datagrok.ai" target="_blank" rel="noopener noreferrer">
+                      <button className="btn brand-btn brand-btn-primary" type="submit">Try now</button>
+                    </Link>
                 </div>
             </div>
         </nav>

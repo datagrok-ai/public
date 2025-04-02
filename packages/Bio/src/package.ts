@@ -71,6 +71,8 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -637,6 +639,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) {
   const func = DG.Func.find({name: 'toAtomicLevel', package: 'Bio'})[0];
   if (!func) throw new Error('To Atomic level Function not found');
   func.prepare({table: seqCol.dataFrame, seqCol: seqCol}).edit();
+}
+
+//name: Molecular Structure
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export async function toAtomicLevelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
+  return toAtomicLevelWidget(sequence);
 }
 
 //top-menu: Bio | Analyze | MSA...

@@ -1,6 +1,6 @@
-# HitDesign
+# Hit Design
 
-HitDesign streamlines the process of designing new molecules and collaborating on molecular ideas.
+Hit Design streamlines the process of designing new molecules and collaborating on molecular ideas.
 You can sketch molecules,
 calculate or predict chemical and biological properties, enrich data with information
 from the proprietary databases, filter based on these properties or substructure search, select hits, 
@@ -13,7 +13,7 @@ seamless integration.
 
 ## Templates
 
-Templates in HitDesign contain essential configurations for conducting a campaign. Template configuration includes:
+Templates in Hit Design contain essential configurations for conducting a campaign. Template configuration includes:
 
 - **Name** : Identifies the template.
 
@@ -25,7 +25,7 @@ Templates in HitDesign contain essential configurations for conducting a campaig
 
 - **Stages** : Define stages for the campaign. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages. For example, stages can be used to organize molecules by their readiness for synthesis.
 
-- **Compute functions** : HitDesign aggregates compute functions tagged with `HitTriageFunction` from Datagrok packages. Users can select from these functions to perform calculations (e.g., mass, solubility, mutagenicity, partial charges, toxicity risks, etc.) on the dataset.
+- **Compute functions** : Hit Design aggregates compute functions tagged with `HitTriageFunction` from Datagrok packages. Users can select from these functions to perform calculations (e.g., mass, solubility, mutagenicity, partial charges, toxicity risks, etc.) on the dataset.
 Every time user changes given molecule or adds new molecule to a dataframe, compute functions are executed automatically for that row.
 
 - **Submit function** : Define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
@@ -80,7 +80,7 @@ Campaign status can be changed through 'Submit' menu. You can set status to anyt
 
 ## Adding custom compute and submit functions
 
-HitDesign allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
+Hit Design allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
 
 ### Compute Functions
 

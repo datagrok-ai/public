@@ -1,3 +1,3 @@
-# DBTests
+# DB Tests
 
-DBTests is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
+DB Tests is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.

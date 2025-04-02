@@ -20,28 +20,28 @@ const footerLinks = [
     {
         title: "Solutions",
         links: [
-            { name: "Cheminformatics", href: "#" },
-            { name: "Bioinformatics", href: "#" },
-            { name: "Data Science", href: "#" },
-            { name: "Enterprise IT", href: "#" },
+            { name: "Cheminformatics", href: "/cheminformatics" },
+            { name: "Bioinformatics", href: "/bioinformatics" },
+            { name: "Data Science", href: "/data-science" },
+            { name: "Enterprise IT", href: "/enterprise" },
         ],
     },
     {
         title: "Company",
         links: [
-            { name: "Careers", href: "#" },
-            { name: "Team", href: "#" },
-            { name: "Customer Stories", href: "#" },
+            { name: "Careers", href: "/company/careers" },
+            { name: "Team", href: "/company/team" },
+            { name: "Customer Stories", href: "/solutions" },
         ],
     },
     {
         title: "Resources",
         links: [
-            { name: "Wiki", href: "#" },
-            { name: "JS-API", href: "#" },
-            { name: "Community", href: "#" },
-            { name: "YouTube", href: "#" },
-            { name: "User Meetings", href: "#" },
+            { name: "Wiki", href: "/help" },
+            { name: "JS-API", href: "/js-api" },
+            { name: "Community", href: "https://community.datagrok.ai" },
+            { name: "YouTube", href: "https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg" },
+            { name: "User Meetings", href: "https://us02web.zoom.us/meeting/register/up0vfuCrpjgpHNzi371YEJIQ4GkMpTm4disW#/registration" },
         ],
     },
 ];

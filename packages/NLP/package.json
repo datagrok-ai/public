@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nlp",
   "fullName": "NLP",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"

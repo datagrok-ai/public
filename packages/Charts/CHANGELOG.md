@@ -1,10 +1,10 @@
 # Charts changelog
 
-## 1.5.0 (WIP)
+## 1.5.1 (2025-04-01)
 
-### Features
+### Bug Fixes
 
-* Added Multiplot viewer
+* GROK-17944: Charts | Multiplot: New plot is added to CloseAll context menu
 
 ## 1.4.4 (2024-02-27)
 

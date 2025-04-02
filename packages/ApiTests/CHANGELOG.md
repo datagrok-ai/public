@@ -1,4 +1,4 @@
-# ApiTests changelog
+# API Tests changelog
 
 ## 1.7.17 (2024-08-30)
 

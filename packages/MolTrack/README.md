@@ -1,3 +1,3 @@
-# MolTrack
+# Mol Track
 
-`MolTrack` is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform
+`Mol Track` is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform

@@ -1,7 +1,7 @@
 import Markdown from 'markdown-to-jsx';
 import React, { useEffect, useState, Component } from 'react';
 
-export function Button({label, type, size}){
+export function Button({label, type, size, href, target}){
     let btnClass = "btn brand-btn m-2 px-4 ";
     if (type != undefined){
         if (type == "outline") btnClass+="brand-btn-outline "
@@ -12,7 +12,7 @@ export function Button({label, type, size}){
         btnClass+="btn-outline"
     }
     size != undefined ? btnClass+= " btn-"+size : ""
-    return(<a className={btnClass} type="submit" href="">{label}</a>);
+    return(<a className={btnClass} type="submit" href={href} target={target}>{label}</a>);
   }
   
 
@@ -41,7 +41,7 @@ export function Tab({name, title, description, link, slides, indicators}){
     return (
         <div className='row'>
             <div className="col-lg-6 col-xs-10 text-left">
-                <div style={{ background: '#F9FAFB', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                <div style={{ background: '#F9FAFB', borderTopLeftRadius: '0.5rem', borderBottomLeftRadius: '0.5rem', borderBottomRightRadius: '0.5rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     <div className='h4' style={{fontWeight: 600}}>{title}</div>
                     <p style={{color: "var(--ifm-color-gray-700)"}}>{description}</p>
                     <ul className='nav flex-column accesscarousel py-3'>
@@ -49,7 +49,7 @@ export function Tab({name, title, description, link, slides, indicators}){
                             <li className='nav-item' key={index}>
                                 <a
                                     className={index === activeIndex ? 'nav-link active' : 'nav-link'}
-                                    data-target={`#accesscarousel-${String(name).toLocaleLowerCase()}`}
+                                    data-target={`#accesscarousel-${getId(String(name)).toLocaleLowerCase()}`}
                                     data-slide-to={index}
                                     onClick={() => setActiveIndex(index)}
                                 >
@@ -80,7 +80,7 @@ export function Tab({name, title, description, link, slides, indicators}){
             </div>
             <div className="col-lg-6 col-xs-10">
                 <div
-                    id={`accesscarousel-${String(name).toLocaleLowerCase()}`}
+                    id={`accesscarousel-${getId(String(name)).toLocaleLowerCase()}`}
                     className="accesscarousel carousel slide carousel-fade"
                     data-ride="carousel"
                     data-interval="false"
@@ -88,7 +88,7 @@ export function Tab({name, title, description, link, slides, indicators}){
                     <ol className={indicators !== undefined ? "carousel-indicators" : "d-none"}>
                         {list.map((item, index) => (
                             <li
-                                data-target={`#accesscarousel-${String(name).toLocaleLowerCase()}`}
+                                data-target={`#accesscarousel-${getId(String(name)).toLocaleLowerCase()}`}
                                 data-slide-to={index}
                                 className={index === 0 ? "active" : ""}
                             ></li>
@@ -97,7 +97,7 @@ export function Tab({name, title, description, link, slides, indicators}){
                     <div className="carousel-inner">
                         {list.map((item, index) => (
                             <div className={index === 0 ? "carousel-item active" : "carousel-item"} key={index}>
-                                <Image src={item.image} />
+                                {item.details ?? <Image src={item.image} />}
                             </div>
                         ))}
                     </div>
@@ -107,31 +107,36 @@ export function Tab({name, title, description, link, slides, indicators}){
     );
 }
 
+export function getId(val) {
+    return val.replaceAll(' ', '-')
+}
+
 export function TabGroup({children}){
     const tabs = children.length ? Array.from(children) : [children];
+    const id = Math.random();
     return (
         <>
-            <ul className="nav nav-tabs nav-pills my-3 mt-5 " id="features-nav-tab" role="tablist">
+            <ul className="nav nav-tabs nav-pills my-3 mt-5 features-nav-tab" id={`features-nav-tab-${id}`} role="tablist">
                 {tabs.map((item, index) => (
                     <li className='nav-item' key={index}>
                         <a
                             className={index === 0 ? 'brand-btn btn-outline btn nav-link active' : 'brand-btn btn-outline btn nav-link'}
-                            id={item.props.name}
+                            id={getId(item.props.name)}
                             data-toggle="tab"
                             role="tab"
-                            aria-controls={`${item.props.name}-content`}
-                            href={`#${item.props.name}-content`}
+                            aria-controls={`${getId(item.props.name)}-content`}
+                            href={`#${getId(item.props.name)}-content`}
                         >
                             {item.props.name}
                         </a>
                     </li>
                 ))}
             </ul>
-            <div className="tab-content text-left container py-4" id="features-nav-tab-content">
+            <div className="tab-content text-left container py-4" id={`features-nav-tab-content-${id}`}>
                 {tabs.map((item, index) => (
                     <div
                         className={index === 0 ? "tab-pane fade show active" : "tab-pane fade"}
-                        id={`${item.props.name}-content`}
+                        id={`${getId(item.props.name)}-content`}
                         role="tabpanel"
                         key={index}
                         aria-labelledby={item.props.name}
@@ -190,7 +195,7 @@ export function Slider({name, children, link, slides, indicators}){
 export function Col({children, color, col}){
     return(
         <div className={col+ " px-2"} >
-            <div className='d-flex text-left p-3 h-100 flex-column justify-content-center'style={{backgroundColor: color != undefined ? color : 'white', borderRadius:"8px"}}>
+            <div className='d-flex text-left p-3 pb-4 h-100 flex-column justify-content-center'style={{backgroundColor: color != undefined ? color : 'white', borderRadius:"8px"}}>
             {children}
         </div>
         </div>
@@ -199,7 +204,7 @@ export function Col({children, color, col}){
 
 export function Row({children, color}){
     return(
-        <div className="container p-5 section" style={{backgroundColor: color != undefined ? color : null}}> 
+        <div className="container p-4 section" style={{backgroundColor: color != undefined ? color : null}}>
             <div className="row">
                 {children}
             </div>

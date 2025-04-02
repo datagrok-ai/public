@@ -1,6 +1,6 @@
-# ApiSamples
+# API Samples
 
-ApiSamples is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
+API Samples is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
 It contains various examples of [Grok API](https://datagrok.ai/help/develop/packages/js-api)
 
 Here are the directories of particular interest:

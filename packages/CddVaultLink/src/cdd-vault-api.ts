@@ -298,11 +298,25 @@ interface ReadoutRow {
   };
 }
 
+export interface SavedSearch {
+  id: number;
+  name: string;
+}
+
+export interface ExportStatus {
+  id: number;
+  status: string;
+  created_at?: string;
+  modified_at?: string;
+  queued_job_position?: number
+}
+
 
 async function request<T>(
   method: string,
   path: string,
-  body?: any
+  body?: any,
+  text?: boolean,
 ): Promise<ApiResponse<T>> {
   try {
     if (apiKey === '') {
@@ -326,7 +340,7 @@ async function request<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await response.json();
+    const data = text ? await response.bytes() : await response.json();
 
     if (!response.ok) {
       throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
@@ -378,4 +392,24 @@ export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQuery
     }
   }
   return request<ReadoutRowsQueryResult>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
+}
+
+/** Get all available saved searches for the vault */
+export async function querySavedSearches(vaultId: number): Promise<ApiResponse<SavedSearch[]>> {
+  return request<SavedSearch[]>('GET', `/api/v1/vaults/${vaultId}/searches`);
+}
+
+/** Get export id and status by saved search id*/
+export async function querySavedSearchById(vaultId: number, searchId: number): Promise<ApiResponse<ExportStatus>> {
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/searches/${searchId}?format=sdf`);
+}
+
+/** Get export status*/
+export async function queryExportStatus(vaultId: number, exportId: number): Promise<ApiResponse<ExportStatus>> {
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/export_progress/${exportId}`);
+}
+
+/** Get export result*/
+export async function queryExportResult(vaultId: number, exportId: number): Promise<ApiResponse<Uint8Array>> {
+  return request<Uint8Array>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, true);
 }

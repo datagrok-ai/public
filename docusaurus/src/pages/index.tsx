@@ -1,31 +1,19 @@
 import React from 'react';
-import clsx from 'clsx';
-import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
-import styles from './index.module.css';
-import Hero from '../components/home/hero';
-import Body from '../components/home/body';
-
-function HomepageHeader() {
-  const {siteConfig} = useDocusaurusContext();
-  // window.location.href = 'https://datagrok.ai';
-  return (
-    <div>
-      <header>
-      <Hero/>
-      <Body/>
-    </header>
-    </div>
-  );
-}
+import Head from "@docusaurus/Head";
+import NavBar from '../components/new/navbar';
+import Footer from '../components/new/footer';
+import HomeLayout from '../docs/home.mdx';
 
 export default function Home(): JSX.Element {
-  const {siteConfig} = useDocusaurusContext();
-  return (
-    <Layout
-      title={`${siteConfig.title}`}>
-      <HomepageHeader />
-    </Layout>
-  );
+    return(
+
+                <div className='new'>
+                    <NavBar page={''}/>
+                    <div class="container-fluid text-center px-0">
+                        <HomeLayout/>
+                    </div>
+                    <Footer/>
+                </div>
+    );
 }

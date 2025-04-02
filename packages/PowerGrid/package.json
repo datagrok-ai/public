@@ -6,7 +6,7 @@
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
   },
-  "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
+  "description": "Power Grid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

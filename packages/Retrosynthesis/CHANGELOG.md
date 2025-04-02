@@ -1,5 +1,9 @@
 # REtrosynthesis changelog
 
+## 1.0.2 (2025-04-01)
+
+* Use multiprocessing.Manager to terminate concurrent requests.
+
 ## 1.0.1 (2025-03-31)
 
 * Add ability to terminate concurrent requests.

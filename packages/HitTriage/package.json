@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "Hit Triage",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
+  "description": "Hit Triage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
   "sources": [
     "css/hit-triage.css"
   ],

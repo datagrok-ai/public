@@ -51,7 +51,9 @@ export class DemoView extends DG.ViewBase {
       .filter((dockNode) => dockNode.container.containerElement.getElementsByClassName('tab-content').length > 0);
     if (dockNodes.length === 0)
       return;
-    const updateIndicatorRoot = dockNodes[0].container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
+    const dockNode = dockNodes.filter((node) => node.container.containerElement.classList.contains('document-manager') ||
+      node.container.containerElement.getElementsByClassName('document-manager').length > 0)[0];
+    const updateIndicatorRoot = dockNode.container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);

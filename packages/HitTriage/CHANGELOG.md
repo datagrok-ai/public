@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.7.0 (2025-04-01)
+
+* Fix not saving campaigns
+
 ## 1.5.0 (2025-03-01)
 
 * Add caching to loaded campaigns.

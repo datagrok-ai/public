@@ -73,6 +73,7 @@ export class DemoScript {
     });
 
     if (grok.shell.v) {
+      // eslint-disable-next-line max-len
       if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
         const homeIcon = ui.iconFA('home', () => {
           grok.shell.v.close();

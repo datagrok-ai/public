@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.20.2 (2025-03-31)
+
+* Detectors: more sensitive for very likely column names
+* Add to atomic level panel widget
+
 ## 2.20.1 (2025-03-29)
 
 * Improve Activity cliffs demo

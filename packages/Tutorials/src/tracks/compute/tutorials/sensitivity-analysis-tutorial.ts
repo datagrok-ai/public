@@ -108,7 +108,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     browseIcon.click();
 
-    let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
+    let name = 'Model-Hub';;
     const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
 

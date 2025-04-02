@@ -481,49 +481,6 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   // onEvent(e: DG.Events): void {  }
 
-  addContextMenu(): void {
-    if (!Object.keys(this.tables).length)
-      return;
-    ;
-    grok.events.onContextMenu.subscribe((args) => {
-      //    if (!(args.args.context instanceof DG.Viewer)) { return 0; };
-      // get opened tables (names, tabs);
-      const tabs: {[key: string]: any} = {};
-      const names = Object.keys(this.tables);
-      for (let i = 0; i < names.length; i++)
-        tabs[names[i]] = this.tables[i];
-
-
-      const callback = (item: any) => {
-        const table = tabs[item];
-        const nCols = Array.from(table.columns.numerical);
-        const colNames = nCols.map((e: any) => e.name);
-        const column0 = this.utils.normalize100(table.getCol(colNames[0]));
-        const column1 = table.getCol(colNames[1]).getRawData();
-        const data = [];
-        for (let i = 0; i < column0.length; i++)
-          data.push([column0[i], column1[i]]);
-        ;
-        this.plots.push({
-          height: '1flex', title: item + ' ' + colNames[1] + '( ' + colNames[0] + ' )',
-          series: {
-            type: 'scatter',
-            large: true,
-            data: data,
-          },
-          show: 1,
-        });
-        this.createElements();
-        this.updatePlots();
-        this.render();
-      }; // callback
-
-      // add context menu items (right click);
-      const menu = args.args.menu.group('New plot');
-      menu.items(names, callback);
-    }); // onContextMenu subscribe
-  }
-
   checkTablesLoaded() : boolean {
     const plotTablesList : string[] = this.plots.map((e) => e.tableName);
     const openTablesArray: string[] = Object.keys(this.tables);
@@ -533,7 +490,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
-    this.addContextMenu();
     if (!this.checkTablesLoaded() || Object.keys(this.tables).length === 0)
       return;
 

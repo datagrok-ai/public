@@ -102,6 +102,13 @@ export function tutorialsInit() {
   });
 }
 
+function showHelp(helpUrl: string) {
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+  grok.shell.windows.help.showHelp(helpUrl);
+}
+
 //name: Demo
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
@@ -198,6 +205,7 @@ export function _filesDemo() {
 //meta.demoPath: Data Access | Databases
 export async function _databasesDemo() {
   grok.shell.addView(DG.View.createByType(DG.View.DATABASES));
+  showHelp('/help/access/access.md#data-connection');
 }
 
 //name: scatterPlotDemo
@@ -379,9 +387,5 @@ export async function _tableLinkingDemo() {
     [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
   const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: 'Table'});
   demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, 'demog', 0.7);
-
-  grok.shell.windows.showContextPanel = false;
-  grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.syncCurrentObject = false;
-  grok.shell.windows.help.showHelp(HELP_URL);
+  showHelp(HELP_URL);
 }

@@ -1,6 +1,6 @@
-# PhyloTreeViewer
+# PhyloTree Viewer
 
-*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees
+*PhyloTree Viewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees
 visualization.
 
 ## Notations

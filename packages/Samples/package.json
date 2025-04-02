@@ -36,7 +36,7 @@
     "debug-demo": "grok publish public --release",
     "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",
-    "build": "tsc && webpack",
+    "build": "webpack",
     "debug-demo-dev": "grok publish dev",
     "release-demo-dev": "grok publish dev --release",
     "debug-demo-public": "grok publish public",

@@ -12,7 +12,7 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
 
 export function showHelpPanel() {
   grok.shell.windows.showContextPanel = true;
-   grok.shell.windows.showHelp = true;
+  grok.shell.windows.showHelp = true;
   grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
   
   grok.shell.windows.context.visible = true;  

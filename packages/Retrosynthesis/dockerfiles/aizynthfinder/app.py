@@ -1,85 +1,119 @@
-import subprocess
 import os
+import signal
 import logging
-import threading
+import subprocess
+from tempfile import NamedTemporaryFile
 
+from multiprocessing import Manager
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
+manager = Manager()
+shared_state = manager.dict()
+
 logging.basicConfig(
   level=logging.DEBUG,
   format="%(asctime)s - %(levelname)s - %(message)s",
-  handlers=[
-    logging.StreamHandler(),
-    logging.FileHandler("app.log")
-  ]
+  handlers=[logging.StreamHandler(), logging.FileHandler("app.log")]
 )
 
-process_lock = threading.Lock()
-current_process = None
+def is_process_alive(pid):
+  try:
+    os.kill(pid, 0)
+    return True
+  except OSError:
+    return False
+
+def terminate_previous_process(user_id):
+  process_info = shared_state.get(user_id)
+  if not process_info or "pid" not in process_info:
+    return False
+
+  pid = process_info["pid"]
+  if is_process_alive(pid):
+    logging.info(f"Terminating process {pid} for user {user_id}.")
+    try:
+      os.kill(pid, signal.SIGKILL)
+      logging.info(f"Process {pid} terminated.")
+    except Exception as e:
+      logging.error(f"Failed to terminate process {pid}: {e}")
+      return False
+
+  shared_state.pop(user_id, None)
+  return True
+
+def run_aizynthfind(config_path, smiles, user_id):
+  try:
+    with NamedTemporaryFile(delete=False, suffix=".txt") as smiles_file:
+      smiles_file.write(smiles.encode())
+      smiles_file.flush()
+
+      command = [
+        "aizynthcli",
+        "--config", config_path,
+        "--smiles", smiles_file.name,
+        "--output", "trees.json"
+      ]
+
+    logging.info(f"Executing: {' '.join(command)}")
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    logging.info(f"Started aizynthcli with PID: {process.pid}")
+
+    shared_state[user_id] = {"status": "running", "pid": process.pid}
+
+    stdout, stderr = process.communicate()
+    return_code = process.returncode
+
+    if shared_state.get(user_id, {}).get("status") == "terminated":
+      logging.warning(f"Process {process.pid} was terminated by a new request.")
+      return {"success": False, "error": "Process terminated"}
+
+    shared_state[user_id].update({"status": "completed", "return_code": return_code})
+
+    if return_code == 0:
+      with open("trees.json", "r") as result_file:
+        result_content = result_file.read()
+      logging.info("aizynthcli completed successfully")
+      return {"result": result_content, "success": True}
+    else:
+      logging.error(f"aizynthcli failed: {stderr}")
+      return {"success": False, "error": stderr}
+
+  except Exception as e:
+    logging.exception(f"Error running aizynthfind for user {user_id}")
+    shared_state.pop(user_id, None)
+    return {"success": False, "error": str(e)}
 
 @app.route('/aizynthfind', methods=['POST'])
 def aizynthfind():
-  global current_process
-
   try:
-    config_content = request.json.get('config')
-    smiles = request.json.get('smiles')
-
     output_dir = os.getcwd()
-    config_path = os.path.join(output_dir, "aizynthcli_data/config.yml")
-    smiles_file_path = os.path.join(output_dir, "smiles.txt")
+    data = request.json
+    user_id = data.get("id")
+    smiles = data.get("smiles")
+    config_path = os.path.join(output_dir, "aizynthcli_data", "config.yml")
 
-    if config_content:
-      with open(config_path, "w") as config_file:
-        config_file.write(config_content)
+    if not os.path.exists(config_path):
+      return jsonify({"success": False, "error": f"Config file not found at {config_path}"}), 400
 
-    with open(smiles_file_path, mode='w') as smiles_file:
-      smiles_file.write(smiles)
-    
-    command = [
-      "aizynthcli",
-      "--config", config_path,
-      "--smiles", smiles_file_path,
-      "--output", os.path.join(output_dir, "trees.json")
-    ]
+    if not smiles:
+      return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
 
-    logging.info(f"Running command: {' '.join(command)}")
+    terminate_previous_process(user_id)
+    result = run_aizynthfind(config_path, smiles, user_id)
 
-    with process_lock:
-      if current_process and current_process.poll() is None:
-        logging.info(f"Terminating previous process (PID: {current_process.pid})")
-        current_process.terminate()
-        current_process.wait()
-      
-      current_process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-      )
-
-    stdout, stderr = current_process.communicate()
-
-    if current_process.returncode == 0:
-      logging.info(f"Process completed successfully. Return code: {current_process.returncode}")
-      logging.info(stdout)
-
-      result_file_path = os.path.join(output_dir, "trees.json")
-      with open(result_file_path, 'r') as result_file:
-        result_content = result_file.read()
-      return jsonify({"result": result_content, "success": True}), 200
+    if result["success"]:
+      return jsonify({"success": True, "result": result["result"]}), 200
     else:
-      logging.error(f"Process failed. Return code: {current_process.returncode}")
-      logging.error(stderr)
-      return jsonify({"success": False, "error": stderr}), 500
+      return jsonify({"success": False, "error": result["error"]}), 500
 
   except Exception as e:
-    logging.exception("Unexpected error occurred")
+    logging.exception(f"Error handling request for user {user_id}")
     return jsonify({"success": False, "error": str(e)}), 500
 
-if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8000)
+if __name__ == "__main__":
+  app.run(host="0.0.0.0", port=8000)

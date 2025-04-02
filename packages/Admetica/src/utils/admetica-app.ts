@@ -11,7 +11,7 @@ import '../css/admetica.css';
 export class AdmeticaViewApp extends BaseViewApp {
   protected STORAGE_NAME: string = 'admetica-sketcher-values';
 
-  constructor(parentCall: DG.FuncCall) {
+  constructor(parentCall: DG.FuncCall | null) {
     super(parentCall);
 
     this.formGenerator = () => this.customFormGenerator();
