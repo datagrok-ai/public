@@ -85,40 +85,45 @@ function createTableQueryWidget(func: DG.Func, inputParams: any): DG.Widget {
 //input: string question
 //output: widget w
 export async function askMultiStep(question: string): Promise<DG.Widget> {
-  return DG.Widget.fromRoot((() => {
-    const container = ui.divV([]);
-    const button = ui.button('Ask AI', async () => {
-      ui.empty(container);
-      const loader = ui.loader();
-      container.appendChild(loader);
-
-      try {
-        const gptAssistant = new ChatGptAssistant(apiKey);
-        const response = await gptAssistant.askMultiStep(question);
-
+  return DG.Widget.fromRoot(
+    (() => {
+      const container = ui.divV([]);
+      
+      const button = ui.button('Ask AI', async () => {
         ui.empty(container);
+        const loader = ui.loader();
+        container.appendChild(loader);
 
-        const func = DG.Func.find({ name: response.function })[0];
+        try {
+          const gptAssistant = new ChatGptAssistant(apiKey);
+          const response = await gptAssistant.askMultiStep(question);
 
-        if (!func) {
-          container.appendChild(ui.divText(`Function "${response.function}" not found.`));
-          return;
+          ui.empty(container);
+
+          const func = DG.Func.find({ name: response.function })[0];
+          if (!func) {
+            container.appendChild(
+              ui.divText(`Function "${response.function}" not found.`, { style: { textAlign: 'center' } })
+            );
+            return;
+          }
+
+          if (func.type === 'data-query') {
+            const inputParams = response.arguments;
+            container.appendChild(
+              createTableQueryWidget(func, inputParams).root
+            );
+          } else if (func.type === 'script') {
+            container.appendChild(response.result);
+          }
+        } catch (error) {
+          ui.empty(container);
+          container.appendChild(ui.divText('Error while processing request.', { style: { textAlign: 'center' } }));
         }
+      });
 
-        if (func.type === 'data-query') {
-          const inputParams = response.arguments;
-          container.appendChild(createTableQueryWidget(func, inputParams).root);
-        } else if (func.type === 'script') {
-          container.appendChild(response.result);
-        }
-      } catch (error) {
-        ui.empty(container);
-        container.appendChild(ui.divText('Error while processing request.'));
-      }
-    });
-    
-    const wrapper = ui.divV([button, container], { style: { gap: '10px' } });
-
-    return wrapper;
-  })());
+      const wrapper = ui.divV([button, container]);
+      return wrapper;
+    })()
+  );
 }
