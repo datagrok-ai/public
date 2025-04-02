@@ -1,7 +1,7 @@
 import Markdown from 'markdown-to-jsx';
 import React, { useEffect, useState, Component } from 'react';
 
-export function Button({label, type, size}){
+export function Button({label, type, size, href, target}){
     let btnClass = "btn brand-btn m-2 px-4 ";
     if (type != undefined){
         if (type == "outline") btnClass+="brand-btn-outline "
@@ -12,7 +12,7 @@ export function Button({label, type, size}){
         btnClass+="btn-outline"
     }
     size != undefined ? btnClass+= " btn-"+size : ""
-    return(<a className={btnClass} type="submit" href="">{label}</a>);
+    return(<a className={btnClass} type="submit" href={href} target={target}>{label}</a>);
   }
   
 
