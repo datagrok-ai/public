@@ -49,16 +49,16 @@ class ProjectDGFunctionsParser {
     private constructor() {
     }
 
-    public GetFunctionsByDirectory(directoryPath: string): any {
+    public getFunctionsByDirectory(directoryPath: string): any {
         this.resultFunctionsObject = {};
-        const filesList = this.GetListOfDirectories(directoryPath)
+        const filesList = this.getListOfDirectories(directoryPath)
         filesList.forEach((filePath: string) => {
-            this.GetMethodsFormFile(filePath);
+            this.readMethodsFormFile(filePath);
         });
         return this.resultFunctionsObject;
     }
 
-    private GetListOfDirectories(dirPath: string) {
+    private getListOfDirectories(dirPath: string) {
         let resultDirs: string[] = []
         const files = fs.readdirSync(dirPath);
 
@@ -67,7 +67,7 @@ class ProjectDGFunctionsParser {
             const stats = fs.statSync(filePath);
 
             if (stats.isDirectory() && file !== "node_modules") {
-                resultDirs = resultDirs.concat(this.GetListOfDirectories(filePath));
+                resultDirs = resultDirs.concat(this.getListOfDirectories(filePath));
             } else {
                 if (file.includes(".d.ts") && !file.includes(".d.ts.map")) {
                     resultDirs.push(filePath);
@@ -77,7 +77,7 @@ class ProjectDGFunctionsParser {
         return resultDirs;
     }
 
-    private GetMethodsFormFile(filePath: string) {
+    private readMethodsFormFile(filePath: string) {
 
         try {
             const fileLines = fs.readFileSync(filePath, 'utf8').split('\n');
@@ -89,11 +89,11 @@ class ProjectDGFunctionsParser {
                 let trimmedLine: string = line.split(' ').filter(word => word !== '').join(' ').split('\t').join('').trim();
 
 
-                namespaceLevel += this.CountCharactersInLine(trimmedLine, '{')
-                namespaceLevel -= this.CountCharactersInLine(trimmedLine, '}')
+                namespaceLevel += this.countCharactersInLine(trimmedLine, '{')
+                namespaceLevel -= this.countCharactersInLine(trimmedLine, '}')
 
                 if (this.containerRegex.test(trimmedLine)) {
-                    this.lastClass = this.GetContainersName(trimmedLine);
+                    this.lastClass = this.getContainersName(trimmedLine);
 
                     if (this.lastClass) {
                         if (this.resultFunctionsObject[this.lastClass] === undefined)
@@ -113,13 +113,13 @@ class ProjectDGFunctionsParser {
 
                         if (this.setAccessorRegex.test(trimmedLine)) {
 
-                            this.AddToResultSetAccessor(trimmedLine);
+                            this.addToResultSetAccessor(trimmedLine);
                             this.concatedString = "";
                             this.wasConcatedString = false;
                         }
                         else if (this.getAccessorRegex.test(trimmedLine)) {
 
-                            this.AddToResultGetAccessor(trimmedLine);
+                            this.addToResultGetAccessor(trimmedLine);
                             this.concatedString = "";
                             this.wasConcatedString = false;
                         }
@@ -129,7 +129,7 @@ class ProjectDGFunctionsParser {
                                 trimmedLine = trimmedLine.substring(trimmedLine.indexOf('function ') + 'function '.length).trim();
                                 isMethod = false;
                             }
-                            this.AddToResultFunction(trimmedLine, isMethod);
+                            this.addToResultFunction(trimmedLine, isMethod);
                             this.concatedString = "";
                             this.wasConcatedString = false;
                         }
@@ -153,7 +153,7 @@ class ProjectDGFunctionsParser {
                                     if (trimmedLine.indexOf('set ') != -1) {
                                         trimmedLine = trimmedLine.substring(trimmedLine.indexOf('set ') + 'set '.length).trim();
                                     }
-                                    this.AddToResultSetAccessor(trimmedLine);
+                                    this.addToResultSetAccessor(trimmedLine);
                                     this.concatedString = "";
                                     this.wasConcatedString = false;
                                 }
@@ -163,7 +163,7 @@ class ProjectDGFunctionsParser {
                                         trimmedLine = trimmedLine.substring(trimmedLine.indexOf('function ') + 'function '.length).trim();
                                         isMethod = true;
                                     }
-                                    this.AddToResultFunction(trimmedLine, isMethod);
+                                    this.addToResultFunction(trimmedLine, isMethod);
                                     this.concatedString = "";
                                     this.wasConcatedString = false;
                                 }
@@ -201,7 +201,7 @@ class ProjectDGFunctionsParser {
         }
     }
 
-    private AddToResultGetAccessor(signature: string): void {
+    private addToResultGetAccessor(signature: string): void {
         const match = signature.match(this.getAccessorRegex);
 
         if (match && this.lastClass !== undefined) {
@@ -219,7 +219,7 @@ class ProjectDGFunctionsParser {
         }
     }
 
-    private AddToResultSetAccessor(signature: string): void {
+    private addToResultSetAccessor(signature: string): void {
         const match = signature.match(this.setAccessorRegex);
 
         if (match && this.lastClass !== undefined) {
@@ -237,7 +237,7 @@ class ProjectDGFunctionsParser {
         }
     }
 
-    private AddToResultFunction(signature: string, isMethod: boolean = false): void {
+    private addToResultFunction(signature: string, isMethod: boolean = false): void {
         const match = signature.match(this.functionRegex);
 
         if (match && this.lastClass !== undefined) {
@@ -257,12 +257,12 @@ class ProjectDGFunctionsParser {
         }
     }
 
-    private GetContainersName(containerString: string): string | undefined {
+    private getContainersName(containerString: string): string | undefined {
         const classNames = containerString.match(this.containerNameRegex);
         return `${classNames![1]} ${classNames![2]}` || undefined;
     }
 
-    private CountCharactersInLine(line: string, char: string): number {
+    private countCharactersInLine(line: string, char: string): number {
         let count = 0;
         for (let i = 0; i < line.length; i++) {
             if (line[i] === char) {
@@ -302,7 +302,7 @@ class VersionsManager {
 }
 
 
-function SaveObjToJsonFile(directory: string, object: any) {
+function saveObjToJsonFile(directory: string, object: any) {
 
     const jsonData = JSON.stringify(object);
     fs.writeFile(directory, jsonData, (err) => {
@@ -325,8 +325,8 @@ try {
     if (outputDir && baseProjectDirectoryPath) {
 
 
-        var functionsData = ProjectDGFunctionsParser.instance.GetFunctionsByDirectory(baseProjectDirectoryPath);
-        SaveObjToJsonFile(outputDir + newVersion + ".json", functionsData);
+        var functionsData = ProjectDGFunctionsParser.instance.getFunctionsByDirectory(baseProjectDirectoryPath);
+        saveObjToJsonFile(outputDir + newVersion + ".json", functionsData);
 
         if (!versions.versions.includes(newVersion))
             VersionsManager.instance.addNewVersion(outputDir + vesionsFile, newVersion);
