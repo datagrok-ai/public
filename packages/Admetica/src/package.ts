@@ -109,8 +109,7 @@ export async function admeProperty(molecule: string, prop: string): Promise<any>
   return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }
 
-async function initializeAdmeticaApp(addPath: boolean = true): Promise<DG.ViewBase | null> {
-  const parent = grok.functions.getCurrentCall();
+async function initializeAdmeticaApp(addPath: boolean = true, parent: DG.FuncCall | null = null): Promise<DG.ViewBase | null> {
   const app = new AdmeticaViewApp(parent);
   app.addPath = addPath;
   await app.init();
@@ -123,7 +122,8 @@ async function initializeAdmeticaApp(addPath: boolean = true): Promise<DG.ViewBa
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
 export async function admeticaApp(): Promise<DG.ViewBase | null> {
-  return await initializeAdmeticaApp();
+  const parent = grok.functions.getCurrentCall();
+  return await initializeAdmeticaApp(true, parent);
 }
 
 //name: Admetica Demo
