@@ -1,5 +1,9 @@
 # REtrosynthesis changelog
 
+## 1.0.3 (2025-04-03)
+
+* Adjusted container resources
+
 ## 1.0.2 (2025-04-01)
 
 * Use multiprocessing.Manager to terminate concurrent requests.
