@@ -348,24 +348,24 @@ export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer, updateB
 async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, thisViewer: ScaffoldTreeViewer): Promise<void> {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
-      let canvas = group.root.querySelector('.chem-canvas.modified');
-      if (!canvas)
-        canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
+      const canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
 
       const { chosenColor, parentColor, smiles, colorOn } = gropVal;
-      const parent = toJs(group.parent).value as ITreeNode;
-      const finalColor = chosenColor && colorOn ? chosenColor : parentColor;
+      if (chosenColor || parentColor) {
+        const parent = toJs(group.parent).value as ITreeNode;
+        const finalColor = chosenColor && colorOn ? chosenColor : parentColor;
 
-      const substructure = chosenColor ? smiles : thisViewer.getParentSmilesIterative(group);
-      if (parent && !(finalColor === chosenColor && colorOn)) {
-        thisViewer.setColorToChildren([group], finalColor ?? null, substructure, false);
+        if (parent && !(finalColor === chosenColor && colorOn)) {
+          const substructure = chosenColor ? smiles : thisViewer.getParentSmilesIterative(group);
+          thisViewer.setColorToChildren([group], finalColor ?? null, substructure, false);
+        } else
+          thisViewer.setColorToHighlight(group, finalColor!, colorOn!, false);
+      } else {
+        const newMolHost = renderMolecule(smiles, thisViewer.sizesMap[thisViewer.size].width, thisViewer.sizesMap[thisViewer.size].height,
+          false, thisViewer, false);
+        const molCanvas = newMolHost.querySelector('.chem-canvas') as HTMLCanvasElement;
+        canvas.replaceWith(molCanvas);
       }
-
-      const newMolHost = renderMolecule(smiles, thisViewer.sizesMap[thisViewer.size].width, thisViewer.sizesMap[thisViewer.size].height,
-        false, thisViewer, false, finalColor ?? null, substructure);
-      const molCanvas = newMolHost.querySelector('.chem-canvas') as HTMLCanvasElement;
-      molCanvas.classList.add('modified');
-      canvas.replaceWith(molCanvas);
 
       resolve();
     });
@@ -463,7 +463,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
 function getMoleculePropertyDiv() : HTMLDivElement | null {
   const c = document.getElementsByClassName('property-grid-item-view-label');
   let name = null;
-  for (let n = 0; n< c.length; ++n) {
+  for (let n = 0; n < c.length; ++n) {
     name = c[n].getAttribute('name');
     if (name !== null && name === 'prop-view-molecule-column')
       return c[n] as HTMLDivElement;
@@ -1441,7 +1441,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.dataFrame)
       return;
   
-    const rowCount = this.dataFrame.rowCount;  
+    const rowCount = this.dataFrame.rowCount;
     const columnName = `${this.title}_${this.moleculeColumnName}_colors`;
     this.colorColumn = this.dataFrame.columns.byName(columnName);
     const isNewColumn = !this.colorColumn;
@@ -1460,15 +1460,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const colorBuffer = new Array<string | null>(rowCount).fill(null);
     const scaffoldColorMap = new Map(this.colorCodedScaffolds.map(scaffold => [scaffold.molecule, scaffold.color]));
-    const childNodeMap = new Map(this.tree.items.map(child => [value(child).smiles, child]));
     
-    const childNodeColorPairs = this.colorCodedScaffolds.reduce((pairs, scaffold) => {
-      const childNode = childNodeMap.get(scaffold.molecule);
-      const color = scaffoldColorMap.get(scaffold.molecule);
-      if (childNode && color)
-        pairs.push({ childNode, color });
-      return pairs;
-    }, [] as { childNode: TreeViewNode<any>, color: string }[]);
+    const childNodeColorPairs = [];
+    for (const child of this.tree.items) {
+      const smiles = value(child).smiles;
+      if (scaffoldColorMap.has(smiles)) {
+        const color = scaffoldColorMap.get(smiles);
+        childNodeColorPairs.push({ childNode: child, color });
+      }
+    }
     
     childNodeColorPairs.sort((a, b) => value(b.childNode).bitset!.trueCount - value(a.childNode).bitset!.trueCount);
     for (const { childNode, color } of childNodeColorPairs) {
@@ -1476,7 +1476,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (bitset && bitset.trueCount > 0) {
         let index = bitset.findNext(-1, true);
         while (index !== -1) {
-          colorBuffer[index] = color;
+          colorBuffer[index] = color!;
           index = bitset.findNext(index, true);
         }
       }
@@ -2061,6 +2061,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     updateVisibleMols(this);
     attached = true;
     scaffoldTreeId += 1;
+    this.title = `${this.title}_${scaffoldTreeId}`;
   }
 
   detach(): void {
