@@ -2,6 +2,7 @@
 // Utilities for similarity computation
 
 import * as DG from 'datagrok-api/dg';
+import {Extremum} from './optimizer-misc';
 
 /** Similarity constants */
 export enum SIMILARITY {
@@ -11,7 +12,7 @@ export enum SIMILARITY {
   };
 
 /** Return the Maximum Relative Deviation (%) between vectors */
-export function getMRD(source: Float32Array, updated: Float32Array): number {
+function getMRD(source: Float32Array, updated: Float32Array): number {
   let mrd = 0;
 
   const len = source.length;
@@ -99,3 +100,34 @@ export function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
 
   return maxDeviation < funcSimTreshold;
 } // areSimilar
+
+/** Return non-similar extrema */
+export async function getNonSimilar(extrema: Extremum[],
+  similarity: number,
+  getCalledFuncCall: (x: Float32Array) => Promise<DG.FuncCall>): Promise<Extremum[]> {
+  // Get computations at extrema points
+  const pointsCount = extrema.length;
+  const calledFuncCalls = new Array<DG.FuncCall>(pointsCount);
+
+  for (let i = 0; i < pointsCount; ++i)
+    calledFuncCalls[i] = await getCalledFuncCall(extrema[i].point);
+
+  const nonSimilar: Extremum[] = [];
+  let toPush: boolean;
+
+  for (const extr of extrema) {
+    toPush = true;
+
+    for (const prev of nonSimilar) {
+      toPush &&= getMRD(prev.point, extr.point) > similarity;
+
+      if (!toPush)
+        break;
+    }
+
+    if (toPush)
+      nonSimilar.push(extr);
+  }
+
+  return nonSimilar;
+} // getNonSimilar

@@ -25,7 +25,7 @@ import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
-import {getMRD} from './fitting/similarity-utils';
+import {getNonSimilar} from './fitting/similarity-utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -1128,8 +1128,8 @@ export class FittingView {
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      const allExtremums = optResult.extremums;
-      const allExtrCount = allExtremums.length;
+      const extrema = optResult.extremums;
+      const allExtrCount = extrema.length;
 
       // Process fails
       if (allExtrCount < this.samplesCount) {
@@ -1152,24 +1152,14 @@ export class FittingView {
         });
       }
 
-      allExtremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+      // Sort all extrema with respect to the loss function
+      extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-      const extremums: Extremum[] = [];
-      const dist = this.similarity;
+      // Get funccals corresponding to the computed extrema
+      const extrFuncCalls = new Array<DG.FuncCall>(allExtrCount);
 
-      allExtremums.forEach((extr) => {
-        let toPush = true;
-
-        extremums.forEach((cur) => {
-          toPush &&= getMRD(cur.point, extr.point) > dist;
-          console.log('MRD:', getMRD(extr.point, cur.point));
-        });
-
-        if (toPush)
-          extremums.push(extr);
-      });
-
-      const rowCount = extremums.length;
+      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall);
+      const rowCount = nonSimilarExtrema.length;
 
       // Show info/warning reporting results
       if (allExtrCount < this.samplesCount) {
@@ -1202,7 +1192,7 @@ export class FittingView {
 
       this.currentFuncCalls = calledFuncCalls;
 
-      extremums.forEach(async (extr, idx) => {
+      nonSimilarExtrema.forEach(async (extr, idx) => {
         lossVals[idx] = extr.cost;
         const lossRoot = this.getLossGraph(extr);
         lossFuncGraphRoots[idx] = lossRoot;
@@ -1241,7 +1231,7 @@ export class FittingView {
         const raw = new Float32Array(rowCount);
 
         for (let j = 0; j < rowCount; ++j)
-          raw[j] = extremums[j].point[idx];
+          raw[j] = nonSimilarExtrema[j].point[idx];
 
         reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
         tooltips.set(cap, `Obtained values of '${cap}'`);
