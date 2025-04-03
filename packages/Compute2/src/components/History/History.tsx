@@ -9,7 +9,8 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
 import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
-import {filter, take} from 'rxjs/operators';
+import {filter, mergeMap, take, toArray} from 'rxjs/operators';
+import {from} from 'rxjs';
 import wu from 'wu';
 import {watchExtractedObservable} from '@vueuse/rxjs';
 
@@ -38,10 +39,6 @@ export const History = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    propFuncs: {
-      type: Object as Vue.PropType<Record<string, (currentRun: DG.FuncCall) => string>>,
-      default: {},
-    },
   },
   emits: {
     runChosen: (_chosenCall: DG.FuncCall) => true,
@@ -57,12 +54,15 @@ export const History = Vue.defineComponent({
     const showMetadata = Vue.ref(true);
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
+    const func = Vue.computed(() => Vue.markRaw(props.func));
+
+    const currentSelection = new Set<DG.FuncCall>();
 
     const refresh = async () => {
       isLoading.value = true;
       try {
         const newHistoricalRuns = await historyUtils.pullRunsByName(
-          props.func.name,
+          func.value.name,
           [{author: grok.shell.user}],
           {},
           ['session.user', 'options'],
@@ -81,7 +81,7 @@ export const History = Vue.defineComponent({
       }
     };
 
-    Vue.watch(() => props.func.id, () => refresh(), {immediate: true});
+    Vue.watch(func, () => refresh(), {immediate: true});
 
     const defaultDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(ID_COLUMN_NAME, []),
@@ -182,10 +182,10 @@ export const History = Vue.defineComponent({
 
     const historicalRunsDf = Vue.shallowRef(Vue.markRaw(defaultDf));
 
-    Vue.watch(historicalRuns, async () => {
+    Vue.watch([historicalRuns, func], async ([historicalRuns, func]) => {
       const df = await Utils.getRunsDfFromList(
-        historicalRuns.value,
-        props.func,
+        historicalRuns,
+        func,
         Vue.toValue(() => props),
       );
       historicalRunsDf.value = Vue.markRaw(df);
@@ -198,6 +198,15 @@ export const History = Vue.defineComponent({
         const run = await historyUtils.loadRun(chosenRun.id, false, false);
         emit('runChosen', run ? Vue.markRaw(run) : run);
       };
+    });
+
+    watchExtractedObservable(historicalRunsDf, (p) => p.onSelectionChanged, () => {
+      const selectedCalls: DG.FuncCall[] = [...historicalRunsDf.value.selection
+        .getSelectedIndexes()]
+        .map((idx) => getRunByIdx(idx)!);
+      currentSelection.clear();
+      for (const call of selectedCalls)
+        currentSelection.add(call);
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
@@ -272,6 +281,23 @@ export const History = Vue.defineComponent({
       </div>
     );
 
+    const deleteSelected = async () => {
+      if (isLoading.value || currentSelection.size === 0)
+        return;
+      const deleteDialog = new HistoricalRunsDelete(currentSelection);
+      deleteDialog.show({center: true, width: 500});
+      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      try {
+        isLoading.value = true;
+        await from(currentSelection).pipe(
+          mergeMap(call => from(deleteRun(call.id)), 5),
+          toArray(),
+        ).toPromise();
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
     const currentFunc = Vue.computed(() => Vue.markRaw(props.func));
     const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
@@ -330,11 +356,17 @@ export const History = Vue.defineComponent({
             onUpdate:value={(val) => showInputs.value = val}
           />
         </div>
-        <div style={{display: 'flex'}}>
+        <div style={{display: 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA
             name='sync'
             tooltip={'Refresh'}
             onClick={refresh}
+            style={{alignContent: 'center'}}
+          />
+          <IconFA
+            name='trash-alt'
+            tooltip={'Delete'}
+            onClick={deleteSelected}
             style={{alignContent: 'center'}}
           />
         </div>
