@@ -15,9 +15,12 @@ export const ViewerTestApp = Vue.defineComponent({
     let i = 0;
     const datasets = [grok.data.demo.demog(), grok.data.demo.doseResponse(), grok.data.demo.geo()];
     const changeData = () => {
-      df.value = datasets[i];
+      df.value = Vue.markRaw(datasets[i]);
       i++;
       i%=datasets.length;
+    };
+    const changeViewer = (v?: DG.Viewer) => {
+      viewer.value = v ? Vue.markRaw(v) : undefined;
     };
     let j = 0;
     const types = ['Grid', 'Histogram', 'Line chart', 'Scatter plot'];
@@ -26,11 +29,12 @@ export const ViewerTestApp = Vue.defineComponent({
       j++;
       j%=types.length;
     };
+
     return () => (
       <div style={{width: '100%', height: '100%'}}>
         <button onClick={changeData}>change data</button>
         <button onClick={changeType}>change type</button>
-        <Viewer type={type.value} dataFrame={df.value} style={{width: '100%', height: '100%'}} onViewerChanged={(v) => viewer.value = v}></Viewer>
+        <Viewer type={type.value} dataFrame={df.value} style={{width: '100%', height: '100%'}} onViewerChanged={changeViewer}></Viewer>
       </div>
     );
   },

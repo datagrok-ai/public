@@ -43,7 +43,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.descriptions[k] = Object.freeze(val);
+    states.descriptions[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentCallsState$.pipe(
@@ -52,7 +52,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.calls[k] = Object.freeze(val);
+    states.calls[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentValidations$.pipe(
@@ -61,7 +61,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.validations[k] = Object.freeze(val);
+    states.validations[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentConsistency$.pipe(
@@ -70,7 +70,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.consistency[k] = Object.freeze(val);
+    states.consistency[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentMeta$.pipe(
@@ -79,7 +79,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.meta[k] = Object.freeze(val);
+    states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   Vue.watch(() => providerFunc.value, (providerFunc) => {

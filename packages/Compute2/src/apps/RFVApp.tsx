@@ -16,6 +16,7 @@ const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 
 export const RFVApp = Vue.defineComponent({
+  name: 'RFVApp',
   props: {
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
@@ -27,6 +28,7 @@ export const RFVApp = Vue.defineComponent({
     },
   },
   setup(props) {
+
     const runRequests$ = new Subject<true>();
     const isFormValid$ = new BehaviorSubject<boolean>(false);
 
@@ -40,14 +42,19 @@ export const RFVApp = Vue.defineComponent({
       }),
     ).subscribe();
 
-    const currentFuncCall = Vue.shallowRef(props.funcCall);
+    const currentFuncCall = Vue.shallowRef(Vue.markRaw(props.funcCall));
     const currentCallState = Vue.ref(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
-    const func = Vue.computed(() => currentFuncCall.value.func);
-    const isRunningOnInput = Vue.computed(() => func.value.options['runOnInput'] === 'true');
+    const func = Vue.shallowRef<DG.Func | undefined>(undefined);
+    const isRunningOnInput = Vue.ref<boolean>(false);
+
+    Vue.watch(currentFuncCall, (call) => {
+      func.value = call.func;
+      isRunningOnInput.value = func.value.options['runOnInput'] === 'true';
+    }, {immediate: true});
 
     const searchParams = useUrlSearchParams<{id?: string}>('history');
 
@@ -90,7 +97,7 @@ export const RFVApp = Vue.defineComponent({
         return;
 
       const fc = await historyUtils.loadRun(loadingId);
-      currentFuncCall.value = fc;
+      currentFuncCall.value = Vue.markRaw(fc);
     }, {immediate: true});
 
 
@@ -145,7 +152,7 @@ export const RFVApp = Vue.defineComponent({
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel view={currentView.value}>
-          {!isRunningOnInput.value && !currentCallState.value.isOutputOutdated &&
+          {!currentCallState.value.isOutputOutdated &&
             <IconFA
               name='save'
               tooltip={'Save'}
@@ -155,7 +162,7 @@ export const RFVApp = Vue.defineComponent({
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
-          onUpdate:funcCall={(fc) => currentFuncCall.value = fc}
+          onUpdate:funcCall={(fc) => currentFuncCall.value = Vue.markRaw(fc)}
           onRunClicked={() => runRequests$.next(true)}
           onFormReplaced={onUpdateForm}
           onFormValidationChanged={(val) => isFormValid$.next(val)}

@@ -8,7 +8,6 @@ import {
   Viewer, InputForm,
   BigButton, IconFA,
   RibbonPanel, DockManager, MarkDown,
-  ComboPopup,
   RibbonMenu,
   ifOverlapping,
   tooltip,
@@ -45,11 +44,13 @@ type TabContent = Map<string,
   {type: 'scalars', scalarProps: DG.Property[]}
 >;
 
+const getEmptyTabToProperties = () => ({
+  inputs: new Map() as TabContent,
+  outputs: new Map() as TabContent,
+});
+
 const tabToProperties = (func: DG.Func) => {
-  const map = {
-    inputs: new Map() as TabContent,
-    outputs: new Map() as TabContent,
-  };
+  const map = getEmptyTabToProperties();
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
     const dfViewers = Utils.getPropViewers(dfProp).config;
@@ -167,14 +168,14 @@ export const RichFunctionView = Vue.defineComponent({
     },
   },
   emits: {
-    'update:funcCall': (call: DG.FuncCall) => call,
-    'runClicked': () => {},
-    'nextClicked': () => {},
-    'actionRequested': (actionUuid: string) => actionUuid,
-    'consistencyReset': (ioName: string) => ioName,
-    'formValidationChanged': (isValid: boolean) => isValid,
-    'formInputChanged': (a: DG.EventData<DG.InputArgs>) => a,
-    'formReplaced': (a: DG.InputForm | undefined) => a,
+    'update:funcCall': (_call: DG.FuncCall) => true,
+    'runClicked': () => true,
+    'nextClicked': () => true,
+    'actionRequested': (_actionUuid: string) => true,
+    'consistencyReset': (_ioName: string) => true,
+    'formValidationChanged': (_isValid: boolean) => true,
+    'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
+    'formReplaced': (_a: DG.InputForm | undefined) => true,
   },
   methods: {
     savePersonalState: () => {},
@@ -183,18 +184,38 @@ export const RichFunctionView = Vue.defineComponent({
   setup(props, {emit, expose}) {
     const {layoutDatabase} = useLayoutDb<RFVSchema>();
 
-    const currentCall = Vue.computed(() => props.funcCall);
+    const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const currentUuid = Vue.computed(() => props.uuid);
 
-    const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
+    const tabToPropertiesMap = Vue.shallowRef<ReturnType<typeof tabToProperties>>(getEmptyTabToProperties());
+    const tabLabels = Vue.shallowRef<string[]>([]);
+    const viewerTabLabels = Vue.shallowRef<DG.FuncCallParam[]>([]);
+    const hasContextHelp = Vue.ref(false);
+    const isSAenabled = Vue.ref(false);
+    const isReportEnabled = Vue.ref(false);
+    const isFittingEnabled = Vue.ref(false);
 
-    const tabLabels = Vue.computed(() => {
-      return [
+
+    Vue.watch(currentCall, (call) => {
+      tabToPropertiesMap.value = Vue.markRaw(tabToProperties(call.func));
+      tabLabels.value = [
         ...tabToPropertiesMap.value.inputs.keys(),
         ...tabToPropertiesMap.value.outputs.keys(),
+
       ];
-    });
+      viewerTabLabels.value = [
+        ...call.inputParams.values(),
+        ...call.outputParams.values(),
+      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+
+      hasContextHelp.value = Utils.hasContextHelp(call.func);
+      const features = Utils.getFeatures(call.func)
+      isSAenabled.value =  Utils.getFeature(features, 'sens-analysis', false);
+      isReportEnabled.value = Utils.getFeature(features, 'export', true);
+      isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+
+    }, {immediate: true});
 
     const run = async () => {
       emit('runClicked');
@@ -208,12 +229,11 @@ export const RichFunctionView = Vue.defineComponent({
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
 
-    const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
-
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.shallowRef(null as HTMLElement | null);
     const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
+
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
@@ -373,22 +393,10 @@ export const RichFunctionView = Vue.defineComponent({
     const validationState = Vue.computed(() => props.validationStates);
     const consistencyState = Vue.computed(() => props.consistencyStates);
 
-    const currentFunc = Vue.computed(() => currentCall.value.func);
-
-    const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
-    const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
-    const isReportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
-    const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
-
-    const viewerTabLabels = Vue.computed(() =>
-      [
-        ...currentCall.value.inputParams.values(),
-        ...currentCall.value.outputParams.values(),
-      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME));
 
     const onValidationChanged = (ev: boolean) => {
       if (!props.localValidation)
@@ -430,7 +438,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const runSA = () => {
       const ranges = getRanges('rangeSA');
-      SensitivityAnalysisView.fromEmpty(currentFunc.value, {ranges});
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges});
     };
 
     const isLocked = Vue.ref(false);
@@ -443,11 +451,11 @@ export const RichFunctionView = Vue.defineComponent({
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
         const targets = getTargets();
-        const view = await FittingView.fromEmpty(currentFunc.value, {ranges, targets, acceptMode: true});
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
-          emit('update:funcCall', call);
+          emit('update:funcCall', Vue.markRaw(call));
       } finally {
         isLocked.value = false;
       }

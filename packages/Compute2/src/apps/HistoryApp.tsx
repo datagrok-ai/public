@@ -7,6 +7,7 @@ import {BehaviorSubject, Subject} from 'rxjs';
 import {useObservable} from '@vueuse/rxjs';
 
 export const HistoryApp = Vue.defineComponent({
+  name: 'HistoryApp',
   props: {
     name: {
       type: String,
@@ -24,14 +25,18 @@ export const HistoryApp = Vue.defineComponent({
   },
   setup(props) {
     const showHistory = useObservable(props.showHistory);
+    const func = Vue.computed(() => {
+      const f = DG.Func.byName(props.name);
+      return f ? Vue.markRaw(f) : undefined;
+    })
     return () => (
-      showHistory.value ?
+      (showHistory.value && func.value) ?
         <History
-          func={DG.Func.byName(props.name)}
+          func={func.value}
           showActions={true}
           showBatchActions={true}
           isHistory={true}
-          onRunChosen={(fc) => props.updateFCBus.next(fc)}
+          onRunChosen={(fc) => props.updateFCBus.next(Vue.markRaw(fc))}
         /> :
         <div></div>
     );

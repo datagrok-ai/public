@@ -20,6 +20,12 @@ import {Subject} from 'rxjs';
 declare global {
   var initialURLHandled: boolean;
 }
+declare let ENABLE_VUE_DEV_TOOLS: boolean;
+
+if (ENABLE_VUE_DEV_TOOLS) {
+  const devtools = (window as any).__VUE_DEVTOOLS_GLOBAL_HOOK__;
+  devtools.enabled = true;
+}
 
 export const _package = new DG.Package();
 
@@ -38,6 +44,11 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
     view.basePath = `/${call.func.name}`;
 }
 
+function setVueAppOptions(app: Vue.App<any>) {
+  app.config.performance = ENABLE_VUE_DEV_TOOLS;
+  app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts';
+}
+
 //name: CustomFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
@@ -49,7 +60,8 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) {
   await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
   const updateFCBus = new Subject<DG.FuncCall>();
 
-  const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus});
+  const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
+  setVueAppOptions(app);
 
   const sub = updateFCBus.subscribe((fc) => {
     view.linkFunccall(fc);
@@ -80,10 +92,11 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   const view = new DG.ViewBase();
   setViewHierarchyData(call, view);
 
-  const app = Vue.createApp(RFVApp, {funcCall: call, view});
+  const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
+  setVueAppOptions(app);
 
   app.mount(view.root);
 
@@ -122,9 +135,10 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 
   const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, view});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
+  setVueAppOptions(app);
 
   app.mount(view.root);
 
@@ -148,6 +162,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 export async function ViewerTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(ViewerAppInstance);
+  setVueAppOptions(app);
   app.mount(view.root);
   view.name = 'ViewerTestApp';
   grok.shell.addView(view);
@@ -157,6 +172,7 @@ export async function ViewerTestApp() {
 export async function FormTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(FormAppInstance);
+  setVueAppOptions(app);
   app.mount(view.root);
   view.name = 'FormTestApp';
   grok.shell.addView(view);
@@ -167,6 +183,7 @@ export async function HistoryTestApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(HistoryAppInstance);
   view.root.classList.remove('ui-panel');
+  setVueAppOptions(app);
   app.mount(view.root);
   view.name = 'HistoryTestApp';
   grok.shell.addView(view);

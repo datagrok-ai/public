@@ -23,7 +23,7 @@ export const TreeWizardApp = Vue.defineComponent({
     },
   },
   setup(props) {
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
     return () => (
       <TreeWizard providerFunc={props.providerFunc} modelName={props.modelName} view={currentView.value} />
     );

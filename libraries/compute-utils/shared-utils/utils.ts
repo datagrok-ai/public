@@ -218,7 +218,7 @@ export const richFunctionViewReport = async (
 
       const buffer = await exportWorkbook.xlsx.writeBuffer();
 
-      const blob =  new Blob([buffer], {type: BLOB_TYPE});
+      const blob = new Blob([buffer], {type: BLOB_TYPE});
 
       return [blob, exportWorkbook] as const;
     } catch (e) {
@@ -232,14 +232,14 @@ export const richFunctionViewReport = async (
   throw new Error('Format is not supported');
 };
 
-export const reportFuncCallExcel = async(funccall: DG.FuncCall) => {
+export const reportFuncCallExcel = async (funccall: DG.FuncCall) => {
   return richFunctionViewReport(
     'Excel',
     funccall.func,
     funccall,
     dfToViewerMapping(funccall),
   );
-}
+};
 
 export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
   const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;

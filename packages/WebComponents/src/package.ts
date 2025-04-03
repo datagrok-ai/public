@@ -6,6 +6,7 @@ import {
   InputForm, Viewer, DGBigButton,
   DGButton, DGIconFA,
   DGToggleInput, DGComboPopup, DGMarkdown,
+  ValidationIcon
 } from '@datagrok-libraries/webcomponents';
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg';
 
@@ -26,6 +27,7 @@ export async function init() {
   customElements.define('dg-combo-popup', DGComboPopup);
   customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
   customElements.define('dg-markdown', DGMarkdown);
+  customElements.define('dg-validation-icon', ValidationIcon);
   inited = true;
 
   await Promise.all([
@@ -38,6 +40,7 @@ export async function init() {
     customElements.whenDefined('dg-combo-popup'),
     customElements.whenDefined('dock-spawn-ts'),
     customElements.whenDefined('dg-markdown'),
+    customElements.whenDefined('dg-validation-icon'),
   ]);
 
   console.log('webcomponents registered');

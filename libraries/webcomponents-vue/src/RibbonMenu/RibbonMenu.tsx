@@ -34,7 +34,7 @@ export const RibbonMenu = Vue.defineComponent({
     }, {flush: 'post'});
 
     const addElement = (el: Element | null | any, idx: number) => {
-      const content = el;
+      const content = el ? Vue.markRaw(el) : undefined
       if (content)
         elements.set(idx, content);
     };

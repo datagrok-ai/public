@@ -92,7 +92,7 @@ export class ModelHandler extends DG.ObjectHandler {
     if (!func.options['readme']) return;
     const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
     const readmeExists = await grok.dapi.files.exists(path);
-    const readmeText = readmeExists ? await grok.dapi.files.readAsText(path) : "No help file";
+    const readmeText = readmeExists ? await grok.dapi.files.readAsText(path) : 'No help file';
     grok.shell.windows.help.showHelp(ui.markdown(readmeText));
   }
 

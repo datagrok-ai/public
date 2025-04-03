@@ -16,6 +16,7 @@ import {watchExtractedObservable} from '@vueuse/rxjs';
 const GRID_INITED_EVENT = 'd4-grid-initialized';
 
 export const History = Vue.defineComponent({
+  name: 'History',
   props: {
     func: {
       type: DG.Func,
@@ -43,10 +44,10 @@ export const History = Vue.defineComponent({
     },
   },
   emits: {
-    runChosen: (chosenCall: DG.FuncCall) => chosenCall,
-    compare: (ids: string[]) => ids,
-    afterRunEdited: (editedCall: DG.FuncCall) => editedCall,
-    afterRunDeleted: (deletedCall: DG.FuncCall) => deletedCall,
+    runChosen: (_chosenCall: DG.FuncCall) => true,
+    compare: (_ids: string[]) => true,
+    afterRunEdited: (_editedCall: DG.FuncCall) => true,
+    afterRunDeleted: (_deletedCall: DG.FuncCall) => true,
   },
   setup(props, {emit}) {
     const isLoading = Vue.ref(true);
@@ -95,7 +96,8 @@ export const History = Vue.defineComponent({
     const getRunByIdx = (idx: number) => {
       if (idx < 0) return;
 
-      return historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
+      const run = historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
+      return run ? Vue.markRaw(run) : undefined;
     };
 
     const isFavoriteByIndex = (idx: number) => {
@@ -103,6 +105,7 @@ export const History = Vue.defineComponent({
     };
 
     const updateRun = (updatedRun: DG.FuncCall) => {
+      Vue.markRaw(updatedRun);
       historicalRuns.value.set(updatedRun.id, updatedRun);
       Vue.triggerRef(historicalRuns);
     };
@@ -177,7 +180,7 @@ export const History = Vue.defineComponent({
       }
     };
 
-    const historicalRunsDf = Vue.shallowRef(defaultDf);
+    const historicalRunsDf = Vue.shallowRef(Vue.markRaw(defaultDf));
 
     Vue.watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
@@ -185,13 +188,16 @@ export const History = Vue.defineComponent({
         props.func,
         Vue.toValue(() => props),
       );
-      historicalRunsDf.value = df;
+      historicalRunsDf.value = Vue.markRaw(df);
     });
 
     watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
-      if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
+      if (chosenRun) {
+        const run = await historyUtils.loadRun(chosenRun.id, false, false);
+        emit('runChosen', run ? Vue.markRaw(run) : run);
+      };
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
@@ -231,7 +237,7 @@ export const History = Vue.defineComponent({
         take(1),
       ).toPromise();
 
-      currentGrid.value = grid;
+      currentGrid.value = Vue.markRaw(grid);
       grid.sort([STARTED_COLUMN_NAME], [false]);
       grid.props.rowHeight = 46;
 
@@ -266,7 +272,7 @@ export const History = Vue.defineComponent({
       </div>
     );
 
-    const currentFunc = Vue.computed(() => props.func);
+    const currentFunc = Vue.computed(() => Vue.markRaw(props.func));
     const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;

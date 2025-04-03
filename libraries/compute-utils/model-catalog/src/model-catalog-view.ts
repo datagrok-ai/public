@@ -95,13 +95,13 @@ export class ModelCatalogView extends DG.CustomCardView {
         link: 'https://github.com/datagrok-ai/public/tree/master/packages/Compute',
       }, {
         name: 'Developing Models',
-        link: 'https://datagrok.ai/help/compute/scripting'
-      }
+        link: 'https://datagrok.ai/help/compute/scripting',
+      },
     ];
-    const  customHelpItems = await this.getClientSpecificHelp();
+    const customHelpItems = await this.getClientSpecificHelp();
     let help = this.ribbonMenu.group('Help');
     for (const item of [...standardHelpItems, ...customHelpItems])
-      help = help.item(item.name,  () => window.open(item.link, '_blank'));
+      help = help.item(item.name, () => window.open(item.link, '_blank'));
     help.endGroup();
   }
 

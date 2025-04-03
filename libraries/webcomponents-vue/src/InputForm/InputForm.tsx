@@ -44,11 +44,11 @@ export const InputForm = Vue.defineComponent({
     },
   },
   emits: {
-    formReplaced: (a: DG.InputForm | undefined) => a,
-    inputChanged: (a: DG.EventData<DG.InputArgs>) => a,
-    validationChanged: (a: boolean) => a,
-    actionRequested: (actionUuid: string) => actionUuid,
-    consistencyReset: (ioName: string) => ioName,
+    formReplaced: (_a: DG.InputForm | undefined) => true,
+    inputChanged: (_a: DG.EventData<DG.InputArgs>) => true,
+    validationChanged: (_a: boolean) => true,
+    actionRequested: (_actionUuid: string) => true,
+    consistencyReset: (_ioName: string) => true,
   },
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
@@ -66,42 +66,39 @@ export const InputForm = Vue.defineComponent({
       const entries = Object.entries(meta).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
       return merge(...entries).pipe(
         tap(([k, val]) => {
-          states.meta[k] = Object.freeze(val);
+          states.meta[k] = Vue.markRaw(val);
         }),
       );
     });
 
     const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
-    Vue.watchEffect(() => {
-      if (!currentForm.value) return;
+    Vue.watch([currentCall, currentForm, validationStates, consistencyStates], ([call, form, validationStates, consistencyStates]) => {
+      if (!form || !call) return;
 
-      [...currentCall.value.inputParams.values()]
-        .filter((param) => (currentForm.value!.getInput(param.property.name)))
+      [...call.inputParams.values()]
+        .filter((param) => (form.getInput(param.property.name)))
         .forEach((param) => {
-          const input = currentForm.value!.getInput(param.property.name);
-          const validationState = validationStates.value?.[param.property.name];
-          const consistencyState = consistencyStates.value?.[param.property.name];
+          const input = form.getInput(param.property.name);
+          const validation = validationStates?.[param.property.name];
+          const consistency = consistencyStates?.[param.property.name];
 
           if (!isInputInjected(input))
             injectInputBaseStatus(emit, param.property.name, input);
 
-          (input as any).setStatus({
-            validation: validationState,
-            consistency: consistencyState,
-          });
+          (input as any).setStatus({validation, consistency});
 
-          input.enabled = !isReadonly.value && consistencyState?.restriction !== 'disabled';
+          input.enabled = !isReadonly.value && consistency?.restriction !== 'disabled';
         });
     });
 
-    Vue.watch([currentForm, states.meta], ([form, meta]) => {
-      if (!form) return;
+    Vue.watch([currentCall, currentForm, states.meta], ([call, form, meta]) => {
+      if (!form || !call) return;
 
-      [...currentCall.value.inputParams.values()]
-        .filter((param) => (form!.getInput(param.property.name)))
+      [...call.inputParams.values()]
+        .filter((param) => (form.getInput(param.property.name)))
         .forEach((param) => {
-          const input = form!.getInput(param.property.name);
+          const input = form.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
           if (input.inputType === DG.InputType.Choice) {
             input.notify = false;
@@ -130,8 +127,9 @@ export const InputForm = Vue.defineComponent({
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
-      emit('formReplaced', event.detail);
-      currentForm.value = event.detail;
+      const form = event.detail ? Vue.markRaw(event.detail) : undefined
+      currentForm.value = form;
+      emit('formReplaced', form);
     };
 
     return () =>
