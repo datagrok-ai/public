@@ -1,13 +1,13 @@
 
-import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from "datagrok-api/dg";
+import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import { loadIssueData, loadIssues } from "./api/data";
-import { _package } from "./package-test";
-import { AuthCreds, JiraIssue } from "./api/objects";
-import { getJiraCreds } from "./app/credentials";
-import { cache, issueData, queried } from "./package";
+import { loadIssueData, loadIssues } from './api/data';
+import { _package } from './package-test';
+import { AuthCreds, JiraIssue } from './api/objects';
+import { getJiraCreds } from './app/credentials';
+import { cache, issueData, queried } from './package';
 import imgBug from './images/bug.png';
 import imgEpic from './images/epic.png';
 import imgFeature from './images/feature.png';
@@ -186,77 +186,47 @@ function listRenderer(list: string[], withTooltip = true) {
     return nameHost;
 }
 
-
-class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
-
+class JiraTicketGridCellRenderer extends DG.BatchCellRenderer {
     get name(): string { return 'JIRA Ticket'; }
     get cellType(): string { return 'JIRA Ticket'; }
     get defaultWidth(): number | null { return 100; }
 
     currentTimeout: any = null;
-    isRunning: boolean = false; 
+    isRunning: boolean = false;
     loadedTickets: Set<string> = new Set<string>();
     cellsToLoad: DG.GridCell[] = [];
     cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
 
-    loadData( gridCell: DG.GridCell) {
-        let found = this.cellsToLoad.filter((e) => {
-            return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn.name === gridCell.gridColumn.name && e.gridRow === gridCell.gridRow
-        }) ?? [];
-
-        if (this.isRunning) {
-            if (found.length === 0)
-                this.cellsToLoadOnTimeoutComplete.push(gridCell)
-            return;
-        }
-
-        if (found.length === 0)
-            this.cellsToLoad.push(gridCell)
-
-        if (this.currentTimeout)
-            clearTimeout(this.currentTimeout);
-
-        this.currentTimeout = setTimeout(async () => {
-            this.isRunning = true;
-            const jiraCreds = await getJiraCreds();
-            if (!jiraCreds) {
-                this.cellsToLoad.forEach((x) => {
-                    cache.set(x.cell.valueString, null);
-                });
-                return;
-            }
-            const chunkSize = 100;
-            const ticketKeys = this.cellsToLoad.map((e)=> e.cell.valueString);
-            let index = 0;
-            while (index < ticketKeys.length) {
-                const keysToLoad = ticketKeys.slice(index, index + chunkSize);
-                try {
-                    const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
-                        0, chunkSize, undefined, keysToLoad);
-                    for (let issue of loadedIssues?.issues ?? []) {
-                        cache.set(issue.key, issue);
-                        this.loadedTickets.add(issue.key);
-                    }
-                } catch (error) {
-                    console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
-                }
-                index += chunkSize;
-            }
-            this.cellsToLoad.forEach((x) => {
-                if(!this.loadedTickets.has(x.cell.valueString))
-                    cache.set(x.cell.valueString, null);
-                x.grid.invalidate();
-            }) 
-
-            this.loadedTickets.clear();
-            this.cellsToLoad = []
-            this.currentTimeout = null;
-            this.isRunning = false;
-            if (this.cellsToLoadOnTimeoutComplete.length > 0)
-                this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.loadData(cell) })
-            this.cellsToLoadOnTimeoutComplete = [];
-        }, 300);
+    constructor(){
+        super(cache);
     }
+
+
+    async loadData(keys: string[]): Promise<Map<string, any>> {
+        const result = new Map<string, any>();
+        const jiraCreds = await getJiraCreds();
+        if (!jiraCreds) {
+            throw new Error('Could not get Jira CREDS')
+        }
+    
+        const chunkSize = 100;
+        let index = 0;
+        while (index < keys.length) {
+            const keysToLoad = keys.slice(index, index + chunkSize);
+            try {
+                const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+                    0, chunkSize, undefined, keysToLoad);
+                for (let issue of loadedIssues?.issues ?? []) {
+                    result.set(issue.key, issue);
+                }
+            } catch (error) {
+                console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
+            }
+            index += chunkSize;
+        }
+        return result;
+    }
+
 
     render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
         const key = gridCell.cell.valueString;
@@ -276,15 +246,15 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
             }
         };
 
-        if (!cache.has(key)) 
-            this.loadData(gridCell);        
+        if (!cache.has(key))
+            this.retrieveBatch(gridCell);
         else {
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
 
             if (ticket && props) {
                 g.fillStyle = '#4d5261';
-                g.textAlign = "left";
+                g.textAlign = 'left';
 
                 if (w > 150) {
                     g.fillText(props.Summary, x + 20, y + 30);
