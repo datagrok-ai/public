@@ -162,7 +162,7 @@ export const RFVApp = Vue.defineComponent({
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
-          onUpdate:funcCall={(fc) => currentFuncCall.value = fc}
+          onUpdate:funcCall={(fc) => currentFuncCall.value = Vue.markRaw(fc)}
           onRunClicked={() => runRequests$.next(true)}
           onFormReplaced={onUpdateForm}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
