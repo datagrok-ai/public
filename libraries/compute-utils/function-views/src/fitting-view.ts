@@ -20,11 +20,12 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
+import {getMRD} from './fitting/similarity-utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -422,7 +423,9 @@ export class FittingView {
     name: TITLE.SIMILARITY,
     inputType: 'Float',
     defaultValue: this.similarity,
-    min: 0,
+    min: FITTING_UI.SIMILARITY_MIN,
+    max: FITTING_UI.SIMILARITY_MAX,
+    units: '%',
   }));
 
   // Auxiliary dock nodes with results
@@ -584,7 +587,7 @@ export class FittingView {
       });
       this.similarityInput.addCaption(TITLE.SIMILARITY);
       this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
-      ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
+      ui.tooltip.bind(this.similarityInput.captionLabel, `Maximum relative deviation (%) between similar fitted points`);
 
       this.updateRunIconStyle();
       this.updateRunIconDisabledTooltip('Select inputs for fitting');
@@ -961,7 +964,7 @@ export class FittingView {
 
   /** Check similarity */
   private isSimilarityValid(): boolean {
-    if (this.similarity >= FITTING_UI.SIMILARITY_MIN)
+    if ((this.similarity >= FITTING_UI.SIMILARITY_MIN) && (this.similarity <= FITTING_UI.SIMILARITY_MAX))
       return true;
 
     this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SIMILARITY}"`);
@@ -995,7 +998,7 @@ export class FittingView {
       if (this.samplesCount < 1)
         return;
 
-      if (this.similarity < FITTING_UI.SIMILARITY_MIN)
+      if ((this.similarity < FITTING_UI.SIMILARITY_MIN) || (this.similarity > FITTING_UI.SIMILARITY_MAX))
         return;
 
       this.failsDF = null;
@@ -1155,7 +1158,10 @@ export class FittingView {
       allExtremums.forEach((extr) => {
         let toPush = true;
 
-        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point, minVals, maxVals) > dist));
+        extremums.forEach((cur) => {
+          toPush &&= getMRD(extr.point, cur.point) > dist;//(distance(cur.point, extr.point, minVals, maxVals) > dist);
+          console.log('MRD:', getMRD(extr.point, cur.point));
+        });
 
         if (toPush)
           extremums.push(extr);

@@ -5,9 +5,30 @@ import * as DG from 'datagrok-api/dg';
 
 /** Similarity constants */
 export enum SIMILARITY {
-  MAX = 1,
-  MIN = 0,
-};
+    MAX = 1,
+    MIN = 0,
+    SCALE = 100, // %
+  };
+
+/** Return the Maximum Relative Deviation (%) between vectors */
+export function getMRD(source: Float32Array, updated: Float32Array): number {
+  let mrd = 0;
+
+  const len = source.length;
+
+  if (len !== updated.length)
+    throw new Error(`Inconsistent length of found points: source - ${source.length}, updated - ${updated.length}`);
+
+  let divisor: number;
+
+  for (let i = 0; i < len; ++i) {
+    divisor = source[i] !== 0 ? source[i] : 1;
+
+    mrd = Math.max(mrd, Math.abs((source[i] - updated[i]) / divisor) * SIMILARITY.SCALE);
+  }
+
+  return mrd;
+}
 
 /** Return the Intersection over Union (IoU) of two ranges */
 function getIoU(min1: number, max1: number, min2: number, max2: number): number {

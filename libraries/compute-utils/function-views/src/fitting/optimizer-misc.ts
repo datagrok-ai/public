@@ -47,16 +47,3 @@ export class InconsistentTables extends Error {
 export function sleep(ms: number) {
   return new Promise((resolve, reject) => setTimeout(resolve, ms));
 };
-
-/** Distance between points */
-export function distance(x: Float32Array, y: Float32Array, mins: Float32Array, maxs: Float32Array): number {
-  const len = x.length;
-
-  if ((len !== y.length) || (len !== mins.length) || (len !== maxs.length))
-    throw new Error('Inconsistent found points');
-
-  return x.reduce((mad, cur, idx) => {
-    const div = maxs[idx] - mins[idx];
-    return div > 0 ? Math.max(mad, Math.abs(cur - y[idx]) / div) : mad;
-  }, 0);
-}
