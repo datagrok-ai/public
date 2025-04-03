@@ -52,6 +52,7 @@ export const History = Vue.defineComponent({
     const showFilters = Vue.ref(false);
     const showInputs = Vue.ref(false);
     const showMetadata = Vue.ref(true);
+    const hasSelected = Vue.ref(false);
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
     const func = Vue.computed(() => Vue.markRaw(props.func));
@@ -207,6 +208,7 @@ export const History = Vue.defineComponent({
       currentSelection.clear();
       for (const call of selectedCalls)
         currentSelection.add(call);
+      hasSelected.value = selectedCalls.length > 0;
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
@@ -363,12 +365,12 @@ export const History = Vue.defineComponent({
             onClick={refresh}
             style={{alignContent: 'center'}}
           />
-          <IconFA
+          { hasSelected.value && <IconFA
             name='trash-alt'
             tooltip={'Delete'}
             onClick={deleteSelected}
             style={{alignContent: 'center'}}
-          />
+          />}
         </div>
       </div>;
       const grid = <Viewer
