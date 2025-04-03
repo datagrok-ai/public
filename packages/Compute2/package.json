@@ -74,6 +74,9 @@
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "packages/Compute2"
   },
+  "sources": [
+    "common/vue.js"
+  ],
   "category": "Compute",
   "meta": {
     "dartium": false
