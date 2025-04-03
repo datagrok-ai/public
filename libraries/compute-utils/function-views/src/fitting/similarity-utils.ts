@@ -2,7 +2,7 @@
 // Utilities for similarity computation
 
 import * as DG from 'datagrok-api/dg';
-import {Extremum} from './optimizer-misc';
+import {Extremum, TargetTableOutput} from './optimizer-misc';
 
 /** Similarity constants */
 export enum SIMILARITY {
@@ -43,7 +43,7 @@ function getIoU(min1: number, max1: number, min2: number, max2: number): number 
 }
 
 /** Return the similarity between argument columns */
-function getArgSimilarity(argCol1: DG.Column, argCol2: DG.Column): number {
+function getArgIoU(argCol1: DG.Column, argCol2: DG.Column): number {
   if (!argCol1.isNumerical)
     throw new Error(`Non-numerical argument column: ${argCol1.name}, type - ${argCol1.type}`);
 
@@ -60,7 +60,7 @@ function getFuncSimilarity(argCol1: DG.Column, funcCol1: DG.Column, argCol2: DG.
 }
 
 /** Check whether df-s are similar */
-export function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
+function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
   argName: string, argSimTreshold: number, funcSimTreshold: number): boolean {
   const argCol1 = df1.col(argName);
   const argCol2 = df2.col(argName);
@@ -71,8 +71,10 @@ export function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
   if (argCol2 === null)
     throw new Error(`Inconsistent dataframe: ${df2.name}, no argument column "${argName}"`);
 
-  // Check similairy of args: no reason to analyze funcs if args are different
-  if (getArgSimilarity(argCol1, argCol2) < argSimTreshold)
+  console.log('Arg sim: ', getArgIoU(argCol1, argCol2));
+
+  // Check similarity of args: no reason to analyze funcs if args are different
+  if (getArgIoU(argCol1, argCol2) < argSimTreshold)
     return false;
 
   const argMin = Math.max(argCol1.stats.min, argCol2.stats.min);
@@ -98,13 +100,17 @@ export function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
     maxDeviation = Math.max(maxDeviation, getFuncSimilarity(argCol1, funcCol1, argCol2, funcCol2, argMin, argMax));
   }
 
+  console.log('MAD:', maxDeviation);
+
   return maxDeviation < funcSimTreshold;
 } // areSimilar
 
 /** Return non-similar extrema */
 export async function getNonSimilar(extrema: Extremum[],
   similarity: number,
-  getCalledFuncCall: (x: Float32Array) => Promise<DG.FuncCall>): Promise<Extremum[]> {
+  getCalledFuncCall: (x: Float32Array) => Promise<DG.FuncCall>,
+  targetDfs: TargetTableOutput[],
+): Promise<Extremum[]> {
   // Get computations at extrema points
   const pointsCount = extrema.length;
   const calledFuncCalls = new Array<DG.FuncCall>(pointsCount);
@@ -114,12 +120,34 @@ export async function getNonSimilar(extrema: Extremum[],
 
   const nonSimilar: Extremum[] = [];
   let toPush: boolean;
+  const targetDfsCount = targetDfs.length;
+  const scaledSimilarity = similarity / SIMILARITY.SCALE;
+  console.log('Scaled sim: ', scaledSimilarity);
 
-  for (const extr of extrema) {
+  for (let extrIdx = 0; extrIdx < pointsCount; ++extrIdx) {
+    const extr = extrema[extrIdx];
+    const funcCall = calledFuncCalls[extrIdx];
+
     toPush = true;
 
-    for (const prev of nonSimilar) {
-      toPush &&= getMRD(prev.point, extr.point) > similarity;
+    for (let prevIdx = 0; prevIdx < nonSimilar.length; ++prevIdx) {
+      toPush &&= getMRD(nonSimilar[prevIdx].point, extr.point) > similarity;
+
+      if (!toPush)
+        break;
+
+      for (let idx = 0; idx < targetDfsCount; ++idx) {
+        toPush &&= !areSimilar(
+          calledFuncCalls[prevIdx].getParamValue(targetDfs[idx].name) as DG.DataFrame,
+          funcCall.getParamValue(targetDfs[idx].name) as DG.DataFrame,
+          targetDfs[idx].argColName,
+          SIMILARITY.MAX - scaledSimilarity,
+          scaledSimilarity,
+        );
+
+        if (!toPush)
+          break;
+      }
 
       if (!toPush)
         break;
@@ -128,6 +156,8 @@ export async function getNonSimilar(extrema: Extremum[],
     if (toPush)
       nonSimilar.push(extr);
   }
+
+  console.log(targetDfs);
 
   return nonSimilar;
 } // getNonSimilar

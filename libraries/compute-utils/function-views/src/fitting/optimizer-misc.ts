@@ -47,3 +47,10 @@ export class InconsistentTables extends Error {
 export function sleep(ms: number) {
   return new Promise((resolve, reject) => setTimeout(resolve, ms));
 };
+
+/** Target dataframe */
+export type TargetTableOutput = {
+  name: string,
+  target: DG.DataFrame,
+  argColName: string,
+};

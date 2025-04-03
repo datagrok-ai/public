@@ -20,7 +20,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
@@ -1155,10 +1155,15 @@ export class FittingView {
       // Sort all extrema with respect to the loss function
       extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-      // Get funccals corresponding to the computed extrema
-      const extrFuncCalls = new Array<DG.FuncCall>(allExtrCount);
+      // Extract target dataframes
+      const targetDfs: TargetTableOutput[] = outputsOfInterest
+        .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
+        .map((output) => {
+          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.colName};
+        });
 
-      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall);
+      // Get non-similar points
+      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
       const rowCount = nonSimilarExtrema.length;
 
       // Show info/warning reporting results
