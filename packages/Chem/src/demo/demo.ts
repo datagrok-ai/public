@@ -78,7 +78,7 @@ export async function _demoChemOverview(): Promise<void> {
       const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
       table.currentCell = table.cell(0, molColumnName);
     }, {description: `Open any pane on the context panel on the right to calculate corresponding properties. For instance, open 'Structure' -> '3D Structure' and 'Biology' -> 'Toxicity'.
-      Click on any other molecule in dataset to re-calculate properties.
+      Click any other molecule in dataset to re-calculate properties.
       `, delay: 3000})
     .step('Fast rendering', async () => {
       await delay(1000);
@@ -434,7 +434,7 @@ export async function _demoChemicalSpace(): Promise<void> {
   //for dendrogram to render correctly
   const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
     sub.unsubscribe();
-    setTimeout(() => grok.shell.tv.grid.invalidate());
+    setTimeout(() => grok.shell.tv.grid.invalidate(), 100);
   });
   setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space'), 1000);
 }

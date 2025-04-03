@@ -1908,7 +1908,7 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 //meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoChemOverview(): Promise<void> {
-  _demoChemOverview();
+  await _demoChemOverview();
 }
 
 
@@ -1932,7 +1932,7 @@ export async function demoMMPA(): Promise<void> {
 //meta.demoPath: Cheminformatics | R-Group Analysis
 //meta.demoSkip: GROK-14320
 export async function demoRgroupAnalysis(): Promise<void> {
-  _demoRGroups();
+  await _demoRGroups();
 }
 
 
@@ -1941,7 +1941,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.demoSkip: GROK-14320
 export async function demoMoleculeActivityCliffs(): Promise<void> {
-  _demoActivityCliffsLayout();
+  await _demoActivityCliffsLayout();
 }
 
 //name: Demo Chemical Space
@@ -1949,7 +1949,7 @@ export async function demoMoleculeActivityCliffs(): Promise<void> {
 //meta.demoPath: Cheminformatics | Chemical Space
 //meta.demoSkip: GROK-14320
 export async function demoChemicalSpace(): Promise<void> {
-  _demoChemicalSpace();
+  await _demoChemicalSpace();
 }
 
 
