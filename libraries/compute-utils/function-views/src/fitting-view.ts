@@ -1152,6 +1152,8 @@ export class FittingView {
         });
       }
 
+      allExtremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+
       const extremums: Extremum[] = [];
       const dist = this.similarity;
 
@@ -1159,7 +1161,7 @@ export class FittingView {
         let toPush = true;
 
         extremums.forEach((cur) => {
-          toPush &&= getMRD(extr.point, cur.point) > dist;//(distance(cur.point, extr.point, minVals, maxVals) > dist);
+          toPush &&= getMRD(cur.point, extr.point) > dist;
           console.log('MRD:', getMRD(extr.point, cur.point));
         });
 
@@ -1188,7 +1190,6 @@ export class FittingView {
         grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
 
       this.clearPrev();
-      extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
