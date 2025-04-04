@@ -49,7 +49,7 @@ function getIoU(min1: number, max1: number, min2: number, max2: number): number 
 }
 
 /** Return the similarity between argument columns */
-function getArgIoU(argCol1: DG.Column, argCol2: DG.Column): number {
+export function getArgIoU(argCol1: DG.Column, argCol2: DG.Column): number {
   if (!argCol1.isNumerical)
     throw new Error(`Non-numerical argument column: ${argCol1.name}, type - ${argCol1.type}`);
 

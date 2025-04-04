@@ -1098,10 +1098,10 @@ export class FittingView {
 
       if (this.loss === LOSS.MAD) {
         costFunc = madCostFunc;
-        costTooltip = 'maximum absolute devation';
+        costTooltip = 'scaled maximum absolute deviation';
       } else {
         costFunc = rmseCostFunc;
-        costTooltip = 'root mean square error';
+        costTooltip = 'scaled root mean square error';
       }
 
       let optResult: OptimizationResult;
