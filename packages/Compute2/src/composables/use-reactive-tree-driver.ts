@@ -18,12 +18,12 @@ function makeMergedItems<T>(input: Record<string, Observable<T>>) {
 export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const driver = new Driver();
 
-  const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
-  const isGlobalLocked = useSubject(driver.globalROLocked$);
-  const treeState = useSubject(driver.currentState$);
+  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
+  const isGlobalLocked = useObservable(driver.globalROLocked$);
+  const treeState = useObservable(driver.currentState$.pipe(map(x => x ? Vue.markRaw(x) : undefined)));
 
-  const currentMetaCallData = useSubject(driver.currentMetaCallData$);
-  const hasNotSavedEdits = useSubject(driver.hasNotSavedEdits$);
+  const currentMetaCallData = useObservable(driver.currentMetaCallData$);
+  const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$);
   const config = useObservable(driver.currentConfig$);
