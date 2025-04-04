@@ -1109,20 +1109,24 @@ export class FittingView {
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
         if (this.diffGrok !== undefined) {
-          optResult = await getFittedParams(
-            this.loss,
-            this.diffGrok.ivp,
-            this.diffGrok.ivpWW,
-            this.diffGrok.pipelineCreator,
-            this.nelderMeadSettings,
-            variedInputNames,
-            minVals,
-            maxVals,
-            inputs,
-            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].colName,
+          try {
+            optResult = await getFittedParams(
+              this.loss,
+              this.diffGrok.ivp,
+              this.diffGrok.ivpWW,
+              this.diffGrok.pipelineCreator,
+              this.nelderMeadSettings,
+              variedInputNames,
+              minVals,
+              maxVals,
+              inputs,
+              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].colName,
             outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
             this.samplesCount,
-          );
+            );
+          } catch (err) { // run fitting in the main thread if in-webworker run failed
+            optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+          }
         } else
           optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
       } else
