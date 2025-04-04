@@ -124,6 +124,10 @@ export async function getFittedParams(
   const inputVector = getInputVec(variedInputNames, minVals, maxVals, fixedInputs, ivp);
   const pipeline = pipelineCreator.getPipeline(inputVector);
 
+  let doneWorkers = 0;
+  let percentage = 0;
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
+
   // Run optimization
   const promises = workers.map((w, idx) => {
     return new Promise<void>((resolve, reject) => {
@@ -151,6 +155,14 @@ export async function getFittedParams(
 
       w.onmessage = (e: any) => {
         w.terminate();
+
+        ++doneWorkers;
+        percentage = Math.floor(100 * (doneWorkers + 1) / nThreads);
+        pi.update(percentage, `Fitting... (${percentage}%)`);
+
+        if (percentage > 99.9)
+          setTimeout(() => pi.update(percentage, `Preparing results...`), 500);
+
         if (e.data.callResult === RESULT_CODE.SUCCEED) {
           e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));
           e.data.fitRes.forEach((res: string, i: number) => {
@@ -175,6 +187,8 @@ export async function getFittedParams(
   }); // promises
 
   await Promise.all(promises);
+
+  pi.close();
 
   return {
     extremums: resultsArray,
