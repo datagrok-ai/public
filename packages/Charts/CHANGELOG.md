@@ -4,7 +4,20 @@
 
 ### Bug Fixes
 
-* GROK-17944: Charts | Multiplot: New plot is added to CloseAll context menu
+* GROK-17944: Multiplot: New plot is added to CloseAll context menu
+
+## 1.5.0 (2025-03-31)
+
+### Features
+
+* Moved Multiplot from separate package to Charts
+
+### Bug Fixes
+
+* [3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer not clickable upper node
+* GROK-17781: Tree: Exception opening city_gps dataset
+* GROK-17769: Radar: "Columns" on null
+* GROK-17819: Console contains many messages
 
 ## 1.4.4 (2024-02-27)
 
