@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-
 import {DBSchema} from 'idb';
 import {
   Viewer, InputForm,
@@ -20,7 +19,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-import {ScalarsPanel} from './ScalarsPanel';
+import {ScalarsPanel, ScalarState} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
@@ -37,19 +36,47 @@ type PanelsState = {
   layout: string,
 };
 
-const dfBlockTitle = (dfProp: DG.Property, viewer: Record<string, string | boolean>) => viewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
+interface ScalarsState {
+  type: 'scalars',
+  scalarsData: ScalarState[],
+}
 
-type TabContent = Map<string,
-  {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } |
-  {type: 'scalars', scalarProps: DG.Property[]}
->;
+interface DataFrameState {
+  name: string,
+  df: DG.DataFrame,
+  type: 'dataframe',
+  config: Record<string,any>,
+}
+
+type TabContent = Map<string, ScalarsState | DataFrameState>;
+
+interface RenderStateItem {
+  tabLabel: string;
+  tabContent: ScalarsState | DataFrameState;
+  isInput: boolean;
+}
 
 const getEmptyTabToProperties = () => ({
   inputs: new Map() as TabContent,
   outputs: new Map() as TabContent,
 });
 
-const tabToProperties = (func: DG.Func) => {
+const DEFAULT_FLOAT_PRECISION = 4;
+
+const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
+  const precision = prop.options.precision;
+
+  const scalarValue = funcCall.outputs[prop.name];
+  const formattedScalarValue = prop.propertyType === DG.TYPE.FLOAT && scalarValue ?
+    precision ? scalarValue.toPrecision(precision): scalarValue.toFixed(DEFAULT_FLOAT_PRECISION):
+    scalarValue;
+  const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
+
+  return [scalarValue, formattedScalarValue, units] as const;
+};
+
+const tabToProperties = (fc: DG.FuncCall) => {
+  const func = fc.func;
   const map = getEmptyTabToProperties();
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
@@ -57,15 +84,20 @@ const tabToProperties = (func: DG.Func) => {
     if (dfViewers.length === 0) return;
 
     dfViewers.forEach((dfViewer) => {
-      const dfNameWithViewer = `${dfBlockTitle(dfProp, dfViewer)} / ${dfViewer['type']}`;
+      const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' '
+      const dfNameWithViewer = `${dfBlockTitle} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
 
+      const name = dfProp.name;
+      let df = isOutput ? fc.outputs[name] : fc.inputs[name];
+      if (df)
+        df = Vue.markRaw(df);
       if (isOutput)
-        map.outputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
+        map.outputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
       else
-        map.inputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
+        map.inputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
     });
     return;
   };
@@ -85,10 +117,12 @@ const tabToProperties = (func: DG.Func) => {
       const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
       const categoryProps = map.outputs.get(category);
+      const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
+      const scalarProp = {name: outputProp.caption || outputProp.name, rawValue, formattedValue, units}
       if (categoryProps && categoryProps.type === 'scalars')
-        categoryProps.scalarProps.push(outputProp);
+        categoryProps.scalarsData.push(scalarProp);
       else
-        map.outputs.set(category, {type: 'scalars', scalarProps: [outputProp]});
+        map.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
     });
 
   return map;
@@ -187,43 +221,32 @@ export const RichFunctionView = Vue.defineComponent({
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const currentUuid = Vue.computed(() => props.uuid);
+    const isFormValid = Vue.ref(false);
 
-    const tabToPropertiesMap = Vue.shallowRef<ReturnType<typeof tabToProperties>>(getEmptyTabToProperties());
-    const tabLabels = Vue.shallowRef<string[]>([]);
-    const viewerTabLabels = Vue.shallowRef<DG.FuncCallParam[]>([]);
+    const callMeta = Vue.computed(() => props.callMeta);
+
+    const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
+    const isRunning = Vue.computed(() => props.callState?.isRunning);
+    const isRunnable = Vue.computed(() => props.localValidation ? isFormValid.value : props.callState?.isRunnable);
+    const isReadonly = Vue.computed(() => props.isReadonly);
+
+    const validationState = Vue.computed(() => props.validationStates);
+    const consistencyState = Vue.computed(() => props.consistencyStates);
+
+    const menuActions = Vue.computed(() => props.menuActions);
+    const buttonActions = Vue.computed(() => props.buttonActions);
+
+    const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
+    const tabLabels = Vue.shallowRef<string[]>([])
+    const visibleTabLabels = Vue.shallowRef([] as string[]);
+
+    const viewerTabsCount = Vue.ref<number>(0);
     const hasContextHelp = Vue.ref(false);
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
 
-
-    Vue.watch(currentCall, (call) => {
-      tabToPropertiesMap.value = Vue.markRaw(tabToProperties(call.func));
-      tabLabels.value = [
-        ...tabToPropertiesMap.value.inputs.keys(),
-        ...tabToPropertiesMap.value.outputs.keys(),
-
-      ];
-      viewerTabLabels.value = [
-        ...call.inputParams.values(),
-        ...call.outputParams.values(),
-      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
-
-      hasContextHelp.value = Utils.hasContextHelp(call.func);
-      const features = Utils.getFeatures(call.func)
-      isSAenabled.value =  Utils.getFeature(features, 'sens-analysis', false);
-      isReportEnabled.value = Utils.getFeature(features, 'export', true);
-      isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
-
-    }, {immediate: true});
-
-    const run = async () => {
-      emit('runClicked');
-    };
-
-    const next = async () => {
-      emit('nextClicked');
-    };
+    const isLocked = Vue.ref(false);
 
     const formHidden = Vue.ref(false);
     const historyHidden = Vue.ref(true);
@@ -233,6 +256,57 @@ export const RichFunctionView = Vue.defineComponent({
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.shallowRef(null as HTMLElement | null);
     const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
+
+    const layoutLoaded = Vue.ref(false);
+    const dockInited = Vue.ref(false);
+
+    const helpText = Vue.ref(null as null | string);
+
+    const {setViewerRef} = useViewersHook(
+      Vue.toRef(props, 'viewersHook'),
+      Vue.toRef(props, 'callMeta'),
+      currentCall,
+    );
+
+    Vue.watch(currentCall, (call) => {
+      const tabToPropertiesMap = tabToProperties(call);
+      tabLabels.value = [
+        ...tabToPropertiesMap.inputs.keys(),
+        ...tabToPropertiesMap.outputs.keys(),
+      ];
+
+      viewerTabsCount.value = [
+        ...call.inputParams.values(),
+        ...call.outputParams.values(),
+      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME)?.length;
+
+      hasContextHelp.value = Utils.hasContextHelp(call.func);
+      const features = Utils.getFeatures(call.func)
+      isSAenabled.value =  Utils.getFeature(features, 'sens-analysis', false);
+      isReportEnabled.value = Utils.getFeature(features, 'export', true);
+      isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+    }, {immediate: true});
+
+    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall]) => {
+      if (isOutputOutdated && prevCall === call)
+        return;
+      const tabToPropertiesMap = tabToProperties(call);
+
+      tabsData.value = visibleTabLabels.map((tabLabel) =>
+        ({
+          tabLabel,
+          tabContent: tabToPropertiesMap.inputs.get(tabLabel) ?? tabToPropertiesMap.outputs.get(tabLabel)!,
+          isInput: !!tabToPropertiesMap.inputs.has(tabLabel)
+        }));
+    }, {immediate: true});
+
+    const run = async () => {
+      emit('runClicked');
+    };
+
+    const next = async () => {
+      emit('nextClicked');
+    };
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -296,8 +370,6 @@ export const RichFunctionView = Vue.defineComponent({
 
     let intelligentLayout = true;
 
-    const layoutLoaded = Vue.ref(false);
-
     const loadPersonalLayout = async () => {
       const personalState = await getSavedPersonalState(currentCall.value);
 
@@ -339,17 +411,6 @@ export const RichFunctionView = Vue.defineComponent({
       intelligentLayout = true;
     };
 
-    expose({
-      savePersonalState,
-      loadPersonalLayout,
-    });
-
-    const dockInited = Vue.ref(false);
-
-    const visibleTabLabels = Vue.shallowRef([] as string[]);
-
-    const helpText = Vue.ref(null as null | string);
-
     Vue.watch(currentCall, async (_, oldCall) => {
       Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
         helpText.value = loadedHelp ?? null;
@@ -371,43 +432,11 @@ export const RichFunctionView = Vue.defineComponent({
       triggerSaveDefault.value = !triggerSaveDefault.value;
     };
 
-    Vue.onBeforeUnmount(() => {
-      savePersonalState(currentCall.value);
-    });
-
-    const {setViewerRef} = useViewersHook(
-      Vue.toRef(props, 'viewersHook'),
-      Vue.toRef(props, 'callMeta'),
-      currentCall,
-    );
-
-    const isFormValid = Vue.ref(false);
-
-    const callMeta = Vue.computed(() => props.callMeta);
-
-    const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
-    const isRunning = Vue.computed(() => props.callState?.isRunning);
-    const isRunnable = Vue.computed(() => props.localValidation ? isFormValid.value : props.callState?.isRunnable);
-    const isReadonly = Vue.computed(() => props.isReadonly);
-
-    const validationState = Vue.computed(() => props.validationStates);
-    const consistencyState = Vue.computed(() => props.consistencyStates);
-
-    const menuActions = Vue.computed(() => props.menuActions);
-    const buttonActions = Vue.computed(() => props.buttonActions);
-
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
-
     const onValidationChanged = (ev: boolean) => {
       if (!props.localValidation)
         return;
       isFormValid.value = ev;
       emit('formValidationChanged', ev);
-    };
-
-    const getDf = (name: string) => {
-      const val = currentCall.value.inputs[name] ?? currentCall.value.outputs[name];
-      return val ? Vue.markRaw(val) : val;
     };
 
     const getRanges = (specificRangeName: string) => {
@@ -441,8 +470,6 @@ export const RichFunctionView = Vue.defineComponent({
       SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges});
     };
 
-    const isLocked = Vue.ref(false);
-
     const runFitting = async () => {
       if (isLocked.value)
         return;
@@ -461,6 +488,17 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
+    expose({
+      savePersonalState,
+      loadPersonalLayout,
+    });
+
+    Vue.onBeforeUnmount(() => {
+      savePersonalState(currentCall.value);
+    });
+
+    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -477,10 +515,10 @@ export const RichFunctionView = Vue.defineComponent({
         return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
       };
 
-      const getDockStrategy = (categoryProps: DG.Property[]) => {
+      const getDockStrategy = (categoryProps: ScalarState[]) => {
         if (!intelligentLayout) return 'fill';
 
-        if (viewerTabLabels.value.length === 0) return null;
+        if (viewerTabsCount.value === 0) return null;
 
         if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill';
 
@@ -648,13 +686,10 @@ export const RichFunctionView = Vue.defineComponent({
               </div> }
 
             {
-              visibleTabLabels.value
-                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
-                tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.has(tabLabel)}))
+              tabsData.value
                 .map(({tabLabel, tabContent, isInput}) => {
                   if (tabContent?.type === 'dataframe') {
                     const options = tabContent.config;
-                    const dfProp = tabContent.dfProp;
                     return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
@@ -664,30 +699,29 @@ export const RichFunctionView = Vue.defineComponent({
                         Vue.withDirectives(<Viewer
                           type={options['type'] as string}
                           options={options}
-                          dataFrame={getDf(dfProp.name)}
+                          dataFrame={tabContent.df}
                           class='w-full'
-                          onViewerChanged={(v) => setViewerRef(v, dfProp.name, options['type'] as string)}
+                          onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
                         />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                       }
                     </div>;
                   }
 
                   if (tabContent?.type === 'scalars') {
-                    const categoryProps = tabContent.scalarProps;
+                    const scalarsData = tabContent.scalarsData;
 
                     const panel = <ScalarsPanel
                       class='h-full overflow-scroll'
-                      categoryScalars={categoryProps}
-                      funcCall={currentCall.value}
+                      scalarsData={scalarsData}
                       dock-spawn-panel-icon='sign-out-alt'
                       dock-spawn-title={tabLabel}
                       dock-spawn-dock-to={getElementToDock()}
-                      dock-spawn-dock-type={getDockStrategy(categoryProps)}
+                      dock-spawn-dock-type={getDockStrategy(scalarsData)}
                       dock-spawn-dock-ratio={getDockRatio()}
                     />;
 
-                    if (categoryProps.length < 3) {
-                      scalarCardCount += categoryProps.length;
+                    if (scalarsData.length < 3) {
+                      scalarCardCount += scalarsData.length;
                       lastCardLabel = tabLabel;
                     }
 

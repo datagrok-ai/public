@@ -66,7 +66,7 @@ export const InputForm = Vue.defineComponent({
       const entries = Object.entries(meta).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
       return merge(...entries).pipe(
         tap(([k, val]) => {
-          states.meta[k] = Vue.markRaw(val);
+          states.meta[k] = val ? Vue.markRaw(val) : undefined;
         }),
       );
     });
