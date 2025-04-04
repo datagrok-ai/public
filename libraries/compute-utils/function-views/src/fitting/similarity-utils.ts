@@ -9,7 +9,13 @@ export enum SIMILARITY {
     MAX = 1,
     MIN = 0,
     SCALE = 100, // %
-  };
+};
+
+/** Argument limits */
+type ArgLimits = {
+  start: number,
+  finish: number,
+};
 
 /** Return the Maximum Relative Deviation (%) between vectors */
 function getMRD(source: Float32Array, updated: Float32Array): number {
@@ -53,11 +59,95 @@ function getArgIoU(argCol1: DG.Column, argCol2: DG.Column): number {
   return getIoU(argCol1.stats.min, argCol1.stats.max, argCol2.stats.min, argCol2.stats.max);
 }
 
-/** Return similarity of 2 functions */
-function getFuncSimilarity(argCol1: DG.Column, funcCol1: DG.Column, argCol2: DG.Column, funcCol2: DG.Column,
-  argMin: number, argMax: number): number {
-  return 0;
+/** Return index limits */
+function getArgIdxLimits(argCol: DG.Column, argMin: number, argMax: number): ArgLimits {
+  const rawData = argCol.getRawData();
+
+  let start = 0;
+  while (rawData[start] < argMin)
+    ++start;
+
+  let finish = start;
+  while (rawData[finish] <= argMax)
+    ++finish;
+
+  return {
+    start: start,
+    finish: finish,
+  };
 }
+
+/** Return similarity of 2 functions */
+function getFuncSimilarity(argColSource: DG.Column, funcColSource: DG.Column,
+  argColNew: DG.Column, funcColNew: DG.Column,
+  argMin: number, argMax: number): number {
+  // Compute function columns scale
+  const scale = Math.max(
+    Math.abs(funcColSource.stats.min),
+    Math.abs(funcColSource.stats.max),
+    Math.abs(funcColNew.stats.min),
+    Math.abs(funcColNew.stats.max),
+  );
+
+  if (scale <= 0) // Func cols are trivial => they are similar
+    return SIMILARITY.MIN;
+
+  const funcRawSource = funcColSource.getRawData();
+  const funcRawNew = funcColNew.getRawData();
+  const newRowCount = argColNew.length;
+
+  if (newRowCount < 1)
+    throw new Error(`Empty model output: the column "${argColNew}" is empty`);
+
+  // Get argument limits
+  const limits = getArgIdxLimits(argColSource, argMin, argMax);
+  const start = limits.start;
+  const finish = limits.finish;
+
+  let mad = 0;
+
+  if (newRowCount < 2) { // Use const interpolation if func col has a single value
+    const interpolated = funcRawNew[0];
+
+    for (let i = start; i < finish; ++i)
+      mad = Math.max(mad, Math.abs((funcRawSource[i] - interpolated) / scale));
+  } else { // Use linear interpolation
+    const argRawSource = argColSource.getRawData();
+    const argRawNew = argColNew.getRawData();
+
+    let arg = 0;
+    let func = 0;
+    let idxNew = 1;
+    let left = argRawNew[idxNew - 1];
+    let right = argRawNew[idxNew];
+    let interpolated = 0;
+
+    for (let i = start; i < finish; ++i) {
+      arg = argRawSource[i];
+      func = funcRawSource[i];
+
+      // Find an appropriate argument
+      while ((right < arg) && (idxNew < newRowCount - 1)) {
+        left = right;
+        ++idxNew;
+        right = argRawNew[idxNew];
+      }
+
+      // Apply interpolation
+      if (right > arg) {
+        if (left < right)
+          interpolated = (funcRawNew[idxNew - 1] * (right - arg) + funcRawNew[idxNew] * (arg - left)) / (right - left);
+        else
+          interpolated = funcRawNew[idxNew];
+      } else
+        interpolated = funcRawNew[idxNew];
+
+      mad = Math.max(mad, Math.abs(func - interpolated));
+    }
+  }
+
+  return mad / scale;
+} // getFuncSimilarity
 
 /** Check whether df-s are similar */
 function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
@@ -71,17 +161,17 @@ function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
   if (argCol2 === null)
     throw new Error(`Inconsistent dataframe: ${df2.name}, no argument column "${argName}"`);
 
-  console.log('Arg sim: ', getArgIoU(argCol1, argCol2));
-
   // Check similarity of args: no reason to analyze funcs if args are different
   if (getArgIoU(argCol1, argCol2) < argSimTreshold)
     return false;
 
+  // Get range for the similarity analysis
   const argMin = Math.max(argCol1.stats.min, argCol2.stats.min);
   const argMax = Math.max(argCol1.stats.max, argCol2.stats.max);
 
   let maxDeviation = 0;
 
+  // Compute similarity between func columns
   for (const funcCol1 of df1.columns) {
     if (funcCol1.name === argName)
       continue;
@@ -99,8 +189,6 @@ function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
 
     maxDeviation = Math.max(maxDeviation, getFuncSimilarity(argCol1, funcCol1, argCol2, funcCol2, argMin, argMax));
   }
-
-  console.log('MAD:', maxDeviation);
 
   return maxDeviation < funcSimTreshold;
 } // areSimilar
@@ -122,7 +210,6 @@ export async function getNonSimilar(extrema: Extremum[],
   let toPush: boolean;
   const targetDfsCount = targetDfs.length;
   const scaledSimilarity = similarity / SIMILARITY.SCALE;
-  console.log('Scaled sim: ', scaledSimilarity);
 
   for (let extrIdx = 0; extrIdx < pointsCount; ++extrIdx) {
     const extr = extrema[extrIdx];
@@ -156,8 +243,6 @@ export async function getNonSimilar(extrema: Extremum[],
     if (toPush)
       nonSimilar.push(extr);
   }
-
-  console.log(targetDfs);
 
   return nonSimilar;
 } // getNonSimilar
