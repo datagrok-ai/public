@@ -46,6 +46,10 @@ export const PipelineView = Vue.defineComponent({
     'addNode': (_data: {itemId: string, position: number}) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('PipelineView onRenderTriggered', event);
+    });
+
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
     const functionsHidden = Vue.ref(true);

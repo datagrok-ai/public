@@ -65,6 +65,10 @@ export const TreeWizard = Vue.defineComponent({
     },
   },
   setup(props) {
+    Vue.onRenderTriggered((event) => {
+      console.log('TreeWizard onRenderTriggered', event);
+    });
+
     const {layoutDatabase} = useLayoutDb<TreeWizardSchema>();
 
     Vue.onBeforeUnmount(() => {

@@ -16,6 +16,10 @@ export const RibbonPanel = Vue.defineComponent({
     default?: any,
   }>,
   setup(props, {slots}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('RibbonPanel onRenderTriggered', event);
+    });
+
     const elements = Vue.reactive(new Map<number, HTMLElement>);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const uuid = uuidv4();

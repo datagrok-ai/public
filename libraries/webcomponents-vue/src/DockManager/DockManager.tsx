@@ -34,6 +34,10 @@ export const DockManager = Vue.defineComponent({
     useLayout: async (_layout: string) => {},
   },
   setup(props, {slots, emit, expose}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('DockManager onRenderTriggered', event);
+    });
+
     const dockSpawnRef = Vue.shallowRef(null as DockSpawnTsWebcomponent | null);
 
     const inited = Vue.ref(false);

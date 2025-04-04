@@ -216,6 +216,10 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('RichFunctionView onRenderTriggered', event);
+    });
+
     const {layoutDatabase} = useLayoutDb<RFVSchema>();
 
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));

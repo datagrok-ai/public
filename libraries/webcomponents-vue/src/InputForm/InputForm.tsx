@@ -51,6 +51,10 @@ export const InputForm = Vue.defineComponent({
     consistencyReset: (_ioName: string) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('InputForm onRenderTriggered', event);
+    });
+
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const validationStates = Vue.computed(() => props.validationStates);
     const consistencyStates = Vue.computed(() => props.consistencyStates);

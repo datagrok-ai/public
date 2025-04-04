@@ -20,6 +20,10 @@ export const ScalarsPanel = Vue.defineComponent({
     },
   },
   setup(props) {
+    Vue.onRenderTriggered((event) => {
+      console.log('ScalarsPanel onRenderTriggered', event);
+    });
+
     const hoveredIdx = Vue.ref(null as null | number);
     const scalarsData = Vue.computed(()  => Vue.markRaw(props.scalarsData));
 

@@ -146,6 +146,10 @@ export const TreeNode = Vue.defineComponent({
     saveStep: (_uuid: string) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('TreeNode onRenderTriggered', event);
+    });
+
     const openIcon = () => <OpenIcon
       open={props.stat.open}
       class="mtl-mr"
