@@ -1,5 +1,38 @@
 # Chem changelog
 
+## 1.15.1 (WIP)
+
+### Features
+
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: Naming/coloring should be saved in projects
+
+### Bug fixes
+
+* GROK-17929: Chem: Similarity sorting checks
+* GROK-17958: Chem: some demos overwrite Datagrok tab name
+
+## 1.15.0 (2025-03-29)
+
+### Features
+
+* [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: add the ability to apply Scaffold tree colors to Scatterplot or other viewers
+* GROK-17731: Chem | Scaffold Tree: Remember previous hide/show state
+* GROK-17867: Chem: Demo improvements
+* Add caching to Gasteiger charges
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: add the ability to apply Scaffold tree colors to Scatterplot
+* MMP: Open scatter plot context menu when right click on cliffs sp, separate generations scatter plots for each activity, cliffs tab scatter plot improvements, trellis filters improvements, use column descriptions instead of custom tooltips for non molecule columns, added help url
+* Chem: Cluster MCL Implementation
+* [#3314](https://github.com/datagrok-ai/public/pull/3314): Chem: Scaffold Tree: Demo improvements
+* Chem: Parallel beautification
+
+### Bug fixes
+
+* GROK-17761: Chem: Demo: Chem: Activity cliffs: Viewer initialization function failed
+* GROK-17791: Chem: Scaffold tree: Coloring the scaffold tree element triggers the grid scroll to the end
+* Chem: Similarity/DIversity search: some progress bar related fixes
+* GROK-17892: Chem | Scaffold tree: Errors on closing viewer
+* GROK-17867: Chem: Demo: Added setTimeout for showing help
+
 ## 1.14.0 (2025-02-24)
 
 ### Features
