@@ -160,9 +160,6 @@ export async function getFittedParams(
         percentage = Math.floor(100 * (doneWorkers + 1) / nThreads);
         pi.update(percentage, `Fitting... (${percentage}%)`);
 
-        if (percentage > 99.9)
-          setTimeout(() => pi.update(percentage, `Preparing results...`), 500);
-
         if (e.data.callResult === RESULT_CODE.SUCCEED) {
           e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));
           e.data.fitRes.forEach((res: string, i: number) => {

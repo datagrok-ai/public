@@ -5,7 +5,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {InconsistentTables} from './optimizer-misc';
-import {getArgIoU} from './similarity-utils';
 
 import '../../css/fitting-view.css';
 
@@ -55,13 +54,8 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame,
   if (simArg === null)
     throw new InconsistentTables(`no "${arg}" column in the output dataframe "${simDf.name}"`);
 
-  const argIoU = getArgIoU(expArg, simArg);
-  if (argIoU < 0.9)
-    return new Float32Array([1000 * (1 - argIoU)]);
-
-  const indeces = getIndeces(expArg, simArg);
-
   const expColumns = expDf.columns;
+  const indeces = getIndeces(expArg, simArg);
   const expColsCount = expColumns.length;
   const errors = new Float32Array((expColsCount - 1) * indeces.length);
   let errIdx = 0;
