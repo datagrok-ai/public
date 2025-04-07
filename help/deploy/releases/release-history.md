@@ -24,7 +24,11 @@ See also:
 
 ## 2025-03-28 Datagrok 1.25.0 release
 
-The Datagrok 1.25.0 release focuses on enhancing user experience and workflow efficiency
+The Datagrok 1.25.0 release focuses on enhancing the UI/UX, visualizations, and overall workflow efficiency
+
+### Breaking changes
+
+Site markup, UI API, and CSS styles have been updated. If your packages or integrations rely on specific UI elements or styling, it is recommended to check for compatibility and make the necessary adjustments.
 
 ### Main updates
  * **New Browse UX**: three new tabs—Toolbox, Dashboards, and Favorites—make navigation more intuitive and organized
