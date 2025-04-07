@@ -59,7 +59,7 @@ export const DockManager = Vue.defineComponent({
         };
       };
       emit('initFinished');
-    }, {once: true});
+    }, {once: true, flush: 'post'});
 
     const getLayout = () => {
       return dockSpawnRef.value?.getLayout() ?? null;
