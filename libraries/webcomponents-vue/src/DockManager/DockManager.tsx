@@ -58,6 +58,7 @@ export const DockManager = Vue.defineComponent({
           title: state.element!,
         };
       };
+      emit('initFinished');
     }, {once: true});
 
     const getLayout = () => {
@@ -79,7 +80,7 @@ export const DockManager = Vue.defineComponent({
         activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
-        onInitFinished={() => {inited.value = true; emit('initFinished');}}
+        onInitFinished={() => {inited.value = true}}
         ref={dockSpawnRef}
       >
         { slots.default?.() }

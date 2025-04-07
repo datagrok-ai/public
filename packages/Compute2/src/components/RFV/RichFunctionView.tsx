@@ -210,6 +210,7 @@ export const RichFunctionView = Vue.defineComponent({
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
     'formReplaced': (_a: DG.InputForm | undefined) => true,
+    'layoutReset': () => true,
   },
   methods: {
     savePersonalState: () => {},
@@ -368,8 +369,8 @@ export const RichFunctionView = Vue.defineComponent({
 
     const removeSavedPersonalState = async () => {
       await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
-
       await loadDefaultLayout();
+      emit('layoutReset');
     };
 
     let intelligentLayout = true;
@@ -416,12 +417,13 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     Vue.watch(currentCall, async (_, oldCall) => {
-      Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
-        helpText.value = loadedHelp ?? null;
-      });
-
       if (oldCall) await savePersonalState(oldCall);
       visibleTabLabels.value = [...tabLabels.value];
+    }, {immediate: true});
+
+    Vue.watch(currentCall, async (call) => {
+      const help = await Utils.getContextHelp(call.func);
+      helpText.value = help ?? null;
     }, {immediate: true});
 
     const triggerSaveDefault = Vue.ref(false);
@@ -621,7 +623,7 @@ export const RichFunctionView = Vue.defineComponent({
             ref={dockRef}
             class={{'pseudo_hidden': !layoutLoaded.value}}
           >
-            { !historyHidden.value &&
+            { !historyHidden.value && props.historyEnabled &&
               <History
                 func={currentCall.value.func}
                 showActions
