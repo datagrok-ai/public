@@ -203,7 +203,7 @@ export class AddNewColumnDialog {
       .show({resizable: true, width: 750, height: 500});
 
     this.uiDialog.onClose.subscribe((_) => {
-      this.mutationObserver?.disconnect(); 
+      this.mutationObserver?.disconnect();
     });
 
     this.uiDialog.history(
@@ -245,7 +245,7 @@ export class AddNewColumnDialog {
         || it.options['vectorFunc'];
     }
     const allFunctionsList = DG.Func.find()
-      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) && it.outputs.length === 1 
+      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) && it.outputs.length === 1
       && returnTypeCond(it));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
@@ -413,13 +413,13 @@ export class AddNewColumnDialog {
     const unmatchedParenthesesMark = Decoration.mark({class: "cm-unmatched-bracket"});
     const withinQuotesMark = Decoration.mark({class: "cm-within-quotes"});
     const highlightTheme = EditorView.baseTheme({
-      ".cm-column-name": { 
+      ".cm-column-name": {
         'color': 'var(--blue-2)',
-        'font-weight': 'bold' 
+        'font-weight': 'bold'
        },
       ".cm-unmatched-bracket": {
         'color': 'red',
-        'font-weight': 'bold' 
+        'font-weight': 'bold'
       },
       ".cm-within-quotes": {
         'color': '#c27706',
@@ -456,7 +456,7 @@ export class AddNewColumnDialog {
       let effects: StateEffect<unknown>[] = selections.map(({from, to}) => stateEffect.of({from, to}));
       if (!effects.length)
         return false;
-    
+
       if (!view.state.field(highlightField, false))
         effects.push(StateEffect.appendConfig.of([highlightField, highlightTheme]));
       view.dispatch({effects});
@@ -526,7 +526,7 @@ export class AddNewColumnDialog {
 
             //add column highlight
             setSelection(cm, columnsAndSelections.columnSelections, addColHighlight);
-            
+
             //add text in quotes addTextWithinQuotes
             setSelection(cm, columnsAndSelections.quotesSelection, addTextWithinQuotes);
 
@@ -658,7 +658,7 @@ export class AddNewColumnDialog {
     let closingBracket = '';
     for (let i = 0; i < intervalsWithoutQuotes.length; i++) {
       for (let j = intervalsWithoutQuotes[i][0]; j < intervalsWithoutQuotes[i][1]; j++) {
-        
+
         if (formula[j] === '(') {
           openBrackets.push(j);
           continue;
@@ -732,7 +732,7 @@ export class AddNewColumnDialog {
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
       if (funcCall.inputs[key] instanceof DG.FuncCall) {
-        //do not allow functions with multiple outputs 
+        //do not allow functions with multiple outputs
         if (funcCall.inputs[key].func.outputs.length > 1)
           throw new Error(`Function ${funcCall.inputs[key].func} returns multiple values`);
         //treat $COLUMN_NAME as scalar
@@ -849,7 +849,7 @@ export class AddNewColumnDialog {
         end: res.end,
         above: true,
         create(view) {
-          let dom = document.createElement("div");          
+          let dom = document.createElement("div");
           dom.textContent = res.signature!;
           return {dom}
         }
@@ -1053,7 +1053,7 @@ export class AddNewColumnDialog {
     this.resultColumnType = this.previwDf!.col(colName)!.type;
     this.previwDf!.columns.remove(colName);
 
-    if (FLOATING_POINT_TYPES.includes(this.resultColumnType))
+    if (FLOATING_POINT_TYPES.includes(this.resultColumnType) && this.gridPreview!.dataFrame.col(colName))
       this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
@@ -1222,7 +1222,7 @@ export class AddNewColumnDialog {
     this.uiDialog!.show({resizable: true});
   }
 
-  functionsCompletions(colNames: string[], packageNames: string[], 
+  functionsCompletions(colNames: string[], packageNames: string[],
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
     packageFunctionsParams: {[key: string]: FuncInfo}, coreFunctionsParams:  {[key: string]: FuncInfo}) {
     return (context: CompletionContext) => {
@@ -1259,9 +1259,9 @@ export class AddNewColumnDialog {
         const openingBracketIdx = word.text.indexOf(openingSym) > dollarIdx ? word.text.indexOf(openingSym) : -1;
         const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString()[word.to] === closingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
-          apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` :
             `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
-              closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+              closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` :
                 `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
         index = word!.from + (openingBracketIdx === -1 ? word.text.lastIndexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
