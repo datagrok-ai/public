@@ -1,5 +1,38 @@
 # Curves changelog
 
+
+## 1.6.0 - 1.8.0 (2025-03-31)
+
+### Features
+
+* GROK-17295: Fitting caching:
+   * Performance improvements
+   * Cached fitting and wrote tests
+   * Fixed margins
+* Fit: Disabled caching for non valid row indexes
+* Outliers: Made outlier toggling not to invalidate the whole grid
+* Added custom event for outlier toggling
+* Added 4pl-regression fit function
+* #3195: Plate Viewer:
+   * Supported plate handling
+   * Implemented automatic plate import from Excel
+   * Added new fluent API
+   * Enabled DRC with grouping
+   * Supported multi-plate file folders
+   * Added details, stats column, IC50, curve preview, statistics recalculation, outlier marking, configuration options
+   * Implemented content-dependent file import
+   * Added rendering for 1536-well plates
+   * Enabled inspection of single series in plate
+   * Added demo
+* Plate readers: Added Delfia Envision and Spectramax parsers
+* Added docs on plate DRC
+
+### Bug fixes
+
+* Fixed MultiCurveViewer issues
+* Fit panel: Fixed namings and inputs
+* GROK-17492: Fixed error when adding statistics column if the series has no name
+
 ## 1.5.0 (2024-08-23)
 
 ### Features
