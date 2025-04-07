@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/retrosynthesis",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Creates retrosynthesis paths for the selected molecule",
   "author": {
     "name": "Maria Dolotova",
