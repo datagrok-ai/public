@@ -3,13 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult} from "./cdd-vault-api";
+import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult, queryMoleculesAsync} from "./cdd-vault-api";
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
+import { CDD_HOST, createLinksFromIds, getAsyncResults } from './utils';
 
 export const _package = new DG.Package();
-const CDD_HOST = 'https://app.collaborativedrug.com/';
 
 //tags: app
 //name: CDD Vault
@@ -49,8 +49,15 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
 
     const moleculesNode = vaultNode.item('Molecules');
     moleculesNode.onSelected.subscribe(async (_) => {
-      const df = await getMolecules(vault.id);
-      grok.shell.addTablePreview(df);     
+      const view = DG.View.create({name: 'Molecules'});
+      grok.shell.addPreview(view);
+      ui.setUpdateIndicator(view.root, true, 'Waiting for molecules');
+      const df = await grok.functions.call('CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, timeoutMinutes: 5});
+      createLinksFromIds(vault.id, df);
+      view.close();
+      df.name = 'Molecules';
+      grok.shell.addTablePreview(df);   
+
     });
 
     const searchNode = vaultNode.item('Search');
@@ -259,16 +266,20 @@ export async function getMolecules(vaultId: number): Promise<DG.DataFrame> {
   const df = DG.DataFrame.fromObjects(molecules.data!.objects!)!;
   if (!df)
     return DG.DataFrame.create();
-  const idCol = df.col('id');
-  if (idCol) {
-    const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
-      const id = idCol.get(i);
-      return `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})`;
-    });
-    df.columns.replace(idCol, linkIdsCol);
-  }
+  createLinksFromIds(vaultId, df);
   await grok.data.detectSemanticTypes(df);
   return df;
+}
+
+
+//name: Get Molecules Async
+//input: int vaultId {nullable: true}
+//input: int timeoutMinutes
+//output: dataframe df
+export async function getMoleculesAsync(vaultId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
+  const exportResponse = await queryMoleculesAsync(vaultId, {});
+  const res = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, false);
+  return res;
 }
 
 //name: Get Saved Searches
@@ -282,6 +293,21 @@ export async function getSavedSearches(vaultId: number): Promise<string> {
   }
   return savedSearches.data ? JSON.stringify(savedSearches.data) : '';
 }
+
+//name: Get Saved Search Results
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId
+//input: int searchId
+//input: int timeoutMinutes
+//output: dataframe df
+export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
+  const exportResponse = await querySavedSearchById(vaultId, searchId);
+  const res = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, true);
+  return res;
+}
+
+
 
 
 //name: CDD Vault search
@@ -387,55 +413,4 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
   }
   await grok.data.detectSemanticTypes(df);
   return df;
-}
-
-//name: Get Saved Search Results
-//input: int vaultId
-//input: int searchId
-//input: int timeoutMinutes
-//output: dataframe df
-export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
-
-  const exportResponse = await querySavedSearchById(vaultId, searchId);
-  if (exportResponse.error) {
-    grok.shell.error(exportResponse.error);
-    return DG.DataFrame.create();
-  }
-
-  const exportId = exportResponse.data?.id;
-  if (!exportId) {
-    grok.shell.error('No export ID received');
-    return DG.DataFrame.create();
-  }
-
-  const timeoutMs = timeoutMinutes * 60 * 1000;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < timeoutMs) {
-    const statusResponse = await queryExportStatus(vaultId, exportId);
-    
-    if (statusResponse.error) {
-      grok.shell.error(statusResponse.error);
-      return DG.DataFrame.create();
-    }
-
-    const status = statusResponse.data?.status;
-    if (status === "finished") {
-      const resultResponse = await queryExportResult(vaultId, exportId);
-      if (resultResponse.error) {
-        grok.shell.error(resultResponse.error);
-        return DG.DataFrame.create();
-      }
-
-      const dfs = await grok.functions.call('Chem:importSdf', {bytes: resultResponse.data});
-      
-      return !dfs?.length ? DG.DataFrame.create() : dfs[0];
-    }
-
-    // Wait for 2 seconds before next check
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-
-  grok.shell.error(`Export timed out after ${timeoutMinutes} minutes`);
-  return DG.DataFrame.create();
 }

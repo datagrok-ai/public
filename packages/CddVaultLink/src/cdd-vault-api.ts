@@ -6,7 +6,7 @@ import { _package } from './package';
 const API_KEY_PARAM_NAME = 'apiKey';
 let apiKey = '';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   count?: number;
   offset?: number;
   page_size?: number;
@@ -379,6 +379,15 @@ export async function queryMolecules(vaultId: number, params: MoleculeQueryParam
 }
 
 /**
+ * Query molecules with various parameters asynchronously
+ */
+export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  // For environments that don't support JSON in GET requests, use POST with /query endpoint
+  return request<ExportStatus>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
+}
+
+/**
  * ReadoutRows without or with various parameters
  */
 export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ReadoutRowsQueryResult>> {
@@ -410,6 +419,6 @@ export async function queryExportStatus(vaultId: number, exportId: number): Prom
 }
 
 /** Get export result*/
-export async function queryExportResult(vaultId: number, exportId: number): Promise<ApiResponse<Uint8Array>> {
-  return request<Uint8Array>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, true);
+export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean): Promise<ApiResponse<any>> {
+  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, isTextResponse);
 }
