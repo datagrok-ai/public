@@ -378,8 +378,10 @@ export class FittingView {
               nullable: false,
               tooltipText: 'Columns with values of functions',
               onValueChanged: (cols) => {
-                if (cols.map((col) => col.name).includes(temp.argName))
+                if (cols.map((col) => col.name).includes(temp.argName)) {
                   temp.argColInput.value = null;
+                  temp.argName = '';
+                }
 
                 this.updateApplicabilityState();
               },
