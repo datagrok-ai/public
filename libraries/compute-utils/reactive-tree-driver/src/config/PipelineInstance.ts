@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemId, NqName, RestrictionType} from '../data/common-types';
+import {ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
 import {ActionInfo, CustomExport, ViewersHook} from './PipelineConfiguration';
 
 //
@@ -43,6 +43,7 @@ export interface PipelineInstanceState {
 
 export type StateTypes = PipelineState['type'];
 
+export type PipelineOutline = PipelineStateRec<StepFunCallStateBase, {}>;
 export type PipelineState = PipelineStateRec<StepFunCallState, PipelineInstanceRuntimeData>;
 export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState, {}>;
 
@@ -112,6 +113,7 @@ export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
   approversGroup: string | undefined;
   customExports: CustomExport[] | undefined;
+  structureCheckResults?: ValidationResult | undefined;
 }
 
 export type PipelineInstanceBase<I, T> = {

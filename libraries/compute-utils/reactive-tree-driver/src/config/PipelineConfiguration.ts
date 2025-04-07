@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
-import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
-import {PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
 
 //
@@ -44,9 +44,8 @@ export type ExportUtils = {
   reportFuncCallExcel: (fc: DG.FuncCall) => Promise<readonly [Blob, ExcelJS.Workbook]>;
 }
 export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<void>;
-
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
-
+export type StructureCheckHook = (data: PipelineOutline) => ValidationResult | undefined;
 
 // link-like
 
@@ -148,7 +147,8 @@ export type PipelineConfigurationBase<P> = {
   version?: string;
   friendlyName?: string;
   onInit?: PipelineHookConfiguration<P>;
-  customExports?: CustomExport[],
+  structureCheck?: StructureCheckHook;
+  customExports?: CustomExport[];
   actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
   states?: StateItem[];
   tags?: string[];

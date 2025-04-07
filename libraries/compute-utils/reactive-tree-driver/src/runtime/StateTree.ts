@@ -67,12 +67,14 @@ export class StateTree {
     const actions = linksState ? linksState.getNodeActionsData(item.uuid) : undefined;
     if (isFuncCallNode(item))
       return item.toState(options, actions);
-    const state = item.toState(options, actions);
+    const selfState = item.toState(options, actions);
     const steps = node.getChildren().map((node) => {
       const item = this.toStateRec(node.item, options, linksState);
       return item;
     });
-    return {...state, steps};
+    const fullState = {...selfState, steps};
+    const structureCheckResults = item.getStructureCheck(fullState);
+    return {...fullState, structureCheckResults};
   }
 
   public static toSerializedStateRec(
