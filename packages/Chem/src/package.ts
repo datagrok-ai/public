@@ -82,6 +82,7 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { oclMol } from './utils/chem-common-ocl';
+import { DesirabilityTemplate, mpo, _mpoDialog } from './analysis/mpo/mpo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2195,4 +2196,11 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 //output: list<string> result
 export async function beautifyMols(mols: string[]): Promise<string[]> {
   return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+}
+
+//name: mpo
+//top-menu: Chem | Calculate | MPO Score...
+//description: Calculates the MPO score for the column of molecules
+export async function _mpo(): Promise<void> {
+  _mpoDialog(grok.shell.t);
 }

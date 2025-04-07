@@ -1,0 +1,18 @@
+{
+    "name": "ADME Test",
+    "description": "Test ADME properties",
+    "properties": {
+        "Caco2": {
+            "line": [[-8, 0], [-6, 1], [-4, 0]],
+            "weight": 0.8
+        },
+        "Lipophilicity": {
+            "line": [[-2, 0], [2, 1], [3, 1], [5, 0.5]],
+            "weight": 1
+        },
+        "Solubility": {
+            "line": [[-9, 0], [-8, 0.1], [-7, 0.3], [-6, 0.7], [-5, 0.9], [0, 1]],
+            "weight": 1
+        }
+    }
+}
