@@ -159,5 +159,6 @@ export async function _mpoDialog(table: DG.DataFrame): Promise<void> {
     if (value)
       updatePropertyInfo(value);
   });
-    
+
+  updatePropertyInfo(mpoFiles[0].fileName);
 }
