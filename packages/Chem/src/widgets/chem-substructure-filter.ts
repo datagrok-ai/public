@@ -113,7 +113,12 @@ export class SubstructureFilter extends DG.Filter {
 
   get isFiltering(): boolean {
     const molFile = this.sketcher?.getMolFile();
-    return super.isFiltering && (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
+    //filter is disabled in case:
+    // 1. Filter was enabled, but the whole filter panel was disabled via checkbox or Ecs button
+    // 2. Filter panel is enabled, but substructure filter was disabled via checkbox
+    // In case the whole filter panel is disabled, but user enabled only substructure filter - isFiltering should return true 
+    const filterEnabled = super.isFiltering || !this.root.parentElement?.classList?.contains('d4-filter-disabled');
+    return filterEnabled && (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
   }
 
   get isReadyToApplyFilter(): boolean {
