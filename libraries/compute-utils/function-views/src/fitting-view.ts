@@ -15,7 +15,6 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
   DIFF_STUDIO_OUTPUT_IDX,
   CATEGORY,
   LINE_CHART_LINE_WIDTH} from './fitting/constants';
-import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
@@ -76,6 +75,16 @@ export type TargetDescription = {
 }
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
+
+type FittingOutputsStore = {
+  prop: DG.Property,
+  input: DG.InputBase,
+  isInterest: BehaviorSubject<boolean>,
+  target: OutputTarget,
+  argName: string,
+  argColInput: DG.ChoiceInput<string | null>,
+  funcColsInput: DG.InputBase<DG.Column[]>,
+};
 
 export type DiffGrok = {
   ivp: IVP,
@@ -253,7 +262,7 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
-        const temp = {
+        const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
           (() => {
@@ -274,21 +283,39 @@ export class FittingView {
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
 
-              if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+              const clearInputs = () => {
+                temp.argColInput.items = [null];
+                temp.argColInput.value = null;
+
+                ui.input.setColumnsInputTable(temp.funcColsInput, grok.data.demo.randomWalk(2, 2), (col: DG.Column) => false);
+              };
+
+              if (input.value === null)
+                clearInputs();
+              else if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
                   const colNames: string[] = [];
+                  const numericalCols: DG.Column[] = [];
 
                   for (const col of (input.value as DG.DataFrame).columns) {
-                    if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)
+                    if (col.isNumerical) {
                       colNames.push(col.name);
+                      numericalCols.push(col);
+                    }
                   }
 
-                  temp.colNameInput.items = colNames;
-                  temp.colNameInput.value = this.options.targets?.[outputProp.name]?.argumentCol ?? colNames[0];
-                } else {
-                  temp.colNameInput.items = [null];
-                  temp.colNameInput.value = null;
-                }
+                  if (colNames.length > 1) {
+                    temp.argColInput.items = colNames;
+                    temp.argColInput.value = colNames[0];
+
+                    ui.input.setColumnsInputTable(temp.funcColsInput, input.value as DG.DataFrame, (col: DG.Column) => col.isNumerical);
+                    temp.funcColsInput.value = numericalCols.slice(1);
+                  } else {
+                    grok.shell.warning(`Not enough of numerical columns: ${colNames.length}, expected: > 1`);
+                    clearInputs();
+                  }
+                } else
+                  clearInputs();
               }
 
               this.updateApplicabilityState();
@@ -308,7 +335,8 @@ export class FittingView {
                   (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
                 if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                   (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                  temp.colNameInput.root.hidden = !v;
+                  temp.argColInput.root.hidden = !v;
+                  temp.funcColsInput.root.hidden = !v;
                 }
               },
               false,
@@ -317,32 +345,57 @@ export class FittingView {
 
             return input;
           })(),
-          colNameInput: (() => {
-            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: (value) => {temp.colName = value!;}});
-            input.setTooltip('Column with argument values');
+          argName: '',
+          argColInput: (() => {
+            const input = ui.input.choice<string | null>('argument', {
+              value: null,
+              items: [null],
+              tooltipText: 'Column with argument values',
+              onValueChanged: (value) => {
+                if (value !== null) {
+                  temp.argName = value;
+
+                  if (temp.funcColsInput.value !== null) {
+                    if (temp.funcColsInput.value.map((col) => col.name).includes(value))
+                      temp.funcColsInput.value = temp.funcColsInput.value.filter((col) => col.name !== value);
+                  }
+                } else
+                  temp.argName = '';
+
+                this.updateApplicabilityState();
+              },
+            });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
-            this.toSetSwitched = false;
             input.nullable = false;
 
             return input;
           })(),
           isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
           target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
-          colName: '',
+          funcColsInput: (() => {
+            const input = ui.input.columns('functions', {
+              nullable: false,
+              tooltipText: 'Columns with values of functions',
+              onValueChanged: (cols) => {
+                if (cols.map((col) => col.name).includes(temp.argName))
+                  temp.argColInput.value = null;
+
+                this.updateApplicabilityState();
+              },
+            });
+            input.root.insertBefore(getSwitchMock(), input.captionLabel);
+            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
+            this.toSetSwitched = false;
+
+            return input;
+          })(),
         };
 
         acc[outputProp.name] = temp;
 
         return acc;
-      }, {} as Record<string, {
-      prop: DG.Property,
-      input: DG.InputBase,
-      isInterest: BehaviorSubject<boolean>,
-      target: OutputTarget,
-      colName: string,
-      colNameInput: DG.InputBase,
-    }>);
+      }, {} as Record<string, FittingOutputsStore>);
 
     return {inputs, outputs};
   };
@@ -792,7 +845,8 @@ export class FittingView {
         }
 
         container.append(outputConfig.input.root);
-        container.append(outputConfig.colNameInput.root);
+        container.append(outputConfig.argColInput.root);
+        container.append(outputConfig.funcColsInput.root);
 
         return container;
       }, form);
@@ -937,8 +991,14 @@ export class FittingView {
         const val = output.input.value;
         cur = (val !== null) && (val !== undefined);
 
-        if (output.prop.propertyType === DG.TYPE.DATA_FRAME)
-          cur = cur && (output.colNameInput.value !== null) && (output.colName !== '');
+        if (output.prop.propertyType === DG.TYPE.DATA_FRAME) {
+          cur &&= (output.funcColsInput.value !== null);
+
+          if (!cur)
+            break;
+
+          cur &&= (output.argColInput.value !== null) && (output.argName !== '') && (output.funcColsInput.value.length > 0);
+        }
 
         if (!cur)
           this.updateRunIconDisabledTooltip(`Incomplete the "${output.input.caption}" target`);
@@ -1062,7 +1122,8 @@ export class FittingView {
             sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
             ++outputsCount;
           } else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), true)
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), true)
               .forEach((err) => {
                 sumOfSquaredErrors += err ** 2;
                 ++outputsCount;
@@ -1085,7 +1146,8 @@ export class FittingView {
           if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
             mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
           else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), false)
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), false)
               .forEach((err) => mad = Math.max(mad, Math.abs(err)));
           }
         });
@@ -1120,7 +1182,7 @@ export class FittingView {
               minVals,
               maxVals,
               inputs,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].colName,
+              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].argName,
             outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
             this.samplesCount,
             );
@@ -1163,7 +1225,7 @@ export class FittingView {
       const targetDfs: TargetTableOutput[] = outputsOfInterest
         .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
         .map((output) => {
-          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.colName};
+          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
         });
 
       // Get non-similar points
@@ -1210,7 +1272,7 @@ export class FittingView {
         const calledFuncCall = await getCalledFuncCall(extr.point);
         calledFuncCalls[idx] = calledFuncCall;
         outputsOfInterest.forEach((output) => {
-          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.colName, toShowTableName);
+          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
           gofs.forEach((item) => gofElems.set(item.caption, item.root));
         });
         gofViewers[idx] = gofElems;

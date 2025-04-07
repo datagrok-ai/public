@@ -9,7 +9,7 @@ import {InconsistentTables} from './optimizer-misc';
 import '../../css/fitting-view.css';
 
 /** Returns indeces corresponding to the closest items */
-export function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
+export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   const expArgRaw = expArg.getRawData();
   const simArgRaw = simArg.getRawData();
   const simCount = simArg.length;
@@ -44,46 +44,45 @@ export function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   return indeces;
 };
 
-export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame, toScale: boolean): Float32Array {
-  const expArg = expDf.col(arg);
-  const simArg = simDf.col(arg);
-
+export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
+  simDf: DG.DataFrame, toScale: boolean): Float32Array {
   if (expArg === null)
-    throw new InconsistentTables(`no "${arg}" column in the target dataframe "${expDf.name}"`);
+    throw new InconsistentTables('no argument column in the target output dataframe');
+
+  const arg = expArg.name;
+  const simArg = simDf.col(arg);
 
   if (simArg === null)
     throw new InconsistentTables(`no "${arg}" column in the output dataframe "${simDf.name}"`);
 
-  const expColumns = expDf.columns;
-  const indeces = getIndeces(expArg, simArg);
-  const expColsCount = expColumns.length;
-  const errors = new Float32Array((expColsCount - 1) * indeces.length);
+  const indices = getIndices(expArg, simArg);
+  const expColsCount = expFuncs.length;
+  const errors = new Float32Array(expColsCount * indices.length);
   let errIdx = 0;
 
-  for (const expCol of expColumns) {
-    if (expCol.name !== arg) {
-      const simCol = simDf.col(expCol.name);
+  for (let idx = 0; idx < expColsCount; ++idx) {
+    const expCol = expFuncs[idx];
+    const simCol = simDf.col(expCol.name);
 
-      if (simCol === null)
-        throw new InconsistentTables(`no "${expCol.name}" column in the output dataframe "${simDf.name}"`);
+    if (simCol === null)
+      throw new InconsistentTables(`no "${expCol.name}" column in the output dataframe "${simDf.name}"`);
 
-      const simRaw = simCol.getRawData();
-      const expRaw = expCol.getRawData();
+    const simRaw = simCol.getRawData();
+    const expRaw = expCol.getRawData();
 
-      if (toScale) {
-        const expScale = Math.max(Math.abs(expCol.stats.max), Math.abs(expCol.stats.min));
-        const coef = (expScale > 0) ? expScale : 1;
+    if (toScale) {
+      const expScale = Math.max(Math.abs(expCol.stats.max), Math.abs(expCol.stats.min));
+      const coef = (expScale > 0) ? expScale : 1;
 
-        indeces.forEach((simIdx, expIdx) => {
-          errors[errIdx] = (simRaw[simIdx] - expRaw[expIdx]) / coef;
-          ++errIdx;
-        });
-      } else {
-        indeces.forEach((simIdx, expIdx) => {
-          errors[errIdx] = simRaw[simIdx] - expRaw[expIdx];
-          ++errIdx;
-        });
-      }
+      indices.forEach((simIdx, expIdx) => {
+        errors[errIdx] = (simRaw[simIdx] - expRaw[expIdx]) / coef;
+        ++errIdx;
+      });
+    } else {
+      indices.forEach((simIdx, expIdx) => {
+        errors[errIdx] = simRaw[simIdx] - expRaw[expIdx];
+        ++errIdx;
+      });
     }
   }
 
