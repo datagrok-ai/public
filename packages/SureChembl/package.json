@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/surechembl",
   "friendlyName": "SureChEMBL",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Performs patents searches through a locally deployed SureChEMBL database",
   "author": {
     "name": "Maria Dolotova",
