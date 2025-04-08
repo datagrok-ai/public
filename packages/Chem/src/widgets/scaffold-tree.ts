@@ -1442,7 +1442,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
   
     const rowCount = this.dataFrame.rowCount;
-    const columnName = `${this.title}_${this.moleculeColumnName}_colors`;
+    const columnName = this.title;
     this.colorColumn = this.dataFrame.columns.byName(columnName);
     const isNewColumn = !this.colorColumn;
     
@@ -1916,7 +1916,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.toggleTreeGenerationVisibility();
     } else if (p.name === 'title') {
       if (this.colorColumn)
-        this.colorColumn.name = `${this.title}_${this.moleculeColumnName}_colors`;
+        this.colorColumn.name = this.title;
     }
   }
 
@@ -2044,6 +2044,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.subs.push(DG.debounce(grok.events.onCustomEvent(SCAFFOLD_TREE_SKETCHER_ACTION), 250).subscribe(async (_) => {
       await updateVisibleNodes(thisViewer);
+    }));
+
+    this.subs.push(dataFrame.onColumnNameChanged.subscribe((e) => {
+      const {oldName, newName} = e.args;
+      if (this.title === oldName)
+        this.getProperty('title')?.set(this, newName);
     }));
 
     this.render();
