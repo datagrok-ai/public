@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.51.0 (2025-04-08)
+
+To Atomic level fixes for terminal monomers with 1 R group, wrongly configured r-groups and incorrect notations
+
 ## 5.50.1 (2025-02-20)
 
 Remove helm dependency in toAtomicLevel for Linear sequences
