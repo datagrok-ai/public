@@ -564,7 +564,7 @@ jobs:
         if: steps.docker_name_ver.outcome == 'success'
         id: build-docker
         run: |
-          docker rm -f $(docker ps --format '{{.ID}}')
+          docker ps -q | xargs -r docker rm -f
           docker system prune -af
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
             image_name=${{ steps.docker_name_ver.outputs.package_name }}
