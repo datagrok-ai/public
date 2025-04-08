@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package } from './package';
+import { paramsStringFromObj } from './utils';
 
 const API_KEY_PARAM_NAME = 'apiKey';
 let apiKey = '';
@@ -106,7 +107,7 @@ export interface Molecule {
   source_files: SourceFile[];
 }
 
-interface MoleculesQueryResult {
+export interface MoleculesQueryResult {
   count?: number;
   offset?: number;
   page_size?: number;
@@ -391,16 +392,17 @@ export async function queryMoleculesAsync(vaultId: number, params: MoleculeQuery
  * ReadoutRows without or with various parameters
  */
 export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ReadoutRowsQueryResult>> {
-  
-  let paramsStr = '';
-  const paramNames = Object.keys(params);
-  for (let i = 0; i < paramNames.length; i++) {
-    const paramVal = (params as any)[paramNames[i]];
-    if(paramVal) {
-      paramsStr += paramsStr === '' ? `?${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
-    }
-  }
+  const paramsStr = paramsStringFromObj(params);
   return request<ReadoutRowsQueryResult>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
+}
+
+/**
+ * ReadoutRows without or with various parameters asynchronously
+ */
+export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  const paramsStr = paramsStringFromObj(params);
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
 }
 
 /** Get all available saved searches for the vault */

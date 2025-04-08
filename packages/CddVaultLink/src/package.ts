@@ -3,11 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult, queryMoleculesAsync} from "./cdd-vault-api";
+import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult, queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult} from "./cdd-vault-api";
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDD_HOST, createLinksFromIds, getAsyncResults } from './utils';
+import { CDD_HOST, createLinksFromIds, getAsyncResults, getAsyncResultsAsDf } from './utils';
 
 export const _package = new DG.Package();
 
@@ -53,7 +53,6 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       grok.shell.addPreview(view);
       ui.setUpdateIndicator(view.root, true, 'Waiting for molecules');
       const df = await grok.functions.call('CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, timeoutMinutes: 5});
-      createLinksFromIds(vault.id, df);
       view.close();
       df.name = 'Molecules';
       grok.shell.addTablePreview(df);   
@@ -68,7 +67,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       const runButton = ui.bigButton('SEARCH', async () => {
         ui.setUpdateIndicator(gridDiv, true);
         const params = funcEditor.getParams();
-        const df = await grok.functions.call('CDDVaultLink:cDDVaultSearch2',
+        const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
           {
             vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
             structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
@@ -252,6 +251,54 @@ export async function cDDVaultSearch2(vaultId: number, structure?: string, struc
   return DG.DataFrame.create();
 }
 
+//name: CDD Vault Search Async 
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//input: string structure {category: Structure; nullable: true; semType: Molecule} [SMILES; cxsmiles or mol string]
+//input: string structure_search_type {category: Structure; nullable: true; choices: ["exact", "similarity", "substructure"]} [SMILES, cxsmiles or mol string]
+//input: double structure_similarity_threshold {category: Structure; nullable: true} [A number between 0 and 1]
+//input: int protocol {category: Protocol; nullable: true} [Protocol id]
+//input: int run {category: Protocol; nullable: true} [Specific run id]
+//output: dataframe df
+//editor: Cddvaultlink:CDDVaultSearchEditor
+export async function cDDVaultSearchAsync(vaultId: number, structure?: string, structure_search_type?: CDDVaultSearchType,
+  structure_similarity_threshold?: number, protocol?: number, run?: number): Promise<DG.DataFrame> {
+  //collecting molecule ids according to protocol query params
+  let molIds: number[] = [];
+  if (protocol) {
+    const exportResponse = await queryReadoutRowsAsync(vaultId, {protocols: protocol.toString(), runs: run?.toString()});
+    const readoutRowsRes = await getAsyncResults(vaultId, exportResponse, 5, false);
+    if (!readoutRowsRes)
+      return DG.DataFrame.create();
+    const readoutRows = readoutRowsRes.data?.objects;
+    if (readoutRows) {
+      for (const readoutRow of readoutRows)
+        if (!molIds.includes(readoutRow.molecule))
+          molIds.push(readoutRow.molecule)
+    }    
+    
+  }
+  const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
+    {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
+
+  const moleculesExportResponse = await queryMoleculesAsync(vaultId, molQueryParams);
+  const cddMols = await getAsyncResults(vaultId, moleculesExportResponse, 5, false) as ApiResponse<MoleculesQueryResult>;
+  if (!cddMols)
+    return DG.DataFrame.create();
+
+  if (cddMols.data?.objects && cddMols.data?.objects.length) {
+    //in case we had both protocol and structure conditions - combine results together
+    const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
+    const df = DG.DataFrame.fromObjects(molsRes)!;
+    if (!df)
+      return DG.DataFrame.create();
+    await grok.data.detectSemanticTypes(df);
+    return df;
+  }
+  return DG.DataFrame.create();
+}
+
 //name: Get Molecules
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
@@ -273,16 +320,21 @@ export async function getMolecules(vaultId: number): Promise<DG.DataFrame> {
 
 
 //name: Get Molecules Async
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: int vaultId {nullable: true}
 //input: int timeoutMinutes
 //output: dataframe df
 export async function getMoleculesAsync(vaultId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
   const exportResponse = await queryMoleculesAsync(vaultId, {});
-  const res = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, false);
-  return res;
+  const df = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, false);
+  createLinksFromIds(vaultId, df);
+  return df;
 }
 
 //name: Get Saved Searches
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: int vaultId {nullable: true}
 //output: string result
 export async function getSavedSearches(vaultId: number): Promise<string> {
@@ -303,7 +355,7 @@ export async function getSavedSearches(vaultId: number): Promise<string> {
 //output: dataframe df
 export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
   const exportResponse = await querySavedSearchById(vaultId, searchId);
-  const res = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, true);
+  const res = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, true);
   return res;
 }
 
@@ -311,6 +363,8 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 
 
 //name: CDD Vault search
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: int vaultId {nullable: true}
 //input: string molecules {category: General; nullable: true} [Comma separated list of ids] 
 //input: string names {category: General; nullable: true} [Comma separated list of names/synonyms]
