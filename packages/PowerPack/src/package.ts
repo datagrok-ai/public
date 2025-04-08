@@ -236,3 +236,17 @@ function _viewerGallery(view: DG.ViewBase): void {
     view.setRibbonPanels(panels);
   }
 }
+
+//name: markdownFileViewer
+//tags: fileViewer
+//meta.fileViewer: md,mdx
+//input: file file
+//output: view result
+export async function markdownFileViewer(file: DG.FileInfo): Promise<DG.View> {
+  const viewFile = DG.View.create();
+  viewFile.name = file.name.slice(0, file.name.indexOf('.'));
+  const input = await ui.input.markdown('');
+  input.value = await file.readAsString();
+  viewFile.append(input.root);
+  return viewFile;
+}
