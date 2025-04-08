@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y nginx gettext && \
 
 RUN mkdir -p /etc/nginx/sites-enabled /etc/nginx/conf.d
 
-# Copy nginx configuration files
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY grok_cvm.conf.template /etc/nginx/sites-enabled/grok_cvm.conf
 COPY entrypoint.sh /etc/nginx/entrypoint.sh
