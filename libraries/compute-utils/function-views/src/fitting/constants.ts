@@ -115,3 +115,10 @@ export const DIFF_STUDIO_OUTPUT_IDX = 0;
 
 export const CATEGORY = '__Category__';
 export const LINE_CHART_LINE_WIDTH = 2;
+
+/** */
+export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
+
+2. Select a column with the independent variable in the **argument** field
+
+3. Specify one or more target columns with the dependent variable(s) in the **functions** field`;

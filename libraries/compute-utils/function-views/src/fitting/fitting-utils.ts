@@ -1,14 +1,17 @@
 /* eslint-disable valid-jsdoc */
 // Fitting utilities
 
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
+import '../../css/sens-analysis.css';
+import {TARGET_DATAFRAME_INFO} from './constants';
 
-/** Returns indeces corresponding to the closest items */
+/** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   const expArgRaw = expArg.getRawData();
   const simArgRaw = simArg.getRawData();
@@ -44,6 +47,7 @@ export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   return indeces;
 };
 
+/** Return errors of approximation */
 export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
   simDf: DG.DataFrame, toScale: boolean): Float32Array {
   if (expArg === null)
@@ -110,3 +114,56 @@ export function getCategoryWidget(category: string, roots: HTMLElement[]) {
     'fit-view-inputs-category',
   );
 }
+
+function isFullyVisible(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  return (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+  );
+}
+
+function moveElementIntoView(element: HTMLElement) {
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+  const offsetX = Math.max(0, -rect.left) + Math.max(0, rect.right - window.innerWidth);
+  const offsetY = Math.max(0, -rect.top) + Math.max(0, rect.bottom - window.innerHeight);
+
+  // Apply translation via CSS transform
+  element.style.position = 'absolute';
+  element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+}
+
+/** Return the Show Info widget */
+export function getShowInfoWidget(root: HTMLElement, dfName: string) {
+  let isInfoShown = false;
+  let popup: HTMLDivElement;
+  let closeIcn: HTMLElement;
+  const info = `# **${dfName}**\n\n${TARGET_DATAFRAME_INFO}`;
+
+  const infoIcon = ui.icons.info(() => {
+    if (isInfoShown) {
+      isInfoShown = false;
+      popup!.remove();
+    } else {
+      isInfoShown = true;
+      popup = ui.hints.addHint(root, ui.markdown(info), ui.hints.POSITION.RIGHT);
+
+      if (!isFullyVisible(popup)) {
+        popup.remove();
+        popup = ui.hints.addHint(root, ui.markdown(info), ui.hints.POSITION.TOP);
+      }
+
+      closeIcn = popup.querySelector('i') as HTMLElement;
+      closeIcn.onclick = () => isInfoShown = false;
+      grok.shell.v.root.appendChild(popup);
+    }
+  }, 'Click to see details');
+
+  infoIcon.classList.add('sa-switch-input');
+
+  return infoIcon;
+} // getShowInfoWidget

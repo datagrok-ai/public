@@ -18,7 +18,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -270,12 +270,10 @@ export class FittingView {
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
             input.value = 0;
-            input.setTooltip(this.toSetSwitched ?
-              'Target value' :
-              (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
+            input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
             input.input.hidden = !this.toSetSwitched;
             input.nullable = false;
-            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
+            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
 
             if (this.options.targets?.[outputProp.name]?.default != null)
               setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
@@ -331,8 +329,7 @@ export class FittingView {
                 temp.isInterest.next(v);
                 this.updateApplicabilityState();
                 input.input.hidden = !v;
-                input.setTooltip(v ? 'Target value' :
-                  (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
+
                 if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                   (input.root.lastElementChild as HTMLDivElement).hidden = !v;
                   temp.argColInput.root.hidden = !v;
@@ -350,7 +347,7 @@ export class FittingView {
             const input = ui.input.choice<string | null>('argument', {
               value: null,
               items: [null],
-              tooltipText: 'Column with argument values',
+              tooltipText: 'Independent variable',
               onValueChanged: (value) => {
                 if (value !== null) {
                   temp.argName = value;
@@ -365,7 +362,11 @@ export class FittingView {
                 this.updateApplicabilityState();
               },
             });
-            input.root.insertBefore(getSwitchMock(), input.captionLabel);
+
+            ui.tooltip.bind(input.captionLabel, 'Column with values of the independent variable');
+
+            const infoIcon = ui.icons.info(() => alert('Hello!'));
+            infoIcon.classList.add('sa-switch-input');
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
 
@@ -376,7 +377,7 @@ export class FittingView {
           funcColsInput: (() => {
             const input = ui.input.columns('functions', {
               nullable: false,
-              tooltipText: 'Columns with values of functions',
+              tooltipText: 'Target dependent variables',
               onValueChanged: (cols) => {
                 if (cols.map((col) => col.name).includes(temp.argName)) {
                   temp.argColInput.value = null;
@@ -389,6 +390,7 @@ export class FittingView {
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             this.toSetSwitched = false;
+            ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
 
             return input;
           })(),
@@ -847,6 +849,12 @@ export class FittingView {
         }
 
         container.append(outputConfig.input.root);
+
+        outputConfig.argColInput.root.insertBefore(getShowInfoWidget(
+          outputConfig.input.root,
+          outputConfig.prop.caption ?? outputConfig.prop.name,
+        ), outputConfig.argColInput.captionLabel);
+
         container.append(outputConfig.argColInput.root);
         container.append(outputConfig.funcColsInput.root);
 
