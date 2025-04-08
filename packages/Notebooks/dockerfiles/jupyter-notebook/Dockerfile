@@ -1,4 +1,4 @@
-FROM datagrok/jupyter_notebook:bleeding-edge
+FROM datagrok/jupyter_notebook:latest
 
 USER root
 RUN apt-get update && apt-get install -y nginx gettext && \

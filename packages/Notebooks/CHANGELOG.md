@@ -1,5 +1,9 @@
 # Notebooks changelog
 
+## 1.3.0 (2025-04-08)
+
+Bug fixes, Docker container with jupyter_notebook server
+
 ## 1.2.0 (2024-10-28)
 
 Fixed corrupted styles for the platform that used to appear after opening a notebook.
