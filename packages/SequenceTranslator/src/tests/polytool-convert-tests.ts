@@ -30,9 +30,9 @@ category('PolyTool: Convert', () => {
   let userLibSettings: UserLibSettings; //backup
 
   before(async () => {
+    rdKitModule = await getRdKitModule();
     helmHelper = await getHelmHelper();
     seqHelper = await getSeqHelper();
-    rdKitModule = await getRdKitModule();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
