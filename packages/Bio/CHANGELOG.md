@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.20.4 (2025-04-08)
+
+* Fix linearization, wrong rgroups and notation problems for toAtomicLevel 
+
 ## 2.20.2 (2025-03-31)
 
 * Detectors: more sensitive for very likely column names

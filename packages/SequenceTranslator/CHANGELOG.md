@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.9.4 (2025-04-08)
+
+* Linearization fix for polytool convert.
+
 ## 1.9.1 (2025-03-31)
 
 * Combination of sequence sets dialog.
