@@ -42,35 +42,25 @@ export function renderMolecule(
       'ellipsis-v',
       (e: MouseEvent) => {
         e.stopImmediatePropagation();
-        const menu = DG.Menu.popup();
-        menu.item('Copy SMILES', () => {
-          const smiles = !DG.chem.isMolBlock(molStr) && !_isSmarts(molStr) ? molStr :
-            _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
-          navigator.clipboard.writeText(smiles);
-          grok.shell.info('SMILES copied to clipboard');
-        });
-        menu.item('Copy Molfile', () => {
-          const molFile = DG.chem.isMolBlock(molStr) ?
-            molStr : _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
-          navigator.clipboard.writeText(molFile);
-          grok.shell.info('Molfile copied to clipboard');
-        });
-        menu.item('Sketch', () => {
-          const sketcher = new DG.chem.Sketcher();
-          DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
-          ui.dialog()
-            .add(sketcher)
-            .show();
-        });
-        menu.item('Explore', () => {
-          grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-        }, null);
-        menu.show();
+        showMoleculeMenu(molStr);
       },
       'More',
     );
     $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
     div.append(moreBtn);
+  }
+  moleculeHost.oncontextmenu = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showMoleculeMenu(molStr);
+  }
+  moleculeHost.onclick = (e: MouseEvent) => {
+    const isInContextPanel = moleculeHost.closest('.grok-prop-panel');
+    if (!isInContextPanel)
+      grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);  
+  }
+  moleculeHost.ondblclick = (e: MouseEvent) => {
+    grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
   }
   div.append(moleculeHost);
 
@@ -81,4 +71,31 @@ export function _svgDiv(mol: any): HTMLDivElement {
   const root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
+}
+
+function showMoleculeMenu(molStr: string) {
+  const menu = DG.Menu.popup();
+  menu.item('Copy SMILES', () => {
+    const smiles = !DG.chem.isMolBlock(molStr) && !_isSmarts(molStr) ? molStr :
+      _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
+    navigator.clipboard.writeText(smiles);
+    grok.shell.info('SMILES copied to clipboard');
+  });
+  menu.item('Copy Molfile', () => {
+    const molFile = DG.chem.isMolBlock(molStr) ?
+      molStr : _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
+    navigator.clipboard.writeText(molFile);
+    grok.shell.info('Molfile copied to clipboard');
+  });
+  menu.item('Sketch', () => {
+    const sketcher = new DG.chem.Sketcher();
+    DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+    ui.dialog()
+      .add(sketcher)
+      .show();
+  });
+  menu.item('Explore', () => {
+    grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
+  }, null);
+  menu.show();
 }
