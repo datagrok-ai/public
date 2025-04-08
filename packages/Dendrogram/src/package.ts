@@ -259,7 +259,7 @@ export async function previewNewick(file: DG.FileInfo) {
   const host = ui.divH([
     ui.button('Load dataframe', () => {
       const view = grok.shell.addTableView(df);
-      const viewer = DG.Viewer.fromType('PhyloTree', df);
+      const viewer = DG.Viewer.fromType('PhylocanvasGL', df);
       view.addViewer(viewer);
       view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
       return view;
