@@ -29,7 +29,7 @@
     "@lumino/commands": "^1.10.1",
     "@lumino/widgets": "^1.11.1",
     "bufferutil": "^4.0.1",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "../../js-api",
     "es6-promise": "~4.2.8",
     "utf-8-validate": "^5.0.2"
   },
