@@ -1185,8 +1185,9 @@ export class FittingView {
               maxVals,
               inputs,
               outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].argName,
-            outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
-            this.samplesCount,
+              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].funcColsInput.value,
+              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
+              this.samplesCount,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
             optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
