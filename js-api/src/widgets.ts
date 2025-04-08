@@ -693,7 +693,7 @@ export class ToolboxPage {
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();
  * */
-export class Dialog extends DartWidget {
+  export class Dialog<Inputs extends Record<string, InputBase<any> > = {} > extends DartWidget {
 
   constructor(dart: any) {
     super(dart);
@@ -730,7 +730,7 @@ export class Dialog extends DartWidget {
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
    * @returns {Dialog} */
-  onOK(handler: Function): Dialog {
+  onOK(handler: Function): Dialog<Inputs> {
     api.grok_Dialog_OnOK(this.dart, handler);
     return this;
   }
@@ -755,7 +755,7 @@ export class Dialog extends DartWidget {
    * Sets the CANCEL button handler
    * @param {Function} handler
    * @returns {Dialog} */
-  onCancel(handler: Function): Dialog {
+  onCancel(handler: Function): Dialog<Inputs> {
     api.grok_Dialog_OnCancel(this.dart, handler);
     return this;
   }
@@ -772,24 +772,41 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog {
+  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor, options?.showNextTo);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
-  showModal(fullScreen: boolean): Dialog {
+  showModal(fullScreen: boolean): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null, null);
     return this;
   }
 
-  /** Adds content to the dialog.
+  /** Adds content to the dialog. using addInput() for inputs is preferred, as it provides better type safety.
    * @param {HTMLElement | Widget | InputBase} content
    * @returns {Dialog} */
-  add(content: HTMLElement | Widget | InputBase): Dialog {
+  add(content: HTMLElement | Widget | InputBase): Dialog<Inputs> {
     api.grok_Dialog_Add(this.dart, toDart(content));
     return this;
+  }
+
+  /** Adds named input, which than can be used in combo with namedInputs, to get inputs in type-safe way*/
+  addInput<K extends string, V extends InputBase<any>>(caption: K, input: V): Dialog<Record<K, V> & Inputs > {
+    input.caption = caption;
+    api.grok_Dialog_Add(this.dart, toDart(input));
+    return this as unknown as Dialog<Record<K, V> & Inputs>;
+  }
+
+  /** gets typed inputs with captions as keys.*/
+  get namedInputs() : Inputs {
+    return this.inputs.reduce((acc, input) => {
+      if (input.caption) {
+        acc[input.caption] = input;
+      }
+      return acc;
+    }, {}) as Inputs; 
   }
 
   /** Closes the dialog. */
@@ -812,7 +829,7 @@ export class Dialog extends DartWidget {
    * @param tooltip
    * @returns {Dialog}
    * */
-  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog {
+  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog<Inputs> {
     api.grok_Dialog_AddButton(this.dart, text, action, index, tooltip);
     return this;
   }
@@ -822,7 +839,7 @@ export class Dialog extends DartWidget {
    * @param {Function} action
    * @returns {Dialog}
    * */
-  addContextAction(text: string, action: Function): Dialog {
+  addContextAction(text: string, action: Function): Dialog<Inputs> {
     api.grok_Dialog_AddContextAction(this.dart, text, action);
     return this;
   }
@@ -836,7 +853,7 @@ export class Dialog extends DartWidget {
   }
 
   /** Initializes default history. */
-  initDefaultHistory(): Dialog {
+  initDefaultHistory(): Dialog<Inputs> {
     api.grok_Dialog_InitDefaultHistory(this.dart);
     return this;
   }
