@@ -1557,6 +1557,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const onOk = () => {
       initialColor = DG.Color.fromHtml(chosenColor);
       applyColor(DG.Color.fromHtml(chosenColor));
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     };
     
     const onCancel = () => applyColor(initialColor);
