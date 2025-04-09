@@ -311,6 +311,7 @@ jobs:
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
+          sed -i 's/\(GROK_SPAWNER_CORE_MODE:.*:-\)false\(}\)/\1true\2/' docker/github_actions.docker-compose.yaml || exit 1
 
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
