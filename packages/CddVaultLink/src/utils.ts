@@ -78,6 +78,20 @@ export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
     }
 }
 
+export async function reorderColummns(df: DG.DataFrame) {
+  const colNames = df.columns.names();
+  const firstColumns = ['id', 'name', 'smiles'];
+  const newColOrder = [];
+  for (const colName of firstColumns) {
+    const index = colNames.indexOf(colName);
+    if (index > -1) {
+      colNames.splice(index, 1);
+      newColOrder.push(colName);
+    }
+  }
+  df.columns.setOrder(newColOrder.concat(colNames));
+}
+
 export function paramsStringFromObj(params: any): string {
     let paramsStr = '';
     const paramNames = Object.keys(params);

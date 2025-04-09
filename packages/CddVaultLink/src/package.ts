@@ -7,7 +7,7 @@ import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, que
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDD_HOST, createLinksFromIds, getAsyncResults, getAsyncResultsAsDf } from './utils';
+import { CDD_HOST, createLinksFromIds, getAsyncResults, getAsyncResultsAsDf, reorderColummns } from './utils';
 
 export const _package = new DG.Package();
 
@@ -52,7 +52,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       const view = DG.View.create({name: 'Molecules'});
       grok.shell.addPreview(view);
       ui.setUpdateIndicator(view.root, true, 'Waiting for molecules');
-      const df = await grok.functions.call('CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, timeoutMinutes: 5});
+      const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, timeoutMinutes: 5});
       view.close();
       df.name = 'Molecules';
       grok.shell.addTablePreview(df);   
@@ -245,6 +245,8 @@ export async function cDDVaultSearch2(vaultId: number, structure?: string, struc
     const df = DG.DataFrame.fromObjects(molsRes)!;
     if (!df)
       return DG.DataFrame.create();
+    createLinksFromIds(vaultId, df);
+    reorderColummns(df);
     await grok.data.detectSemanticTypes(df);
     return df;
   }
@@ -293,6 +295,8 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
     const df = DG.DataFrame.fromObjects(molsRes)!;
     if (!df)
       return DG.DataFrame.create();
+    createLinksFromIds(vaultId, df);
+    reorderColummns(df);
     await grok.data.detectSemanticTypes(df);
     return df;
   }
@@ -314,6 +318,7 @@ export async function getMolecules(vaultId: number): Promise<DG.DataFrame> {
   if (!df)
     return DG.DataFrame.create();
   createLinksFromIds(vaultId, df);
+  reorderColummns(df);
   await grok.data.detectSemanticTypes(df);
   return df;
 }
@@ -329,6 +334,7 @@ export async function getMoleculesAsync(vaultId: number, timeoutMinutes: number)
   const exportResponse = await queryMoleculesAsync(vaultId, {});
   const df = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, false);
   createLinksFromIds(vaultId, df);
+  reorderColummns(df);
   return df;
 }
 
@@ -356,6 +362,7 @@ export async function getSavedSearches(vaultId: number): Promise<string> {
 export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
   const exportResponse = await querySavedSearchById(vaultId, searchId);
   const res = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, true);
+  reorderColummns(res);
   return res;
 }
 
