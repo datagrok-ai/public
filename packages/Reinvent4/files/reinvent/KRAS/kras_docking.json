@@ -2,7 +2,7 @@
   "docking": {
     "header": {
       "logging": {
-        "logfile": "/app/kras_docking.log"
+        "logfile": "kras_docking.log"
       }
     },
     "ligand_preparation": {
@@ -22,7 +22,7 @@
             "type": "console"
           },
           "output": {
-            "conformer_path": "/app/kras_embedded_ligands.sdf",
+            "conformer_path": "kras_embedded_ligands.sdf",
             "format": "sdf"
           }
         }
@@ -36,10 +36,10 @@
           "RDkit"
         ],
         "parameters": {
-          "binary_location": "/app/autodock_vina/autodock_vina_1_1_2_linux_x86/bin",
+          "binary_location": "autodock_vina/autodock_vina_1_1_2_linux_x86/bin",
           "seed": 42,
           "receptor_pdbqt_path": [
-            "/app/kras_receptor.pdbqt"
+            "kras_receptor.pdbqt"
           ],
           "number_poses": 2,
           "search_space": {
@@ -53,10 +53,10 @@
         },
         "output": {
           "poses": {
-            "poses_path": "/app/kras_ligands_docked.sdf"
+            "poses_path": "kras_ligands_docked.sdf"
           },
           "scores": {
-            "scores_path": "/app/kras_scores.csv"
+            "scores_path": "kras_scores.csv"
           }
         }
       }
