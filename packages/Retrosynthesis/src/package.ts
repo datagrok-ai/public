@@ -6,6 +6,7 @@ import '../css/aizynthfinder.css';
 import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
+import { SAMPLE_TREE } from './mock-data';
 
 export const _package = new DG.Package();
 
@@ -65,9 +66,26 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
   try {
     const reactionData: ReactionData = JSON.parse(result);
     const paths: Tree[] = reactionData?.data?.[0]?.trees;
-    return paths?.length ?
-      new DG.Widget(createPathsTreeTabs(paths, false).root) :
-      new DG.Widget(ui.divText('No paths found for the molecule'));
+    // const paths = SAMPLE_TREE;
+    if (paths.length) {
+      const w = new DG.Widget(createPathsTreeTabs(paths, false).root);
+      //workaround to make tree visible in undocked panel
+      ui.tools.waitForElementInDom(w.root).then(() => {
+        if (w.root.closest('.dialog-floating')) {
+          const accPanel = w.root.closest('.panel-content') as HTMLElement;
+          if (accPanel) {
+            const sub = ui.onSizeChanged(accPanel).subscribe((_) => {
+              const waitParentEl = w.root.parentElement;
+              if (waitParentEl?.classList.contains('grok-wait'))
+                waitParentEl.style.height = `100%`;
+              sub.unsubscribe();
+            });
+          }
+        }
+      });
+      return w;
+    } else
+      return new DG.Widget(ui.divText('No paths found for the molecule'));
   } catch {
     return new DG.Widget(ui.divText('Error processing retrosynthesis data'));
   }
@@ -82,8 +100,7 @@ export function retrosynthesisViewer(): AiZynthFinderViewer {
   return new AiZynthFinderViewer();
 }
 
-//top-menu: Chem | Retrosynthesis
-//name: RetrosynthesisPath
+//name: retrosynthesisTopMenu
 export function retrosynthesisTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
 }

@@ -2,7 +2,8 @@
 
 ## 1.0.4 (2025-04-07)
 
-* Adjusted container resources
+* Removed Retrosynthesis function from top menu
+* Some styles fixes
 
 ## 1.0.3 (2025-04-03)
 
