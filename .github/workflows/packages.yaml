@@ -515,6 +515,7 @@ jobs:
         env:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
         run: |
+          docker logs $(docker ps | grep grok_spawner | awk '{print $1}')
           npm list -g --depth=0 --json
           if [ "${{ matrix.package }}" == "DevTools" ]; then
             npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
