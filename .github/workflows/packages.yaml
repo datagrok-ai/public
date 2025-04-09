@@ -277,6 +277,11 @@ jobs:
           if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]] || \
              [ -d "packages/${{ matrix.package }}/queries" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name queries) ]]; then
             profiles+=' --profile grok_connect'
+          else
+            sed -i '/"grokConnectHost": "grok_connect"/a\ \ \ \ \ \ \ \ \ \ "useGrokConnect": false,' docker/localhost.docker-compose.yaml || {
+              echo "❌ Failed to insert useGrokConnect setting"
+              exit 1
+            }  
           fi
           echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
@@ -291,10 +296,20 @@ jobs:
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
+          else
+            sed -i '/"amqpHost": "rabbitmq"/a\ \ \ \ \ \ \ \ \ \ "useQueue": false,' docker/localhost.docker-compose.yaml || {
+              echo "❌ Failed to insert useQueue setting"
+              exit 1
+            }    
           fi
           echo "Check if Grok Spawner is required for the package"
           if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
+          else
+            sed -i '/"grokSpawnerHost": "grok_spawner"/a\ \ \ \ \ \ \ \ \ \ "useGrokSpawner": false,' docker/localhost.docker-compose.yaml || {
+              echo "❌ Failed to insert useGrokSpawner setting"
+              exit 1
+            }   
           fi
           echo "Run datagrok stand with profiles ${profiles}"
 
