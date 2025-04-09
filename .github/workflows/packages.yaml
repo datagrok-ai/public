@@ -311,7 +311,6 @@ jobs:
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
-          sed -i 's/\(GROK_SPAWNER_CORE_MODE:.*:-\)false\(}\)/\1true\2/' docker/localhost.docker-compose.yaml || exit 1
 
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
@@ -516,7 +515,6 @@ jobs:
         env:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
         run: |
-          docker logs $(docker ps | grep grok_spawner | awk '{print $1}')
           npm list -g --depth=0 --json
           if [ "${{ matrix.package }}" == "DevTools" ]; then
             npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
