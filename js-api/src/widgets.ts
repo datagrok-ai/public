@@ -806,7 +806,7 @@ export class ToolboxPage {
         acc[input.caption] = input;
       }
       return acc;
-    }, {}) as Inputs; 
+    }, {} as Record<string, InputBase>) as Inputs; 
   }
 
   /** Closes the dialog. */
