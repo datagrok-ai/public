@@ -309,7 +309,7 @@ export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rer
 
   const dlg = ui.dialog({title: 'Edit chart'})
     .add(gridCellWidget.root)
-    .show({resizable: true, width: size?.width ?? 350, height: size?.height ?? 300});
+    .show({resizable: true, width: size?.width ?? 500, height: size?.height ?? 430});
   if (rerenderOnChange)
     dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
 }
