@@ -74,22 +74,7 @@ export async function getFittedParams(
   if (colsCount < MIN_TARGET_COLS_COUNT)
     throw new Error(`Not enough of target columns: ${colsCount}. Minimum: ${MIN_TARGET_COLS_COUNT}`);
 
-  console.log(funcCols);
-
-  // const targetNames = new Array<string>(cols.length);
-  // targetNames[ARG_IDX] = argColName;
-
-  // let idx = ARG_IDX + 1;
-  // for (const name of cols.names()) {
-  //   if (name !== argColName) {
-  //     targetNames[idx] = name;
-  //     ++idx;
-  //   }
-  // }
-
   const targetNames = [argColName].concat(funcCols.map((col) => col.name));
-
-  console.log('Target names: ', targetNames);
 
   const scaleVals = new Float64Array(colsCount);
   const targetVals = targetNames.map((name, idx) => {

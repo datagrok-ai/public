@@ -269,7 +269,7 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            input.value = 0;
+            input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
             input.input.hidden = !this.toSetSwitched;
             input.nullable = false;
@@ -649,6 +649,8 @@ export class FittingView {
       this.updateRunIconStyle();
       this.updateRunIconDisabledTooltip('Select inputs for fitting');
       this.runIcon.classList.add('fas');
+
+      this.updateApplicabilityState();
     });
 
     this.diffGrok = options.diffGrok;
@@ -910,6 +912,9 @@ export class FittingView {
       'padding-left': '12px',
       'overflow-y': 'scroll',
       'padding-right': '4px',
+      'position': 'relative',
+      'z-index': '2',
+      'background-color': 'white',
     });
     return form;
   } // buildForm
@@ -1004,10 +1009,8 @@ export class FittingView {
         if (output.prop.propertyType === DG.TYPE.DATA_FRAME) {
           cur &&= (output.funcColsInput.value !== null);
 
-          if (!cur)
-            break;
-
-          cur &&= (output.argColInput.value !== null) && (output.argName !== '') && (output.funcColsInput.value.length > 0);
+          if (cur)
+            cur &&= (output.argColInput.value !== null) && (output.argName !== '') && (output.funcColsInput.value.length > 0);
         }
 
         if (!cur)
