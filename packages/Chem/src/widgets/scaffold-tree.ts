@@ -581,6 +581,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree = ui.tree();
     // this.tree.root.classList.add('d4-tree-view-lines');
 
+    this.title = this.string('title', 'Scaffold Tree');
     this.size = this.string('size', Object.keys(this.sizesMap)[2], {choices: Object.keys(this.sizesMap)});
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
@@ -629,7 +630,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
     this.summary = this.string('summary', this.getFilterSum(), {userEditable: false});
-    this.title = this.string('title', 'Scaffold Tree');
     this._initMenu();
   }
 
@@ -1545,6 +1545,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const paletteIcon = ui.iconFA('palette');
 
     let initialColor = DG.Color.fromHtml(chosenColor);
+
+    const updateColorPickerStyle = (style: string) => {
+      colorPicker.style.cssText += `${style} !important`;
+    };
+    
+    const resetColorPickerStyle = () => {
+      colorPicker.style.removeProperty('color');
+      colorPicker.style.removeProperty('pointer-events');
+    };
     
     const applyColor = (color: number) => {
       chosenColor = DG.Color.toHtml(color);
@@ -1558,9 +1567,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       initialColor = DG.Color.fromHtml(chosenColor);
       applyColor(DG.Color.fromHtml(chosenColor));
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+      resetColorPickerStyle();
     };
     
-    const onCancel = () => applyColor(initialColor);
+    const onCancel = () => {
+      applyColor(initialColor);
+      resetColorPickerStyle();
+    };
     
     const colorPicker = ui.colorPicker(
       DG.Color.fromHtml(chosenColor),
@@ -1575,7 +1588,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
-    paletteIcon.onclick = (e) => e.stopImmediatePropagation();
+    paletteIcon.onclick = (e) => {
+      colorPicker.style.pointerEvents = 'none';
+      updateColorPickerStyle('color: grey');
+      e.stopImmediatePropagation();
+    };
     paletteIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const colorIcon = ui.iconFA('circle', async () => {
