@@ -189,6 +189,10 @@ from unnest(@molecules) as molecules
 where is_valid_smiles(Cast(molecules as cstring))
 ```
 
+If the number of functions is getting large, you might prefer to see only relevant ones in the order you prefer. You can hide/reorder the functions in functions dialog or template using the pencil (✎) icon on the top right corner.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-Reorder-functions.gif?raw=true)
+
 ### Submit Functions
 
 Submit functions are used to save or submit the filtered and computed dataset. This could include saving to a private database or additional calculations. Submit functions are defined in the same way as compute functions, but they are tagged with `HitTriageSubmitFunction` tag. The function should accept only two inputs, `Dataframe` `df` and `String` `molecules`, which are the resulting dataframe and name of molecules column respectively. For example, we can create a function that saves the filtered and computed dataset to a database:
@@ -216,7 +220,7 @@ Similarly, you can manage view permissions, which will restrict access to viewin
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)
 
-You can also modify the default shyaring permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
+You can also modify the default sharing permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
 
 1. Go to `Browse` → `Platform` and click on `Plugins` (or directly via a link at `{your_datagrok_url}/packages`).
 2. Under Cheminformatics, click on `HitTriage` package.

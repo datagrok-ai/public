@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.7.1 (2025-04-09)
+
+* Ability to reorder/hide functions in new template or functions dialog.
+
 ## 1.7.0 (2025-04-01)
 
 * Fix not saving campaigns

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, i18n} from './consts';
+import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -11,6 +11,24 @@ export const toFormatedDateString = (d: Date): string => {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 };
 
+/**
+ * Modifies the current URL by updating or adding a query parameter with the specified key and value.
+ * Updates the browser's history state without reloading the page.
+ *
+ * @param key - The query parameter key to be added or updated in the URL.
+ * @param value - The value to be assigned to the specified query parameter key.
+ *
+ * @remarks
+ * This function uses the `history.replaceState` method to update the URL and browser history state.
+ * It ensures that the base URL remains unchanged and appends the query parameter.
+ * If `history.replaceState` is not supported, the function will not modify the URL.
+ *
+ * @example
+ * ```typescript
+ * modifyUrl('page', '2');
+ * // Updates the URL to something like: http://example.com/?page=2
+ * ```
+ */
 export function modifyUrl(key: string, value: string) {
   const title = document.title;
   const url = window.location.href.split('?')[0] + '?' + key + '=' + value;
@@ -360,3 +378,98 @@ export function timeoutOneTimeEventListener(element: HTMLElement, eventName: str
 //   df.name = 'Reinvent Design';
 //   return df;
 // }
+
+// #region Function ordering
+
+export type FunctionOrdering = {
+  order: string[],
+  hidden: string[]
+}
+
+export function getSavedFunctionOrdering(): FunctionOrdering {
+  const orderingString = getLocalStorageValue<string>(HTFunctionOrderingLSKey) ?? '{}';
+  try {
+    const orderingP = JSON.parse(orderingString);
+    const ordering: FunctionOrdering = {
+      order: orderingP?.order ?? [],
+      hidden: orderingP?.hidden ?? [],
+    };
+    return ordering;
+  } catch (e) {
+    console.error('error parsing function ordering', e);
+  }
+  return {order: [], hidden: []};
+}
+
+export function setSavedFunctionOrdering(ordering: FunctionOrdering) {
+  setLocalStorageValue(HTFunctionOrderingLSKey, JSON.stringify(ordering));
+}
+
+export function getReorderedFunctionTabArgs(args: {[key: string]: HTMLElement}) {
+  const ordering = getSavedFunctionOrdering();
+  const orderedArgs: {[key: string]: HTMLElement} = {};
+  for (const key of ordering.order) {
+    if (args[key])
+      orderedArgs[key] = args[key];
+  }
+  for (const key in args) {
+    if (!orderedArgs[key] && !ordering.hidden.includes(key)) {
+      orderedArgs[key] = args[key];
+    }
+  }
+  return orderedArgs;
+}
+
+export function getReorderingInput(functions: string[], onOk: (ordering: FunctionOrdering) => void) {
+  const order = getSavedFunctionOrdering();
+  const dataFrame = DG.DataFrame.fromColumns(functions.map((f) => DG.Column.fromStrings(f, [f])));
+  dataFrame.columns.setOrder(order.order ?? []);
+  const columnsEditor = ui.input.columns('reorder', {table: dataFrame, value: dataFrame.columns.toList().filter((c) => !order.hidden.includes(c.name))});
+  columnsEditor.onChanged.subscribe(() => {
+    try {
+      const chosenColumns = columnsEditor.value.map((c) => c.name);
+      const hiddenColumns = functions.filter((f) => !chosenColumns.includes(f));
+      const newOrdering = {
+        order: columnsEditor.value.map((c) => c.name),
+        hidden: hiddenColumns,
+      };
+      dataFrame.columns.setOrder(newOrdering.order);
+      setSavedFunctionOrdering(newOrdering);
+      onOk(newOrdering);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  const children = Array.from(columnsEditor.root.children) as HTMLElement[];
+  setTimeout(() => {
+    children.forEach((child) => {
+      child.style.maxWidth = '0px';
+      child.style.overflow = 'hidden';
+      child.style.padding = '0px';
+      child.style.paddingRight = '0px';
+      child.style.visibility = 'hidden';
+      if (child instanceof HTMLLabelElement)
+        child.style.display = 'none';
+    });
+  },200);
+  columnsEditor.root.style.justifyContent = 'end';
+  columnsEditor.root.style.width = '40px';
+  columnsEditor.root.style.height = '0px';
+  columnsEditor.root.style.overflow = 'visible';
+  columnsEditor.root.style.padding = '0px';
+
+
+  const editIcon = ui.icons.edit(() => {
+    children.forEach((child) => {
+      child.click();
+    });
+  }, 'Order or hide functions');
+
+  columnsEditor.addOptions(editIcon);
+  (Array.from(columnsEditor.root.children) as HTMLElement[]).forEach((child) => {
+    child.style.borderBottom = 'unset';
+  });
+  editIcon.style.fontSize = '16px';
+  return columnsEditor.root;
+}

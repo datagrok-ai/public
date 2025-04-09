@@ -8,6 +8,7 @@ import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree,
 import '../../../css/hit-triage.css';
 import {funcTypeNames, HTQueryPrefix, HTScriptPrefix} from '../consts';
 import {HitAppBase} from '../hit-app-base';
+import { FunctionOrdering, getReorderingInput, getSavedFunctionOrdering } from '../utils';
 
 export async function chemFunctionsDialog(app: HitAppBase<any>,
   onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
@@ -133,19 +134,41 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   tc.root.style.minWidth = '350px';
   host.appendChild(tc.root);
   // add checkboxes to each hader
-  tc.panes.forEach((pane)=> {
-    const functionCheck =
-      ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
-        calculatedFunctions[funcNamesMap[pane.name]] = !!value;
-        if (!value)
-          $(pane.content).find('input')?.attr('disabled', 'true');
-        else
-          $(pane.content).find('input')?.removeAttr('disabled');
-      }});
-    functionCheck.setTooltip('Toggle calculation of this function');
-    pane.header.appendChild(functionCheck.root);
-    pane.header.classList.add('hit-triage-compute-dialog-pane-header');
-  });
+  function addCheckboxesToPaneHeaders () {
+    tc.panes.forEach((pane)=> {
+      const functionCheck =
+        ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
+          calculatedFunctions[funcNamesMap[pane.name]] = !!value;
+          if (!value)
+            $(pane.content).find('input')?.attr('disabled', 'true');
+          else
+            $(pane.content).find('input')?.removeAttr('disabled');
+        }});
+      functionCheck.setTooltip('Toggle calculation of this function');
+      pane.header.appendChild(functionCheck.root);
+      pane.header.classList.add('hit-triage-compute-dialog-pane-header');
+    });
+  }
+
+  function initTabs(order: FunctionOrdering) {
+    tc.clear();
+    let actOrder = order.order ?? Object.keys(tabControlArgs);
+    if (actOrder.length === 0)
+      actOrder = Object.keys(tabControlArgs);
+    actOrder.forEach((n) => {
+      if (tabControlArgs[n])
+        tc.addPane(n, () => tabControlArgs[n]);
+    });
+    // make sure that hidden functions are not checked;
+    (order.hidden ?? []).forEach((n) => {
+      calculatedFunctions[funcNamesMap[n]] = false;
+    });
+    addCheckboxesToPaneHeaders();
+    if (tc.panes.length > 0)
+      tc.currentPane = tc.panes[0];
+  }
+
+  initTabs(getSavedFunctionOrdering());
   function onOkProxy() {
     const res: IComputeDialogResult = {descriptors: [], externals: {}, scripts: {}, queries: {}};
     res.descriptors = calculatedFunctions[descriptorsName] ?
@@ -182,12 +205,15 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     onOk(res);
   }
 
+  tc.root.appendChild(getReorderingInput(Object.keys(tabControlArgs), (newOrder) => {
+    initTabs(newOrder);
+  }));
   if (dialog) {
     ui.dialog('Compute')
       .add(host)
       .onOK(() => onOkProxy())
       .onCancel(onCancel)
-      .show();
+      .show({resizable: true});
   }
 
   return {
