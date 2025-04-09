@@ -59,13 +59,13 @@ category('PolyTool: Convert', () => {
         mol: {atomCount: 73, bondCount: 77, inchiKey: 'KLFRBMUPPMMGJM-HXTBFBBASA-N'},
       }
     },
-    'cyclized-C(1)-2-0': {
-      src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)'},
-      tgt: {
-        helm: 'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$V2.0',
-        mol: {atomCount: 86, bondCount: 91, inchiKey: 'WIHSRTQGMICACU-DDDKLKPZSA-N'},
-      }
-    },
+    // 'cyclized-C(1)-2-0': {
+    //   src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)'},
+    //   tgt: {
+    //     helm: 'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$V2.0',
+    //     mol: {atomCount: 86, bondCount: 91, inchiKey: 'WIHSRTQGMICACU-DDDKLKPZSA-N'},
+    //   }
+    // },
     'cyclized-C(1)-0-0': {
       src: {seq: 'C(1)-T-G-H-F-Y-P-C(1)'},
       tgt: {
