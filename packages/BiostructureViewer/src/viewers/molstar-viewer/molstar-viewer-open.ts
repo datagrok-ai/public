@@ -68,6 +68,9 @@ export async function addLigandOnStage(
   plugin: PluginUIContext, ligand: LigandData, _color: DG.Color | null, zoom: boolean
 ): Promise<string[]> {
   const ligandLabel: string = `<Ligand at row ${ligand.rowIdx}>`;
+  if (!ligand.data || DG.chem.Sketcher.isEmptyMolfile(ligand.data))
+    return [];
+
   const _molData = await plugin.builders.data.rawData({data: ligand.data, label: LIGAND_LABEL});
   const _molTrajectory = await plugin.builders.structure.parseTrajectory(_molData, ligand.format);
   const _model = await plugin.builders.structure.createModel(_molTrajectory);
