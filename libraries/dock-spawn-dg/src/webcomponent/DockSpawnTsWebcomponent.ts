@@ -3,17 +3,13 @@ import { PanelContainer } from "../PanelContainer";
 import { PanelType } from "../enums/PanelType";
 import { DockNode } from "../DockNode";
 import { faStyle, style, style1, style2 } from "./styles";
-import { Observable, Subscriber, Subscription } from "rxjs";
-import { debounceTime } from "rxjs/operators";
+import { Observable, Subject, Subscriber } from "rxjs";
+import { debounceTime, takeUntil } from "rxjs/operators";
 
 const elementResized = (elem: Element) => {
     return new Observable((subscriber: Subscriber<ResizeObserverEntry[]>) => {
-        const resizeObserver = new ResizeObserver(
-            (entries: ResizeObserverEntry[]) => subscriber.next(entries),
-        );
-
+        const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => subscriber.next(entries),);
         resizeObserver.observe(elem);
-
         return () => resizeObserver.disconnect();
     });
 };
@@ -21,13 +17,11 @@ const elementResized = (elem: Element) => {
 export class DockSpawnTsWebcomponent extends HTMLElement {
     public dockManager: DockManager;
     private slotId: number = 0;
-    private windowResizedBound;
     private slotElementMap: WeakMap<HTMLSlotElement, HTMLElement>;
     private observer: MutationObserver;
-    private resizeSub: Subscription;
     private initialized = false;
-    private initFinished = false;
     private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
+    private destroy$ = new Subject<true>();
 
     constructor() {
         super();
@@ -35,26 +29,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         const shadowRoot = this.attachShadow({ mode: 'open' });
         shadowRoot.adoptedStyleSheets = [style, style1, style2, faStyle];
 
-        this.windowResizedBound = this.windowResized.bind(this);
         this.slotElementMap = new WeakMap();
-    }
-
-    public getLayout() {
-        return this.dockManager.saveState();
-    }
-
-    public async useLayout(serializedState: string) {
-        this.observer.disconnect();
-        const oldPanels = this.dockManager.getPanels();
-        await this.dockManager.loadState(serializedState);
-        oldPanels.forEach((panel) => panel.elementContentContainer.remove());
-        this.dockManager.element.firstChild.remove();
-
-        this.observer.observe(this, {childList: true});
-
-        setTimeout(() => {
-            this.dockManager.invalidate();
-        }, 50);
     }
 
     private initDockspawn() {
@@ -67,51 +42,53 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
         this.dockManager = new DockManager(dockSpawnDiv);
         this.dockManager.config.dialogRootElement = dockSpawnDiv;
+    }
 
-        setTimeout(() => {
-            this.dockManager.initialize();
+    private initDockManager() {
+        this.dockManager.initialize();
 
-            this.dockManager.addLayoutListener({
-                onActivePanelChange: (_, panel, prevPanel) => {
-                    this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: {
-                        newPanel: panel?.title ?? null,
-                        prevPanel: prevPanel?.title ?? null
-                    }}));
-                },
-                onClosePanel: (dockManager, dockNode) => {
-                    let slot = dockNode.elementContent as any as HTMLSlotElement;
-                    let element = this.slotElementMap.get(slot);
-                    if (element) {
-                        if (this.contains(element)) {
-                            this.observer.disconnect();
-                            this.removeChild(element);
-                            this.observer.observe(this, {childList: true});
-                        }
-                        this.dispatchEvent(new CustomEvent('panel-closed', {detail: element}));
+        this.dockManager.addLayoutListener({
+            onActivePanelChange: (_, panel, prevPanel) => {
+                this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: {
+                    newPanel: panel?.title,
+                    prevPanel: prevPanel?.title
+                }}));
+            },
+            onClosePanel: (dockManager, dockNode) => {
+                let slot = dockNode.elementContent as any as HTMLSlotElement;
+                let element = this.slotElementMap.get(slot);
+                if (element) {
+                    if (this.contains(element)) {
+                        this.observer.disconnect();
+                        this.removeChild(element);
+                        this.observer.observe(this, {childList: true});
                     }
-                },
-            });
+                    this.dispatchEvent(new CustomEvent('panel-closed', {detail: element}));
+                }
+            },
+        });
 
-            for (const element of this.children) {
-                this.handleAddedChildNode(element as HTMLElement);
-            }
-            this.observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        this.handleAddedChildNode(node as HTMLElement);
-                    });
-                    mutation.removedNodes.forEach((node) => {
-                        this.handleRemovedChildNode(node as HTMLElement);
-                    });
+        for (const element of this.children) {
+            this.handleAddedChildNode(element as HTMLElement);
+        }
+
+        this.observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    this.handleAddedChildNode(node as HTMLElement);
+                });
+                mutation.removedNodes.forEach((node) => {
+                    this.handleRemovedChildNode(node as HTMLElement);
                 });
             });
-            this.observer.observe(this, {childList: true});
+        });
+        this.observer.observe(this, {childList: true});
 
-            this.resizeSub = elementResized(this).pipe(debounceTime(50)).subscribe(() => this.resize());
-
-            this.initFinished = true;
-            this.dispatchEvent(new CustomEvent('init-finished'));
-        }, 50);
+        elementResized(this).pipe(
+            debounceTime(50),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.resize());
+        this.dispatchEvent(new CustomEvent('manager-init-finished'));
     }
 
     public set activePanelTitle(panelTitle: string) {
@@ -185,23 +162,14 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     connectedCallback() {
         if (!this.initialized) {
-            this.initDockspawn();
             this.initialized = true;
+            this.initDockspawn();
+            setTimeout(() => this.initDockManager(), 0);
+            window.addEventListener('orientationchange', () => this.resize());
         }
-        window.addEventListener('orientationchange', this.windowResizedBound);
-        if (this.initFinished) this.resize();
     }
 
-    disconnectedCallback() {
-        if (!this.initFinished) return;
-
-        this.resizeSub.unsubscribe();
-        window.removeEventListener('orientationchange', this.windowResizedBound);
-    }
-
-    private windowResized() {
-        this.resize();
-    }
+    disconnectedCallback() {}
 
     resize() {
         if (this.clientWidth > 0 && this.clientHeight > 0)

@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DBSchema} from 'idb';
 import {
   Viewer, InputForm,
   BigButton, IconFA,
@@ -25,16 +24,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {useLayoutDb} from '../../composables/use-layout-db';
 import {take} from 'rxjs/operators';
-
-type PanelsState = {
-  historyHidden: boolean,
-  helpHidden: boolean,
-  formHidden: boolean,
-  visibleTabLabels: string[],
-  layout: string,
-};
 
 interface ScalarsState {
   type: 'scalars',
@@ -128,15 +118,6 @@ const tabToProperties = (fc: DG.FuncCall) => {
   return map;
 };
 
-const STORE_NAME = 'RFV2Layouts';
-
-interface RFVSchema extends DBSchema {
-  [STORE_NAME]: {
-    key: string;
-    value: PanelsState;
-  };
-}
-
 export const RichFunctionView = Vue.defineComponent({
   name: 'RichFunctionView',
   props: {
@@ -216,12 +197,10 @@ export const RichFunctionView = Vue.defineComponent({
     savePersonalState: () => {},
     loadPersonalLayout: () => {},
   },
-  setup(props, {emit, expose}) {
+  setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
       console.log('RichFunctionView onRenderTriggered', event);
     });
-
-    const {layoutDatabase} = useLayoutDb<RFVSchema>();
 
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -260,12 +239,12 @@ export const RichFunctionView = Vue.defineComponent({
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.shallowRef(null as HTMLElement | null);
-    const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
-
-    const layoutLoaded = Vue.ref(false);
-    const dockInited = Vue.ref(false);
 
     const helpText = Vue.ref(null as null | string);
+
+    ////
+    // FuncCall related
+    ////
 
     const {setViewerRef} = useViewersHook(
       Vue.toRef(props, 'viewersHook'),
@@ -292,8 +271,8 @@ export const RichFunctionView = Vue.defineComponent({
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
     }, {immediate: true});
 
-    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall]) => {
-      if (isOutputOutdated && prevCall === call)
+    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, ,prevLabels]) => {
+      if (isOutputOutdated && prevCall === call && visibleTabLabels === prevLabels)
         return;
       const tabToPropertiesMap = tabToProperties(call);
 
@@ -305,6 +284,11 @@ export const RichFunctionView = Vue.defineComponent({
         }));
     }, {immediate: true});
 
+    Vue.watch(currentCall, async (call) => {
+      const help = await Utils.getContextHelp(call.func);
+      helpText.value = help ?? null;
+    }, {immediate: true});
+
     const run = async () => {
       emit('runClicked');
     };
@@ -312,6 +296,10 @@ export const RichFunctionView = Vue.defineComponent({
     const next = async () => {
       emit('nextClicked');
     };
+
+    ////
+    // DockManager related
+    ////
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -325,118 +313,13 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const personalPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_personal_state`;
-    const defaultPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_default_state`;
-
-    const getCurrentState = () => {
-      const layout = dockRef?.value?.getLayout();
-      if (!layout) return null;
-
-      return {
-        historyHidden: historyHidden.value,
-        helpHidden: helpHidden.value,
-        formHidden: formHidden.value,
-        visibleTabLabels: visibleTabLabels.value,
-        layout,
-      };
-    };
-
-    const getSavedPersonalState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(call));
-
-      return item ?? null;
-    };
-
-    const getSavedDefaultState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(call));
-
-      return item ?? null;
-    };
-
-    const saveDefaultState = async (call: DG.FuncCall = currentCall.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
-    };
-
-    const savePersonalState = async (call: DG.FuncCall = currentCall.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
-    };
-
-    const removeSavedPersonalState = async () => {
-      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
-      await loadDefaultLayout();
-      emit('layoutReset');
-    };
-
-    let intelligentLayout = true;
-
-    const loadPersonalLayout = async () => {
-      const personalState = await getSavedPersonalState(currentCall.value);
-
-      if (!personalState)
-        layoutLoaded.value = true;
-
-      if (!dockRef.value || !personalState || !dockInited.value) return;
-
-      intelligentLayout = false;
-
-      historyHidden.value = personalState.historyHidden;
-      helpHidden.value = personalState.helpHidden;
-      formHidden.value = personalState.formHidden;
-      visibleTabLabels.value = personalState.visibleTabLabels;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(personalState.layout);
-
-      intelligentLayout = true;
-      layoutLoaded.value = true;
-    };
-
-    const loadDefaultLayout = async () => {
-      const defaultState = await getSavedDefaultState(currentCall.value);
-      if (!dockRef.value || !defaultState || !dockInited.value) return;
-
-      intelligentLayout = false;
-
-      historyHidden.value = defaultState.historyHidden;
-      helpHidden.value = defaultState.helpHidden;
-      formHidden.value = defaultState.formHidden;
-      visibleTabLabels.value = defaultState.visibleTabLabels;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(defaultState.layout);
-
-      intelligentLayout = true;
-    };
-
-    Vue.watch(currentCall, async (_, oldCall) => {
-      if (oldCall) await savePersonalState(oldCall);
+    Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    Vue.watch(currentCall, async (call) => {
-      const help = await Utils.getContextHelp(call.func);
-      helpText.value = help ?? null;
-    }, {immediate: true});
-
-    const triggerSaveDefault = Vue.ref(false);
-    Vue.watch(triggerSaveDefault, async () => {
-      await saveDefaultState();
-      await loadPersonalLayout();
-    }, {flush: 'post'});
-
-    const handleDockInit = async () => {
-      layoutLoaded.value = false;
-      dockInited.value = true;
-      triggerSaveDefault.value = !triggerSaveDefault.value;
-    };
+    ////
+    // Intergrations related
+    ////
 
     const onValidationChanged = (ev: boolean) => {
       if (!props.localValidation)
@@ -494,14 +377,9 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    expose({
-      savePersonalState,
-      loadPersonalLayout,
-    });
-
-    Vue.onBeforeUnmount(() => {
-      savePersonalState(currentCall.value);
-    });
+    ////
+    // render
+    ////
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
@@ -510,20 +388,16 @@ export const RichFunctionView = Vue.defineComponent({
       let scalarCardCount = 0;
 
       const getElementToDock = () => {
-        return intelligentLayout && lastCardLabel &&
+        return lastCardLabel &&
         visibleTabLabels.value.includes(lastCardLabel) &&
         scalarCardCount < 3 ? lastCardLabel: null;
       };
 
       const getDockRatio = () => {
-        if (!intelligentLayout) return null;
-
         return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
       };
 
       const getDockStrategy = (categoryProps: ScalarState[]) => {
-        if (!intelligentLayout) return 'fill';
-
         if (viewerTabsCount.value === 0) return null;
 
         if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill';
@@ -565,10 +439,6 @@ export const RichFunctionView = Vue.defineComponent({
               <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
               { !historyHidden.value && <IconFA name='check'/>}
             </span> }
-            <span onClick={removeSavedPersonalState}>
-              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
-              <span> Reset layout </span>
-            </span>
           </RibbonMenu>
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category} view={currentView.value}>
@@ -619,9 +489,6 @@ export const RichFunctionView = Vue.defineComponent({
           <DockManager
             key={currentUuid.value}
             onPanelClosed={handlePanelClose}
-            onInitFinished={handleDockInit}
-            ref={dockRef}
-            class={{'pseudo_hidden': !layoutLoaded.value}}
           >
             { !historyHidden.value && props.historyEnabled &&
               <History

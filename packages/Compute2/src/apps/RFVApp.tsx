@@ -104,7 +104,6 @@ export const RFVApp = Vue.defineComponent({
     const run = async () => {
       if (!currentFuncCall.value) return;
       currentCallState.value.isRunning = true;
-      await Vue.nextTick();
       try {
         await currentFuncCall.value.call();
         currentCallState.value.isOutputOutdated = false;

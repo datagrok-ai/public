@@ -27,26 +27,9 @@ import {
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
-import {DBSchema} from 'idb';
-import {useLayoutDb} from '../../composables/use-layout-db';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 const DEVELOPERS_GROUP = 'Developers';
-
-type PanelsState = {
-  inspectorHidden: boolean,
-  treeHidden: boolean,
-  layout: string,
-};
-
-const STORE_NAME = 'TreeWizardLayouts';
-
-interface TreeWizardSchema extends DBSchema {
-  [STORE_NAME]: {
-    key: string;
-    value: PanelsState;
-  };
-}
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -67,12 +50,6 @@ export const TreeWizard = Vue.defineComponent({
   setup(props) {
     Vue.onRenderTriggered((event) => {
       console.log('TreeWizard onRenderTriggered', event);
-    });
-
-    const {layoutDatabase} = useLayoutDb<TreeWizardSchema>();
-
-    Vue.onBeforeUnmount(() => {
-      savePersonalState(providerFunc.value);
     });
 
     const {
@@ -100,6 +77,17 @@ export const TreeWizard = Vue.defineComponent({
       changeFuncCall,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
+    const chosenStepUuid = Vue.ref<string | undefined>();
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
+    const modelName = Vue.computed(() => props.modelName);
+    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
+    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
+
+    ////
+    // actions
+    ////
+
     const runActionWithConfirmation = (uuid: string) => {
       const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
       const confirmationMessage = calledAction?.confirmationMessage;
@@ -119,8 +107,6 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const chosenStepUuid = Vue.ref<string | undefined>();
-
     const goNextStep = () => {
       if (chosenStepUuid.value == null || treeState.value == null)
         return;
@@ -129,7 +115,80 @@ export const TreeWizard = Vue.defineComponent({
         chosenStepUuid.value = nextData.state.uuid;
     };
 
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const saveSubTreeState = (uuid: string) => {
+      const chosenStepDesc = states.descriptions[uuid];
+      const dialog = new EditDialog({
+        title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
+        description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
+        tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
+      });
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        saveDynamicItem(chosenStepUuid.value!, editOptions);
+      });
+
+      dialog.show({center: true, width: 500});
+    };
+
+    const saveEntireModelState = () => {
+      if (!treeState.value) return;
+
+      const rootDesc = states.descriptions[treeState.value.uuid];
+      const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        savePipeline(editOptions);
+      });
+
+      dialog.show({center: true, width: 500});
+    };
+
+    const onPipelineProceed = () => {
+      if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
+        if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
+        if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
+        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+      }
+    };
+
+    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
+      if (isRootChoosen.value)
+        loadPipeline(newCall.id);
+      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+        const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
+        if (parent && !isFuncCallState(parent)) {
+          const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
+          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+        }
+      }
+    };
+
+    const onFuncCallChange = (call: DG.FuncCall) => {
+      if (chosenStepUuid.value)
+        changeFuncCall(chosenStepUuid.value, call);
+    };
+
+    ////
+    // DockManager related
+    ////
+
+    const treeHidden = Vue.ref(false);
+    const inspectorHidden = Vue.ref(true);
+    const rfvHidden = Vue.ref(true);
+    const pipelineViewHidden = Vue.ref(true);
+    const treeInstance = Vue.shallowRef(null as InstanceType<typeof Draggable> | null);
+    const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
+    const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
+    const pipelineViewRef = Vue.ref(null as InstanceType<typeof PipelineView> | null);
+
+    const handlePanelClose = (el: HTMLElement) => {
+      if (el === treeInstance.value?.$el) treeHidden.value = true;
+      if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
+      if (el === rfvRef.value?.$el) rfvHidden.value = true;
+      if (el === pipelineViewRef.value?.$el) pipelineViewHidden.value = true;
+    };
+
+    ////
+    // routing/view integration
+    ////
 
     const setViewName = (name: string = '') => {
       if (props.view)
@@ -141,8 +200,6 @@ export const TreeWizard = Vue.defineComponent({
         props.view.path = path;
     };
 
-    const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
-
     Vue.watch(searchParams, (params) => {
       const paramsRaw = [];
       if (params.currentStep)
@@ -152,111 +209,6 @@ export const TreeWizard = Vue.defineComponent({
       setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
     });
 
-    const isLoading = Vue.ref(false);
-
-    const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
-      if (prevPanel === 'Steps') return;
-
-      if (prevPanel === 'Step review')
-        rfvRef.value?.savePersonalState();
-
-      if (newPanel === 'Step review') {
-        isLoading.value = true;
-        await Vue.nextTick();
-        setTimeout(() => {
-          rfvRef.value?.loadPersonalLayout();
-          isLoading.value = false;
-        }, 50);
-      }
-    };
-
-    const dockInited = Vue.ref(false);
-    const triggerSaveDefault = Vue.ref(false);
-    Vue.watch(triggerSaveDefault, async () => {
-      await saveDefaultState();
-      await loadPersonalLayout();
-    }, {flush: 'post'});
-
-    const handleDockInit = async () => {
-      dockInited.value = true;
-      triggerSaveDefault.value = !triggerSaveDefault.value;
-    };
-
-    const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
-
-    const personalPanelsStorage = (func: DG.Func) => `${func.nqName}_personal_state`;
-    const defaultPanelsStorage = (func: DG.Func) => `${func.nqName}_default_state`;
-
-    const getCurrentState = () => {
-      const layout = dockRef?.value?.getLayout();
-      if (!layout) return null;
-
-      return {
-        inspectorHidden: inspectorHidden.value,
-        treeHidden: treeHidden.value,
-        layout,
-      };
-    };
-
-    const getSavedPersonalState = async (func: DG.Func): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(func));
-
-      return item ?? null;
-    };
-
-    const getSavedDefaultState = async (func: DG.Func): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(func));
-
-      return item ?? null;
-    };
-
-    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
-
-    const saveDefaultState = async (func: DG.Func = providerFunc.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
-    };
-
-    const savePersonalState = async (func: DG.Func = providerFunc.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
-    };
-
-    const removeSavedPersonalState = async () => {
-      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
-
-      await loadDefaultLayout();
-    };
-
-    const loadPersonalLayout = async () => {
-      const personalState = await getSavedPersonalState(providerFunc.value);
-      if (!dockRef.value || !personalState || !dockInited.value) return;
-
-      inspectorHidden.value = personalState.inspectorHidden;
-      treeHidden.value = personalState.treeHidden;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(personalState.layout);
-    };
-
-    const loadDefaultLayout = async () => {
-      const defaultState = await getSavedDefaultState(providerFunc.value);
-      if (!dockRef.value || !defaultState || !dockInited.value) return;
-
-      inspectorHidden.value = defaultState.inspectorHidden;
-      treeHidden.value = defaultState.treeHidden;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(defaultState.layout);
-    };
-
-    const modelName = Vue.computed(() => props.modelName);
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
@@ -312,12 +264,6 @@ export const TreeWizard = Vue.defineComponent({
         processPendingStepPath(treeState);
     }, {immediate: true});
 
-    const exports = Vue.computed(() => {
-      if (!treeState.value || isFuncCallState(treeState.value))
-        return [];
-      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
-    });
-
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
         return null;
@@ -325,14 +271,24 @@ export const TreeWizard = Vue.defineComponent({
       return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
     });
 
-    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
-
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
         searchParams.currentStep = newStep.pathSegments.join(' ');
       else
         searchParams.currentStep = undefined;
     }, {immediate: true});
+
+    ////
+    // chosen step state
+    ////
+
+    const exports = Vue.computed(() => {
+      if (!treeState.value || isFuncCallState(treeState.value))
+        return [];
+      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+    });
+
+    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -360,7 +316,9 @@ export const TreeWizard = Vue.defineComponent({
       }, [] as ViewAction[]);
     });
 
-    const treeInstance = Vue.shallowRef(null as InstanceType<typeof Draggable> | null);
+    ////
+    // Navigation tree related
+    ////
 
     let oldClosed = new Set<string>();
 
@@ -386,21 +344,6 @@ export const TreeWizard = Vue.defineComponent({
         .map((state) => state?.isOutputOutdated)
         .every((isOutdated) => isOutdated === false);
     });
-
-    const treeHidden = Vue.ref(false);
-    const inspectorHidden = Vue.ref(true);
-    const rfvHidden = Vue.ref(true);
-    const pipelineViewHidden = Vue.ref(true);
-    const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
-    const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
-    const pipelineViewRef = Vue.ref(null as InstanceType<typeof PipelineView> | null);
-
-    const handlePanelClose = (el: HTMLElement) => {
-      if (el === treeInstance.value?.$el) treeHidden.value = true;
-      if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
-      if (el === rfvRef.value?.$el) rfvHidden.value = true;
-      if (el === pipelineViewRef.value?.$el) pipelineViewHidden.value = true;
-    };
 
     const isEachDraggable = (stat: AugmentedStat) => {
       return (stat.parent && !stat.parent.data.isReadonly &&
@@ -431,6 +374,10 @@ export const TreeWizard = Vue.defineComponent({
         (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data));
     };
 
+    ////
+    // additional
+    ////
+
     const isUserDeveloper = Vue.ref(false);
     Vue.onMounted(async () => {
       // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
@@ -440,58 +387,9 @@ export const TreeWizard = Vue.defineComponent({
         isUserDeveloper.value = true;
     });
 
-    const saveSubTreeState = (uuid: string) => {
-      const chosenStepDesc = states.descriptions[uuid];
-      const dialog = new EditDialog({
-        title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
-        description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
-        tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
-      });
-      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
-        saveDynamicItem(chosenStepUuid.value!, editOptions);
-      });
-
-      dialog.show({center: true, width: 500});
-    };
-
-    const saveEntireModelState = () => {
-      if (!treeState.value) return;
-
-      const rootDesc = states.descriptions[treeState.value.uuid];
-      const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
-      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
-        savePipeline(editOptions);
-      });
-
-      dialog.show({center: true, width: 500});
-    };
-
-    const onPipelineProceed = () => {
-      if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
-        if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
-        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
-      }
-    };
-
-    const onPipelineFuncCallUpdate = (newCall: DG.FuncCall) => {
-      if (isRootChoosen.value)
-        loadPipeline(newCall.id);
-      else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
-        const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
-        if (parent && !isFuncCallState(parent)) {
-          const position = parent.steps.findIndex((step) => step.uuid === chosenStepUuid.value);
-          loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
-        }
-      }
-    };
-
-    const onFuncCallChange = (call: DG.FuncCall) => {
-      if (chosenStepUuid.value)
-        changeFuncCall(chosenStepUuid.value, call);
-    };
-
-    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
+    ////
+    // render
+    ////
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -542,12 +440,9 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
-        {treeState.value &&
         <DockManager class='block h-full'
-          ref={dockRef}
-          onInitFinished={handleDockInit}
+          key={providerFunc.value.id}
           onPanelClosed={handlePanelClose}
-          onUpdate:activePanelTitle={handleActivePanelChanged}
         >
           { !inspectorHidden.value &&
             <Inspector
@@ -627,7 +522,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
-                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value}}
+                class={{'overflow-hidden': true}}
                 funcCall={chosenStepState.value.funcCall!}
                 uuid={chosenStepUuid.value!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
@@ -671,7 +566,7 @@ export const TreeWizard = Vue.defineComponent({
               view={currentView.value}
             />
           }
-        </DockManager> }
+        </DockManager>
       </div>, [[ifOverlapping, isGlobalLocked.value]])
     );
   },
