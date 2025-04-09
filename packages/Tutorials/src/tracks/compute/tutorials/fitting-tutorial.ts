@@ -254,7 +254,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.children[20] as HTMLElement;
+    const trajectoryRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(

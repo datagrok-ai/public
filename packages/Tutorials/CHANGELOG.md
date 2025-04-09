@@ -1,5 +1,13 @@
 # Tutorials changelog
 
+## 1.8.3 (2025-04-11)
+
+Updated the Parameters Optimization tutorial
+
+## 1.8.2 (2025-04-04)
+
+Updated Demos
+
 ## 1.8.1 (2025-03-31)
 
 Updated the Scientific Computing tutorials with respect to new Model Hub UI
