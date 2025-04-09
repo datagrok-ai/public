@@ -646,7 +646,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           showRegressionLine: true,
           legendVisibility: 'Never',
         });
-        const header = ui.h1(`${activity}: Observed vs Predicted`, 'chem-mmpa-generation-tab-cp-header');
+        const header = ui.h2(`${activity}: Observed vs Predicted`, 'chem-mmpa-generation-tab-cp-header');
         generationsSp.root.prepend(header);
         const spActivityCorrDiv = ui.div(ui.splitV([
           ui.box(

@@ -667,8 +667,7 @@
 .mmpa-slider-roots {
   position: absolute;
   z-index: 1;
-  right: 0px;
-  margin-right: 10px;
+  margin-left: 10px;
 }
 
 .mmpa-slider-input {
@@ -871,6 +870,10 @@
 
 .chem-mmp-show-pairs-checkbox label {
   margin-right: 3px!important;
+}
+
+.chem-mmpa-generation-tab-cp-header {
+  margin-left: 10px;
 }
 
 .chem-activity-cliffs-tooltip {
