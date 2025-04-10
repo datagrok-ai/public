@@ -1,5 +1,18 @@
 # Diff Studio changelog
 
+## 1.3.3 (2025-04-10)
+
+Updated the Fitting feature:
+
+* Added progress bar;
+* Target columns selection
+* Similar curves control
+* Navigation for users
+
+## 1.3.2 (2025-04-04)
+
+Tutorials library update
+
 ## 1.3.1 (2025-03-31)
 
 * Updated tags
