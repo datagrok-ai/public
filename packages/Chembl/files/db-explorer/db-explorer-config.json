@@ -1,6 +1,7 @@
 {
   "connectionName": "CHEMBL",
   "schemaName": "public",
+  "dataSourceName": "postgres",
   "entryPoints": {
     "CHEMBL_ID": {
       "table": "molecule_dictionary",
