@@ -213,6 +213,13 @@ category('cell panel', async () => {
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
+    let jupyterRunning = false;
+    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+      console.log('*********** test python script completed');
+      jupyterRunning = true; 
+    });
+    //check that JKG is running
+    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
     console.log('*********** chem-descriptors: started chem descriptors python script');
     const res: DG.DataFrame = await getDescriptorsPy(
       'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
