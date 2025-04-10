@@ -1,6 +1,6 @@
 # HitTriage changelog
 
-## 1.7.1 (2025-04-09)
+## 1.7.2 (2025-04-09)
 
 * Ability to reorder/hide functions in new template or functions dialog.
 

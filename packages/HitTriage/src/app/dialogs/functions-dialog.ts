@@ -155,9 +155,16 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     let actOrder = order.order ?? Object.keys(tabControlArgs);
     if (actOrder.length === 0)
       actOrder = Object.keys(tabControlArgs);
+    
     actOrder.forEach((n) => {
       if (tabControlArgs[n])
         tc.addPane(n, () => tabControlArgs[n]);
+    });
+    // after adding ordered panes, we also need to add new functions, not included in the order
+    Object.keys(tabControlArgs).forEach((n) => {
+      if (!actOrder.includes(n) && tabControlArgs[n] && !(order.hidden ?? []).includes(n)) {
+        tc.addPane(n, () => tabControlArgs[n]);
+      }
     });
     // make sure that hidden functions are not checked;
     (order.hidden ?? []).forEach((n) => {
