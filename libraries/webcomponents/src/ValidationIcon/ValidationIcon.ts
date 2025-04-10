@@ -22,7 +22,6 @@ export class ValidationIcon extends HTMLElement {
 
   constructor() {
     super();
-    $(this).addClass('rfv2-validation-icon');
   }
 
   public destroy() {
@@ -37,8 +36,10 @@ export class ValidationIcon extends HTMLElement {
   }
 
   set validationStatus(s: ValidationIconInput | undefined) {
-    this.status = s;
-    this.update();
+    if (this.status !== s) {
+      this.status = s;
+      this.update();
+    }
   }
 
   get validationStatus() {
@@ -66,6 +67,7 @@ export class ValidationIcon extends HTMLElement {
       return;
     const {validation, consistency} = this.status;
 
+    $(this).addClass('rfv2-validation-icon');
     while (this.firstChild && this.removeChild(this.firstChild));
     this.rerenderValidations();
 

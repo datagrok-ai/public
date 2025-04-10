@@ -20,7 +20,7 @@ import {Subject} from 'rxjs';
 declare global {
   var initialURLHandled: boolean;
 }
-declare var ENABLE_VUE_DEV_TOOLS: any;
+declare let ENABLE_VUE_DEV_TOOLS: any;
 
 export const _package = new DG.Package();
 
@@ -41,7 +41,7 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
 
 function setVueAppOptions(app: Vue.App<any>) {
   app.config.compilerOptions.isCustomElement = (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts';
-  if(ENABLE_VUE_DEV_TOOLS)
+  if (ENABLE_VUE_DEV_TOOLS)
     app.config.performance = true;
 }
 

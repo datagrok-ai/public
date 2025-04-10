@@ -20,7 +20,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
 
   const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
   const isGlobalLocked = useObservable(driver.globalROLocked$);
-  const treeState = useObservable(driver.currentState$.pipe(map(x => x ? Vue.markRaw(x) : undefined)));
+  const treeState = useObservable(driver.currentState$.pipe(map((x) => x ? Vue.markRaw(x) : undefined)));
 
   const currentMetaCallData = useObservable(driver.currentMetaCallData$);
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);

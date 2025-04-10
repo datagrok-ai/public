@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
-import {OpenIcon} from '@he-tree/vue';
+import {ComboPopup, IconFA, ValidationIcon, ValidationIconInput} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
+import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
@@ -173,6 +173,18 @@ export const TreeNode = Vue.defineComponent({
       />;
     };
 
+    const checkIcon = () => {
+      if (pipelineValidation.value)
+        return (
+          <ValidationIcon
+            validationStatus={pipelineValidation.value} style={{
+              alignSelf: 'center',
+              left: '-20px',
+              position: 'absolute',
+            }}
+          />);
+    }
+
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
 
@@ -183,6 +195,12 @@ export const TreeNode = Vue.defineComponent({
     const status = Vue.computed(() => {
       if (props.callState)
         return statesToStatus(props.callState, props.validationStates, props.consistencyStates);
+    });
+
+    const pipelineValidation = Vue.computed(() => {
+      if (!isFuncCallState(props.stat.data)) {
+        return Vue.markRaw({validation: props.stat.data.structureCheckResults});
+      }
     });
 
     return () => (
@@ -197,6 +215,7 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
       >
         { status.value && progressIcon(status.value, props.isReadonly) }
+        { checkIcon() }
         { props.stat.children.length ? openIcon() : null }
         <span
           class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
