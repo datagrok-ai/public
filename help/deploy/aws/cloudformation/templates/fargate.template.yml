@@ -22,17 +22,17 @@ Parameters:
   InternetSubnetAllow:
     Type: String
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
+    Description: Subnet for access to Datagrok endpoint. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
   InternetSubnetAllow2:
     Type: String
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
     Default: ""
-    Description: Additional subnet for access to Datagrok client endpoints. You can omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
   InternetSubnetAllow3:
     Type: String
     Default: ""
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    Description: Additional subnet for access to Datagrok client endpoints. You can omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
 Conditions:
   AccessFromNatGW:
     Fn::And:
@@ -155,16 +155,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: DatagrokSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
-  CvmSecurityGroupALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from ALB to CVM components"
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: CvmALBSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
   CvmSecurityGroupALBIntCommunications:
     Properties:
       Description:
@@ -175,19 +165,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: CvmALBIntSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
-  CvmALBSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM ALB Security Group"
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm-alb"
-        - Key: datagrok.component
-          Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
   CvmALBIntSecurityGroup:
     Properties:
       GroupDescription:
@@ -236,138 +213,6 @@ Resources:
         Ref: CvmALBSecurityGroup
       IpProtocol: TCP
       ToPort: 65535
-  Cvm80Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:

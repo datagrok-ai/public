@@ -17,11 +17,11 @@ Metadata:
 Parameters:
   DNSZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client endpoints.
+    Description: Select existing Route53 Hosted Zone ID for Datagrok endpoint.
   DNSDomain:
     Type: String
     MinLength: 3
-    Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
+    Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
 #Conditions:
 #  CreateDNS:
 #    Fn::And:
@@ -67,29 +67,6 @@ Resources:
           - "${AWS::StackName}-datagrok.${domain}."
           - domain:
               Ref: DNSDomain
-  CvmDNS:
-    Type: AWS::Route53::RecordSet
-    #    Condition: CreateDNS
-    Properties:
-      Type: A
-      AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - CvmLoadBalancer
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - CvmLoadBalancer
-            - DNSName
-      Comment:
-        Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
-      HostedZoneId:
-        Ref: DNSZoneId
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}-datagrok-cvm.${domain}."
-          - domain:
-              Ref: DNSDomain
   DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
     #    Condition: CreateSSL
@@ -103,13 +80,6 @@ Resources:
         - DomainName:
             Fn::Sub:
               - "${AWS::StackName}-datagrok.${domain}"
-              - domain:
-                  Ref: DNSDomain
-          HostedZoneId:
-            Ref: DNSZoneId
-        - DomainName:
-            Fn::Sub:
-              - "${AWS::StackName}-datagrok-cvm.${domain}"
               - domain:
                   Ref: DNSDomain
           HostedZoneId:
@@ -264,38 +234,7 @@ Resources:
                                   print(type(e).__name__, e)
                                   print(f"Response for url {host}/api/users/login/dev/XXX: {r.data}")
 
-                      oldSettings = {}
-                      while True:
-                          r = http.request("GET", f'{host}/api/admin/plugins/scripts/settings',
-                                           headers={'Authorization': auth},
-                                           retries=retry)
-                          if r.data:
-                              try:
-                                  oldSettings = json.loads(r.data)
-                                  print(f"Got settings for {host}.")
-                                  break
-                              except ValueError as e:
-                                  print(type(e).__name__, e)
-                                  print(f"Response for url {host}/api/admin/plugins/scripts/settings: {r.data}")
-
-                      new_settings = {
-                          '#type': oldSettings['settings']['#type'],
-                          'apiUrl': oldSettings['settings']['apiUrl'],
-                          'cvmUrl': oldSettings['settings']['cvmUrl'],
-                          'cvmUrlClient': f"https://{cvmClient}",
-                          'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
-                      }
-
-                      setSettings = http.request("POST", f'{host}/api/admin/plugins/scripts/settings',
-                                                 body=json.dumps(new_settings),
-                                                 headers={'Authorization': auth, "Content-Type": "application/json"},
-                                                 retries=retry)
-                      status = setSettings.status
-                      if status != 200:
-                          raise Exception(f'Could not update settings for {host} with status code {status}')
-                      else:
-                          print(f"Changed Cvm Client Url to https://{cvmClient}")
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status': status})
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status': 200})
               except Exception as e:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__}: {e}"})
