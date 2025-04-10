@@ -39,14 +39,15 @@ category('TreeViewer', () => {
       showCounts: false,
       mouseOverLineColor: 7102046,
       selectedRowsColor: 16747520,
+      filteredRowsColor: 4288075668,
       showMouseOverLine: false,
       sizeColumnName: '',
       sizeAggrType: DG.AGG.AVG,
       colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['control', 'sex', 'disease'],
-      onClick:'Select',
-      includeNulls: true
+      onClick: 'Select',
+      includeNulls: true,
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });
