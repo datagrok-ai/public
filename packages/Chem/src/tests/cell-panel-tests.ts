@@ -219,7 +219,7 @@ category('cell panel', async () => {
       jupyterRunning = true; 
     });
     //check that JKG is running
-    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
+    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 300000);
     console.log('*********** chem-descriptors: started chem descriptors python script');
     const res: DG.DataFrame = await getDescriptorsPy(
       'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
