@@ -1,5 +1,14 @@
 # Compute changelog
 
+## 1.42.2 (2025-04-10)
+
+Updated Parameters Optimization:
+
+- Added progress bar;
+- Target columns selection
+- The hide similar curves feature
+- Navigation for users
+
 ## 1.42.1 (2025-03-31)
 
 - Fix browser tree path
