@@ -485,7 +485,6 @@ export class TreeViewer extends EChartViewer {
       break;
 
     case 'selectedRowsColor':
-      // probably here we will need to repaint the filtered rows
       this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
       break;
 
