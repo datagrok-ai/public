@@ -31,18 +31,26 @@ export const Viewer = Vue.defineComponent({
     const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
     const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
     const type = Vue.computed(() => props.type);
+    const viewerRef = Vue.shallowRef<ViewerT | undefined>(undefined);
+
     const viewerChangedCb = (event: any) => {
       emit('viewerChanged', event.detail ? Vue.markRaw(event.detail) : undefined);
     };
-    return () => <Vue.KeepAlive>
+
+    Vue.onBeforeUnmount(() => {
+      viewerRef.value?.destroy();
+    });
+
+    return () => (
       <dg-viewer
         type={type.value}
         options={options.value}
         dataFrame={currentDf.value}
         onViewerChanged={viewerChangedCb}
         style={{display: 'block', flexGrow: '1'}}
+        ref={viewerRef}
       >
       </dg-viewer>
-    </Vue.KeepAlive>;
+    );
   },
 });

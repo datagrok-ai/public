@@ -10,7 +10,6 @@ export class InputForm extends HTMLElement {
   private skipDefaultInit = true;
   private formChanges$ = new Subject<DG.InputForm>();
 
-  // TODO
   private destroyed$ = new Subject<boolean>();
 
   constructor() {
@@ -50,6 +49,11 @@ export class InputForm extends HTMLElement {
 
   get skipInit() {
     return this.skipDefaultInit;
+  }
+
+  public destroy() {
+    this.destroyed$.next(true);
+    ui.empty(this);
   }
 
   private async replaceFunc(funcCall?: DG.FuncCall) {

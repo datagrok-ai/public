@@ -60,6 +60,7 @@ export const InputForm = Vue.defineComponent({
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
     const skipInit = Vue.computed(() => props.skipInit);
+    const formRef = Vue.shallowRef<InputFormT | undefined>(undefined);
 
     const states = Vue.reactive({
       meta: {} as Record<string, any>,
@@ -135,6 +136,10 @@ export const InputForm = Vue.defineComponent({
       currentForm.value = form;
       emit('formReplaced', form);
     };
+
+    Vue.onBeforeUnmount(() => {
+      formRef.value?.destroy();
+    });
 
     return () =>
       <dg-input-form

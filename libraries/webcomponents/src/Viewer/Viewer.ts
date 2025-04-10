@@ -14,7 +14,6 @@ export class Viewer<T = any> extends HTMLElement {
 
   private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
 
-  // TODO
   private destroyed$ = new Subject<boolean>();
 
   constructor() {
@@ -83,6 +82,11 @@ export class Viewer<T = any> extends HTMLElement {
     ).subscribe((viewer) => {
       this.dispatchEvent(new CustomEvent('viewer-changed', {detail: viewer}));
     });
+  }
+
+  public destroy() {
+    this.destroyed$.next(true);
+    ui.empty(this);
   }
 
   connectedCallback() {

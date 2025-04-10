@@ -13,7 +13,6 @@ export type ValidationIconInput = {
 };
 
 export class ValidationIcon extends HTMLElement {
-  // TODO
   private destroyed$ = new Subject<boolean>();
 
   private status?: ValidationIconInput;
@@ -24,6 +23,11 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
     $(this).addClass('rfv2-validation-icon');
+  }
+
+  public destroy() {
+    this.destroyed$.next(true);
+    ui.empty(this);
   }
 
   connectedCallback() {
