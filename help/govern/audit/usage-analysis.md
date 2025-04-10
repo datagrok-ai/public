@@ -56,9 +56,6 @@ into platform usage:
     * **Access Frequency Daily**: A table lists projects accessed more than once per day by at least one user:
        * **AVG Unique Users Daily** – the average number of such users per day
        * **Days Between Access** – the average time gap between project openings by different users.
-<!--
-1. **Tests**: Provides a holistic overview of automated test execution
-1. **Errors**: Visualizes error events-->
 
 ### Native Datagrok capabilities
 
