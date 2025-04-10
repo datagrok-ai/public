@@ -12,3 +12,8 @@
 .fit-view-chevron-down {
     padding-right: 5px;
 }
+
+.fit-view-svg-icon {    
+    height: 24px;
+    width: 24px;
+}
