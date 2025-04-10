@@ -26,8 +26,9 @@ export async function cddVaultApp(): Promise<DG.ViewBase> {
       '- Find contextual information on molecules.\n' +
       '- Browse the vault content.\n'
   });
-
-  return DG.View.fromRoot(appHeader);
+  const view = DG.View.fromRoot(appHeader);
+  view.name = 'CDD Vault';
+  return view;
 }
 
 //input: dynamic treeNode
@@ -46,6 +47,13 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
 
   for (const vault of vaults.data!) {
     const vaultNode = treeNode.group(vault.name);
+    vaultNode.onSelected.subscribe(() => {
+      const view = DG.View.create({name: vault.name});
+      const tabs = createLinks(['Molecules', 'Search', 'Saved searches'], treeNode, view);
+      view.append(tabs);
+      grok.shell.addPreview(view);
+      setBreadcrumbsInViewName([vault.name], treeNode, view);
+    });
 
     const moleculesNode = vaultNode.item('Molecules');
     moleculesNode.onSelected.subscribe(async (_) => {
@@ -55,8 +63,8 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, timeoutMinutes: 5});
       view.close();
       df.name = 'Molecules';
-      grok.shell.addTablePreview(df);   
-
+      const tv = grok.shell.addTablePreview(df);
+      setBreadcrumbsInViewName([vault.name, 'Molecules'], treeNode, tv);
     });
 
     const searchNode = vaultNode.item('Search');
@@ -85,14 +93,31 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
         gridDiv
       ], {style: {height: '100%'}}));
       grok.shell.addPreview(view);
+      setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, view);
     });
 
     const savedSearchesNode = vaultNode.group('Saved searches', null, false);
+
+    let savedSearches: SavedSearch[] | null = null; 
+    const loadSavedSearches = async () => {
+      if (!savedSearches) {
+        const savedSearchesStr =  await grok.functions.call('CDDVaultLink:getSavedSearches', { vaultId: vault.id });
+        savedSearches = savedSearchesStr !== '' ? JSON.parse(savedSearchesStr) as SavedSearch[] : [];
+      }
+    }
+    savedSearchesNode.onSelected.subscribe(async () => {
+      savedSearchesNode.expanded = true;
+      await loadSavedSearches();
+      const view = DG.View.create({name: 'Saved Searches'});
+      const tabs = createLinks(savedSearches!.map((it) => it.name), treeNode, view);
+      view.append(tabs);
+      grok.shell.addPreview(view);
+      setBreadcrumbsInViewName([vault.name, 'Saved searches'], treeNode);
+    });
+
     savedSearchesNode.onNodeExpanding.subscribe(async () => {
-      const savedSearchesStr =  await grok.functions.call('CDDVaultLink:getSavedSearches', { vaultId: vault.id });
-      if (savedSearchesStr !== '') {
-        const savedSearchesObj = JSON.parse(savedSearchesStr) as SavedSearch[];
-        for (const search of savedSearchesObj) {
+        await loadSavedSearches();
+        for (const search of savedSearches!) {
           const searchItem = savedSearchesNode.item(search.name);
           searchItem.onSelected.subscribe(async () => {
             const view = DG.View.create();
@@ -103,14 +128,56 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
             const df = await grok.functions.call('CDDVaultLink:getSavedSearchResults', { vaultId: vault.id, searchId: search.id, timeoutMinutes: 5});
             gridDiv.append(df.plot.grid().root);
             ui.setUpdateIndicator(gridDiv, false);
+            setBreadcrumbsInViewName([vault.name, 'Saved searches', search.name], treeNode, view);
           });
-        }
       }
     });
    //TODO! unlock other tabs
    // vaultNode.group('Protocols');
    // vaultNode.group('Plates');
    // vaultNode.group('Assays');
+  }
+}
+
+
+function createLinks(nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
+  const div = ui.divV([]);
+  for (const name of nodeNames) {
+    const button = ui.link(name, () => {
+      view.close();
+      tree.currentItem = tree.items.find((item) => item.text === name)!
+    }, 'Click to open');
+    button.classList.add('cdd-menu-point');
+    div.append(button);
+  }
+  return div;
+}
+
+function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGroup, view?: DG.View): void {
+  const usedView = view ?? grok.shell.v;
+  const path = ['Home', 'CDD Vault', ...viewPath.filter((v) => v !== 'Home' && v !== 'Demo')];
+  const breadcrumbs = ui.breadcrumbs(path);
+
+  breadcrumbs.onPathClick.subscribe(async (value) => {
+    const actualItem = value[value.length - 1];
+    if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
+      return;
+    tree.currentItem = actualItem === 'CDD Vault' ? tree : tree.items.find((item) => item.text === actualItem)!;
+  });
+
+  if (usedView) {
+    if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
+      const homeIcon = ui.iconFA('home', () => {
+        grok.shell.v.close();
+        grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
+      });
+      breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
+    }
+    const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+    if (viewNameRoot) {
+      viewNameRoot.textContent = '';
+      viewNameRoot.appendChild(breadcrumbs.root);
+    }
   }
 }
 

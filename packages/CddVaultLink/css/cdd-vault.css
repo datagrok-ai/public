@@ -60,3 +60,8 @@
     overflow: hidden;
     white-space: nowrap;
 }
+
+.cdd-menu-point {
+    font-size: 15px;
+    padding-top: 10px;
+}
