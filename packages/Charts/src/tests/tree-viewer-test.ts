@@ -39,7 +39,7 @@ category('TreeViewer', () => {
       showCounts: false,
       mouseOverLineColor: 7102046,
       selectedRowsColor: 16747520,
-      filteredRowsColor: 4288075668,
+      filteredRowsColor: 9885588,
       showMouseOverLine: false,
       sizeColumnName: '',
       sizeAggrType: DG.AGG.AVG,
