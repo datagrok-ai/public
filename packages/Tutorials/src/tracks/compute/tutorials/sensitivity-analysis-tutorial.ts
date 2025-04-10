@@ -172,7 +172,19 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.title('Analysis');
     this.describe('How does Angle affect the flight trajectory? Let\'s answer this question.');
 
-    const senAnIcnRoot = document.querySelector('i.grok-icon.fal.fa-analytics') as HTMLElement;
+    const ribbonPannels = modelView.getRibbonPanels();
+    if (ribbonPannels.length < 1) {
+      grok.shell.warning('Failed to run model analysis features');
+      return;      
+    }
+    
+    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    if (rightPanel.length < 2) {
+      grok.shell.warning('Failed to load model analysis features');
+      return;      
+    }
+    
+    const senAnIcnRoot = rightPanel[rightPanel.length - 1];
 
     await this.action(
       'Run sensitivity analysis',
