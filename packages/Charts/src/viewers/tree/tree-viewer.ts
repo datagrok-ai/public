@@ -76,6 +76,7 @@ export class TreeViewer extends EChartViewer {
   onClick: onClickOptions;
   includeNulls: boolean;
   labelRotate: number;
+  filteredRowsColor: number;
   selectedRowsColor: number;
   mouseOverLineColor: number;
   showMouseOverLine: boolean;
@@ -99,6 +100,7 @@ export class TreeViewer extends EChartViewer {
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
     this.mouseOverLineColor = this.int('mouseOverLineColor', 0x6C5E5E, {category: 'Style'});
     this.selectedRowsColor = this.int('selectedRowsColor', 0xFF8C00, {category: 'Style'});
+    this.filteredRowsColor = this.int('filteredRowsColor', 0X96D794, {category: 'Style'});
 
     this.showMouseOverLine = this.bool('showMouseOverLine', false, {category: 'Selection'});
 
@@ -230,16 +232,16 @@ export class TreeViewer extends EChartViewer {
         this.cleanTree([this.hoveredPath]);
         this.hoveredPath = null;
 
-        const updatePaths = (paths: string[] | null, filterData: DG.BitSet) => {
+        const updatePaths = (paths: string[] | null, filterData: DG.BitSet, isFilter: boolean) => {
           if (paths) {
             const treeData = this.getSelectionFilterData(filterData);
             const dict = this.addParentPaths(treeData);
-            this.paintBranchByPath(paths, null, dict);
+            this.paintBranchByPath(paths, isFilter ? this.filteredRowsColor : this.selectedRowsColor, dict);
           }
         };
 
-        updatePaths(this.selectedPaths, this.dataFrame.selection);
-        updatePaths(this.filteredPaths, this.dataFrame.filter);
+        updatePaths(this.selectedPaths, this.dataFrame.selection, false);
+        updatePaths(this.filteredPaths, this.dataFrame.filter, true);
       }
     };
 
@@ -313,7 +315,7 @@ export class TreeViewer extends EChartViewer {
     return undefined;
   }
 
-  handleTreeClick(pathString: string, color?: number): void {
+  handleTreeClick(pathString: string, color: number): void {
     if (this.filteredPaths)
       this.cleanTree(this.filteredPaths);
     if (this.selectedPaths)
@@ -321,10 +323,10 @@ export class TreeViewer extends EChartViewer {
     this.paintBranchByPath(pathString, color);
   }
 
-  paintBranchByPath(paths: string | string[], color: number | null = null, selection: SelectionData | null = null): void {
+  paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
-      lineStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
-      itemStyle: { color: DG.Color.toHtml(color ?? this.selectedRowsColor) },
+      lineStyle: { color: DG.Color.toHtml(color) },
+      itemStyle: { color: DG.Color.toHtml(color) },
     };
 
     const pathsArray = Array.isArray(paths) ? paths : [paths];
@@ -484,7 +486,11 @@ export class TreeViewer extends EChartViewer {
 
     case 'selectedRowsColor':
       // probably here we will need to repaint the filtered rows
-      this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
+      this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
+      break;
+
+    case 'filteredRowsColor':
+      this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, true, true);
       break;
 
     default:
@@ -567,23 +573,31 @@ export class TreeViewer extends EChartViewer {
     }));
     this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.updatePaths()));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
-      this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
+      this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
     }));
     this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
-      this.filteredPaths = this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter);
+      this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
     }));
   }
 
-  applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false): string[] {
+  applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false, isFilter: boolean = false): void {
     this.setChartOption();
 
     if (paths && !changedProp)
-      this.cleanTree(paths!);
+      this.cleanTree(paths);
 
     const treeData = this.getSelectionFilterData(bitset);
+    const pathKeys = Object.keys(treeData);
+    const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
+
     const dict = this.addParentPaths(treeData);
-    this.paintBranchByPath(Object.keys(treeData), null, dict);
-    return Object.keys(treeData);
+
+    if (isFilter)
+      this.filteredPaths = pathKeys;
+    else
+      this.selectedPaths = pathKeys;
+
+    this.paintBranchByPath(pathKeys, color, dict);
   }
 
   getSelectionFilterData(bitset: DG.BitSet): SelectionData {
@@ -770,8 +784,8 @@ export class TreeViewer extends EChartViewer {
   }
 
   updatePaths(changedProp: boolean = false): void {
-    this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, changedProp);
-    this.filteredPaths = this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, changedProp);
+    this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, changedProp);
+    this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, changedProp, true);
   }
 
   detach(): void {
@@ -835,7 +849,7 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
-    this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
+    this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
   }
 }
 
