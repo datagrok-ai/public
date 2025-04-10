@@ -213,10 +213,12 @@ category('cell panel', async () => {
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
+    console.log('*********** chem-descriptors: started chem descriptors python script');
     const res: DG.DataFrame = await getDescriptorsPy(
       'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
       DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selesctedDesc)]),
     );
+    console.log('*********** chem-descriptors: finished chem descriptors python script');
     expect(res.columns.names().length, 3);
     expect(selesctedDesc.every((it => res.columns.names().includes(it))), true);
     expect((res.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
