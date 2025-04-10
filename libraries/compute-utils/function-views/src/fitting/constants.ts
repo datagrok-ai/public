@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Specific optimization constants
 
 export enum METHOD {
@@ -23,9 +24,9 @@ export const lossTooltip = new Map([
 /** Grid elements sizes */
 export enum GRID_SIZE {
   LOSS_COL_WIDTH = 60,
-  ROW_HEIGHT = 180,
-  LOSS_GRAPH_WIDTH = 360,
-  GOF_VIEWER_WIDTH = 240,
+  ROW_HEIGHT = 280,
+  LOSS_GRAPH_WIDTH = 320,
+  GOF_VIEWER_WIDTH = 320,
 }
 
 /** UI titles */
@@ -65,7 +66,8 @@ export const MS_TO_SLEEP = 10;
 /** Fitting UI constants */
 export enum FITTING_UI {
   SIMILARITY_MIN = 0,
-  SIMILARITY_DEFAULT = 0.01,
+  SIMILARITY_MAX = 100, // %
+  SIMILARITY_DEFAULT = 10, // %
   SAMPLES = 10,
 };
 
@@ -89,7 +91,7 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 5. Enter the number of points to be found (in the ${HELP_ITEMS.SAMPLES} field).
 
-6. Set the maximum scaled deviation between similar fitted points (in the ${HELP_ITEMS.SIMILARITY} field).
+6. Set the maximum relative deviation (%) in the ${HELP_ITEMS.SIMILARITY} field. It defines the threshold for determining whether fitted points are similar.
 
 7. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing 
@@ -110,3 +112,13 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;
 
 export const DIFF_STUDIO_OUTPUT_IDX = 0;
+
+export const CATEGORY = '__Category__';
+export const LINE_CHART_LINE_WIDTH = 2;
+
+/** */
+export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
+
+2. Select a column with the independent variable in the **argument** field
+
+3. Specify one or more target columns with the dependent variable(s) in the **functions** field`;

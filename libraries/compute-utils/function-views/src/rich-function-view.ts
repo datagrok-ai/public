@@ -24,6 +24,8 @@ import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/ut
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
+import {getFittingWgt, getSensAnWgt} from '../src/fitting/fitting-utils';
+
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
 const RUN_WAIT_TIME = 500;
@@ -703,9 +705,11 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
-    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+    const sensitivityAnalysis = getSensAnWgt();
+    sensitivityAnalysis.onclick = async () => await this.onSALaunch();
 
-    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit inputs');
+    const fitting = getFittingWgt();
+    fitting.onclick = async () => await this.onFittingLaunch();
 
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
@@ -720,8 +724,8 @@ export class RichFunctionView extends FunctionView {
       ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
-      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...this.isFittingEnabled ? [fitting]: [],
+      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 

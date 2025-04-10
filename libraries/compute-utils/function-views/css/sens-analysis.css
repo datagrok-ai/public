@@ -16,3 +16,8 @@
 .ui-form.ui-form-condensed .ui-input-root > .sa-switch-input ~ .ui-input-editor {
     margin-left: 50px;
 }
+
+.sensitivity-analysis-svg-icon {    
+    height: 24px;
+    width: 24px;
+}
