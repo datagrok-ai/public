@@ -49,9 +49,16 @@ into platform usage:
       the sources of events, with each event color-coded. Using this chart, you can
       identify where the majority of activities originate.
     * **User events**: A [scatterplot](../../visualize/viewers/scatter-plot.md) visualizes events specific to individual users, allowing you to track their activity history and understand their usage patterns better.
-1. **Log**: A table lists all log events, which you can filter by user and source
+1. **Log**: A table lists all log events, which you can filter by user and source.
+1. **Projects**: Provides insights into how users interact with projects on the platform:
+    * **Scatterplot** shows a timeline of access events per project. The tooltip displays `access_count`, the number of times a project was opened.
+    * **Unique Users Per Project**: A [barchart](../../visualize/viewers/bar-chart.md) displays the number of distinct users who accessed each project over the given period.
+    * **Access Frequency Daily**: A table lists projects accessed more than once per day by at least one user:
+       * **AVG Unique Users Daily** – the average number of such users per day
+       * **Days Between Access** – the average time gap between project openings by different users.
+<!--
 1. **Tests**: Provides a holistic overview of automated test execution
-1. **Errors**: Visualizes error events
+1. **Errors**: Visualizes error events-->
 
 ### Native Datagrok capabilities
 
