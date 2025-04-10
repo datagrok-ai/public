@@ -51,9 +51,6 @@ Mappings:
     JKG:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/jupyter_kernel_gateway
-    JN:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/jupyter_notebook
     Kaniko:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/kaniko
@@ -106,7 +103,6 @@ Metadata:
       - RabbitmqVersion
       - GrokSpawnerVersion
       - JKGVersion
-      - JNVersion
     ParameterLabels:
       CIDR:
         default: 'CIDR: VPC CIDR'
@@ -150,8 +146,6 @@ Metadata:
         default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
       JKGVersion:
         default: Jupyter Kernel Gateway Version
-      JNVersion:
-        default: Jupyter Notebook Version
       RabbitmqVersion:
         default: RabbitMQ Version
   cfn-lint:
@@ -178,16 +172,14 @@ Parameters:
     Description: VPC CIDR block to allow communication inside VPC
     Type: String
   DNSDomain:
-    Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain
-      should be based on hosted zone name for specified DNSZoneId. For example, if
-      you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain
-      you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint
-      will be 'StackName-datagrok.subdomain.domain.com'.
+    Description: Specify DNS domain for Datagrok endpoint. The domain should be based
+      on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId
+      XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com'
+      or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
     MinLength: 3
     Type: String
   DNSZoneId:
-    Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client
-      endpoints.
+    Description: Select existing Route53 Hosted Zone ID for Datagrok endpoint.
     Type: AWS::Route53::HostedZone::Id
   DatagrokDataSubnet1:
     Description: Data subnet to deploy Datagrok DB.
@@ -223,12 +215,12 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.24.0
+    Default: 1.25.3
     Description: Enter Datagrok docker image version.
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.3.29
+    Default: 2.3.30
     Description: Enter Grok Connect docker image version.
     Type: String
   GrokPipeVersion:
@@ -238,7 +230,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.9.0
+    Default: 1.10.0
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -252,168 +244,31 @@ Parameters:
     Type: String
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
-      to allow all IP addresses access, or another CIDR range.
+    Description: Subnet for access to Datagrok endpoint. Set CIDR to 0.0.0.0/0 to
+      allow all IP addresses access, or another CIDR range.
     Type: String
   InternetSubnetAllow2:
     AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
     Default: ''
-    Description: Additional subnet for access to Datagrok client endpoints. You can
-      omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this
+      parameter is already specified InternetSubnetAllow.
     Type: String
   InternetSubnetAllow3:
     AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
     Default: ''
-    Description: Additional subnet for access to Datagrok client endpoints. You can
-      omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this
+      parameter is already specified InternetSubnetAllow.
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.13.0
+    Default: 1.14.0
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
-    Type: String
-  JNVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.1.1
-    Description: Enter Datagrok Jupyter Notebook docker image version.
     Type: String
   RabbitmqVersion:
     Default: 4.0.5-management
     Description: Enter rabbitmq docker image version.
     Type: String
 Resources:
-  Cvm443Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-        - ${ip}/32
-        - ip:
-            Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-        - ${ip}/32
-        - ip:
-            Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
   CvmALBIntSecurityGroup:
     Properties:
       GroupDescription:
@@ -450,19 +305,6 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::EC2::SecurityGroup
-  CvmALBSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM ALB Security Group
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
-      - Key: datagrok.component
-        Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
   CvmCluster:
     Properties:
       ClusterName:
@@ -474,28 +316,6 @@ Resources:
       - Key: datagrok.component
         Value: cvm
     Type: AWS::ECS::Cluster
-  CvmDNS:
-    Properties:
-      AliasTarget:
-        DNSName:
-          Fn::GetAtt:
-          - CvmLoadBalancer
-          - DNSName
-        HostedZoneId:
-          Fn::GetAtt:
-          - CvmLoadBalancer
-          - CanonicalHostedZoneID
-      Comment:
-        Fn::Sub: ${AWS::StackName} Public Datagrok CVM DNS
-      HostedZoneId:
-        Ref: DNSZoneId
-      Name:
-        Fn::Sub:
-        - ${AWS::StackName}-datagrok-cvm.${domain}.
-        - domain:
-            Ref: DNSDomain
-      Type: A
-    Type: AWS::Route53::RecordSet
   CvmEgress:
     Properties:
       Description:
@@ -601,16 +421,6 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::EC2::SecurityGroup
-  CvmSecurityGroupALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: ${AWS::StackName} Allow communication from ALB to CVM components
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: '-1'
-      SourceSecurityGroupId:
-        Ref: CvmALBSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
   CvmSecurityGroupALBIntCommunications:
     Properties:
       Description:
@@ -929,13 +739,6 @@ Resources:
       - DomainName:
           Fn::Sub:
           - ${AWS::StackName}-datagrok.${domain}
-          - domain:
-              Ref: DNSDomain
-        HostedZoneId:
-          Ref: DNSZoneId
-      - DomainName:
-          Fn::Sub:
-          - ${AWS::StackName}-datagrok-cvm.${domain}
           - domain:
               Ref: DNSDomain
         HostedZoneId:
@@ -2306,30 +2109,8 @@ Resources:
           Got auth for {host}.\")\n                        break\n               \
           \     except (ValueError, KeyError) as e:\n                        print(type(e).__name__,\
           \ e)\n                        print(f\"Response for url {host}/api/users/login/dev/XXX:\
-          \ {r.data}\")\n\n            oldSettings = {}\n            while True:\n\
-          \                r = http.request(\"GET\", f'{host}/api/admin/plugins/scripts/settings',\n\
-          \                                 headers={'Authorization': auth},\n   \
-          \                              retries=retry)\n                if r.data:\n\
-          \                    try:\n                        oldSettings = json.loads(r.data)\n\
-          \                        print(f\"Got settings for {host}.\")\n        \
-          \                break\n                    except ValueError as e:\n  \
-          \                      print(type(e).__name__, e)\n                    \
-          \    print(f\"Response for url {host}/api/admin/plugins/scripts/settings:\
-          \ {r.data}\")\n\n            new_settings = {\n                '#type':\
-          \ oldSettings['settings']['#type'],\n                'apiUrl': oldSettings['settings']['apiUrl'],\n\
-          \                'cvmUrl': oldSettings['settings']['cvmUrl'],\n        \
-          \        'cvmUrlClient': f\"https://{cvmClient}\",\n                'jupyterNotebookToken':\
-          \ oldSettings['settings']['jupyterNotebookToken']\n            }\n\n   \
-          \         setSettings = http.request(\"POST\", f'{host}/api/admin/plugins/scripts/settings',\n\
-          \                                       body=json.dumps(new_settings),\n\
-          \                                       headers={'Authorization': auth,\
-          \ \"Content-Type\": \"application/json\"},\n                           \
-          \            retries=retry)\n            status = setSettings.status\n \
-          \           if status != 200:\n                raise Exception(f'Could not\
-          \ update settings for {host} with status code {status}')\n            else:\n\
-          \                print(f\"Changed Cvm Client Url to https://{cvmClient}\"\
-          )\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status':\
-          \ status})\n    except Exception as e:\n        print(type(e).__name__,\
+          \ {r.data}\")\n\n        cfnresponse.send(event, context, cfnresponse.SUCCESS,\
+          \ {'Status': 200})\n    except Exception as e:\n        print(type(e).__name__,\
           \ e)\n        cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception':\
           \ f\"{type(e).__name__}: {e}\"})\n"
       Description: Sets required settings for Datagrok

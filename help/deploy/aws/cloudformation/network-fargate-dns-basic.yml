@@ -54,9 +54,6 @@ Mappings:
     JKG:
       domain: docker.io
       repo: datagrok/jupyter_kernel_gateway
-    JN:
-      domain: docker.io
-      repo: datagrok/jupyter_notebook
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
@@ -99,7 +96,6 @@ Metadata:
       - RabbitmqVersion
       - GrokSpawnerVersion
       - JKGVersion
-      - JNVersion
     ParameterLabels:
       CIDR:
         default: 'CIDR: VPC CIDR'
@@ -123,8 +119,6 @@ Metadata:
         default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
       JKGVersion:
         default: Jupyter Kernel Gateway Version
-      JNVersion:
-        default: Jupyter Notebook Version
       RabbitmqVersion:
         default: RabbitMQ Version
   cfn-lint:
@@ -133,12 +127,6 @@ Metadata:
       - W8001
       - W8003
 Outputs:
-  CvmLoadBalancerDNSName:
-    Description: Datagrok CVM Load Balancer DNS to create CNAME record
-    Value:
-      Fn::GetAtt:
-      - CvmLoadBalancer
-      - DNSName
   DatagrokAdminPassword:
     Description: Admin password for first login
     Value:
@@ -148,8 +136,7 @@ Outputs:
           Ref: DatagrokAdminPassword
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value: Create DNS records for Datagrok and CVM using stated DNS Names as CNAMEs
-      targets
+    Value: Create DNS records for Datagrok using stated DNS Names as CNAMEs targets
   DatagrokLoadBalancerDNSName:
     Description: Datagrok Load Balancer DNS to create CNAME record
     Value:
@@ -164,19 +151,19 @@ Parameters:
     Type: String
   DatagrokArnSSLCertificate:
     AllowedPattern: (arn:([^:\n]*):([^:\n]*):([^:\n]*):([^:\n]*):(([^:\/\n]*)[:\/])?(.*))?
-    Description: The certificate is used for both Datagrok and CVM client endpoints.
-      If you do not use Route53 for DNS management, it is required to upload certificate
-      to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
+    Description: The certificate is used for both Datagrok endpoint. If you do not
+      use Route53 for DNS management, it is required to upload certificate to AWS
+      ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
       and specify the Certificate ARN here.
     Type: String
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.24.0
+    Default: 1.25.3
     Description: Enter Datagrok docker image version.
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.3.29
+    Default: 2.3.30
     Description: Enter Grok Connect docker image version.
     Type: String
   GrokPipeVersion:
@@ -186,7 +173,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.9.0
+    Default: 1.10.0
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -200,168 +187,31 @@ Parameters:
     Type: String
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
-      to allow all IP addresses access, or another CIDR range.
+    Description: Subnet for access to Datagrok endpoint. Set CIDR to 0.0.0.0/0 to
+      allow all IP addresses access, or another CIDR range.
     Type: String
   InternetSubnetAllow2:
     AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
     Default: ''
-    Description: Additional subnet for access to Datagrok client endpoints. You can
-      omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this
+      parameter is already specified InternetSubnetAllow.
     Type: String
   InternetSubnetAllow3:
     AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
     Default: ''
-    Description: Additional subnet for access to Datagrok client endpoints. You can
-      omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this
+      parameter is already specified InternetSubnetAllow.
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.13.0
+    Default: 1.14.0
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
-    Type: String
-  JNVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.1.1
-    Description: Enter Datagrok Jupyter Notebook docker image version.
     Type: String
   RabbitmqVersion:
     Default: 4.0.5-management
     Description: Enter rabbitmq docker image version.
     Type: String
 Resources:
-  Cvm443Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-        - ${ip}/32
-        - ip:
-            Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-        - ${ip}/32
-        - ip:
-            Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
   CvmALBIntSecurityGroup:
     Properties:
       GroupDescription:
@@ -393,19 +243,6 @@ Resources:
       - Key: Name
         Value:
           Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
-      - Key: datagrok.component
-        Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
-  CvmALBSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM ALB Security Group
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -527,16 +364,6 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::EC2::SecurityGroup
-  CvmSecurityGroupALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: ${AWS::StackName} Allow communication from ALB to CVM components
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: '-1'
-      SourceSecurityGroupId:
-        Ref: CvmALBSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
   CvmSecurityGroupALBIntCommunications:
     Properties:
       Description:
