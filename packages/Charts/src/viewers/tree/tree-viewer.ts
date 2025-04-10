@@ -80,7 +80,7 @@ export class TreeViewer extends EChartViewer {
   mouseOverLineColor: number;
   showMouseOverLine: boolean;
 
-  private filteredPath: string | null = null;
+  private filteredPaths: string[] | null = null;
   private hoveredPath: string | null = null;
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
@@ -142,46 +142,24 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((index: number) => {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): void {
+    bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return columnValue?.toString() === segment || ((columnValue === null || columnValue === '') && segment === ' ');
+        return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
       });
-    }, event.event);
+    }, event);
   }
 
-  handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
-    const filterFunction = this.buildFilterFunction(path);
-    dataFrame.rows.filter(filterFunction);
-  }
-
-  buildFilterFunction(path: string[]): (row: any) => boolean {
-    return (row) => {
-      return path.every((expectedValue, i) => {
-        const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
-        const columnValue = row.get(this.eligibleHierarchyNames[i]);
-        const formattedValue = columnValue !== null ?
-          (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
-        return formattedValue === expectedValue;
-      });
-    };
-  }
-
-  initChartEventListeners() {
+  initChartEventListeners(): void {
     let selectedSectors: string[] = [];
 
     const handleChartClick = (path: string[], event: any) => {
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
-
-      if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, this.dataFrame);
-        return;
-      }
 
       const isMultiSelect = event.event.shiftKey || event.event.ctrlKey || event.event.metaKey;
       if (isMultiSelect) {
@@ -191,7 +169,10 @@ export class TreeViewer extends EChartViewer {
           selectedSectors.push(pathString);
       }
 
-      this.handleDataframeSelection(path, event);
+      if (this.onClick === 'Filter')
+        this.applySelectionFilter(this.dataFrame.filter, path, event.event);
+      else
+        this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
     const showTooltip = async (params: any) => {
@@ -230,15 +211,8 @@ export class TreeViewer extends EChartViewer {
     const handleZrClick = (params: any) => {
       const targetPath = this.getTargetPath(params);
 
-      if (targetPath) {
+      if (targetPath)
         handleChartClick(targetPath.split(' ||| '), params);
-        if (this.onClick === 'Filter') {
-          this.handleTreeClick(targetPath, this.selectedRowsColor);
-          this.filteredPath = targetPath;
-          if (this.selectedPaths)
-            this.handleSelectionChange();
-        }
-      }
     };
 
     const handleZrHover = (params: any) => {
@@ -256,14 +230,16 @@ export class TreeViewer extends EChartViewer {
         this.cleanTree([this.hoveredPath]);
         this.hoveredPath = null;
 
-        if (this.filteredPath)
-          this.paintBranchByPath(this.filteredPath);
+        const updatePaths = (paths: string[] | null, filterData: DG.BitSet) => {
+          if (paths) {
+            const treeData = this.getSelectionFilterData(filterData);
+            const dict = this.addParentPaths(treeData);
+            this.paintBranchByPath(paths, null, dict);
+          }
+        };
 
-        if (this.selectedPaths) {
-          const treeData = this.getSelectionData();
-          const dict = this.addParentPaths(treeData);
-          this.paintBranchByPath(this.selectedPaths, null, dict);
-        }
+        updatePaths(this.selectedPaths, this.dataFrame.selection);
+        updatePaths(this.filteredPaths, this.dataFrame.filter);
       }
     };
 
@@ -338,7 +314,8 @@ export class TreeViewer extends EChartViewer {
   }
 
   handleTreeClick(pathString: string, color?: number): void {
-    this.cleanTree([this.filteredPath!]);
+    if (this.filteredPaths)
+      this.cleanTree(this.filteredPaths);
     if (this.selectedPaths)
       this.cleanTree(this.selectedPaths);
     this.paintBranchByPath(pathString, color);
@@ -421,13 +398,13 @@ export class TreeViewer extends EChartViewer {
     return cloneTree;
   }
 
-  setChartOption() {
+  setChartOption(): void {
     const chartOption = this.chart.getOption();
     if (chartOption && chartOption.series && chartOption.series[0])
       this.option = chartOption;
   }
 
-  onPropertyChanged(p: DG.Property | null, render: boolean = true) {
+  onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (!p) return;
 
     this.setChartOption();
@@ -506,10 +483,8 @@ export class TreeViewer extends EChartViewer {
       break;
 
     case 'selectedRowsColor':
-      if (this.filteredPath)
-        this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
-      if (this.selectedPaths)
-        this.handleSelectionChange(true);
+      // probably here we will need to repaint the filtered rows
+      this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
       break;
 
     default:
@@ -518,7 +493,7 @@ export class TreeViewer extends EChartViewer {
     }
   }
 
-  updateOrient() {
+  updateOrient(): void {
     const defaultLabelOptions = (position: string, align: string, rotate: number) => ({
       position,
       verticalAlign: 'middle',
@@ -559,7 +534,7 @@ export class TreeViewer extends EChartViewer {
     return aggregationMap.get(column.type)?.includes(aggrType)!;
   }
 
-  _testColumns() {
+  _testColumns(): boolean {
     return this.dataFrame.columns.length >= 1;
   }
 
@@ -579,7 +554,7 @@ export class TreeViewer extends EChartViewer {
     return result;
   }
 
-  addSubs() {
+  addSubs(): void {
     if (!this.dataFrame) return;
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -590,39 +565,29 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
-    this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.handleReset()));
+    this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.updatePaths()));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
-      this.handleSelectionChange();
+      this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
+    }));
+    this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
+      this.filteredPaths = this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter);
     }));
   }
 
-  handleReset() {
-    if (this.filteredPath) {
-      this.cleanTree([this.filteredPath]);
-      this.filteredPath = null;
-    }
-    if (this.selectedPaths)
-      this.handleSelectionChange();
-  }
-
-  handleSelectionChange(changedProp: boolean = false): void {
+  applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false): string[] {
     this.setChartOption();
 
-    if (this.selectedPaths && !changedProp)
-      this.cleanTree(this.selectedPaths!);
+    if (paths && !changedProp)
+      this.cleanTree(paths!);
 
-
-    if (this.filteredPath)
-      this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
-
-    const treeData = this.getSelectionData();
+    const treeData = this.getSelectionFilterData(bitset);
     const dict = this.addParentPaths(treeData);
-    this.selectedPaths = Object.keys(treeData);
     this.paintBranchByPath(Object.keys(treeData), null, dict);
+    return Object.keys(treeData);
   }
 
-  getSelectionData(): SelectionData {
-    const rowMask = this.dataFrame.selection.clone();
+  getSelectionFilterData(bitset: DG.BitSet): SelectionData {
+    const rowMask = bitset.clone();
     const selectionBuilder = this.dataFrame
       .groupBy(this.eligibleHierarchyNames)
       .count()
@@ -639,7 +604,7 @@ export class TreeViewer extends EChartViewer {
     return treeData;
   }
 
-  onTableAttached() {
+  onTableAttached(): void {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
     );
@@ -673,7 +638,7 @@ export class TreeViewer extends EChartViewer {
     setItemStyle(data);
   }
 
-  async getSeriesData() {
+  async getSeriesData(): Promise<TreeDataType[]> {
     const aggregations = [];
 
     if (this.sizeColumnName && this.applySizeAggr) {
@@ -688,7 +653,7 @@ export class TreeViewer extends EChartViewer {
     return [await TreeUtils.toTree(this.dataFrame, this.eligibleHierarchyNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls, false)];
   }
 
-  async renderMolecule(params: any, width: number, height: number) {
+  async renderMolecule(params: any, width: number, height: number): Promise<void> {
     const image = await TreeUtils.getMoleculeImage(params.name, width, height);
     const img = new Image();
     img.src = image!.toDataURL('image/png');
@@ -705,14 +670,14 @@ export class TreeViewer extends EChartViewer {
     };
   }
 
-  async renderMoleculeQueued(params: any, width: number, height: number) {
+  async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
     this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
       this.renderMolecule(params, width, height),
     );
     await this.moleculeRenderQueue;
   }
 
-  formatLabel(params: any) {
+  formatLabel(params: any): string {
     if (params.data.semType === 'Molecule') {
       //@ts-ignore
       const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
@@ -772,11 +737,11 @@ export class TreeViewer extends EChartViewer {
     return labelText;
   }
 
-  isVerticalOrientation() {
+  isVerticalOrientation(): boolean {
     return this.orient === 'BT' || this.orient === 'TB';
   }
 
-  syncCollapsedValues(newData: any, existingData: any) {
+  syncCollapsedValues(newData: any, existingData: any): void {
     const pathMap = new Map<string, any>();
 
     (function traverse(node: any) {
@@ -793,7 +758,7 @@ export class TreeViewer extends EChartViewer {
     })(newData[0]);
   }
 
-  updateCollapsedState(data: TreeDataType[]) {
+  updateCollapsedState(data: TreeDataType[]): void {
     const { initialTreeDepth } = this;
 
     const traverse = (node: TreeDataType, depth: number) => {
@@ -804,7 +769,12 @@ export class TreeViewer extends EChartViewer {
     data.forEach((rootNode) => traverse(rootNode, 1));
   }
 
-  detach() {
+  updatePaths(changedProp: boolean = false): void {
+    this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, changedProp);
+    this.filteredPaths = this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, changedProp);
+  }
+
+  detach(): void {
     for (const sub of this.subs)
       sub.unsubscribe();
     super.detach();
@@ -815,7 +785,7 @@ export class TreeViewer extends EChartViewer {
       .then(() => this._render(preserveCollapsed));
   }
 
-  async _render(preserveCollapsed: boolean = true) {
+  async _render(preserveCollapsed: boolean = true): Promise<void> {
     if (!this.dataFrame)
       return;
 
@@ -865,11 +835,7 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
-
-    if (this.filteredPath)
-      this.paintBranchByPath(this.filteredPath, this.selectedRowsColor);
-    if (this.selectedPaths)
-      this.handleSelectionChange(true);
+    this.selectedPaths = this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
   }
 }
 
