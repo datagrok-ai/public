@@ -2091,9 +2091,8 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource: "*"
           - Action:
@@ -2117,9 +2116,8 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2134,9 +2132,8 @@ Resources:
                 aws:RequestTag/caller: [ "grok_spawner" ]
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2147,10 +2144,8 @@ Resources:
               - "ecs:DescribeTasks"
             Condition:
               ArnEquals:
-                ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                - !GetAtt DatagrokCluster.Arn
+                - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2226,9 +2221,8 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Resource:
               Ref: DatagrokKanikoTaskDefinition
           - Action:
