@@ -2889,6 +2889,12 @@ Resources:
             - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
             - logs:
                 Ref: DatagrokLogGroup
+        - Name: GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE
+          Value:
+            Ref: GrokSpawnerTaskRole
+        - Name: GROK_SPAWNER_CVM_ECS__EXEC_ROLE
+          Value:
+            Ref: GrokSpawnerTaskRole
         Essential: true
         Image:
           Fn::Sub:
