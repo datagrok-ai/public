@@ -278,8 +278,6 @@ Resources:
               Fn::GetAtt:
                 - DatagrokLoadBalancerInt
                 - DNSName
-      cvmClient:
-        Ref: CvmDNS
       VpcEndpoint:
         - Fn::If:
             - CreateVPC
