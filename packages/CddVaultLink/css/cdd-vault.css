@@ -54,6 +54,10 @@
     margin-left: 5px;
 }
 
+.cdd-context-panel td {
+    line-height: 24px;
+}
+
 .cdd-context-panel .d4-table-map-value span {
     max-width: 300px;
     text-overflow: ellipsis;
