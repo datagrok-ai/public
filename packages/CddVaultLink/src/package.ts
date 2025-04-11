@@ -46,6 +46,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   }
 
   for (const vault of vaults.data!) {
+    //vault node
     const vaultNode = treeNode.group(vault.name);
     vaultNode.onSelected.subscribe(() => {
       const view = DG.View.create();
@@ -56,41 +57,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       setBreadcrumbsInViewName([vault.name], treeNode, view);
     });
 
-    const moleculesNode = vaultNode.item('Molecules');
-    moleculesNode.onSelected.subscribe(async (_) => {
-      createCDDTableView('Molecules', 'Waiting for molecules', 'CDDVaultLink:getMoleculesAsync',
-        { vaultId: vault.id, timeoutMinutes: 5}, vault.name, treeNode);
-    });
-
-    const searchNode = vaultNode.item('Search');
-    searchNode.onSelected.subscribe(() => {
-      const view = DG.View.create();
-      const funcEditor = new SeachEditor(vault.id);
-      const acc = funcEditor.getEditor();
-      const runButton = ui.bigButton('SEARCH', async () => {
-        ui.setUpdateIndicator(gridDiv, true);
-        const params = funcEditor.getParams();
-        const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-          {
-            vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-            structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
-          });
-        ui.empty(gridDiv);
-        gridDiv.append(df.plot.grid().root);
-        ui.setUpdateIndicator(gridDiv, false);
-      });
-      const gridDiv = ui.div('', 'cdd-vault-search-res-div');
-      runButton.classList.add('cdd-vault-run-search-button');
-      view.name = 'Search CDD Vault'
-      view.root.append(ui.divV([
-        acc,
-        runButton,
-        gridDiv
-      ], {style: {height: '100%'}}));
-      grok.shell.addPreview(view);
-      setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, view);
-    });
-
+    //saved searches node
     const savedSearchesNode = vaultNode.group('Saved searches', null, false);
 
     let savedSearches: SavedSearch[] | null = null; 
@@ -120,6 +87,58 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
               { vaultId: vault.id, searchId: search.id, timeoutMinutes: 5}, vault.name, treeNode);
           });
       }
+    });
+
+    //molecules node
+    const moleculesNode = vaultNode.item('Molecules');
+    moleculesNode.onSelected.subscribe(async (_) => {
+      createCDDTableView('Molecules', 'Waiting for molecules', 'CDDVaultLink:getMoleculesAsync',
+        { vaultId: vault.id, timeoutMinutes: 5}, vault.name, treeNode);
+    });
+
+    //search node
+    const searchNode = vaultNode.item('Search');
+    searchNode.onSelected.subscribe(() => {
+      const view = DG.View.create();
+      const funcEditor = new SeachEditor(vault.id);
+      const acc = funcEditor.getEditor();
+      let df: DG.DataFrame | null = null;
+      const runButton = ui.bigButton('SEARCH', async () => {
+        ui.setUpdateIndicator(gridDiv, true);
+        const params = funcEditor.getParams();
+        df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
+          {
+            vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+            structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
+          });
+        ui.empty(gridDiv);
+        if (df) {
+          const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
+          const run = params.run ? `, run: ${params.run}` : '';
+          const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
+            `:${params.structure_similarity_threshold}`: ''} search for ${params.structure}` : '';
+
+          df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
+          gridDiv.append(df.plot.grid().root);
+        }
+        ui.setUpdateIndicator(gridDiv, false);
+      });
+      const gridDiv = ui.div('', 'cdd-vault-search-res-div');
+      runButton.classList.add('cdd-vault-run-search-button');
+
+      const addToWorkspaceButton = ui.icons.add(() => {
+        if (df)
+          grok.shell.addTablePreview(df);
+      }, 'Add results to workspace');
+      view.setRibbonPanels([[addToWorkspaceButton]]);
+      view.name = 'Search CDD Vault'
+      view.root.append(ui.divV([
+        acc,
+        runButton,
+        gridDiv
+      ], {style: {height: '100%'}}));
+      grok.shell.addPreview(view);
+      setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, view);
     });
    //TODO! unlock other tabs
    // vaultNode.group('Protocols');
