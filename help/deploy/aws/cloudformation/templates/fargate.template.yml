@@ -2091,8 +2091,12 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - !GetAtt DatagrokCluster.Arn
-                  - !GetAtt CvmCluster.Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource: "*"
           - Action:
@@ -2116,8 +2120,12 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - !GetAtt DatagrokCluster.Arn
-                  - !GetAtt CvmCluster.Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2132,8 +2140,12 @@ Resources:
                 aws:RequestTag/caller: [ "grok_spawner" ]
               ArnEquals:
                 ecs:cluster:
-                  - !GetAtt DatagrokCluster.Arn
-                  - !GetAtt CvmCluster.Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2144,8 +2156,12 @@ Resources:
               - "ecs:DescribeTasks"
             Condition:
               ArnEquals:
-                - !GetAtt DatagrokCluster.Arn
-                - !GetAtt CvmCluster.Arn
+                - Fn::GetAtt:
+                    - DatagrokCluster
+                    - Arn
+                - Fn::GetAtt:
+                    - CvmCluster
+                    - Arn
             Effect: Allow
             Resource:
               Fn::Sub:
@@ -2221,8 +2237,12 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - !GetAtt DatagrokCluster.Arn
-                  - !GetAtt CvmCluster.Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Resource:
               Ref: DatagrokKanikoTaskDefinition
           - Action:
