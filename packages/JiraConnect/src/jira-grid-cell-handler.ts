@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import { loadIssueData, loadIssues } from './api/data';
+import { BatchCellRenderer } from '@datagrok-libraries/utils/src/batch-cell-renderer';
 import { _package } from './package-test';
 import { AuthCreds, JiraIssue } from './api/objects';
 import { getJiraCreds } from './app/credentials';
@@ -186,7 +187,7 @@ function listRenderer(list: string[], withTooltip = true) {
     return nameHost;
 }
 
-class JiraTicketGridCellRenderer extends DG.BatchCellRenderer {
+class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
     get name(): string { return 'JIRA Ticket'; }
     get cellType(): string { return 'JIRA Ticket'; }
     get defaultWidth(): number | null { return 100; }
@@ -197,18 +198,19 @@ class JiraTicketGridCellRenderer extends DG.BatchCellRenderer {
     cellsToLoad: DG.GridCell[] = [];
     cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
 
-    constructor(){
-        super(cache);
+    constructor() {
+        super();
+        this.cache = cache;
     }
 
 
-    async loadData(keys: string[]): Promise<Map<string, any>> {
-        const result = new Map<string, any>();
+    async loadData(keys: string[]): Promise<Map<string, JiraIssue>> {
+        const result = new Map<string, JiraIssue>();
         const jiraCreds = await getJiraCreds();
         if (!jiraCreds) {
             throw new Error('Could not get Jira CREDS')
         }
-    
+
         const chunkSize = 100;
         let index = 0;
         while (index < keys.length) {
