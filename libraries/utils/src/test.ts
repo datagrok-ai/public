@@ -455,7 +455,7 @@ export async function runTests(options?: TestExecutionOptions) {
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
     const res = [];
-    const memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+    let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = DG.Widget.getAll().length;
 
     if (category.clear) {
@@ -478,7 +478,7 @@ export async function runTests(options?: TestExecutionOptions) {
         let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
         if (isGBEnable)
           (window as any).gc();
-
+        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
 
         if (isGBEnable)
@@ -503,7 +503,7 @@ export async function runTests(options?: TestExecutionOptions) {
 
         if (isGBEnable)
           (window as any).gc();
-
+        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
         
         if (isGBEnable)
