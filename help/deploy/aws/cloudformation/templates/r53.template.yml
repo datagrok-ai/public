@@ -21,7 +21,7 @@ Parameters:
   DNSDomain:
     Type: String
     MinLength: 3
-    Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
+    Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName.subdomain.domain.com'.
 #Conditions:
 #  CreateDNS:
 #    Fn::And:
@@ -64,7 +64,7 @@ Resources:
         Ref: DNSZoneId
       Name:
         Fn::Sub:
-          - "${AWS::StackName}-datagrok.${domain}."
+          - "${AWS::StackName}.${domain}."
           - domain:
               Ref: DNSDomain
   DatagrokArnSSLCertificate:
@@ -73,13 +73,13 @@ Resources:
     Properties:
       DomainName:
         Fn::Sub:
-          - "${AWS::StackName}-datagrok.${domain}"
+          - "${AWS::StackName}.${domain}"
           - domain:
               Ref: DNSDomain
       DomainValidationOptions:
         - DomainName:
             Fn::Sub:
-              - "${AWS::StackName}-datagrok.${domain}"
+              - "${AWS::StackName}.${domain}"
               - domain:
                   Ref: DNSDomain
           HostedZoneId:
@@ -89,7 +89,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok"
+            Fn::Sub: "${AWS::StackName}"
       ValidationMethod: DNS
 
   DatagrokSettingsSetLambdaRole:
@@ -115,7 +115,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokSettingsSetLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-SettingsSetLambdaFunction-*:*"
               - Effect: Allow
                 Action:
                   - 'ec2:DescribeNetworkInterfaces'
@@ -316,7 +316,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokR53CleanupLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*"
               - Effect: Allow
                 Action:
                   - 'acm:DescribeCertificate'
