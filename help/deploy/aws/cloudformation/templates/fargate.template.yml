@@ -2122,10 +2122,14 @@ Resources:
                       - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "ecs:CreateService"
               - "ecs:TagResource"
@@ -2142,10 +2146,14 @@ Resources:
                       - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "ecs:DescribeTasks"
             Condition:
@@ -2159,10 +2167,14 @@ Resources:
                       - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "logs:GetLogEvents"
             Effect: Allow
@@ -2178,9 +2190,14 @@ Resources:
             Effect: Allow
             Resource:
               Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}"
-                - cluster_name:
-                    Ref: DatagrokCluster
+                - Fn::Sub:
+                    - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                    - cluster_name:
+                        Ref: DatagrokCluster
+                - Fn::Sub:
+                    - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                    - cluster_name:
+                        Ref: CvmCluster
       ManagedPolicyName:
         Fn::Sub: "${AWS::StackName}-GrokSpawner-${AWS::Region}"
   GrokSpawnerECRPolicy:
@@ -2289,6 +2306,10 @@ Resources:
                   - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
                   - cluster_name:
                       Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
               - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
 
   DatagrokKanikoPolicy:
