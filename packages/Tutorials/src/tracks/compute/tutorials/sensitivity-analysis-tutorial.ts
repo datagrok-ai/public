@@ -161,18 +161,32 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      `Click "OK" to go to the next step.`,
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        `Click "OK" to go to the next step.`,
+      );
+    }
 
     // 5. Run sens.analysis
     this.title('Analysis');
     this.describe('How does Angle affect the flight trajectory? Let\'s answer this question.');
 
-    const senAnIcnRoot = document.querySelector('i.grok-icon.fal.fa-analytics') as HTMLElement;
+    const ribbonPannels = modelView.getRibbonPanels();
+    if (ribbonPannels.length < 1) {
+      grok.shell.warning('Failed to run model analysis features');
+      return;      
+    }
+    
+    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    if (rightPanel.length < 2) {
+      grok.shell.warning('Failed to load model analysis features');
+      return;      
+    }
+    
+    const senAnIcnRoot = rightPanel[rightPanel.length - 1];
 
     await this.action(
       'Run sensitivity analysis',
@@ -274,12 +288,14 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Explore solution',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      'Click "OK" to go to the next step.',
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Explore solution',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        'Click "OK" to go to the next step.',
+      );
+    }
 
     // 12. Parameters' impact
 
@@ -344,10 +360,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Complete this tutorial',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+      );
+    }
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
