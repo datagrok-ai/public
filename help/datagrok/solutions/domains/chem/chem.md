@@ -417,19 +417,19 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
 
-A hierarchy can be either generated automatically, or sketched manually. To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. When Scaffold Tree is initially created, a tree is generated automatically. You can also sketch the tree manually, or modify the automatically generated one. For tree generation, we use a derivative of the open-source
+A hierarchy can be either generated automatically, sketched manually, or modified at any point. To access, in the **Top Menu** select **Chem** > **Analyze** > **Scaffold Tree**. For automatic tree generation, a derivative of the open-source
 [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
-developed by Oliver Scott.
+developed by Oliver Scott is used.
 
 :::note
 
-Scaffold tree generation is computationally intensive and may take a significant time.
+Scaffold tree generation is computationally intensive and may take time for large datasets.
 
 :::
 
 ![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds. A picture best illustrates this:
+A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds.
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -545,7 +545,7 @@ permeability, and ADMET properties across your dataset.
 
 MMP analysis automatically detects matched molecular pairs within your
 dataset, calculates the differences in their properties, and aggregates these
-results statistically. The mean property change derived from these
+results. The mean property change derived from these
 transformations highlights consistent structure-activity relationships, indicating
 the expected effect of applying a similar modification to a new molecule.
 
@@ -554,7 +554,7 @@ visualizations, allowing you to:
 
 * Identify high-impact structural modifications that enhance target properties
 * Evaluate how specific chemical changes affect a compound's profile
-* Generate optimized molecules with predicted properties based on validated transformations
+* Generate optimized molecules with predicted properties based on transformations data
 
 ![MMP Demo](img/mmp-full.gif)
 
@@ -582,7 +582,7 @@ The **Substitutions** tab has two interactive tables:
   has two viewing modes:
    * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
 your dataset that contain either fragment from a current substitution.
-   * **Current molecule**: Shows only fragment pairs relevant to the current
+   * **Current molecule**: Shows only fragment pairs relevant to the current molecule
 molecule in your dataset, enabling exploration of molecule-specific
 substitutions. The number of corresponding substitutions appears in the top-left
 corner.
