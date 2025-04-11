@@ -1,7 +1,7 @@
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse} from "./cdd-vault-api";
+import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project} from "./cdd-vault-api";
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';
 
@@ -17,13 +17,32 @@ export async function getAsyncResultsAsDf(vaultId: number, exportResponse: ApiRe
         if (dfs.length)
             df = dfs[0];
     } else {
-        if (resultResponse.data?.objects)
-            df = DG.DataFrame.fromObjects(resultResponse.data.objects)!;
+        if (resultResponse.data?.objects) {
+          prepareDataForDf(resultResponse.data.objects as any[]);
+          df = DG.DataFrame.fromObjects(resultResponse.data.objects)!;
+        }
     }
     return df;
 
 }
 
+const EXCLUDE_FIELDS = ['udfs', 'source_files']; 
+
+function prepareDataForDf(objects: any[]) {
+  for (let i = 0; i < objects.length; i++) {
+    EXCLUDE_FIELDS.forEach((key) => delete objects[i][key]);
+    if (objects[i]['batches']) {
+      objects[i]['molecule_batch_identifiers'] = (objects[i]['batches'] as Batch[]).map((it) => it.molecule_batch_identifier).filter((it) => it !== undefined);
+      delete objects[i]['batches'];
+    }
+    if (objects[i]['projects'])
+      objects[i]['projects'] = (objects[i]['projects'] as Project[]).map((it) => it.name);
+    if (objects[i]['molecule_fields']) {
+      Object.keys(objects[i]['molecule_fields']).forEach((key: string) => objects[i][key] = objects[i]['molecule_fields'][key]);
+      delete objects[i]['molecule_fields'];
+    }
+  }
+}
 
 export async function getAsyncResults(vaultId: number, exportResponse: ApiResponse<ExportStatus>, timeoutMinutes: number, text: boolean): Promise<ApiResponse<any> | null> {
 

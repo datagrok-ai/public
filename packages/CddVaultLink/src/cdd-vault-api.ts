@@ -23,7 +23,7 @@ interface Vault {
   id: number;
 }
 
-interface Project {
+export interface Project {
   name: string;
   id: number;
 }
