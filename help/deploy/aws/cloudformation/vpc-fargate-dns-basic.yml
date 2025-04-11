@@ -338,27 +338,6 @@ Resources:
       RetentionInDays: 1
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
-  CvmLoadBalancerInt:
-    Properties:
-      LoadBalancerAttributes:
-      - Key: routing.http.drop_invalid_header_fields.enabled
-        Value: 'true'
-      Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-int
-      Scheme: internal
-      SecurityGroups:
-      - Ref: CvmALBIntSecurityGroup
-      Subnets:
-      - Ref: DatagrokPrivateSubnet1
-      - Ref: DatagrokPrivateSubnet2
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
-      - Key: datagrok.component
-        Value: cvm
-      Type: application
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
   CvmSecurityGroup:
     Properties:
       GroupDescription:
