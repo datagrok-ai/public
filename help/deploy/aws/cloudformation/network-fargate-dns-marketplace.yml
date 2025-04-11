@@ -2619,17 +2619,10 @@ Resources:
           Effect: Allow
           Resource: '*'
         - Action:
-          - ecs:RegisterTaskDefinition
-          Condition:
-            StringEquals:
-              aws:RequestTag/caller:
-              - grok_spawner
-          Effect: Allow
-          Resource: '*'
-        - Action:
           - ecs:DescribeTaskDefinition
           - ecs:ListTaskDefinitions
           - ecs:DeregisterTaskDefinition
+          - ecs:RegisterTaskDefinition
           Condition: {}
           Effect: Allow
           Resource: '*'
