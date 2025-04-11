@@ -121,17 +121,21 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 
 /** Description of a single element */
 export function singleDescription(root: HTMLElement, description: string, tooltip: string, position: ui.hints.POSITION = ui.hints.POSITION.LEFT) {
-  const clearBtn = ui.button('ok', () => closeIcn.click(), tooltip);
-  const btnDiv = ui.divH([clearBtn]);
-  const msg = ui.divV([
-    ui.markdown(description),
-    btnDiv,
-  ]);
-  const popup = ui.hints.addHint(root, msg, position);
-  const closeIcn = popup.querySelector('i') as HTMLElement;
-  btnDiv.classList.add('tutorials-sci-comp-btns-div');
-
-  return closeIcn;
+  try {
+    const clearBtn = ui.button('ok', () => closeIcn.click(), tooltip);
+    const btnDiv = ui.divH([clearBtn]);
+    const msg = ui.divV([
+      ui.markdown(description),
+      btnDiv,
+    ]);
+    const popup = ui.hints.addHint(root, msg, position);
+    const closeIcn = popup.querySelector('i') as HTMLElement;
+    btnDiv.classList.add('tutorials-sci-comp-btns-div');
+    
+    return closeIcn;
+  } catch (err) {
+    return null;
+  }
 }
 
 /** Close windows */

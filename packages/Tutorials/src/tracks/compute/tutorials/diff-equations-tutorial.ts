@@ -314,12 +314,14 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     let okBtn = singleDescription(lineChartRoot, description, 'Go to the next step');
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      'Check the updates. Click "OK" to go to the next step.',
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        'Check the updates. Click "OK" to go to the next step.',
+      );
+    }
 
     // 11. Close editor
     this.title('Exploration');

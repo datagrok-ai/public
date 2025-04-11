@@ -141,12 +141,14 @@ export class FittingTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      `Click "OK" to go to the next step.`,
-    );
+    if (okBtn !== null){
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        `Click "OK" to go to the next step.`,
+      );
+    }
 
     // 5. Run fitting
     this.title('Fit scalar output');
@@ -308,10 +310,12 @@ export class FittingTutorial extends Tutorial {
       ui.hints.POSITION.RIGHT,
     );
 
-    await this.action(
-      'Explore the fitted trajectory',
-      fromEvent(okBtn, 'click'),
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Explore the fitted trajectory',
+        fromEvent(okBtn, 'click'),
+      );
+    }
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
