@@ -2255,8 +2255,11 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource:
@@ -2301,8 +2304,11 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource: '*'
@@ -2328,8 +2334,11 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource:
@@ -2343,8 +2352,11 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
             StringEquals:
               aws:RequestTag/caller:
@@ -2359,10 +2371,12 @@ Resources:
           - ecs:DescribeTasks
           Condition:
             ArnEquals:
-              ecs:cluster:
-                Fn::GetAtt:
-                - DatagrokCluster
-                - Arn
+            - Fn::GetAtt:
+              - DatagrokCluster
+              - Arn
+            - Fn::GetAtt:
+              - CvmCluster
+              - Arn
           Effect: Allow
           Resource:
             Fn::Sub:
