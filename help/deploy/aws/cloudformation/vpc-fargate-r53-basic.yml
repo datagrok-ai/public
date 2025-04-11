@@ -1660,8 +1660,6 @@ Resources:
         - CreateVPC
         - Ref: DatagrokS3VPCEndpoint
         - Ref: AWS::NoValue
-      cvmClient:
-        Ref: CvmDNS
     Type: AWS::CloudFormation::CustomResource
   DatagrokSettingsSetLambdaFunction:
     Properties:
