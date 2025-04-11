@@ -2,10 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
 import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import $ from 'cash-dom';
+import {debounceTime, distinct, takeUntil} from 'rxjs/operators';
 
 export type ValidationIconInput = {
   validation?: ValidationResult,
@@ -15,13 +16,19 @@ export type ValidationIconInput = {
 export class ValidationIcon extends HTMLElement {
   private destroyed$ = new Subject<boolean>();
 
-  private status?: ValidationIconInput;
-  private scalar: boolean = true;
+  private status$ = new BehaviorSubject<ValidationIconInput | undefined>(undefined);
+  private scalar$ = new BehaviorSubject(true);
+  private hover$ = new BehaviorSubject(false);
   private currentIcon?: HTMLElement;
   private currentPopover?: HTMLElement;
 
   constructor() {
     super();
+
+    combineLatest([this.status$.pipe(distinct()), this.scalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
+      debounceTime(0),
+      takeUntil(this.destroyed$)
+    ).subscribe(() => this.update());
   }
 
   public destroy() {
@@ -36,22 +43,27 @@ export class ValidationIcon extends HTMLElement {
   }
 
   set validationStatus(s: ValidationIconInput | undefined) {
-    if (this.status !== s) {
-      this.status = s;
-      this.update();
-    }
+    this.status$.next(s);
   }
 
   get validationStatus() {
-    return this.status;
+    return this.status$.value;
+  }
+
+  set useHover(v: boolean) {
+    this.hover$.next(v);
+  }
+
+  get useHover() {
+    return this.hover$.value;
   }
 
   set isScalar(v: boolean) {
-    this.scalar = v;
+    this.scalar$.next(v);
   }
 
   get isScalar() {
-    return !!this.scalar;
+    return this.scalar$.value;
   }
 
   consistencyReset() {
@@ -63,18 +75,19 @@ export class ValidationIcon extends HTMLElement {
   }
 
   update() {
-    if (!this.status)
+    if (!this.status$.value)
       return;
-    const {validation, consistency} = this.status;
+    const {validation, consistency} = this.status$.value;
 
     $(this).addClass('rfv2-validation-icon');
     while (this.firstChild && this.removeChild(this.firstChild));
     this.rerenderValidations();
 
-    if (this.currentIcon && this.currentPopover) {
+    if (this.currentIcon)
       this.appendChild(this.currentIcon);
+
+    if (this.currentPopover)
       this.appendChild(this.currentPopover);
-    }
 
     const isAnythingToShow =
       (validation?.errors && validation.errors.length) ||
@@ -86,9 +99,9 @@ export class ValidationIcon extends HTMLElement {
   }
 
   rerenderValidations() {
-    if (!this.status)
+    if (!this.status$.value)
       return;
-    const {validation, consistency} = this.status;
+    const {validation, consistency} = this.status$.value;
 
     const iconOptions = (() => {
       if (validation?.errors && validation.errors.length) return {name: 'exclamation-circle', color: 'var(--red-3)'};
@@ -104,21 +117,30 @@ export class ValidationIcon extends HTMLElement {
 
     if (!iconOptions) return null;
 
-    const icon = ui.iconFA(iconOptions.name, () => this.displayValidation());
-    $(icon).css({'pointer-events': 'all'});
-    if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
 
-    $(icon).toggleClass('fal far');
-    const popover = this.addPopover(icon);
+    if (this.hover$.value) {
+      const icon = ui.iconFA(iconOptions.name);
+      ui.tooltip.bind(icon, () => this.renderValidationResults());
+      if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
 
-    this.currentIcon = icon;
-    this.currentPopover = popover;
+      this.currentIcon = icon;
+      this.currentPopover = undefined;
+    } else {
+      const icon = ui.iconFA(iconOptions.name, () => this.displayValidation());
+      $(icon).css({'pointer-events': 'all'});
+      if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
+
+      $(icon).toggleClass('fal far');
+      const popover = this.addPopover(icon);
+      this.currentIcon = icon;
+      this.currentPopover = popover;
+    }
   }
 
   private renderValidationResults() {
     const root = ui.divV([], {style: {gap: '10px'}});
 
-    const status = this?.status;
+    const status = this?.status$.value;
     if (status?.validation) {
       (['errors', 'warnings', 'notifications'] as const)
         .filter((category) => !!status.validation?.[category]?.length)
@@ -132,7 +154,7 @@ export class ValidationIcon extends HTMLElement {
             ui.divH([
               icon,
               ui.divText(advice.description),
-            ]),
+            ], {style: {alignItems: 'center'}}),
             ...(advice.actions ?? []).map(
               (action) => ui.link(
                 action.actionName,
@@ -152,7 +174,7 @@ export class ValidationIcon extends HTMLElement {
         ui.divH([
           icon,
           ui.divText(`Current value is incosistent. Computed value was ${
-            this.scalar ? consistentValue : 'different'
+            this.scalar$.value ? consistentValue : 'different'
           }`),
         ]),
         ui.link(

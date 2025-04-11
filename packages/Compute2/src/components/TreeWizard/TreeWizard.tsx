@@ -519,17 +519,17 @@ export const TreeWizard = Vue.defineComponent({
               </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null
           }
           {
-            !rfvHidden.value && chosenStepState.value &&
+            !rfvHidden.value && chosenStepState.value && chosenStepUuid.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
                 class={{'overflow-hidden': true}}
-                funcCall={chosenStepState.value.funcCall!}
+                funcCall={chosenStepState.value.funcCall}
                 uuid={chosenStepUuid.value!}
-                callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
-                callMeta={chosenStepUuid.value ? states.meta[chosenStepUuid.value] : undefined}
+                callState={states.calls[chosenStepUuid.value]}
+                callMeta={states.meta[chosenStepUuid.value]}
                 viewersHook={chosenStepState.value.viewersHook}
-                validationStates={states.validations[chosenStepState.value.uuid]}
-                consistencyStates={states.consistency[chosenStepState.value.uuid]}
+                validationStates={states.validations[chosenStepUuid.value]}
+                consistencyStates={states.consistency[chosenStepUuid.value]}
                 menuActions={menuActions.value}
                 buttonActions={buttonActions.value}
                 isReadonly={chosenStepState.value.isReadonly}
@@ -547,11 +547,14 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            !pipelineViewHidden.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
+            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&  !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={chosenStepState.value.provider ? DG.Func.byName(chosenStepState.value.nqName!).prepare() : undefined}
+              funcCall={(chosenStepState.value.provider && chosenStepState.value.nqName) ?
+                DG.Func.byName(chosenStepState.value.nqName!).prepare() :
+                undefined
+              }
               state={chosenStepState.value}
-              uuid={chosenStepUuid.value!}
+              uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
               menuActions={menuActions.value}
               buttonActions={buttonActions.value}
@@ -560,7 +563,8 @@ export const TreeWizard = Vue.defineComponent({
               onProceedClicked={onPipelineProceed}
               onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
-                addStep(chosenStepState.value!.uuid, itemId, position);
+                if (chosenStepUuid.value)
+                  addStep(chosenStepUuid.value, itemId, position);
               }}
               ref={pipelineViewRef}
               view={currentView.value}

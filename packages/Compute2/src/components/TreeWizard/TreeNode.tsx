@@ -177,7 +177,9 @@ export const TreeNode = Vue.defineComponent({
       if (pipelineValidation.value)
         return (
           <ValidationIcon
-            validationStatus={pipelineValidation.value} style={{
+            validationStatus={pipelineValidation.value}
+            useHover={true}
+            style={{
               alignSelf: 'center',
               left: '-20px',
               position: 'absolute',

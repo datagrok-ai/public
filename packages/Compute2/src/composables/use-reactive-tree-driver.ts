@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {useSubject, useSubscription, useObservable} from '@vueuse/rxjs';
+import {useSubscription, useObservable} from '@vueuse/rxjs';
 import {BehaviorSubject, merge, Observable} from 'rxjs';
 import {switchMap, map} from 'rxjs/operators';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
@@ -14,6 +14,8 @@ function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
   return merge(...entries);
 }
+
+export type DriverAPI = ReturnType<typeof useReactiveTreeDriver>;
 
 export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const driver = new Driver();

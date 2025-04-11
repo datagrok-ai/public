@@ -23,6 +23,10 @@ export const ValidationIcon = Vue.defineComponent({
     isScalar: {
       type: Boolean,
       default: true,
+    },
+    useHover: {
+      type: Boolean,
+      default: false,
     }
   },
   emits: {
@@ -31,10 +35,12 @@ export const ValidationIcon = Vue.defineComponent({
   },
   setup(props, {emit}) {
     const isScalar = Vue.computed(() => props.isScalar);
+    const useHover = Vue.computed(() => props.useHover);
     const validationStatus = Vue.computed(() => props.validationStatus ? Vue.markRaw(props.validationStatus) : undefined);
     return () => (
       <dg-validation-icon
         isScalar={isScalar.value}
+        useHover={useHover.value}
         validationStatus={validationStatus.value}
         onConsistencyReset={(_ev: CustomEvent) => emit('consistencyReset')}
         onActionRequest={(ev: CustomEvent<string>) => emit('actionRequest', ev.detail)}

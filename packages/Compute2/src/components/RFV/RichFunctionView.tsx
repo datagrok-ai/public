@@ -504,7 +504,6 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={historyRef}
                 class='overflow-scroll h-full'
               /> }
-
             { !formHidden.value &&
               <div
                 class='flex flex-col p-2 overflow-scroll h-full'
@@ -557,7 +556,6 @@ export const RichFunctionView = Vue.defineComponent({
                   }
                 </div>
               </div> }
-
             {
               tabsData.value
                 .map(({tabLabel, tabContent, isInput}) => {
