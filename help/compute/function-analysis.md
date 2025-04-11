@@ -109,3 +109,10 @@ let y = x + 3;
 ```
 
 :::
+
+## See also
+
+Tutorials:
+
+* [Parameter optimization](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Parameteroptimization)
+* [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)
