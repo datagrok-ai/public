@@ -173,7 +173,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.10.0
+    Default: 1.10.1
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -2816,40 +2816,39 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Environment:
-        - Name: GROK_SPAWNER_DOCKER_REGISTRY_SECRET_ARN
-          Value: ''
-        - Name: GROK_SPAWNER_DATAGROK_ECS_CLUSTER
+        - Name: GROK_SPAWNER_CVM_ECS__CLUSTER
           Value:
-            Ref: DatagrokCluster
-        - Name: GROK_SPAWNER_DATAGROK_ECS_SUBNETS
+            Ref: CvmCluster
+        - Name: GROK_SPAWNER_CVM_ECS__CLUSTER_REGION
+          Value:
+            Ref: ${AWS::Region}
+        - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
+          Value:
+            Ref: FARGATE
+        - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:
             - '["${s1}", "${s2}"]'
             - s1:
-                Ref: DatagrokPrivateSubnet1
+                Ref: CvmPrivateSubnet1
               s2:
-                Ref: DatagrokPrivateSubnet2
-        - Name: GROK_SPAWNER_DATAGROK_ECS_SECURITY_GROUPS
+                Ref: CvmPrivateSubnet2
+        - Name: GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS
           Value:
             Fn::Sub:
             - '["${s1}"]'
             - s1:
-                Ref: DatagrokSecurityGroup
-        - Name: GROK_SPAWNER_DATAGROK_ECS_EXEC_ROLE
-          Value:
-            Fn::GetAtt:
-            - DatagrokTaskExecutionRole
-            - Arn
+                Ref: CvmSecurityGroup
         - Name: GROK_SPAWNER_ENVIRONMENT
           Value:
             Fn::Sub: ${AWS::StackName}
-        - Name: GROK_SPAWNER_KANIKO_S3_BUCKET
+        - Name: GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET
           Value:
             Ref: DatagrokS3
-        - Name: GROK_SPAWNER_KANIKO_TASK_DEFINITION
+        - Name: GROK_SPAWNER_CVM_ECS__KANIKO_TASK_DEFINITION
           Value:
             Ref: DatagrokKanikoTaskDefinition
-        - Name: GROK_SPAWNER_DATAGROK_ECS_LOG_GROUP
+        - Name: GROK_SPAWNER_CVM_ECS__LOG_GROUP
           Value:
             Fn::Sub:
             - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
