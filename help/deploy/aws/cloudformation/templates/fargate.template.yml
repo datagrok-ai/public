@@ -2156,12 +2156,13 @@ Resources:
               - "ecs:DescribeTasks"
             Condition:
               ArnEquals:
-                - Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
-                - Fn::GetAtt:
-                    - CvmCluster
-                    - Arn
+                ecs:cluster:
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
               Fn::Sub:
