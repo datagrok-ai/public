@@ -2415,6 +2415,19 @@ Resources:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: CvmCluster
+        - Action:
+          - iam:PassRole
+          Effect: Allow
+          Resource:
+          - Fn::GetAtt:
+            - GrokSpawnerTaskRole
+            - Arn
+          - Fn::GetAtt:
+            - DatagrokKanikoTaskRole
+            - Arn
+          - Fn::GetAtt:
+            - DatagrokTaskExecutionRole
+            - Arn
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
   GrokSpawnerPrivateDNS:
