@@ -2826,18 +2826,18 @@ Resources:
             Ref: CvmCluster
         - Name: GROK_SPAWNER_CVM_ECS__CLUSTER_REGION
           Value:
-            Ref: ${AWS::Region}
+            Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
           Value:
-            Ref: FARGATE
+            Fn::Sub: FARGATE
         - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:
             - '["${s1}", "${s2}"]'
             - s1:
-                Ref: CvmPrivateSubnet1
+                Ref: DatagrokPrivateSubnet1
               s2:
-                Ref: CvmPrivateSubnet2
+                Ref: DatagrokPrivateSubnet2
         - Name: GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS
           Value:
             Fn::Sub:
