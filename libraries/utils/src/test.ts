@@ -469,15 +469,19 @@ export async function runTests(options?: TestExecutionOptions) {
           }
         }
         let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
+            continue;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if ((window as any).gc)
+        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        if (isGBEnable)
           (window as any).gc();
 
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
 
-        if ((window as any).gc)
+        if (isGBEnable)
           (window as any).gc();
         if (testRun)
           res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: DG.Widget.getAll().length - widgetsBefore });
@@ -488,15 +492,23 @@ export async function runTests(options?: TestExecutionOptions) {
     } else {
       for (let i = 0; i < t.length; i++) {
         let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() === test.name.toLowerCase())
+            continue;
+        
+        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if ((window as any).gc)
+
+        if (isGBEnable)
           (window as any).gc();
 
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
-        if ((window as any).gc)
+        
+        if (isGBEnable)
           (window as any).gc();
+        
         if (testRun)
           res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
 
