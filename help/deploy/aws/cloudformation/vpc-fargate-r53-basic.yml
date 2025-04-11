@@ -2562,9 +2562,6 @@ Resources:
           Effect: Allow
           Resource:
           - Fn::GetAtt:
-            - GrokSpawnerTaskRole
-            - Arn
-          - Fn::GetAtt:
             - DatagrokKanikoTaskRole
             - Arn
           - Fn::GetAtt:
@@ -2768,10 +2765,10 @@ Resources:
                 Ref: DatagrokLogGroup
         - Name: GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE
           Value:
-            Ref: GrokSpawnerTaskRole
+            Ref: DatagrokTaskExecutionRole
         - Name: GROK_SPAWNER_CVM_ECS__EXEC_ROLE
           Value:
-            Ref: GrokSpawnerTaskRole
+            Ref: DatagrokTaskExecutionRole
         Essential: true
         Image:
           Fn::Sub:
