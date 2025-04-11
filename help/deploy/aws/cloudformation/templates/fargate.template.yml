@@ -2469,6 +2469,44 @@ Resources:
                 tag:
                   Ref: GrokSpawnerVersion
           Environment:
+            - Name: "GROK_SPAWNER_ENVIRONMENT"
+              Value:
+                Fn::Sub: "${AWS::StackName}"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER"
+              Value:
+                Ref: DatagrokCluster
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER_REGION"
+              Value:
+                Fn::Sub: "${AWS::Region}"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE"
+              Value:
+                Fn::Sub: "FARGATE"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__SUBNETS"
+              Value:
+                Fn::Sub:
+                  - '["${s1}", "${s2}"]'
+                  - s1:
+                      Ref: DatagrokPrivateSubnet1
+                    s2:
+                      Ref: DatagrokPrivateSubnet2
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__SECURITY_GROUPS"
+              Value:
+                Fn::Sub:
+                  - '["${s1}"]'
+                  - s1:
+                      Ref: DatagrokSecurityGroup
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_S3_BUCKET"
+              Value:
+                Ref: DatagrokS3
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_TASK_DEFINITION"
+              Value:
+                Ref: DatagrokKanikoTaskDefinition
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__LOG_GROUP"
+              Value:
+                Fn::Sub:
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+                  - logs:
+                      Ref: DatagrokLogGroup
             - Name: "GROK_SPAWNER_CVM_ECS__CLUSTER"
               Value:
                 Ref: CvmCluster
@@ -2492,9 +2530,6 @@ Resources:
                   - '["${s1}"]'
                   - s1:
                       Ref: CvmSecurityGroup
-            - Name: "GROK_SPAWNER_ENVIRONMENT"
-              Value:
-                Fn::Sub: "${AWS::StackName}"
             - Name: "GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET"
               Value:
                 Ref: DatagrokS3
