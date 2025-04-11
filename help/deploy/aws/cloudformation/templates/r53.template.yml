@@ -86,11 +86,6 @@ Resources:
             Ref: DNSZoneId
 
       KeyAlgorithm: RSA_2048
-      SubjectAlternativeNames:
-        - Fn::Sub:
-            - "${AWS::StackName}-datagrok-cvm.${domain}"
-            - domain:
-                Ref: DNSDomain
       Tags:
         - Key: Name
           Value:
