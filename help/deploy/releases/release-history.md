@@ -32,13 +32,12 @@ Browse UX: Site markup, UI API, and CSS styles have been updated. If your packag
 
 ### Main updates
  * **New Browse UX**: three new tabs—Toolbox, Dashboards, and Favorites—make navigation more intuitive and organized
-* **Content-specific file viewers** automatically recognize scientific data formats and open the appropriate viewer for analysis, e.g. [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers)
+* **Content-specific file viewers**: improved file viewer support now detects both format and content, allowing files like .xlsx to open in the most suitable viewer—e.g., plain data opens as tables, while plate-formatted files open in the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers)
 * **Harmonized server settings**: we removed unchanged settings (hosts, ports, credentials), eliminated empty entries, and standardized service configurations
-* **Mini-legend** icon now appears when the viewer window is too small to display the full legend. Hovering over the icon reveals the complete legend, ensuring clarity without taking up extra space
-
 
  ### Viewers
 
+* Mini-legend: added an interactive tooltip 
 * [#2303](https://github.com/datagrok-ai/public/issues/2303): Provided 3-point-color scheme for gradient colors 
 * [Box plot](../../visualize/viewers/box-plot.md):  [#3292](https://github.com/datagrok-ai/public/issues/3292): Implemented zoom persistence for visualizations in layouts
 * Pivot table: [#3199](https://github.com/datagrok-ai/public/issues/3199): Added the ability to open data in new workspace
@@ -46,7 +45,7 @@ Browse UX: Site markup, UI API, and CSS styles have been updated. If your packag
 * [PC plot](../../visualize/viewers/pc-plot.md): Now features legend and column coloring
 * [ Pie chart](../../visualize/viewers/pie-chart.md): Added max pie circle size property
 * Fixed for [Line Chart](../../visualize/viewers/line-chart.md):
-   * [#3288](https://github.com/datagrok-ai/public/issues/3288): Added more detailed explanation for “to many categories” 
+   * [#3288](https://github.com/datagrok-ai/public/issues/3288): Added more detailed explanation for “too many categories” 
    * [#3289](https://github.com/datagrok-ai/public/issues/3289): If the column in the legend has too many categories, the legend is not displayed
 
 
@@ -80,12 +79,12 @@ Browse UX: Site markup, UI API, and CSS styles have been updated. If your packag
 #### [Usage analysis](https://github.com/datagrok-ai/public/blob/master/packages/UsageAnalysis/CHANGELOG.md)
 
  *  Implemented the ability to filter functions usage by function tag
- *  [#3213](https://github.com/datagrok-ai/public/issues/3213): Added a new Projects tab (beta). For details, see [User logs concerning opening projects](https://community.datagrok.ai/t/user-logs-concerning-opening-projects/901/5?u=oahadzhanian.datagrok.ai)
+ *  [#3213](https://github.com/datagrok-ai/public/issues/3213): Added a new Projects tab (beta). For details, see [Usage Analysis: Features](https://datagrok.ai/help/govern/audit/usage-analysis#features)
 
 #### [Diff studio](https://github.com/datagrok-ai/public/blob/master/packages/DiffStudio/CHANGELOG.md)
 
  *  Implemented in-webworker solving equations
- *  Introduced the use of DS lib
+ *  Refactored Diff Studio to leverage the Diff Grok library for improved performance and extensibility
 
 
 ## 2025-02-18 Datagrok 1.24.0 release
