@@ -82,7 +82,8 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { oclMol } from './utils/chem-common-ocl';
-import { DesirabilityTemplate, mpo, _mpoDialog } from './analysis/mpo/mpo';
+import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
+import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2203,4 +2204,38 @@ export async function beautifyMols(mols: string[]): Promise<string[]> {
 //description: Calculates the MPO score for the column of molecules
 export async function _mpo(): Promise<void> {
   _mpoDialog(grok.shell.t);
+}
+
+//tags: fileViewer
+//meta.fileViewer: json
+//input: file file
+//meta.fileViewerCheck: Chem:checkJsonMpoProfile
+//output: view v
+export function mpoProfileEditor(file: DG.FileInfo): DG.View {
+  const view = DG.View.create();
+  const saveButton = ui.bigButton('SAVE', () => {});
+  saveButton.style.display = 'none';
+  view.name = file.name;
+  view.setRibbonPanels([[saveButton]]);
+
+  file.readAsString().then((s) => {
+    const mpoEditor = new MpoProfileEditor();
+    mpoEditor.setProfile(JSON.parse(s));
+    view.append(mpoEditor.root);
+
+    mpoEditor.onChanged.subscribe((_) => saveButton.style.display = 'initial');
+    saveButton.onclick = () => {
+      grok.dapi.files.writeAsText(file, JSON.stringify(mpoEditor.getProfile()));
+      saveButton.style.display = 'none';
+    };
+  });
+
+  return view;
+}
+
+//name: checkJsonMpoProfile
+//input: string content
+//output: bool result
+export function checkJsonMpoProfile(content: string) {
+  return JSON.parse(content)['type'] === 'MPO Desirability Profile';
 }

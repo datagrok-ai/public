@@ -1,4 +1,5 @@
 {
+    "type": "MPO Desirability Profile",
     "name": "Pfizer CNS",
     "description": "Score from 0 to 6, with higher scores indicating a greater likelihood of a compound being a successful CNS drug",
     "properties": {

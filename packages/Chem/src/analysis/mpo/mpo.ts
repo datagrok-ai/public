@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {MpoProfileEditor} from "./mpo-profile-editor";
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
@@ -15,7 +16,7 @@ export type PropertyDesirability = {
 }
 
 /// A map of desirability lines with their weights
-export type DesirabilityTemplate = {
+export type DesirabilityProfile = {
   name: string;
   description: string;
   properties: { [key: string]: PropertyDesirability };
@@ -26,7 +27,7 @@ export type DesirabilityTemplate = {
 /// Otherwise, returns the y value of the desirability line at x
 function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): number {
   // If the line is empty or x is outside the range, return 0
-  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0]) 
+  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0])
       return 0;
 
   // Find the two points that x lies between
@@ -36,129 +37,129 @@ function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): numbe
 
     if (x >= x1 && x <= x2) {
       // Linear interpolation between the two points
+      if (x1 === x2) return y1;
       const slope = (y2 - y1) / (x2 - x1);
       return y1 + slope * (x - x1);
     }
   }
 
+  // Should not happen if x is within bounds, but return 0 as fallback
   return 0;
 }
 
+export async function _mpoDialog(table: DG.DataFrame): Promise<void> {
+    // Get list of MPO files from appData/Chem/mpo
+    const mpoFiles = await grok.dapi.files.list('System:AppData/Chem/mpo');
 
-export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
-  const resultColumn = DG.Column.float('mpo', columns[0].length);
-  const desirabilityTemplates = columns.map(column => {
-    return JSON.parse(column.getTag('desirabilityTemplate')) as PropertyDesirability;
-  });
+    const dataFrame = grok.shell.t;
+    const mpoProfileEditor = new MpoProfileEditor(dataFrame);
+    const defaultTemplateName = mpoFiles.length > 0 ? mpoFiles[0].fileName : null;
+    const templateInput = ui.input.choice('Template', { items: mpoFiles.map(f => f.fileName), value: defaultTemplateName! });
 
-  resultColumn.init(i => {
-    let sum = 0;
-    let totalWeight = 0;
+    // Keep track of current template data to avoid modifying original on cancel
+    let currentTemplate: DesirabilityProfile | null = null;
+    let currentTemplateFileName: string | null = defaultTemplateName; // Track filename
 
-    for (let j = 0; j < columns.length; j++) {
-      const value = columns[j].get(i);
-      if (value !== null) {
-        const desirability = desirabilityTemplates[j];
-        const score = desirabilityScore(value, desirability.line);
-        sum += score * desirability.weight;
-        totalWeight += desirability.weight;
-      }
+    async function loadProfile(profileFileName: string | null) {
+        currentTemplateFileName = profileFileName; // Update tracked filename
+        const templateFile = mpoFiles.find(f => f.fileName === profileFileName);
+        const templateContent = await templateFile!.readAsString();
+        currentTemplate = JSON.parse(templateContent) as DesirabilityProfile;
+        mpoProfileEditor.setProfile(currentTemplate);
     }
 
-        // Normalize by total weight to get a score between 0 and 1
-    return totalWeight > 0 ? sum / totalWeight : 0;
-  });
+    // Update property info when template changes
+    templateInput.onChanged.subscribe((value) => {
+      loadProfile(value);
+    });
 
-  dataFrame.columns.add(resultColumn);
-  return resultColumn;
+    // Create dialog
+    const dialog = ui.dialog('MPO Score')
+        // .add(molColInput) // Molecule column is now determined automatically
+        .add(templateInput)
+        .add(mpoProfileEditor.root) // Add the container for properties
+        .onOK(async () => {
+
+            // --- Apply the changes ---
+            // 1. Save the modified template (optional, could just use in memory)
+            // Example: Save back to the file
+             try {
+                 const updatedTemplateString = JSON.stringify(currentTemplate, null, 2);
+                 await grok.dapi.files.writeAsText(`System:AppData/Chem/mpo/${currentTemplateFileName}`, updatedTemplateString);
+                 grok.shell.info(`Template '${currentTemplateFileName}' updated.`);
+             } catch (e) {
+                 console.error("Failed to save template:", e);
+                 grok.shell.error(`Failed to save template '${currentTemplateFileName}': ${e instanceof Error ? e.message : String(e)}`);
+                 // Decide if you want to proceed with calculation even if saving failed
+                 // return;
+             }
+
+
+            // 2. Check for necessary columns and set tags
+            const columnsToProcess: DG.Column[] = [];
+            let missingColumns = false;
+            for (const propertyName in currentTemplate!.properties) {
+                const column = dataFrame.columns.byName(propertyName);
+                if (!column) {
+                    grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping this property for calculation.`);
+                    missingColumns = true;
+                    continue; // Skip this property if column is missing
+                }
+                 // Set the *modified* desirability info as a tag
+                column.setTag('desirabilityTemplate', JSON.stringify(currentTemplate!.properties[propertyName]));
+                columnsToProcess.push(column);
+            }
+
+             if (columnsToProcess.length === 0) {
+                 grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
+                 return;
+             }
+
+             // 3. Call MPO function with the relevant columns
+             try {
+                const resultCol = mpo(dataFrame, columnsToProcess); // mpo now adds the column itself
+                grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
+             } catch(e) {
+                 console.error("MPO Calculation Error:", e);
+                 grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
+             }
+
+        })
+        .show();
+
+    loadProfile(templateInput.value!);
 }
 
 
-export async function _mpoDialog(table: DG.DataFrame): Promise<void> {
-  // Get list of MPO files from appData/Chem/mpo
-  const mpoFiles = await grok.dapi.files.list('System:AppData/Chem/mpo');
+/** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
+export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
+    if (columns.length === 0)
+        throw new Error("No columns provided for MPO calculation.");
 
-  const dataFrame = grok.shell.t;
-  const molCol = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (!molCol)
-    throw new Error('No molecule column found');
+    const resultColumnName = dataFrame.columns.getUnusedName('MPO'); // Ensure unique name
+    const resultColumn = DG.Column.float(resultColumnName, columns[0].length);
 
-  const molColInput = ui.input.column('Column', { table: dataFrame, value: molCol })
-  const templateInput = ui.input.choice('MPO Template', { items: mpoFiles.map(f => f.fileName), value: mpoFiles[0]?.fileName });
-  const propertyInfos = ui.divV([]);
+    const desirabilityTemplates = columns.map(column => {
+        const tag = column.getTag('desirabilityTemplate');
+        return JSON.parse(tag) as PropertyDesirability;
+    });
 
-  // Create dialog
-  const dialog = ui.dialog('MPO Score')
-    .add(molColInput)
-    .add(templateInput)
-    .add(propertyInfos)
-    .onOK(async () => {
-      const templateContent = await grok.dapi.files.readAsText('System:AppData/Chem/mpo/' + templateInput.value!);
-      const template = JSON.parse(templateContent) as DesirabilityTemplate;
+    resultColumn.init(i => {
+        let totalScore = 0;
+        let maxScore = 0;
 
-      for (const property in template.properties) {
-        const column = dataFrame.columns.byName(property);
-        if (!column)
-          throw new Error(`Column ${property} not found`);
-        column.setTag('desirabilityTemplate', JSON.stringify(template.properties[property]));
-      }
-
-      mpo(dataFrame, Object.keys(template.properties).map(property => dataFrame.columns.byName(property)));
-    })
-    .show();
-
-      // Function to update property information
-  async function updatePropertyInfo(templateFileName: string) {
-    const templateFile = mpoFiles.find(f => f.fileName === templateFileName);
-    if (!templateFile) return;
-
-    const templateContent = await templateFile.readAsString();
-    const template = JSON.parse(templateContent) as DesirabilityTemplate;
-    console.log(template);
-
-    const grid = ui.table(Object.keys(template.properties), (propertyName, index) => {
-      const prop = template.properties[propertyName];
-      
-      // Create canvas for the desirability line
-      const canvas = ui.canvas(200, 50);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return [propertyName, prop.weight, canvas];
-      
-      // Set up canvas
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      
-      // Calculate scaling factors
-      const minX = prop.min ?? Math.min(...prop.line.map(p => p[0]));
-      const maxX = prop.max ?? Math.max(...prop.line.map(p => p[0]));
-      const scaleX = 200 / (maxX - minX);
-      const scaleY = 50; // Since y ranges from 0 to 1
-      
-      // Draw the line
-      ctx.beginPath();
-      prop.line.forEach((point, i) => {
-        const x = (point[0] - minX) * scaleX;
-        const y = 50 - (point[1] * scaleY); // Flip y-axis since canvas y increases downward
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
+        for (let j = 0; j < columns.length; j++) {
+            const desirability = desirabilityTemplates[j];
+            const value = columns[j].get(i);
+            const score = desirabilityScore(value, desirability.line);
+            totalScore += desirability.weight * score;
+            maxScore += desirability.weight;
         }
-      });
-      ctx.stroke();
-      
-      return [propertyName, prop.weight, canvas];
-    })
 
-    ui.empty(propertyInfos);
-    propertyInfos.append(grid);
-  }
+        return 100 * (totalScore / maxScore);
+    });
 
-  // Update property info when template changes
-  templateInput.onChanged.subscribe((value) => {
-    if (value)
-      updatePropertyInfo(value);
-  });
-
-  updatePropertyInfo(mpoFiles[0].fileName);
+    // Add the column to the table
+    dataFrame.columns.add(resultColumn);
+    return resultColumn;
 }

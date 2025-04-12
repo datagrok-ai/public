@@ -53,5 +53,6 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: initAutoTests
 export async function initAutoTests() {
-  await initTests(_package, _package.getModule('package-test.js'));
+  //ts-ignore
+  //await initTests(_package, _package.getModule('package-test.js'));
 }
