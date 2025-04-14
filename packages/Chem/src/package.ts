@@ -84,6 +84,7 @@ import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-re
 import { oclMol } from './utils/chem-common-ocl';
 import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
 import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
+import { OCLService } from './open-chem/ocl-service';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2197,6 +2198,17 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 //output: list<string> result
 export async function beautifyMols(mols: string[]): Promise<string[]> {
   return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+}
+
+//name: convertToV3KViaOCL
+//description: Converts the list of molecules to V3K format using OCL
+//input: list<string> mols
+//output: list<string> result
+export async function convertToV3KViaOCL(mols: string[]): Promise<string[]> {
+  const oc = new OCLService();
+  const result = await oc.molfileToV3K(mols);
+  oc.terminate();
+  return result;
 }
 
 //name: mpo
