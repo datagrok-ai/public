@@ -737,9 +737,9 @@
               },
               "object": {
                 "ranges": {
-                  "<= 5": "Fatal is swallowed",
-                  "5 - 50": "Fatal is swallowed",
-                  "50 - 300": "Toxic is swallowed",
+                  "<= 5": "Fatal if swallowed",
+                  "5 - 50": "Fatal if swallowed",
+                  "50 - 300": "Toxic if swallowed",
                   "300 - 2000": "Harmful if swallowed",
                   "2000 - 5000": "May be harmful if swallowed",
                   "> 5000": "Non-toxic"
