@@ -1,7 +1,7 @@
 export type TranslationKey = keyof typeof Defaults;
 
-export type GetLocalizerParameters<K extends TranslationKey> = K extends keyof LocalizerParameters 
-    ? LocalizerParameters[K] 
+export type GetLocalizerParameters<K extends TranslationKey> = K extends keyof LocalizerParameters
+    ? LocalizerParameters[K]
     : [];
 
 export const Defaults = {

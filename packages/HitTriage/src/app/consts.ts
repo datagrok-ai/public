@@ -48,3 +48,4 @@ export enum CampaignGroupingType {
   Author = 'Author',
   LastModifiedUser = 'Last Modified User',
 }
+export const HTFunctionOrderingLSKey = 'HTFunctionOrderingLS';

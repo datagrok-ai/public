@@ -38,9 +38,9 @@ export class SeachEditor {
     runListChoiceDiv = ui.div();
     runsListChoice: DG.InputBase = ui.input.choice('', { value: '', items: [''] });
 
-    readoutChoice: DG.InputBase = ui.input.choice('', { value: ANY_READOUT_CHOICE, items: [ANY_READOUT_CHOICE] });
-    readoutChoiceDiv = ui.div();
-    readoutCondition: DG.InputBase = ui.input.string('');
+   // readoutChoice: DG.InputBase = ui.input.choice('', { value: ANY_READOUT_CHOICE, items: [ANY_READOUT_CHOICE] });
+   // readoutChoiceDiv = ui.div();
+   // readoutCondition: DG.InputBase = ui.input.string('');
 
     structureInput = ui.input.molecule('Structure');
     structureSearchTypeChoice = ui.input.choice('Search', {
@@ -68,11 +68,11 @@ export class SeachEditor {
             this.runListChoiceDiv
         ], {style: {gap: '20px'}}));
 
-        this.readoutChoiceDiv.append(this.readoutChoice.root);
-        this.runAndReadoutDiv.append(ui.divH([
-            this.readoutChoiceDiv,
-            this.readoutCondition.root
-        ], {style: {gap: '20px'}}));
+        // this.readoutChoiceDiv.append(this.readoutChoice.root);
+        // this.runAndReadoutDiv.append(ui.divH([
+        //     this.readoutChoiceDiv,
+        //     this.readoutCondition.root
+        // ], {style: {gap: '20px'}}));
 
         this.protocolListChoiceDiv.append(this.protocolListChoice.root);
         this.specificProtocolDiv.append(this.protocolListChoiceDiv);
@@ -104,7 +104,7 @@ export class SeachEditor {
                 value: '', items: [''].concat(this.protocolNames), onValueChanged: () => {
                     this.runAndReadoutDiv.style.display = !this.protocolListChoice!.value ? 'none' : 'flex';
                     if (this.protocolListChoice!.value) {
-                        this.updateReadoutDefinition(this.protocolListChoice!.value);
+                       // this.updateReadoutDefinition(this.protocolListChoice!.value);
                         this.runChoice.value = ANY_RUN_CHOICE;
                         this.updateRuns(this.protocolListChoice!.value);
                     }
@@ -114,17 +114,17 @@ export class SeachEditor {
         }
     }
 
-    updateReadoutDefinition(protocolName: string) {
-        const readouts = this.protocols[protocolName].readout_definitions.map((it) => it.name);
-        ui.empty(this.readoutChoiceDiv);
-        this.readoutChoice = ui.input.choice('', {
-            value: ANY_READOUT_CHOICE, items: [ANY_READOUT_CHOICE].concat(readouts), onValueChanged: () => {
-                this.readoutCondition.root.style.display = this.readoutChoice.value === ANY_READOUT_CHOICE ? 'none' : 'flex';
-            }
-        });
-        this.readoutCondition.root.style.display = 'none';
-        this.readoutChoiceDiv.append(this.readoutChoice.root);
-    }
+    // updateReadoutDefinition(protocolName: string) {
+    //     const readouts = this.protocols[protocolName].readout_definitions.map((it) => it.name);
+    //     ui.empty(this.readoutChoiceDiv);
+    //     this.readoutChoice = ui.input.choice('', {
+    //         value: ANY_READOUT_CHOICE, items: [ANY_READOUT_CHOICE].concat(readouts), onValueChanged: () => {
+    //             this.readoutCondition.root.style.display = this.readoutChoice.value === ANY_READOUT_CHOICE ? 'none' : 'flex';
+    //         }
+    //     });
+    //     this.readoutCondition.root.style.display = 'none';
+    //     this.readoutChoiceDiv.append(this.readoutChoice.root);
+    // }
 
     updateRuns(protocolName: string) {
         this.currentProtocolRuns = {};

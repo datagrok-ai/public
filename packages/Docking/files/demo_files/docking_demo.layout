@@ -3,18 +3,18 @@
   "viewStateMap": {
     "containerType": "fill",
     "state": {
-      "width": 1094,
-      "height": 801,
+      "width": 1208,
+      "height": 754,
       "documentManager": true
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 1094,
-          "height": 801,
+          "width": 1208,
+          "height": 754,
           "element": {
-            "id": "6a4f2ef0-e920-11ef-b8bf-95dedde45f2d",
+            "id": "9f91f240-e920-11ef-e64c-cf7f9b69f191",
             "type": "Grid",
             "look": {
               "#type": "GridLook",
@@ -77,33 +77,6 @@
                     "vertAlign": "bottom",
                     "textWrap": "words"
                   }
-                },
-                {
-                  "width": 182.87766554433227,
-                  "columnName": "DiffDock poses",
-                  "cellType": "Molecule3D",
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                },
-                {
-                  "isColorCoded": true,
-                  "isTextColorCoded": true,
-                  "width": 90,
-                  "columnName": "confidence",
-                  "customFormat": "0.00",
-                  "cellType": "number",
-                  "format": "0.00",
-                  "colorCodingType": "Linear",
-                  "colorCodingLinear": [
-                    4278255360,
-                    4294901760
-                  ],
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
                 }
               ]
             },
@@ -115,7 +88,7 @@
       }
     ],
     "floating": [],
-    "tableId": "55d4b8a0-e920-11ef-f0e3-8d6bf25fd105",
+    "tableId": "93f62500-e920-11ef-e4e2-37bef8eababd",
     "tableName": "docking_demo"
   },
   "name": "DockingDemo",
@@ -123,5 +96,5 @@
   "author": {
     "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
   },
-  "createdOn": "2025-02-20T09:38:18.077Z"
+  "createdOn": "2025-03-25T11:45:17.667Z"
 }

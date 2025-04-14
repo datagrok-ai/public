@@ -1,4 +1,4 @@
-# KetcherSketcher changelog
+# Ketcher Sketcher changelog
 
 ## 2.2.3 (2025-01-14)
 

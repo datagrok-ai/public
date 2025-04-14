@@ -58,7 +58,6 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 type RendererGridCellTemp = {
   [MmcrTemps.monomerPlacer]: MonomerPlacer
 }
-
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private readonly seqHelper: ISeqHelper;
 
@@ -69,6 +68,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 30; }
 
   get defaultWidth(): number | null { return 230; }
+
+  hasMouseOver: boolean = false;
 
   constructor() {
     super();
@@ -101,6 +102,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent) {
     const back = this.getRendererBack(gridCell);
     back?.onMouseEnter(gridCell, e);
+    this.hasMouseOver = true;
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -110,6 +112,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   override onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent) {
     execMonomerHoverLinks(gridCell, null);
+    if (gridCell?.grid) {
+      const sub = gridCell.grid.onEvent('d4-grid-show-tooltip').subscribe((e) => {
+        sub.unsubscribe();
+        if (this.hasMouseOver)
+          e.preventDefault();
+      });
+    }
+    this.hasMouseOver = false;
   }
 
   override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {

@@ -1067,7 +1067,7 @@ export class AddNewColumnDialog {
     for (const colName of potentialColIds)
       this.previwDf!.columns.remove(colName);
 
-    if (FLOATING_POINT_TYPES.includes(this.resultColumnType))
+    if (FLOATING_POINT_TYPES.includes(this.resultColumnType) && this.gridPreview!.dataFrame.col(colName))
       this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.

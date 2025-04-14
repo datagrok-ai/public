@@ -12,7 +12,9 @@ class FuncGeneratorPlugin {
 
   apply(compiler) {
     const srcDirPath = path.join(compiler.context, 'src');
-    const packageFilePath = path.join(srcDirPath, 'package.ts');
+    let packageFilePath = path.join(srcDirPath, 'package.ts');
+    if(!fs.existsSync(packageFilePath))
+      packageFilePath = path.join(srcDirPath, 'package.js');
     const tsFiles = this._getTsFiles(srcDirPath);
     const genImports = [];
     const genExports = [];

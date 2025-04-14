@@ -16,8 +16,8 @@ config = {
     version: '1.0',
   }],
   initialSteps: [
-  {
+    {
       id: 'pipelinePar',
-  },
+    },
   ],
 };

@@ -62,8 +62,8 @@ import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {_demoActivityCliffs, _demoChemOverview, _demoMMPA,
-  _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
+import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
+  _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -82,6 +82,8 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import { oclMol } from './utils/chem-common-ocl';
+import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
+import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -332,7 +334,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?
-        DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
+        DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer as ArrayBuffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
@@ -347,7 +349,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
-  return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
+  return DG.BitSet.fromBytes(bitArray.getRawData().buffer as ArrayBuffer, bitArray.length);
 }
 
 
@@ -416,7 +418,7 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
-    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
+    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer as ArrayBuffer, molStringsColumn.length);
     return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
@@ -567,13 +569,61 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   }
 }
 
+//name: clusterMCSTopMenu
+//FriendlyName: Cluster MCS
+//top-menu: Chem | Calculate | Cluster MCS...
+//description: Calculates most common substructures for each cluster
+//input: dataframe table
+//input: column molCol {semType: Molecule}
+//input: column clusterCol {type: string}
+export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column): Promise<void> {
+  const c = await performClusterMCS(molCol, clusterCol);
+  c.name = table.columns.getUnusedName(c.name);
+  table.columns.add(c);
+}
+
+//name: clusterMCS
+//friendlyName: Cluster MCS
+//description: Calculates most common substructures for each cluster
+//meta.vectorFunc: true
+//input: column molCol {semType: Molecule}
+//input: column clusterCol {type: string}
+//output: column result {semType: Molecule}
+export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column): Promise<DG.Column> {
+  const PG = DG.TaskBarProgressIndicator.create('Most common substructures...');
+  const mcsCol = DG.Column.string('Cluster MCS', molCol.length);
+  try {
+    const clusteredMols = new Array(clusterCol.categories.length).fill(null).map(() => [] as string[]);
+    const indexes = clusterCol.getRawData();
+    const mols = molCol.toList();
+    //optimization to avoid pushing to arrays
+    for (let i = 0; i < indexes.length; i++)
+      clusteredMols[indexes[i]].push(mols[i]);
+
+    const mcsResult = await (await chemCommonRdKit.getRdKitService()).clusterMCS(clusteredMols, true, true);
+    mcsCol.semType = DG.SEMTYPE.MOLECULE;
+    mcsCol.init((i) => mcsResult[indexes[i]]);
+    mcsCol.setTag('.structure-filter-type', 'Categorical');
+    mcsCol.setTag('.ignore-custom-filter', 'true');
+  } catch (e) {
+    grok.shell.error('Cluster MCS Error');
+    console.error(e);
+  }
+  PG.close();
+  return mcsCol;
+}
+
+
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall): void {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
+  const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
+  const editor = funcEditor.getEditor();
+  editor.appendChild(clusterMCS.root);
   const dialog = ui.dialog({title: 'Chemical space'})
-    .add(funcEditor.getEditor())
+    .add(editor)
     .onOK(async () => {
       const params = funcEditor.getParams();
       return call.func.prepare({
@@ -585,6 +635,7 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
         options: params.options,
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
+        clusterMCS: !!clusterMCS.value,
       }).call();
     });
   dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
@@ -625,11 +676,12 @@ export async function getFingerprints(
 //input: object options {optional: true}
 //input: func preprocessingFunction {optional: true}
 //input: bool clusterEmbeddings {optional: true}
+//input: bool clusterMCS {optional: true}
 //editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
-): Promise<DG.Viewer | undefined> {
+  clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -646,7 +698,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     preprocessingFunction: preprocessingFunction,
     clusterEmbeddings: clusterEmbeddings,
   }).call(undefined, undefined, {processed: false});
-  let res = funcCall.getOutputParamValue();
+  let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
     res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
@@ -655,8 +707,15 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
       if (res.props['labelColumnNames'].constructor.name == 'Array')
         res.setOptions({labelColumnNames: [molecules.name]});
     }
-    if (clusterEmbeddings)
+    if (clusterEmbeddings) {
       res.props.colorColumnName = clusterColName;
+      if (clusterMCS) {
+        const clusterCol = table.col(clusterColName)!;
+        const mcsCol = await performClusterMCS(molecules, clusterCol);
+        mcsCol.name = table.columns.getUnusedName(mcsCol.name);
+        table.columns.add(mcsCol);
+      }
+    }
   }
   return res;
 }
@@ -1448,6 +1507,10 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+  if (!value || !value.cell || !value.cell.dart ||!value.cell.column) {
+    grok.shell.error('Sorting by similarity requires a valid table cell');
+    return;
+  }
   const molCol = value.cell.column;
   const tableRowIdx = value.cell.rowIndex;
   const dframe = molCol.dataFrame;
@@ -1484,7 +1547,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw new Error('Requires an open table view.');
 
-  const molCol = value.cell.column;
+  const molCol = value.cell?.column;
   const molecule = value.value;
   if (molCol == null)
     throw new Error('Molecule column not found.');
@@ -1781,6 +1844,7 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
+  viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
 }
 
 //name: Scaffold Tree Filter
@@ -1846,7 +1910,7 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 //meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoChemOverview(): Promise<void> {
-  _demoChemOverview();
+  await _demoChemOverview();
 }
 
 
@@ -1868,21 +1932,28 @@ export async function demoMMPA(): Promise<void> {
 //name: Demo R Group Analysis
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R-Group Analysis
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoRgroupAnalysis(): Promise<void> {
-  _demoRgroupAnalysis();
+  await _demoRGroups();
 }
 
 
 //name: Demo Activity Cliffs
 //description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
-export async function demoActivityCliffs(): Promise<void> {
-  _demoActivityCliffs();
+export async function demoMoleculeActivityCliffs(): Promise<void> {
+  await _demoActivityCliffsLayout();
 }
+
+//name: Demo Chemical Space
+//description: Maps the dataset to 2D plot based on similarity
+//meta.demoPath: Cheminformatics | Chemical Space
+//meta.demoSkip: GROK-14320
+export async function demoChemicalSpace(): Promise<void> {
+  await _demoChemicalSpace();
+}
+
 
 
 //name: Demo Scaffold Tree
@@ -2118,4 +2189,53 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   const col = DG.Column.fromStrings('deprotected', res);
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
+}
+
+//name: beautifyMols
+//description: Beautifies the list of molecules and returns the list of beautified molecules
+//input: list<string> mols
+//output: list<string> result
+export async function beautifyMols(mols: string[]): Promise<string[]> {
+  return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+}
+
+//name: mpo
+//top-menu: Chem | Calculate | MPO Score...
+//description: Calculates the MPO score for the column of molecules
+export async function _mpo(): Promise<void> {
+  _mpoDialog(grok.shell.t);
+}
+
+//tags: fileViewer
+//meta.fileViewer: json
+//input: file file
+//meta.fileViewerCheck: Chem:checkJsonMpoProfile
+//output: view v
+export function mpoProfileEditor(file: DG.FileInfo): DG.View {
+  const view = DG.View.create();
+  const saveButton = ui.bigButton('SAVE', () => {});
+  saveButton.style.display = 'none';
+  view.name = file.name;
+  view.setRibbonPanels([[saveButton]]);
+
+  file.readAsString().then((s) => {
+    const mpoEditor = new MpoProfileEditor();
+    mpoEditor.setProfile(JSON.parse(s));
+    view.append(mpoEditor.root);
+
+    mpoEditor.onChanged.subscribe((_) => saveButton.style.display = 'initial');
+    saveButton.onclick = () => {
+      grok.dapi.files.writeAsText(file, JSON.stringify(mpoEditor.getProfile()));
+      saveButton.style.display = 'none';
+    };
+  });
+
+  return view;
+}
+
+//name: checkJsonMpoProfile
+//input: string content
+//output: bool result
+export function checkJsonMpoProfile(content: string) {
+  return JSON.parse(content)['type'] === 'MPO Desirability Profile';
 }

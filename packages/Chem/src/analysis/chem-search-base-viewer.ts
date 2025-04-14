@@ -201,7 +201,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
   }
 
-  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator) {
+  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator | null) {
     this.error = error;
     this.clearResults();
     this.root.append(ui.divText(this.error));

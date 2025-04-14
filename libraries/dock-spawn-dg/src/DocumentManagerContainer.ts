@@ -1,10 +1,10 @@
-import { FillDockContainer } from "./FillDockContainer.js";
-import { TabHost } from "./TabHost.js";
-import { DocumentTabPage } from "./DocumentTabPage.js";
-import { DockManager } from "./DockManager.js";
-import { TabHostDirection } from "./enums/TabHostDirection.js";
-import { IState } from "./interfaces/IState.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
+import { FillDockContainer } from "./FillDockContainer";
+import { TabHost } from "./TabHost";
+import { DocumentTabPage } from "./DocumentTabPage";
+import { DockManager } from "./DockManager";
+import { TabHostDirection } from "./enums/TabHostDirection";
+import { IState } from "./interfaces/IState";
+import { IDockContainer } from "./interfaces/IDockContainer";
 
 /**
  * The document manager is then central area of the dock layout hierarchy.
@@ -16,7 +16,7 @@ export class DocumentManagerContainer extends FillDockContainer {
 
     constructor(dockManager: DockManager) {
         super(dockManager, TabHostDirection.TOP);
-        
+
         this.minimumAllowedChildNodes = 0;
         this.element.classList.add('document-manager');
         this.tabHost.createTabPage = this._createDocumentTabPage;

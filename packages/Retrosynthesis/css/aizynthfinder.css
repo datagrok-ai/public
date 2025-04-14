@@ -1,0 +1,8 @@
+.retrosynthesis-reaction-container {
+  position: relative;
+  margin-top: 15px;
+}
+
+.retrosynthesis-mol-rect {
+  cursor: pointer;
+}

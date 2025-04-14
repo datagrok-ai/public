@@ -24,24 +24,22 @@ export const DockManager = Vue.defineComponent({
     default?: Vue.VNode[],
   }>,
   emits: {
-    'panelClosed': (element: HTMLElement) => element,
-    'update:activePanelTitle': (newPanel: string | null, prevPanel: string | null) => {},
-    'initFinished': () => {},
+    'panelClosed': (_element: HTMLElement) => true,
+    'update:activePanelTitle': (_newPanel: string | null, _prevPanel: string | null) => true,
   },
-  methods: {
-    //@ts-ignore
-    getLayout: (): string | null => {},
-    useLayout: async (layout: string) => {},
-  },
-  setup(props, {slots, emit, expose}) {
-    const dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
+  methods: {},
+  setup(props, {slots, emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('DockManager onRenderTriggered', event);
+    });
 
-    const inited = Vue.ref(false);
-    Vue.watch(inited, async () => {
-      dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
+    const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
+
+    const onManagerInitFinished = (manager: any) => {
+      manager.getElementCallback = async (state: IState) => {
         let aimSlot = null as null | HTMLElement;
 
-        const slots = dockSpawnRef.value!.shadowRoot!
+        const slots = dockSpawnRef.value.shadowRoot!
           .querySelectorAll(`slot`);
         slots.forEach((slot: any) => {
           const content = (slot.assignedElements() as HTMLElement[])
@@ -54,31 +52,19 @@ export const DockManager = Vue.defineComponent({
           title: state.element!,
         };
       };
-    }, {once: true});
+    }
 
-    const getLayout = () => {
-      return dockSpawnRef.value?.getLayout() ?? null;
-    };
-
-    const useLayout = async (layout: string) => {
-      await dockSpawnRef.value?.useLayout(layout);
-    };
-    expose({
-      'getLayout': getLayout,
-      'useLayout': useLayout,
-    });
-
-    return () => {
-      return <dock-spawn-ts
+    return () => (
+      <dock-spawn-ts
         style={{'width': '100%'}}
         activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
-        onInitFinished={() => {inited.value = true; emit('initFinished');}}
+        onManagerInitFinished={onManagerInitFinished}
         ref={dockSpawnRef}
       >
         { slots.default?.() }
-      </dock-spawn-ts>;
-    };
-  },
+      </dock-spawn-ts>
+    );
+  }
 });

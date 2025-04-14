@@ -21,7 +21,7 @@ export class ChoiceInputPackagesCategories extends ChoiceInputBase {
             searchChoices: true,
             itemSelectText: '',
         });
-        field.input.addEventListener('change', (event) =>
+        field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
         const categories: string[] = ((await grok.functions.call('UsageAnalysis:PackagesCategories')) as DG.DataFrame).getCol('category').toList();
 

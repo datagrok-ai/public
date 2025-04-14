@@ -6,6 +6,8 @@ import { runScript } from '../utils/utils';
 
 const repositoryDirNameRegex = new RegExp(path.join('1', '2')[1] + 'public$');
 
+const excludedPackages: string[] = ['@datagrok/diff-grok'];
+
 const curDir = process.cwd();
 let devMode = false;
 let repositoryDir = curDir;
@@ -17,6 +19,8 @@ while (path.dirname(repositoryDir) !== repositoryDir) {
   repositoryDir = path.dirname(repositoryDir);
 }
 
+let verbose = false;
+
 const apiDir = path.join(repositoryDir, 'js-api');
 const libDir = path.join(repositoryDir, 'libraries');
 const packageDir = path.join(repositoryDir, 'packages');
@@ -26,6 +30,7 @@ const libName = '@datagrok-libraries/';
 const packageName = '@datagrok/';
 
 export async function link(args: LinkArgs) {
+  verbose = args.verbose ?? false;
   localPackageDependencies = []
   packagesToLink = new Set<string>();
   if (args.dev !== undefined)
@@ -83,12 +88,24 @@ function parsePackageDependencies(dependencyName: string, pathToLink: string): s
 
 async function linkPackages() {
   let anyChanges = true;
+  for (let element of excludedPackages)
+    packagesToLink.delete(element);
+
+  if (verbose) {
+    console.log('Packages to link:')
+    console.log(localPackageDependencies);
+  }
 
   while (anyChanges && packagesToLink.size > 0) {
     anyChanges = false;
-    let mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name));
-
+    let mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name) && !excludedPackages.includes(x.name));
+    if (mapElements.length === 0)
+      break;
     for (let element of mapElements) {
+
+      if (verbose) 
+        console.log(`Package ${element.name} linked`)
+      
       await runScript(`npm install`, element.packagePath);
       await runScript(`npm link ${element.dependencies.join(' ')}`, element.packagePath);
       await runScript(`npm link`, element.packagePath);
@@ -118,7 +135,6 @@ class PackageData {
 }
 
 interface LinkArgs {
-  local?: boolean,
-  npm?: boolean,
+  verbose?: boolean,
   dev?: boolean,
 }

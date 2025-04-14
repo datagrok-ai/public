@@ -236,11 +236,11 @@ export async function getCensusInfo() {
   panelVintages.style.minWidth = '75px';
   panelVintages.style.maxWidth = '75px';
   panelVintages.append(gridVintages.root);
-  htmlStyle = {style: {'border': 'solid 1px lightgray', 'border-left': 'none', 'width': '408px', 'min-width': '408px'}};
+  htmlStyle = {style: {'border': 'solid 1px lightgray', 'borderLeft': 'none', 'width': '408px', 'minWidth': '408px'}};
   const panelDatasets = ui.box(null, htmlStyle);
   panelDatasets.style.minWidth = '400px';
   panelDatasets.append(gridDatasets.root);
-  htmlStyle = {style: {'border': 'solid 1px lightgray', 'border-left': 'none', 'width': '405px', 'min-width': '402px'}};
+  htmlStyle = {style: {'border': 'solid 1px lightgray', 'borderLeft': 'none', 'width': '405px', 'minWidth': '402px'}};
   const panelVariables = ui.box(null, htmlStyle);
   panelVariables.style.minWidth = '250';
   panelVariables.append(gridVariables.root);
@@ -251,7 +251,7 @@ export async function getCensusInfo() {
     panelVariables,
   ], htmlStyle);
 
-  htmlStyle = {style: {'border': 'none', 'width': '100%', 'min-height': '95px'}};
+  htmlStyle = {style: {'border': 'none', 'width': '100%', 'minHeight': '95px'}};
   infoDataset = ui.box(null, htmlStyle);
   // @ts-ignore
   infoDataset.style.height = '100%';
@@ -481,7 +481,7 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 
 //name: gisGeoJSONFileViewer
 //tags: fileViewer
-//meta.fileViewer: geojson, topojson, json
+//meta.fileViewer: geojson, topojson
 //input: file file
 //output: view result
 export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {
@@ -518,7 +518,7 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
 
 //name: gisGeoJSONFileHandler
 //tags: file-handler
-//meta.ext: geojson, topojson, json
+//meta.ext: geojson, topojson
 //input: string filecontent
 //output: list tables
 export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {

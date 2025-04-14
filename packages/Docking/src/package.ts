@@ -91,15 +91,6 @@ export async function prepareAutoDockData(
   };
 }
 
-export function getTableView(tableName?: string): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : (tableName ? grok.shell.getTableView(tableName) : grok.shell.tv);
-  return tableView;
-}
-
-
 //top-menu: Chem | Docking | AutoDock...
 //name: Autodock
 //tags: HitTriageFunction
@@ -127,7 +118,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     for (let col of processedResults.columns)
       table.columns.add(col);
     
-    const {grid} = getTableView(table.name);
+    const {grid} = grok.shell.getTableView(table.name);
 
     addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
     grid.sort([BINDING_ENERGY_COL_UNUSED]);
@@ -180,7 +171,7 @@ export async function getAutodockSingle(
   if (value.toLowerCase().includes(ERROR_COL_NAME))
     return new DG.Widget(ui.divText(value));
 
-  const tableView = getTableView();
+  const tableView = grok.shell.tv;
   const currentTable = table ?? tableView.dataFrame;
   
   const addedToPdb = value.includes(BINDING_ENERGY_COL);
@@ -280,6 +271,7 @@ export async function runDocking(
 
 //name: Docking
 //tags: app
+//meta.icon: images/docking-icon.png
 //input: string path {meta.url: true; optional: true}
 //output: view v
 //meta.browsePath: Bio

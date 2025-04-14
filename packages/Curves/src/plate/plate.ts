@@ -354,7 +354,7 @@ export class Plate {
   }
 
   static inspectSeries(series: FitSeries, fitFunctionName: FitFunctionType) {
-    const seriesName = series.name ?? 'Series';
+    const seriesName = series?.name ?? 'Series';
     if (!series || !fitFunctionName)
       return;
     const curveCol = DG.Column.string('Curve', 1);

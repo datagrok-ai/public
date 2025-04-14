@@ -28,7 +28,7 @@ Key capabilities:
 
 Parameter optimization lets you improve your model performance by finding input values that generate a specified model output. The optimization process uses [loss functions](https://en.wikipedia.org/wiki/Loss_function) to minimize the gap between model output and target data.
 
-To run parameter optimization, first open your model. Then, in the top ribbon, click <i class="grok-icon fal fa-chart-line"></i> **Fit parameters**. A fitting view opens.
+To run parameter optimization, first open your model. Then, in the top ribbon, click the **Fit parameters** icon. A fitting view opens.
 
 In the fitting view, configure:
 
@@ -47,10 +47,6 @@ In the fitting view, configure:
 * On the top ribbon, click <i class="fas fa-play"></i> **Run** to generate a grid showing loss function values, fitted parameters, and line charts of fit quality
 
 ![fitting-table.gif](pics/fitting-table.gif)
-
-To view the details for any result, click a grid row and open the Context Panel (F4). The Context Panel shows the model run details for your current row.
-
-![fitting-context-panel.gif](pics/fitting-context-panel.gif)
 
 :::note developers
 
@@ -77,7 +73,7 @@ Sensitivity analysis helps you understand how changes in input parameters affect
 * [Sobol](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis): performs [variance-based sensitivity analysis](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis) and decomposes output variance into fractions, which can be attributed to inputs
 * **Grid**: studies a function at the points of a grid with the specified step.
 
-To run sensitivity analysis, first open your model. Then, in the top ribbon, click <i class="grok-icon fal fa-analytics"></i> **Run sensitivity analysis**. A sensitivity analysis view opens.
+To run sensitivity analysis, first open your model. Then, in the top ribbon, click the **Run sensitivity analysis** icon. A sensitivity analysis view opens.
 
 In the sensitivity analysis view:
 
@@ -113,3 +109,10 @@ let y = x + 3;
 ```
 
 :::
+
+## See also
+
+Tutorials:
+
+* [Parameter optimization](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Parameteroptimization)
+* [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)

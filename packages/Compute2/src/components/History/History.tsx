@@ -9,13 +9,15 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
 import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
-import {filter, take} from 'rxjs/operators';
+import {filter, mergeMap, take, toArray} from 'rxjs/operators';
+import {from} from 'rxjs';
 import wu from 'wu';
 import {watchExtractedObservable} from '@vueuse/rxjs';
 
 const GRID_INITED_EVENT = 'd4-grid-initialized';
 
 export const History = Vue.defineComponent({
+  name: 'History',
   props: {
     func: {
       type: DG.Func,
@@ -37,16 +39,12 @@ export const History = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    propFuncs: {
-      type: Object as Vue.PropType<Record<string, (currentRun: DG.FuncCall) => string>>,
-      default: {},
-    },
   },
   emits: {
-    runChosen: (chosenCall: DG.FuncCall) => chosenCall,
-    compare: (ids: string[]) => ids,
-    afterRunEdited: (editedCall: DG.FuncCall) => editedCall,
-    afterRunDeleted: (deletedCall: DG.FuncCall) => deletedCall,
+    runChosen: (_chosenCall: DG.FuncCall) => true,
+    compare: (_ids: string[]) => true,
+    afterRunEdited: (_editedCall: DG.FuncCall) => true,
+    afterRunDeleted: (_deletedCall: DG.FuncCall) => true,
   },
   setup(props, {emit}) {
     const isLoading = Vue.ref(true);
@@ -54,14 +52,18 @@ export const History = Vue.defineComponent({
     const showFilters = Vue.ref(false);
     const showInputs = Vue.ref(false);
     const showMetadata = Vue.ref(true);
+    const hasSelected = Vue.ref(false);
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
+    const func = Vue.computed(() => Vue.markRaw(props.func));
+
+    const currentSelection = new Set<DG.FuncCall>();
 
     const refresh = async () => {
       isLoading.value = true;
       try {
         const newHistoricalRuns = await historyUtils.pullRunsByName(
-          props.func.name,
+          func.value.name,
           [{author: grok.shell.user}],
           {},
           ['session.user', 'options'],
@@ -80,7 +82,7 @@ export const History = Vue.defineComponent({
       }
     };
 
-    Vue.watch(() => props.func.id, () => refresh(), {immediate: true});
+    Vue.watch(func, () => refresh(), {immediate: true});
 
     const defaultDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(ID_COLUMN_NAME, []),
@@ -95,7 +97,8 @@ export const History = Vue.defineComponent({
     const getRunByIdx = (idx: number) => {
       if (idx < 0) return;
 
-      return historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
+      const run = historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
+      return run ? Vue.markRaw(run) : undefined;
     };
 
     const isFavoriteByIndex = (idx: number) => {
@@ -103,37 +106,29 @@ export const History = Vue.defineComponent({
     };
 
     const updateRun = (updatedRun: DG.FuncCall) => {
+      Vue.markRaw(updatedRun);
       historicalRuns.value.set(updatedRun.id, updatedRun);
       Vue.triggerRef(historicalRuns);
     };
 
-    const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
+    const showEditDialog = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
       const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
-
-      editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        if (!props.isHistory)
-          updateRun(funcCall);
-        else {
-          return ((editOptions.favorite !== 'same') ?
-            Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
-            Promise.resolve())
-            .then(() => historyUtils.loadRun(funcCall.id, false, false))
-            .then((fullCall) => {
-              if (editOptions.title) fullCall.options['title'] = editOptions.title;
-              if (editOptions.description) fullCall.options['description'] = editOptions.description;
-              if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-
-              return [historyUtils.saveRun(fullCall), fullCall] as const;
-            })
-            .then(([, fullCall]) => {
-              updateRun(fullCall);
-            })
-            .catch((err) => {
-              grok.shell.error(err);
-            });
-        }
-      });
       editDialog.show({center: true, width: 500});
+      const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
+      try {
+        if (!props.isHistory)
+          return updateRun(funcCall);
+        if (editOptions.favorite !== 'same')
+          await Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
+        if (editOptions.title) fullCall.options['title'] = editOptions.title;
+        if (editOptions.description) fullCall.options['description'] = editOptions.description;
+        if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+        await historyUtils.saveRun(fullCall);
+        updateRun(fullCall);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const onEditClick = (cell: DG.GridCell) => {
@@ -144,75 +139,76 @@ export const History = Vue.defineComponent({
       );
     };
 
-    const onFavoriteClick = (cell: DG.GridCell) => {
+    const onFavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, true).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, true);
+      updateRun(run);
     };
 
-    const onUnfavoriteClick = (cell: DG.GridCell) => {
+    const onUnfavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      Utils.saveIsFavorite(run, false).then(() => updateRun(run));
+      await Utils.saveIsFavorite(run, false);
+      updateRun(run);
     };
 
     const deleteRun = async (id: string) => {
-      return historyUtils.loadRun(id, true, false)
-        .then(async (loadedRun) => {
-          return [
-            await (props.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
-            loadedRun,
-          ] as const;
-        })
-        .then(([, loadedRun]) => {
-          historicalRuns.value.delete(id);
-          Vue.triggerRef(historicalRuns);
-
-          return loadedRun;
-        })
-        .then((loadedRun) => {
-          Utils.saveIsFavorite(loadedRun, false);
-        })
-        .catch((e) => {
-          grok.shell.error(e);
-        });
+      try {
+        const loadedRun = await historyUtils.loadRun(id, true, false);
+        if (props.isHistory)
+          await historyUtils.deleteRun(loadedRun);
+        historicalRuns.value.delete(id);
+        Vue.triggerRef(historicalRuns);
+        await Utils.saveIsFavorite(loadedRun, false);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
-    const onDeleteClick = (cell: DG.GridCell) => {
+    const onDeleteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
       const setToDelete = new Set([run]);
       const deleteDialog = new HistoricalRunsDelete(setToDelete);
-
-      deleteDialog.onFuncCallDelete.pipe(
-        take(1),
-      ).subscribe(async () => {
-        try {
-          await Promise.all(
-            wu(setToDelete.values()).map(async (funcCall) => {
-              await deleteRun(funcCall.id);
-
-              return Promise.resolve();
-            }));
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      });
       deleteDialog.show({center: true, width: 500});
+
+      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      try {
+        await Promise.all(
+          wu(setToDelete.values()).map(async (funcCall) => {
+            await deleteRun(funcCall.id);
+          }));
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
-    const historicalRunsDf = Vue.shallowRef(defaultDf);
+    const historicalRunsDf = Vue.shallowRef(Vue.markRaw(defaultDf));
 
-    Vue.watch(historicalRuns, async () => {
+    Vue.watch([historicalRuns, func], async ([historicalRuns, func]) => {
       const df = await Utils.getRunsDfFromList(
-        historicalRuns.value,
-        props.func,
+        historicalRuns,
+        func,
         Vue.toValue(() => props),
       );
-      historicalRunsDf.value = df;
+      historicalRunsDf.value = Vue.markRaw(df);
     });
 
     watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
-      if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
+      if (chosenRun) {
+        const run = await historyUtils.loadRun(chosenRun.id, false, false);
+        emit('runChosen', run ? Vue.markRaw(run) : run);
+      };
+    });
+
+    watchExtractedObservable(historicalRunsDf, (p) => p.onSelectionChanged, () => {
+      const selectedCalls: DG.FuncCall[] = [...historicalRunsDf.value.selection
+        .getSelectedIndexes()]
+        .map((idx) => getRunByIdx(idx)!);
+      currentSelection.clear();
+      for (const call of selectedCalls)
+        currentSelection.add(call);
+      hasSelected.value = selectedCalls.length > 0;
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
@@ -242,7 +238,7 @@ export const History = Vue.defineComponent({
       currentGrid.value.columns.setOrder(cols);
     };
 
-    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), { flush: 'post' });
+    Vue.watch([showMetadata, showInputs, historicalRunsDf, currentGrid], () => updateVisibleColumns(), {flush: 'post'});
 
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;
@@ -252,7 +248,7 @@ export const History = Vue.defineComponent({
         take(1),
       ).toPromise();
 
-      currentGrid.value = grid;
+      currentGrid.value = Vue.markRaw(grid);
       grid.sort([STARTED_COLUMN_NAME], [false]);
       grid.props.rowHeight = 46;
 
@@ -287,7 +283,24 @@ export const History = Vue.defineComponent({
       </div>
     );
 
-    const currentFunc = Vue.computed(() => props.func);
+    const deleteSelected = async () => {
+      if (isLoading.value || currentSelection.size === 0)
+        return;
+      const deleteDialog = new HistoricalRunsDelete(currentSelection);
+      deleteDialog.show({center: true, width: 500});
+      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      try {
+        isLoading.value = true;
+        await from(currentSelection).pipe(
+          mergeMap(call => from(deleteRun(call.id)), 5),
+          toArray(),
+        ).toPromise();
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    const currentFunc = Vue.computed(() => Vue.markRaw(props.func));
     const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;
@@ -345,13 +358,19 @@ export const History = Vue.defineComponent({
             onUpdate:value={(val) => showInputs.value = val}
           />
         </div>
-        <div style={{display: 'flex'}}>
+        <div style={{display: 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA
             name='sync'
             tooltip={'Refresh'}
             onClick={refresh}
             style={{alignContent: 'center'}}
           />
+          { hasSelected.value && <IconFA
+            name='trash-alt'
+            tooltip={'Delete'}
+            onClick={deleteSelected}
+            style={{alignContent: 'center'}}
+          />}
         </div>
       </div>;
       const grid = <Viewer

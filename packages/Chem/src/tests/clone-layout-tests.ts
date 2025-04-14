@@ -69,8 +69,6 @@ category('clone and layout tests', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    const funcs = DG.Func.find({tags: ['moleculeSketcher']});
-    await sketchersWarmUp(funcs);
     DG.chem.currentSketcherType = 'OpenChemLib';
   });
 

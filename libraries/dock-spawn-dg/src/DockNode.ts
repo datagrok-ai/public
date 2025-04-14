@@ -1,4 +1,4 @@
-import { IDockContainer } from "./interfaces/IDockContainer.js";
+import { IDockContainer } from "./interfaces/IDockContainer";
 
 export class DockNode {
 

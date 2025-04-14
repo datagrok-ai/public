@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as yaml from 'js-yaml';
 import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
 import { _package } from '../package';
-import { getFromPdbs, prop, getTableView } from '../utils/utils';
+import { getFromPdbs, prop } from '../utils/utils';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -53,7 +53,7 @@ export class BoltzService {
   }
 
   static async processBoltzResult(df: DG.DataFrame) {
-    const {grid} = getTableView(df.name);
+    const {grid} = grok.shell.getTableView(df.name);
     const pdbCol = df.columns.byName('pdb');
     const confidenceGridCol = grid.columns.byName('confidence_score');
     const confidenceCol = confidenceGridCol?.column;

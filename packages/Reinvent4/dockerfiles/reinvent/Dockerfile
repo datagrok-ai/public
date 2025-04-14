@@ -22,8 +22,12 @@ RUN apt-get update && apt-get -y upgrade && \
 
 WORKDIR /app
 
-RUN git clone https://github.com/MolecularAI/REINVENT4.git && \
-    git clone https://github.com/MolecularAI/DockStream.git
+RUN git clone --no-checkout https://github.com/MolecularAI/REINVENT4.git && \
+    git clone https://github.com/MolecularAI/DockStream.git && \
+    cd REINVENT4 && \
+    git fetch --depth 1 origin f814377b070f178d04bb3f2d31c5622298b3ccf2 && \
+    git checkout f814377b070f178d04bb3f2d31c5622298b3ccf2 && \
+    git remote remove origin
 
 # Fix issues by modifying specific scripts in the REINVENT repository
 # Replace calls to `model_dump()` with `model_config` due to compatibility problems
@@ -91,6 +95,6 @@ RUN /app/venv/bin/pip install flask_cors
 
 ENV PATH="/app/venv/bin:$PATH"
 
-EXPOSE 6666
+EXPOSE 8000
 
-ENTRYPOINT ["python", "reinvent.py", "--host", "0.0.0.0", "--port", "6666"]
+ENTRYPOINT ["python", "reinvent.py", "--host", "0.0.0.0", "--port", "8000"]

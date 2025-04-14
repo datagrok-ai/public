@@ -741,10 +741,7 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   const widget = new DG.Widget(ui.div([]));
   widget.root.append(ui.loader());
   const {dataFrame, column, rowIndex} = molecule.cell;
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView ?
-    ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView) :
-    grok.shell.getTableView(dataFrame.name);
+  const tableView = grok.shell.getTableView(dataFrame.name);
   const {grid} = tableView;
   const gridCell = grid.cell(column.name, rowIndex);
   const renderer = new PdbGridCellRendererBack(null, column);

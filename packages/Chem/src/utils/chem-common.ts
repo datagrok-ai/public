@@ -56,7 +56,7 @@ export function chemEndCriticalSection(token = CHEM_TOKEN): void {
 }
 
 export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray | null {
-  return fp ? BitArray.fromBytes(fp) : fp;
+  return fp ? BitArray.fromBytes(fp) : null;
 }
 
 export function isMolBlock(s: string): boolean {

@@ -183,7 +183,7 @@ Planned
 
 <h5>Read</h5>
 
-* [Multivariate analysis based on partial least squares regression](../../explore/multivariate-analysis/pls.md)
+* [Multivariate analysis based on partial least squares regression](../../explore/multivariate-analysis.md)
 * [Parameter optimization](../../compute/function-analysis.md#parameter-optimization)
 * [Sensitivity analysis](../../compute/function-analysis.md#sensitivity-analysis)
 * [Diff Studio](../../compute/diff-studio.md)

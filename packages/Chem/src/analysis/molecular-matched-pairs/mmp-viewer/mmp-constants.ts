@@ -27,7 +27,11 @@ export enum MMP_NAMES {
   CORE_NUM = '~Core',
   PREDICTION = 'Prediction',
   GENERATIONS = 'Generation',
-  NEW_MOLECULE = 'New molecule',
+  NEW_MOLECULE = 'Predicted molecule',
+  OBSERVED = 'Observed',
+  PREDICTED = 'Predicted',
+  PROPERTY_TYPE = 'Property type',
+  DELTA_ACTIVITY = '\u0394 activity',
 }
 
 export enum SHOW_FRAGS_MODE {
@@ -35,39 +39,28 @@ export enum SHOW_FRAGS_MODE {
   Current = 'Current molecule'
 }
 
-export const FRAGMENTS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const FRAGMENTS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
   [MMP_NAMES.PAIRS_COUNT]: 'Number of substitutions identified in a dataset',
 };
 
-export const PAIRS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const PAIRS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial molecule',
   [MMP_NAMES.TO]: 'Molecule after substitution',
 };
 
-export const GENERATIONS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+export const GENERATIONS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.STRUCTURE]: 'Structure from initial dataset',
   [MMP_NAMES.CORE]: 'Conservative fragment',
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
-  'New molecule': 'New molecule obtained with fragments substitution',
-  [MMP_NAMES.ACTIVITY]: 'Activity type',
-  'Original activity': 'Initial activity value',
-  'New activity': 'Activity value based on MMP rules (initial activity + mean difference)',
-  '\u0394 activity': 'Activity difference',
-  'Prediction': 'Molecule does not exists in the initial dataset',
-};
-
-export const columnsDescriptions: {[key: string]: string} = {
-  [MMP_NAMES.CORE]: 'Common core',
-  [MMP_NAMES.FROM]: 'Original fragment',
-  [MMP_NAMES.TO]: 'Replacement fragment',
-  [MMP_NAMES.PAIRS_COUNT]: 'Total number of pairs',
-  'Generation': 'Transformed molecule',
-  'Activity': 'Analyzed Activity/Property',
-  'Initial value': 'Initial analyzed activity/property value',
-  'Prediction': 'Predicted analyzed activity/property value',
+  [MMP_NAMES.NEW_MOLECULE]: 'New molecule obtained with fragments substitution',
+  [MMP_NAMES.PROPERTY_TYPE]: 'Property type',
+  [MMP_NAMES.OBSERVED]: 'Observed activity value',
+  [MMP_NAMES.PREDICTED]: 'Predicted activity value based on MMP rules (initial activity + mean difference)',
+  [MMP_NAMES.DELTA_ACTIVITY]: 'Activity difference',
+  [MMP_NAMES.PREDICTION]: 'True if molecule does not exists in the initial dataset',
 };
 
 export enum TrellisAxis {From = 'From', To = 'To'};
@@ -81,7 +74,7 @@ export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS = `Click on a non-empty cell 
 export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS = `Click on any row to zoom to corresponding pair on scatter plot`;
 export const FRAGMENTS_TAB_TOOLTIP = `Charts in trellis plot cells show mean difference for corresponding activities. Click on any non-empty cell on trellis plot to filter molecule pairs with corresponding fragment substitution in 'Matched Molecular Pairs' grid below.`;
 export const CLIFFS_TAB_TOOLTIP = `2D map where similar molecules are close to each other. Lines connect matched molecular pairs. Arrow points to a molecule with a greater activity value. Use filters on the scatter plot to change activity difference cutoff or switch of/on the lines for any activity. Click on a line to see molecule pair details in a context panel.`;
-export const GENERATIONS_TAB_TOOLTIP = `A generation of new molecules based on obtained rules. For each molecule from initial dataset and for each selected activity the most optimal substitution is shown with associated prediction results for all activities. We specify if initial or generated molecule is optimal. Open context panel to estimate generation model predictive ability on observed vs predicted plot.`;
+export const GENERATIONS_TAB_TOOLTIP = `Generation of new molecules based on obtained rules. For each molecule from initial dataset and for each selected activity the most optimal substitution is shown with associated prediction results for all activities. We specify if initial or generated molecule is optimal. Open context panel to estimate generation model predictive ability on observed vs predicted plot.`;
 
 export const MMP_CONTEXT_PANE_CLASS = 'mmp-context-pane';
 

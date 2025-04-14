@@ -1,6 +1,7 @@
 --name: BenchmarksDashboard
 --friendlyName: UA | Tests | Benchmarks
 --connection: System:Datagrok
+--input: string instanceFilter = '' {choices: ['', 'dev', 'release', 'public']}
 --input: int lastBuildsNum = 5
 --input: bool showNotRun = false {optional: true}
 --input: bool showBenchmarks = true {optional: true}
@@ -10,7 +11,13 @@ WITH last_builds AS (
     from builds b
     -- todo: filter builds with cicd not-stresstest runs
     -- todo: filter only success builds
-    where (SELECT count(*) from test_runs r where r.build_name = b.name and not r.stress_test and r.benchmark) > 10
+    where (SELECT count(*) from test_runs r where r.build_name = b.name
+                                              and not r.stress_test
+                                              and r.benchmark
+                                              and r.passed is not null
+                                              and (@instanceFilter is null or r.instance like '%' || @instanceFilter || '%')
+                                              and r.ci_cd) > 10
+          and not b.name = '' and b.name is not null
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
   select name, ROW_NUMBER() OVER (ORDER BY build_date) AS build_index,
@@ -30,8 +37,10 @@ select
   r.duration,
   coalesce(nullif(t.owner, ''), p.package_author, '') as owner
 from tests t full join last_builds_indexed b on 1=1
-left join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null) and
-r.date_time = (select max(_r.date_time) from test_runs _r where _r.test_name = r.test_name and _r.build_name = r.build_name and not _r.stress_test) and not r.stress_test and (@showNotCiCd or r.ci_cd)
+left join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null)
+and r.date_time = (select max(_r.date_time) from test_runs _r where _r.test_name = r.test_name and _r.build_name = r.build_name and not _r.stress_test and _r.benchmark and _r.ci_cd)
+and not r.stress_test and (@showNotCiCd or r.ci_cd)
+and (@instanceFilter is null or r.instance like '%' || @instanceFilter || '%')
 left join published_packages p on p.name = t.package and p.is_current
 where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and (@showNotRun or not r.passed is null) and r.benchmark = @showBenchmarks
 order by b.name, t.name

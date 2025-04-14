@@ -136,7 +136,7 @@ export async function reportStep(treeState?: PipelineState) {
       if (isFuncCallState(state) && state.funcCall) {
         const funccall = state.funcCall;
 
-        const blob = await Utils.richFunctionViewReport(
+        const [blob] = await Utils.richFunctionViewReport(
           'Excel',
           funccall.func,
           funccall,

@@ -1,12 +1,12 @@
-import { Dialog } from "./Dialog.js";
-import { DockManager } from "./DockManager.js";
-import { EventHandler } from "./EventHandler.js";
-import { Point } from "./Point.js";
-import { Utils } from "./Utils.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { ContainerType } from "./ContainerType.js";
-import { IState } from "./interfaces/IState.js";
-import { PanelContainer } from "./PanelContainer.js";
+import { Dialog } from "./Dialog";
+import { DockManager } from "./DockManager";
+import { EventHandler } from "./EventHandler";
+import { Point } from "./Point";
+import { Utils } from "./Utils";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { ContainerType } from "./ContainerType";
+import { IState } from "./interfaces/IState";
+import { PanelContainer } from "./PanelContainer";
 
 export class DraggableContainer implements IDockContainer {
 

@@ -22,17 +22,17 @@ Parameters:
   InternetSubnetAllow:
     Type: String
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
+    Description: Subnet for access to Datagrok endpoint. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
   InternetSubnetAllow2:
     Type: String
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
     Default: ""
-    Description: Additional subnet for access to Datagrok client endpoints. You can omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
   InternetSubnetAllow3:
     Type: String
     Default: ""
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    Description: Additional subnet for access to Datagrok client endpoints. You can omit this parameter is already specified InternetSubnetAllow.
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
 Conditions:
   AccessFromNatGW:
     Fn::And:
@@ -86,7 +86,7 @@ Resources:
       DBSubnetGroupDescription:
         Fn::Sub: "${AWS::StackName} Datagrok DatagrokDB Subnet Group"
       DBSubnetGroupName:
-        Fn::Sub: "${AWS::StackName}-datagrok-rds-subnet"
+        Fn::Sub: "${AWS::StackName}-rds-subnet"
       SubnetIds:
         - Ref: DatagrokDataSubnet1
         - Ref: DatagrokDataSubnet2
@@ -100,7 +100,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-rds"
+            Fn::Sub: "${AWS::StackName}-rds"
         - Key: datagrok.component
           Value: datagrok
       VpcId:
@@ -129,7 +129,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm"
+            Fn::Sub: "${AWS::StackName}-cvm"
         - Key: datagrok.component
           Value: cvm
       VpcId:
@@ -155,16 +155,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: DatagrokSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
-  CvmSecurityGroupALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from ALB to CVM components"
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: CvmALBSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
   CvmSecurityGroupALBIntCommunications:
     Properties:
       Description:
@@ -175,19 +165,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: CvmALBIntSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
-  CvmALBSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM ALB Security Group"
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm-alb"
-        - Key: datagrok.component
-          Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
   CvmALBIntSecurityGroup:
     Properties:
       GroupDescription:
@@ -195,7 +172,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm-alb-int"
+            Fn::Sub: "${AWS::StackName}-cvm-alb-int"
         - Key: datagrok.component
           Value: cvm
       VpcId:
@@ -233,141 +210,9 @@ Resources:
         Ref: CvmSecurityGroup
       FromPort: 0
       GroupId:
-        Ref: CvmALBSecurityGroup
+        Ref: CvmALBIntSecurityGroup
       IpProtocol: TCP
       ToPort: 65535
-  Cvm80Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm80IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN"
-      FromPort: 80
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm443IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN"
-      FromPort: 443
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:
@@ -375,7 +220,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok"
+            Fn::Sub: "${AWS::StackName}"
         - Key: datagrok.component
           Value: datagrok
       VpcId:
@@ -388,7 +233,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-alb"
+            Fn::Sub: "${AWS::StackName}-alb"
         - Key: datagrok.component
           Value: datagrok
       VpcId:
@@ -585,7 +430,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-alb-int"
+            Fn::Sub: "${AWS::StackName}-alb-int"
         - Key: datagrok.component
           Value: datagrok
       VpcId:
@@ -684,7 +529,7 @@ Resources:
               - "arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*"
               - Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
       ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-DatagrokECSPolicy-${AWS::Region}"
+        Fn::Sub: "${AWS::StackName}ECSPolicy-${AWS::Region}"
   DatagrokTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -699,49 +544,7 @@ Resources:
       ManagedPolicyArns:
         - Ref: DatagrokECSPolicy
     Type: AWS::IAM::Role
-  CvmTCP80Listener:
-    Properties:
-      DefaultActions:
-        - RedirectConfig:
-            Port: '443'
-            Protocol: HTTPS
-            StatusCode: HTTP_301
-          Type: redirect
-      LoadBalancerArn:
-        Ref: CvmLoadBalancer
-      Port: 80
-      Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  CvmTCP8090IntListener:
-    Properties:
-      DefaultActions:
-        - FixedResponseConfig:
-            StatusCode: 204
-          Type: fixed-response
-      LoadBalancerArn:
-        Ref: CvmLoadBalancerInt
-      Port: 8090
-      Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  CvmTCP443Listener:
-    Properties:
-      DefaultActions:
-        - FixedResponseConfig:
-            StatusCode: 204
-          Type: fixed-response
-      LoadBalancerArn:
-        Ref: CvmLoadBalancer
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn:
-            Ref: DatagrokArnSSLCertificate
-    Type: AWS::ElasticLoadBalancingV2::Listener
   DatagrokJupyterKernelGatewayService:
-    DependsOn:
-      - CvmTCP80Listener
-      - CvmTCP443Listener
-      - CvmTCP8090IntListener
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -818,10 +621,14 @@ Resources:
             - Name: GROK_PARAMETERS
               Value:
                 Fn::Sub:
-                  - '{"capabilities": ["jupyter"],
-                  "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0", "isolatesCount": 4, 
-                  "queuePluginSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
-                   "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }}'
+                  - '{
+                  "queueSettings":{ 
+                    "amqpHost":"${amqpHost}", 
+                    "amqpPort": 5672, 
+                    "amqpUser":"guest", 
+                    "amqpPassword":"${amqpPassword}",
+                    "pipeHost":"${pipeHost}", 
+                    "pipeKey":"${grokPipeApiKey}" }}'
 
                   - amqpHost:
                       Fn::Sub: "rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
@@ -863,7 +670,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jupyter_kernel_gateway"
+        Fn::Sub: "${AWS::StackName}-cvm-jupyter_kernel_gateway"
       Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -871,315 +678,6 @@ Resources:
       EphemeralStorage:
         SizeInGiB: 50
     Type: AWS::ECS::TaskDefinition
-  DatagrokJupyterNotebookService:
-    DependsOn:
-      - CvmTCP80Listener
-      - CvmTCP443Listener
-      - CvmTCP8090IntListener
-      - DatagrokJupyterNotebookTCP5005ListenerRule
-      - DatagrokJupyterNotebookTCP5005IntListenerRule
-      - DatagrokJupyterNotebookTCP8889ListenerRule
-      - DatagrokJupyterNotebookTCP8889IntListenerRule
-    Properties:
-      Cluster:
-        Fn::GetAtt:
-          - CvmCluster
-          - Arn
-      DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 100
-      DeploymentController:
-        Type: ECS
-      DesiredCount: 1
-      LaunchType: "FARGATE"
-      LoadBalancers:
-        - ContainerName: jupyter_notebook
-          ContainerPort: 5005
-          TargetGroupArn:
-            Ref: DatagrokJupyterNotebookTCP5005TargetGroup
-        - ContainerName: jupyter_notebook
-          ContainerPort: 8889
-          TargetGroupArn:
-            Ref: DatagrokJupyterNotebookTCP8889TargetGroup
-        - ContainerName: jupyter_notebook
-          ContainerPort: 5005
-          TargetGroupArn:
-            Ref: DatagrokJupyterNotebookTCP5005IntTargetGroup
-        - ContainerName: jupyter_notebook
-          ContainerPort: 8889
-          TargetGroupArn:
-            Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - Ref: CvmSecurityGroup
-          Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
-      PlatformVersion: 1.4.0
-      PropagateTags: SERVICE
-      SchedulingStrategy: REPLICA
-      ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - DatagrokJupyterNotebookServiceDiscoveryEntry
-              - Arn
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-        - Key: datagrok.service
-          Value: jupyter_notebook
-      TaskDefinition:
-        Ref: DatagrokJupyterNotebookTaskDefinition
-    Type: AWS::ECS::Service
-  DatagrokJupyterNotebookServiceDiscoveryEntry:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM jupyter_notebook service discovery entry in Cloud Map"
-      DnsConfig:
-        DnsRecords:
-          - TTL: 60
-            Type: A
-        RoutingPolicy: MULTIVALUE
-      HealthCheckCustomConfig:
-        FailureThreshold: 1
-      Name: jupyter_notebook
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
-  DatagrokJupyterNotebookTCP5005TargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jn-gh"
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/notebook/helper/info"
-      Matcher:
-        HttpCode: 200
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: true
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: 86400
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterNotebookTCP5005IntTargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jn-gh-i"
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/notebook/helper/info"
-      Matcher:
-        HttpCode: 200
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: true
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: 86400
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterNotebookTCP8889TargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jn"
-      Port: 8889
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/notebook/api"
-      Matcher:
-        HttpCode: 200
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: true
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: 86400
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterNotebookTCP8889IntTargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jn-i"
-      Port: 8889
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/notebook/api"
-      Matcher:
-        HttpCode: 200
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: true
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: 86400
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterNotebookTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-        - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
-          Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-stream-prefix: jn
-          MemoryReservation: 100
-          ReadonlyRootFilesystem: true
-          Name: ResolvConf
-        - DependsOn:
-            - Condition: SUCCESS
-              ContainerName: ResolvConf
-          Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, JN, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, JN, repo ]
-                tag:
-                  Ref: JNVersion
-          LinuxParameters: { }
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-stream-prefix: jn
-          MemoryReservation: 1024
-          #          ReadonlyRootFilesystem: true
-          Name: jupyter_notebook
-          PortMappings:
-            - ContainerPort: 5005
-              HostPort: 5005
-              Protocol: tcp
-            - ContainerPort: 8889
-              HostPort: 8889
-              Protocol: tcp
-      Cpu: '512'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jupyter_notebook"
-      Memory: '2048'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - "FARGATE"
-    Type: AWS::ECS::TaskDefinition
-  DatagrokJupyterNotebookTCP5005ListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterNotebookTCP5005TargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/notebook/helper/*"
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 5
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterNotebookTCP5005IntListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterNotebookTCP5005IntTargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/notebook/helper/*"
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 5
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterNotebookTCP8889ListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterNotebookTCP8889TargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/notebook/*"
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 6
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterNotebookTCP8889IntListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/notebook/*"
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 6
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokCloudMap:
     Properties:
       Description:
@@ -1203,7 +701,7 @@ Resources:
   DatagrokCluster:
     Properties:
       ClusterName:
-        Fn::Sub: "${AWS::StackName}-datagrok"
+        Fn::Sub: "${AWS::StackName}"
       Tags:
         - Key: datagrok.component
           Value: datagrok
@@ -1225,7 +723,7 @@ Resources:
   CvmCluster:
     Properties:
       ClusterName:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm"
+        Fn::Sub: "${AWS::StackName}-cvm"
       Tags:
         - Key: datagrok.component
           Value: cvm
@@ -1332,7 +830,7 @@ Resources:
   DatagrokTCP8080TargetGroup:
     Properties:
       Name:
-        Fn::Sub: "${AWS::StackName}-datagrok"
+        Fn::Sub: "${AWS::StackName}"
       Port: 8080
       Protocol: HTTP
       Tags:
@@ -1350,7 +848,7 @@ Resources:
   DatagrokTCP8080IntTargetGroup:
     Properties:
       Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-i"
+        Fn::Sub: "${AWS::StackName}-i"
       Port: 8080
       Protocol: HTTP
       Tags:
@@ -1468,6 +966,13 @@ Resources:
         - DependsOn:
             - Condition: SUCCESS
               ContainerName: ResolvConf
+          Environment:
+            - Name: GROK_CONNECT_PORT
+              Value: 1234
+            - Name: CONNECTION_POOL_MAXIMUM_SIZE
+              Value: 50
+            - Name: CONNECTION_POOL_IDLE_TIMEOUT
+              Value: 300000
           Essential: true
           Image:
             Fn::Sub:
@@ -1500,7 +1005,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-grok_connect"
+        Fn::Sub: "${AWS::StackName}-grok_connect"
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1670,7 +1175,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-grok_pipe"
+        Fn::Sub: "${AWS::StackName}-grok_pipe"
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1865,7 +1370,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-rabbitmq"
+        Fn::Sub: "${AWS::StackName}-rabbitmq"
       Memory: '2048'
       EphemeralStorage:
         SizeInGiB: 21
@@ -1880,7 +1385,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok"
+            Fn::Sub: "${AWS::StackName}"
         - Key: datagrok.component
           Value: datagrok
       VpcId:
@@ -2014,7 +1519,7 @@ Resources:
       BackupRetentionPeriod: 3
       DBInstanceClass: db.t3.large
       DBInstanceIdentifier:
-        Fn::Sub: "${AWS::StackName}-datagrok-rds"
+        Fn::Sub: "${AWS::StackName}-rds"
       DBName: datagrok
       DBSubnetGroupName:
         Ref: DatagrokDBSubnetGroup
@@ -2052,7 +1557,7 @@ Resources:
               SSEAlgorithm: AES256
       BucketName:
         Fn::Sub:
-          - "${AWS::StackName}-datagrok-s3-${uuid}"
+          - "${AWS::StackName}-s3-${uuid}"
           - uuid:
               Fn::Select:
                 - 2
@@ -2141,7 +1646,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokS3EmptyLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}S3EmptyLambdaFunction-*:*"
               - Action:
                   - s3:GetObject
                   - s3:DeleteObject
@@ -2253,10 +1758,33 @@ Resources:
                   - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}",
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
+              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": true,
               "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}", "adminDevKey": "${adminDevKey}",
-              "queuePluginSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
-              "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }
+              "queueSettings":{ 
+                "amqpHost":"${amqpHost}", 
+                "amqpPort": 5672, 
+                "amqpUser":"guest", 
+                "amqpPassword":"${amqpPassword}",
+                "pipeHost":"${pipeHost}", 
+                "pipeKey":"${grokPipeApiKey}" 
+                },
+              "dockerSettings":{
+                "grokSpawnerApiKey":"test-x-api-key",
+                "grokSpawnerHost":"${grokSpawnerHost}",
+                "grokSpawnerPort":8000,
+                "imageBuildTimeoutMinutes":30,
+                "proxyRequestTimeout":60000
+               },
+             "connectorsSettings":{
+                 "dataframeParsingMode":"New Process",
+                 "externalDataFrameCompress":true,
+                 "grokConnectHost":"${grokConnectHost}",
+                 "grokConnectPort":1234,
+                 "localFileSystemAccess":false,
+                 "sambaSpaceEscape":"none",
+                 "sambaVersion":"3.0",
+                 "windowsSharesProxy":""
+                }
               }'
                   - bucket:
                       Ref: DatagrokS3
@@ -2300,6 +1828,10 @@ Resources:
                             Ref: DatagrokAdminDevKey
                     amqpHost:
                       Fn::Sub: "rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
+                    grokConnectHost:
+                      Fn::Sub: "grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
+                    grokSpawnerHost:
+                      Fn::Sub: "grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
                     pipeHost:
                       Fn::Sub: "pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
                     amqpPassword:
@@ -2344,7 +1876,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok"
+        Fn::Sub: "${AWS::StackName}"
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2378,7 +1910,7 @@ Resources:
                         - DatagrokS3
                         - Arn
       ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-DatagrokS3Access-${AWS::Region}"
+        Fn::Sub: "${AWS::StackName}S3Access-${AWS::Region}"
   DatagrokTaskRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -2402,7 +1934,7 @@ Resources:
   DatagrokLoadBalancer:
     Properties:
       Name:
-        Fn::Sub: "${AWS::StackName}-datagrok"
+        Fn::Sub: "${AWS::StackName}"
       Scheme:
         'Fn::If':
           - InternetIngressAccess
@@ -2420,38 +1952,9 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-alb"
+            Fn::Sub: "${AWS::StackName}-alb"
         - Key: datagrok.component
           Value: datagrok
-      Type: application
-      LoadBalancerAttributes:
-        - Key: routing.http.drop_invalid_header_fields.enabled
-          Value: 'true'
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  CvmLoadBalancer:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm"
-      Scheme:
-        'Fn::If':
-          - InternetIngressAccess
-          - 'internet-facing'
-          - 'internal'
-      SecurityGroups:
-        - Ref: CvmALBSecurityGroup
-      Subnets:
-        'Fn::If':
-          - InternetIngressAccess
-          - - Ref: DatagrokPublicSubnet1
-            - Ref: DatagrokPublicSubnet2
-          - - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm-alb"
-        - Key: datagrok.component
-          Value: cvm
       Type: application
       LoadBalancerAttributes:
         - Key: routing.http.drop_invalid_header_fields.enabled
@@ -2460,7 +1963,7 @@ Resources:
   DatagrokLoadBalancerInt:
     Properties:
       Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-int"
+        Fn::Sub: "${AWS::StackName}-int"
       Scheme: internal
       SecurityGroups:
         - Ref: DatagrokALBIntSecurityGroup
@@ -2470,30 +1973,9 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-alb-int"
+            Fn::Sub: "${AWS::StackName}-alb-int"
         - Key: datagrok.component
           Value: datagrok
-      Type: application
-      LoadBalancerAttributes:
-        - Key: routing.http.drop_invalid_header_fields.enabled
-          Value: 'true'
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  CvmLoadBalancerInt:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-int"
-      Scheme: internal
-      SecurityGroups:
-        - Ref: CvmALBIntSecurityGroup
-      Subnets:
-        - Ref: DatagrokPrivateSubnet1
-        - Ref: DatagrokPrivateSubnet2
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${AWS::StackName}-datagrok-cvm-alb-int"
-        - Key: datagrok.component
-          Value: cvm
       Type: application
       LoadBalancerAttributes:
         - Key: routing.http.drop_invalid_header_fields.enabled
@@ -2502,7 +1984,7 @@ Resources:
   DatagrokLogGroup:
     Properties:
       LogGroupName:
-        Fn::Sub: "/ecs/${AWS::StackName}-datagrok-${AWS::Region}"
+        Fn::Sub: "/ecs/${AWS::StackName}-${AWS::Region}"
       RetentionInDays: 7
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -2538,25 +2020,6 @@ Resources:
         DNSName:
           Fn::GetAtt:
             - DatagrokLoadBalancerInt
-            - DNSName
-  CvmPrivateDNS:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok CVM DNS for internal routing"
-      Name:
-        Fn::Sub: cvm.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
-      Type: A
-      AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - CvmLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - CvmLoadBalancerInt
             - DNSName
   GrokConnectPrivateDNS:
     Type: AWS::Route53::RecordSet
@@ -2628,22 +2091,19 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
-            Effect: Allow
-            Resource: "*"
-          - Action:
-              - ecs:RegisterTaskDefinition
-            Condition:
-              StringEquals:
-                aws:RequestTag/caller: [ "grok_spawner" ]
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource: "*"
           - Action:
               - ecs:DescribeTaskDefinition
               - ecs:ListTaskDefinitions
               - ecs:DeregisterTaskDefinition
+              - ecs:RegisterTaskDefinition
             Condition: { }
             Effect: Allow
             Resource: "*"
@@ -2654,15 +2114,22 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "ecs:CreateService"
               - "ecs:TagResource"
@@ -2671,29 +2138,43 @@ Resources:
                 aws:RequestTag/caller: [ "grok_spawner" ]
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "ecs:DescribeTasks"
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
-                - cluster_name:
-                    Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
           - Action:
               - "logs:GetLogEvents"
             Effect: Allow
@@ -2708,10 +2189,24 @@ Resources:
               - "ecs:DescribeClusters"
             Effect: Allow
             Resource:
-              Fn::Sub:
-                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}"
-                - cluster_name:
-                    Ref: DatagrokCluster
+               - Fn::Sub:
+                   - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                   - cluster_name:
+                       Ref: DatagrokCluster
+               - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                       Ref: CvmCluster
+          - Action:
+              - iam:PassRole
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - DatagrokKanikoTaskRole
+                  - Arn
+              - Fn::GetAtt:
+                  - DatagrokTaskExecutionRole
+                  - Arn
       ManagedPolicyName:
         Fn::Sub: "${AWS::StackName}-GrokSpawner-${AWS::Region}"
   GrokSpawnerECRPolicy:
@@ -2763,9 +2258,12 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  Fn::GetAtt:
-                    - DatagrokCluster
-                    - Arn
+                  - Fn::GetAtt:
+                      - DatagrokCluster
+                      - Arn
+                  - Fn::GetAtt:
+                      - CvmCluster
+                      - Arn
             Resource:
               Ref: DatagrokKanikoTaskDefinition
           - Action:
@@ -2817,6 +2315,10 @@ Resources:
                   - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
                   - cluster_name:
                       Ref: DatagrokCluster
+              - Fn::Sub:
+                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                  - cluster_name:
+                      Ref: CvmCluster
               - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
 
   DatagrokKanikoPolicy:
@@ -3006,12 +2508,19 @@ Resources:
                 tag:
                   Ref: GrokSpawnerVersion
           Environment:
-            - Name: "GROK_SPAWNER_DOCKER_REGISTRY_SECRET_ARN"
-              Value: ""
-            - Name: "GROK_SPAWNER_DATAGROK_ECS_CLUSTER"
+            - Name: "GROK_SPAWNER_ENVIRONMENT"
+              Value:
+                Fn::Sub: "${AWS::StackName}"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER"
               Value:
                 Ref: DatagrokCluster
-            - Name: "GROK_SPAWNER_DATAGROK_ECS_SUBNETS"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER_REGION"
+              Value:
+                Fn::Sub: "${AWS::Region}"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE"
+              Value:
+                Fn::Sub: "FARGATE"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__SUBNETS"
               Value:
                 Fn::Sub:
                   - '["${s1}", "${s2}"]'
@@ -3019,32 +2528,65 @@ Resources:
                       Ref: DatagrokPrivateSubnet1
                     s2:
                       Ref: DatagrokPrivateSubnet2
-            - Name: "GROK_SPAWNER_DATAGROK_ECS_SECURITY_GROUPS"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__SECURITY_GROUPS"
               Value:
                 Fn::Sub:
                   - '["${s1}"]'
                   - s1:
                       Ref: DatagrokSecurityGroup
-            - Name: "GROK_SPAWNER_DATAGROK_ECS_EXEC_ROLE"
-              Value:
-                Fn::GetAtt:
-                  - DatagrokTaskExecutionRole
-                  - Arn
-            - Name: "GROK_SPAWNER_ENVIRONMENT"
-              Value:
-                Fn::Sub: "${AWS::StackName}"
-            - Name: "GROK_SPAWNER_KANIKO_S3_BUCKET"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_S3_BUCKET"
               Value:
                 Ref: DatagrokS3
-            - Name: "GROK_SPAWNER_KANIKO_TASK_DEFINITION"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_TASK_DEFINITION"
               Value:
                 Ref: DatagrokKanikoTaskDefinition
-            - Name: "GROK_SPAWNER_DATAGROK_ECS_LOG_GROUP"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__LOG_GROUP"
               Value:
                 Fn::Sub:
                   - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
                   - logs:
                       Ref: DatagrokLogGroup
+            - Name: "GROK_SPAWNER_CVM_ECS__CLUSTER"
+              Value:
+                Ref: CvmCluster
+            - Name: "GROK_SPAWNER_CVM_ECS__CLUSTER_REGION"
+              Value:
+                Fn::Sub: "${AWS::Region}"
+            - Name: "GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE"
+              Value:
+                Fn::Sub: "FARGATE"
+            - Name: "GROK_SPAWNER_CVM_ECS__SUBNETS"
+              Value:
+                Fn::Sub:
+                  - '["${s1}", "${s2}"]'
+                  - s1:
+                      Ref: DatagrokPrivateSubnet1
+                    s2:
+                      Ref: DatagrokPrivateSubnet2
+            - Name: "GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS"
+              Value:
+                Fn::Sub:
+                  - '["${s1}"]'
+                  - s1:
+                      Ref: CvmSecurityGroup
+            - Name: "GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET"
+              Value:
+                Ref: DatagrokS3
+            - Name: "GROK_SPAWNER_CVM_ECS__KANIKO_TASK_DEFINITION"
+              Value:
+                Ref: DatagrokKanikoTaskDefinition
+            - Name: "GROK_SPAWNER_CVM_ECS__LOG_GROUP"
+              Value:
+                Fn::Sub:
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+                  - logs:
+                      Ref: DatagrokLogGroup
+            - Name: "GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE"
+              Value:
+                Ref: DatagrokTaskExecutionRole
+            - Name: "GROK_SPAWNER_CVM_ECS__EXEC_ROLE"
+              Value:
+                Ref: DatagrokTaskExecutionRole
           LinuxParameters: { }
           LogConfiguration:
             LogDriver: awslogs
@@ -3067,7 +2609,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-grok_spawner"
+        Fn::Sub: "${AWS::StackName}-grok_spawner"
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -3106,7 +2648,7 @@ Resources:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-grok_spawner_kaniko"
+        Fn::Sub: "${AWS::StackName}-grok_spawner_kaniko"
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:

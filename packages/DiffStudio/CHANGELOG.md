@@ -1,9 +1,33 @@
 # Diff Studio changelog
 
+## 1.3.3 (2025-04-10)
+
+Updated the Fitting feature:
+
+* Added progress bar;
+* Target columns selection
+* Similar curves control
+* Navigation for users
+
+## 1.3.2 (2025-04-04)
+
+Tutorials library update
+
+## 1.3.1 (2025-03-31)
+
+* Updated tags
+* Updated built-in models
+
+## 1.3.0 (2025-03-29)
+
+* Implemented the "Save to Model Hub" feature
+* Updated the Bioreactor and PK-PD models and demos
+* Updated with respect to new Browse UX
+
 ## 1.2.6 (2025-03-10)
 
 * Fitting in webworkers for cyclic models
-* Updaed tests for pipelines
+* Updated tests for pipelines
 
 ## 1.2.5 (2025-03-06)
 

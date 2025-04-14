@@ -4,7 +4,7 @@ channels:
   - pytorch
   - nvidia
 dependencies:
-  - python>=3.11
+  - python=3.11
   - rdkit
   - joblib
   - numpy
@@ -20,7 +20,7 @@ dependencies:
   - cuda-version=11.8
   - cudatoolkit=11.8
   - cuDNN
-  - pytorch>=1.8.1=*cuda*
+  - pytorch==2.5.0=*_cu*
+  - torchvision==0.20.0=*_cu*
+  - torchaudio==2.5.0=*_cu*
   - pytorch-cuda=11.8
-  - torchvision=*=*_cu*
-  - torchaudio=*=*_cu*

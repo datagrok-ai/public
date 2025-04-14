@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectTable} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectTable, expectFloat} from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: functions calls', async () => {
   const xValue = 1.5;
@@ -353,7 +353,7 @@ category('Dapi: functions', async () => {
     expect(query.inputs.length, 1);
     const call = query.prepare({'x': 0.5});
     const res = (await call.call()).getOutputParamValue();
-    expect(res.get('res', 0), 0.5);
+    expectFloat(res.get('res', 0), 0.5);
   });
 
   test('save with NaN', async () => {

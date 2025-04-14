@@ -91,13 +91,14 @@ export class AdmeticaBaseEditor {
     return paramsForm;
   }
 
-  private createInputForProperty(property: any) {
+  private createInputForProperty(property: any, model: Model) {
     if (property.property.skip) {
      return; 
     }
     const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
     const prop = DG.Property.fromOptions(property.property);
     const input = DG.InputBase.forProperty(prop, object);
+    const isLinear = model.coloring.type === DG.COLOR_CODING_TYPE.LINEAR;
 
     if (!property.property.enable)
       input.root.style.pointerEvents = 'none';
@@ -111,6 +112,8 @@ export class AdmeticaBaseEditor {
     input.addCaption('');
     input.onChanged.subscribe(() => {
       property.object[key] = input.value;
+      if (key === 'direction' && isLinear)
+        [model.coloring.min, model.coloring.max] = [model.coloring.max, model.coloring.min];  
       const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
       this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
     });
@@ -227,7 +230,7 @@ export class AdmeticaBaseEditor {
     inputs.classList.add('admetica-input-form');
     inputs.appendChild(ui.divText(model.name, 'admetica-descriptor-name'));
     model.properties.forEach(p => {
-      const input = this.createInputForProperty(p);
+      const input = this.createInputForProperty(p, model);
       if (input) inputs.appendChild(input);
     });
     

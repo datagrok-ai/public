@@ -48,7 +48,7 @@ export async function loadIssues(host: string, creds: AuthCreds, index: number =
     return issues as JiraIssuesList;
 }
 
-export async function loadIssueData(host: string, creds: AuthCreds, issueName: string): Promise<JiraIssue | null> {
+export async function loadIssueData(host: string, creds: AuthCreds, issueName: string): Promise<JiraIssue | null | ErrorMessageResponse> {
     let url = `https://${host}/rest/api/3/issue/${issueName}`;
     let requestOptions = buildRequestOptions(url, creds);
     let issue: JiraIssue | null = await invokeApiFetch(url, requestOptions);

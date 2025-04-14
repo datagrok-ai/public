@@ -34,20 +34,25 @@ export function mutationCliffsWidget(
     addExpandIconGen('Mutation Cliffs pairs', aminoToInput.root, widgetRoot,
       () => {
         const parts = cliffsPairsWidgetParts(table, options);
-        const div = ui.divV([parts!.aminoToInput.root, parts!.pairsGrid.root, parts!.uniqueSequencesGrid.root],
-          {style: {width: '100%', height: '100%'}});
+        const div = ui.splitH(
+          [ui.divV([parts!.aminoToInput.root, parts!.pairsGrid.root], {style: {marginRight: '10px'}}),
+            ui.divV([parts!.uniqueSequencesGrid.root], {style: {marginLeft: '10px'}})],
+          {style: {width: '100%', height: '100%'}}, true);
 
         setTimeout(() => {
           if (document.contains(div)) {
             const dW = div.offsetWidth;
             const pairsGridParent = parts!.pairsGrid.canvas?.parentElement;
+            parts!.pairsGrid.props.showRowHeader = true;
+            parts!.uniqueSequencesGrid.props.showRowHeader = true;
             const uniqueSequencesGridParent = parts!.uniqueSequencesGrid.canvas?.parentElement;
             if (pairsGridParent && uniqueSequencesGridParent) {
               pairsGridParent.style.height = '100%';
               uniqueSequencesGridParent.style.height = '100%';
               uniqueSequencesGridParent.style.marginTop = '20px';
-              if (dW > 200) {
-                const macroMolWidth = Math.max(dW * 0.5, 200);
+              if (dW > 400) {
+                const macroMolWidth = Math.max(dW * 0.33, 200);
+
                 const mutationGridCol = parts!.pairsGrid.columns.byName('Mutation');
                 if (mutationGridCol)
                   mutationGridCol.width = macroMolWidth;
@@ -79,6 +84,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
+  const mutationsGroupsArray: string[] = [];
   const fromIdxArray: number[] = [];
   const toIdxArray: number[] = [];
   const alignedSeqCol = table.getCol(options.sequenceColumnName!);
@@ -88,6 +94,9 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const activityScaledColData = options.activityCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
   const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
+
+  // one mutation position and monomer can contain multiple groups of substitutions
+  const mutationsGroupMap: Record<number, number> = {};
 
   const positionColumns: { [colName: string]: DG.Column<string> } =
     Object.fromEntries(options.positionColumns.map((col) => [col.name, col]));
@@ -106,7 +115,9 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
       for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
         if (!filteredIndexes.includes(referenceIdx))
           continue;
-
+        if (!mutationsGroupMap[referenceIdx])
+          mutationsGroupMap[referenceIdx] = Object.keys(mutationsGroupMap).length + 1;
+        const group = mutationsGroupMap[referenceIdx];
 
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
@@ -125,6 +136,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
           seenIndexes.get(subIdx)!.push(referenceIdx);
           substitutionsArray.push(`${baseSequence}#${subSeq}`);
+          mutationsGroupsArray.push(`${group}`);
           deltaArray.push(baseActivity - activityScaledColData[subIdx]);
           substitutedToArray.push(posColCategories[posColData[subIdx]]);
           fromIdxArray.push(referenceIdx);
@@ -142,10 +154,12 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
+  const mutationGroupCol = DG.Column.fromStrings('Group', mutationsGroupsArray);
   const hiddenSubstToAarCol = DG.Column.fromStrings('~to', substitutedToArray);
   const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
   const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
-  const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
+  const pairsTable =
+    DG.DataFrame.fromColumns([substCol, activityDeltaCol, mutationGroupCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
   const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: (value) => {

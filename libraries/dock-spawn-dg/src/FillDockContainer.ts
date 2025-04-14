@@ -1,12 +1,12 @@
-import { DockManager } from "./DockManager.js";
-import { Utils } from "./Utils.js";
-import { ContainerType } from "./ContainerType.js";
-import { TabHost } from "./TabHost.js";
-import { TabHostDirection } from "./enums/TabHostDirection.js";
-import { ISize } from "./interfaces/ISize.js";
-import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize.js";
-import { IState } from "./interfaces/IState.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
+import { DockManager } from "./DockManager";
+import { Utils } from "./Utils";
+import { ContainerType } from "./ContainerType";
+import { TabHost } from "./TabHost";
+import { TabHostDirection } from "./enums/TabHostDirection";
+import { ISize } from "./interfaces/ISize";
+import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize";
+import { IState } from "./interfaces/IState";
+import { IDockContainer } from "./interfaces/IDockContainer";
 
 export class FillDockContainer implements IDockContainerWithSize {
 

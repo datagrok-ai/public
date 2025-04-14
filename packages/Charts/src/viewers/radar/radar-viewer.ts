@@ -9,10 +9,10 @@ import { EChartViewer } from '../echart/echart-viewer';
 import _ from 'lodash';
 
 import '../../../css/radar-viewer.css';
+import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
-const ERROR_CLASS = 'd4-viewer-error';
 const WARNING_CLASS = 'radar-warning';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
@@ -211,7 +211,7 @@ export class RadarViewer extends EChartViewer {
     option.series[2].data = this.createSeriesData(indexes);
 
     if (this.filter.trueCount > MAXIMUM_ROW_NUMBER)
-      this._showMessage('Only first 1000 shown', WARNING_CLASS);
+      MessageHandler._showMessage(this.root, 'Only first 1000 shown', WARNING_CLASS);
   
     if (this.showMin)
       this.updateMin();
@@ -390,14 +390,6 @@ export class RadarViewer extends EChartViewer {
     return columns;
   }
 
-  _showMessage(msg: string, className: string) {this.root.appendChild(ui.divText(msg, className));}
-
-  _removeMessage(className: string) {
-    const divTextElement = this.root.getElementsByClassName(className)[0];
-    if (divTextElement)
-      this.root.removeChild(divTextElement);
-  }
-
   formatLabel(value: string): string {
     const specialCharactersRegex: RegExp = /[^a-zA-Z0-9]+/g;
     return value.split(specialCharactersRegex).join("\n");
@@ -410,13 +402,15 @@ export class RadarViewer extends EChartViewer {
   }
 
   render(indexes?: number[]) {
+    if (!this.dataFrame)
+      return;
+    
     if (!this._testColumns()) {
-      this._showMessage('The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
+      MessageHandler._showMessage(this.root, 'The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
-    let colors;
-    this._removeMessage(WARNING_CLASS);
-    this._removeMessage(ERROR_CLASS);
+    MessageHandler._removeMessage(this.root, WARNING_CLASS);
+    MessageHandler._removeMessage(this.root, ERROR_CLASS);
     this.getSeriesData(indexes!);
     this.chart.setOption(option);
   }

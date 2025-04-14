@@ -51,13 +51,13 @@ export enum HINT {
 
 /** Links to help */
 export enum LINK {
-  PLS = '/help/explore/multivariate-analysis/pls#pls-components',
-  MVA = '/help/explore/multivariate-analysis/pls',
-  MODEL = '/help/explore/multivariate-analysis/plots/predicted-vs-reference',
-  COEFFS = '/help/explore/multivariate-analysis/plots/regression-coefficients',
-  LOADINGS = '/help/explore/multivariate-analysis/plots/loadings',
-  EXPL_VARS = '/help/explore/multivariate-analysis/plots/explained-variance',
-  SCORES = '/help/explore/multivariate-analysis/plots/scores',
+  PLS = '/help/explore/multivariate-analysis#pls-components',
+  MVA = '/help/explore/multivariate-analysis',
+  MODEL = '/help/explore/multivariate-analysis#observed-vs-predicted',
+  COEFFS = '/help/explore/multivariate-analysis#regression-coefficients',
+  LOADINGS = '/help/explore/multivariate-analysis#loadings',
+  EXPL_VARS = '/help/explore/multivariate-analysis#explained-variance',
+  SCORES = '/help/explore/multivariate-analysis#scores',
 }
 
 /** Components consts */

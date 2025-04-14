@@ -1,11 +1,11 @@
-import { TabPage } from "./TabPage.js";
-import { Utils } from "./Utils.js";
-import { TabHostDirection } from "./enums/TabHostDirection.js";
-import { TabHandle } from "./TabHandle.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { DockManager } from "./DockManager.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { EventHandler } from './EventHandler.js';
+import { TabPage } from "./TabPage";
+import { Utils } from "./Utils";
+import { TabHostDirection } from "./enums/TabHostDirection";
+import { TabHandle } from "./TabHandle";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { DockManager } from "./DockManager";
+import { PanelContainer } from "./PanelContainer";
+import { EventHandler } from './EventHandler';
 
 /**
  * Tab Host control contains tabs known as TabPages.

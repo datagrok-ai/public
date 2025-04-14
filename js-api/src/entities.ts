@@ -790,15 +790,10 @@ export class Model extends Entity {
  * {@link https://datagrok.ai/help/compute/jupyter-notebook}
  * */
 export class Notebook extends Entity {
+
   /** @constructs Notebook */
   constructor(dart: any) {
     super(dart);
-  }
-
-  /** Create Notebook on server for edit.
-   * @returns {Promise<string>} Current notebook's name */
-  edit(): Promise<string> {
-    return api.grok_Notebook_Edit(this.dart);
   }
 
   /** Environment name */
@@ -809,11 +804,8 @@ export class Notebook extends Entity {
   get description(): string { return api.grok_Notebook_Get_Description(this.dart); }
   set description(e: string) { api.grok_Notebook_Set_Description(this.dart, e); }
 
-  /** Converts Notebook to HTML code
-   * @returns {Promise<string>} */
-  toHtml(): Promise<string> {
-    return api.grok_Notebook_ToHtml(this.dart);
-  }
+  get notebook(): {[_:string]: any} { return api.grok_Notebook_Get_Notebook_Content(this.dart); }
+  set notebook(data: {[_:string]: any}) { api.grok_Notebook_Set_Notebook_Content(this.dart, data); }
 }
 
 /** @extends Entity
@@ -874,6 +866,9 @@ export class FileInfo extends Entity {
 
   /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv` */
   get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.dart); }
+
+  /** Returns URL path, i.e. `Demo.TestJobs.Files.DemoFiles/geo/dmv_offices.csv` */
+  get viewPath(): string { return api.grok_FileInfo_Get_ViewPath(this.dart); }
 
   /** Returns file extension, i.e. `csv` */
   get extension(): string { return api.grok_FileInfo_Get_Extension(this.dart); }
@@ -1094,11 +1089,6 @@ export class ScriptEnvironment extends Entity {
 
   /** Environment yaml file content */
   get environment(): string { return api.grok_ScriptEnvironment_Environment(this.dart); }
-
-  /** Setup environment */
-  setup(): Promise<void> {
-    return api.grok_ScriptEnvironment_Setup(this.dart);
-  }
 }
 
 export class LogEventType extends Entity {

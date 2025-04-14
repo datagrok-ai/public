@@ -11,6 +11,7 @@ import {UaView} from './tabs/ua';
 import $ from 'cash-dom';
 import {ChoiceInputTags} from "./elements/choice-input-tags";
 import {ChoiceInputPackagesCategories} from "./elements/choice-input-packages-categories";
+import {ChoiceInputProjects} from "./elements/choice-input-projects";
 
 
 export class UaToolbox {
@@ -20,6 +21,7 @@ export class UaToolbox {
   packagesInput: ChoiceInputPackages;
   tagsInput: ChoiceInputTags;
   packagesCategoriesInput: ChoiceInputPackagesCategories;
+  projectsInput: ChoiceInputProjects;
 
   filterStream: BehaviorSubject<UaFilter>;
   dateFromDD: DG.InputBase = ui.input.string('From', {value: ''});
@@ -51,18 +53,20 @@ export class UaToolbox {
     const packagesInput = await ChoiceInputPackages.construct();
     const tagsInput = await ChoiceInputTags.construct();
     const packagesCategoriesInput = await ChoiceInputPackagesCategories.construct();
+    const projectsInput = await ChoiceInputProjects.construct();
     const filterStream = new BehaviorSubject(new UaFilter({
       date: date,
       groups: [groupsInput.emptyLabel],
       packages: [packagesInput.emptyLabel],
       tags: [tagsInput.emptyLabel],
-      packagesCategories: [packagesCategoriesInput.emptyLabel]
+      packagesCategories: [packagesCategoriesInput.emptyLabel],
+      projects: [projectsInput.emptyLabel]
     }));
-    return new UaToolbox(dateInput, groupsInput, packagesInput, tagsInput, packagesCategoriesInput, filterStream, viewHandler);
+    return new UaToolbox(dateInput, groupsInput, packagesInput, tagsInput, packagesCategoriesInput, projectsInput, filterStream, viewHandler);
   }
 
   private constructor(dateInput: DG.InputBase, groupsInput: ChoiceInputGroups,
-    packagesInput: ChoiceInputPackages, tagsInput: ChoiceInputTags, packagesCategoriesInput: ChoiceInputPackagesCategories, filterStream: BehaviorSubject<UaFilter>, viewHandler: ViewHandler) {
+    packagesInput: ChoiceInputPackages, tagsInput: ChoiceInputTags, packagesCategoriesInput: ChoiceInputPackagesCategories, projectsInput: ChoiceInputProjects, filterStream: BehaviorSubject<UaFilter>, viewHandler: ViewHandler) {
     this.rootAccordion = ui.accordion();
     this.formDD = ui.div();
     this.dateInput = dateInput;
@@ -70,17 +74,21 @@ export class UaToolbox {
     this.packagesInput = packagesInput;
     this.tagsInput = tagsInput;
     this.packagesCategoriesInput = packagesCategoriesInput;
+    this.projectsInput = projectsInput;
     this.filterStream = filterStream;
     this.viewHandler = viewHandler;
     this.toggleTagsInput(false);
     this.toggleCategoriesInput(false);
+    this.toggleProjectsInput(false);
+    this.togglePackagesInput(false);
     this.filters = this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
         groupsInput.field,
         packagesInput.field,
         tagsInput.field,
-        packagesCategoriesInput.field
+        packagesCategoriesInput.field,
+        projectsInput.field
       ]);
       const applyB = ui.bigButton('Apply', () => {
         applyB.disabled = true;
@@ -149,12 +157,15 @@ export class UaToolbox {
     const filter = new UaFilter({
       date: this.dateInput.value,
       groups: this.groupsInput.getSelectedItems(),
-      packages: this.packagesInput.getSelectedItems(),
     });
     if (this.tagsInput.field.root.style.display !== 'none')
       filter.tags = this.tagsInput.getSelectedItems();
     if (this.packagesCategoriesInput.field.root.style.display !== 'none')
       filter.packagesCategories = this.packagesCategoriesInput.getSelectedItems();
+    if (this.projectsInput.field.root.style.display !== 'none')
+      filter.projects = this.projectsInput.getSelectedItems();
+    if (this.packagesInput.field.root.style.display !== 'none')
+      filter.packages = this.packagesInput.getSelectedItems();
     return filter;
   }
 
@@ -162,11 +173,14 @@ export class UaToolbox {
     this.filterStream.next(this.getFilter());
     this.viewHandler.setUrlParam('date', this.dateInput.value, true);
     this.viewHandler.setUrlParam('users', this.groupsInput.getSelectedItems().join(','), true);
-    this.viewHandler.setUrlParam('packages', this.packagesInput.getSelectedItems().join(','), true);
+    if (this.packagesInput.field.root.style.display !== 'none')
+      this.viewHandler.setUrlParam('packages', this.packagesInput.getSelectedItems().join(','), false);
     if (this.tagsInput.field.root.style.display !== 'none')
       this.viewHandler.setUrlParam('tags', this.tagsInput.getSelectedItems().join(','), false);
     if (this.packagesCategoriesInput.field.root.style.display !== 'none')
       this.viewHandler.setUrlParam('categories', this.packagesCategoriesInput.getSelectedItems().join(','), false);
+    if (this.projectsInput.field.root.style.display !== 'none')
+      this.viewHandler.setUrlParam('projects', this.projectsInput.getSelectedItems().join(','), false);
   }
 
   setDate(value: string) {
@@ -189,11 +203,23 @@ export class UaToolbox {
     this.packagesCategoriesInput.addItems(value.split(','));
   }
 
+  setProjects(value: string): void {
+    this.projectsInput.addItems(value.split(','));
+  }
+
   toggleTagsInput(visible: boolean): void {
     ui.setDisplay(this.tagsInput.field.root, visible);
   }
 
   toggleCategoriesInput(visible: boolean): void {
     ui.setDisplay(this.packagesCategoriesInput.field.root, visible);
+  }
+
+  toggleProjectsInput(visible: boolean): void {
+    ui.setDisplay(this.projectsInput.field.root, visible);
+  }
+
+  togglePackagesInput(visible: boolean): void {
+    ui.setDisplay(this.packagesInput.field.root, visible);
   }
 }

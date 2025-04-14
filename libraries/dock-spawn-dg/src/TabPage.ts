@@ -1,8 +1,8 @@
-import { TabHandle } from "./TabHandle.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { TabHost } from "./TabHost.js";
-import { Utils } from "./Utils.js";
+import { TabHandle } from "./TabHandle";
+import { PanelContainer } from "./PanelContainer";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { TabHost } from "./TabHost";
+import { Utils } from "./Utils";
 
 export class TabPage {
     selected: boolean;

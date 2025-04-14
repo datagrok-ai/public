@@ -1,4 +1,4 @@
-# BiostructureViewer changelog
+# Biostructure Viewer changelog
 
 ## 1.3.3 (2025-02-06)
 

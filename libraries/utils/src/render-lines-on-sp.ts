@@ -134,10 +134,10 @@ export class ScatterPlotLinesRenderer {
         let lineLen = 0;
         const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
         const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
-        const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
+        const pointFrom = this.sp.pointToScreen(this.lines.from[i]);
         let aX = pointFrom?.x;
         let aY = pointFrom?.y;
-        const pointTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
+        const pointTo = this.sp.pointToScreen(this.lines.to[i]);
         let bX = pointTo?.x;
         let bY = pointTo?.y;
         const minAxis = Math.min(this.sp.viewBox.width, this.sp.viewBox.height);

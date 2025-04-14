@@ -42,7 +42,7 @@ category('Grid', () => {
     let order = grid.getRowOrder();
     expect(order[0], 0);
     expect(order[1], 2);
-    
+
     bitset.setAll(true);
     grid.dataFrame.filter.copyFrom(bitset);
   });
@@ -66,7 +66,8 @@ category('Grid', () => {
     };
 
     demog.col('height')?.meta.colors.setConditional({ '20-170': '#00FF00', '170-190': '#220505' });
-    demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
+    demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green], {min: 25, max: 55});
+    demog.col('weight')?.meta.colors.setLinearAbsolute({58.31: '#73aff5', 97.98: '#ff5140', 137.65: '#ffa500', 177.32: '#50af28', 197.16: '#d9d9d9', 217: '#9467bd'}, {belowMinColor: '#000000', aboveMaxColor: '#ffffff'});
 
     //categorical RACE column check
     const raceCol = demog.col('race')!;
@@ -82,8 +83,20 @@ category('Grid', () => {
     //numerical AGE column check for Linear ColorCoding
     const ageCol = demog.col('age')!;
     if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
-      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]')
+      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]' ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MIN) !== '25' ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MAX) !== '55')
       throw new Error('Linear Color Coding error');
+
+    // numerical WEIGHT column check for Linear ColorCoding with absolute values
+    const weightCol = demog.col('weight')!;
+    if (weightCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4285771765,4294922560,4294944000,4283477800,4292467161,4287915965]' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE) !== 'true' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_ABSOLUTE) !== '{"58.31":"#73aff5","97.98":"#ff5140","137.65":"#ffa500","177.32":"#50af28","197.16":"#d9d9d9","217":"#9467bd"}' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_BELOW_MIN_COLOR) !== '#000000' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_ABOVE_MAX_COLOR) !== '#ffffff')
+      throw new Error('Linear Color Coding with absolute values error');
   });
 
   test('columnVisibility', async () => {

@@ -9,6 +9,7 @@ import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
+import { LruCache } from './utils';
 import * as DG from "./dataframe";
 
 
@@ -1108,7 +1109,7 @@ export class Grid extends Viewer<IGridSettings> {
   get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
-
+  get onTooltipCreating(): Observable<GridTooltipArgs> { return __obs('d4-grid-show-tooltip', this.dart) };
   get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
 
   /** Returns currently visible cells */
@@ -1200,6 +1201,16 @@ export class GridCellRenderArgs extends EventData {
   }
 }
 
+export class GridTooltipArgs extends EventData {
+  constructor(dart: any) {
+    super(dart);
+  }
+  preventDefault(): void {
+    api.grok_EventData_PreventDefault(this.dart);
+  }
+
+}
+
 
 export class CanvasRenderer {
   get defaultWidth(): number | null {
@@ -1271,6 +1282,67 @@ export class GridCellRenderer extends CanvasRenderer {
   onDoubleClick(gridCell: GridCell, e: MouseEvent): void {}
 }
 
+export abstract class BatchCellRenderer extends GridCellRenderer {
+  currentTimeout: any = null;
+  isRunning: boolean = false;
+  loadedValues: Map<string, any> = new Map<string, any>();
+  cellsToLoad: GridCell[] = [];
+  cellsToLoadOnTimeoutComplete: GridCell[] = [];
+  cache: LruCache<string, any>;
+
+  constructor(cache: LruCache<string, any>) {
+      super();
+
+      this.cache = cache;
+  }
+
+  abstract loadData(keys: string[]) : Promise<Map<string, any>>;
+
+  async retrieveBatch(gridCell: GridCell) {
+      let found = this.cellsToLoad.filter((e) => {
+          return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn.name === gridCell.gridColumn.name && e.gridRow === gridCell.gridRow;
+      }) ?? [];
+
+      if (found.length > 0)
+          return;
+
+      if (this.isRunning) {
+          this.cellsToLoadOnTimeoutComplete.push(gridCell)
+          return;
+      }
+
+      this.cellsToLoad.push(gridCell)
+
+      if (this.currentTimeout)
+          clearTimeout(this.currentTimeout);
+
+
+      this.currentTimeout = setTimeout(async () => {
+          this.isRunning = true;
+
+
+          this.loadedValues = await this.loadData(this.cellsToLoad.map((e) => e.cell.valueString));
+
+          for (const [key, value] of this.loadedValues) {
+              this.cache.set(key, value);
+          }
+
+          this.cellsToLoad.forEach((x) => {
+              if (!this.loadedValues.has(x.cell.valueString))
+                  this.cache.set(x.cell.valueString, null);
+              x.grid.invalidate();
+          })
+
+          this.loadedValues.clear();
+          this.cellsToLoad = []
+          this.currentTimeout = null;
+          this.isRunning = false;
+          if (this.cellsToLoadOnTimeoutComplete.length > 0)
+              this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.retrieveBatch(cell) })
+          this.cellsToLoadOnTimeoutComplete = [];
+      });
+  }
+}
 
 /** Proxy class for the Dart-based grid cell renderers. */
 export class GridCellRendererProxy extends GridCellRenderer {

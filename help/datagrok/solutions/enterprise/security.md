@@ -78,8 +78,8 @@ the server checks its validity before proceeding.
 
 ## Infrastructure
 
-Datagrok consist of Docker containers, [database](../../../develop/under-the-hood/infrastructure.md#database)
-and [persistent file storage](../../../develop/under-the-hood/infrastructure.md#storage).
+Datagrok consist of Docker containers, [database](../../../develop/under-the-hood/infrastructure.md#1-core-components)
+and [persistent file storage](../../../develop/under-the-hood/infrastructure.md#1-core-components).
 
 ### Encryption in-transit
 

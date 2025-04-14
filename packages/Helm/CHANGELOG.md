@@ -1,5 +1,13 @@
 # Helm changelog
 
+## 2.8.3 (2025-03-27)
+
+Fix MAJOR bug with overcached renderer after using polytool rules
+
+## 2.8.2 (2025-03-26)
+
+Fix Helm Service editor moving datagrok page up
+
 ## 2.8.1 (2025-03-03)
 
 ### Bug fixes

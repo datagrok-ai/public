@@ -52,6 +52,25 @@ Scaffold tree highlighting issue
 5. Fix the structure so that it is valid again
 - Expected results: user can fix invalid structure and continue working with scaffold tree.
 
+- Close all.
+
+#### Applying Scaffold Tree Colors to Scatterplot
+1. Load the smiles_50.csv dataset.Generate the Scaffold Tree viewer.
+2. Apply Colors in Scaffold Tree: 
+  - Select the first 3 molecules.
+  - Assign a different color to each.
+  - Ensure the checkboxes next to the selected scaffolds are checked.
+3. Add Scatterplot viewer: 
+  - As Color set 'Scaffold Tree_1' column
+  - Expected result: Scatterplot should inherit colors form Scaffold Tree.
+4. Save you data as new project and new layout.
+  - Reopen your saved project and layout. 
+  - Expected result: Coloring in Scatterplot remains the same; it should not reset or change.
+5. Change name for 'Scaffold Tree_1' column. (e.g., to 'MyScaffoldTree')
+  - Column name changes. 
+  - The Scaffold Tree viewer name updates accordingly.Scaffold Tree`s name should be updated. 
+  - The Color setting in the Scatterplot viewer also updates to reflect the new column name.
+
 ---
 {
 "order": 2,

@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, singleDescription, closeWindows, describeElements} from './utils';
+import {getElement, getView, singleDescription, closeWindows, describeElements, PAUSE} from './utils';
 
 /** Fitting results info */
 const fittingInfo = [
@@ -51,22 +51,23 @@ export class FittingTutorial extends Tutorial {
     this.describe('Consider ball flight simulation.');
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-          grok.shell.v = DG.View.createByType('browse');
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
-        // 1. Open Apps
-    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    // grok.shell.v = browseView;
-    // browseView.showTree = true;
-
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    // 1. Open Apps
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
+    
+    const browsePanel = grok.shell.browsePanel;    
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
 
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
+        
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
@@ -74,16 +75,28 @@ export class FittingTutorial extends Tutorial {
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run Diff Studio
-    let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
+        
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+    
+    // 2. Run Model catalog
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+    
+    browseIcon.click();
+    
+    let name = 'Model-Hub';
+    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
-
+    
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
-
+    
     await this.action(
       `Run ${name}`,
       fromEvent(modelCatalogIcn, 'dblclick'),
@@ -128,18 +141,32 @@ export class FittingTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      `Click "OK" to go to the next step.`,
-    );
+    if (okBtn !== null){
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        `Click "OK" to go to the next step.`,
+      );
+    }
 
     // 5. Run fitting
     this.title('Fit scalar output');
     this.describe('How should the ball be thrown to make it fly exactly 10 meters? Let\'s find the answer.');
 
-    const fitIcnRoot = document.querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
+    const ribbonPannels = modelView.getRibbonPanels();
+    if (ribbonPannels.length < 1) {
+      grok.shell.warning('Failed to run model analysis features');
+      return;      
+    }
+
+    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    if (rightPanel.length < 2) {
+      grok.shell.warning('Failed to load model analysis features');
+      return;      
+    }
+
+    const fitIcnRoot = rightPanel[rightPanel.length - 2];
 
     await this.action(
       'Click "Fit inputs"',
@@ -241,7 +268,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.children[20] as HTMLElement;
+    const trajectoryRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -283,10 +310,12 @@ export class FittingTutorial extends Tutorial {
       ui.hints.POSITION.RIGHT,
     );
 
-    await this.action(
-      'Explore the fitted trajectory',
-      fromEvent(okBtn, 'click'),
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Explore the fitted trajectory',
+        fromEvent(okBtn, 'click'),
+      );
+    }
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

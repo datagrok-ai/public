@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
-import {OpenIcon} from '@he-tree/vue';
+import {ComboPopup, IconFA, ValidationIcon, ValidationIconInput} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
+import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
@@ -103,6 +103,7 @@ const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
 };
 
 export const TreeNode = Vue.defineComponent({
+  name: 'TreeNode',
   props: {
     stat: {
       type: Object as Vue.PropType<AugmentedStat>,
@@ -137,14 +138,18 @@ export const TreeNode = Vue.defineComponent({
     },
   },
   emits: {
-    addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
-    removeNode: () => {},
-    toggleNode: () => {},
-    runSubtree: (startUuid: string, rerunWithConsistent?: boolean) => {},
-    runStep: (uuid: string) => {},
-    saveStep: (uuid: string) => {},
+    addNode: (_data: {itemId: string, position: number}) => true,
+    removeNode: () => true,
+    toggleNode: () => true,
+    runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
+    runStep: (_uuid: string) => true,
+    saveStep: (_uuid: string) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('TreeNode onRenderTriggered', event);
+    });
+
     const openIcon = () => <OpenIcon
       open={props.stat.open}
       class="mtl-mr"
@@ -168,16 +173,36 @@ export const TreeNode = Vue.defineComponent({
       />;
     };
 
+    const checkIcon = () => {
+      if (pipelineValidation.value)
+        return (
+          <ValidationIcon
+            validationStatus={pipelineValidation.value}
+            useHover={true}
+            style={{
+              alignSelf: 'center',
+              left: '-20px',
+              position: 'absolute',
+            }}
+          />);
+    }
+
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
 
-    const treeNodeRef = Vue.ref(null as null | HTMLElement);
+    const treeNodeRef = Vue.shallowRef(null as null | HTMLElement);
     const isHovered = useElementHover(treeNodeRef);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
     const status = Vue.computed(() => {
       if (props.callState)
         return statesToStatus(props.callState, props.validationStates, props.consistencyStates);
+    });
+
+    const pipelineValidation = Vue.computed(() => {
+      if (!isFuncCallState(props.stat.data)) {
+        return Vue.markRaw({validation: props.stat.data.structureCheckResults});
+      }
     });
 
     return () => (
@@ -192,8 +217,14 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
       >
         { status.value && progressIcon(status.value, props.isReadonly) }
+        { checkIcon() }
         { props.stat.children.length ? openIcon() : null }
-        <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
+        <span
+          class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
+          style={{
+            opacity: (props.stat.children.length === 0 && props.stat.data.type !== 'funccall') ? 0.5 : 1.0,
+          }}
+        >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { ...isHovered.value ? [

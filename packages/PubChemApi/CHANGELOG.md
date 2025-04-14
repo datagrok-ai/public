@@ -1,4 +1,4 @@
-# PubChemApi changelog
+# PubChem changelog
 
 ## 1.2.3 (2025-02-25)
 

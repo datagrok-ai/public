@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/hit-triage",
-  "friendlyName": "HitTriage",
-  "version": "1.4.4",
+  "friendlyName": "Hit Triage",
+  "version": "1.7.2",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
+  "description": "Hit Triage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
   "sources": [
     "css/hit-triage.css"
   ],
@@ -20,7 +20,7 @@
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
     "css-loader": "^6.5.1",
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "^1.25.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.5.1",
@@ -54,7 +54,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

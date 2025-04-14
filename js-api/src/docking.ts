@@ -82,6 +82,10 @@ export class DockContainer {
   /** Removes a dock container from the dock layout hierarchy
    *  @returns {DockNode} - the node that was removed from the dock tree */
   //remove() { return new DockNode(api.grok_DockContainer_Remove(this.dart)); }
+
+  setActiveChild(child: DockContainer): void {
+    api.grok_DockContainer_SetActiveChild(this.dart, child.dart);
+  }
 }
 
 

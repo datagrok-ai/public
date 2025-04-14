@@ -1,6 +1,6 @@
-# JiraConnect
+# Jira Connect
 
-JiraConnect integrates JIRA with Datagrok. Connect to your JIRA project by providing credentials,
+Jira Connect integrates JIRA with Datagrok. Connect to your JIRA project by providing credentials,
 and the rest is handled automatically:
 
 * Recognizing ticket identifiers everywhere

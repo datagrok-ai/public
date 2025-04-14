@@ -95,8 +95,8 @@ export class Shell {
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
   set o(x: any) { this.setCurrentObject(x, true); }
 
-  setCurrentObject(x: any, freeze: boolean) {
-    api.grok_Set_CurrentObject(toDart(x), freeze);
+  setCurrentObject(x: any, freeze: boolean, force?: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze, force ?? false);
   }
 
   /** Current viewer */
@@ -466,16 +466,6 @@ export class Settings {
         return true;
       }
     });
-  }
-
-  /** Jupyter Notebook URL */
-  get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterNotebook();
-  }
-
-  /** Jupyter Notebook Token */
-  get jupyterNotebookToken(): string {
-    return api.grok_Settings_Get_JupyterNotebookToken();
   }
 }
 

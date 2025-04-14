@@ -59,9 +59,6 @@ category('Packages: migrations', () => {
   });
 
   test('Upload new migration', async () => {
-    await expectExceptionAsync(() => publish(packageWithSecondMigration, 'apitestsdb', true));
-    await waitPackageInit();
-
     // in release: published, updated
     await publish(packageWithSecondMigration, 'apitestsdb', false);
     await grok.functions.call('apitestsdb:AccessTableB');

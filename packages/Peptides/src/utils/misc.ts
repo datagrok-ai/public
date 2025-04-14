@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as C from './constants';
 import * as type from './types';
 import {PeptidesSettings} from './types';
@@ -463,4 +464,8 @@ export function debounce<T extends Array<any>, K>(f: (...args: T) => Promise<K>,
       timer = setTimeout(() => resolve(f(...args)), timeout);
     });
   };
+}
+
+export function isInDemo(): boolean {
+  return 'isInDemo' in grok.shell && !!grok.shell.isInDemo;
 }

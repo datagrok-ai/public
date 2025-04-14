@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {isViewerPresent, uploadProject, findViewer} from '../gui-utils';
+import {after, before, category, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {isViewerPresent, uploadProject, findViewer, showToolbox} from '../gui-utils';
 
 
 category('Viewers: Line Chart', () => {
@@ -12,11 +12,14 @@ category('Viewers: Line Chart', () => {
   let demog: DG.DataFrame;
 
   before(async () => {
+    showToolbox();
     demog = grok.data.demo.demog(1000);
     v = grok.shell.addTableView(demog);
   });
 
   test('lineChart.visual', async () => {
+    grok.shell.windows.showToolbox = true;
+    await delay(100);
     const lineChartIcon = document.getElementsByClassName('svg-line-chart')[0] as HTMLElement;
     lineChartIcon.click();
     await awaitCheck(() => document.querySelector('.d4-line-chart') !== null, 'line chart not found', 3000);
@@ -46,11 +49,11 @@ category('Viewers: Line Chart', () => {
     await awaitCheck(() => document.querySelector('.d4-line-chart') !== null, 'line chart not found', 3000);
 
     if (lineChart.props.splitColumnName != 'race')
-      throw 'Split column has not been set'; 
+      throw 'Split column has not been set';
     if (lineChart.props.valueColumnName != 'height')
       throw 'Value column has not been set';
     if (lineChart.props.valueAggrType != 'max')
-      throw 'Aggregation has not been set'; 
+      throw 'Aggregation has not been set';
 
     lineChart.setOptions({
       title: 'Test Line chart',
@@ -63,7 +66,7 @@ category('Viewers: Line Chart', () => {
       querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement).
       value === 'Test Line chart', 'title property has not been set', 2000);
     if (!lineChart.props.relativeValues)
-      throw 'relativeValues property has not been set'; 
+      throw 'relativeValues property has not been set';
     if (lineChart.props.onClick != 'Filter')
       throw 'onClick property has not been set';
     if (lineChart.props.barBorderLineMouseOverWidth != 10)
@@ -71,7 +74,7 @@ category('Viewers: Line Chart', () => {
     if (lineChart.props.barSortOrder != 'desc')
       throw 'barSortOrder property (default) has not been set';
     if (lineChart.props.barSortType != 'by value')
-      throw 'barSortType property (default) has not been set';   
+      throw 'barSortType property (default) has not been set';
   }, {skipReason: 'GROK-11670'});
 
   // Does not work through Test Manager
@@ -84,13 +87,13 @@ category('Viewers: Line Chart', () => {
     const lineChart = findViewer('Line chart', v);
 
     if (lineChart!.props.splitColumnName != 'race')
-      throw 'Split column has not been set'; 
+      throw 'Split column has not been set';
     if (lineChart!.props.valueColumnName != 'height')
       throw 'Value column has not been set';
     if (lineChart!.props.valueAggrType != 'max')
       throw 'Aggregation has not been set';
     if (!lineChart!.props.relativeValues)
-      throw 'relativeValues property has not been set'; 
+      throw 'relativeValues property has not been set';
     if (lineChart!.props.onClick != 'Filter')
       throw 'onClick property has not been set';
     if (lineChart!.props.barBorderLineMouseOverWidth != 10)
@@ -98,11 +101,11 @@ category('Viewers: Line Chart', () => {
     if (lineChart!.props.barSortOrder != 'desc')
       throw 'barSortOrder property (default) has not been set';
     if (lineChart!.props.barSortType != 'by value')
-      throw 'barSortType property (default) has not been set';   
+      throw 'barSortType property (default) has not been set';
   }, {skipReason: 'GROK-11670'});
 
   after(async () => {
     grok.shell.closeAll();
     // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Line Chart').first());
-  }); 
+  });
 }, { owner: 'dkovalyov@datagrok.ai' });

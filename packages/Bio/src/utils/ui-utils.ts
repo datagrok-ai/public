@@ -14,3 +14,26 @@ export function updateDivInnerHTML(div: HTMLElement, content: string | Node): vo
   div.innerHTML = '';
   div.append(content);
 }
+
+export function adjustGridcolAfterRender(
+  grid: DG.Grid, colName: string, width: number, rowHeight?: number, dontWait?: boolean
+) {
+  const update = () => {
+    const col = grid.col(colName);
+    if (col)
+      col.width = width;
+    if (rowHeight)
+      grid.props.rowHeight = rowHeight;
+  };
+  if (dontWait) {
+    update();
+    return;
+  }
+
+  const sub = grid.onAfterDrawOverlay.subscribe(() => {
+    sub.unsubscribe();
+    setTimeout(() => {
+      update();
+    });
+  });
+}
