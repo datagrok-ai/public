@@ -271,8 +271,8 @@ export const RichFunctionView = Vue.defineComponent({
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
     }, {immediate: true});
 
-    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, ,prevLabels]) => {
-      if (isOutputOutdated && prevCall === call && visibleTabLabels === prevLabels)
+    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
+      if (prevCall === call && visibleTabLabels === prevLabels && isOutputOutdated === prevOutputOutdated)
         return;
       const tabToPropertiesMap = tabToProperties(call);
 
@@ -565,6 +565,7 @@ export const RichFunctionView = Vue.defineComponent({
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
                       dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
+                      key={tabLabel}
                     >
                       {
                         Vue.withDirectives(<Viewer
@@ -589,6 +590,7 @@ export const RichFunctionView = Vue.defineComponent({
                       dock-spawn-dock-to={getElementToDock()}
                       dock-spawn-dock-type={getDockStrategy(scalarsData)}
                       dock-spawn-dock-ratio={getDockRatio()}
+                      key={tabLabel}
                     />;
 
                     if (scalarsData.length < 3) {
