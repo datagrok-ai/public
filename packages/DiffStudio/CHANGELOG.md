@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.3.3 (2025-04-14)
+
+Improved inputs precision when using lookup tables
+
 ## 1.3.3 (2025-04-10)
 
 Updated the Fitting feature:
