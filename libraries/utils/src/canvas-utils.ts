@@ -1,6 +1,6 @@
 import {Point} from "datagrok-api/src/grid";
 
-export function drawLines(this: any, g: CanvasRenderingContext2D, points: Iterable<Point>) {
+export function drawLines(g: CanvasRenderingContext2D, points: Iterable<Point>) {
   g.beginPath();
 
   let first = true;
@@ -14,5 +14,5 @@ export function drawLines(this: any, g: CanvasRenderingContext2D, points: Iterab
   }
 
   g.stroke();
-  return this;
+  return g;
 }
