@@ -3,11 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult, queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult} from "./cdd-vault-api";
+import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult, queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, ProtocolQueryResult, Protocol, queryProtocolsAsync} from "./cdd-vault-api";
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDD_HOST, createLinksFromIds, getAsyncResults, getAsyncResultsAsDf, reorderColummns } from './utils';
+import { CDD_HOST, createLinksFromIds, createObjectViewer, getAsyncResults, getAsyncResultsAsDf, reorderColummns } from './utils';
 
 export const _package = new DG.Package();
 
@@ -57,6 +57,48 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       setBreadcrumbsInViewName([vault.name], treeNode, view);
     });
 
+    //protocols node
+    const protocolsNode = vaultNode.group('Protocols', null, false);
+    let protocols: Protocol[] | null = null;
+    const loadProtocols = async () => {
+      if (!protocols) {
+        const protocolsStr =  await grok.functions.call('CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5});
+        protocols = protocols !== '' ? JSON.parse(protocolsStr) as Protocol[] : [];
+      }
+    }
+    protocolsNode.onSelected.subscribe(async () => {
+      protocolsNode.expanded = true;
+      await loadProtocols();
+      const view = DG.View.create();
+      view.name = 'Protocols';
+      const tabs = createLinks(protocols!.map((it) => it.name), treeNode, view);
+      view.append(tabs);
+      grok.shell.addPreview(view);
+      setBreadcrumbsInViewName([vault.name, 'Protocols'], treeNode);
+    });
+
+    protocolsNode.onNodeExpanding.subscribe(async () => {
+      await loadProtocols();
+      for (const protocol of protocols!) {
+        const protocolItem = protocolsNode.item(protocol.name);
+        protocolItem.onSelected.subscribe(async () => {
+          const view = DG.View.create();
+          view.name = protocol.name;
+          const searchMoleculesButton = ui.button('Explore', () => {
+            createCDDTableView(['Protocols', protocol.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
+              { 
+                vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
+                structure_similarity_threshold: 0, protocol: protocol.id, run: undefined 
+              }, vault.name, treeNode);
+          }, 'Explore protocol molecules');
+          const protocolSettings = createObjectViewer(protocol, protocol.name, searchMoleculesButton);
+          view.append(protocolSettings);
+          grok.shell.addPreview(view);
+          setBreadcrumbsInViewName(['Protocols', protocol.name], treeNode);
+        });
+    }
+  });
+
     //saved searches node
     const savedSearchesNode = vaultNode.group('Saved searches', null, false);
 
@@ -83,7 +125,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
         for (const search of savedSearches!) {
           const searchItem = savedSearchesNode.item(search.name);
           searchItem.onSelected.subscribe(async () => {
-            createCDDTableView(search.name, `Waiting for ${search.name} results`, 'CDDVaultLink:getSavedSearchResults',
+            createCDDTableView(['Saved searches', search.name], `Waiting for ${search.name} results`, 'CDDVaultLink:getSavedSearchResults',
               { vaultId: vault.id, searchId: search.id, timeoutMinutes: 5}, vault.name, treeNode);
           });
       }
@@ -92,7 +134,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     //molecules node
     const moleculesNode = vaultNode.item('Molecules');
     moleculesNode.onSelected.subscribe(async (_) => {
-      createCDDTableView('Molecules', 'Waiting for molecules', 'CDDVaultLink:getMoleculesAsync',
+      createCDDTableView(['Molecules'], 'Waiting for molecules', 'CDDVaultLink:getMoleculesAsync',
         { vaultId: vault.id, timeoutMinutes: 5}, vault.name, treeNode);
     });
 
@@ -141,23 +183,22 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, view);
     });
    //TODO! unlock other tabs
-   // vaultNode.group('Protocols');
    // vaultNode.group('Plates');
    // vaultNode.group('Assays');
   }
 }
 
-async function createCDDTableView(viewName: string, progressMessage: string, funcName: string,
+async function createCDDTableView(viewName: string[], progressMessage: string, funcName: string,
   funcParams: {[key: string]: any}, vaultName: string, treeNode: DG.TreeViewGroup) {
   const view = DG.View.create();
-  view.name = viewName;
+  view.name = viewName[length - 1];
   grok.shell.addPreview(view);
   ui.setUpdateIndicator(view.root, true, progressMessage);
   const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
   view.close();
-  df.name = viewName;
+  df.name = viewName[length - 1];
   const tv = grok.shell.addTablePreview(df);
-  setBreadcrumbsInViewName([vaultName, viewName], treeNode, tv);
+  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, tv);
 }
 
 function createLinks(nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
@@ -423,6 +464,17 @@ export async function getMoleculesAsync(vaultId: number, timeoutMinutes: number)
   createLinksFromIds(vaultId, df);
   reorderColummns(df);
   return df;
+}
+
+
+//name: Get Protocols Async
+//input: int vaultId {nullable: true}
+//input: int timeoutMinutes
+//output: string protocols
+export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number): Promise<string> {
+  const exportResponse = await queryProtocolsAsync(vaultId);
+  const protocols = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, false);
+  return protocols?.data?.objects ? JSON.stringify(protocols.data.objects) : '';
 }
 
 //name: Get Saved Searches

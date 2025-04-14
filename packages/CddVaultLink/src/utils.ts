@@ -1,5 +1,6 @@
 
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project} from "./cdd-vault-api";
 
@@ -121,4 +122,130 @@ export function paramsStringFromObj(params: any): string {
         }
     }
     return paramsStr;
+}
+
+export function createObjectViewer(obj: any, title: string = 'Object Viewer', additionalHeaderEl?: HTMLElement): HTMLElement {
+  // Helper function to determine if a value is a dictionary/object
+  function isDictionary(value: any): boolean {
+    return value !== null && 
+           typeof value === 'object' && 
+           !Array.isArray(value) && 
+           !(value instanceof Date);
+  }
+
+  // Helper function to determine if a value is a simple array
+  function isSimpleArray(value: any): boolean {
+    return Array.isArray(value) && 
+           value.every(item => 
+             typeof item === 'string' || 
+             typeof item === 'number' || 
+             typeof item === 'boolean'
+           );
+  }
+
+  // Helper function to get pane name for array items
+  function getPaneName(item: any, index: number, parentName: string): string {
+    if (item.name) return item.name;
+    if (item.id) return item.id.toString();
+    if (parentName === 'protocol_statistics' && item.readout_definition?.name)
+      return item.readout_definition.name;
+    return `Item ${index}`;
+  }
+
+  // Helper function to create a view for a specific value
+  function createValueView(value: any, parentName: string): HTMLElement {
+    if (value === null || value === undefined) {
+      return ui.divText('null');
+    }
+
+    if (isSimpleArray(value)) {
+      return ui.divText(value.join(', '));
+    }
+
+    if (Array.isArray(value)) {
+      const accordion = ui.accordion();
+      value.forEach((item, index) => {
+        if (isDictionary(item) || Array.isArray(item)) {
+          accordion.addPane(getPaneName(item, index, parentName), () => createValueView(item, parentName));
+        } else {
+          accordion.addPane(`Item ${index}`, () => ui.divText(String(item)));
+        }
+      });
+      return accordion.root;
+    }
+
+    if (isDictionary(value)) {
+      const simpleProperties: { [key: string]: any } = {};
+      const complexProperties: { [key: string]: any } = {};
+
+      // Separate simple and complex properties
+      for (const [key, val] of Object.entries(value)) {
+        if (isDictionary(val) || Array.isArray(val)) {
+          complexProperties[key] = val;
+        } else {
+          simpleProperties[key] = val;
+        }
+      }
+
+      // Create container for both simple properties table and complex properties accordion
+      const container = ui.divV([]);
+
+      // Add simple properties table if any exist
+      if (Object.keys(simpleProperties).length > 0) {
+        container.appendChild(ui.tableFromMap(simpleProperties));
+      }
+
+      // Add complex properties as nested accordions if any exist
+      if (Object.keys(complexProperties).length > 0) {
+        const accordion = ui.accordion();
+        for (const [key, val] of Object.entries(complexProperties)) {
+          accordion.addPane(key, () => createValueView(val, parentName));
+        }
+        container.appendChild(accordion.root);
+      }
+
+      return container;
+    }
+
+    if (value instanceof Date) {
+      return ui.divText(value.toISOString());
+    }
+
+    return ui.divText(String(value));
+  }
+
+  // Create dictionaries for simple and complex properties
+  const simpleProperties: { [key: string]: any } = {};
+  const complexProperties: { [key: string]: any } = {};
+
+  // Separate simple and complex properties
+  for (const [key, value] of Object.entries(obj)) {
+    if (isDictionary(value) || Array.isArray(value)) {
+      complexProperties[key] = value;
+    } else {
+      simpleProperties[key] = value;
+    }
+  }
+
+  const header = ui.divH([ui.h2(title)]);
+  if (additionalHeaderEl)
+    header.append(additionalHeaderEl);
+  // Create the main container
+  const container = ui.divV([header]);
+
+  // Add simple properties table if any exist
+  if (Object.keys(simpleProperties).length > 0) {
+    container.appendChild(ui.tableFromMap(simpleProperties));
+  }
+
+  // Add complex properties as accordion if any exist
+  if (Object.keys(complexProperties).length > 0) {
+    const accordion = ui.accordion();
+    for (const [key, value] of Object.entries(complexProperties)) {
+      accordion.addPane(key, () => createValueView(value, key));
+    }
+    container.appendChild(accordion.root);
+  }
+
+  return container;
 }

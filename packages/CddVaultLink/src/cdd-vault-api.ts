@@ -114,7 +114,7 @@ export interface MoleculesQueryResult {
   objects?: Molecule[];
 }
 
-interface ProtocolQueryResult {
+export interface ProtocolQueryResult {
   count?: number;
   offset?: number;
   page_size?: number;
@@ -370,6 +370,13 @@ export async function getMolecule(vaultId: number, moleculeId: number): Promise<
 export async function getProtocols(vaultId: number): Promise<ApiResponse<ProtocolQueryResult>> {
   return request('GET', `/api/v1/vaults/${vaultId}/protocols`);
 }
+
+/** Get list of available protocols  asynchronously*/
+export async function queryProtocolsAsync(vaultId: number): Promise<ApiResponse<ExportStatus>> {
+  const paramsStr = paramsStringFromObj({async: true});
+  return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
+}
+
 
 /**
  * Query molecules with various parameters
