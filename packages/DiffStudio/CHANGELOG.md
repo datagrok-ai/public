@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.3.3 (2025-04-14)
+## 1.3.4 (2025-04-14)
 
 Improved inputs precision when using lookup tables
 
