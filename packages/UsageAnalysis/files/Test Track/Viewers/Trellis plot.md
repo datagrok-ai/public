@@ -1,69 +1,102 @@
 ### Trellis plot
 
-1. Open the **demog** dataset.
-2. On the **Menu Ribbon**, click the **Add viewer** icon, and select **Trellis plot**. 
-   * **_Expected result:_** **Trellis plot** visualized viewer opens without errors in the console. 
-3. Close previously opened viewer. On the **Viewers tab**, click **Trellis plot** icon. 
-   * **_Expected result:_** **Trellis plot** visualized viewer opens without errors in console. 
-4. Working with a viewer:
-    * Moving the viewer by the workspace
-    * Navigation inside the viewer
-    * Hover and select elements inside the viewer
-    * Open\Close the Context Panel
-    * Display of help window
-    * Return viewer after closing by **Edit | Undo** (```CTRL + Z```)
-    * Interact with all viewer`s elements directly on the viewer.
-   * **_Expected Result_**: Changes should be reflected on the viewer with no errors. 
-5. On the **Trellis plot** viewer, click the **Gear** icon. The **Context Panel** opens. Check:
-    * Appearance and UI. Context Panel`s style shouldn't be broken
-    * Detach the panel and move it around the workspace
-    * Search on the Context Panel
-    * Change some settings values
-   * **_Expected Result:_** Changed settings should be reflected in the Trellis plot viewer without errors, and the viewer should be updated accordingly.
-6. **Context menu** (focus on options: inner viewer changes, properties, Clone, save as PNG, Save to Gallery, Embed, Full Screen, Close)
-   * **_Expected Result:_** Changes should be reflected in the viewer without errors, and the viewer should be updated accordingly.
-6. **On Click** functionality:
-   * Right-click the viewer and select **On Click > Select**
-   * Click any empty cell - there should be no selected rows
-   * Click any non-empty cell - check selection
-   * Change the inner viewer  - selection should NOT change
-   * Click non empty cell - selection should change
-   * Change any axis - selection should NOT change
-   * Right-click the viewer and select **On Click > Filter** - all selected rows should be filtered, Rows Source should be changed to All
-   * Click any empty cell - all rows should be filtered out
-   * Click any non-empty cell - check filtering
-   * Change the inner viewer - filtering should NOT change
-   * Click non empty cell - check filtering
-   * Change any axis - filtering should be reset
-   * Click non empty cell
-   * Press ESC - this should reset filtering and selection
-   * Right-click the viewer and select **On Click > None** - clicking any cell should not change filtering of selection
-7. **Tooltip** testing (main focus on options: Hide, Edit, Use a group tooltip, use as group tooltip, remove group tooltip)
-   * Changes to the properties should be reflected in the Trellis plot viewer without errors, and the viewer should be updated accordingly. 
-8. **Floating viewer** after applying layout:
-   * Open new **demog** dataset.
-   * Adjust Screen Zoom: Zoom out the screen.
-   * Add and Move Viewer: Add a Trellis plot viewer. Detach the viewer and move it to the bottom of the screen.
-   * Save the current layout.
-   * Reset Screen Zoom: Zoom in the screen to its original size.
-   * Apply the previously saved layout.
-   * **_Expected Results:_**
-     * The layout should automatically adjust to fit the current screen size.
-     * All viewers should remain accessible and properly positioned on the screen.
-9. **Split updates in properties**. 
-   * Test on the SPGI dataset with opened new Trellis plot viewer: 
-    * Open the Trellis plot's Context panel.
-    * Add or remove X or Y column from the  Trellis plot itself.
-    * Check the number of X or Y columns on the Context panel.
-   * **_Expected results_**: number of selected columns in properties should be updated immediately on adding or removing a column.
-10. **Pick Up / Apply**  ([#2116](https://github.com/datagrok-ai/public/issues/2116))
-  * Open SPGI 
-  * Add two trellis plots
-  * Right-click the first trellis plot. Select **Pick up/Apply > Pick up** 
-  * Right-click the second trellis plot. Select **Pick up/Apply > Apply**
-  * Change the X or Y column on the first trellis plot. Observe whether these changes affect the second trellis plot
-  * Adjust the zoom slider on the second trellis plot. Observe whether these changes affect the first trellis plot
-  * **_Expected Result_**: After the initial settings transfer, the configurations of the two trellis plots should be completely independent. Changes to the X or Y column on the first plot or adjustments to the zoom slider on the second plot should not affect the other plot.
+#### 1. Opening
+1. Open demog.csv
+2. On the **Menu Ribbon**, click the **Add viewer** icon, and select **Trellis plot**
+3. Close the viewer
+1. On the **Viewers tab**, click the **Trellis plot** icon
+---
+
+#### 2.  Viewer basics 
+
+1. Undock the viewer and move it around the screen
+1. Dock the viewer in a different location
+1. Switch between inner viewers:
+   * Сhange their settings on the top of the trellis plot
+   * Hover and select elements inside the viewer
+1. Open\Close the Context Panel
+1. Display the  help window
+1. Close the viewer and return it by **Edit > Undo** (```CTRL + Z```)
+---
+   
+#### 3. Context Panel
+
+1. Open the **Context Panel** - check its appearance and UI
+1. Undock the panel, move it around the workspace and dock again
+1. Check search on the Context Panel
+1. Change some settings values - **the viewer should be updated accordingly**
+1. Add or remove the X (Y) column directly from the trellis plot
+1. Verify the number of X (Y) columns in the Context Panel - **the number of columns in the Context Panel should be immediately updated when a column is added or removed**
+---
+
+#### 4. Context menu
+
+1. Switch the inner viewer and check its specific item in the context menu
+1. Go to **Context menu > To Script** - a balloon with the script should appear
+1. Go to **Context menu > General** and check all items
+1. Go to **Context menu > Tooltip** and check all items
+1. Open the Context Panel
+1. Go to **Context menu > Properties** and verify that property changes are consistent between the Context Panel and the context menu
+---
+
+#### 5. OnClick functionality (check for each inner viewer)
+
+1. Go to **Context menu > On Click > Select**
+1. Click any empty cell - **there should be no selected rows**
+1. Click any non-empty cell - **check selection**
+1.  Change the inner viewer  - **selection should NOT change**
+1. Click non empty cell - **selection should change**
+1.  Use 
+1. Change any axis - **selection should NOT change**
+1. Go to **Context menu > On Click > Filter** - all selected rows should be filtered, Rows Source should be changed to All
+1. Click any empty cell - **all rows should be filtered out**
+1. Click any non-empty cell - **check filtering**
+1. Change the inner viewer - **filtering should NOT change**
+1. Click non empty cell - **check filtering**
+1. Change any axis - **filtering should be reset**
+1. Click non empty cell
+1. Press ESC - **this should reset filtering and selection**
+1. Click non empty cell - **some rows should be filtered**
+1. Open the **Filter Panel** and apply some filters - **Filtering should respect both Filter Panel and trellis plot filters**
+1. Go to **Context menu > Reset view** - only the filtering of the trellis plot should be reset
+1. Go to **Context menu > On Click > None** - clicking any cell should not change filtering or selection
+---
+
+#### 6. Pick Up / Apply  ([#2116](https://github.com/datagrok-ai/public/issues/2116))
+
+1. Close All
+1. Open SPGI 
+1. Add two trellis plots
+1. Right-click the first trellis plot. Select **Pick up/Apply > Pick up** 
+1. Right-click the second trellis plot. Select **Pick up/Apply > Apply**
+1. Change the X or Y column on the first trellis plot - **the second plot should not be affected**
+1. Adjust the zoom slider on the second trellis plot - **the first plot should not be affected**
+---
+
+#### 7. Layout and Project save/restore
+1. Save the layout
+2. Add some more viewers
+1. Apply the saved layout - **verify that only two trellises are displayed**
+1. Save the project
+1. Close All
+1. OPen the saved project - **verify that only two trellises are displayed**
+---
+
+#### 8. Floating viewer after applying layout
+
+1. Close All
+1. Open demog.csv
+1. Use `Ctrl + '-'` (or `Cmd + '-'` on Mac) to zoom out the screen view
+1. Add a trellis plot 
+1. Undock the viewer and drag it to the bottom of the screen
+1. Save the layout.
+1. Reset Screen Zoom: Zoom in to return the screen to its original size
+1. Apply the saved layout
+
+**Expected Results:**
+
+  * The layout should automatically adjust to fit the current screen size.
+  * All viewers should remain accessible and properly positioned on the screen.
 ---
 {
   "order": 13,
