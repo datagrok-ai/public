@@ -18,7 +18,7 @@ export interface ApiResponse<T> {
   errorCode?: number;
 }
 
-interface Vault {
+export interface Vault {
   name: string;
   id: number;
 }
@@ -28,7 +28,21 @@ export interface Project {
   id: number;
 }
 
-interface Collection {
+export interface VaultCollection {
+  id: number;
+  class: string;
+  created_at: string;
+  modified_at: string;
+  name: string;
+  owner: string;
+  molecules: number[]; // Array of molecule IDs
+  project: {
+    name: string;
+    id: number;
+  };
+}
+
+export interface Collection {
   name: string;
   id: number;
 }
@@ -202,6 +216,85 @@ interface ReadoutRowsQueryParameters {
   data_sets?: string; // Comma-separated list of public dataset IDs
 }
 
+interface CollectionQueryParams {
+  /**
+   * Comma-separated list of collection IDs
+   * Cannot be used with Date and Type parameters
+   */
+  collections?: string;
+
+  /**
+   * If true, performs an asynchronous export (recommended for large datasets)
+   * - Ignores page_size parameter when true
+   * - Recommended when downloading more than page_size results
+   */
+  async?: boolean;
+
+  /**
+   * If true, only returns Collection IDs (smaller and faster response)
+   * - Still use async=true when expecting many IDs
+   * - Ignores page_size parameter when true
+   * @default false
+   */
+  only_ids?: boolean;
+
+  /**
+   * If true, includes molecule IDs in the response (as molecules array)
+   * @default false
+   */
+  include_molecule_ids?: boolean;
+
+  /**
+   * Filters collections created before this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  created_before?: string;
+
+  /**
+   * Filters collections created after this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  created_after?: string;
+
+  /**
+   * Filters collections modified before this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  modified_before?: string;
+
+  /**
+   * Filters collections modified after this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  modified_after?: string;
+
+  /**
+   * The index of the first object to return
+   * @default 0
+   */
+  offset?: number;
+
+  /**
+   * Maximum number of objects to return (default: 50, max: 1000)
+   * - Ignored when async=true or only_ids=true
+   * - For large responses, prefer async=true over multiple chunks
+   */
+  page_size?: number;
+
+  /**
+   * Comma-separated list of project IDs to filter by
+   * @default All available projects
+   */
+  projects?: string;
+
+  /**
+   * Comma-separated list of collection types to include
+   * Possible values: "user_collection" (private), "vault_collection" (shared)
+   * Cannot be used with collections parameter
+   */
+  type?: string;
+}
+
 export interface Protocol {
   id: number;
   class: string;
@@ -371,12 +464,18 @@ export async function getProtocols(vaultId: number): Promise<ApiResponse<Protoco
   return request('GET', `/api/v1/vaults/${vaultId}/protocols`);
 }
 
-/** Get list of available protocols  asynchronously*/
+/** Get list of available protocols asynchronously*/
 export async function queryProtocolsAsync(vaultId: number): Promise<ApiResponse<ExportStatus>> {
   const paramsStr = paramsStringFromObj({async: true});
   return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
 }
 
+/** Get list of available collections asynchronously*/
+export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
 
 /**
  * Query molecules with various parameters
