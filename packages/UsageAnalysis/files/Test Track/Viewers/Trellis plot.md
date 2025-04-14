@@ -67,10 +67,15 @@
 1. Close All
 1. Open SPGI 
 1. Add two trellis plots
+1. For the first trellis plot:
+  * Set the Y axis to R1
+  * Switch the inner viewer to bar chart
+  * Enable the legend and change its position
+  * Add the header
 1. Right-click the first trellis plot. Select **Pick up/Apply > Pick up** 
 1. Right-click the second trellis plot. Select **Pick up/Apply > Apply**
-1. Change the X or Y column on the first trellis plot - **the second plot should not be affected**
-1. Adjust the zoom slider on the second trellis plot - **the first plot should not be affected**
+1. Change the X or Y axis on the first trellis plot - **the second plot should not be affected**
+1. Adjust the range slider on the second trellis plot using +/- on the axes, scroll - **the first plot should not be affected**
 ---
 
 #### 7. Layout and Project save/restore
@@ -79,7 +84,7 @@
 1. Apply the saved layout - **verify that only two trellises are displayed**
 1. Save the project
 1. Close All
-1. OPen the saved project - **verify that only two trellises are displayed**
+1. Open the saved project - **verify that only two trellises are displayed**
 ---
 
 #### 8. Floating viewer after applying layout
