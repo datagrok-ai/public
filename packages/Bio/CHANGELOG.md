@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.20.5 (2025-04-14)
+
+* Non blocking behavior of OCL mol converter
+
 ## 2.20.4 (2025-04-08)
 
 * Fix linearization, wrong rgroups and notation problems for toAtomicLevel 

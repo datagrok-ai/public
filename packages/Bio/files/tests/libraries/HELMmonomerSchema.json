@@ -85,12 +85,10 @@
     "symbol",
     "name",
     "molfile",
-    "author",
     "id",
     "rgroups",
     "smiles",
     "polymerType",
-    "monomerType",
-    "createDate"
+    "monomerType"
   ]
 }

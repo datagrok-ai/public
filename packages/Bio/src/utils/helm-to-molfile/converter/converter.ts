@@ -109,7 +109,7 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
   public convertToMolfileV3KColumn(helmCol: DG.Column<string>): DG.Column<string> {
     const df = helmCol.dataFrame;
     const molfileList = this.convertToMolfileV3K(helmCol.toList()).map((mwm) => mwm.molfile);
-    const molColName = getUnusedColName(df, `molfileV2K(${helmCol.name})`);
+    const molColName = getUnusedColName(df, `molfileV3K(${helmCol.name})`);
     const molfileColumn = DG.Column.fromList('string', molColName, molfileList);
     return molfileColumn;
   }

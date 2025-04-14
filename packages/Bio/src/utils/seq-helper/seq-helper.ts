@@ -89,11 +89,16 @@ export class SeqHelper implements ISeqHelper {
     //#endregion From HelmToMolfileConverter
     const helmList = helmCol.toList();
     const molList = new Array<string>(helmCol.length);
+    // this function is paralelized and in threads, so will not block the UI. OFC, we prefer to use it.
+    // if not found, we will use the default one running in main thread...
     const beautifyMolsChemFunc = DG.Func.find({package: 'Chem', name: 'beautifyMols'})[0];
-    // both options set to false, ugly molfiles
+    // similarly, OCL Function is also paralelized and in threads, so will not block the UI.
+    const OCLFunc = DG.Func.find({package: 'Chem', name: 'convertToV3KViaOCL'})[0];
+
+    // depending on the function found, we will use it or not. if not, use internal OCL and beautification
     for (let i = 0; i < helmCol.length; i++) {
       molList[i] = (this.helmToAtomicLevelSingle(helmList[i], converter,
-        chiralityEngine, !beautifyMolsChemFunc)).molfile;
+        chiralityEngine && !OCLFunc, !beautifyMolsChemFunc)).molfile;
     }
     // need to beautify the molfiles
     if (beautifyMolsChemFunc) {
@@ -102,6 +107,15 @@ export class SeqHelper implements ISeqHelper {
         for (let i = 0; i < helmCol.length; i++)
           beautifiedMols[i] && (molList[i] = beautifiedMols[i]);
       }
+    }
+    // handle OCL
+    if (chiralityEngine && OCLFunc) {
+      const oclMols = await OCLFunc.apply({mols: molList});
+      if (oclMols && Array.isArray(oclMols) && oclMols.length === helmCol.length) {
+        for (let i = 0; i < helmCol.length; i++)
+          oclMols[i] && (molList[i] = oclMols[i]);
+      } else
+        grok.shell.warning('OCL function returned an unexpected result');
     }
     //const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
 
