@@ -9,6 +9,7 @@ import {TooltipOptions} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics} from '../utils/algorithms';
 import {AggregationColumns} from '../utils/statistics';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export type SelectionWidgetOptions = {
   tableSelection: DG.BitSet, gridColumns: DG.GridColumnList, positionColumns: DG.Column<string>[],
@@ -122,6 +123,13 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
     setWebLogoRenderer(grid, mpStats, options.positionColumns, options.activityColumn, cellRendererOptions,
       tooltipOptions);
   }
+
+  (table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE) ?? []).forEach(
+    (col) => {
+      if (newTable.col(col.name))
+        newTable.col(col.name)!.temp[SeqTemps.notationProvider] = col.temp[SeqTemps.notationProvider];
+    },
+  );
 
   return gridHost;
 }
