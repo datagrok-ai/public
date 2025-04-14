@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.21.0 (2025-04-14)
+
+* Move separator refinement to seq-handler stage
+* Add support for custom notation macromolecule difference rendering
+
 ## 2.20.5 (2025-04-14)
 
 * Non blocking behavior of OCL mol converter
