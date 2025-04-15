@@ -2081,7 +2081,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 //input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
 //input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]
 //input: list split_sizes = [0.8, 0.1, 0.1] {category: General} [Split proportions for train/validation/test sets]
-//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined']} [Method of splitting the data into train/val/test]
+//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles']} [Method of splitting the data into train/val/test]
 //input: string activation = 'ReLU' {category: Model; choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU']} [Activation function]
 //input: bool atom_messages = false {category: Model} [Use messages on atoms instead of messages on bonds]
 //input: bool message_bias = false {category: Model} [Whether to add bias to linear layers]
@@ -2130,6 +2130,7 @@ export async function trainChemprop(
     'split_type': split_type,
     'warmup_epochs': warmup_epochs,
   };
+  predictColumn.name = df.columns.getUnusedName(predictColumn.name);
   df.columns.add(predictColumn);
   try {
     const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
@@ -2172,6 +2173,17 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
     return false;
   if (!predictColumn.matches('numerical'))
     return false;
+  return true;
+}
+
+//name: isInteractiveNN
+//meta.mlname: Chemprop
+//meta.mlrole: isInteractive
+//meta.mlupdate: false
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column) {
   return true;
 }
 
