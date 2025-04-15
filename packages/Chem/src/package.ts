@@ -2175,6 +2175,17 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
   return true;
 }
 
+//name: isInteractiveNN
+//meta.mlname: Chemprop
+//meta.mlrole: isInteractive
+//meta.mlupdate: false
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column) {
+  return true;
+}
+
 export {getMCS};
 
 //top-menu: Chem | Transform | Deprotect...
