@@ -2031,7 +2031,7 @@ export async function trainModelChemprop(table: string, predict: string, paramet
     parameters: parameterValues,
   };
 
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/train_chemprop', {
+  const response = await fetch('http://127.0.0.1:5000/modeling/train_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {'Content-Type': 'application/json'},
@@ -2053,7 +2053,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
     table: table,
   };
 
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/predict_chemprop', {
+  const response = await fetch('http://127.0.0.1:5000/modeling/predict_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {'Content-Type': 'application/json'},

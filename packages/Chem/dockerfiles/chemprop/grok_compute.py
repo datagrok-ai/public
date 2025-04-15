@@ -2,6 +2,7 @@ import io
 from io import StringIO
 import zipfile
 from flask import Blueprint, Flask, request, Response
+from flask_cors import CORS
 import logging
 import sys
 import json
@@ -14,6 +15,7 @@ from chemprop import ChemProp
 from settings import Settings
 
 app = Flask('grok_compute')
+CORS(app)
 handler = logging.StreamHandler(sys.stderr)
 handler.setFormatter(logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
@@ -106,7 +108,7 @@ def modeling_predict_chemprop():
     table_hash = hashlib.sha256(table_str.encode('utf-8')).hexdigest()
     table = pd.read_csv(StringIO(table_str))
     chemprop = ChemProp()
-    try: 
+    try:
         prediction = chemprop.predict_impl(table_hash, model_blob, table)
         return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
                               headers=headers_app_json), 201
