@@ -2031,7 +2031,7 @@ export async function trainModelChemprop(table: string, predict: string, paramet
     parameters: parameterValues,
   };
 
-  const response = await fetch('http://127.0.0.1:5000/modeling/train_chemprop', {
+  const response = await fetch('http://127.0.0.1:9000/modeling/train_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {'Content-Type': 'application/json'},
@@ -2053,7 +2053,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
     table: table,
   };
 
-  const response = await fetch('http://127.0.0.1:5000/modeling/predict_chemprop', {
+  const response = await fetch('http://127.0.0.1:9000/modeling/predict_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {'Content-Type': 'application/json'},
@@ -2081,7 +2081,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 //input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
 //input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]
 //input: list split_sizes = [0.8, 0.1, 0.1] {category: General} [Split proportions for train/validation/test sets]
-//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined']} [Method of splitting the data into train/val/test]
+//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles']} [Method of splitting the data into train/val/test]
 //input: string activation = 'ReLU' {category: Model; choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU']} [Activation function]
 //input: bool atom_messages = false {category: Model} [Use messages on atoms instead of messages on bonds]
 //input: bool message_bias = false {category: Model} [Whether to add bias to linear layers]

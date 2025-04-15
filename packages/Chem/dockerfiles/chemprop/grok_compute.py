@@ -67,12 +67,7 @@ def modeling_train_chemprop():
     chemprop = ChemProp()
     try:
         model_blob, log = chemprop.train_impl(table_hash, table, predict, parameter_values)
-        performance = engine.estimate_performance_impl(table_hash, model_blob, table, predict,
-                                                     True) if model_blob == '' else chemprop.estimate_performance_impl(table_hash,
-                                                                                                                   model_blob,
-                                                                                                                   table,
-                                                                                                                   predict,
-                                                                                                                   False)
+        performance = chemprop.estimate_performance_impl(table_hash, model_blob, table, predict)
         buffer = io.BytesIO()
         archive = zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED)
         archive.writestr('blob.bin', model_blob)
