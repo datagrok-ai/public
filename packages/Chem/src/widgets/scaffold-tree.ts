@@ -448,14 +448,13 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
       mol.delete();
       substrMol.delete();
     } else if (mol !== null && substrMol !== null) {
-      drawMoleculeToCanvas(0, 0, width, height, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, null);
+      drawMoleculeToCanvas(0, 0, moleculeWidth, moleculeHeight, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, null);
       mol.delete();
       substrMol.delete();
     }
   }
 
   $(moleculeHost).addClass('chem-canvas');
-  moleculeHost.style.width = '100%';
   moleculeHost.style.height = '';
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
 }
