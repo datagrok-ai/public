@@ -6,3 +6,13 @@
 .retrosynthesis-mol-rect {
   cursor: pointer;
 }
+
+.retrosynthesis-settings-icon {
+  position: absolute;
+  top: 40px;
+  font-size: 16px;
+}
+
+.retrosynthesis-settings-dlg .dlg-settings {
+  min-height: 10px;
+}

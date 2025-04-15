@@ -95,10 +95,18 @@ def aizynthfind():
     data = request.json
     user_id = data.get("id")
     smiles = data.get("smiles")
-    config_path = os.path.join(output_dir, "aizynthcli_data", "config.yml")
+    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, "config.yml")
+    user_defined_config_path = config_path
 
     if not os.path.exists(config_path):
-      return jsonify({"success": False, "error": f"Config file not found at {config_path}"}), 400
+      config_path = os.path.join(output_dir, "aizynthcli_data", "config.yml")
+      if not os.path.exists(config_path):
+        return jsonify({"success": False, "error": f"Config file not found at {config_path} or {user_defined_config_path}"}), 400
+
+    logging.info(f"****************** Reading config")
+    with open(config_path, "r") as file:
+      content = file.read()
+    logging.info(content)
 
     if not smiles:
       return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
@@ -114,6 +122,33 @@ def aizynthfind():
   except Exception as e:
     logging.exception(f"Error handling request for user {user_id}")
     return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/set_config', methods=['POST'])
+def set_config():
+  try:
+      config_content = request.json.get('config')
+      user_id = request.json.get("id")
+      
+      output_dir = os.getcwd()
+      os.makedirs(f"{output_dir}/aizynthcli_data/{user_id}", exist_ok=True)
+      config_path = f"{output_dir}/aizynthcli_data/{user_id}/config.yml"
+
+      if config_content:
+          with open(config_path, "w") as config_file:
+              config_file.write(config_content)
+          return jsonify({"success": True}), 200
+      else:
+          return jsonify({"success": False, "error": "Empty config content"}), 400
+      
+  except Exception as e:
+      logging.error(f"Unexpected error: {str(e)}")
+      return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/health_check', methods=['GET'])
+def health_check():
+  return jsonify({"success": True}), 200
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=8000)

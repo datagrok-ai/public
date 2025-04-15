@@ -6,7 +6,7 @@ import '../css/aizynthfinder.css';
 import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
-import { SAMPLE_TREE } from './mock-data';
+import {SAMPLE_TREE} from './mock-data';
 
 export const _package = new DG.Package();
 
@@ -32,6 +32,34 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
     throw new Error('Error occured during paths generation');
 
   return resJson['result'];
+}
+
+
+export async function setUserDefinedConfig(file: DG.FileInfo): Promise<void> {
+  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
+  const fileContent = await file.readAsString();
+  const currentUser = await grok.dapi.users.current();
+  const userId = currentUser.id;
+
+  try {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/set_config', {
+      method: 'POST',
+      body: JSON.stringify({config: fileContent, id: userId}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to set configuration: ${errorText}`);
+    }
+
+    grok.shell.info('Configuration updated successfully');
+  } catch (error) {
+    grok.shell.error(`Error setting configuration: ${error}`);
+    throw error;
+  }
 }
 
 
@@ -66,7 +94,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
   try {
     const reactionData: ReactionData = JSON.parse(result);
     const paths: Tree[] = reactionData?.data?.[0]?.trees;
-    // const paths = SAMPLE_TREE;
+    //const paths = SAMPLE_TREE;
     if (paths.length) {
       const w = new DG.Widget(createPathsTreeTabs(paths, false).root);
       //workaround to make tree visible in undocked panel
@@ -83,6 +111,20 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
           }
         }
       });
+      const settings = ui.icons.settings(() => {
+        const configFileInput = ui.input.file('Config', {nullable: true});
+        w.root.append(configFileInput.root);
+        const dlg = ui.dialog('Settings')
+          .add(configFileInput.root)
+          .onOK(() => {
+            if (configFileInput.value)
+              setUserDefinedConfig(configFileInput.value);
+          });
+        dlg.root.classList.add('retrosynthesis-settings-dlg');
+        dlg.show();
+      });
+      settings.classList.add('retrosynthesis-settings-icon');
+      w.root.append(settings);
       return w;
     } else
       return new DG.Widget(ui.divText('No paths found for the molecule'));
