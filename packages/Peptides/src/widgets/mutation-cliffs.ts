@@ -4,6 +4,7 @@ import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {addExpandIconGen, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export type MutationCliffsOptions = {
   mutationCliffs: type.MutationCliffs, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
@@ -177,6 +178,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
+  substCol.temp[SeqTemps.notationProvider] = alignedSeqCol.temp[SeqTemps.notationProvider];
 
   let keyPress = false;
   let lastSelectedIndex: number | null = null;
@@ -257,6 +259,10 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   uniqueSequencesTable.name = 'Unique sequences that form Mutation Cliffs pairs';
   const seqIdxCol = uniqueSequencesTable.columns.addNewInt('~seqIdx');
   const seqIdxColData = seqIdxCol.getRawData();
+  if (uniqueSequencesTable.col(options.sequenceColumnName)) {
+    uniqueSequencesTable.col(options.sequenceColumnName)!.temp[SeqTemps.notationProvider] =
+      alignedSeqCol.temp[SeqTemps.notationProvider];
+  }
   const selectedIndexes = uniqueSequencesBitSet.getSelectedIndexes();
   seqIdxCol.init((idx) => selectedIndexes[idx]);
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();

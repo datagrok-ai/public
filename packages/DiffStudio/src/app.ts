@@ -10,6 +10,7 @@ import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
 import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
@@ -228,6 +229,12 @@ type Browsing = {
 type LastModel = {
   info: string,
   isCustom: boolean,
+};
+
+/** Lookup data specification */
+type LookupData = {
+  arr: Int32Array | Uint32Array | Float32Array | Float64Array,
+  format: string | null | undefined,
 };
 
 /** Docking options */
@@ -1444,7 +1451,6 @@ export class DiffStudio {
       return;
 
     const inputsDf = await getInputsTable(lookupInfo.choices);
-    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
 
     if (inputsDf === null)
       return;
@@ -1466,16 +1472,20 @@ export class DiffStudio {
     });
 
     const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
-    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+    const colsRaw = new Map<string, LookupData>();
 
     for (const col of cols) {
-      if (col.isNumerical)
-        colsRaw.set(col.name, col.getRawData());
+      if (col.isNumerical) {
+        colsRaw.set(col.name, {
+          arr: col.getRawData(),
+          format: col.meta.format,
+        });
+      }
     }
 
     for (let row = 0; row < rowCount; ++row) {
       const inputs = new Map<string, number>();
-      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      colsRaw.forEach((info, name) => inputs.set(name, getFormatted(info.arr[row], info.format)));
       tableInputs.set(inpSetsNames[row], inputs);
     }
 

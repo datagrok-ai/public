@@ -84,6 +84,7 @@ import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-re
 import { oclMol } from './utils/chem-common-ocl';
 import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
 import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
+import { OCLService } from './open-chem/ocl-service';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2080,7 +2081,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 //input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
 //input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]
 //input: list split_sizes = [0.8, 0.1, 0.1] {category: General} [Split proportions for train/validation/test sets]
-//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined']} [Method of splitting the data into train/val/test]
+//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles']} [Method of splitting the data into train/val/test]
 //input: string activation = 'ReLU' {category: Model; choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU']} [Activation function]
 //input: bool atom_messages = false {category: Model} [Use messages on atoms instead of messages on bonds]
 //input: bool message_bias = false {category: Model} [Whether to add bias to linear layers]
@@ -2129,6 +2130,7 @@ export async function trainChemprop(
     'split_type': split_type,
     'warmup_epochs': warmup_epochs,
   };
+  predictColumn.name = df.columns.getUnusedName(predictColumn.name);
   df.columns.add(predictColumn);
   try {
     const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
@@ -2174,6 +2176,17 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
   return true;
 }
 
+//name: isInteractiveNN
+//meta.mlname: Chemprop
+//meta.mlrole: isInteractive
+//meta.mlupdate: false
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column) {
+  return true;
+}
+
 export {getMCS};
 
 //top-menu: Chem | Transform | Deprotect...
@@ -2197,6 +2210,17 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 //output: list<string> result
 export async function beautifyMols(mols: string[]): Promise<string[]> {
   return await (await chemCommonRdKit.getRdKitService()).beautifyMolsV3K(mols);
+}
+
+//name: convertToV3KViaOCL
+//description: Converts the list of molecules to V3K format using OCL
+//input: list<string> mols
+//output: list<string> result
+export async function convertToV3KViaOCL(mols: string[]): Promise<string[]> {
+  const oc = new OCLService();
+  const result = await oc.molfileToV3K(mols);
+  oc.terminate();
+  return result;
 }
 
 //name: mpo

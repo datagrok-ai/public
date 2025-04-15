@@ -14,5 +14,5 @@ export function drawLines(g: CanvasRenderingContext2D, points: Iterable<Point>) 
   }
 
   g.stroke();
-  return this;
+  return g;
 }

@@ -259,9 +259,13 @@ function getTooltipContent(model: any, value: any): string {
       const rangeType = rangeParts.includes('-') ? '-' : rangeParts[0];
       const rangeStart = rangeParts.includes('-') ? parseFloat(rangeParts[0]) : parseFloat(rangeParts[1]);
       const rangeEnd = parseFloat(rangeParts[2]);
-      if ((rangeType === '-' && value >= rangeStart && value <= rangeEnd) ||
+      if (
+        (rangeType === '-' && value >= rangeStart && value <= rangeEnd) ||
         (rangeType === '<' && value < rangeStart) ||
-        (rangeType === '>' && value > rangeStart)) {
+        (rangeType === '<=' && value <= rangeStart) ||
+        (rangeType === '>' && value > rangeStart) ||
+        (rangeType === '>=' && value >= rangeStart)
+      ) {
         tooltipContent += `${ranges[rangeKey as keyof typeof ranges]}\n`;
         break;
       }
@@ -277,7 +281,7 @@ function getTooltipContent(model: any, value: any): string {
 export function addCustomTooltip(table: DG.DataFrame): void {
   const view = grok.shell.getTableView(table.name);
   view.grid.onCellTooltip((cell, x, y) => {
-    if (cell.isTableCell) {
+    if (cell.isTableCell && typeof cell.cell.value === 'number') {
       const subgroup = cell.tableColumn!.name;
       const value = cell.cell.value;
       const model = properties.subgroup.flatMap((subg: Subgroup) => subg.models)

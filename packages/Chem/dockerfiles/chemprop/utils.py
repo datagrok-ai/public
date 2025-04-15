@@ -26,13 +26,14 @@ def call_process(params: list):
     :return: Log of the process's stdout if successful.
     :raises RuntimeError: If the process fails (return code != 0).
     """
+    logger.debug(f'Params: {params}')
     process = subprocess.run(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+
     if process.returncode != 0:
         error_log = process.stderr.decode()
         logger.error(f'Process failed with error log: {error_log}')
         raise RuntimeError(f"Process failed with return code {process.returncode}: {error_log}")
-    
+
     log = process.stdout.decode()
     logger.debug(f'Process succeeded with log: {log}')
     return log

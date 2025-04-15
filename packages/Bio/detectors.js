@@ -308,7 +308,6 @@ class BioPackageDetectors extends DG.Package {
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
 
-        refineSeqSplitter(col, stats, separator).then(() => { });
         col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -624,36 +623,5 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
     });
-  }
-}
-
-async function refineSeqSplitter(col, stats, separator) {
-  let invalidateRequired = false;
-
-  const refinerList = [
-    {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
-  ];
-
-  for (const refineFuncFind of refinerList) {
-    try {
-      const funcList = DG.Func.find(refineFuncFind);
-      if (funcList.length === 0) continue;
-
-      const funcFc = funcList[0].prepare({col: col, stats: stats, separator: separator});
-      const refineRes = (await funcFc.call()).getOutputParamValue();
-      invalidateRequired ||= refineRes;
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  if (invalidateRequired) {
-    // Applying custom notation provider MUST invalidate SeqHandler
-    delete col.temp[SeqTemps.seqHandler];
-
-    for (const view of grok.shell.tableViews) {
-      if (view.dataFrame === col.dataFrame)
-        view.grid.invalidate();
-    }
   }
 }

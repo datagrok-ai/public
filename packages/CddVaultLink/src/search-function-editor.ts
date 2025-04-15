@@ -59,6 +59,7 @@ export class SeachEditor {
     constructor(vaultId: number) {
         this.vaultId = vaultId;
         this.accordion = ui.accordion(`cdd_vault_search_${this.vaultId}`);
+        this.accordion.root.classList.add('cdd-search-vault-tab');
         this.protocolInNotIn.classList.add('cdd-protocol-in-not-in-input');
         this.protocolCond.classList.add('cdd-protocol-cond-input');
         this.structureInput.classList.add('cdd-molecule-input');

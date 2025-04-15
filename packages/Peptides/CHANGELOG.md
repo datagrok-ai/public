@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.23.2 (2025-04-14)
+
+* Manual setting of notation providers to tables
+
 ## 1.22.0 (2025-03-22)
 
 * Fixed unhighlighting of header weblogo

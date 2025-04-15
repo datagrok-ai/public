@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.43.1 (2025-04-14)
+
+- Fitting, Sensitivity Analysis: Fixed precision of the values lookup feature
+
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
 ## 1.42.1 (2025-04-10)
 
 Updated the Fitting feature:

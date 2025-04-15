@@ -81,8 +81,8 @@ export class SunburstViewer extends EChartViewer {
     return pixel[3] === 0;
   }
 
-  handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((index: number) => {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any) {
+    bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
 
@@ -127,11 +127,6 @@ export class SunburstViewer extends EChartViewer {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
-      if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, this.dataFrame);
-        return;
-      }
-
       const event = params.event.event;
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
       const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
@@ -139,7 +134,11 @@ export class SunburstViewer extends EChartViewer {
         selectedSectors.push(pathString);
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
-      this.handleDataframeSelection(path, event);
+
+      if (this.onClick === 'Filter')
+        this.applySelectionFilter(this.dataFrame.filter, path, event);
+      else
+        this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
     const handleChartMouseover = async (params: any) => {

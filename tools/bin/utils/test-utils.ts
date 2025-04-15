@@ -64,7 +64,7 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return { url, key };
 }
 
-export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
+export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -75,6 +75,22 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defa
   console.log(`Using web root: ${url}`);
 
   const browser = await puppeteer.launch(params);
+  if (params.debug) {
+    const targets = await browser.targets();
+    const devtoolsTarget = targets.find((t) => {
+      return t.type() === 'other' && t.url().startsWith('devtools://');
+    });
+    if (devtoolsTarget) {
+      const client = await devtoolsTarget.createCDPSession()
+      await client.send('Runtime.enable');
+      await client.send('Runtime.evaluate', {
+        expression: `
+      window.UI.viewManager.showView('network');
+      window.UI.dockController.setDockSide('bottom')
+    `
+      });
+    }
+  }
 
   const page = await browser.newPage();
   await page.setViewport({
@@ -355,6 +371,7 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
               verbosePassed: "",
               verboseSkipped: "",
               verboseFailed: "Tests execution failed",
+              error: JSON.stringify(e),
               passedAmount: 0,
               skippedAmount: 0,
               failedAmount: 1,
@@ -429,6 +446,7 @@ export type ResultObject = {
   passedAmount: number,
   skippedAmount: number,
   failedAmount: number,
+  error?: string,
   csv: string
 };
 

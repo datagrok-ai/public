@@ -543,7 +543,6 @@ export async function macromoleculePreprocessingFunction(
 }
 
 //name: Helm Fingerprints
-//tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: helm
@@ -581,7 +580,6 @@ export async function helmPreprocessingFunction(
 //input: object options {optional: true}
 //input: bool clusterEmbeddings = true { optional: true }
 //input: bool isDemo {optional: true}
-//output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,

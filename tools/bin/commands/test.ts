@@ -168,8 +168,11 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       testsResults.push(r);
       organized = testsLeft;
       browserId++;
-      if (r.verboseFailed === 'Tests execution failed')
+      if (r.verboseFailed === 'Tests execution failed') {
+        if (r.error)
+          console.log(r.error);
         break;
+      }
     }
     while (r.failed);
   }, testInvocationTimeout)

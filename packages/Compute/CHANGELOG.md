@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
 ## 1.42.2 (2025-04-10)
 
 Updated Parameters Optimization:

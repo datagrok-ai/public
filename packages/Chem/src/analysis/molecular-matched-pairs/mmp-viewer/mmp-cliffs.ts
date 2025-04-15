@@ -167,7 +167,6 @@ export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp
     options: {useWebGPU: true},
   };
 
-  //@ts-ignore
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
 
