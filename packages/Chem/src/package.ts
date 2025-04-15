@@ -2130,6 +2130,7 @@ export async function trainChemprop(
     'split_type': split_type,
     'warmup_epochs': warmup_epochs,
   };
+  predictColumn.name = df.columns.getUnusedName(predictColumn.name);
   df.columns.add(predictColumn);
   try {
     const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
