@@ -4,7 +4,7 @@
 1. Open demog.csv
 2. On the **Menu Ribbon**, click the **Add viewer** icon, and select **Trellis plot**
 3. Close the viewer
-1. On the **Viewers tab**, click the **Trellis plot** icon
+1. Go to **Toolbox > Viewers > Trellis plot**
 ---
 
 #### 2.  Viewer basics 
@@ -12,7 +12,7 @@
 1. Undock the viewer and move it around the screen
 1. Dock the viewer in a different location
 1. Switch between inner viewers:
-   * Сhange their settings on the top of the trellis plot
+   * Change their settings on the top of the trellis plot
    * Hover and select elements inside the viewer
 1. Open\Close the Context Panel
 1. Display the  help window
@@ -46,7 +46,6 @@
 1. Click any non-empty cell - **check selection**
 1.  Change the inner viewer  - **selection should NOT change**
 1. Click non empty cell - **selection should change**
-1.  Use 
 1. Change any axis - **selection should NOT change**
 1. Go to **Context menu > On Click > Filter** - all selected rows should be filtered, Rows Source should be changed to All
 1. Click any empty cell - **all rows should be filtered out**
@@ -68,10 +67,10 @@
 1. Open SPGI 
 1. Add two trellis plots
 1. For the first trellis plot:
-  * Set the Y axis to R1
-  * Switch the inner viewer to bar chart
-  * Enable the legend and change its position
-  * Add the header
+   * Set the Y axis to R1
+   * Switch the inner viewer to bar chart
+   * Enable the legend and change its position
+   * Add the title
 1. Right-click the first trellis plot. Select **Pick up/Apply > Pick up** 
 1. Right-click the second trellis plot. Select **Pick up/Apply > Apply**
 1. Change the X or Y axis on the first trellis plot - **the second plot should not be affected**
