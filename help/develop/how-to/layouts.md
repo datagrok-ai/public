@@ -93,7 +93,7 @@ view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 ## Saving and searching
 
 The `grok.dapi.layouts` endpoint provides common functionality inherited from
-[HttpDataSource](https://datagrok.ai/js-api/classes/dg.HttpDataSource) that is responsible for handling collections of
+[HttpDataSource](https://datagrok.ai/js-api/dg/classes/HttpDataSource) that is responsible for handling collections of
 entities stored on the server. Developers can save layouts, find them by id, filter the list of entities according
 to [certain criteria](../../datagrok/navigation/views/table-view#search), and so on.
 

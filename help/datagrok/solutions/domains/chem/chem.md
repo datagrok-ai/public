@@ -45,7 +45,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+  * [Enamine](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
   * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
 
 </details>

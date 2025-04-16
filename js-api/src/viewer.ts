@@ -303,7 +303,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
 
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
- *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
+ *  See an example on github: {@link https://github.com/datagrok-ai/labs/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
   public dart: any;

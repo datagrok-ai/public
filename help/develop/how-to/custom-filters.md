@@ -3,7 +3,7 @@ title: "Develop custom filters"
 ---
 
 Developers can extend Datagrok with custom filters. This could be done by defining a class that extends
-[DG.Filter](https://datagrok.ai/js-api/classes/dg.Filter) class. An
+[DG.Filter](http://datagrok.ai/js-api/dg/classes/Filter) class. An
 [example](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts) of such
 class can be found in the [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) package.
 
@@ -57,4 +57,4 @@ Or, alternatively, the filter can be added through UI:
 See also:
 
 * [Filters](../../visualize/viewers/filters.md)
-* [Filter class](https://datagrok.ai/js-api/classes/dg.Filter)
+* [Filter class](http://datagrok.ai/js-api/dg/classes/Filter)

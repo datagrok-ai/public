@@ -68,7 +68,7 @@ JavaScript API Samples, there you can run
 this [code snippet](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers) to get a simple working
 example right away and see how it functions within the platform. Finally, if you would like to explore the methods
 discussed in the article on your own, jump right to
-our [JavaScript API documentation](https://datagrok.ai/js-api/classes/dg.JsViewer).
+our [JavaScript API documentation](https://datagrok.ai/js-api/dg/classes/JsViewer).
 
 ### External dependencies
 
@@ -567,12 +567,12 @@ You can find more inspiring examples in our [public repository](https://github.c
 * JavaScript-based viewers:
   * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
     using the [Echarts](https://echarts.apache.org) framework
-  * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
+  * [Leaflet](https://github.com/datagrok-ai/labs/tree/master/packages/Leaflet): integrates with
     the [Leaflet](https://leafletjs.com/) library to build interactive maps
   * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
     viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
-  * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
+  * [ChaRPy](https://github.com/datagrok-ai/labs/tree/master/packages/ChaRPy): translates a Datagrok viewer to
     Python and R code using scripting viewers for the respective programming languages
   * [Demo]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
@@ -593,4 +593,4 @@ See also:
 * [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Samples/scripts

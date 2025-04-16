@@ -245,7 +245,7 @@ ui.dialog()
 .show();
 ```
 
-Check the [ChaRPy](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js)
+Check the [ChaRPy](https://github.com/datagrok-ai/labs/blob/master/packages/ChaRPy/src/package.js)
 package for a similar example.
 
 ## Docking viewers

@@ -603,7 +603,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
 /**
  * Functionality for handling connections collection from server and working with credentials remote endpoint
  * Allows to manage {@link DataConnection}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security}
  * @extends HttpDataSource
  * */
 export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
@@ -657,7 +657,7 @@ export class FuncsDataSource extends HttpDataSource<Func> {
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
  * Allows to manage {@link Credentials}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource<Credentials> {

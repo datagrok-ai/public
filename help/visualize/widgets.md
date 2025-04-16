@@ -11,5 +11,5 @@ You can create custom widgets and provide them to Datagrok as [packages](../deve
 See also:
 
 * [Custom widget example](https://github.com/datagrok-ai/public/tree/master/packages/Widgets)
-* [Widget API reference](https://datagrok.ai/js-api/classes/dg.Widget)
-* [JavaScript API documentation](https://datagrok.ai/help/develop/js-api)
+* [Widget API reference](https://datagrok.ai/js-api/dg/classes/Widget)
+* [JavaScript API documentation](https://datagrok.ai/js-api/)

@@ -239,11 +239,11 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
 ### Release flow
 
 The new branch `release/X.Y.Z` is created during the release of the latest version of the platform. The release branch
-is required to create a stable and reliable release of public [Datagrok JS API](https://datagrok.ai/help/develop/js-api)
+is required to create a stable and reliable release of public [Datagrok JS API](https://datagrok.ai/js-api)
 and [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok). After the tests and approvals, the CI/CD
-tool bumps the version of [JS API](https://datagrok.ai/help/develop/js-api)
+tool bumps the version of [JS API](https://datagrok.ai/js-api)
 and [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok). Then it generates the release notes for the new
-version. The version of [JS API](https://datagrok.ai/help/develop/js-api)
+version. The version of [JS API](https://datagrok.ai/js-api)
 coincide with the [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok) version. Commit with new version,
 and release notes should be cherry-picked from the release branch to the master branch.
 All the procedures are performed automatically by [CI/CD tool](../../develop/dev-process/ci-flow.mdx).
