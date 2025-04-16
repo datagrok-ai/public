@@ -1269,13 +1269,13 @@ export class FittingView {
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
       const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
-      const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
+      //const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
       const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
       let toAddGofCols = true;
       const outputColNames: string[] = [];
 
-      this.currentFuncCalls = calledFuncCalls;
+      //this.currentFuncCalls = calledFuncCalls;
 
       nonSimilarExtrema.forEach(async (extr, idx) => {
         lossVals[idx] = extr.cost;
@@ -1284,7 +1284,7 @@ export class FittingView {
 
         const gofElems = new Map<string, HTMLElement>();
         const calledFuncCall = await getCalledFuncCall(extr.point);
-        calledFuncCalls[idx] = calledFuncCall;
+        //calledFuncCalls[idx] = calledFuncCall;
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
           gofs.forEach((item) => gofElems.set(item.caption, item.root));
@@ -1381,7 +1381,8 @@ export class FittingView {
           return;
 
         const row = cell.tableRowIndex ?? 0;
-        const selectedRun = calledFuncCalls[row];
+        //const selectedRun = calledFuncCalls[row];
+        const selectedRun = await getCalledFuncCall(nonSimilarExtrema[row].point);
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1494,7 +1495,7 @@ export class FittingView {
         caption: caption,
         root: DG.Viewer.barChart(
           DG.DataFrame.fromColumns([
-            DG.Column.fromStrings(caption, ['obtained', 'target']),
+            DG.Column.fromStrings(caption, ['Simulation', 'Target']),
             DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
           ]),
           {
