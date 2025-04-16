@@ -122,3 +122,14 @@ export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
 2. Select a column with the independent variable in the **argument** field
 
 3. Specify one or more target columns with the dependent variable(s) in the **functions** field`;
+
+/** Loss function line chart options */
+export const LOSS_FUNC_CHART_OPTS = {
+  showYAxis: true,
+  showXAxis: true,
+  showXSelector: true,
+  showYSelectors: true,
+  lineColoringType: 'custom',
+  lineColor: 15274000,
+  markerColor: 15274000,
+};

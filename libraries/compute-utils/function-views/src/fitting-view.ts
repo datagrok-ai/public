@@ -14,7 +14,8 @@ import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   DIFF_STUDIO_OUTPUT_IDX,
   CATEGORY,
-  LINE_CHART_LINE_WIDTH} from './fitting/constants';
+  LINE_CHART_LINE_WIDTH,
+  LOSS_FUNC_CHART_OPTS} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
@@ -1269,22 +1270,15 @@ export class FittingView {
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
       const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
-      //const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
-      const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
       let toAddGofCols = true;
       const outputColNames: string[] = [];
 
-      //this.currentFuncCalls = calledFuncCalls;
-
       nonSimilarExtrema.forEach(async (extr, idx) => {
         lossVals[idx] = extr.cost;
-        const lossRoot = this.getLossGraph(extr);
-        lossFuncGraphRoots[idx] = lossRoot;
 
         const gofElems = new Map<string, HTMLElement>();
         const calledFuncCall = await getCalledFuncCall(extr.point);
-        //calledFuncCalls[idx] = calledFuncCall;
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
           gofs.forEach((item) => gofElems.set(item.caption, item.root));
@@ -1330,13 +1324,22 @@ export class FittingView {
       // Add linecharts of loss function
       const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
       tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
-      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => {
+        const extr = nonSimilarExtrema[row];
+
+        return DG.DataFrame.fromColumns([
+          DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
+          DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]);
+      });
+
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
       // Add viewers to the grid
       let toReorderCols = true;
+
+      console.log('Tada!');
 
       grid.onCellPrepare(async (gc: DG.GridCell) => {
         if (toReorderCols) {
@@ -1347,7 +1350,7 @@ export class FittingView {
         if (gc.isColHeader || gc.isRowHeader) return;
 
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
-          gc.style.element = lossFuncGraphRoots[gc.gridRow];
+          gc.style.element = gc.cell.value.plot.line(LOSS_FUNC_CHART_OPTS).root;
 
         outputColNames.forEach((name) => {
           if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null && gofViewers[gc.gridRow] !== undefined)
@@ -1461,23 +1464,6 @@ export class FittingView {
 
     return outputsOfInterest;
   } // getOutputsOfInterest
-
-  /** Return loss function line chart root  */
-  private getLossGraph(extr: Extremum): HTMLElement {
-    return DG.Viewer.lineChart(
-      DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
-      {
-        showYAxis: true,
-        showXAxis: true,
-        showXSelector: true,
-        showYSelectors: true,
-        lineColoringType: 'custom',
-        lineColor: 15274000,
-        markerColor: 15274000,
-      }).root;
-  } // getLossGraph
 
   /** Return output goodness of fit (GOF) viewer root */
   private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFViewer[] {
