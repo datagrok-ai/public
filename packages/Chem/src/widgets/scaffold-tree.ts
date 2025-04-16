@@ -1909,6 +1909,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._generateLink!.style.pointerEvents = 'none';
     this._generateLink!.style.color = 'lightgrey';
     this.message = message ?? NO_MOL_COL_ERROR_MSG;
+    this._message!.style.visibility = this.allowGenerate === false ? 'hidden' : 'visible';
     if (!this.molColumn) {
       (this._iconAdd! as any).inert = true;
       this._iconAdd!.style.color = 'grey';
