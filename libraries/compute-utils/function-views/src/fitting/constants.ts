@@ -126,6 +126,7 @@ export enum SIZE {
   TARGET = 2,
   MIN_MARKER = 1,
   MAX_MARKER = 7,
+  LIGHTER_PERC = 50,
 };
 
 /** */
@@ -142,6 +143,6 @@ export const LOSS_FUNC_CHART_OPTS = {
   showXSelector: true,
   showYSelectors: true,
   lineColoringType: 'custom',
-  lineColor: 15274000,
-  markerColor: 15274000,
+  lineColor: 4288600805,
+  markerColor: 4288600805,
 };

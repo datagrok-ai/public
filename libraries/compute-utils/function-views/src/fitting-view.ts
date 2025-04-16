@@ -16,13 +16,16 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
+
+const colors = DG.Color.categoricalPalette;
+const colorsCount = colors.length;
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -1531,10 +1534,22 @@ export class FittingView {
       const sizes = new Int32Array(rowsCount).fill(SIZE.SIMULATION, 0, simDf.rowCount).fill(SIZE.TARGET, simDf.rowCount);
       expVsSimDf.columns.add(DG.Column.fromInt32Array(NAME.SIZE, sizes));
 
-      //grok.shell.addTableView(expVsSimDf);
+      // Coloring scheme
+      const simFuncColNames = simDf.columns.names().filter((name) => name !== argColName);
 
       // Create linecharts
       funcColNames.forEach((name) => {
+        const catColName = `${NAME.CATEGORY}_${name}`;
+        const catCol = expVsSimDf.col(catColName);
+        const colorIdx = simFuncColNames.indexOf(name) % colorsCount;
+        const color = colors[colorIdx];
+        const rgb = DG.Color.toRgb(color);
+
+        catCol!.colors.setCategorical({
+          'Simulation': color,
+          'Target': simFuncColNames.length > 1 ? lightenRGB(rgb, SIZE.LIGHTER_PERC) : colors[colorIdx + 1],
+        });
+
         result.push({
           caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
           table: expVsSimDf,
@@ -1548,10 +1563,10 @@ export class FittingView {
             legendPosition: 'Top',
             linesWidth: SIZE.LINE_CHART_LINE_WIDTH,
             linesOrderColumnName: argColName,
-            markerType: DG.MARKER_TYPE.SQUARE,
+            markerType: DG.MARKER_TYPE.CIRCLE,
             markerMinSize: SIZE.MIN_MARKER,
             markerMaxSize: SIZE.MAX_MARKER,
-            colorColumnName: `${NAME.CATEGORY}_${name}`,
+            colorColumnName: catColName,
             sizeColumnName: NAME.SIZE,
           } as DG.IScatterPlotSettings,
         });

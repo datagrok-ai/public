@@ -247,3 +247,49 @@ export function getLossFuncDf(extr: Extremum): DG.DataFrame {
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount)),
   ]);
 }
+
+export function rgbToHex(rgbString: string) {
+  // Extract the RGB values using a regular expression
+  const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match)
+    throw new Error('Invalid RGB format. Expected format: \'rgb(r, g, b)\'');
+
+
+  // Parse the RGB values
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+
+  // Convert each component to a 2-digit hexadecimal string
+  const toHex = (value: number) => value.toString(16).padStart(2, '0');
+
+  const hexR = toHex(r);
+  const hexG = toHex(g);
+  const hexB = toHex(b);
+
+  // Return the concatenated hex color string
+  return `#${hexR}${hexG}${hexB}`;
+}
+
+export function lightenRGB(rgbString: string, percentage: number) {
+  // Extract the RGB values using a regular expression
+  const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match)
+    throw new Error('Invalid RGB format. Expected format: \'rgb(r, g, b)\'');
+
+
+  // Parse the RGB values
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+
+  // Calculate the lighter values
+  const lighten = (value: number) => Math.min(255, Math.round(value + (255 - value) * (percentage / 100)));
+
+  const newR = lighten(r);
+  const newG = lighten(g);
+  const newB = lighten(b);
+
+  // Return the new RGB string
+  return `rgb(${newR}, ${newG}, ${newB})`;
+}
