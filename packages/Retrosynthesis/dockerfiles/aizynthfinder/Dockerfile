@@ -28,9 +28,11 @@ WORKDIR /app
 ENV PATH="/app/venv/bin:$PATH"
 
 # Create virtual environment and install packages
-RUN python3.10 -m venv /app/venv && \
-    /app/venv/bin/pip install --upgrade pip && \
-    /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors gunicorn
+RUN python3.10 -m venv /app/venv
+
+RUN /app/venv/bin/pip install --upgrade pip
+
+RUN /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors gunicorn
 
 # Download public data
 RUN mkdir ./aizynthcli_data && \

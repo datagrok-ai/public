@@ -3,6 +3,7 @@ import signal
 import logging
 import subprocess
 from tempfile import NamedTemporaryFile
+from werkzeug.utils import secure_filename
 
 from multiprocessing import Manager
 from flask import Flask, request, jsonify
@@ -80,7 +81,7 @@ def run_aizynthfind(config_path, smiles, user_id):
       logging.info("aizynthcli completed successfully")
       return {"result": result_content, "success": True}
     else:
-      logging.error(f"aizynthcli failed: {stderr}")
+      logging.error(f"aizynthcli failed: {stderr}, error code: {return_code}, stdout: {stdout}")
       return {"success": False, "error": stderr}
 
   except Exception as e:
@@ -93,23 +94,22 @@ def aizynthfind():
   try:
     output_dir = os.getcwd()
     data = request.json
-    user_id = data.get("id")
+    user_id = data.get("user_id")
     smiles = data.get("smiles")
-    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, "config.yml")
-    user_defined_config_path = config_path
+    config_name = data.get("config_name")
 
+    if not smiles or not user_id:
+      return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
+    f
+    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, f"{config_name}") if config_name else os.path.join(output_dir, "aizynthcli_data", "config.yml")
     if not os.path.exists(config_path):
-      config_path = os.path.join(output_dir, "aizynthcli_data", "config.yml")
-      if not os.path.exists(config_path):
-        return jsonify({"success": False, "error": f"Config file not found at {config_path} or {user_defined_config_path}"}), 400
+      return jsonify({"success": False, "error": f"File {config_path} not found"}), 404
 
     logging.info(f"****************** Reading config")
     with open(config_path, "r") as file:
       content = file.read()
     logging.info(content)
 
-    if not smiles:
-      return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
 
     terminate_previous_process(user_id)
     result = run_aizynthfind(config_path, smiles, user_id)
@@ -124,27 +124,62 @@ def aizynthfind():
     return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route('/set_config', methods=['POST'])
-def set_config():
+@app.route('/get_user_configs', methods=['POST'])
+def get_user_configs():
   try:
-      config_content = request.json.get('config')
-      user_id = request.json.get("id")
-      
-      output_dir = os.getcwd()
-      os.makedirs(f"{output_dir}/aizynthcli_data/{user_id}", exist_ok=True)
-      config_path = f"{output_dir}/aizynthcli_data/{user_id}/config.yml"
+    user_id = request.json.get("user_id")
+    if not user_id:
+      return jsonify({"success": False, "error": "User ID is required"}), 400
 
-      if config_content:
-          with open(config_path, "w") as config_file:
-              config_file.write(config_content)
-          return jsonify({"success": True}), 200
-      else:
-          return jsonify({"success": False, "error": "Empty config content"}), 400
+    output_dir = os.getcwd()
+    user_config_dir = os.path.join(output_dir, "aizynthcli_data", user_id)
+      
+    # Create directory if it doesn't exist
+    os.makedirs(user_config_dir, exist_ok=True)
+      
+    # Get all files in the directory
+    config_files = []
+    for file in os.listdir(user_config_dir):
+      if os.path.isfile(os.path.join(user_config_dir, file)):
+        config_files.append(file)
+
+    return jsonify({"success": True, "configs": config_files}), 200
+
+  except Exception as e:
+    logging.error(f"Unexpected error: {str(e)}")
+    return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/add_user_config', methods=['POST'])
+def add_user_config():
+  try:  
+    config_content = request.json.get('config')
+    config_name = request.json.get('config_name')
+    user_id = request.json.get("user_id")
+    
+    if not user_id:
+      return jsonify({"success": False, "error": "User ID is required"}), 400
+        
+    if not config_name or config_name == '':
+      return jsonify({"success": False, "error": "Config name is required"}), 400
+
+    if not config_content:
+      return jsonify({"success": False, "error": "Config is required"}), 400
+        
+    output_dir = os.getcwd()
+    user_config_path = os.path.join(output_dir, "aizynthcli_data", user_id)
+    os.makedirs(user_config_path, exist_ok=True)
+    user_config_file = os.path.join(user_config_path, f"{config_name}")
+
+    with open(user_config_file, "w") as config_file:
+      config_file.write(config_content)
+    
+    logging.info(f"Config {config_name} saved successfully for user {user_id}")
+    return jsonify({"success": True, "message": f"Config {config_name} uploaded successfully"}), 200
       
   except Exception as e:
-      logging.error(f"Unexpected error: {str(e)}")
+      logging.error(f"Error uploading config: {str(e)}")
       return jsonify({"success": False, "error": str(e)}), 500
-
 
 @app.route('/health_check', methods=['GET'])
 def health_check():

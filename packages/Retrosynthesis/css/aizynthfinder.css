@@ -16,3 +16,9 @@
 .retrosynthesis-settings-dlg .dlg-settings {
   min-height: 10px;
 }
+
+.retrosynthesis-add-config-icon {
+  color: var(--blue-1);
+    padding-left: 8px;
+    padding-top: 10px;
+}
