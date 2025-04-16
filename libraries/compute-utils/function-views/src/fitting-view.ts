@@ -19,7 +19,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -61,6 +61,14 @@ type FittingConstStore = {
 type GoFViewer = {
   caption: string,
   root: HTMLElement,
+};
+
+/** Goodness of fit (GoF) viewer */
+type GoFtable = {
+  caption: string,
+  table: DG.DataFrame,
+  chart: string,
+  opts: any,
 };
 
 export type RangeDescription = {
@@ -1269,34 +1277,9 @@ export class FittingView {
 
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
-      const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
-      let toAddGofCols = true;
-      const outputColNames: string[] = [];
 
-      nonSimilarExtrema.forEach(async (extr, idx) => {
-        lossVals[idx] = extr.cost;
-
-        const gofElems = new Map<string, HTMLElement>();
-        const calledFuncCall = await getCalledFuncCall(extr.point);
-        outputsOfInterest.forEach((output) => {
-          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
-          gofs.forEach((item) => gofElems.set(item.caption, item.root));
-        });
-        gofViewers[idx] = gofElems;
-
-        if (toAddGofCols) {
-          gofElems.forEach((_, name) => {
-            tooltips.set(name, 'Goodness of fit');
-            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.STRING);
-            const gridCol = this.comparisonView.grid.columns.byName(name);
-            gridCol!.cellType = 'html';
-            gridCol!.width = GRID_SIZE.GOF_VIEWER_WIDTH;
-            outputColNames.push(name);
-          });
-          toAddGofCols = false;
-        }
-      });
+      nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
 
       // Add fitting results to the table: iteration & loss
       const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
@@ -1321,25 +1304,40 @@ export class FittingView {
       grid.props.showAddNewRowIcon = false;
       grid.props.allowEdit = false;
 
-      // Add linecharts of loss function
-      const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
-      tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
-      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => {
-        const extr = nonSimilarExtrema[row];
+      // Add goodness of fit viewers
+      const gofTables = new Array<Map<string, GoFtable>>(rowCount);
 
-        return DG.DataFrame.fromColumns([
-          DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
-          DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]);
+      for (let idx = 0; idx < rowCount; ++idx) {
+        const gofDfs = new Map<string, GoFtable>();
+
+        const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+
+        outputsOfInterest.forEach((output) => {
+          const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
+          gofs.forEach((item) => gofDfs.set(item.caption, item));
+        });
+
+        gofTables[idx] = gofDfs;
+      }
+
+      // Add goodness of fit columns
+      gofTables[0].forEach((_, name) => {
+        reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
+        const lossFuncGraphGridCol = grid.columns.byName(name);
+        lossFuncGraphGridCol!.cellType = 'html';
+        lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
       });
 
+      // Add dataframe with loss function values
+      const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
+      tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => getLossFuncDf(nonSimilarExtrema[row]));
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
       // Add viewers to the grid
       let toReorderCols = true;
-
-      console.log('Tada!');
 
       grid.onCellPrepare(async (gc: DG.GridCell) => {
         if (toReorderCols) {
@@ -1352,10 +1350,17 @@ export class FittingView {
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
           gc.style.element = gc.cell.value.plot.line(LOSS_FUNC_CHART_OPTS).root;
 
-        outputColNames.forEach((name) => {
-          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null && gofViewers[gc.gridRow] !== undefined)
-            gc.style.element = gofViewers[gc.gridRow].get(name) ?? ui.label('');
-        });
+        const row = gc.gridRow;
+
+        if (gc.isTableCell && (row < rowCount)) {
+          const gof = gofTables[row].get(gc.gridColumn.name);
+
+          if (gof !== undefined) {
+            gc.style.element = (gof.chart === 'line') ?
+              gc.cell.value.plot.line(gof.opts).root :
+              gc.cell.value.plot.bar(gof.opts).root;
+          }
+        }
       });
 
       // Set loss-column format & sort by loss-vals
@@ -1465,8 +1470,8 @@ export class FittingView {
     return outputsOfInterest;
   } // getOutputsOfInterest
 
-  /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFViewer[] {
+  /** Return output goodness of fit (GOF) table */
+  private getOutputGofTable(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFtable[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
@@ -1479,26 +1484,25 @@ export class FittingView {
     case DG.TYPE.BIG_INT:
       return [{
         caption: caption,
-        root: DG.Viewer.barChart(
-          DG.DataFrame.fromColumns([
-            DG.Column.fromStrings(caption, ['Simulation', 'Target']),
-            DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
-          ]),
-          {
-            valueColumnName: TITLE.VALUE,
-            splitColumnName: caption,
-            valueAggrType: DG.AGG.AVG,
-            showValueSelector: false,
-            showCategorySelector: false,
-            showStackSelector: false,
-            showEmptyBars: true,
-          },
-        ).root,
+        chart: 'bar',
+        table: DG.DataFrame.fromColumns([
+          DG.Column.fromStrings(caption, ['Simulation', 'Target']),
+          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
+        ]),
+        opts: {
+          valueColumnName: TITLE.VALUE,
+          splitColumnName: caption,
+          valueAggrType: DG.AGG.AVG,
+          showValueSelector: false,
+          showCategorySelector: false,
+          showStackSelector: false,
+          showEmptyBars: true,
+        },
       }];
 
     // a set of linecharts comparing columns of output dataframe to their targets
     case DG.TYPE.DATA_FRAME:
-      const result: GoFViewer[] = [];
+      const result: GoFtable[] = [];
       const simDf = call.getParamValue(name) as DG.DataFrame;
       const expDf = target as DG.DataFrame;
       const simArgCol = simDf.col(argColName);
@@ -1531,7 +1535,9 @@ export class FittingView {
         if ((name !== argColName) && (name !== CATEGORY)) {
           result.push({
             caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            root: DG.Viewer.lineChart(expVsSimDf, {
+            table: expVsSimDf,
+            chart: 'line',
+            opts: {
               xColumnName: argColName,
               yColumnNames: [name],
               splitColumnName: CATEGORY,
@@ -1541,7 +1547,7 @@ export class FittingView {
               showMarkers: 'Always',
               lineWidth: LINE_CHART_LINE_WIDTH,
               yGlobalScale: true,
-            }).root,
+            },
           });
         }
       });
@@ -1551,7 +1557,7 @@ export class FittingView {
     default:
       throw new Error('Unsupported output type');
     }
-  } // getOutputGof
+  } // getOutputGofTable
 
   /** Clear previous results: close dock nodes and unsubscribe from events */
   private clearPrev(): void {

@@ -5,11 +5,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {InconsistentTables} from './optimizer-misc';
+import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {TARGET_DATAFRAME_INFO} from './constants';
+import {TARGET_DATAFRAME_INFO, TITLE} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -238,4 +238,12 @@ export function getSensAnWgt(): HTMLElement {
   ui.tooltip.bind(div, 'Run sensitivity analysis. Opens a separate view');
 
   return div;
+}
+
+/** Return dataframe with loss function vals */
+export function getLossFuncDf(extr: Extremum): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount)),
+  ]);
 }
