@@ -12,10 +12,7 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  DIFF_STUDIO_OUTPUT_IDX,
-  CATEGORY,
-  LINE_CHART_LINE_WIDTH,
-  LOSS_FUNC_CHART_OPTS} from './fitting/constants';
+  DIFF_STUDIO_OUTPUT_IDX, NAME, LOSS_FUNC_CHART_OPTS, SIZE} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
@@ -58,17 +55,11 @@ type FittingConstStore = {
 } & InputValues;
 
 /** Goodness of fit (GoF) viewer */
-type GoFViewer = {
-  caption: string,
-  root: HTMLElement,
-};
-
-/** Goodness of fit (GoF) viewer */
 type GoFtable = {
   caption: string,
   table: DG.DataFrame,
-  chart: string,
-  opts: any,
+  chart: DG.VIEWER,
+  opts: Partial<DG.IBarChartSettings | DG.IScatterPlotSettings>,
 };
 
 export type RangeDescription = {
@@ -1356,8 +1347,8 @@ export class FittingView {
           const gof = gofTables[row].get(gc.gridColumn.name);
 
           if (gof !== undefined) {
-            gc.style.element = (gof.chart === 'line') ?
-              gc.cell.value.plot.line(gof.opts).root :
+            gc.style.element = (gof.chart === DG.VIEWER.SCATTER_PLOT) ?
+              gc.cell.value.plot.scatter(gof.opts).root :
               gc.cell.value.plot.bar(gof.opts).root;
           }
         }
@@ -1484,9 +1475,9 @@ export class FittingView {
     case DG.TYPE.BIG_INT:
       return [{
         caption: caption,
-        chart: 'bar',
+        chart: DG.VIEWER.BAR_CHART,
         table: DG.DataFrame.fromColumns([
-          DG.Column.fromStrings(caption, ['Simulation', 'Target']),
+          DG.Column.fromStrings(caption, [NAME.SIMULATION, NAME.TARGET]),
           DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
         ]),
         opts: {
@@ -1527,29 +1518,43 @@ export class FittingView {
       })), true);
 
       // Add category column (for splitting data)
-      const categories = new Array<string>(simDf.rowCount).fill('Simulation').concat(new Array<string>(expDf.rowCount).fill('Target'));
-      expVsSimDf.columns.add(DG.Column.fromStrings(CATEGORY, categories));
+      const funcColNames = expVsSimDf.columns.names().filter((name) => name !== argColName);
+
+      // Add style cols
+      const categories = new Array<string>(simDf.rowCount).fill(NAME.SIMULATION).concat(new Array<string>(expDf.rowCount).fill(NAME.TARGET));
+      const rowsCount = categories.length;
+
+      funcColNames.forEach((name) => {
+        expVsSimDf.columns.add(DG.Column.fromStrings(`${NAME.CATEGORY}_${name}`, categories));
+      });
+
+      const sizes = new Int32Array(rowsCount).fill(SIZE.SIMULATION, 0, simDf.rowCount).fill(SIZE.TARGET, simDf.rowCount);
+      expVsSimDf.columns.add(DG.Column.fromInt32Array(NAME.SIZE, sizes));
+
+      //grok.shell.addTableView(expVsSimDf);
 
       // Create linecharts
-      expVsSimDf.columns.names().forEach((name) => {
-        if ((name !== argColName) && (name !== CATEGORY)) {
-          result.push({
-            caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            table: expVsSimDf,
-            chart: 'line',
-            opts: {
-              xColumnName: argColName,
-              yColumnNames: [name],
-              splitColumnName: CATEGORY,
-              showSplitSelector: false,
-              legendVisibility: 'Always',
-              legendPosition: 'Top',
-              showMarkers: 'Always',
-              lineWidth: LINE_CHART_LINE_WIDTH,
-              yGlobalScale: true,
-            },
-          });
-        }
+      funcColNames.forEach((name) => {
+        result.push({
+          caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
+          table: expVsSimDf,
+          chart: DG.VIEWER.SCATTER_PLOT,
+          opts: {
+            xColumnName: argColName,
+            yColumnName: name,
+            showColorSelector: false,
+            showSizeSelector: false,
+            legendVisibility: 'Always',
+            legendPosition: 'Top',
+            linesWidth: SIZE.LINE_CHART_LINE_WIDTH,
+            linesOrderColumnName: argColName,
+            markerType: DG.MARKER_TYPE.SQUARE,
+            markerMinSize: SIZE.MIN_MARKER,
+            markerMaxSize: SIZE.MAX_MARKER,
+            colorColumnName: `${NAME.CATEGORY}_${name}`,
+            sizeColumnName: NAME.SIZE,
+          } as DG.IScatterPlotSettings,
+        });
       });
 
       return result;

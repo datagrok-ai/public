@@ -113,8 +113,20 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 export const DIFF_STUDIO_OUTPUT_IDX = 0;
 
-export const CATEGORY = '__Category__';
-export const LINE_CHART_LINE_WIDTH = 2;
+export enum NAME {
+  CATEGORY = '__Category__',
+  SIZE = '__Size__',
+  SIMULATION = 'Simulation',
+  TARGET = 'Target',
+};
+
+export enum SIZE {
+  LINE_CHART_LINE_WIDTH = 2,
+  SIMULATION = 1,
+  TARGET = 2,
+  MIN_MARKER = 1,
+  MAX_MARKER = 7,
+};
 
 /** */
 export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
