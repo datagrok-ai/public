@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -82,7 +83,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.dataFrame.filter.and(this.viewer.bitset);
     this.dataFrame.rows.addFilterState(this.saveState());
   }
-  
+
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
@@ -103,13 +104,13 @@ export class ScaffoldTreeFilter extends DG.Filter {
     requestAnimationFrame(() => {
       const wrapper = this.root.closest('.d4-root.d4-filter-group.d4-viewer.d4-filters.ui-box') as HTMLElement;
       if (!wrapper) return;
-    
+
       const viewerContainer = wrapper.querySelector(
-        '.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar)'
+        '.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar)',
       ) as HTMLElement;
-    
+
       if (viewerContainer)
         viewerContainer.style.maxHeight = `${wrapper.clientHeight}px`;
-    });    
+    });
   }
 }
