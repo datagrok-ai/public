@@ -349,38 +349,34 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
       });
     }
 
-    let testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
-
-      if (options.benchmark)
-        (<any>window).DG.Test.isInBenchmark = true;
-      if (options.reproduce)
-        (<any>window).DG.Test.isReproducing = true;
-      if (options.ciCd)
-        (<any>window).DG.Test.isCiCd = true;
-      if (options.debug)
-        (<any>window).DG.Test.isInDebug = true;
-
-      return new Promise<any>((resolve, reject) => {
-        (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
-          .then((results: any) => {
-            resolve(results);
-          })
-          .catch((e: any) => {
-            resolve({
-              failed: true,
-              verbosePassed: "",
-              verboseSkipped: "",
-              verboseFailed: "Tests execution failed",
-              error: JSON.stringify(e),
-              passedAmount: 0,
-              skippedAmount: 0,
-              failedAmount: 1,
-              csv: "",
-              df: undefined
-            })
-          });
-      })
-    }, testExecutionData, browserOptions);
+    const testingResults = await page.evaluate(
+      async (testData, options) => {
+        try {
+          if (options.benchmark) (<any>window).DG.Test.isInBenchmark = true;
+          if (options.reproduce) (<any>window).DG.Test.isReproducing = true;
+          if (options.ciCd) (<any>window).DG.Test.isCiCd = true;
+          if (options.debug) (<any>window).DG.Test.isInDebug = true;
+    
+          const results = await (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout);
+          return results;
+        } catch (e) {
+          return {
+            failed: true,
+            verbosePassed: "",
+            verboseSkipped: "",
+            verboseFailed: "Tests execution failed",
+            error: JSON.stringify(e),
+            passedAmount: 0,
+            skippedAmount: 0,
+            failedAmount: 1,
+            csv: "",
+            df: undefined
+          };
+        }
+      },
+      testExecutionData,
+      browserOptions
+    );
 
     if (browserOptions.record) {
       await recorder.stop();
