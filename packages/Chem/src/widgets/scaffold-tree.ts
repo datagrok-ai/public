@@ -375,31 +375,34 @@ async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, 
 export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
   const elementToGroupMap = new Map<HTMLElement, DG.TreeViewGroup>();
   const visibleNodes = new Set<DG.TreeViewGroup>();
-  
+
   const nodes: DG.TreeViewGroup[] = [];
   fillVisibleNodes(thisViewer.tree, nodes, true);
-  
+
   nodes.forEach(group => {
     const element = group.root as HTMLElement;
     elementToGroupMap.set(element, group);
   });
 
+  function handleVisibleGroup(group: DG.TreeViewGroup) {
+    const groupVal = value(group);
+    renderMoleculeAsync(group, groupVal, thisViewer);
+    const updateBitset = thisViewer.updateBitset(group);
+    updateLabel(thisViewer, group, updateBitset);
+  }
+
   const intersectionObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const element = entry.target as HTMLElement;
       const group = elementToGroupMap.get(element);
-  
-      if (group) {
-        const groupVal = value(group);
-  
-        if (entry.isIntersecting) {
-          visibleNodes.add(group);
-          renderMoleculeAsync(group, groupVal, thisViewer);
-          const updateBitset = thisViewer.updateBitset(group);
-          updateLabel(thisViewer, group, updateBitset);
-        } else {
-          visibleNodes.delete(group);
-        }
+
+      if (!group) return;
+
+      if (entry.isIntersecting) {
+        visibleNodes.add(group);
+        handleVisibleGroup(group);
+      } else {
+        visibleNodes.delete(group);
       }
     });
   }, {
@@ -409,18 +412,13 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
   });
 
   const resizeObserver = new ResizeObserver((entries) => {
-    //if (!thisViewer.resizable) return;
+    if (!thisViewer.resizable && thisViewer.size !== 'large') return;
     entries.forEach((entry) => {
       const element = entry.target as HTMLElement;
       const group = elementToGroupMap.get(element);
-  
-      if (group) {
-        const groupVal = value(group);
-        
-        if (visibleNodes.has(group)) {
-          console.log(value(group).smiles);
-          renderMoleculeAsync(group, groupVal, thisViewer);
-        }
+
+      if (group && visibleNodes.has(group)) {
+        handleVisibleGroup(group);
       }
     });
   });
@@ -445,67 +443,73 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
 }
 
-function renderMolecule(node: DG.TreeViewGroup, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined,
-  tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
-  const r = window.devicePixelRatio || 1;
-  const resizable = viewer?.resizable ?? false;
-
+function renderMolecule(
+  node: DG.TreeViewGroup,
+  width: number,
+  height: number,
+  skipDraw: boolean = false,
+  viewer: ScaffoldTreeViewer | undefined,
+  tooltip: boolean = false,
+  color: string | null = null,
+  substructure: string | null = null
+): HTMLDivElement {
+  const r = window.devicePixelRatio;
   let moleculeWidth = width;
   let moleculeHeight = height;
 
-  if (!tooltip) {
-    const containerRect = node.root.getBoundingClientRect();
-    const scaleW = containerRect.width / width;
-    const scaleH = containerRect.height / height;
-    const scale = Math.min(scaleW, scaleH, 1);
+  if (!tooltip && viewer?.size === 'large') {
+    const { small: minSize, large: maxSize } = viewer.sizesMap;
 
-    moleculeWidth = Math.floor(width * scale);
-    moleculeHeight = Math.floor(height * scale);
+    const { width: containerW, height: containerH } = node.root.getBoundingClientRect();
+    const containerWidth = containerW - 75;
+    
+    const scaleFactor = Math.min(containerWidth / minSize.width, containerH / minSize.height);
+    moleculeWidth = Math.min(maxSize.width, Math.max(minSize.width, minSize.width * scaleFactor));
+    moleculeHeight = Math.min(maxSize.height, Math.max(minSize.height, minSize.height * scaleFactor));
   }
 
+  const canvasW = Math.floor(moleculeWidth * r);
+  const canvasH = Math.floor(moleculeHeight * r);
   const moleculeHost = ui.canvas(moleculeWidth, moleculeHeight);
-
+  moleculeHost.width = canvasW;
+  moleculeHost.height = canvasH;
   moleculeHost.style.width = `${moleculeWidth}px`;
   moleculeHost.style.height = `${moleculeHeight}px`;
 
   const context = moleculeHost.getContext('2d');
-  if (context) {
-    context.setTransform(r, 0, 0, r, 0, 0);
+  if (!context) return ui.div();
 
-    if (skipDraw) {
-      context.font = '18px Roboto, Roboto Local';
-      const text = 'Loading...';
-      const tm = context.measureText(text);
-      const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent;
-      const x = (moleculeWidth - tm.width) / 2;
-      const y = (moleculeHeight - fontHeight) / 2 + Math.abs(tm.actualBoundingBoxAscent);
-      context.fillText(text, x, y);
-    } else {
-      const molStr = value(node).smiles;
-      const mol = getQueryMolSafe(molStr, '', _rdKitModule);
-      const substrMol = getQueryMolSafe(substructure ?? molStr, '', _rdKitModule);
+  context.setTransform(r, 0, 0, r, 0, 0);
 
-      if (mol && substrMol) {
-        let highlights = null;
-        if (color) {
-          const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
-          highlights = matchedAtomsAndBonds[0];
+  if (skipDraw) {
+    context.font = '18px Roboto, Roboto Local';
+    const text = 'Loading...';
+    const tm = context.measureText(text);
+    const y = (moleculeHeight + (tm.actualBoundingBoxAscent - tm.actualBoundingBoxDescent)) / 2;
+    const x = (moleculeWidth - tm.width) / 2;
+    context.fillText(text, x, y);
+  } else {
+    const molStr = value(node).smiles;
+    const mol = getQueryMolSafe(molStr, '', _rdKitModule);
+    const substr = substructure ?? molStr;
+    const substrMol = getQueryMolSafe(substr, '', _rdKitModule);
+
+    if (mol && substrMol) {
+      let highlights: ISubstruct | null = null;
+
+      if (color) {
+        try {
+          const matches: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
+          highlights = matches[0];
           _addColorsToBondsAndAtoms(highlights, color);
+        } catch (e) {
+          console.warn('Highlighting failed:', e);
         }
-
-        drawMoleculeToCanvas(
-          0, 0,
-          moleculeHost.width, moleculeHost.height,
-          moleculeHost,
-          molStr,
-          '',
-          { normalizeDepiction: true, straightenDepiction: true },
-          highlights
-        );
-
-        mol.delete();
-        substrMol.delete();
       }
+
+      drawMoleculeToCanvas(0, 0, canvasW, canvasH, moleculeHost, molStr, '', { normalizeDepiction: true, straightenDepiction: true }, highlights);
+      mol.delete();
+      substrMol.delete();
     }
   }
 

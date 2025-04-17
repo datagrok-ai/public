@@ -1,10 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ScaffoldTreeViewer, BitwiseOp, isOrphans} from './scaffold-tree';
-import {filter, debounce} from 'rxjs/operators';
-import {interval} from 'rxjs';
-import { SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
+import {filter} from 'rxjs/operators';
 
 const COLUMN_NAME_CHANGED = 'column-name-changed';
 
@@ -104,13 +102,14 @@ export class ScaffoldTreeFilter extends DG.Filter {
     /**temporary workaround in order not to set height 100% */
     requestAnimationFrame(() => {
       const wrapper = this.root.closest('.d4-root.d4-filter-group.d4-viewer.d4-filters.ui-box') as HTMLElement;
-      if (wrapper) {
-        const viewerContainer = wrapper.querySelector('.d4-filter-group-wrapper .ui-box:last-child') as HTMLElement;
-        if (viewerContainer) {
-          const wrapperHeight = wrapper.getBoundingClientRect().height;
-          viewerContainer.style.height = `${wrapperHeight}px`;
-        }
-      }
-    });
-  }  
+      if (!wrapper) return;
+    
+      const viewerContainer = wrapper.querySelector(
+        '.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar)'
+      ) as HTMLElement;
+    
+      if (viewerContainer)
+        viewerContainer.style.maxHeight = `${wrapper.clientHeight}px`;
+    });    
+  }
 }
