@@ -139,7 +139,6 @@ export async function testFunctions(scope: object) {
 }
 
 //name: testFunction
-//description: test func
 //meta.vectorFunc: true
 //input: column<int> col1
 //input: column<string> col2

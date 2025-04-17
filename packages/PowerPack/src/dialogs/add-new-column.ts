@@ -791,7 +791,7 @@ export class AddNewColumnDialog {
         throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`);
       //check for column and list types
       if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
-        if (property.propertySubType && property.propertySubType !== actualInputType)
+        if (property.propertySubType && property.propertySubType !== actualInputType && (property.propertyType === DG.TYPE.LIST && funcCall.inputs[property.name]?.length !== 0))
           throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`);
       } else {
         //check for type match
