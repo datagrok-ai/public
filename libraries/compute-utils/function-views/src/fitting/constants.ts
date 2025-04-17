@@ -64,6 +64,9 @@ enum HELP_ITEMS {
 /** Progress bar time to sleep */
 export const MS_TO_SLEEP = 10;
 
+/** Styles timeout */
+export const STYLE_TIMEOUT = 3000;
+
 /** Fitting UI constants */
 export enum FITTING_UI {
   SIMILARITY_MIN = 0,
@@ -120,6 +123,10 @@ export enum INDICES {
   DOUBLE_CAT = 2,
   DIFF_STUDIO_OUTPUT = 0,
   SCALAR_VALS_COL = 1,
+  OLIVE = 8,
+  LIGHT_OLIVE = 16,
+  GREY = 7,
+  LIGHT_GREY = 15,
 };
 
 export enum NAME {
@@ -139,7 +146,7 @@ export enum SIZE {
   LIGHTER_PERC = 50,
 };
 
-/** */
+/** Info panel content */
 export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
 
 2. Select a column with the independent variable in the **argument** field

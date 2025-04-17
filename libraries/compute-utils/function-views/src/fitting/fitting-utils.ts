@@ -9,7 +9,7 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {GRID_SIZE, INDICES, TARGET_DATAFRAME_INFO, TITLE} from './constants';
+import {GRID_SIZE, INDICES, STYLE_TIMEOUT, TARGET_DATAFRAME_INFO, TITLE} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -304,10 +304,11 @@ function getSingleScalarBarChartOpts(valColName: string, catColName: string): Pa
     showCategorySelector: false,
     valueColumnName: valColName,
     splitColumnName: catColName,
-    stackColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.OLIVE], DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE]],
     valueAggrType: DG.AGG.AVG,
     showValueSelector: false,
-    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
   };
 }
 
@@ -319,7 +320,9 @@ function getFirstDoubleScalarBarChartOpts(valColName: string, catColName: string
     showCategorySelector: false,
     valueColumnName: valColName,
     splitColumnName: catColName,
-    stackColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.OLIVE], DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE]],
     valueAggrType: DG.AGG.AVG,
     showValueSelector: false,
     description: valColName,
@@ -338,7 +341,7 @@ function getSecondDoubleScalarBarChartOpts(valColName: string, catColName: strin
     splitColumnName: catColName,
     colorColumnName: valColName,
     colorAggrType: DG.AGG.AVG,
-    linearColorScheme: DG.Color.categoricalPalette.slice(2, 4),
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.GREY], DG.Color.categoricalPalette[INDICES.LIGHT_GREY]],
     valueAggrType: DG.AGG.AVG,
     showValueSelector: false,
     description: valColName,
@@ -371,7 +374,10 @@ export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement 
       catColName,
     )).root;
 
-    return ui.splitV([first, second], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+    const container = ui.splitV([first, second], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+    setTimeout(() => container.style.height = '100%', STYLE_TIMEOUT);
+
+    return container;
 
   default:
     return DG.Viewer.grid(table).root;
