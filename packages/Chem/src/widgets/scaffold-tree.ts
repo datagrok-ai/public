@@ -375,14 +375,44 @@ async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, 
 export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
   const elementToGroupMap = new Map<HTMLElement, DG.TreeViewGroup>();
   const visibleNodes = new Set<DG.TreeViewGroup>();
+  const pendingGroups = new Set<DG.TreeViewGroup>();
+  let frameRequested = false;
 
   const nodes: DG.TreeViewGroup[] = [];
   fillVisibleNodes(thisViewer.tree, nodes, true);
 
-  nodes.forEach(group => {
+  mapElementsToGroups(nodes, elementToGroupMap);
+  disconnectExistingObservers(thisViewer);
+
+  const intersectionObserver = setupIntersectionObserver(
+    thisViewer, elementToGroupMap, visibleNodes, scheduleGroupUpdate
+  );
+
+  const resizeObserver = setupResizeObserver(
+    thisViewer, elementToGroupMap, visibleNodes
+  );
+
+  nodes.forEach((group) => {
     const element = group.root as HTMLElement;
-    elementToGroupMap.set(element, group);
+    intersectionObserver.observe(element);
+    resizeObserver.observe(element);
   });
+
+  thisViewer.intersectionObserver = intersectionObserver;
+  thisViewer.resizeObserver = resizeObserver;
+  thisViewer.visibleNodes = visibleNodes;
+
+  function mapElementsToGroups(groups: DG.TreeViewGroup[], map: Map<HTMLElement, DG.TreeViewGroup>) {
+    groups.forEach(group => {
+      const element = group.root as HTMLElement;
+      map.set(element, group);
+    });
+  }
+
+  function disconnectExistingObservers(viewer: ScaffoldTreeViewer) {
+    viewer.intersectionObserver?.disconnect?.();
+    viewer.resizeObserver?.disconnect?.();
+  }
 
   function handleVisibleGroup(group: DG.TreeViewGroup) {
     const groupVal = value(group);
@@ -391,45 +421,73 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     updateLabel(thisViewer, group, updateBitset);
   }
 
-  const intersectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      const element = entry.target as HTMLElement;
-      const group = elementToGroupMap.get(element);
+  function scheduleGroupUpdate(group: DG.TreeViewGroup) {
+    if (pendingGroups.has(group)) return;
 
-      if (!group) return;
+    pendingGroups.add(group);
+    if (!frameRequested) {
+      frameRequested = true;
+      requestAnimationFrame(() => {
+        pendingGroups.forEach(handleVisibleGroup);
+        pendingGroups.clear();
+        frameRequested = false;
+      });
+    }
+  }
 
-      if (entry.isIntersecting) {
-        visibleNodes.add(group);
-        handleVisibleGroup(group);
-      } else {
-        visibleNodes.delete(group);
-      }
+  function setupIntersectionObserver(
+    viewer: ScaffoldTreeViewer,
+    groupMap: Map<HTMLElement, DG.TreeViewGroup>,
+    visibleSet: Set<DG.TreeViewGroup>,
+    scheduleUpdate: (group: DG.TreeViewGroup) => void
+  ) {
+    return new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const element = entry.target as HTMLElement;
+        const group = groupMap.get(element);
+        if (!group) return;
+
+        if (entry.isIntersecting) {
+          visibleSet.add(group);
+          scheduleUpdate(group);
+        } else {
+          visibleSet.delete(group);
+        }
+      });
+    }, {
+      root: viewer.tree.root,
+      rootMargin: '50px',
+      threshold: 0
     });
-  }, {
-    root: thisViewer.tree.root,
-    rootMargin: '50px',
-    threshold: 0
-  });
+  }
 
-  const resizeObserver = new ResizeObserver((entries) => {
-    if (!thisViewer.resizable && thisViewer.size !== 'large') return;
-    entries.forEach((entry) => {
-      const element = entry.target as HTMLElement;
-      const group = elementToGroupMap.get(element);
+  function setupResizeObserver(
+    viewer: ScaffoldTreeViewer,
+    groupMap: Map<HTMLElement, DG.TreeViewGroup>,
+    visibleSet: Set<DG.TreeViewGroup>
+  ) {
+    let resizeTimeout: number | null = null;
+    const resizedGroups = new Set<DG.TreeViewGroup>();
 
-      if (group && visibleNodes.has(group)) {
-        handleVisibleGroup(group);
-      }
+    return new ResizeObserver((entries) => {
+      if (!viewer.resizable && viewer.size !== 'large') return;
+
+      entries.forEach((entry) => {
+        const element = entry.target as HTMLElement;
+        const group = groupMap.get(element);
+        if (group && visibleSet.has(group)) {
+          resizedGroups.add(group);
+        }
+      });
+
+      if (resizeTimeout !== null) clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(() => {
+        resizedGroups.forEach(scheduleGroupUpdate);
+        resizedGroups.clear();
+        resizeTimeout = null;
+      }, 5);
     });
-  });
-
-  nodes.forEach((group) => {
-    const element = group.root as HTMLElement;
-    intersectionObserver.observe(element);
-    resizeObserver.observe(element);
-  });
-
-  thisViewer.visibleNodes = visibleNodes;
+  }
 }
 
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
@@ -632,6 +690,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   colorColumn: DG.Column | null = null;
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
   _resizeObserverAttached: any;
+  intersectionObserver: IntersectionObserver | undefined;
+  resizeObserver: ResizeObserver | undefined;
 
   constructor() {
     super();
