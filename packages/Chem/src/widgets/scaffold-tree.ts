@@ -526,8 +526,8 @@ function renderMolecule(
     moleculeHeight = Math.min(maxSize.height, Math.max(minSize.height, minSize.height * scaleFactor));
   }
 
-  const canvasW = Math.floor(moleculeWidth * r);
-  const canvasH = Math.floor(moleculeHeight * r);
+  const canvasW = Math.floor(moleculeWidth);
+  const canvasH = Math.floor(moleculeHeight);
   const moleculeHost = ui.canvas(moleculeWidth, moleculeHeight);
   moleculeHost.width = canvasW;
   moleculeHost.height = canvasH;
