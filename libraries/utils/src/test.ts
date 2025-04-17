@@ -493,7 +493,7 @@ export async function runTests(options?: TestExecutionOptions) {
       for (let i = 0; i < t.length; i++) {
         let test = t[i];
         if (options.test)
-          if (options.test.toLowerCase() === test.name.toLowerCase())
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
             continue;
         
         let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
@@ -510,7 +510,7 @@ export async function runTests(options?: TestExecutionOptions) {
           (window as any).gc();
         
         if (testRun)
-          res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
+          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
 
       }
     }
@@ -549,7 +549,7 @@ export async function runTests(options?: TestExecutionOptions) {
           }));
           res.forEach(async (test) => reportTest('package', test));
         } else
-          res = await invokeTestsInCategory(value, options);
+        res = await invokeTestsInCategory(value, options);
         const data = res.filter((d) => d.result != 'skipped');
 
         if (!skipped)
@@ -562,7 +562,7 @@ export async function runTests(options?: TestExecutionOptions) {
           data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
         if (value.beforeStatus)
           data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
-        results.push(...data);
+          results.push(...data);
       }
     } finally {
       resetConsole();
