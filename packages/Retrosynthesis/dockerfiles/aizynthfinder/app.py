@@ -100,8 +100,8 @@ def aizynthfind():
 
     if not smiles or not user_id:
       return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
-    f
-    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, f"{config_name}") if config_name else os.path.join(output_dir, "aizynthcli_data", "config.yml")
+    
+    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, f"{config_name}") if (config_name and config_name != '') else os.path.join(output_dir, "aizynthcli_data", "config.yml")
     if not os.path.exists(config_path):
       return jsonify({"success": False, "error": f"File {config_path} not found"}), 404
 

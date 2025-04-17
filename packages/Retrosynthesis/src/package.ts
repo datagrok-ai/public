@@ -12,6 +12,7 @@ export const _package = new DG.Package();
 
 const STORAGE_NAME = 'retrosynthesis';
 const KEY = 'config';
+const DEFAULT_CONFIG_NAME = 'default';
 
 //name: CalculateRetroSynthesisPaths
 //meta.cache: all
@@ -38,35 +39,6 @@ export async function calculateRetroSynthesisPaths(molecule: string, configName?
 }
 
 
-export async function addUserDefinedConfig(file: DG.FileInfo): Promise<void> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-  const fileContent = await file.readAsString();
-  const currentUser = await grok.dapi.users.current();
-  const userId = currentUser.id;
-
-  console.log(JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}));
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/add_user_config', {
-      method: 'POST',
-      body: JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to add configuration: ${errorText}`);
-    }
-
-    grok.shell.info('Configuration added successfully');
-  } catch (error) {
-    grok.shell.error(`Error adding configuration: ${error}`);
-    throw error;
-  }
-}
-
-
 //name: Chemistry | Retrosynthesis
 //tags: panel, chem, widgets
 //condition: true
@@ -88,19 +60,19 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
   const configName = grok.userSettings.getValue(STORAGE_NAME, KEY);
 
   // Call retrosynthesis function
-  // let result: string;
-  // try {
-  //   result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-  //     {molecule: molecule, configName: configName});
-  // } catch (e: any) {
-  //   return new DG.Widget(ui.divText(e));
-  // }
+  let result: string;
+  try {
+    result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
+      {molecule: molecule, configName: configName ?? ''});
+  } catch (e: any) {
+    return new DG.Widget(ui.divText(e));
+  }
 
   // Parse and process reaction data
   try {
-   // const reactionData: ReactionData = JSON.parse(result);
-   // const paths: Tree[] = reactionData?.data?.[0]?.trees;
-    const paths = SAMPLE_TREE;
+    const reactionData: ReactionData = JSON.parse(result);
+    const paths: Tree[] = reactionData?.data?.[0]?.trees;
+    // const paths = SAMPLE_TREE;
     if (paths.length) {
       const w = new DG.Widget(createPathsTreeTabs(paths, false).root);
       //workaround to make tree visible in undocked panel
@@ -133,7 +105,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
             configChoice = ui.input.choice('Current config', {
               nullable: false,
               value: currentConfig,
-              items: ['default'].concat(userConfigs),
+              items: [DEFAULT_CONFIG_NAME].concat(userConfigs),
             });
             choicesDiv.append(configChoice.root);
           }
@@ -144,8 +116,8 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
           userConfigs = await getUserConfigs();
         let configChoice = ui.input.choice('Current config', {
           nullable: false,
-          value: configName ?? 'default',
-          items: ['default'].concat(userConfigs),
+          value: configName ?? DEFAULT_CONFIG_NAME,
+          items: [DEFAULT_CONFIG_NAME].concat(userConfigs),
         });
         const choicesDiv = ui.div(configChoice.root);
         const settingsDiv = ui.divV([
@@ -155,8 +127,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
         const dlg = ui.dialog('Settings')
           .add(settingsDiv)
           .onOK(() => {
-            if (configFileInput.value)
-              grok.userSettings.add(STORAGE_NAME, KEY, configChoice.value!);
+            grok.userSettings.add(STORAGE_NAME, KEY, configChoice!.value! === DEFAULT_CONFIG_NAME ? '' : configChoice!.value!);
             grok.shell.info(`Current config saved`);
           });
         dlg.root.classList.add('retrosynthesis-settings-dlg');
@@ -211,6 +182,34 @@ export async function getUserConfigs(): Promise<string[]> {
     return configs.configs ?? [];
   } catch (error) {
     grok.shell.error(`Error getting configuration files: ${error}`);
+    throw error;
+  }
+}
+
+export async function addUserDefinedConfig(file: DG.FileInfo): Promise<void> {
+  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
+  const fileContent = await file.readAsString();
+  const currentUser = await grok.dapi.users.current();
+  const userId = currentUser.id;
+
+  console.log(JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}));
+  try {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/add_user_config', {
+      method: 'POST',
+      body: JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to add configuration: ${errorText}`);
+    }
+
+    grok.shell.info('Configuration added successfully');
+  } catch (error) {
+    grok.shell.error(`Error adding configuration: ${error}`);
     throw error;
   }
 }
