@@ -243,6 +243,7 @@
 }
 
 .chem-scaffold-tree-toolbar {
+  min-height: 24px;
   max-height: 24px;
   margin: 0 0 2px 2px;
   visibility: hidden;
