@@ -27,6 +27,7 @@ export enum GRID_SIZE {
   ROW_HEIGHT = 280,
   LOSS_GRAPH_WIDTH = 320,
   GOF_VIEWER_WIDTH = 320,
+  BAR_HEIGHT = 100,
 }
 
 /** UI titles */
@@ -111,13 +112,22 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 * [Parameters optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;
 
-export const DIFF_STUDIO_OUTPUT_IDX = 0;
+export enum INDICES {
+  SINGLE_VAL = 0,
+  SINGLE_CAT = 1,
+  DOUBLE_VAL1 = 0,
+  DOUBLE_VAL2 = 1,
+  DOUBLE_CAT = 2,
+  DIFF_STUDIO_OUTPUT = 0,
+  SCALAR_VALS_COL = 1,
+};
 
 export enum NAME {
   CATEGORY = '__Category__',
   SIZE = '__Size__',
   SIMULATION = 'Simulation',
   TARGET = 'Target',
+  SCALARS = 'Scalars',
 };
 
 export enum SIZE {

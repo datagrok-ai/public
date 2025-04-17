@@ -12,11 +12,11 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  DIFF_STUDIO_OUTPUT_IDX, NAME, LOSS_FUNC_CHART_OPTS, SIZE} from './fitting/constants';
+  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -1236,6 +1236,8 @@ export class FittingView {
       if (this.method === METHOD.NELDER_MEAD) {
         if (this.diffGrok !== undefined) {
           try {
+            const index = INDICES.DIFF_STUDIO_OUTPUT;
+
             optResult = await getFittedParams(
               this.loss,
               this.diffGrok.ivp,
@@ -1246,9 +1248,9 @@ export class FittingView {
               minVals,
               maxVals,
               inputs,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].argName,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].funcColsInput.value,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
+              outputsOfInterest[index].argName,
+              outputsOfInterest[index].funcColsInput.value,
+              outputsOfInterest[index].target as DG.DataFrame,
               this.samplesCount,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
@@ -1351,13 +1353,25 @@ export class FittingView {
 
       for (let idx = 0; idx < rowCount; ++idx) {
         const gofDfs = new Map<string, GoFtable>();
+        const scalarGoFs: GoFtable[] = [];
 
         const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
 
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
-          gofs.forEach((item) => gofDfs.set(item.caption, item));
+          gofs.forEach((item) => {
+            if (item.chart !== DG.VIEWER.BAR_CHART)
+              gofDfs.set(item.caption, item);
+            else
+              scalarGoFs.push(item);
+          });
         });
+
+        if (scalarGoFs.length > 0) {
+          const gof = this.getScalarsGofTable(scalarGoFs);
+          const name = gof.table.columns.length > 2 ? NAME.SCALARS : gof.table.columns.byIndex(0).name;
+          gofDfs.set(name, gof);
+        }
 
         gofTables[idx] = gofDfs;
       }
@@ -1365,6 +1379,7 @@ export class FittingView {
       // Add goodness of fit columns
       gofTables[0].forEach((_, name) => {
         reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
+        tooltips.set(name, 'Goodness of fit');
         const lossFuncGraphGridCol = grid.columns.byName(name);
         lossFuncGraphGridCol!.cellType = 'html';
         lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
@@ -1400,7 +1415,7 @@ export class FittingView {
           if (gof !== undefined) {
             gc.style.element = (gof.chart === DG.VIEWER.SCATTER_PLOT) ?
               gc.cell.value.plot.scatter(gof.opts).root :
-              gc.cell.value.plot.bar(gof.opts).root;
+              getScalarsGoodnessOfFitViewer(gc.cell.value as DG.DataFrame);
           }
         }
       });
@@ -1512,13 +1527,27 @@ export class FittingView {
     return outputsOfInterest;
   } // getOutputsOfInterest
 
+  /** Return a table with scalar output results */
+  private getScalarsGofTable(gofs: GoFtable[]): GoFtable {
+    const cols: DG.Column[] = [];
+    gofs.forEach((gof) => cols.push(gof.table.columns.byIndex(INDICES.SCALAR_VALS_COL)));
+    cols.push(DG.Column.fromStrings(NAME.CATEGORY, [NAME.SIMULATION, NAME.TARGET]));
+
+    return {
+      caption: NAME.SCALARS,
+      table: DG.DataFrame.fromColumns(cols),
+      chart: cols.length > 2 ? DG.VIEWER.RADAR_VIEWER : DG.VIEWER.BAR_CHART,
+      opts: {},
+    };
+  } // getScalarsGofTable
+
   /** Return output goodness of fit (GOF) table */
   private getOutputGofTable(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFtable[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
 
-    // Provide an approprate viewer for each output
+    // Provide an appropriate viewer for each output
     switch (type) {
     // bar chart for each scalar
     case DG.TYPE.FLOAT:
@@ -1528,18 +1557,10 @@ export class FittingView {
         caption: caption,
         chart: DG.VIEWER.BAR_CHART,
         table: DG.DataFrame.fromColumns([
-          DG.Column.fromStrings(caption, [NAME.SIMULATION, NAME.TARGET]),
-          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
+          DG.Column.fromStrings(NAME.SCALARS, [NAME.SIMULATION, NAME.TARGET]),
+          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, caption, [call.getParamValue(name), target]),
         ]),
-        opts: {
-          valueColumnName: TITLE.VALUE,
-          splitColumnName: caption,
-          valueAggrType: DG.AGG.AVG,
-          showValueSelector: false,
-          showCategorySelector: false,
-          showStackSelector: false,
-          showEmptyBars: true,
-        },
+        opts: {},
       }];
 
     // a set of linecharts comparing columns of output dataframe to their targets

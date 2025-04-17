@@ -9,7 +9,7 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {TARGET_DATAFRAME_INFO, TITLE} from './constants';
+import {GRID_SIZE, INDICES, TARGET_DATAFRAME_INFO, TITLE} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -248,6 +248,7 @@ export function getLossFuncDf(extr: Extremum): DG.DataFrame {
   ]);
 }
 
+/** Transform RGB-color to hex number */
 export function rgbToHex(rgbString: string) {
   // Extract the RGB values using a regular expression
   const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -271,6 +272,7 @@ export function rgbToHex(rgbString: string) {
   return `#${hexR}${hexG}${hexB}`;
 }
 
+/** Return RGB-color lightened with respect to the given percentage */
 export function lightenRGB(rgbString: string, percentage: number) {
   // Extract the RGB values using a regular expression
   const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -293,3 +295,85 @@ export function lightenRGB(rgbString: string, percentage: number) {
   // Return the new RGB string
   return `rgb(${newR}, ${newG}, ${newB})`;
 }
+
+/** Return options for single scalar goodness of fit bar chart */
+function getSingleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    stackColumnName: catColName,
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+  };
+}
+
+/** Return options for the first chart of double scalar goodness of fit bar chart */
+function getFirstDoubleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    stackColumnName: catColName,
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    description: valColName,
+    descriptionVisibilityMode: 'Always',
+    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+  };
+}
+
+/** Return options for the second chart of double scalar goodness of fit bar chart */
+function getSecondDoubleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: DG.Color.categoricalPalette.slice(2, 4),
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    description: valColName,
+    descriptionVisibilityMode: 'Always',
+    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+  };
+}
+
+/** Return goodness of fit viewer for scalar targets */
+export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement {
+  const cols = table.columns;
+
+  switch (cols.length) {
+  case 2:
+    return DG.Viewer.barChart(table, getSingleScalarBarChartOpts(
+      cols.byIndex(INDICES.SINGLE_VAL).name,
+      cols.byIndex(INDICES.SINGLE_CAT).name,
+    )).root;
+
+  case 3:
+    const catColName = cols.byIndex(INDICES.DOUBLE_CAT).name;
+
+    const first = DG.Viewer.barChart(table, getFirstDoubleScalarBarChartOpts(
+      cols.byIndex(INDICES.DOUBLE_VAL1).name,
+      catColName,
+    )).root;
+
+    const second = DG.Viewer.barChart(table, getSecondDoubleScalarBarChartOpts(
+      cols.byIndex(INDICES.DOUBLE_VAL2).name,
+      catColName,
+    )).root;
+
+    return ui.splitV([first, second], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+
+  default:
+    return DG.Viewer.grid(table).root;
+  }
+} // getScalarsGoodnessOfFitViewer
