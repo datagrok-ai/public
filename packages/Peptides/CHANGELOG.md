@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.23.3 (2025-04-17)
+
+Selection widget: value retrieving fix
+
 ## 1.23.2 (2025-04-14)
 
 * Manual setting of notation providers to tables
