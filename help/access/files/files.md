@@ -172,6 +172,8 @@ HTML files.
 
 File preview is limited to files under 10MB. The platform won't display larger
 files. Unsupported file formats cannot be previewed, but you can download them.
+File upload is limited to 100MB if no explicit limit is set. Format-specific
+limits also apply: XLSX – 10MB, CSV – ~536MB, XML – 10MB, D42 – 500MB, ZIP – 50MB.
 
 :::
 
