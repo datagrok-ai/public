@@ -1871,14 +1871,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
   }
 
-  changeCanvasSize(molString: any): void {
-    const { chosenColor, colorOn, parentColor, smiles, group } = molString;
-    const color = chosenColor && colorOn ? chosenColor : parentColor;
-    const substr = chosenColor && colorOn ? smiles : this.getParentSmilesIterative(group);
-
-    this.highlightCanvas(group, color, substr);
-  }
-
   toggleTreeGenerationVisibility(): void {
     this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
     const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.Table);
@@ -1973,20 +1965,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
       this._bitOpInput!.value = this.bitOperation;
     } else if (p.name === 'size') {
-      const canvases = this.tree.root.querySelectorAll('.chem-canvas');
-      const molStrings = this.tree.items
-      .filter((item) => !isOrphans(item))
-      .map((item) => ({
-        group: item,
-        smiles: item.value.smiles,
-        parentColor: item.value.parentColor,
-        chosenColor: item.value.chosenColor,
-        colorOn: item.value.colorOn,
-      }));
-
-      for (let i = 0; i < canvases.length; ++i)
-        this.changeCanvasSize(molStrings[i]);
       this.updateSizes();
+      updateVisibleMols(this);
       this.updateUI();
     } else if (p.name === 'allowGenerate') {
       this.toggleTreeGenerationVisibility();
