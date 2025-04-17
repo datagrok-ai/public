@@ -89,6 +89,36 @@ type FittingOutputsStore = {
   funcColsInput: DG.InputBase<DG.Column[]>,
 };
 
+type ValidationInfo = {
+  isValid: boolean,
+  msg: string,
+};
+
+/** Check validness of outputs */
+function getValidation(store: FittingOutputsStore): ValidationInfo {
+  if (store.prop.propertyType !== DG.TYPE.DATA_FRAME)
+    return {isValid: true, msg: ''};
+
+  const argName = store.argName;
+  const funcColsVals = store.funcColsInput.value;
+
+  if ((funcColsVals === null) || (funcColsVals === null)) {
+    return {
+      isValid: false,
+      msg: `Incomplete the "${store.input.caption}" target`,
+    };
+  }
+
+  if (funcColsVals.map((col) => col.name).includes(argName)) {
+    return {
+      isValid: false,
+      msg: `Invalid ${store.input.caption}: functions should not contain argument ('${argName}')`,
+    };
+  }
+
+  return {isValid: true, msg: ''};
+}
+
 export type DiffGrok = {
   ivp: IVP,
   ivpWW: IVP2WebWorker,
@@ -265,6 +295,26 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
+        const validator = (_: string) => {
+          const validation = getValidation(temp);
+
+          if (validation.isValid) {
+            temp.argColInput.input.classList.remove('d4-invalid');
+            temp.funcColsInput.input.classList.remove('d4-invalid');
+            ui.tooltip.bind(temp.argColInput.input, 'Independent variable');
+            ui.tooltip.bind(temp.funcColsInput.input, 'Target dependent variables');
+
+            return null;
+          }
+
+          temp.argColInput.input.classList.add('d4-invalid');
+          temp.funcColsInput.input.classList.add('d4-invalid');
+          ui.tooltip.bind(temp.argColInput.input, validation.msg);
+          ui.tooltip.bind(temp.funcColsInput.input, validation.msg);
+
+          return validation.msg;
+        };
+
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -345,22 +395,17 @@ export class FittingView {
 
             return input;
           })(),
-          argName: '',
+          argName: '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
               value: null,
               items: [null],
               tooltipText: 'Independent variable',
               onValueChanged: (value) => {
-                if (value !== null) {
+                if (value !== null)
                   temp.argName = value;
-
-                  if (temp.funcColsInput.value !== null) {
-                    if (temp.funcColsInput.value.map((col) => col.name).includes(value))
-                      temp.funcColsInput.value = temp.funcColsInput.value.filter((col) => col.name !== value);
-                  }
-                } else
-                  temp.argName = '';
+                else
+                  temp.argName = '_';
 
                 this.updateApplicabilityState();
               },
@@ -372,6 +417,7 @@ export class FittingView {
             infoIcon.classList.add('sa-switch-input');
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
+            input.addValidator(validator);
 
             return input;
           })(),
@@ -381,19 +427,13 @@ export class FittingView {
             const input = ui.input.columns('functions', {
               nullable: false,
               tooltipText: 'Target dependent variables',
-              onValueChanged: (cols) => {
-                if (cols.map((col) => col.name).includes(temp.argName)) {
-                  temp.argColInput.value = null;
-                  temp.argName = '';
-                }
-
-                this.updateApplicabilityState();
-              },
+              onValueChanged: (cols) => this.updateApplicabilityState(),
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             this.toSetSwitched = false;
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
+            input.addValidator(validator);
 
             return input;
           })(),
@@ -761,6 +801,7 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  /** Return value lookup widget */
   private async getLookupElement(inputsLookup?: string) {
     if (inputsLookup === undefined)
       return null;
@@ -1010,6 +1051,13 @@ export class FittingView {
         cur = (val !== null) && (val !== undefined);
 
         if (output.prop.propertyType === DG.TYPE.DATA_FRAME) {
+          const validation = getValidation(output);
+
+          if (!validation.isValid) {
+            this.updateRunIconDisabledTooltip(validation.msg);
+            return false;
+          }
+
           cur &&= (output.funcColsInput.value !== null);
 
           if (cur)
