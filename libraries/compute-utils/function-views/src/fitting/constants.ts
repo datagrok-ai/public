@@ -27,6 +27,7 @@ export enum GRID_SIZE {
   ROW_HEIGHT = 280,
   LOSS_GRAPH_WIDTH = 320,
   GOF_VIEWER_WIDTH = 320,
+  RADAR_WIDTH = 280,
   BAR_HEIGHT = 100,
 }
 
@@ -61,11 +62,11 @@ enum HELP_ITEMS {
   SIMILARITY = '`' + TITLE.SIMILARITY + '`',
 };
 
-/** Progress bar time to sleep */
-export const MS_TO_SLEEP = 10;
-
-/** Styles timeout */
-export const STYLE_TIMEOUT = 3000;
+export enum TIMEOUT {
+  MS_TO_SLEEP = 10,
+  STYLE_TIMEOUT = 3000,
+  RADAR = 200,
+};
 
 /** Fitting UI constants */
 export enum FITTING_UI {
@@ -129,6 +130,8 @@ export enum INDICES {
   LIGHT_OLIVE = 16,
   GREY = 7,
   LIGHT_GREY = 15,
+  BLUE = 0,
+  ORANGE = 1,
 };
 
 export enum NAME {
@@ -137,6 +140,7 @@ export enum NAME {
   SIMULATION = 'Simulation',
   TARGET = 'Target',
   SCALARS = 'Scalars',
+  NULL = 'Null',
 };
 
 export enum SIZE {
@@ -165,3 +169,5 @@ export const LOSS_FUNC_CHART_OPTS = {
   lineColor: 4288600805,
   markerColor: 4288600805,
 };
+
+export const MIN_RADAR_COLS_COUNT = 4;

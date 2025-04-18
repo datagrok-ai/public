@@ -9,7 +9,7 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {GRID_SIZE, HELP_LINK, INDICES, STYLE_TIMEOUT, TARGET_DATAFRAME_INFO, TITLE} from './constants';
+import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -366,8 +366,12 @@ function getSecondDoubleScalarBarChartOpts(valColName: string, catColName: strin
 /** Return goodness of fit viewer for scalar targets */
 export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement {
   const cols = table.columns;
+  const colsCount = cols.length;
 
-  switch (cols.length) {
+  if (colsCount < 2)
+    throw new Error(`Incorrect scalars fit table. Columns: ${colsCount}, expected: > 1`);
+
+  switch (colsCount) {
   case 2:
     return DG.Viewer.barChart(table, getSingleScalarBarChartOpts(
       cols.byIndex(INDICES.SINGLE_VAL).name,
@@ -388,11 +392,22 @@ export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement 
     )).root;
 
     const container = ui.splitV([first, second], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
-    setTimeout(() => container.style.height = '100%', STYLE_TIMEOUT);
+    setTimeout(() => container.style.height = '100%', TIMEOUT.STYLE_TIMEOUT);
 
     return container;
 
   default:
-    return DG.Viewer.grid(table).root;
+    throw new Error('Incorrect columns count in scalar "simulation vs target" table');
   }
 } // getScalarsGoodnessOfFitViewer
+
+/** Return radar tooltip */
+export function getRadarTooltip(): HTMLElement {
+  const colors = DG.Color.categoricalPalette;
+  const simLabel = ui.label(NAME.SIMULATION);
+  simLabel.style.color = rgbToHex(DG.Color.toRgb(colors[INDICES.BLUE]));
+  const targetLabel = ui.label(NAME.TARGET);
+  targetLabel.style.color = rgbToHex(DG.Color.toRgb(colors[INDICES.ORANGE]));
+
+  return ui.divV([simLabel, targetLabel]);
+}

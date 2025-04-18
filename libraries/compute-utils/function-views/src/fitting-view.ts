@@ -12,17 +12,21 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE} from './fitting/constants';
+  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
+  MIN_RADAR_COLS_COUNT,
+  TIMEOUT} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
+import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
+import {color} from 'html2canvas/dist/types/css/types/color';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -1391,6 +1395,9 @@ export class FittingView {
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
+      let toAddRadars = false;
+      gofTables[0].forEach((gof) => toAddRadars ||= (gof.table.columns.length >= MIN_RADAR_COLS_COUNT));
+
       // Add viewers to the grid
       let toReorderCols = true;
 
@@ -1411,9 +1418,23 @@ export class FittingView {
           const gof = gofTables[row].get(gc.gridColumn.name);
 
           if (gof !== undefined) {
-            gc.style.element = (gof.chart === DG.VIEWER.SCATTER_PLOT) ?
-              gc.cell.value.plot.scatter(gof.opts).root :
-              getScalarsGoodnessOfFitViewer(gc.cell.value as DG.DataFrame);
+            if (gof.chart === DG.VIEWER.SCATTER_PLOT)
+              gc.style.element = gc.cell.value.plot.scatter(gof.opts).root;
+            else {
+              if (toAddRadars) {
+                const container = ui.divV([], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+                ui.tooltip.bind(container, () => getRadarTooltip());
+                gc.style.element = container;
+                setTimeout(async () => {
+                  const rViewer = new ScalarsFitRadar(gc.cell.value as DG.DataFrame);
+                  const root = await rViewer.getRoot();
+                  root.style.marginTop = '0px';
+                  root.style.marginLeft = '0px';
+                  container.append(root);
+                }, TIMEOUT.RADAR);
+              } else
+                gc.style.element = getScalarsGoodnessOfFitViewer(gc.cell.value as DG.DataFrame);
+            }
           }
         }
       });
@@ -1428,8 +1449,14 @@ export class FittingView {
           const cellCol = cell.tableColumn;
           if (cellCol) {
             const name = cell.tableColumn.name;
-            const msg = tooltips.get(name);
-            ui.tooltip.show(msg ?? '', x, y);
+
+            if ((name === NAME.SCALARS) && toAddRadars)
+              ui.tooltip.show(getRadarTooltip(), x, y);
+            else {
+              const msg = tooltips.get(name);
+              ui.tooltip.show(msg ?? '', x, y);
+            }
+
             return true;
           }
         }
