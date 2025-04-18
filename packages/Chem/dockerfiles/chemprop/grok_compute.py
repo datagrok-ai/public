@@ -9,10 +9,12 @@ import json
 import os
 import pandas as pd
 import hashlib
+import torch
 
 from modeling import get_all_engines, get_engine_by_type
 from chemprop import ChemProp
 from settings import Settings
+from lightning.pytorch.accelerators import find_usable_cuda_devices
 
 app = Flask('grok_compute')
 CORS(app)
@@ -27,6 +29,14 @@ bp = Blueprint('grok_compute', __name__)
 headers_text = {'Content-Type': 'text/plain'}
 headers_app_json = {'Content-Type': 'application/json'}
 headers_app_octet_stream = {'Content-Type': 'application/octet-stream'}
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+app.logger.debug('Check GPU availability')
+app.logger.debug(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    app.logger.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
+else:
+    app.logger.debug("No usable CUDA devices found. Using CPU.")
 
 @bp.route('/modeling/engines', methods=['GET'])
 def modeling_engines():
