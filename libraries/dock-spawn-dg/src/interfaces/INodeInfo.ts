@@ -1,5 +1,5 @@
-import { ContainerType } from "../ContainerType.js";
-import { IState } from "./IState.js";
+import { ContainerType } from "../ContainerType";
+import { IState } from "./IState";
 
 export interface INodeInfo {
     containerType: ContainerType;

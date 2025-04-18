@@ -8,5 +8,5 @@ envsubst '${RESOLVER_ADDR}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.
 
 
 nginx -g 'daemon off;' & exec /home/grok/entrypoint.sh \
-    --main "jupyter notebook --debug --config=/home/grok/jupyter_notebook_config.py" \
+    --main "jupyter notebook --debug --config=/home/grok/.jupyter/jupyter_notebook_config.py" \
     --helper "gunicorn grok_helper:app --timeout 900 --chdir ${GROK_HELPER_DIR} -b 0.0.0.0:5005 --access-logfile - --error-logfile - --workers 2 --threads=4 --worker-class=gthread" "$@"

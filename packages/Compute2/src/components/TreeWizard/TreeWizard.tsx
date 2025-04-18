@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
-  StepFunCallState,
+  PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
@@ -27,25 +27,9 @@ import {
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
-import {DBSchema} from 'idb';
-import {useLayoutDb} from '../../composables/use-layout-db';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 const DEVELOPERS_GROUP = 'Developers';
-
-type PanelsState = {
-  inspectorHidden: boolean,
-  treeHidden: boolean,
-  layout: string,
-};
-
-const STORE_NAME = 'TreeWizardLayouts';
-
-interface TreeWizardSchema extends DBSchema {
-  [STORE_NAME]: {
-    key: string;
-    value: PanelsState;
-  };
-}
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -64,10 +48,8 @@ export const TreeWizard = Vue.defineComponent({
     },
   },
   setup(props) {
-    const {layoutDatabase} = useLayoutDb<TreeWizardSchema>();
-
-    Vue.onBeforeUnmount(() => {
-      savePersonalState(providerFunc.value);
+    Vue.onRenderTriggered((event) => {
+      console.log('TreeWizard onRenderTriggered', event);
     });
 
     const {
@@ -92,8 +74,19 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
-      changeFuncCall
+      changeFuncCall,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
+
+    const chosenStepUuid = Vue.ref<string | undefined>();
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
+    const modelName = Vue.computed(() => props.modelName);
+    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
+    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
+
+    ////
+    // actions
+    ////
 
     const runActionWithConfirmation = (uuid: string) => {
       const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
@@ -114,8 +107,6 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const chosenStepUuid = Vue.ref<string | undefined>();
-
     const goNextStep = () => {
       if (chosenStepUuid.value == null || treeState.value == null)
         return;
@@ -123,304 +114,6 @@ export const TreeWizard = Vue.defineComponent({
       if (nextData)
         chosenStepUuid.value = nextData.state.uuid;
     };
-
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
-
-    const setViewName = (name: string = '') => {
-      if (props.view)
-        props.view.name = name;
-    };
-
-    const setViewPath = (path: string = '') => {
-      if (props.view)
-        props.view.path = path;
-    };
-
-    const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
-
-    Vue.watch(searchParams, (params) => {
-      const paramsRaw = [];
-      if (params.currentStep)
-        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
-      if (params.id)
-        paramsRaw.push(`id=${params.id}`);
-      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
-    });
-
-    const isLoading = Vue.ref(false);
-
-    const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
-      if (prevPanel === 'Steps') return;
-
-      if (prevPanel === 'Step review')
-        rfvRef.value?.savePersonalState();
-
-      if (newPanel === 'Step review') {
-        isLoading.value = true;
-        await Vue.nextTick();
-        setTimeout(() => {
-          rfvRef.value?.loadPersonalLayout();
-          isLoading.value = false;
-        }, 50);
-      }
-    };
-
-    const dockInited = Vue.ref(false);
-    const triggerSaveDefault = Vue.ref(false);
-    Vue.watch(triggerSaveDefault, async () => {
-      await saveDefaultState();
-      await loadPersonalLayout();
-    }, {flush: 'post'});
-
-    const handleDockInit = async () => {
-      dockInited.value = true;
-      triggerSaveDefault.value = !triggerSaveDefault.value;
-    };
-
-    const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
-
-    const personalPanelsStorage = (func: DG.Func) => `${func.nqName}_personal_state`;
-    const defaultPanelsStorage = (func: DG.Func) => `${func.nqName}_default_state`;
-
-    const getCurrentState = () => {
-      const layout = dockRef?.value?.getLayout();
-      if (!layout) return null;
-
-      return {
-        inspectorHidden: inspectorHidden.value,
-        treeHidden: treeHidden.value,
-        layout,
-      };
-    };
-
-    const getSavedPersonalState = async (func: DG.Func): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(func));
-
-      return item ?? null;
-    };
-
-    const getSavedDefaultState = async (func: DG.Func): Promise<PanelsState | null> => {
-      const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(func));
-
-      return item ?? null;
-    };
-
-    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
-
-    const saveDefaultState = async (func: DG.Func = providerFunc.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
-    };
-
-    const savePersonalState = async (func: DG.Func = providerFunc.value) => {
-      if (!dockInited.value) return;
-
-      const state = getCurrentState();
-      if (state) await layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
-    };
-
-    const removeSavedPersonalState = async () => {
-      await layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
-
-      await loadDefaultLayout();
-    };
-
-    const loadPersonalLayout = async () => {
-      const personalState = await getSavedPersonalState(providerFunc.value);
-      if (!dockRef.value || !personalState || !dockInited.value) return;
-
-      inspectorHidden.value = personalState.inspectorHidden;
-      treeHidden.value = personalState.treeHidden;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(personalState.layout);
-    };
-
-    const loadDefaultLayout = async () => {
-      const defaultState = await getSavedDefaultState(providerFunc.value);
-      if (!dockRef.value || !defaultState || !dockInited.value) return;
-
-      inspectorHidden.value = defaultState.inspectorHidden;
-      treeHidden.value = defaultState.treeHidden;
-
-      await Vue.nextTick();
-
-      await dockRef.value.useLayout(defaultState.layout);
-    };
-
-    const modelName = Vue.computed(() => props.modelName);
-    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
-      if (!metadata || hasNotSavedEdits) {
-        searchParams.id = undefined;
-        setViewName(modelName.value);
-        return;
-      }
-
-      const {id, title, started} = metadata;
-      if (id) searchParams.id = id;
-      if (title) setViewName(`${modelName.value} - ${title}`);
-      else if (started) setViewName(`${modelName.value} - ${started}`);
-      else setViewName(modelName.value);
-    });
-
-    let pendingStepPath: string | null = null;
-
-    Vue.watch(treeState, (treeState) => {
-      if (!treeState)
-        return;
-
-      if (pendingStepPath) {
-        const nodeWithPath = findTreeNodeByPath(
-          pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
-          treeState,
-        );
-        pendingStepPath = null;
-        if (nodeWithPath?.state) {
-          chosenStepUuid.value = nodeWithPath.state.uuid;
-          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
-          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
-        }
-        return;
-      }
-
-      if (globalThis.initialURLHandled)
-        return;
-
-      // Getting inital URL user entered with
-      const startUrl = new URL(grok.shell.startUri);
-      const loadingId = startUrl.searchParams.get('id');
-      if (loadingId) {
-        globalThis.initialURLHandled = true;
-        pendingStepPath = startUrl.searchParams.get('currentStep');
-        loadPipeline(loadingId);
-      }
-    }, {immediate: true});
-
-    const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
-        return null;
-
-      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
-    });
-
-    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
-
-    Vue.watch(chosenStep, (newStep) => {
-      if (newStep)
-        searchParams.currentStep = newStep.pathSegments.join(' ');
-      else
-        searchParams.currentStep = undefined;
-    }, {immediate: true});
-
-    const isRootChoosen = Vue.computed(() => {
-      return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
-    });
-
-    const menuActions = Vue.computed(() => {
-      return chosenStepState.value?.actions?.reduce((acc, action) => {
-        const menuCategory = action.menuCategory ?? 'Actions';
-        if (action.position === 'menu') {
-          if (acc[menuCategory])
-            acc[menuCategory].push(action);
-          else
-            acc[menuCategory] = [action];
-        }
-        return acc;
-      }, {} as Record<string, ViewAction[]>);
-    });
-
-    const buttonActions = Vue.computed(() => {
-      return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'buttons')
-          acc.push(action);
-
-        return acc;
-      }, [] as ViewAction[]);
-    });
-
-
-    const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
-
-    let oldClosed = new Set<string>();
-
-    Vue.watch(treeState, (_nextState, oldState) => {
-      if (oldState && treeInstance.value) {
-        const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
-        oldClosed = oldStats.reduce((acc, stat) => {
-          if (!stat.open)
-            acc.add(stat.data.uuid);
-          return acc;
-        }, new Set<string>());
-      }
-    }, {immediate: true});
-
-    const restoreOpenedNodes = (stat: AugmentedStat) => {
-      if (oldClosed.has(stat.data.uuid))
-        stat.open = false;
-      return stat;
-    };
-
-    const isTreeReportable = Vue.computed(() => {
-      return Object.values(states.calls)
-        .map((state) => state?.isOutputOutdated)
-        .every((isOutdated) => isOutdated === false);
-    });
-
-    const treeHidden = Vue.ref(false);
-    const inspectorHidden = Vue.ref(true);
-    const rfvHidden = Vue.ref(true);
-    const pipelineViewHidden = Vue.ref(true);
-    const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
-    const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
-    const pipelineViewRef = Vue.ref(null as InstanceType<typeof PipelineView> | null);
-
-    const handlePanelClose = (el: HTMLElement) => {
-      if (el === treeInstance.value?.$el) treeHidden.value = true;
-      if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
-      if (el === rfvRef.value?.$el) rfvHidden.value = true;
-      if (el === pipelineViewRef.value?.$el) pipelineViewHidden.value = true;
-    };
-
-    const isEachDraggable = (stat: AugmentedStat) => {
-      return (stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-      ) ?? false;
-    };
-
-    const isEachDroppable = (stat: AugmentedStat) => {
-      const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
-      return (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data)) &&
-        (!draggedStep || stat.data.uuid === draggedStep.parent?.data.uuid);
-    };
-
-    const onAfterDrop = () => {
-      const draggedStep = dragContext.startInfo?.dragNode as AugmentedStat | undefined;
-      if (draggedStep) {
-        const oldIndex = dragContext.startInfo.indexBeforeDrop;
-        const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
-          dragContext.targetInfo.indexBeforeDrop - 1:
-          dragContext.targetInfo.indexBeforeDrop;
-        if (oldIndex !== newIndex)
-          moveStep(draggedStep.data.uuid, newIndex);
-      }
-    };
-
-    const isDeletable = (stat: AugmentedStat) => {
-      return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data));
-    };
-
-    const isUserDeveloper = Vue.ref(false);
-    Vue.onMounted(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-
-      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP))
-        isUserDeveloper.value = true;
-    });
 
     const saveSubTreeState = (uuid: string) => {
       const chosenStepDesc = states.descriptions[uuid];
@@ -470,10 +163,233 @@ export const TreeWizard = Vue.defineComponent({
 
     const onFuncCallChange = (call: DG.FuncCall) => {
       if (chosenStepUuid.value)
-        changeFuncCall(chosenStepUuid.value, call)
-    }
+        changeFuncCall(chosenStepUuid.value, call);
+    };
 
-    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
+    ////
+    // DockManager related
+    ////
+
+    const treeHidden = Vue.ref(false);
+    const inspectorHidden = Vue.ref(true);
+    const rfvHidden = Vue.ref(true);
+    const pipelineViewHidden = Vue.ref(true);
+    const treeInstance = Vue.shallowRef(null as InstanceType<typeof Draggable> | null);
+    const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
+    const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
+    const pipelineViewRef = Vue.ref(null as InstanceType<typeof PipelineView> | null);
+
+    const handlePanelClose = (el: HTMLElement) => {
+      if (el === treeInstance.value?.$el) treeHidden.value = true;
+      if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
+      if (el === rfvRef.value?.$el) rfvHidden.value = true;
+      if (el === pipelineViewRef.value?.$el) pipelineViewHidden.value = true;
+    };
+
+    ////
+    // routing/view integration
+    ////
+
+    const setViewName = (name: string = '') => {
+      if (props.view)
+        props.view.name = name;
+    };
+
+    const setViewPath = (path: string = '') => {
+      if (props.view)
+        props.view.path = path;
+    };
+
+    Vue.watch(searchParams, (params) => {
+      const paramsRaw = [];
+      if (params.currentStep)
+        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
+      if (params.id)
+        paramsRaw.push(`id=${params.id}`);
+      setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
+    });
+
+    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+      if (!metadata || hasNotSavedEdits) {
+        searchParams.id = undefined;
+        setViewName(modelName.value);
+        return;
+      }
+
+      const {id, title, started} = metadata;
+      if (id) searchParams.id = id;
+      if (title) setViewName(`${modelName.value} - ${title}`);
+      else if (started) setViewName(`${modelName.value} - ${started}`);
+      else setViewName(modelName.value);
+    });
+
+    let pendingStepPath: string | null = null;
+
+    const processPendingStepPath = (treeState: PipelineState) => {
+      if (pendingStepPath) {
+        const nodeWithPath = findTreeNodeByPath(
+          pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
+          treeState,
+        );
+        pendingStepPath = null;
+        if (nodeWithPath?.state) {
+          chosenStepUuid.value = nodeWithPath.state.uuid;
+          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
+          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
+        }
+      }
+    };
+
+    Vue.watch(treeState, (treeState) => {
+      if (!treeState)
+        return;
+
+      if (pendingStepPath) {
+        processPendingStepPath(treeState);
+        return;
+      }
+
+      if (globalThis.initialURLHandled)
+        return;
+
+      // Getting inital URL user entered with
+      const startUrl = new URL(grok.shell.startUri);
+      globalThis.initialURLHandled = true;
+
+      const loadingId = startUrl.searchParams.get('id');
+      pendingStepPath = startUrl.searchParams.get('currentStep');
+      if (loadingId)
+        loadPipeline(loadingId);
+      else if (pendingStepPath)
+        processPendingStepPath(treeState);
+    }, {immediate: true});
+
+    const chosenStep = Vue.computed(() => {
+      if (!treeState.value)
+        return null;
+
+      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
+    });
+
+    Vue.watch(chosenStep, (newStep) => {
+      if (newStep)
+        searchParams.currentStep = newStep.pathSegments.join(' ');
+      else
+        searchParams.currentStep = undefined;
+    }, {immediate: true});
+
+    ////
+    // chosen step state
+    ////
+
+    const exports = Vue.computed(() => {
+      if (!treeState.value || isFuncCallState(treeState.value))
+        return [];
+      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+    });
+
+    const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    const isRootChoosen = Vue.computed(() => {
+      return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
+    });
+
+    const menuActions = Vue.computed(() => {
+      return chosenStepState.value?.actions?.reduce((acc, action) => {
+        const menuCategory = action.menuCategory ?? 'Actions';
+        if (action.position === 'menu') {
+          if (acc[menuCategory])
+            acc[menuCategory].push(action);
+          else
+            acc[menuCategory] = [action];
+        }
+        return acc;
+      }, {} as Record<string, ViewAction[]>);
+    });
+
+    const buttonActions = Vue.computed(() => {
+      return chosenStepState.value?.actions?.reduce((acc, action) => {
+        if (action.position === 'buttons')
+          acc.push(action);
+
+        return acc;
+      }, [] as ViewAction[]);
+    });
+
+    ////
+    // Navigation tree related
+    ////
+
+    let oldClosed = new Set<string>();
+
+    Vue.watch(treeState, (_nextState, oldState) => {
+      if (oldState && treeInstance.value) {
+        const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
+        oldClosed = oldStats.reduce((acc, stat) => {
+          if (!stat.open)
+            acc.add(stat.data.uuid);
+          return acc;
+        }, new Set<string>());
+      }
+    }, {immediate: true});
+
+    const restoreOpenedNodes = (stat: AugmentedStat) => {
+      if (oldClosed.has(stat.data.uuid))
+        stat.open = false;
+      return stat;
+    };
+
+    const isTreeReportable = Vue.computed(() => {
+      return Object.values(states.calls)
+        .map((state) => state?.isOutputOutdated)
+        .every((isOutdated) => isOutdated === false);
+    });
+
+    const isEachDraggable = (stat: AugmentedStat) => {
+      return (stat.parent && !stat.parent.data.isReadonly &&
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
+      ) ?? false;
+    };
+
+    const isEachDroppable = (stat: AugmentedStat) => {
+      const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
+      return (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data)) &&
+        (!draggedStep || stat.data.uuid === draggedStep.parent?.data.uuid);
+    };
+
+    const onAfterDrop = () => {
+      const draggedStep = dragContext.startInfo?.dragNode as AugmentedStat | undefined;
+      if (draggedStep) {
+        const oldIndex = dragContext.startInfo.indexBeforeDrop;
+        const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
+          dragContext.targetInfo.indexBeforeDrop - 1:
+          dragContext.targetInfo.indexBeforeDrop;
+        if (oldIndex !== newIndex)
+          moveStep(draggedStep.data.uuid, newIndex);
+      }
+    };
+
+    const isDeletable = (stat: AugmentedStat) => {
+      return !!stat.parent && !stat.parent.data.isReadonly &&
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data));
+    };
+
+    ////
+    // additional
+    ////
+
+    const isUserDeveloper = Vue.ref(false);
+    Vue.onMounted(async () => {
+      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
+      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+
+      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP))
+        isUserDeveloper.value = true;
+    });
+
+    ////
+    // render
+    ////
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -510,18 +426,23 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={saveEntireModelState}
           /> }
-          {isTreeReady.value && isTreeReportable.value && <IconFA
-            name='arrow-to-bottom'
-            tooltip='Report all steps'
-            onClick={async () => reportStep(treeState.value) }
-          /> }
         </RibbonPanel>
-        {treeState.value &&
+        {isTreeReady.value && isTreeReportable.value &&
+          <RibbonMenu groupName='Export' view={currentView.value}>
+            {
+              exports.value.map(({name, handler}) =>
+                <span onClick={() => (treeState.value)
+                  ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
+                  : null}>
+                  <div> {name} </div>
+                </span>,
+              )
+            }
+          </RibbonMenu>
+        }
         <DockManager class='block h-full'
-          ref={dockRef}
-          onInitFinished={handleDockInit}
+          key={providerFunc.value.id}
           onPanelClosed={handlePanelClose}
-          onUpdate:activePanelTitle={handleActivePanelChanged}
         >
           { !inspectorHidden.value &&
             <Inspector
@@ -598,17 +519,17 @@ export const TreeWizard = Vue.defineComponent({
               </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null
           }
           {
-            !rfvHidden.value && chosenStepState.value &&
+            !rfvHidden.value && chosenStepState.value && chosenStepUuid.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
-                class={{'overflow-hidden': true, 'pseudo_hidden': isLoading.value}}
-                funcCall={chosenStepState.value.funcCall!}
+                class={{'overflow-hidden': true}}
+                funcCall={chosenStepState.value.funcCall}
                 uuid={chosenStepUuid.value!}
-                callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
-                callMeta={chosenStepUuid.value ? states.meta[chosenStepUuid.value] : undefined}
+                callState={states.calls[chosenStepUuid.value]}
+                callMeta={states.meta[chosenStepUuid.value]}
                 viewersHook={chosenStepState.value.viewersHook}
-                validationStates={states.validations[chosenStepState.value.uuid]}
-                consistencyStates={states.consistency[chosenStepState.value.uuid]}
+                validationStates={states.validations[chosenStepUuid.value]}
+                consistencyStates={states.consistency[chosenStepUuid.value]}
                 menuActions={menuActions.value}
                 buttonActions={buttonActions.value}
                 isReadonly={chosenStepState.value.isReadonly}
@@ -626,11 +547,14 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            !pipelineViewHidden.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
+            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&  !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={chosenStepState.value.provider ? DG.Func.byName(chosenStepState.value.nqName!).prepare() : undefined}
+              funcCall={(chosenStepState.value.provider && chosenStepState.value.nqName) ?
+                DG.Func.byName(chosenStepState.value.nqName!).prepare() :
+                undefined
+              }
               state={chosenStepState.value}
-              uuid={chosenStepUuid.value!}
+              uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
               menuActions={menuActions.value}
               buttonActions={buttonActions.value}
@@ -639,13 +563,14 @@ export const TreeWizard = Vue.defineComponent({
               onProceedClicked={onPipelineProceed}
               onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
-                addStep(chosenStepState.value!.uuid, itemId, position);
+                if (chosenStepUuid.value)
+                  addStep(chosenStepUuid.value, itemId, position);
               }}
               ref={pipelineViewRef}
               view={currentView.value}
             />
           }
-        </DockManager> }
+        </DockManager>
       </div>, [[ifOverlapping, isGlobalLocked.value]])
     );
   },

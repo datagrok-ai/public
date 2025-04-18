@@ -51,6 +51,13 @@ RUN pip install Flask
 
 RUN pip install futures
 
+RUN mamba install -n base -c conda-forge awscli -y && \
+    mamba run -n base aws s3 cp s3://datagrok-data/autodock /app --no-sign-request --recursive --region us-east-2 && \
+    find /app -name '*.zip' -exec unzip -o {} -d /app \; && \
+    rm -rf /app/*.zip && \
+    mamba remove -n base awscli -y && \
+    mamba clean -afy
+
 COPY autodock.py /app/autodock.py
 
 EXPOSE 8000

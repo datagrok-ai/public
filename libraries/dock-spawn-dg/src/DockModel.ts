@@ -1,5 +1,5 @@
-import { DockNode } from "./DockNode.js";
-import { Dialog } from "./Dialog.js";
+import { DockNode } from "./DockNode";
+import { Dialog } from "./Dialog";
 
 export class DockModel {
     rootNode: DockNode;

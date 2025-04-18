@@ -294,7 +294,7 @@ discoverable. [Model browser](#model-browser) makes heavy use of this feature.
 
 Tags and parameters could either be edited manually in the model's [Context Panel](../datagrok/navigation/panels/panels.md#context-panel), or specified along with the model
 body. Here is the corresponding section from the Lotka-Volterra model
-(full code [here](https://github.com/datagrok-ai/public/blob/master/packages/Compute/scripts/Lotka-Volterra.js)):
+(full code [here](https://github.com/datagrok-ai/public/blob/master/packages/Compute/scripts/lotka-volterra.js)):
 
 ```js
 //name: Lotka-Volterra

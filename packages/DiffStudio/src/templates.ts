@@ -48,7 +48,6 @@ const TEMPLATE_ADVANCED = `#name: Advanced
 
 /** Extended template illustrating extended features: the use of annotations */
 const TEMPLATE_EXTENDED = `#name: Extended
-#tags: model
 #description: 2D ordinary differential equations system sample
 #comment:
   This is an extended template. It has additional scripting annotations.

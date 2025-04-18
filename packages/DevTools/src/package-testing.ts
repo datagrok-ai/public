@@ -384,11 +384,6 @@ export class TestManager extends DG.ViewBase {
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
-        .item('Profile', async () => {
-          DG.Test.isProfiling = true;
-          await this.runAllTests(node, tests, nodeType);
-          DG.Test.isProfiling = false;
-        })
         .item('Copy', async () => {
           navigator.clipboard.writeText(node.captionLabel.innerText.trim());
         })
@@ -404,6 +399,11 @@ export class TestManager extends DG.ViewBase {
         menu.item('Run force', async () => {
           this.runAllTests(node, tests, nodeType, true);
         }, 1);
+        menu.item('Profile', async () => {
+          DG.Test.isProfiling = true;
+          await this.runAllTests(node, tests, nodeType);
+          DG.Test.isProfiling = false;
+        })
       }
       menu.show();
       e.preventDefault();
@@ -494,13 +494,15 @@ export class TestManager extends DG.ViewBase {
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
       this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+      this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
-      if (res.col('package') == null || this.verboseCheckBox.value)
-        this.addPackageInfo(res, t.packageName);
-      if (!this.verboseCheckBox.value)
-        this.removeTestRow(t.packageName, t.test.category, t.test.name);
+      // if (res.col('package') == null || this.verboseCheckBox.value)
+      this.addPackageInfo(res, t.packageName);
+      // if (!this.verboseCheckBox.value)
+      // this.removeTestRow(t.packageName, t.test.category, t.test.name);
       res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
+      res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
@@ -642,7 +644,7 @@ export class TestManager extends DG.ViewBase {
     const obj = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType),
       nodeType, false, unhandled, isAggrTest);
     const grid = obj.info;
-    const resultPanel = ui.divV([this.verboseCheckBox, grid]);
+    const resultPanel = ui.divV([grid]);
     const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), { style: { userSelect: 'text' } }), true);
     const res = acc.addPane('Results', () => ui.div(resultPanel, { style: { width: '100%' } }), true);
@@ -745,46 +747,17 @@ export class TestManager extends DG.ViewBase {
         }) + "." + currentDate.getMilliseconds().toString().padStart(3, "0");
         testInfo.rows.addNew([formattedDate, false, 'unhandled', 0, false, '', '', testInfo.get('package', 0), '']);
       }
-      if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
-        return { info, testInfo };
-      if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
-        const cat = testInfo.get('category', 0);
-        if (isAggrTest) {
-          const grid = DG.DataFrame.fromCsv(testInfo.get('result', 0)).plot.grid().root;
-          grid.style.width = 'inherit';
-          grid.style.maxWidth = null;
-          info = ui.div(grid, { style: { width: '100%' } });
-          return { info, testInfo };
-        }
-        const time = testInfo.get('ms', 0);
-        const result = testInfo.get('result', 0);
-        const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
-        info = ui.divV([
-          ui.divText(result, {
-            style: {
-              color: testInfo.get('skipped', 0) ?
-                'var(--orange-2)' : resColor, userSelect: 'text'
-            }
-          }),
-          ui.divText(`Time, ms: ${time}`),
-        ]);
-        if (nodeType !== NODE_TYPE.TEST)
-          info.appendChild(ui.divText(`Test: ${testInfo.get('name', 0)}`));
-        if (nodeType === NODE_TYPE.PACKAGE)
-          info.appendChild(ui.divText(`Category: ${cat}`));
-      }
-      else {
-        if (!isTooltip) {
-          const resStr = ui.div();
-          resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\
+      if (!isTooltip) {
+        const resStr = ui.div();
+        resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\
           <span>${results.filter((b) => !b).length} failed</span> <span>${skipped} skipped</span>`;
-          const res = ui.divH([resStr, ui.button('Add to workspace', () => {
-            grok.shell.addTableView(testInfo);
-          })]);
-          res.classList.add('dt-res-string');
-          info = ui.divV([res, testInfo.plot.grid().root]);
-        } else return null;
-      }
+        const res = ui.divH([resStr, ui.button('Add to workspace', () => {
+          grok.shell.addTableView(testInfo);
+        })]);
+        res.classList.add('dt-res-string');
+        info = ui.divV([res, testInfo.plot.grid().root]);
+      } else return null;
+
     }
     return { info, testInfo };
   };

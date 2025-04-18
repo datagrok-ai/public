@@ -326,7 +326,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
-[compute virtual machine](../under-the-hood/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`, runs
+compute virtual machine, whereas the second, `CountSubsequenceJS`, runs
 directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and
 fetches back the result to the browser.
 
@@ -706,12 +706,6 @@ Viewers | Add Scripting Viewer`.
            newly created column
    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
 
-   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)).
-   Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package. Write a test that creates two dataframes
-   with the columns with dna_nucleotide semantic type, appends the dataframes and calculates the `Counts` column. The test
-   should check the existence of the appended columns and the `Counts` column, as well as its values. After the test is written,
-   run it to make sure it fails.
-
 3. Add a function to the package as follows:
 
    ```javascript
@@ -725,19 +719,44 @@ Viewers | Add Scripting Viewer`.
 
 4. Implement the `fuzzyJoin` function.
 
-5. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
+5. Implement test for `fuzzyJoin` function:
+
+   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)). 
+   Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package and add import to package-test file. 
+
+   To create test in `fuzzy-join-test.ts` import `test` and `category` functions from `library/utils` to the file. You can use these functions to implement basic test:
+
+   ```javascript
+   import {category, test} from '@datagrok-libraries/utils/src/test';
+   import * as grok from 'datagrok-api/grok';
+   import * as ui from 'datagrok-api/ui';
+   import * as DG from 'datagrok-api/dg';
+
+   category('Category Name', () => {
+   test('Test Name', async () => {
+      //Test's content
+   });
+   })
+   ```
+   Write a test that creates two dataframes with the columns with dna_nucleotide semantic type, use `fuzzyJoin` function tyo join dataframes. 
+   After getting result  appends the dataframes and calculates the `Counts` column. The test should check the existence of the appended columns.
+
+6. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
    on the Datagrok server, in this one we locally build the package before sending it. In addition, webpack output helps
    find some syntactic errors in JavaScript.
-6. Launch the platform and run the test to check if you implemented the function correctly. If the test fails, fix the
+   
+7. Launch the platform and run the test to check if you implemented the function correctly by [Test Manager](../../develop/dev-process/tools/test-manager.md). If the test fails, fix the
    function and run the test again until it passes.
-7. After the test passes, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
+
+8. After the test passes, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
    package's `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
 
    ![exercises-transforming-dataframes](exercises-transforming-dataframes.png).
 
 If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
 of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
-8. Read more about joining dataframes through the case reviewed at our
+
+9. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables).
 
@@ -969,6 +988,9 @@ dialog-based function which forms such files automatically by a given search inp
 
 5. (*) You may notice the sequences you get in this order are not too different. Add more diversity to these tables. For
    example, you can use the `offset` parameter of the `GET` query.
+
+## Exercise 11: Test Implementation 
+
 
 <!---
 Search for a keyword to form a table with limits

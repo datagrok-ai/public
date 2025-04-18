@@ -1,5 +1,22 @@
 # compute-utils changelog
 
+## 1.43.1 (2025-04-14)
+
+- Fitting, Sensitivity Analysis: Fixed precision of the values lookup feature
+
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
+## 1.42.1 (2025-04-10)
+
+Updated the Fitting feature:
+
+- Added progress bar;
+- Target columns selection
+- The hide similar curves feature
+- Navigation for users
+
 ## 1.41.3 (2025-03-07)
 
 - FittingView: Diff Studio models: Updated input vector computation

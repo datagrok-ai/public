@@ -79,6 +79,8 @@ export class Test {
       return new Promise(async (resolve, reject) => {
         let result = '';
         try {
+          if (DG.Test.isInDebug)
+            debugger;
           result = await test();
         } catch (e: any) {
           reject(e);
@@ -453,7 +455,7 @@ export async function runTests(options?: TestExecutionOptions) {
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
     const res = [];
-    const memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+    let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = DG.Widget.getAll().length;
 
     if (category.clear) {
@@ -467,50 +469,49 @@ export async function runTests(options?: TestExecutionOptions) {
           }
         }
         let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
+            continue;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if (DG.Test.isInDebug)
-          debugger;
-        if ((window as any).gc)
+        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        if (isGBEnable)
           (window as any).gc();
-        if (DG.Test.isProfiling)
-          console.profile(`${test.category}: ${test.name}`);
+        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
-        if ((window as any).gc)
+
+        if (isGBEnable)
           (window as any).gc();
         if (testRun)
           res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: DG.Widget.getAll().length - widgetsBefore });
-        if (DG.Test.isProfiling)
-          console.profileEnd(`${test.category}: ${test.name}`);
+
         grok.shell.closeAll();
         DG.Balloon.closeAll();
-
-        if (DG.Test.isProfiling)
-          grok.shell.info(`${test.category}: ${test.name} finished \n You can find results in DevTools (F12) / Performance panel`);
       }
     } else {
       for (let i = 0; i < t.length; i++) {
         let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
+            continue;
+        
+        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        if (DG.Test.isInDebug)
-          debugger;
-        if ((window as any).gc)
-          (window as any).gc();
-        if (DG.Test.isProfiling)
-          console.profile(`${test.category}: ${test.name}`);
-        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
-        if ((window as any).gc)
-          (window as any).gc();
-        if (testRun)
-          res.push({ ...testRun, memoryUsed: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
 
-        if (DG.Test.isProfiling) {
-          console.profileEnd(`${test.category}: ${test.name}`);
-          grok.shell.info(`${test.category}: ${test.name} finished \n You can find results in DevTools (F12) / Performance panel`);
-        }
+        if (isGBEnable)
+          (window as any).gc();
+        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
+        
+        if (isGBEnable)
+          (window as any).gc();
+        
+        if (testRun)
+          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
+
       }
     }
     return res;
@@ -548,7 +549,7 @@ export async function runTests(options?: TestExecutionOptions) {
           }));
           res.forEach(async (test) => reportTest('package', test));
         } else
-          res = await invokeTestsInCategory(value, options);
+        res = await invokeTestsInCategory(value, options);
         const data = res.filter((d) => d.result != 'skipped');
 
         if (!skipped)
@@ -561,7 +562,7 @@ export async function runTests(options?: TestExecutionOptions) {
           data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
         if (value.beforeStatus)
           data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
-        results.push(...data);
+          results.push(...data);
       }
     } finally {
       resetConsole();
@@ -624,7 +625,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       r = { date: startDate, success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = testTimeout ?? STANDART_TIMEOUT;
+
+      if (DG.Test.isProfiling)
+        console.profile(`${t.category}: ${t.name}`);
+
       r = { date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+
+      if (DG.Test.isProfiling) {
+        console.profileEnd(`${t.category}: ${t.name}`);
+        grok.shell.info(`Profiling of ${t.category}: ${t.name} finished \n Please ensure that you have opened DevTools (F12) / Performance panel before test starts.`);
+      }
     }
   } catch (x: any) {
     stdError(x);

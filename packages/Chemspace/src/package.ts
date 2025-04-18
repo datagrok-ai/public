@@ -31,6 +31,7 @@ const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: '
   [SEARCH_MODE.TEXT]: 'text', [SEARCH_MODE.EXACT]: 'exact'};
 
 //tags: app
+//meta.browsePath: Chem
 //name: Chemspace
 export async function app(): Promise<void> {
   await getApiToken();

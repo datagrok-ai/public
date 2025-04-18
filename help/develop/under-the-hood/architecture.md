@@ -42,14 +42,14 @@ build our way up.
 
 ### Data engine
 
-First of all, we built a fit-for-purpose [data engine](infrastructure.md#in-memory-database), which is essentially an
+First of all, we built a fit-for-purpose [data engine](scaling.md#in-memory-database), which is essentially an
 in-memory columnar database. It is the heart of the system and is highly optimized for the routines typical for
 exploratory data analysis, i.e., fast sequential access for column data, efficient data storage, data transfer, data
 compression, filtering, aggregations, joins, caches, descriptive statistics, etc. It has an expressive and clean API.
 
 ### Viewers
 
-On top of the data engine, we built several [high-performance viewers](infrastructure.md#viewers)
+On top of the data engine, we built several [high-performance viewers](scaling.md#viewers)
 that make heavy use of the data engine. The ability to use that engine unlocks unique possibilities for viewers, such as
 easy data aggregations or passing data to web workers for multithreaded rendering. All viewers access the same data (no
 copies are made), share specific statistics and cached calculations, have the same look and feel and usage patterns, and
@@ -57,7 +57,7 @@ cooperate in particular tasks.
 
 ### Server
 
-Also, on top of the data engine, we built a [server](infrastructure.md#datlas). It is used for many purposes: data
+Also, on top of the data engine, we built a [server](infrastructure.md#1-core-components). It is used for many purposes: data
 retrieval from different data sources, security, user management, metadata storage, multiple object repositories, user
 collaboration, running arbitrary scripts written in different languages, building and applying predictive models, and a
 lot more. The server utilizes extensible plugin architecture and currently has over 20 plugins. The server enables the
@@ -66,7 +66,7 @@ client and server are written in Dart and share a lot of common libraries.
 
 ### Application client
 
-Next, we built a [data analytics application client](infrastructure.md#web-application) that integrates our data engine,
+Next, we built a [data analytics application client](infrastructure.md#1-core-components) that integrates our data engine,
 viewers, and server-based capabilities. The application can run entirely autonomously in the browser without making
 requests to the server. In that mode, it lets users import data of non-trivial sizes (tens of millions of rows) from
 local files in many popular data formats, clean and transform it using some tools and routines, interactively visualize
@@ -93,4 +93,4 @@ some component, and our load balancer will take care of dispatching computations
 
 * [Enterprise evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
 * [Infrastructure](infrastructure.md) with detailed description of every component
-* [Deployment](deploy/deploy.md) instruction to install and try Datagrok
+* [Deployment](../../deploy/deploy.md) instruction to install and try Datagrok

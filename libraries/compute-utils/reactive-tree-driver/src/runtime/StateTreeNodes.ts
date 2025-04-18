@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData} from '../config/PipelineInstance';
+import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineOutline} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
@@ -20,6 +20,7 @@ const descriptionStates = descriptionOutputs.map((id) => ({id}));
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
   disableCallsUUID?: boolean,
+  skipFuncCalls?: boolean,
 };
 
 export type ConsistencyInfo = {
@@ -160,7 +161,7 @@ export class FuncCallNode implements IStoreProvider {
       uuid: this.uuid,
       configId: this.config.id,
       friendlyName: this.config.friendlyName,
-      funcCall: instance?.getFuncCall(),
+      funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
       viewersHook: this.config.viewersHook,
       actions,
@@ -368,9 +369,20 @@ export class PipelineNodeBase implements IStoreProvider {
     };
     if (options.disableNodesUUID)
       res.uuid = '';
-
     return res;
   }
+
+  getStructureCheck(state: PipelineOutline) {
+    if (this.config.structureCheck) {
+      try {
+        return this.config.structureCheck(state);
+      } catch(e: any) {
+        grok.shell.error(e);
+        console.error(e);
+      }
+    }
+  }
+
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {

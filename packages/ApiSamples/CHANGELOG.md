@@ -1,4 +1,4 @@
-# ApiSamples changelog
+# API Samples changelog
 
 ## 1.0.12 (2024-10-17)
 

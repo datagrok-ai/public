@@ -1,4 +1,4 @@
-import { EventHandler } from "./EventHandler.js";
+import { EventHandler } from "./EventHandler";
 
 export class ResizeHandle {
 

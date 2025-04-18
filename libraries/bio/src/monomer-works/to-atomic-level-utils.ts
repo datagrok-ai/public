@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {monomerWorksConsts as C} from './consts';
 import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap} from './types';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE,} from '../utils/const';
@@ -55,7 +56,7 @@ export function monomerSeqToMolfile(
 
   // define atom and bond counts, taking into account the bond type
   const getAtomAndBondCounts = getResultingAtomBondCounts;
-  const {atomCount, bondCount} = getAtomAndBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
+  const {atomCount, bondCount, needsCapping} = getAtomAndBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
 
   // create arrays to store lines of the resulting molfile
   const molfileAtomBlock = new Array<string>(atomCount);
@@ -66,9 +67,9 @@ export function monomerSeqToMolfile(
   let sugar = null;
   let phosphate = null;
 
-  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
     addMonomerToMolblock = addAminoAcidToMolblock;
-  } else { // nucleotides
+  else { // nucleotides
     addMonomerToMolblock = addNucleotideToMolblock;
     sugar = (alphabet === ALPHABET.DNA) ? getMolGraph(monomersDict, C.DEOXYRIBOSE) : getMolGraph(monomersDict, C.RIBOSE);
     phosphate = getMolGraph(monomersDict, C.PHOSPHATE);
@@ -123,7 +124,9 @@ export function monomerSeqToMolfile(
     });
   }
 
-  capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
+  // if the last monomer needs to be capped, add the terminal OH to the resulting molfile
+  if (needsCapping)
+    capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
 
   const molfileCountsLine = C.V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + C.V3K_COUNTS_LINE_ENDING;
 
@@ -228,9 +231,9 @@ function addNucleotideToMolblock(
 ): void {
   // construnct the lines of V3K molfile atom block corresponding to phosphate
   // and sugar
-  if (v.i === 0) {
+  if (v.i === 0)
     addBackboneMonomerToMolblock(LC.sugar!, molfileAtomBlock, molfileBondBlock, v);
-  } else {
+  else {
     for (const monomer of [LC.phosphate, LC.sugar])
       addBackboneMonomerToMolblock(monomer!, molfileAtomBlock, molfileBondBlock, v);
   }
@@ -346,19 +349,21 @@ function fillBackboneToBranchBond(branchMonomer: MolGraph, molfileBondBlock: str
 function getResultingAtomBondCounts(
   monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType
-): { atomCount: number, bondCount: number } {
+): { atomCount: number, bondCount: number, needsCapping: boolean } {
   let atomCount = 0;
   let bondCount = 0;
 
   let monomerCount: number = 0;
+  let needsCapping = true;
+  let lastMonomerGraph: MolGraph | null = null;
   // sum up all the atoms/nodes provided by the sequence
   for (const seqMonomer of monomerSeq) {
     if (seqMonomer.symbol === GAP_SYMBOL) continue; // Skip for gap/empty monomer in MSA
     if (seqMonomer.symbol == '*')
       throw new Error(`Gap canonical symbol is '', not '*`);
-    const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
-    atomCount += monomer.atoms.x.length;
-    bondCount += monomer.bonds.bondTypes.length;
+    lastMonomerGraph = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
+    atomCount += lastMonomerGraph.atoms.x.length;
+    bondCount += lastMonomerGraph.bonds.bondTypes.length;
     monomerCount++;
   }
 
@@ -368,6 +373,14 @@ function getResultingAtomBondCounts(
     atomCount += 1;
     // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
     bondCount += monomerCount;
+    // if the last monomer is something like NH2, which only has R1, there is no need to cap it
+    if (monomerCount > 0) {
+      if ((lastMonomerGraph?.meta?.rNodes?.length ?? 0) < 2) {
+        needsCapping = false;
+        atomCount -= 1; // remove the last atom (the terminal 'O')
+        bondCount -= 1; // remove the last bond (the terminal C-OH)
+      }
+    }
   } else { // nucleotides
     const sugar = (alphabet === ALPHABET.DNA) ?
       getMolGraph(monomersDict, C.DEOXYRIBOSE)! : getMolGraph(monomersDict, C.RIBOSE)!;
@@ -395,7 +408,7 @@ function getResultingAtomBondCounts(
     bondCount += monomerSeq.length * 3;
   }
 
-  return {atomCount, bondCount};
+  return {atomCount, bondCount, needsCapping};
 }
 
 /** Keep precision upon floating point operations over atom coordinates

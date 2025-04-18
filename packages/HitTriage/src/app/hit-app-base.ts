@@ -26,12 +26,12 @@ export abstract class HitAppBase<T> {
 
   // public layouts: Promise<DG.ViewLayout[]>;
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
+    this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`
     this._appName = appN;
     const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
     const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
     const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];
-    this.resetBaseUrl();
     this.computeFunctions = {functions, scripts, queries};
 
     // this.layouts = new Promise<DG.ViewLayout[]>(async (resolve) => {
@@ -47,12 +47,6 @@ export abstract class HitAppBase<T> {
       return;
     }
     this.hasEditPermission = await checkEditPermissions(campaign.authorUserId, campaign.permissions);
-  }
-
-  public resetBaseUrl() {
-    const href = window.location.href;
-    const urlObj = new URL(href);
-    this.baseUrl = urlObj.origin + urlObj.pathname;
   }
 
   protected getFilterType(colName: string): DG.FILTER_TYPE {

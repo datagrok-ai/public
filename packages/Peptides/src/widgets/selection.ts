@@ -9,6 +9,7 @@ import {TooltipOptions} from '../utils/tooltips';
 import {calculateMonomerPositionStatistics} from '../utils/algorithms';
 import {AggregationColumns} from '../utils/statistics';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export type SelectionWidgetOptions = {
   tableSelection: DG.BitSet, gridColumns: DG.GridColumnList, positionColumns: DG.Column<string>[],
@@ -29,7 +30,6 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   const newTable = DG.DataFrame.create(table.rowCount);
   newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(options.tableSelection);
-  const numericalCols = wu(table.columns.numerical);
   let gridSortOrder: {cols: DG.Column[], types: boolean[]} | null = null;
   for (let gridColIdx = 1; gridColIdx < options.gridColumns.length; gridColIdx++) {
     const gridCol = options.gridColumns.byIndex(gridColIdx)!;
@@ -58,8 +58,7 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
     }
     const getValue = !sourceColRawData || !sourceColCategories ?
       (i: number): any => sourceCol.get(i) :
-      numericalCols
-        .some((col) => col.name === sourceCol.name) ? (i: number): number => sourceColRawData[i] :
+      sourceCol.isNumerical ? (i: number): number => sourceColRawData[i] :
         (i: number): string => sourceColCategories[sourceColRawData[i]];
     const col = sourceCol.name === options.activityColumn.name ?
       newTable.columns.addNewFloat(gridCol.name).init((i) => getValue(i) as number) :
@@ -122,6 +121,13 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
     setWebLogoRenderer(grid, mpStats, options.positionColumns, options.activityColumn, cellRendererOptions,
       tooltipOptions);
   }
+
+  (table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE) ?? []).forEach(
+    (col) => {
+      if (newTable.col(col.name))
+        newTable.col(col.name)!.temp[SeqTemps.notationProvider] = col.temp[SeqTemps.notationProvider];
+    },
+  );
 
   return gridHost;
 }

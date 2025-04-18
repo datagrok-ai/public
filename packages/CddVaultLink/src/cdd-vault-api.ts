@@ -1,11 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { _package } from './package';
+import { paramsStringFromObj } from './utils';
 
-//TODO: properly handle
-const apiKey = '';
+const API_KEY_PARAM_NAME = 'apiKey';
+let apiKey = '';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   count?: number;
   offset?: number;
   page_size?: number;
@@ -13,19 +15,34 @@ interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
+  errorCode?: number;
 }
 
-interface Vault {
+export interface Vault {
   name: string;
   id: number;
 }
 
-interface Project {
+export interface Project {
   name: string;
   id: number;
 }
 
-interface Collection {
+export interface VaultCollection {
+  id: number;
+  class: string;
+  created_at: string;
+  modified_at: string;
+  name: string;
+  owner: string;
+  molecules: number[]; // Array of molecule IDs
+  project: {
+    name: string;
+    id: number;
+  };
+}
+
+export interface Collection {
   name: string;
   id: number;
 }
@@ -104,14 +121,14 @@ export interface Molecule {
   source_files: SourceFile[];
 }
 
-interface MoleculesQueryResult {
+export interface MoleculesQueryResult {
   count?: number;
   offset?: number;
   page_size?: number;
   objects?: Molecule[];
 }
 
-interface ProtocolQueryResult {
+export interface ProtocolQueryResult {
   count?: number;
   offset?: number;
   page_size?: number;
@@ -197,6 +214,85 @@ interface ReadoutRowsQueryParameters {
   type?: "detail_row" | "batch_run_aggregate_row" | "batch_protocol_aggregate_row" | "molecule_protocol_aggregate_row"; // Type of readout rows to return
   include_control_state?: boolean; // If true, control wells are identified as positive or negative control wells
   data_sets?: string; // Comma-separated list of public dataset IDs
+}
+
+interface CollectionQueryParams {
+  /**
+   * Comma-separated list of collection IDs
+   * Cannot be used with Date and Type parameters
+   */
+  collections?: string;
+
+  /**
+   * If true, performs an asynchronous export (recommended for large datasets)
+   * - Ignores page_size parameter when true
+   * - Recommended when downloading more than page_size results
+   */
+  async?: boolean;
+
+  /**
+   * If true, only returns Collection IDs (smaller and faster response)
+   * - Still use async=true when expecting many IDs
+   * - Ignores page_size parameter when true
+   * @default false
+   */
+  only_ids?: boolean;
+
+  /**
+   * If true, includes molecule IDs in the response (as molecules array)
+   * @default false
+   */
+  include_molecule_ids?: boolean;
+
+  /**
+   * Filters collections created before this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  created_before?: string;
+
+  /**
+   * Filters collections created after this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  created_after?: string;
+
+  /**
+   * Filters collections modified before this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  modified_before?: string;
+
+  /**
+   * Filters collections modified after this date (ISO 8601 format: YYYY-MM-DDThh:mm:ss±hh:mm)
+   * Cannot be used with collections parameter
+   */
+  modified_after?: string;
+
+  /**
+   * The index of the first object to return
+   * @default 0
+   */
+  offset?: number;
+
+  /**
+   * Maximum number of objects to return (default: 50, max: 1000)
+   * - Ignored when async=true or only_ids=true
+   * - For large responses, prefer async=true over multiple chunks
+   */
+  page_size?: number;
+
+  /**
+   * Comma-separated list of project IDs to filter by
+   * @default All available projects
+   */
+  projects?: string;
+
+  /**
+   * Comma-separated list of collection types to include
+   * Possible values: "user_collection" (private), "vault_collection" (shared)
+   * Cannot be used with collections parameter
+   */
+  type?: string;
 }
 
 export interface Protocol {
@@ -296,13 +392,35 @@ interface ReadoutRow {
   };
 }
 
+export interface SavedSearch {
+  id: number;
+  name: string;
+}
+
+export interface ExportStatus {
+  id: number;
+  status: string;
+  created_at?: string;
+  modified_at?: string;
+  queued_job_position?: number
+}
+
 
 async function request<T>(
   method: string,
   path: string,
-  body?: any
+  body?: any,
+  text?: boolean,
 ): Promise<ApiResponse<T>> {
   try {
+    if (apiKey === '') {
+      const credentials = await _package.getCredentials();
+      if (!credentials)
+        throw new Error('API key is not set in package credentials');
+      if (!credentials.parameters[API_KEY_PARAM_NAME])
+        throw new Error('API key is not set in package credentials');
+      apiKey = credentials.parameters[API_KEY_PARAM_NAME];
+    }
     const headers: any = {
       'X-CDD-Token': apiKey,
       'Accept': 'application/json',
@@ -316,15 +434,17 @@ async function request<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    const data = text ? await response.bytes() : await response.json();
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
     }
 
-    const data = await response.json();
     return { data };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'An unknown error occurred',
+      errorCode: error instanceof Error ? error.cause as number : undefined
     };
   }
 }
@@ -344,6 +464,19 @@ export async function getProtocols(vaultId: number): Promise<ApiResponse<Protoco
   return request('GET', `/api/v1/vaults/${vaultId}/protocols`);
 }
 
+/** Get list of available protocols asynchronously*/
+export async function queryProtocolsAsync(vaultId: number): Promise<ApiResponse<ExportStatus>> {
+  const paramsStr = paramsStringFromObj({async: true});
+  return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
+}
+
+/** Get list of available collections asynchronously*/
+export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
+
 /**
  * Query molecules with various parameters
  */
@@ -353,17 +486,47 @@ export async function queryMolecules(vaultId: number, params: MoleculeQueryParam
 }
 
 /**
+ * Query molecules with various parameters asynchronously
+ */
+export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  // For environments that don't support JSON in GET requests, use POST with /query endpoint
+  return request<ExportStatus>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
+}
+
+/**
  * ReadoutRows without or with various parameters
  */
 export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ReadoutRowsQueryResult>> {
-  
-  let paramsStr = '';
-  const paramNames = Object.keys(params);
-  for (let i = 0; i < paramNames.length; i++) {
-    const paramVal = (params as any)[paramNames[i]];
-    if(paramVal) {
-      paramsStr += paramsStr === '' ? `?${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
-    }
-  }
+  const paramsStr = paramsStringFromObj(params);
   return request<ReadoutRowsQueryResult>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
+}
+
+/**
+ * ReadoutRows without or with various parameters asynchronously
+ */
+export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ExportStatus>> {
+  params.async = true;
+  const paramsStr = paramsStringFromObj(params);
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
+}
+
+/** Get all available saved searches for the vault */
+export async function querySavedSearches(vaultId: number): Promise<ApiResponse<SavedSearch[]>> {
+  return request<SavedSearch[]>('GET', `/api/v1/vaults/${vaultId}/searches`);
+}
+
+/** Get export id and status by saved search id*/
+export async function querySavedSearchById(vaultId: number, searchId: number): Promise<ApiResponse<ExportStatus>> {
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/searches/${searchId}?format=sdf`);
+}
+
+/** Get export status*/
+export async function queryExportStatus(vaultId: number, exportId: number): Promise<ApiResponse<ExportStatus>> {
+  return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/export_progress/${exportId}`);
+}
+
+/** Get export result*/
+export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean): Promise<ApiResponse<any>> {
+  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, isTextResponse);
 }

@@ -1,6 +1,7 @@
 {
   "connectionName": "Datagrok",
   "schemaName": "public",
+  "dataSourceName": "postgres",
   "entryPoints": {
     "DG_USER_LOGIN": {
       "table": "users",

@@ -33,9 +33,13 @@ export class Tags {
 
   static ColorCodingLinear = '.color-coding-linear';
 
+  static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
+
   static ColorCodingLinearAbsolute = '.%color-coding-linear-absolute';
 
-  static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
+  static ColorCodingLinearBelowMinColor = '.%color-coding-linear-below-min-color';
+
+  static ColorCodingLinearAboveMaxColor = '.%color-coding-linear-above-max-color';
 
   static ColorCodingConditional = '.color-coding-conditional';
 

@@ -1,5 +1,5 @@
 // An example of using predictive models.
-// https://datagrok.ai/help/learn/predictive-modeling
+// https://datagrok.ai/help/learn/
 
 let t1 = await grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv');
 let t2 = await grok.ml.applyModel('Samples:Models:PredictSexByBasicDemographics', t1);

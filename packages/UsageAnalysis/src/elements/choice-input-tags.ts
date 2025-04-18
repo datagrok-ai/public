@@ -21,7 +21,7 @@ export class ChoiceInputTags extends ChoiceInputBase {
             searchChoices: true,
             itemSelectText: '',
         });
-        field.input.addEventListener('change', (event) =>
+        field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
         const tags: string[] = ((await grok.functions.call('UsageAnalysis:EntitiesTags')) as DG.DataFrame).getCol('tag').toList();
 

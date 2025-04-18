@@ -45,6 +45,15 @@ Close All
 
     * `if(${Stereo Category}=='S_UNKN', null, ${Average Mass})` - the linear legend should appear
     * `if(${Stereo Category}=='S_UNKN', null, ${Series})` - the categorical legend should appear
+
+Close All 
+
+1. Open SPGI_v2
+1. Add a scatterplot
+1. Set color by ID, marker by Core.
+1. The Legend should be displayed
+
+
 ---
 {
   "order": 1,

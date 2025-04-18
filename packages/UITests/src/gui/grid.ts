@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 // import * as DG from 'datagrok-api/dg';
 
 import { category, delay, test, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
-import { getHTMLElementbyInnerText } from './gui-utils';
+import {getHTMLElementbyInnerText, showToolbox} from './gui-utils';
 import { checkDialog } from './gui-utils';
 
 category('GUI: Grid', () => {
   before(async () => {
+    showToolbox();
     grok.shell.windows.showProperties = true;
   });
 
@@ -20,8 +21,8 @@ category('GUI: Grid', () => {
 
     let searchInput: HTMLInputElement | undefined;
     let input;
-    for (let i = 0; i < document.getElementsByClassName('ui-input-editor').length; i++) {
-      input = document.getElementsByClassName('ui-input-editor')[i] as HTMLInputElement;
+    for (let i = 0; i < searchTab!.parentElement!.getElementsByClassName('ui-input-editor').length; i++) {
+      input = searchTab!.parentElement!.getElementsByClassName('ui-input-editor')[i] as HTMLInputElement;
       if (input.placeholder == 'Search') {
         searchInput = input;
         break;

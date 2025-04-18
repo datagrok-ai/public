@@ -16,6 +16,10 @@ export const RibbonPanel = Vue.defineComponent({
     default?: any,
   }>,
   setup(props, {slots}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('RibbonPanel onRenderTriggered', event);
+    });
+
     const elements = Vue.reactive(new Map<number, HTMLElement>);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const uuid = uuidv4();
@@ -29,16 +33,6 @@ export const RibbonPanel = Vue.defineComponent({
     };
 
     Vue.watch(elements, () => {
-      // Workaround for ui.comboPopup elements. It doesn't work if it is not a direct child of '.d4-ribbon-item'
-      elements.forEach((elem) => {
-        const content = ((elem.firstChild?.nodeType !== Node.TEXT_NODE) ? elem.firstChild: elem.firstChild.nextSibling) as HTMLElement | null;
-
-        if (content && content.tagName.toLowerCase().includes('dg-combo-popup')) {
-          content.classList.add('d4-ribbon-item');
-          elem.parentElement?.classList.remove('d4-ribbon-item');
-        }
-      });
-
       const panels = currentView.value.getRibbonPanels();
       const existingPanelIdx = panels.findIndex(isInstanceManagedPanel);
       const panel = [...elements.values()];
@@ -60,7 +54,7 @@ export const RibbonPanel = Vue.defineComponent({
     });
 
     const addElement = (el: Element | null | any, idx: number) => {
-      const content = el;
+      const content = el ? Vue.markRaw(el) : undefined;
       if (content) {
         (content).RibbonPanelUUID = uuid;
         elements.set(idx, content);

@@ -55,7 +55,7 @@ function getApiRoot() {
     return `${parsedUrl.protocol}//${parsedUrl.host}/api`;
 }
 
-function getAuthToken() {
+export function getAuthToken() {
     let cookies = document.cookie.split("; ");
     for (let cookie of cookies) {
         let [key, value] = cookie.split("=");

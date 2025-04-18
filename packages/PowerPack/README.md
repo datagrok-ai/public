@@ -1,9 +1,9 @@
-# PowerPack
+# Power Pack
 
 Commonly used platform enhancements
 
-Owner: [Andrew Skalkin](https://github.com/skalkin)
-Issues: <https://github.com/datagrok-ai/public/projects/2>
+Owner: [Andrew Skalkin](https://github.com/skalkin) 
+Issues: [Tracker](https://github.com/datagrok-ai/public/projects/2)
 
 ## Power widgets
 

@@ -69,7 +69,7 @@ Every release contains the most recent dependency packages which saves us time w
 provides the best quality experience to the user.
 
 Datagrok packages are also tested using [CodeQL](https://codeql.github.com/)
-and [Grype](https://github.com/anchore/grype/) ([results are available publicly](https://github.com/datagrok-ai/public/actions/workflows/security_scan.yml)).
+and [Grype](https://github.com/anchore/grype/) ([results are available publicly](https://github.com/datagrok-ai/public/actions/workflows/security_scan_anchore.yaml)).
 
 ## Client-server interactions
 
@@ -78,8 +78,8 @@ the server checks its validity before proceeding.
 
 ## Infrastructure
 
-Datagrok consist of Docker containers, [database](../../../develop/under-the-hood/infrastructure.md#database)
-and [persistent file storage](../../../develop/under-the-hood/infrastructure.md#storage).
+Datagrok consist of Docker containers, [database](../../../develop/under-the-hood/infrastructure.md#1-core-components)
+and [persistent file storage](../../../develop/under-the-hood/infrastructure.md#1-core-components).
 
 ### Encryption in-transit
 

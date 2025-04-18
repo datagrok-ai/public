@@ -1,5 +1,23 @@
 # Peptides changelog
 
+## 1.23.3 (2025-04-17)
+
+Selection widget: value retrieving fix
+
+## 1.23.2 (2025-04-14)
+
+* Manual setting of notation providers to tables
+
+## 1.22.0 (2025-03-22)
+
+* Fixed unhighlighting of header weblogo
+* Harmonization of selection and counts in monomer-position and MPR viewers
+* Added more comprehensive tooltips
+
+## 1.21.7 (2025-03-17)
+
+* Fixes and improvements of Selection panel
+
 ## 1.21.6 (2025-03-13)
 
 * Fix demo and compatibility to older platform versions

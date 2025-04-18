@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE} from './utils';
 
 /** Monte Carlo viewers description */
 const monteCarloViewersInfo = [
@@ -71,32 +71,45 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.describe('Consider ball flight simulation.');
     closeWindows();
 
-    if (grok.shell.view('Browse') === undefined) {
-      grok.shell.v = DG.View.createByType('browse');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
     // 1. Open Apps
-    // const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    // grok.shell.v = browseView;
-    // browseView.showTree = true;
+    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)      
+      browseIcon.click();
 
-    const appsGroupRoot = await getElement(grok.shell.browsePanel.root, 'div[name="tree-Apps"]');
+    const browsePanel = grok.shell.browsePanel;    
+    const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
       return;
     }
 
+    const appView = grok.shell.view('Apps');
+    if ((appView !== null) && (appView !== undefined))
+      appView.close();
+    
     await this.action(
-     'Open Apps',
+      'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run Diff Studio
-    let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
-    const modelCatalogIcn = await getElement(grok.shell.browsePanel.root,`div[name="div-${name}"]`);
+    await new Promise((resolve) => setTimeout(resolve, PAUSE));
+    
+    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+
+    // 2. Run Model catalog
+    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    if (galleryGrid === null) {
+      grok.shell.warning('Failed to open apps');
+      return;
+    }
+
+    browseIcon.click();
+
+    let name = 'Model-Hub';;
+    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
 
     if (modelCatalogIcn === null) {
@@ -148,18 +161,32 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      `Click "OK" to go to the next step.`,
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        `Click "OK" to go to the next step.`,
+      );
+    }
 
     // 5. Run sens.analysis
     this.title('Analysis');
     this.describe('How does Angle affect the flight trajectory? Let\'s answer this question.');
 
-    const senAnIcnRoot = document.querySelector('i.grok-icon.fal.fa-analytics') as HTMLElement;
+    const ribbonPannels = modelView.getRibbonPanels();
+    if (ribbonPannels.length < 1) {
+      grok.shell.warning('Failed to run model analysis features');
+      return;      
+    }
+    
+    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    if (rightPanel.length < 2) {
+      grok.shell.warning('Failed to load model analysis features');
+      return;      
+    }
+    
+    const senAnIcnRoot = rightPanel[rightPanel.length - 1];
 
     await this.action(
       'Run sensitivity analysis',
@@ -261,20 +288,19 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Explore solution',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      'Click "OK" to go to the next step.',
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Explore solution',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        'Click "OK" to go to the next step.',
+      );
+    }
 
     // 12. Parameters' impact
 
     // Align elements
     const panelRoot = sensAnView.root.querySelector('div.panel-base') as HTMLElement;
-    panelRoot.style.width = '300px';
-    const pcPlotColumnRoot = sensAnView.root.querySelector('div.splitter-container-column.splitter-container-horizontal') as HTMLElement;
-    pcPlotColumnRoot.style.width = '300px';
 
     this.title('Parameters\' impact');
     this.describe(`Explore which of the throw parameters has the most significant impact on
@@ -334,10 +360,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Complete this tutorial',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+      );
+    }
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

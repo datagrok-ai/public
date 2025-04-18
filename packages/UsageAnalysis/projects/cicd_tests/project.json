@@ -11,7 +11,7 @@
       },
       {
         "path": "Benchmark.csv",
-        "creationScript": "Result = UsageAnalysis:BenchmarksDashboard(5,false,true,false)",
+        "creationScript": "Result = UsageAnalysis:BenchmarksDashboard('dev',5,false,true,false)",
         "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
       },
       {

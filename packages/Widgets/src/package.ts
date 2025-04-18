@@ -59,6 +59,13 @@ export function fooInput(): DG.InputBase {
 }
 
 export class FooInput extends DG.JsInputBase<string> {
+  get inputType(): string {
+    return 'foo';
+  }
+  get dataType(): string {
+    return DG.TYPE.STRING;
+  }
+
   valueEditor: HTMLInputElement = ui.element('input');
   unitsEditor: HTMLInputElement = ui.element('input');
   editor = ui.divH([this.valueEditor, this.unitsEditor]);

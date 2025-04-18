@@ -21,6 +21,9 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
+  - patents search
+  - cdd vault integration
 ---
 
 ```mdx-code-block
@@ -42,7 +45,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+  * [Enamine](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
   * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
 
 </details>
@@ -314,7 +317,7 @@ To sort a dataset by similarity, right-click your reference molecule and select 
 
 To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
-<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
+![Similarity and diversity search](similarity-and-diversity-search.gif)
 
 <details>
 <summary>How to use</summary>
@@ -331,7 +334,7 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.md).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![chem-space](../../../../compute/chem-space.gif)
 
@@ -348,7 +351,7 @@ The dialog has the following inputs:
     * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
 * **Method**: The dimensionality reduction method that will be used. The options are:
     * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
-    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
 * **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
@@ -380,7 +383,7 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
+![R-Group Analysis](img/new_r_group_analysis.gif)
 
 <details>
 <summary> How to use </summary>
@@ -414,19 +417,19 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
 
-A hierarchy can be either generated automatically, or sketched manually. To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. When Scaffold Tree is initially created, a tree is generated automatically. You can also sketch the tree manually, or modify the automatically generated one. For tree generation, we use a derivative of the open-source
+A hierarchy can be either generated automatically, sketched manually, or modified at any point. To access, in the **Top Menu** select **Chem** > **Analyze** > **Scaffold Tree**. For automatic tree generation, a derivative of the open-source
 [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
-developed by Oliver Scott.
+developed by Oliver Scott is used.
 
 :::note
 
-Scaffold tree generation is computationally intensive and may take a significant time.
+Scaffold tree generation is computationally intensive and may take time for large datasets.
 
 :::
 
 ![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds. A picture best illustrates this:
+A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds.
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -536,84 +539,114 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 ### Matched molecular pairs
 
-:::note
+The **Matched Molecular Pairs** (MMP) tool supports lead optimization by
+quantifying how specific structural changes affect potency, solubility,
+permeability, and ADMET properties across your dataset.
 
-This feature is in Beta.
-
-:::
-
-The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
-identify structural transformation rules that can be used to improve potency and
-ADMET properties during lead optimization. This tool automatically detects
-matched molecule pairs in your dataset and calculates the difference in property
-or activity values between them. The mean change in property or activity values
-across your dataset represents the expected size of the change when the
-transformation is applied to a molecule.
+MMP analysis automatically detects matched molecular pairs within your
+dataset, calculates the differences in their properties, and aggregates these
+results. The mean property change derived from these
+transformations highlights consistent structure-activity relationships, indicating
+the expected effect of applying a similar modification to a new molecule.
 
 The results of the MMP analysis are presented in a series of tables and
 visualizations, allowing you to:
 
-* View fragments and substitutions in your dataset 
-* Analyze the effect of specific fragments on the chosen activity or property of
-  a lead compound
-* Generate new molecules based on the transformations present in your dataset
-  and view their predicted properties and activities.
+* Identify high-impact structural modifications that enhance target properties
+* Evaluate how specific chemical changes affect a compound's profile
+* Generate optimized molecules with predicted properties based on transformations data
+
+![MMP Demo](img/mmp-full.gif)
 
 <details>
 <summary>How to use</summary>
 
 To run MMP analysis:
 
-1. In the **Top Menu**, select **Chem** > **Analyze ** > **Matched Molecular
-   Pairs...** A dialog opens.
-1. In the dialog, select the table you want to analyze (**Table**), the column
-   containing molecules within this table (**Molecules**), and the
-   activity/property columns (**Activity**). Click **OK**. An MMP section is
-   added to the view. It has four tabs:
+1. In the **Top Menu**, select **Chem** > **Analyze** > **Matched Molecular
+ Pairs...** to open the analysis dialog.
+2. In the dialog, configure the analysis by selecting:
+    * **Table**: The dataset you want to analyze
+    * **Molecules**: The column containing molecules
+    * **Activity**: The column(s) representing activity or property values
+    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core
+3. Click OK. An MMP analysis is added to the view with four tabs:
 
 <Tabs>
-<TabItem value="transformations" label="Transformations" default> 
+<TabItem value="substitutions" label="Substitutions" default> 
 
-The **Transformations** tab has two tables:
+The **Substitutions** tab has two interactive tables:
 
-* **The upper table** shows all fragment substitutions found in the dataset for
-  the current molecule. It includes the frequency of each substitution and the
-  corresponding change in the analyzed activity or property.
-* **The lower table** shows all pairs of molecules associated with the
-  substitution from the upper table.  It provides details about the analyzed
-  activity or property for each pair of molecules.
+1. **Fragments** table (upper): Shows all fragment substitutions found in your
+  dataset along with their frequency and mean change in activity or property. It
+  has two viewing modes:
+   * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
+your dataset that contain either fragment from a current substitution.
+   * **Current molecule**: Shows only fragment pairs relevant to the current molecule
+molecule in your dataset, enabling exploration of molecule-specific
+substitutions. The number of corresponding substitutions appears in the top-left
+corner.
+
+1. **Molecule pairs** table (lower): Shows pairs of molecules and their property changes corresponding to the current
+   substitution in the **Fragments** table. Clicking a row here pins the molecule pair at the top of your
+   dataset and shows the details about the pair in the **Context Panel**. 
+
+To select multiple rows in any table, use **Ctrl+click**. To open a table in a separate view, click the **+** icon above the corresponding table.
+
+ ![Substitutions tab](img/mmp-tab-substitutions.gif)
 
 </TabItem>
 <TabItem value="fragments" label="Fragments">
 
-In the **Fragments** tab, a 
-[trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
-fragments on the x and y axes. Each intersection in the plot displays the change
-in the analyzed activity or property resulting from a fragment substitution.
+The **Fragments** tab contains:
+
+1. [Trellis plot](../../../../visualize/viewers/trellis-plot.md): Shows
+identified fragments along the _x_ and _y_ axes, with property changes shown at
+their intersections. Click a cell to filter corresponding molecule pairs in the
+table below. Use the filter icon to refine results, or sort fragments by
+frequency or molecular weight using the sorting icons on the axes.
+
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution
+   and functions identically to the **Molecule pairs** table in the
+   **Substitutions** tab.
+
+![Sort Fragments trellis plot](img/mmp-tab-fragments.gif)
+
 
 </TabItem>
 <TabItem value="cliffs" label="Cliffs"> 
 
-In the **Cliffs** tab, a
-[scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
-molecules with similar structures but significant differences in the analyzed
-activity or property. Arrows connecting molecules represent changes in the
-specified activity or property, with the arrow pointing toward the molecule with
-the higher value. Clicking an arrow shows both molecules in the **Context
-Panel**, along with the information about the analyzed activity or property.
+The **Cliffs** tab includes:
+
+1. [Scatterplot](../../../../visualize/viewers/scatter-plot.md): Shows clusters
+of molecules with similar structures but significant differences in the activity
+or property. Arrows connecting molecules represent a property change, pointing
+toward the molecule with the higher value.
+
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution,
+identical to the table in the **Substitutions** tab. Clicking a row here zooms
+to that pair on the scatterplot and shows the pair's details in the **Context
+Panel**. Conversely, clicking an arrow on the scatterplot shows that pair in the
+table. Toggle the table's visibility with the **Show Pairs** checkbox above the
+scatterplot. 
+
+Use activity filters on the scatterplot to refine results in both views.
+![Filter Cliffs scatterplot](img/mmp-tab-cliffs.gif)
 
 </TabItem>
 <TabItem value="generation" label="Generation">
 
-In the **Generation** tab, transformation rules derived from the matched molecule pairs in
-your dataset are used to generate new molecules and predict their property and
-activity values. For every molecule in your dataset, the table shows each
-potential transformation, providing:
+The **Generation** tab uses transformation rules derived from your dataset
+to create and predict new molecules. For each molecule, the table shows:
 
-* Both the starting and new compounds.
-* The maximum common substructure for this pair and the substituted fragment.
-* Original and predicted values for one of the analyzed activities or
-  properties.
+* Original and transformed molecules
+* Molecule status (existing or newly generated)
+* Maximum common substructure and the substituted fragment for this pair
+* Original and predicted property or activity values
+
+The **Context Panel** shows a scatterplot comparing observed vs. predicted values based on your dataset molecules.
+
+![MMP Generations](img/mmp-generations.gif)
 
 </TabItem>
 </Tabs>
@@ -723,6 +756,63 @@ To view the chemical scripts you've created or those shared with you, open the [
 For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
+
+## Retrosynthesis
+
+Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
+commercially available starting materials and the synthetic reactions needed to reach the target.
+
+To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
+
+## Integration with SureChEMBL
+
+SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
+
+<details>
+<summary> How to use </summary>
+
+* select cell with molecule structure in the grid
+* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
+* change the number in the *Molecules limit* field to search for more or fewer molecules
+* change the similarity cutoff using the *Similarity cutoff* slider
+* click the *plus* icon to add all patents found for molecules in the results as a table view
+
+![surechembl search parameters](img/surechembl_search_params.gif)
+
+Search results are shown under the *Substructure Search*/*Similarity Search* tab. Similarity search results are sorted by similarity score and the score is indicated above the molecule.
+Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
+
+![surechembl search results](img/surechembl_search_results.gif)
+
+</details>
+
+## Integration with CDD Vault
+
+CDDVaultLInk plugin provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
+
+<details>
+<summary> How to use </summary>
+
+To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
+CDD Vault api key should be set in package credentials manager under 'apiKey' key.
+
+To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
+List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
+
+* *Molecules* - the list of all available molecules in the vault. *Id* column contains links to the corresponding molecules in your vault.
+![Molecules tab](img/cdd_molecules.png)
+
+* *Search* - basic search through you vault containing similarity and diversity searches.
+![Search tab](img/cdd_search.png)
+
+* *Saved searches* - open tab to see the list of all saved searches in your vault. Click any search in the list to open the search results.
+![Saved search](img/cdd_saved_search.png)
+
+There is also a tab in the context panel. To use, click or sketch a molecule, and expand the *Databases* -> *CDD Vault* context panel on the right:
+![Context panel](img/cdd_context_panel.png)
+
+</details>
 
 ## Utilities
 

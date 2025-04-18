@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {useSubject, useSubscription, useObservable} from '@vueuse/rxjs';
+import {useSubscription, useObservable} from '@vueuse/rxjs';
 import {BehaviorSubject, merge, Observable} from 'rxjs';
 import {switchMap, map} from 'rxjs/operators';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
@@ -15,15 +15,17 @@ function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   return merge(...entries);
 }
 
+export type DriverAPI = ReturnType<typeof useReactiveTreeDriver>;
+
 export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const driver = new Driver();
 
-  const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
-  const isGlobalLocked = useSubject(driver.globalROLocked$);
-  const treeState = useSubject(driver.currentState$);
+  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
+  const isGlobalLocked = useObservable(driver.globalROLocked$);
+  const treeState = useObservable(driver.currentState$.pipe(map((x) => x ? Vue.markRaw(x) : undefined)));
 
-  const currentMetaCallData = useSubject(driver.currentMetaCallData$);
-  const hasNotSavedEdits = useSubject(driver.hasNotSavedEdits$);
+  const currentMetaCallData = useObservable(driver.currentMetaCallData$);
+  const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$);
   const config = useObservable(driver.currentConfig$);
@@ -43,7 +45,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.descriptions[k] = Object.freeze(val);
+    states.descriptions[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentCallsState$.pipe(
@@ -52,7 +54,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.calls[k] = Object.freeze(val);
+    states.calls[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentValidations$.pipe(
@@ -61,7 +63,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.validations[k] = Object.freeze(val);
+    states.validations[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentConsistency$.pipe(
@@ -70,7 +72,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.consistency[k] = Object.freeze(val);
+    states.consistency[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   useSubscription(driver.currentMeta$.pipe(
@@ -79,7 +81,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
       return makeMergedItems(data);
     }),
   ).subscribe(([k, val]) => {
-    states.meta[k] = Object.freeze(val);
+    states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
   Vue.watch(() => providerFunc.value, (providerFunc) => {
@@ -144,7 +146,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
 
   const changeFuncCall = (uuid: string, call: DG.FuncCall) => {
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
-  }
+  };
 
   return {
     // driver,

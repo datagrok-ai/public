@@ -1,4 +1,4 @@
-# ChemblAPI changelog
+# ChEMBL API changelog
 
 ## 1.1.4 (2025-03-06)
 

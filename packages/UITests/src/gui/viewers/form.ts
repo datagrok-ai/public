@@ -3,7 +3,7 @@ import {after, before, category, delay, expect,
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isViewerPresent} from '../gui-utils';
+import {isViewerPresent, showToolbox} from '../gui-utils';
 
 
 category('Viewers: Form', () => {
@@ -11,6 +11,7 @@ category('Viewers: Form', () => {
   let demog: DG.DataFrame;
 
   before(async () => {
+    showToolbox();
     demog = grok.data.demo.demog(1000);
   });
 
@@ -21,11 +22,11 @@ category('Viewers: Form', () => {
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
     isViewerPresent(Array.from(tv.viewers), 'Form');
     const form = document.querySelector('[name=viewer-Form]') as HTMLElement;
-    const left = form.getElementsByClassName('grok-icon fal fa-chevron-left')[0] as HTMLElement; 
+    const left = form.getElementsByClassName('grok-icon fal fa-chevron-left')[0] as HTMLElement;
     const right = form.getElementsByClassName('grok-icon fal fa-chevron-right')[0] as HTMLElement;
     const select = form.getElementsByClassName('grok-icon fal fa-square')[0] as HTMLElement;
     const edit = form.getElementsByClassName('grok-icon fal fa-edit')[0] as HTMLElement;
-    const design = form.getElementsByClassName('grok-icon fal fa-object-ungroup')[0] as HTMLElement; 
+    const design = form.getElementsByClassName('grok-icon fal fa-object-ungroup')[0] as HTMLElement;
     for (let i = 0; i < 10; i++) {
       right.click();
       if (i % 2 === 0) select.click();
@@ -87,11 +88,11 @@ category('Viewers: Form', () => {
     tv.resetLayout();
     tv.loadLayout(layout);
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
-    isViewerPresent(Array.from(tv.viewers), 'Form');    
+    isViewerPresent(Array.from(tv.viewers), 'Form');
   });
 
   after(async () => {
     tv?.close();
     grok.shell.closeTable(demog);
-  }); 
+  });
 }, { owner: 'dkovalyov@datagrok.ai' });

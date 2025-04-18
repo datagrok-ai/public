@@ -14,8 +14,8 @@ export const PipelineView = Vue.defineComponent({
   name: 'PipelineView',
   props: {
     funcCall: {
-      type: Object as Vue.PropType<DG.FuncCall | undefined>,
-      required: true,
+      type: Object as Vue.PropType<DG.FuncCall>,
+      required: false,
     },
     state: {
       type: Object as Vue.PropType<PipelineState>,
@@ -40,12 +40,16 @@ export const PipelineView = Vue.defineComponent({
     },
   },
   emits: {
-    'update:funcCall': (call: DG.FuncCall) => call,
-    'proceedClicked': () => {},
-    'actionRequested': (actionUuid: string) => actionUuid,
-    'addNode': ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
+    'update:funcCall': (_call: DG.FuncCall) => true,
+    'proceedClicked': () => true,
+    'actionRequested': (_actionUuid: string) => true,
+    'addNode': (_data: {itemId: string, position: number}) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('PipelineView onRenderTriggered', event);
+    });
+
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
     const functionsHidden = Vue.ref(true);
@@ -56,7 +60,7 @@ export const PipelineView = Vue.defineComponent({
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
-    const currentView = Vue.shallowRef(props.view);
+    const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
 
@@ -71,7 +75,11 @@ export const PipelineView = Vue.defineComponent({
       if (el === helpRef.value?.$el) helpHidden.value = true;
     };
 
-    const hasInnerStep = Vue.computed(() => !isFuncCallState(state.value) && state.value.steps.length > 0);
+    const hasInnerStep = Vue.ref(false)
+
+    Vue.watch(state, (state) => {
+      hasInnerStep.value = !isFuncCallState(state) && state.steps.length > 0;
+    }, { immediate: true });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
 
@@ -104,14 +112,14 @@ export const PipelineView = Vue.defineComponent({
           >
             { state.value.stepTypes
               .map((stepType, idx) => {
-                const func = stepType.nqName ? DG.Func.byName(stepType.nqName): null;
+                const func = stepType.nqName ? Vue.markRaw(DG.Func.byName(stepType.nqName)): null;
                 const language = func instanceof DG.Script ? func.language: 'javascript';
                 const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
 
                 return <div
                   class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
                   style={{width: '208px'}}
-                  onMouseover={() => hoveredFunc.value = func}
+                  onMouseover={() => hoveredFunc.value = func ? Vue.markRaw(func) : null}
                   onMouseleave={() => hoveredFunc.value = null}
                 >
                   <div class='flex flex-col'>

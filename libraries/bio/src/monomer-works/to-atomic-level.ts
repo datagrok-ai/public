@@ -226,6 +226,7 @@ function getMolGraph(
     setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol);
     // todo: restore after debugging
     removeHydrogen(monomerGraph);
+    replaceWrongfulRGroups(monomerGraph);
 
     removeRgroupKwargs(monomerGraph);
 
@@ -323,7 +324,8 @@ export function parseCapGroups(rGroupObjList: any[]): string[] {
     // in some cases the smiles field is written with uppercase
     if (!capGroup)
       capGroup = obj[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
-    capGroup = capGroup.replace(/(\[|\]|\*|:|\d)/g, '');
+    // some nice person can set the smiles field in r groups to have OH, which is incorrect smiles
+    capGroup = capGroup.replace(/(\[|\]|\*|:|\d)/g, '').replace('OH', 'O').replace('Oh', 'O');
     capGroupsArray.push(capGroup);
   }
   return capGroupsArray;
@@ -432,10 +434,34 @@ function removeRGroupLines(molfileV2K: string): string {
  * @return {string} - V3000 molfile*/
 export function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
   // The standard Chem converter is not used here because it relies on creation of moduleRdkit on each iteration
-  const molObj = moduleRdkit.get_mol(molfileV2K);
+  const molObj = moduleRdkit.get_mol(fixV2000MolfileRAtomLines(molfileV2K));
   const molfileV3K = molObj.get_v3Kmolblock();
   molObj.delete();
   return molfileV3K;
+}
+
+/** fixes the r lines of the molblock. rdkit sometimes gives v2000 with weird numbers in r atom lines,
+ * that can be interpreted as isotopes or cause downstream weirdness
+ * @param {string} molfileV2K
+ * @return {string} */
+export function fixV2000MolfileRAtomLines(molfileV2K: string): string {
+  const lines = molfileV2K.split('\n');
+  const fixedLines = lines.map((line) => {
+    const rIndex1 = line.indexOf(' R#  ');
+    const rIndex2 = line.indexOf(' R   ');
+    if (rIndex1 === -1 && rIndex2 === -1)
+      return line;
+    const rIndex = rIndex1 !== -1 ? rIndex1 : rIndex2;
+    // all numbers after R should be 0, otherwise they get interpreted as isotopes or smth weird
+    const lineArray = line.split('');
+    for (let i = rIndex + 5; i < lineArray.length; i++) {
+      if (lineArray[i] === ' ')
+        continue;
+      lineArray[i] = '0';
+    }
+    return lineArray.join('');
+  });
+  return fixedLines.join('\n');
 }
 
 /** Parse V3000 bond block and construct the Bonds object
@@ -635,6 +661,19 @@ function removeHydrogen(monomerGraph: MolGraph): void {
       --i;
       // monomerGraph.atoms.atomTypes[i] = 'Li';
     }
+    ++i;
+  }
+}
+
+/** Replaces wrongly registered r-groups with corrections. for example, some monomers have [*:1][OH] or smth similar
+ * @param {MolGraph} monomerGraph - monomer graph*/
+function replaceWrongfulRGroups(monomerGraph: MolGraph): void {
+  let i = 0;
+  while (i < monomerGraph.atoms.atomTypes.length) {
+    if (monomerGraph.atoms.atomTypes[i]?.toLowerCase() === 'oh')
+      monomerGraph.atoms.atomTypes[i] = 'O';
+    if (monomerGraph.atoms.atomTypes[i] === '?')
+      monomerGraph.atoms.atomTypes[i] = 'H'; //replace ? with H
     ++i;
   }
 }
@@ -1156,7 +1195,7 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
     const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
 
     removeHydrogen(monomerGraph);
-
+    replaceWrongfulRGroups(monomerGraph);
     const molfile = convertMolGraphToMolfileV3K(monomerGraph);
     symbolToCappedMolfileMap.set(monomerSymbol, molfile);
   }

@@ -1,9 +1,9 @@
-import { Utils } from "./Utils.js";
-import { DockManager } from "./DockManager.js";
-import { DockWheelItem } from "./DockWheelItem.js";
-import { WheelTypes } from "./enums/WheelTypes.js";
-import { Dialog } from "./Dialog.js";
-import { DockNode } from "./DockNode.js";
+import { Utils } from "./Utils";
+import { DockManager } from "./DockManager";
+import { DockWheelItem } from "./DockWheelItem";
+import { WheelTypes } from "./enums/WheelTypes";
+import { Dialog } from "./Dialog";
+import { DockNode } from "./DockNode";
 
 /**
  * Manages the dock overlay buttons that are displayed over the dock manager

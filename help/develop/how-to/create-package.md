@@ -22,6 +22,12 @@ created package, you have to install the dependencies. Run this from the `TextSt
 npm install
 ```
 
+:::note
+
+The internal name of the package should follow **PascalCase** (e.g., `TextStats`), while the friendly name should use **Title Case** (e.g., `Text Stats`). Additionally, all publicly available plugins must have custom icons without exception.
+
+:::
+
 ## 2. Implement the panel function
 
 Add the actual panel's code at `TextStats/src/package.ts`:

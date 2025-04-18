@@ -7,9 +7,7 @@ title: "Enterprise evaluation FAQ"
   * [Deployment](../../../deploy/deploy.md)
 
 * Security
-  * [Security overview](../../../govern/access-control/access-control.md)
-  * [Authentication](../../../govern/access-control/access-control.md#authentication)
-  and [authorization](../../../govern/access-control/access-control.md#authorization)
+  * [Security, authentication, and authorization](../../../govern/access-control/access-control.md)
   * [Encryption at rest](#encryption-at-rest)
   and [encryption in transit](#encryption-in-transit)
 
@@ -43,7 +41,7 @@ title: "Enterprise evaluation FAQ"
 
 * Extensibility
   * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)
-  * [Creating custom server-side components](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer)
+  * [Creating custom server-side components](https://github.com/datagrok-ai/labs/tree/master/packages/Pedometer)
   * [Creating custom scripts](https://datagrok.ai/help/compute/scripting) and utilizing them in other components
   * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/spgi)
   * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)
@@ -115,3 +113,4 @@ Also, there are multiple advanced options to deploy application:
 * [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/deploy/terraform/terraform.tf)
 to deploy to
   AWS ECS
+  

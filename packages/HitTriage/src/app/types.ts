@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-export type AppName = 'Hit Triage' | 'Hit Design' | 'PeptiHit';
+export type AppName = keyof CampaignsType;
 
 export type CampaignsType = {
     'Hit Triage': HitTriageCampaign,

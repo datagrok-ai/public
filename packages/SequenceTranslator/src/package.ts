@@ -27,6 +27,7 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {PolyToolTags} from './consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import { getPTCombineDialog } from './polytool/pt-combine-dialog';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
 
@@ -300,6 +301,12 @@ export async function getPtHelmEnumeratorDialog(cell?: DG.Cell) {
 //input: object cell {nullable: true}
 export async function getPtChemEnumeratorDialog(cell?: DG.Cell) {
   return polyToolEnumerateChemUI(cell);
+}
+
+//name: Combine Sequences
+//top-menu: Bio | PolyTool | Combine Sequences...
+export async function getPolyToolCombineDialog() {
+  getPTCombineDialog();
 }
 
 

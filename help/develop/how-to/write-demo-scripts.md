@@ -19,15 +19,15 @@ The first step is to initialize a `DemoScript`:
 
 ```typescript
 export function demo() {
-  const demoScript = new DemoScript('Demo', 'Demo description', true, {autoStartFirstStep: true});
+  const demoScript = new DemoScript('Demo', 'Demo description', true, {autoStartFirstStep: true, path: 'Curves/Demo'});
   // ...
 }
 ```
 
-Each demo script should have a `name`, `description`, and an `isAutomatic`
-flag that sets the type of script. Additionally, there are optional
-parameters, such as `autoStartFirstStep`, that automatically initiate the
-first step in manual scripts.
+Each demo script must include a `name`, `description`, and an `isAutomatic` flag
+to define its type. Additionally, optional parameters like `autoStartFirstStep`
+can automatically initiate the first step in manual scripts, while `path` allows
+adding a custom breadcrumb element to the view name.
 
 After initialization, you need to add steps using the `step()` function:
 

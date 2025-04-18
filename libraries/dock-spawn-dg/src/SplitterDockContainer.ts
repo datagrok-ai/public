@@ -1,10 +1,10 @@
-import { DockManager } from "./DockManager.js";
-import { SplitterPanel } from "./SplitterPanel.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { ContainerType } from "./ContainerType.js";
-import { ISize } from "./interfaces/ISize.js";
-import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize.js";
-import { IState } from "./interfaces/IState.js";
+import { DockManager } from "./DockManager";
+import { SplitterPanel } from "./SplitterPanel";
+import { IDockContainer } from "./interfaces/IDockContainer";
+import { ContainerType } from "./ContainerType";
+import { ISize } from "./interfaces/ISize";
+import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize";
+import { IState } from "./interfaces/IState";
 
 export abstract class SplitterDockContainer implements IDockContainerWithSize {
     name: string;

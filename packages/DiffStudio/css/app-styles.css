@@ -93,3 +93,8 @@
     height: 24px;
     width: 24px;
 }
+
+.diff-studio-ribbon-save-to-model-catalog-icon { 
+    margin-left: 4px;
+    margin-right: 8px;
+}

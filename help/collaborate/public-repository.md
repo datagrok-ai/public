@@ -12,13 +12,13 @@ very extensible, and almost anything could be implemented as a package:
   as [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase/README.md)
   or [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides/README.md)
 * Connectors to [OpenAPI web services](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* Visualizations, such as [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet/README.md)
+* Visualizations, such as [Leaflet](https://github.com/datagrok-ai/labs/tree/master/packages/Leaflet/README.md)
 * Importing and previewing files, such as
   [SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite),
   [PDF](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors/README.md), or
   [CIF](https://github.com/datagrok-ai/public/tree/master/packages/NglViewer/README.md)
 * Scientific methods implemented in R, Python, or Julia
-* File metadata extractors, such as [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika/README.md)
+* File metadata extractors, such as [Tika](https://github.com/datagrok-ai/labs/tree/master/packages/Tika/README.md)
 * Custom predictive models that work with the built-in [predictive modeling](../learn/learn.md)
   , such as [TensorFlow.js](https://github.com/datagrok-ai/public/tree/master/packages/TensorFlow.js/README.md)
 * Platform enhancements, such

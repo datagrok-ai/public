@@ -21,7 +21,8 @@ export const defaultLaunchParameters: utils.Indexable = {
   args: [
     '--disable-dev-shm-usage',
     '--disable-features=site-per-process',
-    '--window-size=1920,1080'
+    '--window-size=1920,1080',
+    '--js-flags=--expose-gc'
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
@@ -63,7 +64,7 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return { url, key };
 }
 
-export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
+export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -74,6 +75,22 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defa
   console.log(`Using web root: ${url}`);
 
   const browser = await puppeteer.launch(params);
+  if (params.debug) {
+    const targets = await browser.targets();
+    const devtoolsTarget = targets.find((t) => {
+      return t.type() === 'other' && t.url().startsWith('devtools://');
+    });
+    if (devtoolsTarget) {
+      const client = await devtoolsTarget.createCDPSession()
+      await client.send('Runtime.enable');
+      await client.send('Runtime.evaluate', {
+        expression: `
+      window.UI.viewManager.showView('network');
+      window.UI.dockController.setDockSide('bottom')
+    `
+      });
+    }
+  }
 
   const page = await browser.newPage();
   await page.setViewport({
@@ -316,7 +333,6 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
     const browser: Browser = out.browser;
     const page: Page = out.page;
     const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
-
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
@@ -333,37 +349,34 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
       });
     }
 
-    let testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
-
-      if (options.benchmark)
-        (<any>window).DG.Test.isInBenchmark = true;
-      if (options.reproduce)
-        (<any>window).DG.Test.isReproducing = true;
-      if (options.ciCd)
-        (<any>window).DG.Test.isCiCd = true;
-      if (options.debug)
-        (<any>window).DG.Test.isInDebug = true;
-
-      return new Promise<any>((resolve, reject) => {
-        (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
-          .then((results: any) => {
-            resolve(results);
-          })
-          .catch((e: any) => {
-            resolve({
-              failed: true,
-              verbosePassed: "",
-              verboseSkipped: "",
-              verboseFailed: "Tests execution failed",
-              passedAmount: 0,
-              skippedAmount: 0,
-              failedAmount: 1,
-              csv: "",
-              df: undefined
-            })
-          });
-      })
-    }, testExecutionData, browserOptions);
+    const testingResults = await page.evaluate(
+      async (testData, options) => {
+        try {
+          if (options.benchmark) (<any>window).DG.Test.isInBenchmark = true;
+          if (options.reproduce) (<any>window).DG.Test.isReproducing = true;
+          if (options.ciCd) (<any>window).DG.Test.isCiCd = true;
+          if (options.debug) (<any>window).DG.Test.isInDebug = true;
+    
+          const results = await (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout);
+          return results;
+        } catch (e) {
+          return {
+            failed: true,
+            verbosePassed: "",
+            verboseSkipped: "",
+            verboseFailed: "Tests execution failed",
+            error: JSON.stringify(e),
+            passedAmount: 0,
+            skippedAmount: 0,
+            failedAmount: 1,
+            csv: "",
+            df: undefined
+          };
+        }
+      },
+      testExecutionData,
+      browserOptions
+    );
 
     if (browserOptions.record) {
       await recorder.stop();
@@ -429,6 +442,7 @@ export type ResultObject = {
   passedAmount: number,
   skippedAmount: number,
   failedAmount: number,
+  error?: string,
   csv: string
 };
 

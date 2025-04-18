@@ -24,6 +24,8 @@ declare global {
 
     line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
 
+    lines(points: Iterable<Point>): CanvasRenderingContext2D;
+
     /**
      * Use stroke() or fill() after.
      */
@@ -67,6 +69,19 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
   this.lineTo(x2, y2);
   this.stroke();
 
+  return this;
+}
+
+CanvasRenderingContext2D.prototype.lines = function (points: Iterable<Point>) {
+  let first = true;
+  for (const point of points) {
+    if (first) {
+      this.moveTo(point.x, point.y);
+      first = false;
+    } else {
+      this.lineTo(point.x, point.y);
+    }
+  }
   return this;
 }
 
@@ -273,6 +288,7 @@ export class Utils {
 
       df.changeColumnType('result', COLUMN_TYPE.STRING);
       df.changeColumnType('logs', COLUMN_TYPE.STRING);
+      df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
         resultDF = df;      

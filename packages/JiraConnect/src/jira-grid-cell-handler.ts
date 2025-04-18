@@ -1,13 +1,13 @@
 
-import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from "datagrok-api/dg";
+import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import { loadIssueData } from "./api/data";
-import { _package } from "./package-test";
-import { AuthCreds, JiraIssue } from "./api/objects";
-import { getJiraCreds } from "./app/credentials";
-import { cache, issueData, queried } from "./package";
+import { loadIssueData, loadIssues } from './api/data';
+import { _package } from './package-test';
+import { AuthCreds, JiraIssue } from './api/objects';
+import { getJiraCreds } from './app/credentials';
+import { cache, issueData, queried } from './package';
 import imgBug from './images/bug.png';
 import imgEpic from './images/epic.png';
 import imgFeature from './images/feature.png';
@@ -55,6 +55,8 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
             if (!issue || issue === null)
                 return ui.divText('Issue not found');
             const creds = await getJiraCreds();
+            if (!creds)
+                return ui.div('There is no any creds to get tickets\'s data');
 
             const object: Record<string, WithCalcButtonType> = {};
             const column = x && x.cell && x.cell.dart && x.cell.column ? x.cell.column : null; // need to check dart, sometimes its null
@@ -184,15 +186,54 @@ function listRenderer(list: string[], withTooltip = true) {
     return nameHost;
 }
 
-
-class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
-
+class JiraTicketGridCellRenderer extends DG.BatchCellRenderer {
     get name(): string { return 'JIRA Ticket'; }
     get cellType(): string { return 'JIRA Ticket'; }
     get defaultWidth(): number | null { return 100; }
 
+    currentTimeout: any = null;
+    isRunning: boolean = false;
+    loadedTickets: Set<string> = new Set<string>();
+    cellsToLoad: DG.GridCell[] = [];
+    cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
+
+    constructor(){
+        super(cache);
+    }
+
+
+    async loadData(keys: string[]): Promise<Map<string, any>> {
+        const result = new Map<string, any>();
+        const jiraCreds = await getJiraCreds();
+        if (!jiraCreds) {
+            throw new Error('Could not get Jira CREDS')
+        }
+    
+        const chunkSize = 100;
+        let index = 0;
+        while (index < keys.length) {
+            const keysToLoad = keys.slice(index, index + chunkSize);
+            try {
+                const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+                    0, chunkSize, undefined, keysToLoad);
+                for (let issue of loadedIssues?.issues ?? []) {
+                    result.set(issue.key, issue);
+                }
+            } catch (error) {
+                console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
+            }
+            index += chunkSize;
+        }
+        return result;
+    }
+
+
     render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
         const key = gridCell.cell.valueString;
+
+        if (!key || key.length == 0)
+            return;
+
         const stRen = DG.GridCellRenderer.byName('string')!;
         const keyHeight = Math.min(25, h);
         const ticket = cache.get(key);
@@ -205,17 +246,15 @@ class JiraTicketGridCellRenderer extends DG.GridCellRenderer {
             }
         };
 
-        if (!cache.has(key) && key && key.length > 0) {
-            issueData(key).then((_) => gridCell.render());
-            renderKey();
-        }
+        if (!cache.has(key))
+            this.retrieveBatch(gridCell);
         else {
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
 
             if (ticket && props) {
                 g.fillStyle = '#4d5261';
-                g.textAlign =  "left";
+                g.textAlign = 'left';
 
                 if (w > 150) {
                     g.fillText(props.Summary, x + 20, y + 30);

@@ -5,7 +5,7 @@
     "name": "Alexey Chopovsky",
     "email": "achopovsky@datagrok.ai"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
@@ -13,9 +13,9 @@
     "directory": "packages/OligoBatchCalculator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "^1.25.0",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
@@ -46,7 +46,7 @@
     "css/style.css"
   ],
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"

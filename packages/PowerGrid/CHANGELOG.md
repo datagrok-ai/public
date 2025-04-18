@@ -1,4 +1,8 @@
-# PowerGrid changelog
+# Power Grid changelog
+
+## 1.6.2 (2025-04-18)
+
+* Removed dependency from datagrok=tools
 
 ## 1.5.5 (2025-03-07)
 

@@ -37,7 +37,7 @@ async function _testSimilaritySearchViewer() {
   await awaitCheck(() => getSearchViewer(moleculesView, 'Sequence Similarity Search') !== undefined,
     'Sequence Similarity Search viewer has not been created', 100);
   if (!viewer.initialized) throw new Error('The viewer is not initialized.');
-  if (!viewer.moleculeColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
+  if (!viewer.targetColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
   if (!viewer.beforeRender()) throw new Error('The viewer is not able to render.');
   if (!viewer.computeRequested) throw new Error('The viewer has not compute requested even.');
   if (!computeCompleted) throw new Error('The viewer has not compute completed.');
@@ -87,7 +87,7 @@ async function _testDiversitySearchViewer() {
   await awaitCheck(() => getSearchViewer(moleculesView, 'Sequence Diversity Search') !== undefined,
     'Sequence Diversity Search viewer has not been created', 100);
   if (!viewer.initialized) throw new Error('The viewer is not initialized.');
-  if (!viewer.moleculeColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
+  if (!viewer.targetColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
   if (!viewer.beforeRender()) throw new Error('The viewer is not able to render.');
   if (!viewer.computeRequested) throw new Error('The viewer has not compute requested even.');
   if (!computeCompleted) throw new Error('The viewer has not compute completed.');

@@ -19,6 +19,10 @@ export const RibbonMenu = Vue.defineComponent({
     default?: Vue.VNode[],
   }>,
   setup(props, {slots}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('RibbonMenu onRenderTriggered', event);
+    });
+
     const elements = Vue.reactive(new Map<number, HTMLElement>);
 
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -34,7 +38,7 @@ export const RibbonMenu = Vue.defineComponent({
     }, {flush: 'post'});
 
     const addElement = (el: Element | null | any, idx: number) => {
-      const content = el;
+      const content = el ? Vue.markRaw(el) : undefined
       if (content)
         elements.set(idx, content);
     };
