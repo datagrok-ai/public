@@ -2021,6 +2021,11 @@ export async function getContainer() {
   return container;
 }
 
+export async function getChempropError(response: Response): Promise<string> {
+  const match = (await response.text()).match(/[\w.]+Error:\s*(.*)/);
+  return match ? match[1] : response.statusText;
+}
+
 export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
   const container = await getContainer();
 
@@ -2040,7 +2045,7 @@ export async function trainModelChemprop(table: string, predict: string, paramet
   if (response.status !== 201) {
     if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
       throw new Error(`Failed to start container: ${container.friendlyName}`);
-    throw new Error(`Error training model: ${response.statusText}`);
+    throw new Error(await getChempropError(response));
   }
   return new Uint8Array(await response.arrayBuffer());
 }
@@ -2062,7 +2067,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
   if (response.status !== 201) {
     if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
       throw new Error(`Failed to start container: ${container.friendlyName}`);
-    throw new Error(`Error applying model: ${response.statusText}`);
+    throw new Error(await getChempropError(response));
   }
 
   const data = await response.json();
