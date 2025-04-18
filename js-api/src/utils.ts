@@ -333,7 +333,7 @@ export class Utils {
       }
 
     } catch (e) {
-      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${error}` : `test: null, error: ${error}`;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}` : `test: null, error: ${e}`;
     }
 
     return {
