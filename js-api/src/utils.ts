@@ -316,18 +316,6 @@ export class Utils {
           break;
       }
 
-      if (resultDF) {
-        const bs = DG.BitSet.create(resultDF.rowCount)
-        bs.setAll(true);
-        for (let i = 0; i < resultDF.rowCount; i++) {
-          if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
-            bs.set(i, false);
-          }
-        }
-        resultDF = resultDF.clone(bs);
-        csv = resultDF.toCsv();
-      }
-
       if ((<any>window).DG.Test.isInDebug) {
         console.log('on browser closing debug point');
         debugger
@@ -345,7 +333,7 @@ export class Utils {
       passedAmount: countPassed,
       skippedAmount: countSkipped,
       failedAmount: countFailed,
-      csv: csv
+      csv: Utils.createResultsCsv(resultDF),
       // df: resultDF?.toJson()
     };
   }
@@ -360,6 +348,21 @@ export class Utils {
    */
   static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
     return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
+  }
+
+  static createResultsCsv(resultDF?: DataFrame): string {
+    if (resultDF) {
+      const bs = DG.BitSet.create(resultDF.rowCount)
+      bs.setAll(true);
+      for (let i = 0; i < resultDF.rowCount; i++) {
+        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
+          bs.set(i, false);
+        }
+      }
+      resultDF = resultDF.clone(bs);
+      return resultDF.toCsv();
+    }
+    return '';
   }
 }
 
