@@ -81,7 +81,15 @@ export class Test {
         try {
           if (DG.Test.isInDebug)
             debugger;
-          result = await test();
+          
+          let res = await test();
+          try {
+            result = res.toString();
+          }
+          catch (e) { 
+            result = 'Can\'t convert test\'s result to string';
+            console.error(`Can\'t convert test\'s result to string in the ${this.category}:${this.name} test`);
+          }
         } catch (e: any) {
           reject(e);
         }
@@ -416,6 +424,7 @@ function resetConsole(): void {
 }
 
 export async function runTests(options?: TestExecutionOptions) {
+  console.log('--------------------')
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>')) ?? ['', ''])[1];
   await initAutoTests(package_);
@@ -424,6 +433,7 @@ export async function runTests(options?: TestExecutionOptions) {
     result: string, ms: number, skipped: boolean, logs?: string, owner?: string
   }[] = [];
   console.log(`Running tests`);
+  console.log(options);
   options ??= {};
   options!.testContext ??= new TestContext();
   grok.shell.clearLastError();
@@ -476,6 +486,7 @@ export async function runTests(options?: TestExecutionOptions) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
         let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        console.log(`********${isGBEnable}`);
         if (isGBEnable)
           (window as any).gc();
         memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
@@ -495,20 +506,20 @@ export async function runTests(options?: TestExecutionOptions) {
         if (options.test)
           if (options.test.toLowerCase() !== test.name.toLowerCase())
             continue;
-        
+
         let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-
+        console.log(`********${isGBEnable}`);
         if (isGBEnable)
           (window as any).gc();
         memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
-        
+
         if (isGBEnable)
           (window as any).gc();
-        
+
         if (testRun)
           res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
 
@@ -610,6 +621,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
   let skipReason = filter ? 'skipped' : t.options?.skipReason;
+  console.log(test.name, skip);
 
   if (DG.Test.isInBenchmark && !t.options?.benchmark) {
     stdLog(`SKIPPED: ${t.category} ${t.name} doesnt available in benchmark mode`);
