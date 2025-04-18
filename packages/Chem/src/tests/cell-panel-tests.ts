@@ -233,11 +233,11 @@ category('cell panel', async () => {
     await awaitCheck(() => {
       return res !== null && res.rowCount > 0
     }, `descriptors python scripts hasn't finished in 2 minutes`, 120000, 1000);
-    expect(res?.columns.names().length, 3);
-    expect(selesctedDesc.every((it => res?.columns.names().includes(it))), true);
-    expect((res?.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
-    expect(res?.get('HeavyAtomCount', 0), 25);
-    expect(res?.get('NHOHCount', 0), 1);
+    expect(res!.columns.names().length, 3);
+    expect(selesctedDesc.every((it => res!.columns.names().includes(it))), true);
+    expect((res!.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
+    expect(res!.get('HeavyAtomCount', 0), 25);
+    expect(res!.get('NHOHCount', 0), 1);
 
     //check that widget doesn't throw errors
     for (const mol of molFormats)
