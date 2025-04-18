@@ -23,7 +23,6 @@ async function genomeBrowser(data: string, fileName: string = 'GenomeBrowser'): 
 //tags: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: GenomeBrowser:checkGenomeConfig
-//meta.fileViewerCheck: GenomeBrowser:checkGenomeConfig
 //input: file file
 //output: view v
 export async function previewGenomeFileBrowse(fileData: DG.FileInfo): Promise<DG.View> {
