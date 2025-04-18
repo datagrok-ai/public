@@ -100,7 +100,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer.root);
 
-    /**temporary workaround in order not to set height 100% */
+    /** Temporary workaround to avoid setting height to 100% */
     requestAnimationFrame(() => {
       const wrapper = this.root.closest('.d4-root.d4-filter-group.d4-viewer.d4-filters.ui-box') as HTMLElement;
       if (!wrapper) return;
