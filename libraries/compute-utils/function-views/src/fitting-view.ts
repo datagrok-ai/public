@@ -16,7 +16,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -483,9 +483,7 @@ export class FittingView {
     this.acceptedFitting$.next(chosenCall);
   });
 
-  private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute/function-analysis#parameter-optimization', '_blank');
-  }, 'Open help in a new tab');
+  private helpIcon = getHelpIcon();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {

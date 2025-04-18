@@ -17,3 +17,15 @@
     height: 24px;
     width: 24px;
 }
+
+.fit-view-help-icon {
+    font-size: large;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.fit-view-ribbon-text {    
+    font-weight: normal;
+    margin-left: 2px;
+    margin-right: 8px;
+}
