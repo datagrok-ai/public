@@ -435,12 +435,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     }
   }
 
-  function setupIntersectionObserver(
-    viewer: ScaffoldTreeViewer,
-    groupMap: Map<HTMLElement, DG.TreeViewGroup>,
-    visibleSet: Set<DG.TreeViewGroup>,
-    scheduleUpdate: (group: DG.TreeViewGroup) => void,
-  ) {
+  function setupIntersectionObserver(viewer: ScaffoldTreeViewer, groupMap: Map<HTMLElement, DG.TreeViewGroup>, visibleSet: Set<DG.TreeViewGroup>, scheduleUpdate: (group: DG.TreeViewGroup) => void) {
     return new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const element = entry.target as HTMLElement;
@@ -460,11 +455,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
     });
   }
 
-  function setupResizeObserver(
-    viewer: ScaffoldTreeViewer,
-    groupMap: Map<HTMLElement, DG.TreeViewGroup>,
-    visibleSet: Set<DG.TreeViewGroup>,
-  ) {
+  function setupResizeObserver(viewer: ScaffoldTreeViewer, groupMap: Map<HTMLElement, DG.TreeViewGroup>, visibleSet: Set<DG.TreeViewGroup>) {
     let resizeTimeout: number | null = null;
     const resizedGroups = new Set<DG.TreeViewGroup>();
 
@@ -499,16 +490,7 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
 }
 
-function renderMolecule(
-  node: DG.TreeViewGroup,
-  width: number,
-  height: number,
-  skipDraw: boolean = false,
-  viewer: ScaffoldTreeViewer | undefined,
-  tooltip: boolean = false,
-  color: string | null = null,
-  substructure: string | null = null,
-): HTMLDivElement {
+function renderMolecule(node: DG.TreeViewGroup, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
   const r = window.devicePixelRatio;
   let moleculeWidth = width;
   let moleculeHeight = height;
@@ -687,7 +669,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   scaffoldTreeId: number = scaffoldTreeId;
   colorColumn: DG.Column | null = null;
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
-  _resizeObserverAttached: any;
   intersectionObserver: IntersectionObserver | undefined;
   resizeObserver: ResizeObserver | undefined;
 
