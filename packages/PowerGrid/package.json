@@ -22,6 +22,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "datagrok-tools": "latest",
     "@types/node": "^22.7.5",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^5.20.0",
