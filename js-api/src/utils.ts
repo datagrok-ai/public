@@ -246,7 +246,7 @@ export class Utils {
     );
   }
 
-  static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
+  static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -256,78 +256,84 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-    for (let testParam of testsParams) {
-      let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
-      let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
-      df.columns.add(flakingCol); 
-      let packageNameCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package)); 
-      df.columns.add(packageNameCol); 
-      if (df.rowCount === 0) {
-        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
-        countFailed += 1;
-        failed = true;
-        continue;
-      }
-      
-      let row = df.rows.get(0);
-      if (df.rowCount > 1) {
-        let unhandledErrorRow = df.rows.get(1);
-        if (!unhandledErrorRow.get("success")) {
-          unhandledErrorRow["category"] = row.get("category");
-          unhandledErrorRow["name"] = row.get("name");
-          row = unhandledErrorRow;
+    let lastTest: any = null;
+    try {
+      for (let testParam of testsParams) {
+        lastTest = testParam;
+        let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
+        let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+        df.columns.add(flakingCol);
+        let packageNameCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+        df.columns.add(packageNameCol);
+        if (df.rowCount === 0) {
+          verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+          countFailed += 1;
+          failed = true;
+          continue;
         }
-      } 
-      const category = row.get("category");
-      const testName = row.get("name");
-      const time = row.get("ms");
-      const result = row.get("result");
-      const success = row.get("success");
-      const skipped = row.get("skipped");
-      row["flaking"] = success && DG.Test.isReproducing;
 
-      df.changeColumnType('result', COLUMN_TYPE.STRING);
-      df.changeColumnType('logs', COLUMN_TYPE.STRING);
-      df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
-
-      if (resultDF === undefined)
-        resultDF = df;      
-      else
-        resultDF = resultDF.append(df);
-      
-      if (row["skipped"]) {
-        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countSkipped += 1;
-      }
-      else if (row["success"]) {
-        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countPassed += 1;
-      }
-      else {
-        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countFailed += 1;
-        failed = true;
-      }
-      if((success !== true && skipped!==true)  && stopOnFail)
-        break;
-    }
-
-    if (resultDF) {
-      const bs = DG.BitSet.create(resultDF.rowCount)
-      bs.setAll(true);
-      for(let i = 0; i < resultDF.rowCount; i++){
-        if(resultDF.rows.get(i).get('category') === 'Unhandled exceptions'){
-          bs.set(i, false);
+        let row = df.rows.get(0);
+        if (df.rowCount > 1) {
+          let unhandledErrorRow = df.rows.get(1);
+          if (!unhandledErrorRow.get("success")) {
+            unhandledErrorRow["category"] = row.get("category");
+            unhandledErrorRow["name"] = row.get("name");
+            row = unhandledErrorRow;
+          }
         }
-      }
-      resultDF =  resultDF.clone(bs);
-      csv = resultDF.toCsv()       
-    }
+        const category = row.get("category");
+        const testName = row.get("name");
+        const time = row.get("ms");
+        const result = row.get("result");
+        const success = row.get("success");
+        const skipped = row.get("skipped");
+        row["flaking"] = success && DG.Test.isReproducing;
 
-    if ((<any>window).DG.Test.isInDebug)
-    {
-      console.log('on browser closing debug point');
-      debugger
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
+        df.changeColumnType('logs', COLUMN_TYPE.STRING);
+        df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
+
+        if (resultDF === undefined)
+          resultDF = df;
+        else
+          resultDF = resultDF.append(df);
+
+        if (row["skipped"]) {
+          verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countSkipped += 1;
+        }
+        else if (row["success"]) {
+          verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countPassed += 1;
+        }
+        else {
+          verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countFailed += 1;
+          failed = true;
+        }
+        if ((success !== true && skipped !== true) && stopOnFail)
+          break;
+      }
+
+      if (resultDF) {
+        const bs = DG.BitSet.create(resultDF.rowCount)
+        bs.setAll(true);
+        for (let i = 0; i < resultDF.rowCount; i++) {
+          if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
+            bs.set(i, false);
+          }
+        }
+        resultDF = resultDF.clone(bs);
+        csv = resultDF.toCsv();
+      }
+
+      if ((<any>window).DG.Test.isInDebug) {
+        console.log('on browser closing debug point');
+        debugger
+      }
+
+    } catch (e) {
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${error}` : `test: null, error: ${error}`;
     }
 
     return {
