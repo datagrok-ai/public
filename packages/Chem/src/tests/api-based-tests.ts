@@ -13,22 +13,22 @@ category('server features', () => {
   before(async () => {
   });
   
-  // test('descriptors', async () => {
-  //   await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
-  //   const tree = await grok.chem.descriptorsTree();
-  //   expect(tree !== undefined, true);
-  //   const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
-  //     DG.DataFrame.fromCsv(testCsv);
-  //   const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
-  //     ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
+  test('descriptors', async () => {
+    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+    const tree = await grok.chem.descriptorsTree();
+    expect(tree !== undefined, true);
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
+      DG.DataFrame.fromCsv(testCsv);
+    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
+      ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
 
-  //   expect(t.columns.contains('MolWt'), true);
-  //   expect(t.columns.contains('NumAromaticCarbocycles'), true);
-  //   expect(t.columns.contains('NumHAcceptors'), true);
-  //   expect(t.columns.contains('NumHeteroatoms'), true);
-  //   expect(t.columns.contains('NumRotatableBonds'), true);
-  //   expect(t.columns.contains('RingCount'), true);
-  // }, {benchmark: true, stressTest: true});
+    expect(t.columns.contains('MolWt'), true);
+    expect(t.columns.contains('NumAromaticCarbocycles'), true);
+    expect(t.columns.contains('NumHAcceptors'), true);
+    expect(t.columns.contains('NumHeteroatoms'), true);
+    expect(t.columns.contains('NumRotatableBonds'), true);
+    expect(t.columns.contains('RingCount'), true);
+  }, {benchmark: true, stressTest: true});
 
   test('sketcher', async () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');

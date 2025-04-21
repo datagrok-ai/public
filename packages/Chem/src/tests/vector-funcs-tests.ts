@@ -22,11 +22,11 @@ category('vector functions', () => {
             [30, 22], (val) => (val as DG.BitSet).trueCount);
     });
 
-    // test('chemDescriptor', async () => {
-    //     await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
-    //     await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
-    //         [259.27099609375, 192.01600646972656]);
-    // }, {timeout: 30000 + CONTAINER_TIMEOUT});
+    test('chemDescriptor', async () => {
+        await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+        await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
+            [259.27099609375, 192.01600646972656]);
+    }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
     test('getInchis', async () => {
         await testVectorFunc('Chem:getInchis(${smiles})', 'Inchi', [0, 9],
