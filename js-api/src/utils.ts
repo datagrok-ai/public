@@ -247,7 +247,7 @@ export class Utils {
   }
 
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-    console.log(`********** Entered executeTests function`);
+    console.log(`********** Entered executeTests func`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -324,7 +324,8 @@ export class Utils {
       res = Utils.createResultsCsv(resultDF);
 
     } catch (e) {
-      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}` : `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
     }
 
     return {
