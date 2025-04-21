@@ -247,7 +247,7 @@ export class Utils {
   }
 
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-    console.log(`********** Entered executeTests`);
+    console.log(`********** Entered executeTests function`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
