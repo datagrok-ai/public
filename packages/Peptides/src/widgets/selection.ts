@@ -56,13 +56,14 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
       sourceColCategories = sourceCol.categories;
     } catch (_e) {
     }
-    const getValue = !sourceColRawData || !sourceColCategories ?
+    const getValue = (!sourceColRawData || !sourceColCategories ?
       (i: number): any => sourceCol.get(i) :
-      sourceCol.isNumerical ? (i: number): number => sourceColRawData[i] :
-        (i: number): string => sourceColCategories[sourceColRawData[i]];
+      (sourceCol.isNumerical ? (i: number): number => sourceColRawData[i] :
+        (i: number): string => sourceColCategories[sourceColRawData[i]]));
+    const getNullableValue = (i: number): any => sourceCol.isNone(i) ? null : getValue(i);
     const col = sourceCol.name === options.activityColumn.name ?
-      newTable.columns.addNewFloat(gridCol.name).init((i) => getValue(i) as number) :
-      newTable.columns.addNewVirtual(gridCol.name, (i) => getValue(i) as unknown, sourceCol.type as DG.TYPE);
+      newTable.columns.addNewFloat(gridCol.name).init((i) => getNullableValue(i) as number) :
+      newTable.columns.addNewVirtual(gridCol.name, (i) => getNullableValue(i) as unknown, sourceCol.type as DG.TYPE);
     for (const [tag, value] of sourceCol.tags)
       col.setTag(tag, value);
   }

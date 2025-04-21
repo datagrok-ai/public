@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
@@ -83,7 +84,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
 
   const substitutionsArray: string[] = [];
-  const deltaArray: number[] = [];
+  const deltaArray: (number | null)[] = [];
   const substitutedToArray: string[] = [];
   const mutationsGroupsArray: string[] = [];
   const fromIdxArray: number[] = [];
@@ -123,7 +124,8 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
         const baseActivity = activityScaledColData[referenceIdx];
-
+        // activities can be null, and when getting raw data, they will come up as DG.FLOAT_NULL, so very close to 0, leading to incorrect deltas.
+        const actBaseActivity = options.activityCol.isNone(referenceIdx) ? null : baseActivity;
         for (const subIdx of indexArray) {
           if (forbiddentIndexes.includes(subIdx) || !filteredIndexes.includes(subIdx))
             continue;
@@ -134,11 +136,13 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
 
           const subSeq = alignedSeqColCategories[alignedSeqColData[subIdx]];
-
+          // same here, check for null
+          const actActivity = options.activityCol.isNone(subIdx) ? null : activityScaledColData[subIdx];
+          const delta = actBaseActivity == null || actActivity == null ? null : actBaseActivity - actActivity;
           seenIndexes.get(subIdx)!.push(referenceIdx);
           substitutionsArray.push(`${baseSequence}#${subSeq}`);
           mutationsGroupsArray.push(`${group}`);
-          deltaArray.push(baseActivity - activityScaledColData[subIdx]);
+          deltaArray.push(delta);
           substitutedToArray.push(posColCategories[posColData[subIdx]]);
           fromIdxArray.push(referenceIdx);
           toIdxArray.push(subIdx);
@@ -238,6 +242,18 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
     pairsGrid.invalidate();
     uniqueSequencesGrid.invalidate();
   });
+
+
+  // just a cosmetic thing, draw null values in delta column as N/A
+  pairsGrid.onCellPrepare((gc) => {
+    if (gc?.isTableCell && gc?.gridColumn?.name?.toLowerCase() == 'delta' && (gc?.cell?.value == null || gc?.cell?.value == DG.FLOAT_NULL)) {
+      try {
+        gc.customText = 'N/A';
+      } catch (_) {
+      }
+    }
+  });
+
   pairsGrid.onCellRender.subscribe((gcArgs) => {
     if (gcArgs.cell.tableColumn?.name !== substCol.name || !pairsSelectedIndexes.includes(gcArgs.cell.tableRowIndex!))
       return;
