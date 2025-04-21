@@ -45,12 +45,15 @@ export class DemoView extends DG.ViewBase {
   }
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
-    const path = viewPath.split('|').map((s) => s.trim()).join('/');
+    const splitViewPath = viewPath.split('|');
+    const path = splitViewPath.map((s) => s.trim()).join('/');
     const dockNodes = Array.from(grok.shell.dockManager.rootNode.children)
       .filter((dockNode) => dockNode.container.containerElement.getElementsByClassName('tab-content').length > 0);
     if (dockNodes.length === 0)
       return;
-    const updateIndicatorRoot = dockNodes[0].container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
+    const dockNode = dockNodes.filter((node) => node.container.containerElement.classList.contains('document-manager') ||
+      node.container.containerElement.getElementsByClassName('document-manager').length > 0)[0];
+    const updateIndicatorRoot = dockNode.container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -77,12 +80,7 @@ export class DemoView extends DG.ViewBase {
     } else {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       try {
-        // const sub = grok.events.onViewAdded.subscribe((view) => {
-        //   this.browseView.preview = view;
-        //   grok.shell.v = this.browseView;
-        // });
         await func.apply();
-        // sub.unsubscribe();
       }
       finally { }
       if (grok.shell.tv instanceof DG.TableView)
@@ -90,38 +88,49 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
 
+    this._setViewName(splitViewPath[splitViewPath.length - 1].trim());
     grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
 
-  private _setBreadcrumbsInViewName(viewPath: string[]): void {
-    const path = viewPath.includes('Home') ? viewPath : ['Home', ...viewPath];
+  private _setBreadcrumbsInViewName(viewPath: string[], view?: DG.View): void {
+    const usedView = view ? view === grok.shell.v ? view : null : grok.shell.v;
+    const path = ['Home', 'Demo', ...viewPath.filter((v) => v !== 'Home' && v !== 'Demo')];
     const breadcrumbs = ui.breadcrumbs(path);
 
     breadcrumbs.onPathClick.subscribe(async (value) => {
-      const currentFunc = this.funcs.filter((func) => {
-        return (func.name === value[value.length - 1]);
-      });
-      if (currentFunc.length !== 0)
+      const actualItem = value[value.length - 1];
+      if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
         return;
-      if (value.length === 1 && value[0] === 'Home') {
-        // await this.browseView.setHomeView();
-        return;
-      }
-      this.nodeView(value[value.length - 1], (value[0] === 'Home' ? value.slice(1) : value).join('/'));
+      this.tree.currentItem = actualItem === 'Demo' ? this.tree : this.tree.items.find((item) => item.text === actualItem)!;
     });
 
-    // const viewNameRoot = this.browseView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-    // if (viewNameRoot) {
-    //   viewNameRoot.textContent = '';
-    //   viewNameRoot.appendChild(breadcrumbs.root);
-    // }
+    if (usedView) {
+      if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
+        const homeIcon = ui.iconFA('home', () => {
+          grok.shell.v.close();
+          grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
+        });
+        homeIcon.classList.add('demo-breadcrumbs-home-element');
+        breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
+      }
+      const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+      if (viewNameRoot) {
+        viewNameRoot.textContent = '';
+        viewNameRoot.appendChild(breadcrumbs.root);
+      }
+    }
   }
 
   private _closeAll(): void {
     grok.shell.closeAll();
     this._closeDemoScript();
+  }
+
+  private _setViewName(name: string): void {
+    if (grok.shell.v)
+      grok.shell.v.name = name;
   }
 
   private _closeDemoScript(): void {
@@ -222,6 +231,10 @@ export class DemoView extends DG.ViewBase {
 
     const searchInput = this._createSearchInput(this.funcs, tree);
     this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
+    this.subs.push(grok.events.onViewAdded.subscribe((view) => {
+      if (view.name === 'Demo app')
+        setTimeout(() => this._setBreadcrumbsInViewName([], view), 100); // we need this because sometimes view is added one more time
+    }));
   }
 
   private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {
@@ -349,10 +362,10 @@ export class DemoView extends DG.ViewBase {
     tree.root.classList.add('demo-app-group-view');
     const searchInput = this._createSearchInput(directionFuncs, tree);
     view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
-    this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     // this.tree.root.focus();
     this.tree.rootNode.root.focus();
     grok.shell.addView(view);
+    this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     // this.browseView.preview = view;
   }
 

@@ -7,7 +7,7 @@ import {createTableView} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
-import { SHOW_FRAGS_MODE } from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
+import { MMP_NAMES, SHOW_FRAGS_MODE } from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 
 const pairsFromMolblock = `
      RDKit          2D
@@ -114,14 +114,14 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
       'O=C1Oc2ccccc2C(O)C1Cc1ccc(O)cc1O',
       'OCc1ccnc2cc(Cl)ccc12',
     ]},
-    'Observed activity': {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
-    'Activity': {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
-    'Core': {idxs: [0, 70, 113],
+    [MMP_NAMES.OBSERVED]: {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
+    [MMP_NAMES.PROPERTY_TYPE]: {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
+    [MMP_NAMES.CORE]: {idxs: [0, 70, 113],
       values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O', 'Clc1ccc2c(C[*:1])ccnc2c1']},
-    'From': {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
-    'To': {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
-    'Predicted activity': {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
-    'Predicted molecule': {idxs: [0, 70, 113],
+    [MMP_NAMES.FROM]: {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
+    [MMP_NAMES.TO]: {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
+    [MMP_NAMES.PREDICTED]: {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
+    [MMP_NAMES.NEW_MOLECULE]: {idxs: [0, 70, 113],
       values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O', 'CCCc1ccnc2cc(Cl)ccc12']},
   },
 };

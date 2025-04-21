@@ -5,7 +5,7 @@
     "name": "Amelichev Konstantin",
     "email": "kamelichev@datagrok.ai"
   },
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "TensorFlow.js provides support for training and applying TensorFlow.js-based predictive models.",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   "dependencies": {
     "@tensorflow/tfjs": "^4.21.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "jszip": "^3.10.1",
     "jszip-sync": "^3.2.1-sync"

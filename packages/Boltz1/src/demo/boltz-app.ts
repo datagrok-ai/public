@@ -184,7 +184,7 @@ export class Boltz1AppView {
     this.pocketInputs.set(`${uniqueName} ${pocketChain.caption}`, pocketChain);
     this.pocketInputs.set(`${uniqueName} ${pocketResidues.caption}`, pocketResidues);
 
-    return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], { style: { justifyContent: 'stretch' } });
+    return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], { style: { justifyContent: 'space-between', width: '80%' } });
   }
 
   private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {

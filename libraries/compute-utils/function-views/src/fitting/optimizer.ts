@@ -21,15 +21,19 @@ export async function performNelderMeadOptimization(
   let failsCount = 0;
   let failsDF: DG.DataFrame | null = null;
 
-  const pi = DG.TaskBarProgressIndicator.create(`Fitting...`);
-
   let i: number;
+  let percentage = 0;
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
 
   for (i = 0; i < samplesCount; ++i) {
     try {
       extremums.push(await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop));
 
       pi.update(100 * (i + 1) / samplesCount, `Fitting...`);
+
+      percentage = Math.floor(100 * (i + 1) / samplesCount);
+      pi.update(percentage, `Fitting... (${percentage}%)`);
+
       await sleep(MS_TO_SLEEP);
 
       if ((pi as any).canceled)

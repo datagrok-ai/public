@@ -1,20 +1,25 @@
 import os
-import torch
-import numpy as np
+import sys
 import logging
+import tempfile
 from time import time
 from numpy.linalg import norm
+from concurrent.futures import ThreadPoolExecutor
+
+import torch
+import numpy as np
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify
-from constants import mean_vectors
-from chemprop import data, featurizers, models
+from flask_cors import CORS
 from lightning import pytorch as pl
 from lightning.pytorch.accelerators import find_usable_cuda_devices
 from io import StringIO
-from flask_cors import CORS
+
+from constants import mean_vectors
+from chemprop import data, featurizers, models
+
 
 app = Flask(__name__)
 CORS(app)
@@ -22,13 +27,31 @@ CORS(app)
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
 
+# Global flag to control whether exceptions should be raised or logged
+raise_ex_flag = False  # Default is to log exceptions, not raise them
+
 def is_malformed(smiles):
-  try:
-    mol = Chem.MolFromSmiles(smiles)
-    return mol is None
-  except Exception as e:
-    logging.error(f"Error validating SMILES '{smiles}': {str(e)}")
+  with tempfile.NamedTemporaryFile(mode='w+', delete=True) as tmp_file:
+    stderr_fileno = sys.stderr.fileno()
+    stderr_backup = os.dup(stderr_fileno)
+
+    try:
+      os.dup2(tmp_file.fileno(), stderr_fileno)
+      mol = Chem.MolFromSmiles(smiles)
+      os.dup2(stderr_backup, stderr_fileno)
+    finally:
+      os.close(stderr_backup)
+    
+    tmp_file.seek(0)
+    warning_msg = tmp_file.read().strip()
+
+  if mol is None or warning_msg:
+    print(f"Invalid SMILES detected: {smiles}. Warning: {warning_msg}")
+    if raise_ex_flag:
+      raise ValueError(f"Invalid SMILES string: {smiles}. Warning: {warning_msg}")
     return True
+
+  return False
 
 def convert_to_smiles(molecule):
   if "M  END" in molecule:
@@ -37,6 +60,8 @@ def convert_to_smiles(molecule):
       return Chem.MolToSmiles(mol) if mol else ''
     except Exception as e:
       logging.error(f"Error converting molblock to SMILES: {str(e)}")
+      if raise_ex_flag:
+        raise ValueError("Error converting molblock to SMILES") from e
       return None
   return molecule
 
@@ -173,11 +198,13 @@ def handle_exception(e):
 
 @app.route('/predict', methods=['POST'])
 def admetica_predict():
+  global raise_ex_flag
+  
   try:
+    raise_ex_flag = request.args.get('raiseException', 'false').lower() == 'true'
     raw_data = request.data
-    
     models = request.args.get('models')
-    add_probability = request.args.get('probability', 'false') == 'true'
+    add_probability = False
     start = time()
     response_data = predict(raw_data, models, add_probability)
     logging.debug(f'Time required: {time() - start}')

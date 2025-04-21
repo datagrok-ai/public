@@ -1,4 +1,4 @@
-# DevTools changelog
+# Dev Tools changelog
 
 ## 1.5.1 (2025-27-01)
 

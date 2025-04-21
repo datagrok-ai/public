@@ -88,7 +88,7 @@ export class FittingTutorial extends Tutorial {
     
     browseIcon.click();
     
-    let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
+    let name = 'Model-Hub';
     const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
     
@@ -141,18 +141,32 @@ export class FittingTutorial extends Tutorial {
       'Go to the next step',
     );
 
-    await this.action(
-      'Click "OK"',
-      fromEvent(okBtn, 'click'),
-      undefined,
-      `Click "OK" to go to the next step.`,
-    );
+    if (okBtn !== null){
+      await this.action(
+        'Click "OK"',
+        fromEvent(okBtn, 'click'),
+        undefined,
+        `Click "OK" to go to the next step.`,
+      );
+    }
 
     // 5. Run fitting
     this.title('Fit scalar output');
     this.describe('How should the ball be thrown to make it fly exactly 10 meters? Let\'s find the answer.');
 
-    const fitIcnRoot = document.querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
+    const ribbonPannels = modelView.getRibbonPanels();
+    if (ribbonPannels.length < 1) {
+      grok.shell.warning('Failed to run model analysis features');
+      return;      
+    }
+
+    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    if (rightPanel.length < 2) {
+      grok.shell.warning('Failed to load model analysis features');
+      return;      
+    }
+
+    const fitIcnRoot = rightPanel[rightPanel.length - 2];
 
     await this.action(
       'Click "Fit inputs"',
@@ -254,7 +268,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.children[20] as HTMLElement;
+    const trajectoryRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -296,10 +310,12 @@ export class FittingTutorial extends Tutorial {
       ui.hints.POSITION.RIGHT,
     );
 
-    await this.action(
-      'Explore the fitted trajectory',
-      fromEvent(okBtn, 'click'),
-    );
+    if (okBtn !== null) {
+      await this.action(
+        'Explore the fitted trajectory',
+        fromEvent(okBtn, 'click'),
+      );
+    }
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

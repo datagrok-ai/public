@@ -1,13 +1,13 @@
 {
   "name": "chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "../../libraries/utils"
+    "@datagrok-libraries/utils": "^4.5.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",

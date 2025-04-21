@@ -1,4 +1,4 @@
-//name: simpleInputs2
+//name: SimpleInputs2
 //language: javascript
 //description: RichFunctionView simple inputs test
 //input: int a

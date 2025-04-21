@@ -20,6 +20,7 @@ import './tests/compute-utils/reactive-tree-driver/oninit-hook';
 import './tests/compute-utils/reactive-tree-driver/links-workflow';
 import './tests/compute-utils/reactive-tree-driver/sequence-run';
 import './tests/compute-utils/reactive-tree-driver/links-retention';
+import './tests/compute-utils/reactive-tree-driver/structurecheck-hook';
 
 export const _package = new DG.Package();
 export {tests};

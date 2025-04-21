@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.70 (2025-04-14)
+
+### Features
+
+* Added error output
+
 ## 4.13.67 (2025-03-26)
 
 ### Features

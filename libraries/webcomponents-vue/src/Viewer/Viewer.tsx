@@ -21,24 +21,36 @@ export const Viewer = Vue.defineComponent({
     options: Object as Vue.PropType<Record<string, string | boolean | string[]>>,
   },
   emits: {
-    viewerChanged: (v: DG.Viewer<any> | undefined) => v,
+    viewerChanged: (_v: DG.Viewer<any> | undefined) => true,
   },
   setup(props, {emit}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('Viewer onRenderTriggered', event);
+    });
+
     const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
     const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
     const type = Vue.computed(() => props.type);
+    const viewerRef = Vue.shallowRef<ViewerT | undefined>(undefined);
+
     const viewerChangedCb = (event: any) => {
-      emit('viewerChanged', event.detail);
+      emit('viewerChanged', event.detail ? Vue.markRaw(event.detail) : undefined);
     };
-    return () => <Vue.KeepAlive>
+
+    Vue.onBeforeUnmount(() => {
+      viewerRef.value?.destroy();
+    });
+
+    return () => (
       <dg-viewer
         type={type.value}
         options={options.value}
         dataFrame={currentDf.value}
         onViewerChanged={viewerChangedCb}
         style={{display: 'block', flexGrow: '1'}}
+        ref={viewerRef}
       >
       </dg-viewer>
-    </Vue.KeepAlive>;
+    );
   },
 });

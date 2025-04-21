@@ -66,9 +66,11 @@
   overflow: hidden;
 }
 
+/** Setting height to 100% is misleading when calculating visible nodes, which is why optimization for visible nodes fails */
 .d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar) {
   position: relative;
-  height: 100%;
+  min-height: 50px;
+  height: auto;
 }
 
 .d4-filter-element .grok-loader {
@@ -241,6 +243,7 @@
 }
 
 .chem-scaffold-tree-toolbar {
+  min-height: 24px;
   max-height: 24px;
   margin: 0 0 2px 2px;
   visibility: hidden;
@@ -667,8 +670,7 @@
 .mmpa-slider-roots {
   position: absolute;
   z-index: 1;
-  right: 0px;
-  margin-right: 10px;
+  margin-left: 10px;
 }
 
 .mmpa-slider-input {
@@ -780,6 +782,10 @@
   padding: 5px;
 }
 
+.chem-mmp-trellis-plot {
+  height: 100%!important;
+}
+
 .chem-mmp-trellis-plot div[name="viewer selector"] {
   display: none;
 }
@@ -792,6 +798,20 @@
   padding-left: 7px;
   padding-top: 4px;
 }
+
+.chem-mmp-trellis-filters-div {
+  height: 100%;
+  width: 100%;
+}
+
+.chem-mmp-trellis-filters-div.filters-closed {
+  display: none!important;
+}
+
+/* .chem-mmp-trellis-filters-div.filters-opened {
+  display: flex !important;
+  width: 100% !important;
+} */
 
 .mmp-trellis-summary-col-dlg select {
   display: none;
@@ -853,6 +873,10 @@
 
 .chem-mmp-show-pairs-checkbox label {
   margin-right: 3px!important;
+}
+
+.chem-mmpa-generation-tab-cp-header {
+  margin-left: 10px;
 }
 
 .chem-activity-cliffs-tooltip {

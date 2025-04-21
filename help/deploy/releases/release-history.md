@@ -22,6 +22,71 @@ See also:
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
 
+## 2025-03-28 Datagrok 1.25.0 release
+
+The Datagrok 1.25.0 release focuses on enhancing the UI/UX, visualizations, and overall workflow efficiency
+
+### Breaking changes
+
+Browse UX: Site markup, UI API, and CSS styles have been updated. If your packages or integrations rely on specific UI elements or styling, it is recommended to check for compatibility and make the necessary adjustments.
+
+### Main updates
+ * **New Browse UX**: three new tabs—Toolbox, Dashboards, and Favorites—make navigation more intuitive and organized
+* **Content-specific file viewers**: improved file viewer support now detects both format and content, allowing files like .xlsx to open in the most suitable viewer—e.g., plain data opens as tables, while plate-formatted files open in the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers)
+* **Harmonized server settings**: we removed unchanged settings (hosts, ports, credentials), eliminated empty entries, and standardized service configurations
+
+ ### Viewers
+
+* Mini-legend: added an interactive tooltip 
+* [#2303](https://github.com/datagrok-ai/public/issues/2303): Provided 3-point-color scheme for gradient colors 
+* [Box plot](../../visualize/viewers/box-plot.md):  [#3292](https://github.com/datagrok-ai/public/issues/3292): Implemented zoom persistence for visualizations in layouts
+* Pivot table: [#3199](https://github.com/datagrok-ai/public/issues/3199): Added the ability to open data in new workspace
+* [Trellis plot](../../visualize/viewers/trellis-plot.md): Enabled filter on cell click
+* [PC plot](../../visualize/viewers/pc-plot.md): Now features legend and column coloring
+* [ Pie chart](../../visualize/viewers/pie-chart.md): Added max pie circle size property
+* Fixed for [Line Chart](../../visualize/viewers/line-chart.md):
+   * [#3288](https://github.com/datagrok-ai/public/issues/3288): Added more detailed explanation for “too many categories” 
+   * [#3289](https://github.com/datagrok-ai/public/issues/3289): If the column in the legend has too many categories, the legend is not displayed
+
+
+#### [Grid](../../visualize/viewers/grid.md)
+
+*  Image Url columns now support links to images using Datagrok paths
+* [#3077](https://github.com/datagrok-ai/public/issues/3077): Added the ability to define colors for the linear coloring (min, max, inflection point)
+* [#3285](https://github.com/datagrok-ai/public/issues/3285): Сalculated columns now show unique columns in the error message
+* Fixed [#3243](https://github.com/datagrok-ai/public/issues/3243): Columns coloring via Edit Column Properties 
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* Improved the jittering function. For details, see [Jittering function in scatterplot](https://community.datagrok.ai/t/jittering-fucntion-in-scatter-plot/904/4?u=oahadzhanian.datagrok.ai)
+* Fixed [#3193](https://github.com/datagrok-ai/public/issues/3193): The color by expression dialog now retains the last entered formula
+
+### Packages
+
+#### [Chem:](https://github.com/datagrok-ai/public/tree/master/packages/Chem/CHANGELOG.md)
+
+*  [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: Added the ability to apply scaffold tree colors to scatterplot or other viewers
+
+#### [Charts:](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+* [#3249](https://github.com/datagrok-ai/public/issues/3249): Tree viewer: Added cross-viewer selection
+* Fixed [#3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer not clickable upper node 
+
+#### [Power Grid](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/CHANGELOG.md)
+
+* Fixed [#3242](https://github.com/datagrok-ai/public/issues/3242): Pinned columns: Long column name is not visible when column is pinned  
+
+
+#### [Usage analysis](https://github.com/datagrok-ai/public/blob/master/packages/UsageAnalysis/CHANGELOG.md)
+
+ *  Implemented the ability to filter functions usage by function tag
+ *  [#3213](https://github.com/datagrok-ai/public/issues/3213): Added a new Projects tab (beta). For details, see [Usage Analysis: Features](https://datagrok.ai/help/govern/audit/usage-analysis#features)
+
+#### [Diff studio](https://github.com/datagrok-ai/public/blob/master/packages/DiffStudio/CHANGELOG.md)
+
+ *  Implemented in-webworker solving equations
+ *  Refactored Diff Studio to leverage the Diff Grok library for improved performance and extensibility
+
+
 ## 2025-02-18 Datagrok 1.24.0 release
 
 The Datagrok 1.24.0 release includes stability, visualization, and UX improvements
@@ -1208,7 +1273,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * The ability to configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
-* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/function_results_cache#client-side-cache)
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/function_results_cache#client-side-cache)
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.
@@ -1501,7 +1566,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 * [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new tutorials.
 
   
-### Enhancements in libraries
+### Enhancements in libraries 
 
 * A new [math](https://github.com/datagrok-ai/public/tree/master/libraries/math/CHANGELOG.md) library intended to be used for high efficiency (mostly wasm) calculations.
 * See other updates for [utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils/CHANGELOG.md), [ml](https://github.com/datagrok-ai/public/tree/master/libraries/ml/CHANGELOG.md) and [bio](https://github.com/datagrok-ai/public/tree/master/libraries/bio/CHANGELOG.md).
@@ -1569,7 +1634,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * Namespaces view for easy access to all data sources and content within the platform. Now you can explore and access all available data in one centralized location.
 * [EDA package](release-history.md#eda) using partial least squares regression for the multivariate data analysis.
 * [Bioreactors package](#bioreactors) for the simulation of the mechanism of Controlled Fab-Arm Exchange.
-* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 * [Demo application](https://public.datagrok.ai/apps/Tutorials/Demo), an interactive educational resource showcasing the diverse capabilities and features of the DataGrok platform. It offers tutorials and demonstrations for hands-on learning of data manipulation, visualization, modeling, and more.
 * Multiple improvements in plugins, such as  [Chem](#chem), [Peptides](#peptides), [Dendrogram](#dendrogram).
 
@@ -1663,11 +1728,11 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 
 #### [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis#readme)
 
-We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 
 #### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
 
-We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
+We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis).
 
 #### [Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors#readme)
 

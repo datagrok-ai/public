@@ -34,7 +34,7 @@ function getSettings(gc: DG.GridColumn): BarChartSettings {
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const df = gridCell.grid.dataFrame;
-  const cols = df.columns.byNames(settings.columnNames);
+  const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
   const row = gridCell.cell.row.idx;
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height)
     .inflate(-2, -2);
@@ -83,7 +83,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const settings: BarChartSettings = getSettings(gridCell.gridColumn);
     const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
     const row = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
     g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
 
     for (let i = 0; i < cols.length; i++) {

@@ -143,7 +143,7 @@ After Day 4, you will learn:
 1. Create a function that aggregates demographics data in your package:
    1. A function called `diseaseAvgAge` takes parameters `df` and `site`, aggregates data, and returns a dataframe with
       average age for each disease. Average age should be represented separately for female and male patients.
-   1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/classes/dg.DemoDatasets#demog)
+   1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/dg/classes/DemoDatasets#demog)
    1. Refer to the [data aggregation](https://public.datagrok.ai/js/samples/data-frame/aggregation/aggregate) example
 1. Calculated columns:
    1. Complete the [Calculated Columns](https://dev.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/CalculatedColumns)
@@ -151,7 +151,7 @@ After Day 4, you will learn:
    1. Create a function that adds a calculated column to the demographics dataset:
       1. A function called `addBmiColumn` takes parameters `df`, column names `weight`, and `height`, adds a column with
          BMI to the original dataframe.
-      1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/classes/dg.DemoDatasets#demog)
+      1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/dg/classes/DemoDatasets#demog)
       1. Refer to the
          [example](https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns/add-calculated-column)
          for calculated columns

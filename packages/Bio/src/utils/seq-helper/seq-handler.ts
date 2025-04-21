@@ -54,7 +54,7 @@ export class SeqHandler implements ISeqHandler {
     const defaultGapOriginal = this.isFasta() ? GapOriginals[NOTATION.FASTA] :
       this.isSeparator() ? GapOriginals[NOTATION.SEPARATOR] :
         this.isHelm() ? GapOriginals[NOTATION.HELM] :
-          this.isCustom() ? this.notationProvider.defaultGapOriginal :
+          this.isCustom() ? (this.notationProvider?.defaultGapOriginal ?? GapOriginals[NOTATION.SEPARATOR]) :
             undefined;
     if (defaultGapOriginal == undefined)
       throw new Error(`Unexpected defaultGapOriginal for notation '${this.notation}'`);
@@ -97,6 +97,72 @@ export class SeqHandler implements ISeqHandler {
     }
 
     this.columnVersion = this.column.version;
+    // refine separator only at this stage
+    if (this.isSeparator() && (!this.isCustom() || !this.notationProvider) && !col.temp['seqHandlerRefined']) {
+      this.refineSeparatorNotation();
+      col.temp['seqHandlerRefined'] = true;
+    }
+  }
+
+  private async refineSeparatorNotation() {
+    // from detectors.
+    const SEQ_SAMPLE_LIMIT = 100; const SEQ_SAMPLE_LENGTH_LIMIT = 100;
+    const categoriesSample = [...new Set((this.column.length < SEQ_SAMPLE_LIMIT ?
+      wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, this.column.length)).map((rowI) => this.column.get(rowI)) :
+      this.column.categories.slice(0, SEQ_SAMPLE_LIMIT))
+      .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
+      .filter((seq) => seq.length !== 0/* skip empty values for detector */),
+    )];
+
+    const getStats = (values: string[], minLength: number, splitter: (s: string) => string[]) => {
+      const freq:{[key: string]: number} = {};
+      let sameLength = true;
+      let firstLength = null;
+
+      for (const seq of values) {
+        const mSeq = !!seq ? splitter(seq) : [];
+
+        if (firstLength === null)
+          firstLength = mSeq.length;
+        else if (mSeq.length !== firstLength)
+          sameLength = false;
+
+        if (mSeq.length >= minLength) {
+          for (const m of mSeq) {
+            if (!(m in freq)) freq[m] = 0;
+            freq[m] += 1;
+          }
+        }
+      }
+      return {freq: freq, sameLength: sameLength};
+    };
+
+    const stats = getStats(categoriesSample, 3, (s) => s.split(this.separator!));
+    let invalidateRequired = false;
+
+    const refinerList = [
+      {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
+    ];
+
+    for (const refineFuncFind of refinerList) {
+      try {
+        const funcList = DG.Func.find(refineFuncFind);
+        if (funcList.length === 0) continue;
+
+        const funcFc = funcList[0].prepare({col: this.column, stats: stats, separator: this.separator});
+        const refineRes = (await funcFc.call()).getOutputParamValue();
+        invalidateRequired ||= refineRes;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (invalidateRequired) {
+    // Applying custom notation provider MUST invalidate SeqHandler
+      delete this.column.temp[SeqTemps.seqHandler];
+
+      this.column.fireValuesChanged();
+    }
   }
 
   /** From detectMacromolecule */

@@ -88,7 +88,9 @@ class BioPackageDetectors extends DG.Package {
   }
 
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
-  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
+  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein', 'pep', 'enumerated'];
+
+  veryLikelyColNamePartList = ['peptide', 'oligo', 'sequence', 'enumerated'];
 
   peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
@@ -152,7 +154,9 @@ class BioPackageDetectors extends DG.Package {
       const colName = col.name;
       const colNameLikely = this.likelyColNamePartList.some(
         (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
-      const seqMinLength = colNameLikely ? 7 : 10;
+      const colNameVeryLikely = this.veryLikelyColNamePartList.some(
+        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
+      const seqMinLength = colNameVeryLikely ? 3 : colNameLikely ? 7 : 10;
       const maxBadRatio = colNameLikely ? 0.05 : 0.005;
 
       // Fail early
@@ -188,11 +192,11 @@ class BioPackageDetectors extends DG.Package {
         col.setTag(DG.TAGS.CELL_RENDERER, 'helm');
         return DG.SEMTYPE.MACROMOLECULE;
       }
-
+      const multiplier = colNameVeryLikely ? 1.4 : colNameLikely ? 1.2 : 1.0;
       const decoyAlphabets = [
-        ['NUMBERS', this.numbersRawAlphabet, 0.25, undefined],
-        ['SMILES', this.smilesRawAlphabet, 0.25, (seq) => seq.replaceAll()],
-        ['SMARTS', this.smartsRawAlphabet, 0.45, undefined],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25 * multiplier, undefined],
+        ['SMILES', this.smilesRawAlphabet, 0.25 * multiplier, (seq) => seq.replaceAll()],
+        ['SMARTS', this.smartsRawAlphabet, 0.45 * multiplier, undefined],
       ];
 
       const candidateAlphabets = [
@@ -304,7 +308,6 @@ class BioPackageDetectors extends DG.Package {
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
 
-        refineSeqSplitter(col, stats, separator).then(() => { });
         col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -620,36 +623,5 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
     });
-  }
-}
-
-async function refineSeqSplitter(col, stats, separator) {
-  let invalidateRequired = false;
-
-  const refinerList = [
-    {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
-  ];
-
-  for (const refineFuncFind of refinerList) {
-    try {
-      const funcList = DG.Func.find(refineFuncFind);
-      if (funcList.length === 0) continue;
-
-      const funcFc = funcList[0].prepare({col: col, stats: stats, separator: separator});
-      const refineRes = (await funcFc.call()).getOutputParamValue();
-      invalidateRequired ||= refineRes;
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  if (invalidateRequired) {
-    // Applying custom notation provider MUST invalidate SeqHandler
-    delete col.temp[SeqTemps.seqHandler];
-
-    for (const view of grok.shell.tableViews) {
-      if (view.dataFrame === col.dataFrame)
-        view.grid.invalidate();
-    }
   }
 }

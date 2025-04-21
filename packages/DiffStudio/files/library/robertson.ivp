@@ -1,5 +1,4 @@
 #name: Robertson
-#tags: model
 #description: Robertson's chemical reaction model
 #comment: This is classic example of stiff ODEs.
 #equations:

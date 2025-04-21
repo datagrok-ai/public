@@ -4,7 +4,6 @@
 
 /** Chemical reactions, mass-action kinetics */
 const CHEM_REACT_MODEL = `#name: Chem react
-#tags: model
 #description: Mass-action kinetics illustration
 #comment: 
   Source: https://doi.org/10.1002/ijch.201800003.
@@ -42,7 +41,6 @@ const CHEM_REACT_MODEL = `#name: Chem react
 
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `#name: Robertson
-#tags: model
 #description: Robertson chemical reaction model
 #comment: This is classic example of stiff ODEs.
 #equations:
@@ -64,7 +62,6 @@ const ROBERTSON_MODEL = `#name: Robertson
 
 /** Fermentation process simulation */
 const FERMENTATION_MODEL = `#name: Fermentation
-#tags: model
 #description: Simulation of fermentation process in the ethanol production
 #comment: 
   Source: https://core.ac.uk/download/pdf/11737483.pdf.
@@ -93,7 +90,6 @@ const FERMENTATION_MODEL = `#name: Fermentation
 
 /** PK simulation */
 const PK_MODEL = `#name: PK
-#tags: model
 #description: Pharmacokinetic (PK) simulation: one-compartment model
 #equations:
   d(depot)/dt = -KA * depot
@@ -127,7 +123,6 @@ const PK_MODEL = `#name: PK
 
 /** PK-PD simulation */
 const PK_PD_MODEL = `#name: PK-PD
-#tags: model
 #description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
 #equations:
   d(depot)/dt = -KA * depot
@@ -169,7 +164,6 @@ const PK_PD_MODEL = `#name: PK-PD
 
 /** Gluconic acid production */
 const ACID_PROD_MODEL = `#name: GA-production
-#tags: model
 #description: Gluconic acid (GA) production by Aspergillus niger modeling
 #equations:
   dX/dt = rX
@@ -221,7 +215,6 @@ const ACID_PROD_MODEL = `#name: GA-production
 
 /** Nimotuzumab disposition model */
 const NIMOTUZUMAB_MODEL = `#name: Nimotuzumab
-#tags: model
 #description: Nimotuzumab disposition model
 #comment:
   Source: https://www.mdpi.com/1999-4923/12/12/1147
@@ -267,7 +260,6 @@ const NIMOTUZUMAB_MODEL = `#name: Nimotuzumab
 
 /** Bioreactor simulation */
 const BIOREACTOR_MODEL = `#name: Bioreactor
-#tags: model
 #description: Bioreactor simulation
 #comment: 
   Source: https://doi.org/10.1074/jbc.RA117.000303.
@@ -418,7 +410,6 @@ const BIOREACTOR_MODEL = `#name: Bioreactor
 
 /** Pollution model */
 const POLLUTION_MODEL = `#name: Pollution
-#tags: model
 #description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
 #comment: 
   Source: https://archimede.uniba.it/~testset/report/pollu.pdf

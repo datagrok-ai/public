@@ -1,5 +1,19 @@
 # Peptides changelog
 
+## 1.23.4 (2025-04-21)
+
+* Fixes for selection table for DG null values
+* Correction of unselection for standalone viewers
+* Cosmetic corrections to null values in predictions
+
+## 1.23.3 (2025-04-17)
+
+Selection widget: value retrieving fix
+
+## 1.23.2 (2025-04-14)
+
+* Manual setting of notation providers to tables
+
 ## 1.22.0 (2025-03-22)
 
 * Fixed unhighlighting of header weblogo

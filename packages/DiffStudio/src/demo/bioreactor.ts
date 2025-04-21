@@ -6,7 +6,6 @@ import {Model} from '../model';
 
 /** Bioreactor model specification */
 const MODEL = `#name: Bioreactor
-#tags: model
 #description: Bioreactor simulation
 #comment: 
   Source: https://doi.org/10.1074/jbc.RA117.000303.

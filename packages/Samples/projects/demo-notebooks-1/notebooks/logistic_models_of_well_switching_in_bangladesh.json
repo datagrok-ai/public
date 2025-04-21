@@ -24,10 +24,10 @@
         },
         "outputs": [],
         "source": [
-          "from datagrok.api import *\n",
-          "grok_host = 'http://host.docker.internal:8888/api'\n",
-          "grok_init(grok_host)\n",
-          "df = grok_read('e6641860-3260-11e9-b889-2bfe7b437dbf')"
+          "from datagrok_api import DatagrokClient\n",
+          "base_url = 'http://host.docker.internal:8888/api'\n",
+          "api = DatagrokClient(@USER_API_KEY, base_url)\n",
+          "df = api.download_table('e6641860-3260-11e9-b889-2bfe7b437dbf')"
         ]
       },
       {

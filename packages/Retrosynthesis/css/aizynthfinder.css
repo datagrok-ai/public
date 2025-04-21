@@ -1,18 +1,24 @@
-.surechembl-add-all-patents-to-workspace-button {
-  color: #2083d5!important;
-  padding-bottom: 10px;
-}
-
-.surechembl-add-patents-to-workspace-button {
-  color: #2083d5!important;
-  visibility: hidden;
-}
-
-.d4-accordion-pane-header:hover .surechembl-add-patents-to-workspace-button {
-    visibility: visible;
-}
-
 .retrosynthesis-reaction-container {
   position: relative;
   margin-top: 15px;
+}
+
+.retrosynthesis-mol-rect {
+  cursor: pointer;
+}
+
+.retrosynthesis-settings-icon {
+  position: absolute;
+  top: 40px;
+  font-size: 16px;
+}
+
+.retrosynthesis-settings-dlg .dlg-settings {
+  min-height: 10px;
+}
+
+.retrosynthesis-add-config-icon {
+  color: var(--blue-1);
+    padding-left: 8px;
+    padding-top: 10px;
 }

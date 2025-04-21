@@ -12,10 +12,10 @@ REMARK. This UI does NOT contain the Process mode input (unlike Diff Studio). Al
 * Observe Changes: Verify that the table and line chart are modified in real-time as you move the slider.
 3. Save the Script:
 * Add "//tags: model" to JS body. Save the script after confirming that it runs correctly.
-4. Access Model in Model Catalog:
-* Go to Apps > Run Model catalog > Open the saved model from the catalog.
+4. Access Model in Model Hub:
+* Go to Apps > Run Model Hub > Open the saved model from the hub.
 5. Interact with Model:
-* Move the slider for the Final at input in the Model catalog.
+* Move the slider for the Final at input in the Model Hub.
 
 Expected Results:
 

@@ -1,5 +1,4 @@
 #name: PK-PD
-#tags: model
 #description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
 #equations:
   d(depot)/dt = -KA * depot

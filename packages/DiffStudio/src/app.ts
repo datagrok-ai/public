@@ -10,6 +10,7 @@ import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
 import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
@@ -170,7 +171,6 @@ function getLink(state: EDITOR_STATE): string {
 /** Completions of control expressions */
 const completions = [
   {label: `${CONTROL_EXPR.NAME}: `, type: 'keyword', info: INFO.NAME},
-  {label: `${CONTROL_EXPR.TAGS}: `, type: 'keyword', info: INFO.TAGS},
   {label: `${CONTROL_EXPR.DESCR}: `, type: 'keyword', info: INFO.DESCR},
   {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: 'keyword', info: INFO.DIF_EQ},
   {label: `${CONTROL_EXPR.EXPR}:\n  `, type: 'keyword', info: INFO.EXPR},
@@ -229,6 +229,12 @@ type Browsing = {
 type LastModel = {
   info: string,
   isCustom: boolean,
+};
+
+/** Lookup data specification */
+type LookupData = {
+  arr: Int32Array | Uint32Array | Float32Array | Float64Array,
+  format: string | null | undefined,
 };
 
 /** Docking options */
@@ -489,7 +495,7 @@ export class DiffStudio {
   private sensAnWgt = this.getSensAnWgt();
   private fittingWgt = this.getFitWgt();
 
-  private addToModelCatalogWgt = this.getAddToModelCatalogWgt();
+  private addToModelCatalogWgt = this.getAddToModelHubWgt();
 
   private facetGridDiv: HTMLDivElement | null = null;
   private facetGridNode: DG.DockNode | null = null;
@@ -689,11 +695,11 @@ export class DiffStudio {
   }
 
   /** Return the export to JavaScript widget */
-  private getAddToModelCatalogWgt(): HTMLElement {
+  private getAddToModelHubWgt(): HTMLElement {
     const icon = ui.iconFA(
       'layer-plus',
-      async () => await this.saveToModelCatalog(),
-      'Save to Model Catalog',
+      async () => await this.saveToModelHub(),
+      'Save to Model Hub',
     );
 
     icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
@@ -742,7 +748,7 @@ export class DiffStudio {
     this.exportToJsWgt.style.color = color;
   }
 
-  /** Update state of the save to Model Catalog widget */
+  /** Update state of the save to Model Hub widget */
   private updateSaveToModelCatalogWidget(enabled: boolean) {
     const color = this.getColor(enabled);
     this.addToModelCatalogWgt.style.color = color;
@@ -973,7 +979,7 @@ export class DiffStudio {
   }; // exportToJS
 
   /** Get JS-script for solving the current IVP */
-  private async saveToModelCatalog(): Promise<void> {
+  private async saveToModelHub(): Promise<void> {
     try {
       const model = this.editorView!.state.doc.toString();
       const ivp = getIVP(model);
@@ -1001,7 +1007,7 @@ export class DiffStudio {
 
       const script = DG.Script.create(lines.join('\n'));
       grok.dapi.scripts.save(script);
-      grok.shell.info('Saved to Model Catalog');
+      grok.shell.info('Saved to Model Hub');
     } catch (err) {
       this.processError(err);
     }
@@ -1445,7 +1451,6 @@ export class DiffStudio {
       return;
 
     const inputsDf = await getInputsTable(lookupInfo.choices);
-    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
 
     if (inputsDf === null)
       return;
@@ -1467,16 +1472,20 @@ export class DiffStudio {
     });
 
     const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
-    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+    const colsRaw = new Map<string, LookupData>();
 
     for (const col of cols) {
-      if (col.isNumerical)
-        colsRaw.set(col.name, col.getRawData());
+      if (col.isNumerical) {
+        colsRaw.set(col.name, {
+          arr: col.getRawData(),
+          format: col.meta.format,
+        });
+      }
     }
 
     for (let row = 0; row < rowCount; ++row) {
       const inputs = new Map<string, number>();
-      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      colsRaw.forEach((info, name) => inputs.set(name, getFormatted(info.arr[row], info.format)));
       tableInputs.set(inpSetsNames[row], inputs);
     }
 

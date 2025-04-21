@@ -1,14 +1,14 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as utils from './utils';
 
 export class TreeUtils {
-
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
       AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean,
-      includeNulls?: boolean, markSelected: boolean = true): Promise<TreeDataType> {
+    includeNulls?: boolean, markSelected: boolean = true): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
       collapsed: false,
@@ -105,7 +105,7 @@ export class TreeUtils {
             node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
-          
+
           const value = node[prop];
           if (!value) continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, value);
@@ -133,7 +133,7 @@ export class TreeUtils {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
         const name = value == null ? ' ' : value.toString();
         /**
-         * ' ||| ' is used as a temporary separator because a single '|' fails 
+         * ' ||| ' is used as a temporary separator because a single '|' fails
          * to handle certain edge cases in the tree viewer.
          */
         const node: TreeDataType = {
@@ -146,8 +146,8 @@ export class TreeUtils {
 
         if (value === '') {
           node.itemStyle = {
-            color: '#c7c7c7'
-          }
+            color: '#c7c7c7',
+          };
         }
 
         const colorCodingType = columns[colIdx].meta.colors.getType();
@@ -182,13 +182,21 @@ export class TreeUtils {
     return data;
   }
 
-  static async toForestAsync(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    const tree = await TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
+  static async toForestAsync(
+    dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+    includeNulls: boolean = true, selection: boolean = false, inherit: boolean = false,
+  ) {
+    const tree = await TreeUtils.toTree(
+      dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit, includeNulls,
+    );
     return tree.children;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, selection, inherit);
+  static toForest(
+    dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+    includeNulls: boolean = true, selection: boolean = false, inherit: boolean = false,
+  ) {
+    return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, includeNulls, selection, inherit);
   }
 
   static async getMoleculeImage(name: string, width: number, height: number): Promise<HTMLCanvasElement> {

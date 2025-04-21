@@ -20,7 +20,7 @@ import {DocumentManager} from '@jupyterlab/docmanager';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
 import {RenderMimeRegistry, standardRendererFactories as initialFactories} from '@jupyterlab/rendermime';
 import {SetupCommands} from './commands';
-import {removeChildren, editNotebook, setupEnvironment} from './utils';
+import {removeChildren, editNotebook, setupEnvironment, getAuthToken} from './utils';
 
 export let _package = new DG.Package();
 
@@ -318,7 +318,9 @@ class NotebookView extends DG.ViewBase {
         }, 'Open as script')
       ],
       [
-        ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
+        ui.iconFA('save', () => {
+        nbWidget.context.save();
+      }, 'Save notebook'),
         ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before'),
         ui.iconFA('cut', () => NotebookActions.cut(nbWidget.content), 'Cut cell'),
         ui.iconFA('copy', () => NotebookActions.copy(nbWidget.content), 'Copy cell'),
@@ -350,8 +352,8 @@ class NotebookView extends DG.ViewBase {
   }
 
   notebookToCode(jnb) {
-    let inputRegex = /(.*) = grok_read/g;
-    let outputRegex = /grok\((.*)\)/g;
+    let inputRegex = /(.*) = download_table/g;
+    let outputRegex = /(.*) = upload_table\((.*)\)/g;
     let script = [
       `#name: ${this.notebook.name}\n`,
       `#description: ${this.notebook.description}\n`,
@@ -475,6 +477,8 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
         if (prop === 'send') {
           return new Proxy(target[prop], {
             apply: (sendMethod, thisArg, argumentsList) => {
+              if (typeof argumentsList[0] === 'string')
+                argumentsList[0] = argumentsList[0].replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
               if (!connected)
                 buffer.push(argumentsList[0])
               else
@@ -497,6 +501,7 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
 });
 
 let CONTAINER_ID;
+let SESSION_TOKEN;
 
 async function toHtml(notebook) {
   const arrayBuffer = await convertNotebook(JSON.stringify(notebook.notebook));
@@ -517,6 +522,7 @@ export async function initContainer() {
       progress.close();
     }
   }
+  SESSION_TOKEN = getAuthToken();
 }
 
 //name: Notebook

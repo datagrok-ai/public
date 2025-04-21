@@ -49,7 +49,7 @@ import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
-import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
+import {demoActivityCliffsCyclic} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
@@ -71,6 +71,8 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -541,7 +543,6 @@ export async function macromoleculePreprocessingFunction(
 }
 
 //name: Helm Fingerprints
-//tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: helm
@@ -579,7 +580,6 @@ export async function helmPreprocessingFunction(
 //input: object options {optional: true}
 //input: bool clusterEmbeddings = true { optional: true }
 //input: bool isDemo {optional: true}
-//output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
@@ -637,6 +637,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) {
   const func = DG.Func.find({name: 'toAtomicLevel', package: 'Bio'})[0];
   if (!func) throw new Error('To Atomic level Function not found');
   func.prepare({table: seqCol.dataFrame, seqCol: seqCol}).edit();
+}
+
+//name: Molecular Structure
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export async function toAtomicLevelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
+  return toAtomicLevelWidget(sequence);
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -1115,10 +1123,9 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //meta.demoPath: Bioinformatics | Activity Cliffs
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
-//meta.isDemoScript: True
 //meta.demoSkip: GROK-14320
 export async function demoBioActivityCliffs(): Promise<void> {
-  await demoBio01bUI();
+  await demoActivityCliffsCyclic();
 }
 
 // demoBio03

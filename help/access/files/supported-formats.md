@@ -103,7 +103,7 @@ See also:
 [DiffStudio]: https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio#readme
 [SQLite]: https://github.com/datagrok-ai/public/tree/master/packages/SQLite#readme
 [Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme
-[NMRium]: https://github.com/datagrok-ai/public/tree/master/packages/NMRium#readme
+[NMRium]: https://github.com/datagrok-ai/public/tree/master/packages/nmrium#readme
 [ChemSpectraViewer]: https://github.com/datagrok-ai/chem-spectra-viewer
 
 [//]: # ([Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme)

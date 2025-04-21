@@ -14,5 +14,5 @@
 6. Go to the Toolbox > File and click Refresh - the layout shouldn't change
 ---
 {
-  "order": 11
+  "order": 12
 }

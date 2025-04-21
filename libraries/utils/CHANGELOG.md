@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.5.3 (2025-04-14)
+
+Added the drawLines method
+
 ## 4.4.2 (2025-03-10)
 
 Added a method to verify that a container is running, starting it if necessary

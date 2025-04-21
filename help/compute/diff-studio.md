@@ -314,22 +314,21 @@ Use this syntax to define the ODE solver configuration and improve performance:
 
 You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
-* Add your models to a Model Catalog.
+* Add your models to a Model Hub.
 * Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
 
-Click the <i class="fas fa-layer-plus"></i> **Save to Model Catalog** icon on the top panel to add your model to Model Catalog:
+Click the <i class="fas fa-layer-plus"></i> **Save to Model Hub** icon on the top panel to add your model to Model Hub:
 
- ![table-lookups](pics/diff-studio-model-catalog.gif)
+ ![table-lookups](pics/diff-studio-model-hub.gif)
 
 Export your model to JavaScript script:
 
 1. Toggle **Edit** and click the `</>` icon
 2. Add metadata for catalog:
   
-   ```python
-   #name: Model name
-   #tags: model
-   #description: Brief description
+   ```javascript
+   //tags: model
+   //description: Brief description
    ```
 
 3. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
@@ -340,31 +339,30 @@ Diff Studio lets you define model in a declarative form using simple syntax:
 
 |Keyword|Specifies|Example|
 |-|-|-|
-|**#name**|Model name|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [Robertson's](https://public.datagrok.ai/files/system.appdata/diffstudio/library/robertson.ivp) model|
-|**#equations**|Ordinary differential equations ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [mass-action](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) kinetics simulation|
-|**#inits**|[Initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem)|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [fermentation](https://public.datagrok.ai/files/system.appdata/diffstudio/library/fermentation.ivp) modeling|
-|**#argument**|The independent variable, its range, and the solution time step|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [pollution](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pollution.ivp) model|
-|**#expressions**|Additional computations|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
-|**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [chemical reactions](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) modeling|
-|**#constants**|Model constants|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
-|**#loop**|Multiple simulation [cycles](#cyclic-processes)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk-pd.ivp) simulation|
-|**#update**|Additional modeling [stage](#multistage-processes)|[Gluconic acid](https://public.datagrok.ai/files/system.appdata/diffstudio/library/ga-production.ivp) production modeling|
-|**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/files/system.appdata/diffstudio/library/nimotuzumab.ivp) disposition model|
-|**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pollution](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pollution.ivp) model|
-|**#meta.inputs**|CSV file with inputs [lookup table](#user-interface-options)|[Bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
-|**#meta.solver**|ODEs solver [settings](#solver-configuration)|[Pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
-|**#comment**|Explanations, notes, remarks, etc.|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template|
-|**#tags**|The platform [script](#platform-integration) tags|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
-|**#description**|The platform [script](#platform-integration) tooltip|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**#name**|Model name|[Basic](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/basic.ivp) template, [Robertson's](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/robertson.ivp?params:Initial=0&Final=6&Step=0.01&A=1&B=0&C=0) model|
+|**#equations**|Ordinary differential equations ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))|[Basic](https://public.datagrok.ai/apps/DiffStudio/Templates/basic) template, [mass-action](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/chem-react.ivp) kinetics simulation|
+|**#inits**|[Initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem)|[Basic](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/basic.ivp) template, [fermentation](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/fermentation.ivp) modeling|
+|**#argument**|The independent variable, its range, and the solution time step|[Basic](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/basic.ivp) template, [pollution](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pollution.ivp) model|
+|**#expressions**|Additional computations|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [pharmacokinetics](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk.ivp) simulation|
+|**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [chemical reactions](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/chem-react.ivp) modeling|
+|**#constants**|Model constants|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [bioreactor](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/bioreactor.ivp) model|
+|**#loop**|Multiple simulation [cycles](#cyclic-processes)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk-pd.ivp) simulation|
+|**#update**|Additional modeling [stage](#multistage-processes)|[Gluconic acid](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) production modeling|
+|**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/nimotuzumab.ivp) disposition model|
+|**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template, [pollution](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pollution.ivp) model|
+|**#meta.inputs**|CSV file with inputs [lookup table](#user-interface-options)|[Bioreactor](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/bioreactor.ivp) model|
+|**#meta.solver**|ODEs solver [settings](#solver-configuration)|[Pharmacokinetics](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk.ivp) simulation|
+|**#comment**|Explanations, notes, remarks, etc.|[Advanced](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/advanced.ivp) template|
+|**#description**|The platform [script](#platform-integration) tooltip|[Extended](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/extended.ivp) template|
 
 To improve UI, annotate model inputs using:
 
 |Option|Specifies|Example|
 |-|-|-|
-|**caption**|Input caption|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
-|**category**|Input category. Items belonging to the same category are grouped together in the UI|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
-|**units**|Input measure units|[Mass-action](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) kinetics simulation|
-|**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**caption**|Input caption|[Extended](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/extended.ivp) template|
+|**category**|Input category. Items belonging to the same category are grouped together in the UI|[Extended](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/extended.ivp) template|
+|**units**|Input measure units|[Mass-action](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/chem-react.ivp) kinetics simulation|
+|**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|[Extended](https://public.datagrok.ai/file/System.AppData/DiffStudio/templates/extended.ivp) template|
 
 ## See also
 

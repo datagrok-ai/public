@@ -1,15 +1,15 @@
 {
   "name": "@datagrok/api-samples",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
   },
   "servicePackage": true,
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.5.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
@@ -57,7 +57,7 @@
     "Administrators"
   ],
   "canView": [
-    "All users"
+    "Administrators"
   ],
   "category": "Development"
 }

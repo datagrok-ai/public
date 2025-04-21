@@ -11,6 +11,7 @@ export async function _testSequenceSpaceReturnsResult(
 ) {
   // await grok.data.detectSemanticTypes(df);
   const col: DG.Column = df.getCol(colName);
+  df.name = 'seqSpaceDf';
   const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
   if (semType)
     col.semType = semType;
@@ -18,12 +19,14 @@ export async function _testSequenceSpaceReturnsResult(
   const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
   if (!preprocessingFunc)
     throw new Error('Preprocessing function not found');
-  const sp = await grok.functions.call('Bio:sequenceSpaceTopMenu', {
+  await grok.functions.call('Bio:sequenceSpaceTopMenu', {
     table: df, molecules: df.col(colName)!,
     methodName: algorithm, similarityMetric: MmDistanceFunctionsNames.LEVENSHTEIN,
     plotEmbeddings: true, preprocessingFunction: preprocessingFunc, options: {[BYPASS_LARGE_DATA_WARNING]: true}
   });
   // const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true,
   //   preprocessingFunc, {[BYPASS_LARGE_DATA_WARNING]: true});
-  expect(sp != null, true);
+  const tv = grok.shell.tableView(df.name);
+  const sp = Array.from(tv?.viewers ?? [])[1];
+  expect(sp != null);
 }

@@ -113,9 +113,9 @@ extensions.
 
 [powerful JavaScript API]: https://datagrok.ai/js-api/
 
-[Digital Signal Processing]: https://github.com/datagrok-ai/public/tree/master/packages/DSP
+[Digital Signal Processing]: https://github.com/datagrok-ai/labs/tree/master/packages/DSP
 
-[Biosignals]: https://github.com/datagrok-ai/public/tree/master/packages/BioSignals
+[Biosignals]: https://github.com/datagrok-ai/labs/tree/master/packages/BioSignals
 
 [Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem
 

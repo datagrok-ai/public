@@ -1,6 +1,8 @@
 name: myenv
 channels:
   - conda-forge
+  - pytorch
+  - nvidia
 dependencies:
   - python>=3.11
   - pytorch=2.5
@@ -14,3 +16,11 @@ dependencies:
   - requests
   - scikit-learn
   - pyyaml
+  - flask-cors
+  - cuda-version=11.8
+  - cudatoolkit=11.8
+  - cuDNN
+  - pytorch==2.5.0=*_cu*
+  - torchvision==0.20.0=*_cu*
+  - torchaudio==2.5.0=*_cu*
+  - pytorch-cuda=11.8

@@ -2,12 +2,19 @@
 title: "Test Manager"
 ---
 
-
 # Test Manager Tour
 
-Test manager is a tool that can be useful in test reproducing and debugging. It can be used to run any package test. To open `Test Manager`, you should run it from `Browser` using the next path: `Apps` > `Admin` > `Test Manager`. 
+## Overview
 
-![TM open](tm-open.gif)
+The **Test Manager** is a powerful tool designed to assist in test reproduction, debugging, and profiling. It enables you to execute any package test efficiently. 
+
+To access **Test Manager**, navigate through the following path in the **Browser**:
+
+**Apps** > **Admin** > **Test Manager**
+
+![Opening Test Manager](tm-open.gif)
+
+---
 
 ### Test Manager Options
 
@@ -28,21 +35,51 @@ Context Menu options:
 | **Copy URL(running)** | Copy the test's link to the clipboard. Opening this link would invoke test              |
 | **Run Force**         | Execute test even if it is marked as skipped                                            |
 
-## Tests Execution
+---
 
-You can easily navigate in the Test Manager hierarchy to specify test or category execution. To invoke a test or category you can use the `Run` button or **Right Click** > `Run`. After the test run results appear in the **Context Panel**, you can easily see their tests' statuses and more data(`memoryDelta`, `ms`, `widgetsDelta`, `owner`) that can be useful. 
+## Test Execution
 
-![TM open](tm-test-execution.gif)
+With **Test Manager**, you can easily navigate the hierarchical structure of tests to execute individual tests or categories. To run a test, use one of the following methods:
 
-### Tests Debugging
+- Click the **Run** button.
+- **Right-click** on the test or category and select **Run**.
 
-The test can be easily debugged by the Test Manager. To do this, you have to select the option `Debug` under the Search input and open **Browser Inspector(F12)**. The next test execution would be stopped on test invocation so to debug it you would need just Step Into it. 
+Once a test has executed, the results will be displayed in the **Context Panel**, where you can review:
 
-![TM open](tm-debug-usage.gif)
+- **Test Status** (Success, Failure, etc.)
+- **Memory Usage (`memoryDelta`)**
+- **Execution Time (`ms`)**
+- **UI Impact (`widgetsDelta`)**
+- **Test Owner (`owner`)**
 
-### Tests Profiling 
+![Executing Tests](tm-test-execution.gif)
 
-Test Manager also offers the ability to profile tests and get more information about the test's execution. You should open **Browser Inspector(F12)** and **Right Click** > `Profile` to profile the test. After that, you would be able to see stages of the test's execution in the `Performance` tab of Inspector.
+---
 
-![TM open](tm-profiling.gif)
+## Test Debugging
 
+**Test Manager** makes debugging simple and efficient. Follow these steps to debug a test:
+
+1. Select **Debug** under the **Search** input.
+2. Open the **Browser Inspector (F12)**.
+3. Execute the test—execution will pause at the test invocation point.
+4. Use **Step Into** to debug the test step by step.
+
+This method allows you to pinpoint issues and verify test behavior effectively.
+
+![Debugging Tests](tm-debug-usage.gif)
+
+---
+
+## Test Profiling
+
+For deeper insights into test execution, **Test Manager** provides a profiling feature. Follow these steps to profile a test:
+
+1. Open the **Browser Inspector (F12)**.
+2. **Right-click** on the test and select **Profile**.
+3. Navigate to the **Performance** tab in the Inspector.
+4. Analyze the test execution timeline and performance metrics.
+
+Profiling helps identify performance bottlenecks and optimize test execution times.
+
+![Profiling Tests](tm-profiling.gif)

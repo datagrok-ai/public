@@ -55,6 +55,7 @@ export async function getFittedParams(
   maxVals: Float32Array,
   fixedInputs: Record<string, number>,
   argColName: string,
+  funcCols: DG.Column[],
   target: DG.DataFrame,
   samplesCount: number): Promise<OptimizationResult> {
   // Extract settings names & values
@@ -67,22 +68,13 @@ export async function getFittedParams(
 
   // Extract target data
   const cols = target.columns;
-  const colsCount = cols.length;
+  const colsCount = funcCols.length + 1;//cols.length;
   const targetRowCount = target.rowCount;
 
   if (colsCount < MIN_TARGET_COLS_COUNT)
     throw new Error(`Not enough of target columns: ${colsCount}. Minimum: ${MIN_TARGET_COLS_COUNT}`);
 
-  const targetNames = new Array<string>(cols.length);
-  targetNames[ARG_IDX] = argColName;
-
-  let idx = ARG_IDX + 1;
-  for (const name of cols.names()) {
-    if (name !== argColName) {
-      targetNames[idx] = name;
-      ++idx;
-    }
-  }
+  const targetNames = [argColName].concat(funcCols.map((col) => col.name));
 
   const scaleVals = new Float64Array(colsCount);
   const targetVals = targetNames.map((name, idx) => {
@@ -124,6 +116,10 @@ export async function getFittedParams(
   const inputVector = getInputVec(variedInputNames, minVals, maxVals, fixedInputs, ivp);
   const pipeline = pipelineCreator.getPipeline(inputVector);
 
+  let doneWorkers = 0;
+  let percentage = 0;
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
+
   // Run optimization
   const promises = workers.map((w, idx) => {
     return new Promise<void>((resolve, reject) => {
@@ -151,6 +147,15 @@ export async function getFittedParams(
 
       w.onmessage = (e: any) => {
         w.terminate();
+
+        ++doneWorkers;
+        percentage = Math.floor(100 * (doneWorkers + 1) / nThreads);
+
+        if (percentage < 99.9)
+          pi.update(percentage, `Fitting... (${percentage}%)`);
+        else
+          pi.update(percentage, 'Fitting... (preparing charts)');
+
         if (e.data.callResult === RESULT_CODE.SUCCEED) {
           e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));
           e.data.fitRes.forEach((res: string, i: number) => {
@@ -175,6 +180,8 @@ export async function getFittedParams(
   }); // promises
 
   await Promise.all(promises);
+
+  pi.close();
 
   return {
     extremums: resultsArray,

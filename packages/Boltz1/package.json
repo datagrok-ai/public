@@ -2,17 +2,17 @@
   "name": "@datagrok/boltz1",
   "friendlyName": "Boltz1",
   "fullName": "Boltz1",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Integrates Datagrok with Boltz-1",
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.5.0",
     "datagrok-tools": "4.13.64",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10",
     "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5"
@@ -49,5 +49,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Boltz1"
-  }
+  },
+  "category": "Bioinformatics"
 }

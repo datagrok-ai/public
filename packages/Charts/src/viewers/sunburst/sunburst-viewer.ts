@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -17,7 +18,7 @@ const CATEGORIES_NUMBER = 500;
 let sunburstId = 0;
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
-  Filter: 'All'
+  Filter: 'All',
 };
 
 /** Represents a sunburst viewer */
@@ -38,6 +39,7 @@ export class SunburstViewer extends EChartViewer {
   title: string;
   sunburstVersion: number | null = null;
   currentVersion: number | null = null;
+  includeNulls: boolean;
 
   constructor() {
     super();
@@ -50,6 +52,7 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
     this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
+    this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
       animation: false,
@@ -78,8 +81,8 @@ export class SunburstViewer extends EChartViewer {
     return pixel[3] === 0;
   }
 
-  handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((index: number) => {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any) {
+    bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
 
@@ -124,11 +127,6 @@ export class SunburstViewer extends EChartViewer {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
-      if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, this.dataFrame);
-        return;
-      }
-
       const event = params.event.event;
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
       const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
@@ -136,7 +134,11 @@ export class SunburstViewer extends EChartViewer {
         selectedSectors.push(pathString);
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
-      this.handleDataframeSelection(path, event);
+
+      if (this.onClick === 'Filter')
+        this.applySelectionFilter(this.dataFrame.filter, path, event);
+      else
+        this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
     const handleChartMouseover = async (params: any) => {
@@ -208,17 +210,23 @@ export class SunburstViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
-    if (p?.name === 'hierarchyColumnNames' || p?.name === 'inheritFromGrid')
-      this.render();
-    if (p?.name === 'table') {
+    if (!p) return;
+    switch (p.name) {
+    case 'table':
       this.updateTable();
       this.onTableAttached(true);
-    }
-    if (p?.name === 'onClick')
+      break;
+
+    case 'onClick':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
-    else
-      super.onPropertyChanged(p, render);
+      break;
+
+    default:
+      this.render();
+      break;
+    }
   }
+
 
   addSubs() {
     if (!this.dataFrame)
@@ -237,10 +245,10 @@ export class SunburstViewer extends EChartViewer {
       const gridOrder: Int32Array = new Int32Array(grid.getRowOrder().buffer);
       const names = this.hierarchyColumnNames;
       this.hierarchyColumnNames = Array.from(gridOrder)
-        .map(index => grid.table.row(index).get('name'))
-        .filter(columnName => names.includes(columnName!));
+        .map((index) => grid.table.row(index).get('name'))
+        .filter((columnName) => names.includes(columnName!));
       this.render();
-    }));    
+    }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -276,7 +284,7 @@ export class SunburstViewer extends EChartViewer {
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     return await TreeUtils.toForest(this.dataFrame, this.eligibleHierarchyNames, this.filter,
-      rowSource, this.inheritFromGrid);
+      this.includeNulls, rowSource, this.inheritFromGrid);
   }
 
   async renderMolecule(params: any, width: number, height: number) {
@@ -285,6 +293,7 @@ export class SunburstViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
+      fontSize: 0,
       formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
@@ -292,7 +301,7 @@ export class SunburstViewer extends EChartViewer {
       backgroundColor: {
         image: img.src,
       },
-    }
+    };
   }
 
   formatLabel(params: any) {
@@ -310,15 +319,15 @@ export class SunburstViewer extends EChartViewer {
     if (params.data.semType === 'Molecule') {
       const minImageWidth = 70;
       const minImageHeight = 80;
-    
+
       if (width >= minImageWidth && height >= minImageHeight) {
         const scaleByWidth = width / minImageWidth;
         const scaleByHeight = height / minImageHeight;
         const scale = Math.min(scaleByWidth, scaleByHeight);
-    
+
         const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
         const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
-    
+
         this.renderMolecule(params, renderWidth, renderHeight);
         return ' ';
       }
@@ -393,9 +402,9 @@ export class SunburstViewer extends EChartViewer {
       this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
         (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
       );
-    } else {
-      this.eligibleHierarchyNames = orderedHierarchyNames ??  this.hierarchyColumnNames;
-    }
+    } else
+      this.eligibleHierarchyNames = orderedHierarchyNames ?? this.hierarchyColumnNames;
+
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
@@ -405,6 +414,9 @@ export class SunburstViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     const data = await this.getSeriesData();
+    Object.assign(this.option.series[0], {
+      data,
+    });
 
     // Reinitialize the chart (needed in order to prevent memory leak)
     if (this.chart) {
@@ -418,10 +430,7 @@ export class SunburstViewer extends EChartViewer {
     this.initEventListeners();
     this.addSubs();
 
-    Object.assign(this.option.series[0], {
-      data,
-      label: { formatter: (params: any) => this.formatLabel(params) },
-    });
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
   }
 

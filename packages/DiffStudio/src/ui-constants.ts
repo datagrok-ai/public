@@ -253,7 +253,7 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
 # Catalog
-Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Catalog**.
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**.
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})

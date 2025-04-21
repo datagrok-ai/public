@@ -391,8 +391,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       grok.shell.warning('Layout cound not be saved');
     else
       campaign.layout = newLayout.viewState;
-    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
-      JSON.stringify(campaign));
+    await _package.saveCampaignJson(this.appName, campaign);
     notify && grok.shell.info('Campaign saved successfully.');
     return campaign;
   }

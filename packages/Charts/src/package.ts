@@ -33,14 +33,14 @@ export async function _chordViewerDemo() {
   await viewerDemo('Chord');
 }
 
-//name: globeViewerDemo
-//description: Globe viewer represents data visualization layers on a 3-dimensional globe in a spherical projection
-//meta.demoPath: Visualization | Geographical | Globe
-//meta.demoWait: 4000
-//meta.demoSkip: GROK-14320
-export async function _globeViewerDemo() {
-  await viewerDemo('Globe');
-}
+// //name: globeViewerDemo
+// //description: Globe viewer represents data visualization layers on a 3-dimensional globe in a spherical projection
+// //meta.demoPath: Visualization | Geographical | Globe
+// //meta.demoWait: 4000
+// //meta.demoSkip: GROK-14320
+// export async function _globeViewerDemo() {
+//   await viewerDemo('Globe');
+// }
 
 //name: radarViewerDemo
 //description: Radar viewer is used on multivariate data to plot groups of values over several common variables

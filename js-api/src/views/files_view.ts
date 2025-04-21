@@ -1,6 +1,7 @@
 import { CardView } from './card_view';
 import { toJs } from '../wrappers';
-import {IDartApi} from "../api/grok_api.g";
+import {IDartApi} from '../api/grok_api.g';
+import {TreeViewGroup} from '../widgets';
 const api: IDartApi = <any>window;
 
 
@@ -29,4 +30,7 @@ export class FilesView extends CardView {
     this.showPreview = !s;
     this.showSearch = !s;
   }
+
+  /** Returns the files view tree. */
+  get tree(): TreeViewGroup { return toJs(api.grok_FilesView_Get_Tree(this.dart)); }
 }

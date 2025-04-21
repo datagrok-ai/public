@@ -87,8 +87,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
     this.linkFunccall(loadedCall);
 
-    await this.onAfterSaveRun(savedCall);
-    return savedCall;
+    await this.onAfterSaveRun(loadedCall);
+    return loadedCall;
   }
 
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {

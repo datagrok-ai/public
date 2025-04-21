@@ -15,7 +15,9 @@ export class DBExplorer {
   private objHandlers: DBExplorerObjectHandler[] = [];
   constructor(
     private connectionName: string,
-    private schemaName: string
+    private schemaName: string,
+    private nqName?: string,
+    private dataSourceName?: string
   ) {
     this._dbLoadPromise = this.loadDbSchema();
   }
@@ -25,7 +27,10 @@ export class DBExplorer {
   }
 
   private async loadDbSchema() {
-    this.connection = await grok.dapi.connections.filter(`name="${this.connectionName}"`).first();
+    const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
+
+    this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
+
     if (this.connection == null)
       throw new Error(`Connection ${this.connectionName} not found`);
 
@@ -136,7 +141,7 @@ export class DBExplorer {
   }
 
   public static async initFromConfig(config: DBExplorerConfig) {
-    const exp = new DBExplorer(config.connectionName, config.schemaName);
+    const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
       await exp.addEntryPoint(semType, entry.table, entry.column);
     if (config.joinOptions)

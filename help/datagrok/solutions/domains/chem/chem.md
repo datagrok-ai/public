@@ -21,6 +21,9 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
+  - patents search
+  - cdd vault integration
 ---
 
 ```mdx-code-block
@@ -42,7 +45,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+  * [Enamine](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
   * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
 
 </details>
@@ -314,7 +317,7 @@ To sort a dataset by similarity, right-click your reference molecule and select 
 
 To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
-<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
+![Similarity and diversity search](similarity-and-diversity-search.gif)
 
 <details>
 <summary>How to use</summary>
@@ -380,7 +383,7 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
+![R-Group Analysis](img/new_r_group_analysis.gif)
 
 <details>
 <summary> How to use </summary>
@@ -414,19 +417,19 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
 
-A hierarchy can be either generated automatically, or sketched manually. To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. When Scaffold Tree is initially created, a tree is generated automatically. You can also sketch the tree manually, or modify the automatically generated one. For tree generation, we use a derivative of the open-source
+A hierarchy can be either generated automatically, sketched manually, or modified at any point. To access, in the **Top Menu** select **Chem** > **Analyze** > **Scaffold Tree**. For automatic tree generation, a derivative of the open-source
 [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
-developed by Oliver Scott.
+developed by Oliver Scott is used.
 
 :::note
 
-Scaffold tree generation is computationally intensive and may take a significant time.
+Scaffold tree generation is computationally intensive and may take time for large datasets.
 
 :::
 
 ![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds. A picture best illustrates this:
+A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds.
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -438,7 +441,8 @@ To manually sketch or modify the scaffold tree, use these controls:
 * To add a new root node,  in the **Toolbar**, click the **Add new root structure** (**+**) icon. This opens a molecular sketcher.
 * To add a new scaffold under an existing one, click the **Add new scaffold** (**+**) icon next to the scaffold.
   Alternatively, right-click the molecule and select **Add New...**.
-* To delete a scaffold along with its children, right-click it and select **Remove**.
+* To delete a scaffold along with its children, click the **Remove scaffold** (trash) icon next to the scaffold.
+  Alternatively, right-click the molecule and select **Remove**.
 * To edit a scaffold, click the **Edit...** icon next to the scaffold.
   Alternatively, right-click the molecule, and select **Edit...**. This opens a molecular sketcher.
 
@@ -479,13 +483,27 @@ To filter a dataset using a scaffold tree, do the following:
 You can add the scaffold tree as a filter to the **Filter Panel**:
 
 1. In the **Menu Ribbon**, click the **Filter** icon to toggle the **Filter panel**.
-1. In the top left corner, click the **Hamburger** (☰) icon > **Add External** > **Scaffold Tree Filter**. A dialog opens.
+1. In the top left corner, click the **Hamburger** (☰) icon > **Add Filter** > **Scaffold Tree Filter**. A dialog opens.
 1. In the dialog, select the molecular column and click **OK**. A scaffold tree tile is added to the **Filter Panel**.
 1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold using a sketcher.
 
 ![Scaffold tree filter panel](scaffold-tree-filter.gif)
 
 You can use a scaffold tree with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
+</details>
+
+To make scaffold structures easier to interpret, you can apply colors to nodes in the scaffold tree. The colors appear both in the column and the viewer.
+
+<details>
+<summary>Coloring</summary>
+
+To color scaffold nodes, do the following:
+
+* Click the **Circle** icon to toggle coloring on or off. If turned off, the node inherits the color from its nearest colored parent.
+* Click the **Palette** icon to pick a color. The color applies to the node and all its children unless they already have their own color.
+* To override an inherited color, assign a new color to the node. The new color takes priority.
+
+![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </details>
 
@@ -542,7 +560,7 @@ permeability, and ADMET properties across your dataset.
 
 MMP analysis automatically detects matched molecular pairs within your
 dataset, calculates the differences in their properties, and aggregates these
-results statistically. The mean property change derived from these
+results. The mean property change derived from these
 transformations highlights consistent structure-activity relationships, indicating
 the expected effect of applying a similar modification to a new molecule.
 
@@ -551,7 +569,7 @@ visualizations, allowing you to:
 
 * Identify high-impact structural modifications that enhance target properties
 * Evaluate how specific chemical changes affect a compound's profile
-* Generate optimized molecules with predicted properties based on validated transformations
+* Generate optimized molecules with predicted properties based on transformations data
 
 ![MMP Demo](img/mmp-full.gif)
 
@@ -579,7 +597,7 @@ The **Substitutions** tab has two interactive tables:
   has two viewing modes:
    * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
 your dataset that contain either fragment from a current substitution.
-   * **Current molecule**: Shows only fragment pairs relevant to the current
+   * **Current molecule**: Shows only fragment pairs relevant to the current molecule
 molecule in your dataset, enabling exploration of molecule-specific
 substitutions. The number of corresponding substitutions appears in the top-left
 corner.
@@ -753,6 +771,63 @@ To view the chemical scripts you've created or those shared with you, open the [
 For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
+
+## Retrosynthesis
+
+Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
+commercially available starting materials and the synthetic reactions needed to reach the target.
+
+To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
+
+## Integration with SureChEMBL
+
+SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
+
+<details>
+<summary> How to use </summary>
+
+* select cell with molecule structure in the grid
+* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
+* change the number in the *Molecules limit* field to search for more or fewer molecules
+* change the similarity cutoff using the *Similarity cutoff* slider
+* click the *plus* icon to add all patents found for molecules in the results as a table view
+
+![surechembl search parameters](img/surechembl_search_params.gif)
+
+Search results are shown under the *Substructure Search*/*Similarity Search* tab. Similarity search results are sorted by similarity score and the score is indicated above the molecule.
+Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
+
+![surechembl search results](img/surechembl_search_results.gif)
+
+</details>
+
+## Integration with CDD Vault
+
+CDDVaultLInk plugin provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
+
+<details>
+<summary> How to use </summary>
+
+To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
+CDD Vault api key should be set in package credentials manager under 'apiKey' key.
+
+To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
+List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
+
+* *Molecules* - the list of all available molecules in the vault. *Id* column contains links to the corresponding molecules in your vault.
+![Molecules tab](img/cdd_molecules.png)
+
+* *Search* - basic search through you vault containing similarity and diversity searches.
+![Search tab](img/cdd_search.png)
+
+* *Saved searches* - open tab to see the list of all saved searches in your vault. Click any search in the list to open the search results.
+![Saved search](img/cdd_saved_search.png)
+
+There is also a tab in the context panel. To use, click or sketch a molecule, and expand the *Databases* -> *CDD Vault* context panel on the right:
+![Context panel](img/cdd_context_panel.png)
+
+</details>
 
 ## Utilities
 

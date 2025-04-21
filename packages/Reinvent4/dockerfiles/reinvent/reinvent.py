@@ -59,17 +59,25 @@ def run_reinvent():
             config_dict = toml.load(file)
         
         model_folder_map = {}
-
         files = [f for f in os.listdir(current_directory) if os.path.isfile(os.path.join(current_directory, f))]
+        folders = [f for f in os.listdir(current_directory) if os.path.isdir(os.path.join(current_directory, f))]
         pt_files = [f for f in files if f.endswith('.pt')]
-        logging.info("Pytorch models: %s", ', '.join(pt_files))
+        logging.info("Pytorch models in current directory: %s", ', '.join(pt_files))
+        
+        for folder in folders:
+            folder_path = os.path.join(current_directory, folder)
+            existing_pt_files = [f for f in os.listdir(folder_path) if f.endswith('.pt')]
+            for pt_file in existing_pt_files:
+                model_folder_map[os.path.splitext(pt_file)[0]] = folder_path
+                
         for pt_file in pt_files:
             folder_name = os.path.splitext(pt_file)[0]
             folder_path = os.path.join(current_directory, folder_name)
             os.makedirs(folder_path, exist_ok=True)
             shutil.move(os.path.join(current_directory, pt_file), os.path.join(folder_path, pt_file))
-            # Store the mapping from model name to folder path
             model_folder_map[folder_name] = folder_path
+        
+        logging.info("Final model folder mapping: %s", model_folder_map)
         
         # Update checkpoint dirs for models
         for component in config_dict["stage"][0]["scoring"]["component"]:

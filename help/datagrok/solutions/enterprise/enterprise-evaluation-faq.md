@@ -41,7 +41,7 @@ title: "Enterprise evaluation FAQ"
 
 * Extensibility
   * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)
-  * [Creating custom server-side components](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer)
+  * [Creating custom server-side components](https://github.com/datagrok-ai/labs/tree/master/packages/Pedometer)
   * [Creating custom scripts](https://datagrok.ai/help/compute/scripting) and utilizing them in other components
   * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/spgi)
   * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)

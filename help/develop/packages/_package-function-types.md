@@ -112,7 +112,7 @@ To be continued...
 
 [application launcher]: https://public.datagrok.ai/apps
 
-[BioSignals application]: https://github.com/datagrok-ai/public/tree/master/packages/BioSignals
+[BioSignals application]: https://github.com/datagrok-ai/labs/tree/master/packages/BioSignals
 
 [ClinicalCase application]: https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase
 

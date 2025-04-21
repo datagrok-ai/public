@@ -62,7 +62,7 @@ export const IconFA = Vue.defineComponent({
       default: 'pointer',
     },
     animation: {
-      type: Object as Vue.PropType<'spin' | 'pulse' | null>,
+      type: String as Vue.PropType<'spin' | 'pulse' | null>,
       default: null,
     },
     tooltip: {
@@ -125,9 +125,9 @@ export const ToggleInput = Vue.defineComponent({
     },
   },
   emits: {
-    'update:value': (value: boolean) => value,
+    'update:value': (_value: boolean) => true,
   },
-  setup(props, {emit, attrs}) {
+  setup(props, {emit}) {
     return () => <dg-toggle-input
       caption={props.caption}
       value={props.value}
@@ -154,7 +154,7 @@ export const ComboPopup = Vue.defineComponent({
     },
   },
   emits: {
-    'selected': (value: {item: string, itemIdx: number}) => value,
+    'selected': (_value: {item: string, itemIdx: number}) => true,
   },
   setup(props, {emit}) {
     return () => <dg-combo-popup

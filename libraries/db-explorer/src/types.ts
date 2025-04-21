@@ -23,6 +23,8 @@ export type QueryJoinOptions = {
 export type DBExplorerConfig = {
     connectionName: string;
     schemaName: string;
+    nqName?: string;
+    dataSourceName?: string;
     entryPoints: {[semtype: string]: {
         table: string;
         column: string;

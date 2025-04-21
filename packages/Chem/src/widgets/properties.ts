@@ -58,23 +58,12 @@ export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTML
   
   function prop(p: IChemProperty, mol: OCL.Molecule): {value: any, addColumnIcon: HTMLElement | null} {
     let addColumnIcon: HTMLElement | null = null;
-    if (host) {
-      const addColumnIcon = ui.iconFA('plus', () => {
-        const molCol: DG.Column<string> = semValue.cell.column;
-        const col : DG.Column = DG.Column.fromType(DGTypeMap[p.type],
-          semValue.cell.dataFrame.columns.getUnusedName(p.name), molCol.length)
-          .setTag('CHEM_WIDGET_PROPERTY', p.name)
-          .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
-          .init((i) => {
-            try {
-              if (molCol.isNone(i)) return null;
-              const mol = oclMol(molCol.get(i)!);
-              return p.valueFunc(mol);
-            } catch (_) {
-              return null;
-            }
-          });
-        semValue.cell.dataFrame.columns.add(col);
+    if (host && semValue.cell.dataFrame && semValue.cell.column) {
+      addColumnIcon = ui.iconFA('plus', async () => {
+      const res = await addPropertiesAsColumns(semValue.cell.dataFrame, semValue.cell.column, [p.name]);
+      const col = res[0];
+      col.setTag('CHEM_WIDGET_PROPERTY', p.name);
+      col.setTag('CHEM_ORIG_MOLECULE_COLUMN', semValue.cell.column.name);
       }, `Calculate ${p.name} for the whole table`);
   
       ui.tools.setHoverVisibility(host, [addColumnIcon]);
@@ -105,6 +94,7 @@ export async function addPropertiesAsColumns(df: DG.DataFrame, smilesCol: DG.Col
     col.name = df.columns.getUnusedName(col.name);
     df.columns.add(col);
   });
+  return resCols;
 }
 
 export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, propsMap: string[]): Promise<DG.Column[]> {

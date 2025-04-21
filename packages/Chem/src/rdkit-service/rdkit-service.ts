@@ -644,4 +644,19 @@ export class RdKitService {
       return '';
     })
   }
+
+  async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
+    await chemBeginCriticalSection();
+    const segmentLength = Math.ceil(molfiles.length / this.workerCount);
+    const res = await this._doParallel(
+      (i: number, _: number) => {
+        return this.parallelWorkers[i].beautifyMols(molfiles.slice(i * segmentLength, i === this.workerCount - 1 ? molfiles.length : (i + 1) * segmentLength));
+      },
+      (data) => {
+        return data.flat();
+      }
+    );
+    chemEndCriticalSection();
+    return res;
+  }
 }

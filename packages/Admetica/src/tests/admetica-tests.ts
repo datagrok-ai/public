@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {awaitCheck, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 
-import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
+import { runAdmeticaFunc, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 export const CONTAINER_TIMEOUT = 900000;
@@ -30,7 +30,7 @@ category('Admetica', () => {
     await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
+    const distributionResults = await fetchWrapper(() => runAdmeticaFunc(smiles, 'PPBR,VDss', false));
     expect(distributionResults != null, true);
   }, {timeout: CONTAINER_TIMEOUT + 25000});
 
@@ -117,8 +117,8 @@ category('Admetica', () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
-      const args = [molecules.toCsv(), await getQueryParams(), 'false'];
-      return await runOnce(runAdmetica, ...args);
+      const args = [molecules.toCsv(), await getQueryParams(), false];
+      return await runOnce(runAdmeticaFunc, ...args);
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
   }, {timeout: CONTAINER_TIMEOUT + 10000000000, benchmark: true });
@@ -129,12 +129,12 @@ category('Admetica', () => {
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
-    const args = [smiles, distributionModels, 'false'];
-    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmetica, ...args));
+    const args = [smiles, distributionModels, false];
+    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmeticaFunc, ...args));
   }, {timeout: CONTAINER_TIMEOUT + 1000000, benchmark: true});
 });
   
-async function runOnce(func: (...args: string[]) => Promise<string | null>, ...args: string[]) {
+async function runOnce(func: (...args: any[]) => Promise<string | null>, ...args: any[]) {
   return await func(...args);
 }
 

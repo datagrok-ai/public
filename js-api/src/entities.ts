@@ -43,7 +43,7 @@ export interface DatabaseConnectionProperties {
 }
 
 /** Represents connection cache properties
- *  See also: {@link https://datagrok.ai/help/develop/function_results_cache}
+ *  See also: {@link https://datagrok.ai/help/develop/how-to/function_results_cache}
  *  */
 export interface DataConnectionCacheProperties {
   cacheResults?: boolean;
@@ -776,7 +776,7 @@ export class DataConnection extends Entity {
 
 /** Represents a predictive model
  * @extends Entity
- * {@link https://datagrok.ai/help/learn/predictive-modeling-info}
+ * {@link https://datagrok.ai/help/learn/-info}
  * */
 export class Model extends Entity {
   /** @constructs Model */
@@ -1026,23 +1026,23 @@ export class Script extends Func {
   /** Script */
   get clientCode(): string { return api.grok_Script_ClientCode(this.dart); }
 
-  /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Script language. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
-  /** Environment name. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
 
-  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get reference(): string { return api.grok_Script_Get_Reference(this.dart); }
   set reference(s: string) { api.grok_Script_Set_Reference(this.dart, s); }
 
-  /** Sample table. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Sample table. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
-  /** Script tags. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Script tags. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
   set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
@@ -1050,7 +1050,7 @@ export class Script extends Func {
 /** Represents connection credentials
  *  Usually it is a login and a password pair
  *  Passwords are stored in the secured credentials storage
- *  See also: {@link https://datagrok.ai/help/govern/security}
+ *  See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
  *  */
 export class Credentials extends Entity {
   /**

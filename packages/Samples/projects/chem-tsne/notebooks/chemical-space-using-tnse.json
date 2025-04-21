@@ -24,10 +24,10 @@
         },
         "outputs": [],
         "source": [
-          "from datagrok.api import *\n",
-          "grok_host = 'http://host.docker.internal:8888/api'\n",
-          "grok_init(grok_host)\n",
-          "data = grok_read('295154f0-3260-11e9-8102-71a1f74ba434')\n",
+          "from datagrok_api import DatagrokClient\n",
+          "base_url = 'http://host.docker.internal:8888/api'\n",
+          "api = DatagrokClient(@USER_API_KEY, base_url)\n",
+          "data = api.download_table('295154f0-3260-11e9-8102-71a1f74ba434')\n",
           "smiles = data['smiles']"
         ]
       },
@@ -218,7 +218,7 @@
     ],
     "metadata": {
       "datagrok": {
-        "host": "http://localhost:8888/api",
+        "host": "http://host.docker.internal:8888/api",
         "id": "12e9ebe2-9297-533a-8e1e-5c1dcaec4db4",
         "session_token": "",
         "user_id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"

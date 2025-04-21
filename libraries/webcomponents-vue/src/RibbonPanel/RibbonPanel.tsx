@@ -16,6 +16,10 @@ export const RibbonPanel = Vue.defineComponent({
     default?: any,
   }>,
   setup(props, {slots}) {
+    Vue.onRenderTriggered((event) => {
+      console.log('RibbonPanel onRenderTriggered', event);
+    });
+
     const elements = Vue.reactive(new Map<number, HTMLElement>);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const uuid = uuidv4();
@@ -50,7 +54,7 @@ export const RibbonPanel = Vue.defineComponent({
     });
 
     const addElement = (el: Element | null | any, idx: number) => {
-      const content = el;
+      const content = el ? Vue.markRaw(el) : undefined;
       if (content) {
         (content).RibbonPanelUUID = uuid;
         elements.set(idx, content);

@@ -1,13 +1,18 @@
 {
-  "name": "cddvaultlink",
+  "name": "@datagrok/cddvaultlink",
   "friendlyName": "CDD Vault Link",
-  "version": "0.0.1",
-  "description": "",
+  "version": "1.0.1",
+  "description": "Integration with CDD Vault registration system",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.25.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "../../libraries/utils"
+    "@datagrok-libraries/utils": "^4.5.0",
+    "@datagrok/chem": "^1.15.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
@@ -36,6 +41,7 @@
   "canView": [
     "All users"
   ],
+  "category": "Cheminformatics",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

@@ -1,4 +1,8 @@
-# BiostructureViewer changelog
+# Biostructure Viewer changelog
+
+## 1.4.2 (2025-04-17)
+
+ * Error handling for ligands and semtype check fix
 
 ## 1.3.3 (2025-02-06)
 

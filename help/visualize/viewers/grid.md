@@ -604,7 +604,7 @@ or press Alt+C.
 
 * YouTube:
 
-   [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www1.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
+   [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
 
 See also:
 

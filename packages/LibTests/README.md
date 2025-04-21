@@ -1,3 +1,3 @@
-# LibTests
+# Lib Tests
 
-`LibTests` is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform
+`Lib Tests` is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform

@@ -39,7 +39,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height)
     .fitSquare().inflate(-2, -2);
-  const cols = df.columns.byNames(settings.columnNames);
+  const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const atan2 = Math.atan2(vectorY, vectorX);
@@ -96,7 +96,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings = getSettings(gridCell.gridColumn);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
 
     g.strokeStyle = 'lightgray';
 

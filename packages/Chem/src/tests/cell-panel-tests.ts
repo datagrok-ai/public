@@ -213,15 +213,31 @@ category('cell panel', async () => {
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
-    const res: DG.DataFrame = await getDescriptorsPy(
+    let jupyterRunning = false;
+    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+      console.log('*********** test python script completed');
+      jupyterRunning = true; 
+    });
+    //check that JKG is running
+    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
+    console.log('*********** chem-descriptors: started chem descriptors python script');
+    let res: DG.DataFrame | null = null;
+    const t = Date.now();
+    getDescriptorsPy(
       'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
       DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selesctedDesc)]),
-    );
-    expect(res.columns.names().length, 3);
-    expect(selesctedDesc.every((it => res.columns.names().includes(it))), true);
-    expect((res.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
-    expect(res.get('HeavyAtomCount', 0), 25);
-    expect(res.get('NHOHCount', 0), 1);
+    ).then((desc: DG.DataFrame) => {
+      console.log(`*********** chem-descriptors: finished chem descriptors python script in ${Date.now() - t} ms`);
+      res = desc;
+    });
+    await awaitCheck(() => {
+      return res !== null && res.rowCount > 0
+    }, `descriptors python scripts hasn't finished in 2 minutes`, 120000, 1000);
+    expect(res!.columns.names().length, 3);
+    expect(selesctedDesc.every((it => res!.columns.names().includes(it))), true);
+    expect((res!.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
+    expect(res!.get('HeavyAtomCount', 0), 25);
+    expect(res!.get('NHOHCount', 0), 1);
 
     //check that widget doesn't throw errors
     for (const mol of molFormats)
