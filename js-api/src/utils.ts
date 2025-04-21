@@ -247,7 +247,7 @@ export class Utils {
   }
 
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-    console.log(`********** Entered executeTests`);
+    console.log(`********** Entered executeTests function`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -258,6 +258,7 @@ export class Utils {
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
     let lastTest: any = null;
+    let res: string  = '';
     try {
       for (let testParam of testsParams) {
         lastTest = testParam;
@@ -320,9 +321,10 @@ export class Utils {
         console.log('on browser closing debug point');
         debugger
       }
+      res = Utils.createResultsCsv(resultDF);
 
     } catch (e) {
-      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}` : `test: null, error: ${e}`;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}` : `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
     }
 
     return {
@@ -333,7 +335,7 @@ export class Utils {
       passedAmount: countPassed,
       skippedAmount: countSkipped,
       failedAmount: countFailed,
-      csv: Utils.createResultsCsv(resultDF),
+      csv: res,
       // df: resultDF?.toJson()
     };
   }
