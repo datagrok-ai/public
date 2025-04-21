@@ -209,7 +209,7 @@ category('cell panel', async () => {
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   }, {stressTest: true});
 
-  // //TODO: Compare the calculated values
+  //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
@@ -243,5 +243,4 @@ category('cell panel', async () => {
     for (const mol of molFormats)
       await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
   }, {timeout: 60000 + utils.CONTAINER_TIMEOUT, stressTest: true});
-  
 });
