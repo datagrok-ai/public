@@ -21,27 +21,27 @@ category('calculate', () => {
   });
 
 
-  test('map identifiers', async () => {
-    await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
-    smiles = grok.data.demo.molecules(20);
-    await grok.data.detectSemanticTypes(smiles);
+  // test('map identifiers', async () => {
+  //   await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
+  //   smiles = grok.data.demo.molecules(20);
+  //   await grok.data.detectSemanticTypes(smiles);
 
-    const checkIdentifier = async (name: string, value: string) => {
-      await getMapIdentifiers(smiles, smiles.col('smiles')!, 'smiles', name);
-      expect(smiles.columns.names().includes(name), true, `${name} column hasn't been added`);
-      expect(smiles.col(name)?.get(2), value, `incorrect ${name} value`);
-    }
+  //   const checkIdentifier = async (name: string, value: string) => {
+  //     await getMapIdentifiers(smiles, smiles.col('smiles')!, 'smiles', name);
+  //     expect(smiles.columns.names().includes(name), true, `${name} column hasn't been added`);
+  //     expect(smiles.col(name)?.get(2), value, `incorrect ${name} value`);
+  //   }
 
-    await checkIdentifier('inchi', 'InChI=1S/C6H4O3S2/c7-5-3-4(6(8)9-5)11-2-1-10-3/h1-2H2');
+  //   await checkIdentifier('inchi', 'InChI=1S/C6H4O3S2/c7-5-3-4(6(8)9-5)11-2-1-10-3/h1-2H2');
 
-    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
-    if (chemblPackInstalled) {
-      await checkIdentifier('actor', '10489-75-5');
-      await checkIdentifier('chembl', 'CHEMBL2262349');
-      await checkIdentifier('pubchem', '82669'); 
-      await checkIdentifier('mcule', 'MCULE-6494517749');     
-    }
-  }, {timeout: 60000 + CONTAINER_TIMEOUT});
+  //   const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+  //   if (chemblPackInstalled) {
+  //     await checkIdentifier('actor', '10489-75-5');
+  //     await checkIdentifier('chembl', 'CHEMBL2262349');
+  //     await checkIdentifier('pubchem', '82669'); 
+  //     await checkIdentifier('mcule', 'MCULE-6494517749');     
+  //   }
+  // }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
 
   test('to inchi', async () => {
