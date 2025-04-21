@@ -7,7 +7,6 @@
 3. On the **Menu Ribbon**, click the **Add viewer** icon, and select **PC plot**
 3. Close the viewer
 1. Go to **Toolbox > Viewers > PC plot**
----
 
 #### 2. Viewer basics 
 
@@ -18,7 +17,6 @@
 1. Close the viewer and return it by **Edit > Undo** (```CTRL + Z```)
 1. Add a legend and change its position
 1. Resize the viewer - **check mini-legend appearing and Self-adjustable viewer layout that keep viewers usable even in a small window**
----
 
 #### 3. Context Panel
 
@@ -31,7 +29,6 @@
    * Aggregate to `count(Id)`
    * Pivot to `Chemist 521`    
 1. Save the Layout. Check
----
 
 #### 4. Context menu
 
@@ -44,7 +41,6 @@
 1. Go to **Context menu > Tooltip** and check all items
 1. Open the Context Panel
 1. Go to **Context menu > Columns / Selection / Properties** and verify that changes are consistent between the Context Panel and the context menu
----
 
 #### 5. Color coding and the legend
 
@@ -55,7 +51,6 @@
 1. Grid > Chemical Space X: switch to the conditional color coding - **verify that legend appears and scheme on the viewer is changed**
 1. Go to **Context Panel > Legend** and check Legend visibility and position settings
 3. Save to Layout. Check
----
 
 #### 6. Pick Up / Apply  
 
@@ -70,7 +65,6 @@
 1. Right-click the second PC plot. Select **Pick up/Apply > Apply**
 1. Change the axes on the first PC plot - **the second plot should not be affected**
 1. Adjust the range slider on the second PC plot - **the first plot should update to show the filtered lines, but its own range sliders should remain unchanged and stay in their original positions**
----
 
 #### 7. Layout and Project save/restore
 1. Save the layout
@@ -79,7 +73,6 @@
 1. Save the project
 1. Close All
 1. Open the saved project - **check**
----
 
 #### 8. Filtering
 
@@ -91,6 +84,7 @@
 1. Go to PC plot, **Context menu > Reset view** (or double-click the white space in the viewer) - **Only the filtering on the PC plot should be reset, and the range sliders should return to their default positions**
 1. Use range sliders on the axes to filter data one more time
 1. On the **Filter Panel** click **Reset filter** - this should reset all applied filters and restore the range sliders on the PC plot to their default positions
+
 ---
 {
   "order": 8,
