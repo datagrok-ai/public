@@ -2027,7 +2027,7 @@ export async function getChempropError(response: Response): Promise<string> {
 }
 
 export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
-  const container = await getContainer();
+  let chempropContainer = await getContainer();
 
   const body = {
     type: 'Chemprop',
@@ -2043,7 +2043,9 @@ export async function trainModelChemprop(table: string, predict: string, paramet
   });
 
   if (response.status !== 201) {
-    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+    chempropContainer = await grok.dapi.docker.dockerContainers.find(chempropContainer.id);
+    const started = chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking');
+    if (!started)
       throw new Error(`Failed to start container: ${container.friendlyName}`);
     throw new Error(await getChempropError(response));
   }
@@ -2051,7 +2053,7 @@ export async function trainModelChemprop(table: string, predict: string, paramet
 }
 
 export async function applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
-  const container = await getContainer();
+  let chempropContainer = await getContainer();
 
   const body = {
     modelBlob: Array.from(modelBlob),
@@ -2065,7 +2067,9 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
   });
 
   if (response.status !== 201) {
-    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+    chempropContainer = await grok.dapi.docker.dockerContainers.find(chempropContainer.id);
+    const started = chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking');
+    if (!started)
       throw new Error(`Failed to start container: ${container.friendlyName}`);
     throw new Error(await getChempropError(response));
   }
