@@ -7,11 +7,16 @@ import {INDICES, MIN_RADAR_COLS_COUNT, NAME} from './constants';
 
 export class ScalarsFitRadar {
   private table: DG.DataFrame;
+  private isDataValid: boolean;
 
   constructor(table: DG.DataFrame) {
-    this.validate(table);
-    this.table = table.clone();
-    this.prepareTable();
+    this.isDataValid = this.validate(table);
+
+    if (this.isDataValid) {
+      this.table = table.clone();
+      this.prepareTable();
+    } else
+      this.table = table;
   }
 
   public async getRoot(): Promise<HTMLElement> {
@@ -19,6 +24,9 @@ export class ScalarsFitRadar {
   }
 
   private async getViewerRoot(): Promise<HTMLElement> {
+    if (!this.isDataValid)
+      return DG.Viewer.grid(this.table).root;
+
     const radar = await this.table.plot.fromType('Radar', {
       colorColumnName: NAME.CATEGORY,
       currentRowColor: DG.Color.categoricalPalette[INDICES.LIGHT_GREY],
@@ -29,23 +37,31 @@ export class ScalarsFitRadar {
     return radar.root;
   }
 
-  private validate(table: DG.DataFrame): void {
+  private validate(table: DG.DataFrame): boolean {
     const cols = table.columns;
     const colsCount = cols.length;
 
-    if (colsCount < MIN_RADAR_COLS_COUNT)
-      throw new Error(`Incorrect number of column for radar viewer: ${colsCount}. Expected: > ${MIN_RADAR_COLS_COUNT - 1}`);
+    if (colsCount < MIN_RADAR_COLS_COUNT) {
+      console.log(`Incorrect number of column for radar viewer: ${colsCount}. Expected: > ${MIN_RADAR_COLS_COUNT - 1}`);
+      return false;
+    }
 
     const catColType = cols.byIndex(colsCount - 1).type;
-    if (catColType !== DG.COLUMN_TYPE.STRING)
-      throw new Error(`Incorrect category column type of a table for radar viewer: ${catColType}. Expected: ${DG.COLUMN_TYPE.STRING}`);
+    if (catColType !== DG.COLUMN_TYPE.STRING) {
+      console.log(`Incorrect category column type of a table for radar viewer: ${catColType}. Expected: ${DG.COLUMN_TYPE.STRING}`);
+      return false;
+    }
 
     for (let i = 0; i < colsCount - 2; ++i) {
       const col = cols.byIndex(i);
 
-      if (!col.isNumerical)
-        throw new Error(`Incorrect values column '${col.name}' of a table for radar viewer: ${col.type}. Expected: numerical`);
+      if (!col.isNumerical) {
+        console.log(`Incorrect values column '${col.name}' of a table for radar viewer: ${col.type}. Expected: numerical`);
+        return false;
+      }
     }
+
+    return true;
   }
 
   private prepareTable(): void {

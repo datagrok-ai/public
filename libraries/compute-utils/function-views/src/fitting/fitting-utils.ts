@@ -319,9 +319,10 @@ function getSingleScalarBarChartOpts(valColName: string, catColName: string): Pa
     splitColumnName: catColName,
     colorColumnName: valColName,
     colorAggrType: DG.AGG.AVG,
-    linearColorScheme: [DG.Color.categoricalPalette[INDICES.OLIVE], DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE]],
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE], DG.Color.categoricalPalette[INDICES.OLIVE]],
     valueAggrType: DG.AGG.AVG,
     showValueSelector: false,
+    barSortType: 'by category',
   };
 }
 
@@ -335,12 +336,13 @@ function getFirstDoubleScalarBarChartOpts(valColName: string, catColName: string
     splitColumnName: catColName,
     colorColumnName: valColName,
     colorAggrType: DG.AGG.AVG,
-    linearColorScheme: [DG.Color.categoricalPalette[INDICES.OLIVE], DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE]],
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE], DG.Color.categoricalPalette[INDICES.OLIVE]],
     valueAggrType: DG.AGG.AVG,
     showValueSelector: false,
     description: valColName,
     descriptionVisibilityMode: 'Always',
     maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+    barSortType: 'by category',
   };
 }
 
@@ -360,6 +362,7 @@ function getSecondDoubleScalarBarChartOpts(valColName: string, catColName: strin
     description: valColName,
     descriptionVisibilityMode: 'Always',
     maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+    barSortType: 'by category',
   };
 }
 
@@ -397,7 +400,7 @@ export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement 
     return container;
 
   default:
-    throw new Error('Incorrect columns count in scalar "simulation vs target" table');
+    return DG.Viewer.grid(table).root;
   }
 } // getScalarsGoodnessOfFitViewer
 
