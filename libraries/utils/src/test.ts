@@ -84,7 +84,7 @@ export class Test {
           
           let res = await test();
           try {
-            result = res.toString();
+            result = res?.toString() ?? '';
           }
           catch (e) { 
             result = 'Can\'t convert test\'s result to string';
@@ -461,6 +461,8 @@ export async function runTests(options?: TestExecutionOptions) {
     }
     return invokationResult
   }
+  const memoryDelta = 'memoryDelta';
+  const widgetsDelta = 'widgetsDelta';
 
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
@@ -495,7 +497,7 @@ export async function runTests(options?: TestExecutionOptions) {
         if (isGBEnable)
           await (window as any).gc();
         if (testRun)
-          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: DG.Widget.getAll().length - widgetsBefore });
+          res.push({ ...testRun, [memoryDelta]: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, [widgetsDelta]: DG.Widget.getAll().length - widgetsBefore });
 
         grok.shell.closeAll();
         DG.Balloon.closeAll();

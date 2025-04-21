@@ -469,45 +469,52 @@ export class TestManager extends DG.ViewBase {
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
-    if (DG.Test.isInBenchmark && !t.test.options?.benchmark) {
-      t.test.options.skipReason = "Test can not be runned in benchmark mode";
-
-      this.updateTestResultsIcon(t.resultDiv, true, true);
-      return;
-    }
+    let testSucceeded = false;
     const skipReason = t.test.options?.skipReason;
-    if ((force || this.runSkippedMode) && skipReason) {
-      t.test.options.skipReason = undefined;
-      runSkipped = true;
-    }
-    this.testInProgress(t.resultDiv, true);
-    const res: DG.DataFrame = await grok.functions.call(
-      `${t.packageName}:test`, {
-      'category': t.test.category,
-      'test': t.test.name,
-      'testContext': new TestContext(false),
-    });
-    if (res.getCol('result').type !== 'string')
-      res.changeColumnType('result', 'string');
-    const testSucceeded = res.get('success', 0);
-    if (runSkipped) t.test.options.skipReason = skipReason;
-    if (!this.testsResultsDf) {
-      this.testsResultsDf = res;
-      if (res.col('logs'))
+    try {
+      if (DG.Test.isInBenchmark && !t.test.options?.benchmark) {
+        t.test.options.skipReason = "Test can not be runned in benchmark mode";
+
+        this.updateTestResultsIcon(t.resultDiv, true, true);
+        return;
+      }
+      if ((force || this.runSkippedMode) && skipReason) {
+        t.test.options.skipReason = undefined;
+        runSkipped = true;
+      }
+      this.testInProgress(t.resultDiv, true);
+      const res: DG.DataFrame = await grok.functions.call(
+        `${t.packageName}:test`, {
+        'category': t.test.category,
+        'test': t.test.name,
+        'testContext': new TestContext(false),
+      });
+      if (res.getCol('result').type !== 'string')
+        res.changeColumnType('result', 'string');
+      testSucceeded = res.get('success', 0);
+      if (runSkipped) t.test.options.skipReason = skipReason;
+      if (!this.testsResultsDf) {
+        this.testsResultsDf = res;
+        if (this.testsResultsDf.col('memoryUsed'))
+          this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
         this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
-      if (res.col('memoryDelta'))
         this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
-      this.addPackageInfo(this.testsResultsDf, t.packageName);
-    } else {
-      // if (res.col('package') == null || this.verboseCheckBox.value)
-      this.addPackageInfo(res, t.packageName);
-      // if (!this.verboseCheckBox.value)
-      // this.removeTestRow(t.packageName, t.test.category, t.test.name);
-      if (res.col('logs'))
+        this.addPackageInfo(this.testsResultsDf, t.packageName);
+      } else {
+        // if (res.col('package') == null || this.verboseCheckBox.value)
+        this.addPackageInfo(res, t.packageName);
+        // if (!this.verboseCheckBox.value)
+        // this.removeTestRow(t.packageName, t.test.category, t.test.name);
+        if (this.testsResultsDf.col('memoryUsed'))
+          this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
         res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
-      if (res.col('memoryDelta'))
         res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
-      this.testsResultsDf = this.testsResultsDf.append(res);
+        this.testsResultsDf = this.testsResultsDf.append(res);
+      }
+    }
+    catch (e) {
+      grok.shell.error(`${t.test.name} imvocation error`);
+      console.error(e?.message ?? e);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
     return testSucceeded;
