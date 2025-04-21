@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, before, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, before, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {molV2000, molV3000, readDataframe} from './utils';
 
 
@@ -46,6 +46,13 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   }, {timeout: 90000});
 
   test('curate.emptyValues', async () => {
+    let jupyterRunning = false;
+    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+      console.log('*********** test python script completed');
+      jupyterRunning = true; 
+    });
+    //check that JKG is running
+    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(df);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'smiles',
@@ -57,6 +64,13 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   }, {timeout: 90000});
 
   test('curate.malformedData', async () => {
+    let jupyterRunning = false;
+    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+      console.log('*********** test python script completed');
+      jupyterRunning = true; 
+    });
+    //check that JKG is running
+    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(df);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'canonical_smiles',
@@ -90,6 +104,13 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
 
 async function curate(df: DG.DataFrame, col: string) {
+      let jupyterRunning = false;
+      grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+        console.log('*********** test python script completed');
+        jupyterRunning = true; 
+      });
+      //check that JKG is running
+      await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
   const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': col,
     'kekulization': true, 'normalization': true, 'reionization': true,
     'neutralization': true, 'tautomerization': true, 'mainFragment': true});
