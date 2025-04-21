@@ -2081,7 +2081,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 //input: dataframe df
 //input: column predictColumn
 //input: string dataset_type = 'regression' {category: General; choices: ['regression', 'classification']} [Type of dataset, e.g. classification or regression. This determines the loss function used during training.]
-//input: string metric = 'rmse' {category: General; choices: ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy']} [Metric to use during evaluation. Note: Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).]
+//input: string metric = 'rmse' {category: General; choices: ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1']} [Metric to use during evaluation. Note: Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).]
 //input: int multiclass_num_classes = 3 {category: General} [Number of classes when running multiclass classification]
 //input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
 //input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]
