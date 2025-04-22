@@ -35,7 +35,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.smiles', async () => {
     await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(1000) : smiles, 'smiles');
-  }, {timeout: 90000, benchmark: true});
+  }, {timeout: 90000, benchmark: true, skipReason: 'GROK-18029'});
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
