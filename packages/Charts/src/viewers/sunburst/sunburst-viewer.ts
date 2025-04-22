@@ -40,7 +40,7 @@ export class SunburstViewer extends EChartViewer {
   sunburstVersion: number | null = null;
   currentVersion: number | null = null;
   includeNulls: boolean;
-
+  private moleculeRenderQueue: Promise<void> = Promise.resolve();
   constructor() {
     super();
     this.initCommonProperties();
@@ -293,8 +293,6 @@ export class SunburstViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
-      fontSize: 0,
-      formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
       width: width.toString(),
@@ -304,7 +302,14 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  formatLabel(params: any) {
+  async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
+    this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
+      this.renderMolecule(params, width, height),
+    );
+    await this.moleculeRenderQueue;
+  }
+
+  formatLabel(params: any): string {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
     const getCurrentItemIndex = params.dataIndex - 1;
@@ -328,10 +333,13 @@ export class SunburstViewer extends EChartViewer {
         const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
         const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
 
-        this.renderMolecule(params, renderWidth, renderHeight);
+        this.renderMoleculeQueued(params, renderWidth, renderHeight);
+        return ' ';
+      } else {
+        if (params.data.label)
+          delete params.data.label;
         return ' ';
       }
-      return ' ';
     }
 
     const averageCharWidth = 5;
