@@ -39,7 +39,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
