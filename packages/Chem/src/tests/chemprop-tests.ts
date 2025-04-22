@@ -8,7 +8,7 @@ import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
-category('chemprop', () => {
+category('w_chemprop', () => {
   let binBlob: Uint8Array;
   let table: DG.DataFrame;
 

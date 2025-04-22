@@ -468,7 +468,7 @@ export async function runTests(options?: TestExecutionOptions) {
     let t = category.tests ?? [];
     const res = [];
     let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
-    const widgetsBefore = DG.Widget.getAll().length;
+    const widgetsBefore = getWidgetsCountSafe();
 
     if (category.clear) {
       for (let i = 0; i < t.length; i++) {
@@ -497,7 +497,7 @@ export async function runTests(options?: TestExecutionOptions) {
         if (isGBEnable)
           await (window as any).gc();
         if (testRun)
-          res.push({ ...testRun, [memoryDelta]: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, [widgetsDelta]: DG.Widget.getAll().length - widgetsBefore });
+          res.push({ ...testRun, [memoryDelta]: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, [widgetsDelta]: getWidgetsCountSafe() - widgetsBefore });
 
         grok.shell.closeAll();
         DG.Balloon.closeAll();
@@ -528,6 +528,16 @@ export async function runTests(options?: TestExecutionOptions) {
       }
     }
     return res;
+  }
+
+  function getWidgetsCountSafe() {
+    let length = -1;
+    try {
+      length = DG.Widget.getAll().length;
+    } catch (e: any) {
+      console.warn(e.message ?? e);
+    }
+    return length;
   }
 
   async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
