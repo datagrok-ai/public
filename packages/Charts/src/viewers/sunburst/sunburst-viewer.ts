@@ -41,6 +41,7 @@ export class SunburstViewer extends EChartViewer {
   currentVersion: number | null = null;
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private latestRenderToken = 0;
   constructor() {
     super();
     this.initCommonProperties();
@@ -227,7 +228,6 @@ export class SunburstViewer extends EChartViewer {
     }
   }
 
-
   addSubs() {
     if (!this.dataFrame)
       return;
@@ -399,7 +399,17 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render(orderedHierarchyNames?: string[]): void {
-    this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
+    const currentToken = ++this.latestRenderToken;
+
+    this.renderQueue = this.renderQueue
+      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames));
+  }
+
+  private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {
+    if (token !== this.latestRenderToken)
+      return;
+
+    await this._render(orderedHierarchyNames);
   }
 
   async _render(orderedHierarchyNames?: string[]) {
@@ -408,11 +418,18 @@ export class SunburstViewer extends EChartViewer {
 
     if (this.filter.trueCount >= CATEGORIES_NUMBER) {
       this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
-        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+        (name) => {
+          const column = this.dataFrame.col(name);
+          if (column)
+            return column.categories.length <= CATEGORIES_NUMBER;
+          return false;
+        },
       );
-    } else
-      this.eligibleHierarchyNames = orderedHierarchyNames ?? this.hierarchyColumnNames;
-
+    } else {
+      const validColumnNames = new Set(this.dataFrame.columns.names());
+      this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames)
+        .filter((name) => validColumnNames.has(name));
+    }
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
