@@ -1,5 +1,9 @@
 # Chemspace changelog
 
+## 1.2.1 (2025-04-22)
+
+Removed swagger file
+
 ## 1.2.1 (2025-03-29)
 
 Moved application under Chem section in browse tree
