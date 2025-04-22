@@ -212,12 +212,6 @@ export class SunburstViewer extends EChartViewer {
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (!p) return;
     switch (p.name) {
-    case 'hierarchyColumnNames':
-    case 'inheritFromGrid':
-    case 'includeNulls':
-      this.render();
-      break;
-
     case 'table':
       this.updateTable();
       this.onTableAttached(true);
@@ -228,7 +222,7 @@ export class SunburstViewer extends EChartViewer {
       break;
 
     default:
-      super.onPropertyChanged(p, render);
+      this.render();
       break;
     }
   }
@@ -299,6 +293,7 @@ export class SunburstViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
+      fontSize: 0,
       formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
@@ -419,6 +414,9 @@ export class SunburstViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     const data = await this.getSeriesData();
+    Object.assign(this.option.series[0], {
+      data,
+    });
 
     // Reinitialize the chart (needed in order to prevent memory leak)
     if (this.chart) {
@@ -432,10 +430,7 @@ export class SunburstViewer extends EChartViewer {
     this.initEventListeners();
     this.addSubs();
 
-    Object.assign(this.option.series[0], {
-      data,
-      label: { formatter: (params: any) => this.formatLabel(params) },
-    });
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
   }
 

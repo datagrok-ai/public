@@ -5,7 +5,6 @@
 2. On the **Menu Ribbon**, click the **Add viewer** icon, and select **Trellis plot**
 3. Close the viewer
 1. Go to **Toolbox > Viewers > Trellis plot**
----
 
 #### 2.  Viewer basics 
 
@@ -17,8 +16,7 @@
 1. Open\Close the Context Panel
 1. Display the  help window
 1. Close the viewer and return it by **Edit > Undo** (```CTRL + Z```)
----
-   
+
 #### 3. Context Panel
 
 1. Open the **Context Panel** - check its appearance and UI
@@ -27,7 +25,6 @@
 1. Change some settings values - **the viewer should be updated accordingly**
 1. Add or remove the X (Y) column directly from the trellis plot
 1. Verify the number of X (Y) columns in the Context Panel - **the number of columns in the Context Panel should be immediately updated when a column is added or removed**
----
 
 #### 4. Context menu
 
@@ -37,7 +34,6 @@
 1. Go to **Context menu > Tooltip** and check all items
 1. Open the Context Panel
 1. Go to **Context menu > Properties** and verify that property changes are consistent between the Context Panel and the context menu
----
 
 #### 5. OnClick functionality (check for each inner viewer)
 
@@ -59,7 +55,6 @@
 1. Open the **Filter Panel** and apply some filters - **Filtering should respect both Filter Panel and trellis plot filters**
 1. Go to **Context menu > Reset view** - only the filtering of the trellis plot should be reset
 1. Go to **Context menu > On Click > None** - clicking any cell should not change filtering or selection
----
 
 #### 6. Pick Up / Apply  ([#2116](https://github.com/datagrok-ai/public/issues/2116))
 
@@ -75,7 +70,6 @@
 1. Right-click the second trellis plot. Select **Pick up/Apply > Apply**
 1. Change the X or Y axis on the first trellis plot - **the second plot should not be affected**
 1. Adjust the range slider on the second trellis plot using +/- on the axes, scroll - **the first plot should not be affected**
----
 
 #### 7. Layout and Project save/restore
 1. Save the layout
@@ -84,7 +78,6 @@
 1. Save the project
 1. Close All
 1. Open the saved project - **verify that only two trellises are displayed**
----
 
 #### 8. Floating viewer after applying layout
 
@@ -101,6 +94,7 @@
 
   * The layout should automatically adjust to fit the current screen size.
   * All viewers should remain accessible and properly positioned on the screen.
+
 ---
 {
   "order": 13,
