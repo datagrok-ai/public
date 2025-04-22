@@ -8,10 +8,10 @@ import { emit } from 'process';
 export abstract class BatchCellRenderer<T> extends DG.GridCellRenderer {
   currentTimeout: any = null;
   isRunning: boolean = false;
-  loadedValues: Map<string, T> = new Map<string, T>();
-  cellsToLoad: DG.GridCell[] = [];
-  cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
+  cellsToLoad: { value: DG.GridCell, renderFuncs: Map<HTMLCanvasElement, () => (void)> }[] = [];
+  cellsToLoadOnTimeoutComplete: { value: DG.GridCell, renderFunc: () => (void), canvas: HTMLCanvasElement }[] = [];
   cache: LruCache<string, T>;
+  delay: number = 100;
 
   constructor() {
     super();
@@ -20,44 +20,55 @@ export abstract class BatchCellRenderer<T> extends DG.GridCellRenderer {
 
   abstract loadData(keys: string[]): Promise<Map<string, T>>;
 
-  async retrieveBatch(gridCell: DG.GridCell) {
-    let found = this.cellsToLoad.filter((e) => {
-      return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn?.name === gridCell.gridColumn?.name && e.tableRowIndex === gridCell.tableRowIndex;
-    }) ?? [];
+  /** 
+    gridCell - cell that has to be loaded
+    funcToRender - closure function to render cell
+    canvas - cell's canvas
+  **/
+  async retrieveBatch(gridCell: DG.GridCell, funcToRender: () => void, canvas: HTMLCanvasElement) {
+    const found = this.cellsToLoad.find((e) => {
+      return e.value.value === gridCell.value && e.value.gridColumn === gridCell.gridColumn && e.value.tableRowIndex === gridCell.tableRowIndex;;
+    });
 
-    if (found.length > 0)
-      return;
-
-    if (this.isRunning) {
-      this.cellsToLoadOnTimeoutComplete.push(gridCell);
+    if (found) {
+      found.renderFuncs.set(canvas, funcToRender);
       return;
     }
 
-    this.cellsToLoad.push(gridCell);
+    if (this.isRunning) {
+      this.cellsToLoadOnTimeoutComplete.push({ value: gridCell, renderFunc: funcToRender, canvas: canvas });
+      return;
+    }
+
+    this.cellsToLoad.push({ value: gridCell, renderFuncs: new Map().set(canvas, funcToRender)});
     if (this.currentTimeout)
       clearTimeout(this.currentTimeout);
 
     this.currentTimeout = setTimeout(async () => {
       this.isRunning = true;
-      this.loadedValues = await this.loadData(this.cellsToLoad.map((e) => e.cell.valueString));
+      
+      const loadedValues = await this.loadData(Array.from(new Set(this.cellsToLoad.map((e) => e.value.cell.valueString))));
 
-      for (const [key, value] of this.loadedValues) {
+      for (const [key, value] of loadedValues) {
         this.cache.set(key, value);
       }
 
       this.cellsToLoad.forEach((x) => {
-        if (!this.loadedValues.has(x.cell.valueString))
-          this.cache.set(x.cell.valueString, null);
-        x.grid.invalidate();
+        if (!loadedValues.has(x.value.cell.valueString))
+          this.cache.set(x.value.cell.valueString, null);
+        for(const func of x.renderFuncs.values()){
+          func();
+        }
       })
 
-      this.loadedValues.clear();
       this.cellsToLoad = [];
       this.currentTimeout = null;
       this.isRunning = false;
+
       if (this.cellsToLoadOnTimeoutComplete.length > 0)
-        this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.retrieveBatch(cell) });
+        this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.retrieveBatch(cell.value, cell.renderFunc, cell.canvas) });
+
       this.cellsToLoadOnTimeoutComplete = [];
-    });
+    }, this.delay);
   }
 }

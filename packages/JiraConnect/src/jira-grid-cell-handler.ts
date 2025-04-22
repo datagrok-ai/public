@@ -195,8 +195,6 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
     currentTimeout: any = null;
     isRunning: boolean = false;
     loadedTickets: Set<string> = new Set<string>();
-    cellsToLoad: DG.GridCell[] = [];
-    cellsToLoadOnTimeoutComplete: DG.GridCell[] = [];
 
     constructor() {
         super();
@@ -248,8 +246,11 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
             }
         };
 
-        if (!cache.has(key))
-            this.retrieveBatch(gridCell);
+        if (!cache.has(key)) {
+            const isRenderOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas;
+
+            this.retrieveBatch(gridCell, () => { gridCell.render(isRenderOnGrid ? undefined : { context: g, bounds: new DG.Rect(x, y, w,h)}) }, g.canvas);
+        }
         else {
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
