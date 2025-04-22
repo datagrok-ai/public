@@ -1,39 +1,39 @@
-**Train**
+#### 1. Train
 
-1. Open demo file: Browse > Files > Demo > Sensors > accelerometer.csv
-2. Top menu > ML > Models > Train Model... Predictive model form opens. Fill it according to sample:
+1. Open **Browse > Files > Demo > Sensors > accelerometer.csv**
+2. Go to **ML > Models > Train Model...**. A dialog opens 
+1. Set:
 
-* Table field: accelerometer
-* for Predict set: accel_x
-* for Features set: accel_y, accel_z, time_offset
-* Model Engine: EDA: PLS
-* Components: 3
+   * **Features** to `accel_y`, `accel_z`, `time_offset`
+   * **Model Engine** to `EDA: PLS`
+   * **Components** to 3
+**The result of modeling should appear**
+3. Click "SAVE" to save the model as "Accelerometer_model_PLS"
+5. Switch the **Model Engine** to EDA: Linnear Regression
+6. Save the model as "Accelerometer_model_LR"
 
-3. The result of modeling should appear. Press "Train" button.
-4. Save Predictive model with name "Accelerometer model PLS".
-5. Go to Toolbox menu > Models. Press "Train" button.
-6. Fill the form according to sample:
+#### 2. Apply
 
-* Table field: accelerometer
-* for Predict set: accel_x
-* for Features set: accel_y, accel_z, time_offset
-* Model Engine: EDA: Linnear Regression
+1. Open **Browse > Files > Demo > Sensors > accelerometer.csv**
+11. Go to  **ML > Models > Apply Model...** 
+1. Select "Accelerometer_model_PLS" model - **Inputs in "Apply predictive model" form should be set correctly (`accel_y`, `accel_z`, `time_offset`)**
+1. Click OK - **the predictive model result should appear in the last column**
+12. Go to  **Top menu > ML > Models > Apply Model...** 
+1.  Run prediction "Accelerometer model LR" - **check the inputs and the result**
 
-7. The result of modeling should appear. Press "Train" button. 
-8. Save Predictive model with name "Accelerometer model LR".
-9. File > Close All.
+#### 3. Apply on a new dataset
 
-**Apply**
+1. Go to **Tools > Dev > Open test dataset**
+1. Set 1000 rows, 10 cols and "random walk as demo table". Click OK
+14. Go to **ML > Models > Apply model**
+1. Select "Accelerometer_model_LR" - **check the inputs and the result**
 
-10. Open demo file once again: Browse > Files > Demo > Sensors > accelerometer.csv
-11. Top menu > ML > Models > Apply Model... Apply predictive model form opens. Choose "Accelerometer model PLS" model. Inputs in "Apply predictive model" form should be set correctly (accel_x - accel_x). Press OK button. The predictive model result should appear.
-12. Toolbox > Models. Run prediction "Accelerometer model LR". Inputs in "Apply predictive model" form should be set correctly (accel_x - accel_x). The predictive model result should appear.
-13. Go to Top menu > Tools > Dev > Open test dataset. Set 1000 rows, 10 cols and "random walk as demo table". Preaa OK button. 
-14. Go to ML > Models > Apply model. Choose "Accelerometer model LR" for new table and run it. The predictive model result should appear.
+#### 4. Delete 
 
-**Delete** 
-
-15. Delete "Accelerometer model LR" and "Accelerometer model PLS" models in Toolbox. 
+1. Go to **Browse > Platform > Predictive models**
+5. Locate the "Accelerometer_model_LR" and "Accelerometer_model_PLS" models
+3. Check the **Context Panel** tabs 
+2. Delete the "Accelerometer_model_LR" and "Accelerometer_model_PLS" models
 
 ---
 {

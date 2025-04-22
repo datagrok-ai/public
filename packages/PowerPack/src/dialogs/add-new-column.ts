@@ -714,27 +714,35 @@ export class AddNewColumnDialog {
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
-      this.validateFuncCallTypes(funcCall);
+      const error = this.validateFuncCallTypes(funcCall);
+      return this.getErrorMessage(error);
     } catch (e: any) {
-      return e.message?.endsWith(': end of input expected]') ? 'Possible syntax error' : e.message ?? e;
+      return this.getErrorMessage(e.message ?? e);
     }
-    return '';
   }
 
+  getErrorMessage(message: string) {
+    return message?.endsWith(': end of input expected]') ? 'Possible syntax error' : message;
+  }
 
-  validateFuncCallTypes(funcCall: DG.FuncCall) {
+  validateFuncCallTypes(funcCall: DG.FuncCall): string {
     const innerFuncCalls: string[] = [];
     const actualInputParamTypes: { [key: string]: string } = {};
     const actualInputSemTypes: { [key: string]: string } = {};
 
-    if (funcCall.func.name.toLowerCase() === 'if')
-      this.getIfFuncOutputParam(funcCall);
+    if (funcCall.func.name.toLowerCase() === 'if') {
+      try {
+        this.getIfFuncOutputParam(funcCall);
+      } catch (e: any) {
+        return e.message ?? e;
+      }
+    }
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
       if (funcCall.inputs[key] instanceof DG.FuncCall) {
         //do not allow functions with multiple outputs
         if (funcCall.inputs[key].func.outputs.length > 1)
-          throw new Error(`Function ${funcCall.inputs[key].func} returns multiple values`);
+          return `Function ${funcCall.inputs[key].func} returns multiple values`;
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
@@ -760,7 +768,7 @@ export class AddNewColumnDialog {
           actualInputType = typeof res.getOutputParamValue();
         } catch (e: any) {
           //throw new Error(`Variable ${funcCall.inputs[property.name].inputs['variableName']} is not declared`);
-          throw e;
+          return e.message ?? e;
         }
       }
       //handling dynamic type in actual input
@@ -784,26 +792,30 @@ export class AddNewColumnDialog {
         continue;
       //check for semType match
       if (property.semType && actualSemType && property.semType !== actualSemType)
-        throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`);
+        return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`;
       //check for column and list types
       if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
-        if (property.propertySubType && property.propertySubType !== actualInputType)
-          throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`);
+        if (property.propertySubType && property.propertySubType !== actualInputType && (property.propertyType === DG.TYPE.LIST && funcCall.inputs[property.name]?.length !== 0))
+          return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`;
       } else {
         //check for type match
         if (property.propertyType !== actualInputType) {
           //check for type match in mapping
           const mappingMatch = VALIDATION_TYPES_MAPPING[property.propertyType] && VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType);
           if (!mappingMatch)
-            throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`);
+            return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`;
         }
       }
     }
     //validate inner func calls recursively
     if (innerFuncCalls.length) {
-      for (const param of innerFuncCalls)
-        this.validateFuncCallTypes(funcCall.inputs[param]);
+      for (const param of innerFuncCalls) {
+        const error = this.validateFuncCallTypes(funcCall.inputs[param]);
+        if (error)
+          return error;
+      }
     }
+    return '';
   }
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
@@ -1332,10 +1344,10 @@ export class AddNewColumnDialog {
         if (second == first)
           return second;
         else {
-          if (first ==  DG.TYPE.DYNAMIC || second ==  DG.TYPE.DYNAMIC)
-            return  DG.TYPE.DYNAMIC;
+          if (first == DG.TYPE.DYNAMIC || second == DG.TYPE.DYNAMIC)
+            return DG.TYPE.DYNAMIC;
           if (isNumerical(second) && isNumerical(first)) {
-            var resType = numericCast[first][second];
+            const resType = numericCast[first][second];
             if (resType == '')
               throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
             return resType;

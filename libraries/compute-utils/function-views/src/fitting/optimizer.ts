@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
 import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
-import {MS_TO_SLEEP} from './constants';
+import {TIMEOUT} from './constants';
 
 export async function performNelderMeadOptimization(
   objectiveFunc: (x: Float32Array) => Promise<number>,
@@ -34,7 +34,7 @@ export async function performNelderMeadOptimization(
       percentage = Math.floor(100 * (i + 1) / samplesCount);
       pi.update(percentage, `Fitting... (${percentage}%)`);
 
-      await sleep(MS_TO_SLEEP);
+      await sleep(TIMEOUT.MS_TO_SLEEP);
 
       if ((pi as any).canceled)
         break;

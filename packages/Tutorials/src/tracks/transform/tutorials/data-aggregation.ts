@@ -5,6 +5,7 @@ import $ from 'cash-dom';
 import { interval } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { waitForElementClick } from '../../eda/tutorials/utils';
+import { Platform, getPlatform, platformKeyMap } from '../../shortcuts';
 
 
 
@@ -20,6 +21,7 @@ export class AggregationTutorial extends Tutorial {
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
+  platform: Platform = getPlatform();
 
   protected async _run() {
     grok.shell.windows.showToolbox = false;
@@ -32,7 +34,7 @@ export class AggregationTutorial extends Tutorial {
 
     await this.action('Open Aggregation Editor', grok.functions.onAfterRunAction.pipe(
       filter((call) => call.func.name === 'CmdAggregateRows')), this.getMenuItem('Data'),
-      'Select <b>Data > Aggregate Rows</b> in the top menu, or press <b>Alt+A</b>.');
+      `Select <b>Data > Aggregate Rows</b> in the top menu, or press <b>${platformKeyMap['Alt'][this.platform]}+A</b>.`);
 
     this.describe('The aggregation editor consists of several components: the section on ' +
       'top contains aggregation parameters; the spreadsheet at the bottom shows the result, ' +

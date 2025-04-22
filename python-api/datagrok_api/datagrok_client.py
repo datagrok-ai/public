@@ -66,7 +66,7 @@ class DatagrokClient:
         '''
         name = name.replace(':', '.')
         endpoint = f"/public/v1/tables/{name}"
-        csv_data = dataframe.to_csv(index=False)
+        csv_data = dataframe.to_csv(index=False).encode("utf-8")
         response = self._request('POST', endpoint, content_type="text/csv", data=csv_data)
         return response.json()
 
