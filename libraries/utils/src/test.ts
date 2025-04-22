@@ -461,8 +461,6 @@ export async function runTests(options?: TestExecutionOptions) {
     }
     return invokationResult
   }
-  const memoryDelta = 'memoryDelta';
-  const widgetsDelta = 'widgetsDelta';
 
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
@@ -497,7 +495,7 @@ export async function runTests(options?: TestExecutionOptions) {
         if (isGBEnable)
           await (window as any).gc();
         if (testRun)
-          res.push({ ...testRun, [memoryDelta]: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, [widgetsDelta]: getWidgetsCountSafe() - widgetsBefore });
+          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
 
         grok.shell.closeAll();
         DG.Balloon.closeAll();
