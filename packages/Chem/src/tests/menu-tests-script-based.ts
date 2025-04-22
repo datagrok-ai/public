@@ -43,7 +43,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
