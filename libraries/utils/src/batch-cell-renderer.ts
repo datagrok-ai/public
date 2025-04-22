@@ -40,13 +40,13 @@ export abstract class BatchCellRenderer<T> extends DG.GridCellRenderer {
       return;
     }
 
-    this.cellsToLoad.push({ value: gridCell, renderFuncs: new Map().set(canvas, funcToRender)});
+    this.cellsToLoad.push({ value: gridCell, renderFuncs: new Map().set(canvas, funcToRender) });
     if (this.currentTimeout)
       clearTimeout(this.currentTimeout);
 
     this.currentTimeout = setTimeout(async () => {
       this.isRunning = true;
-      
+
       const loadedValues = await this.loadData(Array.from(new Set(this.cellsToLoad.map((e) => e.value.cell.valueString))));
 
       for (const [key, value] of loadedValues) {
@@ -56,7 +56,7 @@ export abstract class BatchCellRenderer<T> extends DG.GridCellRenderer {
       this.cellsToLoad.forEach((x) => {
         if (!loadedValues.has(x.value.cell.valueString))
           this.cache.set(x.value.cell.valueString, null);
-        for(const func of x.renderFuncs.values()){
+        for (const func of x.renderFuncs.values()) {
           func();
         }
       })

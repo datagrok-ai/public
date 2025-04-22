@@ -249,9 +249,14 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
         if (!cache.has(key)) {
             const isRenderOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas;
 
-            this.retrieveBatch(gridCell, () => { gridCell.render(isRenderOnGrid ? undefined : { context: g, bounds: new DG.Rect(x, y, w,h)}) }, g.canvas);
+            g.font = '15px "Font Awesome 5 Pro"';
+            g.fillStyle = '#4d5261';
+            g.fillText('\uf110', x + w / 2, y + h / 2);
+
+            this.retrieveBatch(gridCell, () => { gridCell.render(isRenderOnGrid ? undefined : { context: g, bounds: new DG.Rect(x, y, w, h) }) }, g.canvas);
         }
         else {
+            g.clearRect(x, y, w, h);
             cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
             renderKey();
 
