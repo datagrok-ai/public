@@ -1,0 +1,26 @@
+---
+title: "Low-code workflows"
+---
+
+There might be many [scripts](../scripting) deployed to the platform
+and often users will have certain use patterns. Datagrok provides a
+low-code solution to structure and organize multiple scripts into easy
+to use workflows.
+
+Each individual script can be viewed as a building block of a user
+workflow. For each script the platform already has a [generated
+UI]('/') (__TODO:__ RFV url). So passing an output of one script to
+another script input is a simple workflow.
+
+__TODO: Some gif, link to public example__
+
+More precisely, workflow in this documentation section means a
+uniderectional acyclic graph where vertexes are
+[scripts](overview#scripts-as-nodes) inputs/outputs and edges are
+[links](overview#links-as-edges) between them. Links could use simple
+Typescript functions called [handlers](overview#links-handlers) to
+implement arbitrary transformations. Workflow could be
+[static](configuration#static-pipelines) meaning, a set of vertexes
+and edges is immutable. It is possible to create [dynamic
+workflows](configuration#dynamic-pipelines), where a set of vertexes
+and edges could be altered during the workflow itself.
