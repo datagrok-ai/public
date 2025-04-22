@@ -523,7 +523,7 @@ export async function runTests(options?: TestExecutionOptions) {
           await (window as any).gc();
         
         if (testRun)
-          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: DG.Widget.getAll().length - widgetsBefore });
+          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
 
       }
     }

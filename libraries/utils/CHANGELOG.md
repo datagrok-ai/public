@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.5.5 (2025-04-22)
+
+Fixed tests failing due to DG.Widget.getAll() errors
+
 ## 4.5.3 (2025-04-14)
 
 Added the drawLines method
