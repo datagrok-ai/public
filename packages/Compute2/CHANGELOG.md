@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.2.2 (2025-04-22)
+
+- Compute-utils update
+
 ## 1.2.2 (2025-04-21)
 
 - Fix npm build
