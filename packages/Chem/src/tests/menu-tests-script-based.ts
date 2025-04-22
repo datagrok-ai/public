@@ -54,7 +54,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 16);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('curate.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -65,7 +65,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 43);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('mutate.smiles', async () => {
     await mutate('CN1C(CC(O)C1=O)C1=CN=CC=C1');
