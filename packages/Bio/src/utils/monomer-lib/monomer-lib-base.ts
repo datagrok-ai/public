@@ -209,8 +209,22 @@ export class MonomerLibBase implements IMonomerLibBase {
         {style: {display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '6px'}}));
 
       // Source
-      if (monomer.symbol != GAP_SYMBOL)
-        res.append(ui.divText(monomer.lib?.source ?? 'Missed in libraries'));
+      if (monomer.symbol != GAP_SYMBOL) {
+        let source = monomer.lib?.source;
+        if (!source)
+          res.append(ui.divText('Missed in libraries'));
+        else {
+          // remove.json extension
+          if (source.endsWith('.json'))
+            source = source.substring(0, source.length - 5);
+          // convert campelCase/snake_case/kebab-case to space separated words
+          source = source
+            .replace(/_/g, ' ')
+            .replace(/-/g, ' ')
+            .replace(/([a-z])([a-z])([A-Z])/g, '$1$2 $3');
+          res.append(ui.divText(source));
+        }
+      }
     } else {
       res.append(ui.divV([
         ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
