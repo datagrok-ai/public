@@ -106,7 +106,7 @@ class ChemProp(Engine):
 
          'metric': {
             'type': Types.STRING,
-            'choices': ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy'],
+            'choices': ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1'],
             'description': 'Metric to use during evaluation.'
                            'Note: Does NOT affect loss function used during training'
                            '(loss is determined by the `dataset_type` argument).'

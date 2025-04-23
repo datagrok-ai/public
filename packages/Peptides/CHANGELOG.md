@@ -1,5 +1,15 @@
 # Peptides changelog
 
+## 1.23.5 (2025-04-22)
+
+* Fix invisible Scroller in mutations cliffs 
+
+## 1.23.4 (2025-04-21)
+
+* Fixes for selection table for DG null values
+* Correction of unselection for standalone viewers
+* Cosmetic corrections to null values in predictions
+
 ## 1.23.3 (2025-04-17)
 
 Selection widget: value retrieving fix

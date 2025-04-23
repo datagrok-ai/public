@@ -1,11 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
+import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 
 export class ActivityCliffsTutorial extends Tutorial {
@@ -25,6 +27,7 @@ export class ActivityCliffsTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
+  platform: Platform = getPlatform();
   // manualMode = true;
 
   protected async _run() {
@@ -90,9 +93,9 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents
     the maximum detected activity cliff for that molecule. The pairs with larger red markers may be
     particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.<br>
-    Let’s zoom in. Use <b>Alt + Mouse Drag</b>.`);
+    Let’s zoom in. Use <b>${platformKeyMap['Alt'][this.platform]} + Mouse Drag</b>.`);
 
-    await this.action('Press Use Alt + Mouse Drag to zoom in', v!.onZoomed);
+    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed);
     
     this.title('Explore the pairs of molecules', true);
     this.describe(`The opacity of the green line connecting molecules corresponds to the magnitude of the activity cliff.
