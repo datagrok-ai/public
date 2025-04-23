@@ -3,7 +3,7 @@
 //input: int a
 //output: int out
 
-if (a === 0)
+if (a == 0) // use type coercion
   throw 'exception';
 else
   a++;
