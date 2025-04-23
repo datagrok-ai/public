@@ -3,7 +3,8 @@ title: "Overview"
 sidebar_position: 0
 ---
 
-In this section a brief overview of primary concepts is provided.
+In this section a brief overview of primary concepts of workflows
+graph is provided.
 
 ### Scripts io as vertexes
 
@@ -18,17 +19,24 @@ generated UI are reused in workflows as is.
 
 Links are connections that are either pass data directly from source
 to target or do some transformations via Typescript. There are
-multiple types of links, some of which use source scripts
-inputs/outputs to pass data to a virtual target, which is not a script
-io. This way it is possible to have a derived state.
+multiple types of links, some of them use source scripts
+inputs/outputs to pass data to a virtual target, which is not stored
+in a script io. This way it is possible to have a derived state, for
+example a validation state.
 
-Link handlers are Typescript functions that receive a `controller`
-object argument, each link type has its own controller type with
-slightly different methods to get and set inputs/outputs. Note that
-inputs/outputs of links are different of inputs/outputs scripts. For
-example, a script output will probably be a link input, and a link
-output will be a script input. More details about different link types
-are available [here](link-types).
+Link handlers are used to make data transformations. They are just
+Typescript functions that receive a `controller` object argument, each
+link type has its own controller type with slightly different methods
+to get and set inputs/outputs. Availability only in Typescript and
+using a controller object to get/set inputs/outputs are the main
+differences between a script and a link handler.
+
+Note that inputs/outputs of links are different from inputs/outputs of
+scripts. For example, a script output will probably be a link input,
+and a link output will be a script input. More details about different
+link types are available [here](link-types).
+
+__TODO: some simple drawing illustrating the above__
 
 ### Configuration
 
@@ -42,6 +50,3 @@ pipeline) might have links definitions which target own or nested
 scripts io. The main restriction for links is to have information
 propagated only forward (depth first graph ordering). More information
 about configuration is available [here](configuration).
-
-
-__TODO: Nav tree gif, link to public example__
