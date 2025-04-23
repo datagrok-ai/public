@@ -3,11 +3,10 @@
 1. Open **Browse > Files > Demo > Sensors > accelerometer.csv**
 2. Go to **ML > Models > Train Model...**. A dialog opens 
 1. Set:
-
    * **Features** to `accel_y`, `accel_z`, `time_offset`
    * **Model Engine** to `EDA: PLS`
    * **Components** to 3
-**The result of modeling should appear**
+   * **The result of modeling should appear**
 3. Click "SAVE" to save the model as "Accelerometer_model_PLS"
 5. Switch the **Model Engine** to EDA: Linnear Regression
 6. Save the model as "Accelerometer_model_LR"
