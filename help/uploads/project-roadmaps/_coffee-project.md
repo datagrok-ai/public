@@ -110,7 +110,7 @@ Hopefully, now you see a bunch of visualizations. We suggest that you look into 
 features correlate with each other and which of them have a greater impact on the outcome. We would especially like to
 draw your attention to the scatter plot `Predicted vs Reference`, which shows actual predictions for sales. Later, you
 will see how well a predictive model can cope with the same task. Also, you can learn more about multivariate analysis
-from [our Wiki page](https://datagrok.ai/help/explore/multivariate-analysis/pls).
+from [our Wiki page](https://datagrok.ai/help/explore/multivariate-analysis).
 
 Later in this example, we will use the following features:
 

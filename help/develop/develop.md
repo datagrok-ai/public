@@ -57,7 +57,7 @@ In addition to that, it might contain the following folders:
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
-  Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
+  Examples: [EnamineStore](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
 * `connections` and `queries`: [connections](../access/access.md#data-connection)
   and [queries](../access/access.md#data-query) for data retrieval.
@@ -65,10 +65,10 @@ In addition to that, it might contain the following folders:
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.
   Example: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
-  <!--, [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)-->
+  <!--, [Discovery](https://github.com/datagrok-ai/labs/tree/master/packages/Discovery)-->
 * `files` and `tables`: data for demonstration and testing.
   Example: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)-->
+  <!--, [Sunburst](https://github.com/datagrok-ai/labs/tree/master/packages/Sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
 * `schemas`: `yaml` files with property schemas
 * `jobs`: data jobs
@@ -356,7 +356,7 @@ Standard package development includes the stages below:
 
 Most of the above steps can be automated
 using [CI/CD tools](https://www.redhat.com/en/topics/devops/what-is-ci-cd#ci/cd-tools). You can use [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml)
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml)
 in [GitHub Actions](https://github.com/features/actions) as an example. It builds, tests, and publishes
 our [public packages](https://github.com/datagrok-ai/public/tree/master/packages).
 
@@ -372,7 +372,7 @@ To test a package in CI, you need the following:
 ##### Install dependencies in GitHub Actions
 
 To install dependent grok packages in [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml), you can
 use `devDependencies` in [package.json](#packagejson) We used an individual `grokDependencies`
 section earlier, but now this content is moved to `devDependencies` for a better CI process
 
@@ -387,7 +387,7 @@ section earlier, but now this content is moved to `devDependencies` for a better
 ##### Skip tests in GitHub Actions
 
 To skip running tests in [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml) you can use `skipCI`
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml) you can use `skipCI`
 in [package.json](#packagejson)
 
 ```json
@@ -551,4 +551,4 @@ See also:
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
-[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Samples/scripts

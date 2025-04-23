@@ -69,7 +69,7 @@ Every release contains the most recent dependency packages which saves us time w
 provides the best quality experience to the user.
 
 Datagrok packages are also tested using [CodeQL](https://codeql.github.com/)
-and [Grype](https://github.com/anchore/grype/) ([results are available publicly](https://github.com/datagrok-ai/public/actions/workflows/security_scan.yml)).
+and [Grype](https://github.com/anchore/grype/) ([results are available publicly](https://github.com/datagrok-ai/public/actions/workflows/security_scan_anchore.yaml)).
 
 ## Client-server interactions
 

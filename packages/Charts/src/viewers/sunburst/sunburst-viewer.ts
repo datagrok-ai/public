@@ -40,7 +40,8 @@ export class SunburstViewer extends EChartViewer {
   sunburstVersion: number | null = null;
   currentVersion: number | null = null;
   includeNulls: boolean;
-
+  private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private latestRenderToken = 0;
   constructor() {
     super();
     this.initCommonProperties();
@@ -81,8 +82,8 @@ export class SunburstViewer extends EChartViewer {
     return pixel[3] === 0;
   }
 
-  handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((index: number) => {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any) {
+    bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
 
@@ -127,11 +128,6 @@ export class SunburstViewer extends EChartViewer {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
-      if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, this.dataFrame);
-        return;
-      }
-
       const event = params.event.event;
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
       const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
@@ -139,7 +135,11 @@ export class SunburstViewer extends EChartViewer {
         selectedSectors.push(pathString);
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
-      this.handleDataframeSelection(path, event);
+
+      if (this.onClick === 'Filter')
+        this.applySelectionFilter(this.dataFrame.filter, path, event);
+      else
+        this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
     const handleChartMouseover = async (params: any) => {
@@ -213,12 +213,6 @@ export class SunburstViewer extends EChartViewer {
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (!p) return;
     switch (p.name) {
-    case 'hierarchyColumnNames':
-    case 'inheritFromGrid':
-    case 'includeNulls':
-      this.render();
-      break;
-
     case 'table':
       this.updateTable();
       this.onTableAttached(true);
@@ -229,11 +223,10 @@ export class SunburstViewer extends EChartViewer {
       break;
 
     default:
-      super.onPropertyChanged(p, render);
+      this.render();
       break;
     }
   }
-
 
   addSubs() {
     if (!this.dataFrame)
@@ -300,7 +293,6 @@ export class SunburstViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
-      formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
       width: width.toString(),
@@ -310,7 +302,14 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  formatLabel(params: any) {
+  async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
+    this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
+      this.renderMolecule(params, width, height),
+    );
+    await this.moleculeRenderQueue;
+  }
+
+  formatLabel(params: any): string {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
     const getCurrentItemIndex = params.dataIndex - 1;
@@ -334,10 +333,13 @@ export class SunburstViewer extends EChartViewer {
         const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
         const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
 
-        this.renderMolecule(params, renderWidth, renderHeight);
+        this.renderMoleculeQueued(params, renderWidth, renderHeight);
+        return ' ';
+      } else {
+        if (params.data.label)
+          delete params.data.label;
         return ' ';
       }
-      return ' ';
     }
 
     const averageCharWidth = 5;
@@ -397,7 +399,17 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render(orderedHierarchyNames?: string[]): void {
-    this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
+    const currentToken = ++this.latestRenderToken;
+
+    this.renderQueue = this.renderQueue
+      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames));
+  }
+
+  private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {
+    if (token !== this.latestRenderToken)
+      return;
+
+    await this._render(orderedHierarchyNames);
   }
 
   async _render(orderedHierarchyNames?: string[]) {
@@ -406,11 +418,18 @@ export class SunburstViewer extends EChartViewer {
 
     if (this.filter.trueCount >= CATEGORIES_NUMBER) {
       this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
-        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+        (name) => {
+          const column = this.dataFrame.col(name);
+          if (column)
+            return column.categories.length <= CATEGORIES_NUMBER;
+          return false;
+        },
       );
-    } else
-      this.eligibleHierarchyNames = orderedHierarchyNames ?? this.hierarchyColumnNames;
-
+    } else {
+      const validColumnNames = new Set(this.dataFrame.columns.names());
+      this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames)
+        .filter((name) => validColumnNames.has(name));
+    }
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
@@ -420,6 +439,9 @@ export class SunburstViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     const data = await this.getSeriesData();
+    Object.assign(this.option.series[0], {
+      data,
+    });
 
     // Reinitialize the chart (needed in order to prevent memory leak)
     if (this.chart) {
@@ -433,10 +455,7 @@ export class SunburstViewer extends EChartViewer {
     this.initEventListeners();
     this.addSubs();
 
-    Object.assign(this.option.series[0], {
-      data,
-      label: { formatter: (params: any) => this.formatLabel(params) },
-    });
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
   }
 

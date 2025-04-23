@@ -1273,7 +1273,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * The ability to configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
-* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/function_results_cache#client-side-cache)
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/function_results_cache#client-side-cache)
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.
@@ -1566,7 +1566,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 * [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new tutorials.
 
   
-### Enhancements in libraries
+### Enhancements in libraries 
 
 * A new [math](https://github.com/datagrok-ai/public/tree/master/libraries/math/CHANGELOG.md) library intended to be used for high efficiency (mostly wasm) calculations.
 * See other updates for [utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils/CHANGELOG.md), [ml](https://github.com/datagrok-ai/public/tree/master/libraries/ml/CHANGELOG.md) and [bio](https://github.com/datagrok-ai/public/tree/master/libraries/bio/CHANGELOG.md).
@@ -1634,7 +1634,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * Namespaces view for easy access to all data sources and content within the platform. Now you can explore and access all available data in one centralized location.
 * [EDA package](release-history.md#eda) using partial least squares regression for the multivariate data analysis.
 * [Bioreactors package](#bioreactors) for the simulation of the mechanism of Controlled Fab-Arm Exchange.
-* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 * [Demo application](https://public.datagrok.ai/apps/Tutorials/Demo), an interactive educational resource showcasing the diverse capabilities and features of the DataGrok platform. It offers tutorials and demonstrations for hands-on learning of data manipulation, visualization, modeling, and more.
 * Multiple improvements in plugins, such as  [Chem](#chem), [Peptides](#peptides), [Dendrogram](#dendrogram).
 
@@ -1728,11 +1728,11 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 
 #### [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis#readme)
 
-We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 
 #### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
 
-We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
+We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis).
 
 #### [Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors#readme)
 

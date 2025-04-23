@@ -1,4 +1,5 @@
 {
+    "type": "MPO Desirability Profile",
     "name": "ADME Test",
     "description": "Test ADME properties",
     "properties": {

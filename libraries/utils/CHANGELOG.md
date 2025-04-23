@@ -1,5 +1,17 @@
 # utils changelog
 
+## 4.5.6 (2025-04-22)
+
+Fixed error in invokeTestsInCategory
+
+## 4.5.5 (2025-04-22)
+
+Fixed tests failing due to DG.Widget.getAll() errors
+
+## 4.5.3 (2025-04-14)
+
+Added the drawLines method
+
 ## 4.4.2 (2025-03-10)
 
 Added a method to verify that a container is running, starting it if necessary

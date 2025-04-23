@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -66,7 +67,7 @@ export class RadarViewer extends EChartViewer {
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
-    
+
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
@@ -92,24 +93,24 @@ export class RadarViewer extends EChartViewer {
       const indicator = this.createRadarIndicator(c);
       option.radar.indicator.push(indicator);
     }
-  
+
     this.updateMin();
     this.updateMax();
-  
+
     const color = DG.Color.toHtml(this.showCurrentRow ? this.currentRowColor : this.lineColor);
     const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     this.updateRow(color, currentRow);
-  
+
     this.setupChartEvents();
-    
+
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
-  
+
   highlightRowIfEnabled(params: any) {
-    if (!this.showMouseOverRow) {
+    if (!this.showMouseOverRow)
       return;
-    }
-  
+
+
     const optionCopy = _.cloneDeep(option);
     const series = optionCopy.series[2].data.find((series: any) => series.name === params.name);
     if (series) {
@@ -118,7 +119,7 @@ export class RadarViewer extends EChartViewer {
     }
     this.chart.setOption(optionCopy);
   }
-  
+
   setupChartEvents() {
     this.chart.on('mouseover', (params: any) => {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
@@ -166,6 +167,7 @@ export class RadarViewer extends EChartViewer {
 
   onTableAttached() {
     this.init();
+    this.filter = this.dataFrame.filter;
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
       .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
@@ -177,7 +179,7 @@ export class RadarViewer extends EChartViewer {
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.valuesColumnNames = this.valuesColumnNames.filter(columnName => !columnNamesToRemove.includes(columnName));
+      this.valuesColumnNames = this.valuesColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
       this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
@@ -207,15 +209,15 @@ export class RadarViewer extends EChartViewer {
 
     for (const c of this.columns)
       option.radar.indicator.push(this.createRadarIndicator(c));
-    
+
     option.series[2].data = this.createSeriesData(indexes);
 
     if (this.filter.trueCount > MAXIMUM_ROW_NUMBER)
       MessageHandler._showMessage(this.root, 'Only first 1000 shown', WARNING_CLASS);
-  
+
     if (this.showMin)
       this.updateMin();
-  
+
     if (this.showMax)
       this.updateMax();
 
@@ -227,7 +229,7 @@ export class RadarViewer extends EChartViewer {
 
   createSeriesData(filter?: number[]): any[] {
     const seriesData = [];
-  
+
     for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
 
@@ -238,9 +240,9 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = this.colorColumnName
-        ? DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i)
-        : this.lineColor;
+      const color = this.colorColumnName ?
+        DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i) :
+        this.lineColor;
 
       seriesData.push({
         value: value,
@@ -259,7 +261,7 @@ export class RadarViewer extends EChartViewer {
         },
       });
     }
-  
+
     return seriesData;
   }
 
@@ -272,7 +274,7 @@ export class RadarViewer extends EChartViewer {
       this.updateRow(color, currentRowIdx);
     }
   }
-  
+
   updateMouseOverRow(): void {
     const mouseOverIn = this.filter.get(this.dataFrame.mouseOverRowIdx);
     if (mouseOverIn && this.showMouseOverRow) {
@@ -286,7 +288,7 @@ export class RadarViewer extends EChartViewer {
   createRadarIndicator(c: DG.Column): RadarIndicator {
     const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
     const indicator: RadarIndicator = { name: this.formatLabel(c.name) };
-  
+
     if (c.type === 'datetime') {
       indicator.max = this.getYearFromDate(c.max);
       indicator.min = this.getYearFromDate(c.min);
@@ -294,7 +296,7 @@ export class RadarViewer extends EChartViewer {
       indicator.max = c.max;
       indicator.min = minimalVal;
     }
-  
+
     return indicator;
   }
 
@@ -378,7 +380,7 @@ export class RadarViewer extends EChartViewer {
   }
 
   getColumns() : DG.Column<any>[] {
-    let columns: DG.Column<any>[] = [];
+    const columns: DG.Column<any>[] = [];
     const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
     if (this.valuesColumnNames?.length > 0) {
       const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
@@ -392,7 +394,7 @@ export class RadarViewer extends EChartViewer {
 
   formatLabel(value: string): string {
     const specialCharactersRegex: RegExp = /[^a-zA-Z0-9]+/g;
-    return value.split(specialCharactersRegex).join("\n");
+    return value.split(specialCharactersRegex).join('\n');
   }
 
   _testColumns(): boolean {
@@ -404,7 +406,7 @@ export class RadarViewer extends EChartViewer {
   render(indexes?: number[]) {
     if (!this.dataFrame)
       return;
-    
+
     if (!this._testColumns()) {
       MessageHandler._showMessage(this.root, 'The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
@@ -427,9 +429,9 @@ export class RadarViewer extends EChartViewer {
     for (const c of columns) {
       const datetime = c.getRawData().map((value: number) => this.getDate(c, value));
       const values = c.type === 'datetime' ? datetime : Array.from(c.values());
-      const isValidValue = (value: number) => typeof value === 'bigint' 
-        ? value !== BigInt('-2147483648')
-        : value !== -2147483648;
+      const isValidValue = (value: number) => typeof value === 'bigint' ?
+        value !== BigInt('-2147483648') :
+        value !== -2147483648;
       const sortedValues = values.filter(isValidValue).sort((a, b) => Number(a) - Number(b));
 
       const idx = Math.floor(percent * (sortedValues.length - 1));

@@ -1,5 +1,17 @@
 # Compute changelog
 
+## 1.43.1 (2025-04-22)
+
+Updated the Fitting feature:
+
+- Target columns selection
+- Fitting results displaying
+- Goodness of fit viewers creation
+
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
 ## 1.42.2 (2025-04-10)
 
 Updated Parameters Optimization:

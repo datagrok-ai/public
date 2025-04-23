@@ -69,3 +69,7 @@
     font-size: 15px;
     padding-top: 10px;
 }
+
+.cdd-search-vault-tab .d4-accordion-pane-header {
+    font-weight: bold;
+}

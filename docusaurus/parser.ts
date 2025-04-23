@@ -274,8 +274,6 @@ class ProjectDGFunctionsParser {
 }
 
 class VersionsManager {
-
-
     public static instance: VersionsManager = new VersionsManager();
 
     private constructor() {

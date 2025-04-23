@@ -214,7 +214,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.DATA, /* fill choices in setData() */});
     
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
-      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
+      {category: PROPS_CATS.DATA});
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
     //   {category: PROPS_CATS.DATA});
     // this.emdbProvider = this.string(PROPS.emdbProvider, defaults.emdbProvider,
@@ -316,7 +316,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // -- Ligand --
     if (!this.ligandColumnName) {
-      const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) ?? this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       if (molCol)
         this.ligandColumnName = molCol.name;
     }
@@ -1070,8 +1070,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, start `);
 
     if (!this.viewer) throw new Error('The mol* viewer is not created'); // return; // There is not PDB data
-    if (!this.dataFrame || !this.ligandColumnName) return;
-
+    if (!this.dataFrame || !this.ligandColumnName || (this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE && this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE3D)) return;
     const newLigands: LigandMap = {selected: [], current: null, hovered: null};
     newLigands.selected = !this.showSelectedRowsLigands ? [] :
       wu(this.dataFrame.selection.getSelectedIndexes())
@@ -1122,7 +1121,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => task())).then(() => {
+    await Promise.all(ligandTaskList.map(async (task) => {try {await task()} catch (e) {_package.logger.error(e);}})).then(() => {
       this.ligands = newLigands;
     });
 

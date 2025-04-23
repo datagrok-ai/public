@@ -1,27 +1,32 @@
-FROM mambaorg/micromamba
+FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 SHELL ["/bin/bash", "-c"]
 
-USER root
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update && \
+    apt install -y --no-install-recommends curl bzip2 ca-certificates && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /app && chown mambauser:mambauser /app
-
-USER mambauser
+ENV MAMBA_EXE=/usr/local/bin/micromamba
+ARG MAMBA_VERSION=1.5.3
+RUN curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" -o /tmp/micromamba.tar.bz2 && \
+    mkdir -p /tmp/micromamba && \
+    tar -xvjf /tmp/micromamba.tar.bz2 -C /tmp/micromamba --strip-components=1 && \
+    mv /tmp/micromamba/micromamba "$MAMBA_EXE" && \
+    rm -rf /tmp/micromamba /tmp/micromamba.tar.bz2
 
 WORKDIR /app
 
-COPY --chown=mambauser:mambauser environment.yml /app/
-
+COPY environment.yml .
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy
 
-RUN set -ex ; \
-    micromamba env create -f environment.yml ; \
+RUN micromamba env create -f environment.yml && \
     micromamba clean -afy
 
-COPY --chown=mambauser:mambauser . /app
+COPY . .
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
 

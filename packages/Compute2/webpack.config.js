@@ -9,7 +9,7 @@ module.exports = (env) => {
   if (ENABLE_VUE_DEV_TOOLS)
     console.warn('Building DEV ONLY Compute2 build with vue devtools support');
 
-  return {
+  const config = {
     mode,
     entry: {
       test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
@@ -57,7 +57,7 @@ module.exports = (env) => {
       'wu': 'wu',
       'exceljs': 'ExcelJS',
       'html2canvas': 'html2canvas',
-      ...(ENABLE_VUE_DEV_TOOLS ? {} : {'vue': 'Vue'}),
+      'vue': 'Vue'
     },
     output: {
       filename: '[name].js',
@@ -70,5 +70,11 @@ module.exports = (env) => {
       usedExports: true,
       concatenateModules: false,
     }
+  };
+
+  if (ENABLE_VUE_DEV_TOOLS) {
+    delete config.externals.vue;
   }
+
+  return config;
 };

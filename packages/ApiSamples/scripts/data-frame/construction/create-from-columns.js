@@ -1,10 +1,10 @@
 //tags: DataFrame, Column, construction
 // API References:
 //
-// https://datagrok.ai/js-api/classes/dg.ColumnList
-// https://datagrok.ai/js-api/classes/dg.DataFrame
-// https://datagrok.ai/js-api/classes/dg.Column#fromList
-// https://datagrok.ai/js-api/classes/dg.Column#qnum
+// https://datagrok.ai/js-api/dg/classes/ColumnList
+// https://datagrok.ai/js-api/dg/classes/DataFrame
+// https://datagrok.ai/js-api/dg/classes/Column#fromList
+// https://datagrok.ai/js-api/dg/classes/Column#qnum
 //
 // Note that the "population" data type becomes int
 

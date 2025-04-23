@@ -10,6 +10,8 @@ onmessage = ({data: {op, data, argList, notationType}}) => {
     break;
   case OCLServiceCall.DRUG_LIKENESS:
     postMessage(getDrugLikeliness(data, notationType));
+  case OCLServiceCall.Molfile_To_V3K:
+    postMessage(molfilesToV3K(data));
   default:
     postMessage(getToxRisks(data, argList, notationType));
     break;
@@ -18,6 +20,27 @@ onmessage = ({data: {op, data, argList, notationType}}) => {
 
 function isSmiles(notationType: string): boolean {
   return notationType === MolNotationType.SMILES;
+}
+
+function molfilesToV3K(molList: Array<string>) {
+  const res: Array<string> = new Array(molList?.length ?? 0).fill('');
+  const errors: string[] = [];
+  molList.forEach((molfile, i) => {
+    if (!molfile) {
+      res[i] = '';
+      return;
+    }
+    try {
+      const mol = OCL.Molecule.fromMolfile(molfile);
+      const v3 = mol.toMolfileV3();
+      res[i] = v3.replace('STERAC1', 'STEABS');
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : e as string);
+      res[i] = '';
+    }
+  });
+  return {res, errors};
+
 }
 
 function getChemProperties(molList: Array<string>, propList: string[], notationType: string): OCLWorkerReturnType {

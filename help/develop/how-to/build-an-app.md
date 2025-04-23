@@ -9,7 +9,7 @@ executing database queries, accessing web services, or running
 
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
-* [Enamine molecule browser](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
+* [Enamine molecule browser](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
 <!--* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
 From the technical perspective, an app is a [function](../../datagrok/concepts/functions/functions.md)
@@ -96,12 +96,12 @@ anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either
 through simple div-s , or
-through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js)
+through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/containers/splitters.js)
 , populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers, and so forth. Our
 internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 demonstrates such an approach.
 
-<!--Another approach is found in a [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
+<!--Another approach is found in a [Discovery](https://github.com/datagrok-ai/labs/tree/master/packages/Discovery)
 application. There we reuse a particular kind of view: a table view, and centralize the rest of the UI around it. In
 this application you'd also find some useful techniques one needs in many applications, such as modifying the app's URI
 or hiding the side panels of the Datagrok's main UI.-->
@@ -294,7 +294,7 @@ aggregations.
 
 Dataframes are comprised of columns. Columns may be used as Datagrok functions arguments. For columns, it's possible to
 get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
-column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.DataFrame) one can subscribe on
+column. There is also a diverse [system of events](https://datagrok.ai/js-api/dg/classes/DataFrame) one can subscribe on
 a dataframe.
 
 Let's create a dataframe and check what we can do with it.
@@ -321,12 +321,12 @@ There we create a new dataframe from columns, add a column and a row, delete a r
 
 A good overview of dataframes capabilities is available in our
 [API Samples](https://dev.datagrok.ai/js/samples/data-frame/). Also check the API reference
-at [this link](https://datagrok.ai/js-api/classes/dg.DataFrame).
+at [this link](https://datagrok.ai/js-api/dg/classes/DataFrame).
 
 *References:*
 
 * [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
-* [Dataframe API reference](https://datagrok.ai/js-api/classes/dg.DataFrame)
+* [Dataframe API reference](https://datagrok.ai/js-api/dg/classes/DataFrame)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
 #### Iterating over a dataframe
@@ -425,7 +425,7 @@ each store. There are several *asynchronous* methods for storing and retrieving 
 as `grok.dapi.userDataStorage.postValue`
 for posting a single value, or `grok.dapi.userDataStorage.get` for getting the whole map. Learn of all these
 methods [here](user-data-storage.md), also check a complete example
-in [API Samples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
+in [API Samples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-settings-storage.js)
 .
 
 As the name assumes, the storage is only seen to the user. However, it's possible to create stores visible to all users.
@@ -436,7 +436,7 @@ default.
 
 * User data storage [reference](user-data-storage.md)
 * User data
-  storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
+  storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-settings-storage.js)
 
 #### Storing dataframes
 

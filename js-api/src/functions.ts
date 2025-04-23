@@ -279,7 +279,7 @@ type FuncCallParams = {
 } & { values(): FuncCallParam[]; }
 
 /** Represents a function call
- * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
+ * {@link https://datagrok.ai/help/datagrok/concepts/functions/function-call}
  * */
 export class FuncCall extends Entity {
   declare readonly dart: any;

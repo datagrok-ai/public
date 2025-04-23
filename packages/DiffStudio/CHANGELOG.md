@@ -1,5 +1,16 @@
 # Diff Studio changelog
 
+## 1.3.5 (2025-04-22)
+
+Updated parameters optimization:
+
+* Improved color scheme
+* Fixed target column selection input
+
+## 1.3.4 (2025-04-14)
+
+Improved inputs precision when using lookup tables
+
 ## 1.3.3 (2025-04-10)
 
 Updated the Fitting feature:

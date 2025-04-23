@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -32,6 +33,30 @@ enum ANNOT {
   TOOLTIP = 'tooltip',
   MISC = 'Misc'
 };
+
+type Format = string | null | undefined;
+
+/** Lookup data specification */
+type LookupData = {
+  arr: Int32Array | Uint32Array | Float32Array | Float64Array,
+  format: Format,
+};
+
+/** Return value formatted with respect to the given format */
+export function getFormatted(value: number, format: Format): number {
+  if ((format === null) || (format === undefined))
+    return value;
+
+  if (format.includes('E') || format.includes('e'))
+    return value;
+
+  const precision = format.length - 2;
+
+  if ((precision < 1) || (precision > 20))
+    return value;
+
+  return Number(value.toPrecision(precision));
+}
 
 /** Load dataframe using the command */
 async function loadTable(command: string): Promise<DG.DataFrame | null> {
@@ -196,16 +221,20 @@ export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map
   constIputs.forEach((input, name) => defaultInputs.set(name, input.value));
 
   const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
-  const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+  const colsRaw = new Map<string, LookupData>();
 
   for (const col of cols) {
-    if (col.isNumerical)
-      colsRaw.set(col.name, col.getRawData());
+    if (col.isNumerical) {
+      colsRaw.set(col.name, {
+        arr: col.getRawData(),
+        format: col.meta.format,
+      });
+    }
   }
 
   for (let row = 0; row < rowCount; ++row) {
     const inputs = new Map<string, number>();
-    colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+    colsRaw.forEach((info, name) => inputs.set(name, getFormatted(info.arr[row], info.format)));
     tableInputs.set(inpSetsNames[row], inputs);
   }
 

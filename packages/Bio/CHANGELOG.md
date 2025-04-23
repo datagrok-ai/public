@@ -1,5 +1,20 @@
 # Bio changelog
 
+## 2.21.1 (2025-04-22)
+
+* Weblogo: Fix behavior, correct fitting, reaction to slider, property harmonization
+* Better formatting of source monomer lib name
+* Support of sequence space for custom notation
+
+## 2.21.0 (2025-04-14)
+
+* Move separator refinement to seq-handler stage
+* Add support for custom notation macromolecule difference rendering
+
+## 2.20.5 (2025-04-14)
+
+* Non blocking behavior of OCL mol converter
+
 ## 2.20.4 (2025-04-08)
 
 * Fix linearization, wrong rgroups and notation problems for toAtomicLevel 

@@ -28,41 +28,47 @@ class ChemProp(Engine):
         params.extend(self.parameter_values_to_shell_params_string(parameter_values))
         index_of_type = params.index('--dataset-type')
         params[index_of_type] = '--task-type'
-        log = call_process(params)
         model_blob = ''
+        log = ''
+        
         try:
-            model_blob = open(ChemProp._get_model_blob_path(tmp_dir), 'rb').read()
-        except:
-            pass
+            log = call_process(params)
+            try:
+                model_blob = open(ChemProp._get_model_blob_path(tmp_dir), 'rb').read()
+            except Exception:
+                pass
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
         return model_blob, log
 
-    def predict_impl(self, id: str, model_blob, table: pd.DataFrame, estimate_performance: bool = False):
-        model_path = ChemProp._get_model_blob_path(Engine.get_temporary_directory(id, False))
-        save_blob = not os.path.exists(model_path)
-        tmp_dir = Engine.get_temporary_directory(id, save_blob)
-        if save_blob:
-            model_dir = os.path.dirname(model_path)
-            shutil.rmtree(model_dir, ignore_errors=True)
-            os.makedirs(model_dir)
-            open(model_path, 'wb').write(model_blob)
+    def predict_impl(self, id: str, model_blob, table: pd.DataFrame):
+        tmp_dir = Engine.get_temporary_directory(id)
         table_path = os.path.join(tmp_dir, 'table.csv')
-        if not estimate_performance:
-            table.columns = ['smiles']
-            # Convert molblocks to SMILES if needed
-            table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
-            ChemProp._save_table(table, table_path)
+        model_path = os.path.join(tmp_dir, 'model.ckpt')
+        
+        with open(model_path, 'wb') as f:
+            f.write(model_blob)
+        
+        table = table.iloc[:, [0]]
+        table.columns = ['smiles']
+        table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
+
+        ChemProp._save_table(table, table_path)
         predictions_path = os.path.join(tmp_dir, 'table_preds_0.csv')
+        
         params = [
             'chemprop',
             'predict',
             '--test-path', table_path,
             '--model-path', model_path,
         ]
+        
         call_process(params)
+        
         prediction = pd.read_csv(predictions_path, na_values=['Invalid SMILES'])
-        if not estimate_performance:
-            prediction = prediction.filter([c for c in list(prediction) if c not in list(table)])
-        return prediction
+        preds_column = next((col for col in prediction.columns if 'pred' in col), None)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return prediction[[preds_column]]
 
     @staticmethod
     def _get_model_blob_path(tmp_dir: str):
@@ -100,7 +106,7 @@ class ChemProp(Engine):
 
          'metric': {
             'type': Types.STRING,
-            'choices': ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy'],
+            'choices': ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1'],
             'description': 'Metric to use during evaluation.'
                            'Note: Does NOT affect loss function used during training'
                            '(loss is determined by the `dataset_type` argument).'
@@ -141,7 +147,7 @@ class ChemProp(Engine):
 
         'split_type': {
             'type': Types.STRING,
-            'choices': ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined'],
+            'choices': ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles'],
             'description': 'Method of splitting the data into train/val/test',
             'category': 'general',
             'default_value': 'random'

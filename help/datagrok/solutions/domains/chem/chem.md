@@ -45,7 +45,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+  * [Enamine](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
   * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
 
 </details>
@@ -441,7 +441,8 @@ To manually sketch or modify the scaffold tree, use these controls:
 * To add a new root node,  in the **Toolbar**, click the **Add new root structure** (**+**) icon. This opens a molecular sketcher.
 * To add a new scaffold under an existing one, click the **Add new scaffold** (**+**) icon next to the scaffold.
   Alternatively, right-click the molecule and select **Add New...**.
-* To delete a scaffold along with its children, right-click it and select **Remove**.
+* To delete a scaffold along with its children, click the **Remove scaffold** (trash) icon next to the scaffold.
+  Alternatively, right-click the molecule and select **Remove**.
 * To edit a scaffold, click the **Edit...** icon next to the scaffold.
   Alternatively, right-click the molecule, and select **Edit...**. This opens a molecular sketcher.
 
@@ -482,13 +483,27 @@ To filter a dataset using a scaffold tree, do the following:
 You can add the scaffold tree as a filter to the **Filter Panel**:
 
 1. In the **Menu Ribbon**, click the **Filter** icon to toggle the **Filter panel**.
-1. In the top left corner, click the **Hamburger** (☰) icon > **Add External** > **Scaffold Tree Filter**. A dialog opens.
+1. In the top left corner, click the **Hamburger** (☰) icon > **Add Filter** > **Scaffold Tree Filter**. A dialog opens.
 1. In the dialog, select the molecular column and click **OK**. A scaffold tree tile is added to the **Filter Panel**.
 1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold using a sketcher.
 
 ![Scaffold tree filter panel](scaffold-tree-filter.gif)
 
 You can use a scaffold tree with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
+</details>
+
+To make scaffold structures easier to interpret, you can apply colors to nodes in the scaffold tree. The colors appear both in the column and the viewer.
+
+<details>
+<summary>Coloring</summary>
+
+To color scaffold nodes, do the following:
+
+* Click the **Circle** icon to toggle coloring on or off. If turned off, the node inherits the color from its nearest colored parent.
+* Click the **Palette** icon to pick a color. The color applies to the node and all its children unless they already have their own color.
+* To override an inherited color, assign a new color to the node. The new color takes priority.
+
+![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </details>
 

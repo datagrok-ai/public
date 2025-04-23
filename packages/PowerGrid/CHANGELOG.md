@@ -1,5 +1,9 @@
 # Power Grid changelog
 
+## 1.6.2 (2025-04-18)
+
+* Removed dependency from datagrok=tools
+
 ## 1.5.5 (2025-03-07)
 
 * GROK-17680: ImageUrl: Supported images with Datagrok paths, added docs

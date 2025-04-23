@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.13.71",
+  "version": "4.13.77",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -35,8 +35,18 @@
   },
   "babel": {
     "presets": [
-      "@babel/preset-typescript",
-      "@babel/preset-env"
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "chrome": "100"
+          },
+          "exclude": [
+            "@babel/plugin-transform-async-to-generator"
+          ]
+        }
+      ],
+      "@babel/preset-typescript"
     ],
     "plugins": [
       "@babel/plugin-transform-runtime"

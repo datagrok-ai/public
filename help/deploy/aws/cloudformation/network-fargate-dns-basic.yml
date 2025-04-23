@@ -57,7 +57,7 @@ Mappings:
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
-      version: v1.12.1
+      version: v1.19.1
     Rabbitmq:
       domain: docker.io
       repo: rabbitmq
@@ -173,7 +173,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.10.0
+    Default: 1.10.1
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -1771,6 +1771,10 @@ Resources:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
           - Fn::Sub: arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
@@ -2561,8 +2565,11 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource:
@@ -2607,23 +2614,19 @@ Resources:
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
                 - Arn
-          Effect: Allow
-          Resource: '*'
-        - Action:
-          - ecs:RegisterTaskDefinition
-          Condition:
-            StringEquals:
-              aws:RequestTag/caller:
-              - grok_spawner
+              - Fn::GetAtt:
+                - CvmCluster
+                - Arn
           Effect: Allow
           Resource: '*'
         - Action:
           - ecs:DescribeTaskDefinition
           - ecs:ListTaskDefinitions
           - ecs:DeregisterTaskDefinition
+          - ecs:RegisterTaskDefinition
           Condition: {}
           Effect: Allow
           Resource: '*'
@@ -2631,50 +2634,96 @@ Resources:
           - ecs:DescribeServices
           - ecs:UpdateService
           - ecs:DeleteService
+          - ecs:ListServices
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource:
-            Fn::Sub:
+          - Fn::Sub:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:ListContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:DescribeContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
         - Action:
           - ecs:CreateService
           - ecs:TagResource
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
             StringEquals:
               aws:RequestTag/caller:
               - grok_spawner
           Effect: Allow
           Resource:
-            Fn::Sub:
+          - Fn::Sub:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
         - Action:
           - ecs:DescribeTasks
           Condition:
             ArnEquals:
               ecs:cluster:
-                Fn::GetAtt:
+              - Fn::GetAtt:
                 - DatagrokCluster
+                - Arn
+              - Fn::GetAtt:
+                - CvmCluster
                 - Arn
           Effect: Allow
           Resource:
-            Fn::Sub:
+          - Fn::Sub:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
         - Action:
           - logs:GetLogEvents
           Effect: Allow
@@ -2689,10 +2738,24 @@ Resources:
           - ecs:DescribeClusters
           Effect: Allow
           Resource:
-            Fn::Sub:
-            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - iam:PassRole
+          Effect: Allow
+          Resource:
+          - Fn::GetAtt:
+            - DatagrokKanikoTaskRole
+            - Arn
+          - Fn::GetAtt:
+            - DatagrokTaskExecutionRole
+            - Arn
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
   GrokSpawnerPrivateDNS:
@@ -2816,12 +2879,19 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Environment:
-        - Name: GROK_SPAWNER_DOCKER_REGISTRY_SECRET_ARN
-          Value: ''
-        - Name: GROK_SPAWNER_DATAGROK_ECS_CLUSTER
+        - Name: GROK_SPAWNER_ENVIRONMENT
+          Value:
+            Fn::Sub: ${AWS::StackName}
+        - Name: GROK_SPAWNER_DATAGROK_ECS__CLUSTER
           Value:
             Ref: DatagrokCluster
-        - Name: GROK_SPAWNER_DATAGROK_ECS_SUBNETS
+        - Name: GROK_SPAWNER_DATAGROK_ECS__CLUSTER_REGION
+          Value:
+            Fn::Sub: ${AWS::Region}
+        - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
+          Value:
+            Fn::Sub: EC2
+        - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
           Value:
             Fn::Sub:
             - '["${s1}", "${s2}"]'
@@ -2829,32 +2899,65 @@ Resources:
                 Ref: DatagrokPrivateSubnet1
               s2:
                 Ref: DatagrokPrivateSubnet2
-        - Name: GROK_SPAWNER_DATAGROK_ECS_SECURITY_GROUPS
+        - Name: GROK_SPAWNER_DATAGROK_ECS__SECURITY_GROUPS
           Value:
             Fn::Sub:
             - '["${s1}"]'
             - s1:
                 Ref: DatagrokSecurityGroup
-        - Name: GROK_SPAWNER_DATAGROK_ECS_EXEC_ROLE
-          Value:
-            Fn::GetAtt:
-            - DatagrokTaskExecutionRole
-            - Arn
-        - Name: GROK_SPAWNER_ENVIRONMENT
-          Value:
-            Fn::Sub: ${AWS::StackName}
-        - Name: GROK_SPAWNER_KANIKO_S3_BUCKET
+        - Name: GROK_SPAWNER_DATAGROK_ECS__KANIKO_S3_BUCKET
           Value:
             Ref: DatagrokS3
-        - Name: GROK_SPAWNER_KANIKO_TASK_DEFINITION
+        - Name: GROK_SPAWNER_DATAGROK_ECS__KANIKO_TASK_DEFINITION
           Value:
             Ref: DatagrokKanikoTaskDefinition
-        - Name: GROK_SPAWNER_DATAGROK_ECS_LOG_GROUP
+        - Name: GROK_SPAWNER_DATAGROK_ECS__LOG_GROUP
           Value:
             Fn::Sub:
             - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
             - logs:
                 Ref: DatagrokLogGroup
+        - Name: GROK_SPAWNER_CVM_ECS__CLUSTER
+          Value:
+            Ref: CvmCluster
+        - Name: GROK_SPAWNER_CVM_ECS__CLUSTER_REGION
+          Value:
+            Fn::Sub: ${AWS::Region}
+        - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
+          Value:
+            Fn::Sub: EC2
+        - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
+          Value:
+            Fn::Sub:
+            - '["${s1}", "${s2}"]'
+            - s1:
+                Ref: DatagrokPrivateSubnet1
+              s2:
+                Ref: DatagrokPrivateSubnet2
+        - Name: GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS
+          Value:
+            Fn::Sub:
+            - '["${s1}"]'
+            - s1:
+                Ref: CvmSecurityGroup
+        - Name: GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET
+          Value:
+            Ref: DatagrokS3
+        - Name: GROK_SPAWNER_CVM_ECS__KANIKO_TASK_DEFINITION
+          Value:
+            Ref: DatagrokKanikoTaskDefinition
+        - Name: GROK_SPAWNER_CVM_ECS__LOG_GROUP
+          Value:
+            Fn::Sub:
+            - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+            - logs:
+                Ref: DatagrokLogGroup
+        - Name: GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE
+          Value:
+            Ref: DatagrokTaskExecutionRole
+        - Name: GROK_SPAWNER_CVM_ECS__EXEC_ROLE
+          Value:
+            Ref: DatagrokTaskExecutionRole
         Essential: true
         Image:
           Fn::Sub:

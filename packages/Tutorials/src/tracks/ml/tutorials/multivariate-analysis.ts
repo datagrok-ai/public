@@ -14,7 +14,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   get steps() { return 7; }
     
   demoTable: string = 'cars.csv';
-  helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
+  helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis';
 
   protected async _run() {
     this.header.textContent = this.name;

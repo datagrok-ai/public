@@ -2175,7 +2175,18 @@ export class Legend extends DartWidget {
     api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
   }
 
-  get filterBy() { return api.grok_Legend_Get_FilterBy(this.dart); }
+  /** Mapped indices of filtered (selected) categories. */
+  get selectedCategories(): Set<number> | null {
+    return api.grok_Legend_Get_SelectedCategories(this.dart);
+  }
+
+  /** Mapped indices of extra (selected) categories. */
+  get selectedExtraCategories(): Set<number> | null {
+    return api.grok_Legend_Get_SelectedExtraCategories(this.dart);
+  }
+
+  /** Whether the legend is in tooltip (collapsed) mode. */
+  get isTooltipMode(): boolean { return api.grok_Legend_Get_IsToolTipMode(this.dart); }
 }
 
 
