@@ -66,11 +66,9 @@
   overflow: hidden;
 }
 
-/** Setting height to 100% is misleading when calculating visible nodes, which is why optimization for visible nodes fails */
 .d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar) {
   position: relative;
-  min-height: 50px;
-  height: auto;
+  height: 100%;
 }
 
 .d4-filter-element .grok-loader {
@@ -243,7 +241,6 @@
 }
 
 .chem-scaffold-tree-toolbar {
-  min-height: 24px;
   max-height: 24px;
   margin: 0 0 2px 2px;
   visibility: hidden;
