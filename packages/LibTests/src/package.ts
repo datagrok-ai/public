@@ -15,11 +15,6 @@ import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 
 export const _package = new DG.Package();
 
-//tags: init
-export async function init() {
-  await DG.Func.byName('WebComponents:init').prepare().call();
-}
-
 //
 // Validators manual testing
 //
@@ -129,6 +124,7 @@ export function ValidatorActionsDemoFactory(params: any) {
 
 //tags: test
 export async function TestViewerComponent() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const view = new DG.ViewBase();
   const viewerComponent = document.createElement('dg-viewer') as ViewerT;
 
@@ -167,6 +163,7 @@ export async function TestViewerComponent() {
 
 //tags: test
 export async function TestFromComponent() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
   const fc1 = func.prepare({
     a: 1,
@@ -199,6 +196,7 @@ export async function TestFromComponent() {
 
 //tags: test
 export async function TestElements() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const bnt = document.createElement('button', {is: 'dg-button'});
   bnt.textContent = 'Click me';
   const bigBtn = document.createElement('button', {is: 'dg-big-button'});
