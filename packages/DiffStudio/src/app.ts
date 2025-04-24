@@ -436,6 +436,7 @@ export class DiffStudio {
   }
 
   static isStartingUriProcessed: boolean = false;
+  static toCreateUI: boolean = true;
 
   private solutionTable = DG.DataFrame.create();
   private startingPath = '';
@@ -1839,17 +1840,17 @@ export class DiffStudio {
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
     folder.onSelected.subscribe(async () => {
-      //const func = await grok.functions.find('DiffStudio:runDiffStudio');
-      const func: DG.Func = DG.Func.find({package: _package.name, name: 'runDiffStudio'})[0];
+      const func = await grok.functions.find('DiffStudio:runDiffStudio');
       const funcCall = func.prepare({});
+      DiffStudio.toCreateUI = false;
       await funcCall.call();
+      DiffStudio.toCreateUI = true;
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
       view.parentCall = funcCall;
 
       setTimeout(() => grok.shell.addPreview(view, undefined, undefined, null), 200);
-      //view.basePath = 'apps/DiffStudio/';
-      view.path = `${title}`;
+      view.path = `/${title}`;
     });
 
     return folder;
@@ -1860,6 +1861,12 @@ export class DiffStudio {
     const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
 
     folder.onSelected.subscribe(async () => {
+      const func = await grok.functions.find('DiffStudio:runDiffStudio');
+      const funcCall = func.prepare({});
+      DiffStudio.toCreateUI = false;
+      await funcCall.call();
+      DiffStudio.toCreateUI = true;
+
       const view = DG.View.create();
 
       try {
@@ -1892,9 +1899,9 @@ export class DiffStudio {
           view.append(ui.h2('No recent models'));
 
         view.name = TITLE.RECENT;
+        view.parentCall = funcCall;
         grok.shell.addPreview(view, undefined, undefined, null);
-        view.basePath = 'apps/DiffStudio/';
-        view.path = TITLE.RECENT;
+        view.path = `/${TITLE.RECENT}`;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };

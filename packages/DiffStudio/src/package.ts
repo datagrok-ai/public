@@ -50,12 +50,17 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 export async function runDiffStudio(): Promise<DG.ViewBase> {
   const path = grok.shell.startUri;
   const toSetStartingPath = (path === window.location.href);
-  const solver = new DiffStudio(false);
 
-  if (toSetStartingPath)
-    solver.setStartingPath(path);
+  if (DiffStudio.toCreateUI) {
+    const solver = new DiffStudio(false);
 
-  return await solver.runSolverApp();
+    if (toSetStartingPath)
+      solver.setStartingPath(path);
+
+    return await solver.runSolverApp();
+  }
+
+  return DG.View.create();
 
   // const proxiView = DG.View.create();
 
