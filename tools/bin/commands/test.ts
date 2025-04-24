@@ -91,6 +91,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
   if (parsed.length == 0)
     return {
       failed: true,
+      error: '',
       verbosePassed: 'Package not found',
       verboseSkipped: 'Package not found',
       verboseFailed: 'Package not found',
@@ -168,9 +169,10 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       testsResults.push(r);
       organized = testsLeft;
       browserId++;
-      if (r.verboseFailed === 'Tests execution failed') {
-        if (r.error)
-          console.log(r.error);
+
+      if (r.error) {
+        console.log(`\nexecution error:`);
+        console.log(r.error);
         break;
       }
     }

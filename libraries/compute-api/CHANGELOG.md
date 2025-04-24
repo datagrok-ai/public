@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.5.0 (2025-04-24)
+
+- Update Compute2 API
+
 ## 0.4.0 (2025-02-19)
 
 - Release for 1.24.0

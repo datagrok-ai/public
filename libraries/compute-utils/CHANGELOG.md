@@ -1,5 +1,17 @@
 # compute-utils changelog
 
+## 1.43.3 (2025-04-24)
+
+Update Compute2 public API
+
+## 1.43.2 (2025-04-22)
+
+Updated the Fitting feature:
+
+- target columns selection
+- fitting results displaying
+- goodness of fit viewers creation
+
 ## 1.43.1 (2025-04-14)
 
 - Fitting, Sensitivity Analysis: Fixed precision of the values lookup feature

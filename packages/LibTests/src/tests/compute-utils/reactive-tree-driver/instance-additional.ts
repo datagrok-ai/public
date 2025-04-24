@@ -314,7 +314,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved consistency state', async () => {
-    const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -336,7 +336,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved outdated state', async () => {
-    const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -358,7 +358,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Handle script errors', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -377,7 +377,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Remove script errors on success', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -398,7 +398,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved error state', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();

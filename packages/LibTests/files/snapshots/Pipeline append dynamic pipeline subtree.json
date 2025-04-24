@@ -1,7 +1,6 @@
 {
   "configId": "pipelinePar",
   "uuid": "",
-  "provider": "LibTests:MockProvider3",
   "version": "1.0",
   "nqName": "LibTests:MockWrapper3",
   "isReadonly": false,
@@ -10,7 +9,6 @@
     {
       "configId": "pipelinePar",
       "uuid": "",
-      "provider": "LibTests:MockProvider2",
       "version": "1.0",
       "nqName": "LibTests:MockWrapper2",
       "isReadonly": false,
@@ -27,7 +25,6 @@
         {
           "configId": "pipeline1",
           "uuid": "",
-          "provider": "LibTests:MockProvider1",
           "version": "1.0",
           "nqName": "LibTests:MockWrapper1",
           "isReadonly": false,
@@ -66,7 +63,6 @@
     {
       "configId": "pipelinePar",
       "uuid": "",
-      "provider": "LibTests:MockProvider2",
       "version": "1.0",
       "nqName": "LibTests:MockWrapper2",
       "isReadonly": false,
@@ -83,7 +79,6 @@
         {
           "configId": "pipeline1",
           "uuid": "",
-          "provider": "LibTests:MockProvider1",
           "version": "1.0",
           "nqName": "LibTests:MockWrapper1",
           "isReadonly": false,

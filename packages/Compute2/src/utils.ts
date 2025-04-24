@@ -101,13 +101,13 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
 PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
 
-export const hasRunnableSteps = (data: PipelineState): data is PipelineWithAdd =>
+export const hasRunnableSteps = (data: PipelineState) =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly && data.steps.length > 0;
 
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
-export const couldBeSaved = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data) && !!data.provider;
+export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName;
 
 export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,

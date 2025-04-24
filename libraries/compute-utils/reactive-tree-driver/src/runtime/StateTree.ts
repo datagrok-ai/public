@@ -192,9 +192,6 @@ export class StateTree {
         throw new Error(`Cannot save mock tree`);
       if (nqName == null)
         throw new Error(`Attempting to save pipeline with no nqName`);
-      const rootItem = root.getItem() as PipelineNodeBase;
-      if (rootItem.config.provider == null)
-        throw new Error(`Attempting to save pipeline with no nqName provider`);
       const pendingFuncCallSaves = this.nodeTree.traverse(root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {

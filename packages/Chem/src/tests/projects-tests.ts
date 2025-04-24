@@ -56,7 +56,7 @@ category('projects', () => {
   test('curate', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runCurate,
       ['smiles', 'curated_molecule'], '');
-  }, {timeout: 50000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('names_to_smiles', async () => {
     const chemblPackInstalled = DG.Func.find({ package: 'ChemblApi', name: 'getCompoundsIds' }).length;

@@ -1,7 +1,6 @@
 {
   "configId": "pipeline1",
   "uuid": "",
-  "provider": "LibTests:MockProvider5",
   "version": "1.0",
   "nqName": "LibTests:MockWrapper5",
   "isReadonly": false,

@@ -40,7 +40,8 @@ export class SunburstViewer extends EChartViewer {
   sunburstVersion: number | null = null;
   currentVersion: number | null = null;
   includeNulls: boolean;
-
+  private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private latestRenderToken = 0;
   constructor() {
     super();
     this.initCommonProperties();
@@ -227,7 +228,6 @@ export class SunburstViewer extends EChartViewer {
     }
   }
 
-
   addSubs() {
     if (!this.dataFrame)
       return;
@@ -293,8 +293,6 @@ export class SunburstViewer extends EChartViewer {
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
-      fontSize: 0,
-      formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
       width: width.toString(),
@@ -304,7 +302,14 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  formatLabel(params: any) {
+  async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
+    this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
+      this.renderMolecule(params, width, height),
+    );
+    await this.moleculeRenderQueue;
+  }
+
+  formatLabel(params: any): string {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
     const getCurrentItemIndex = params.dataIndex - 1;
@@ -328,10 +333,13 @@ export class SunburstViewer extends EChartViewer {
         const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
         const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
 
-        this.renderMolecule(params, renderWidth, renderHeight);
+        this.renderMoleculeQueued(params, renderWidth, renderHeight);
+        return ' ';
+      } else {
+        if (params.data.label)
+          delete params.data.label;
         return ' ';
       }
-      return ' ';
     }
 
     const averageCharWidth = 5;
@@ -391,7 +399,17 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render(orderedHierarchyNames?: string[]): void {
-    this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
+    const currentToken = ++this.latestRenderToken;
+
+    this.renderQueue = this.renderQueue
+      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames));
+  }
+
+  private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {
+    if (token !== this.latestRenderToken)
+      return;
+
+    await this._render(orderedHierarchyNames);
   }
 
   async _render(orderedHierarchyNames?: string[]) {
@@ -400,11 +418,18 @@ export class SunburstViewer extends EChartViewer {
 
     if (this.filter.trueCount >= CATEGORIES_NUMBER) {
       this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
-        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+        (name) => {
+          const column = this.dataFrame.col(name);
+          if (column)
+            return column.categories.length <= CATEGORIES_NUMBER;
+          return false;
+        },
       );
-    } else
-      this.eligibleHierarchyNames = orderedHierarchyNames ?? this.hierarchyColumnNames;
-
+    } else {
+      const validColumnNames = new Set(this.dataFrame.columns.names());
+      this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames)
+        .filter((name) => validColumnNames.has(name));
+    }
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);

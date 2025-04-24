@@ -230,18 +230,16 @@ export class FittingTutorial extends Tutorial {
     // 10. Explore
     const barChartRoot = await getElement(fittingView.root, 'div.d4-bar-chart');
     if (barChartRoot === null) {
-      grok.shell.warning('Sensitivity analysis run timeout exceeded');
+      grok.shell.warning('Parameter optimization run timeout exceeded');
       return;
     }
 
     this.describe(`To fit <b>Velocity</b> and <b>Angle</b>, Datagrok iteratively minimizes the ${ui.link('loss function', 'https://en.wikipedia.org/wiki/Loss_function').outerHTML}.`);
-    const grid = fittingView.grid;
 
-    let doneBtn = describeElements([
-      grid.root,
-      grid.cell('Max distance', 0).element,
-      grid.cell('RMSE by iterations', 0).element,
-    ], fittingInfo);
+    const grid = fittingView.grid;
+    const gridRoot = grid.root;
+
+    let doneBtn = describeElements([gridRoot, gridRoot, gridRoot], fittingInfo);
 
     await this.action(
       'Explore results',

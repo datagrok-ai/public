@@ -8,7 +8,7 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 
 category('ComputeUtils: Driver state tree persistence', async () => {
   test('Load and save simple config', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -21,7 +21,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
   });
 
   test('Save creates new uuids', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -52,14 +52,14 @@ category('ComputeUtils: Driver state tree persistence', async () => {
 
   test('Load nested pipeline', async () => {
     // create and save nested pipeline
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     const metaCall = await tree.save().toPromise();
     // create outer pipeline
-    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
+    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.init().toPromise();
@@ -73,7 +73,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
 
   test('Save nested pipeline', async () => {
     // create outer pipeline
-    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
+    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.init().toPromise();
@@ -81,7 +81,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const sc = StateTree.toSerializedStateRec(nestedRoot, {disableNodesUUID: true, disableCallsUUID: true});
     // save nested pipeline
     const metaCall = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
     const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
     await loadedTree.init().toPromise();

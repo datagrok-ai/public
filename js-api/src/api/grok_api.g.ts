@@ -1491,7 +1491,9 @@ export interface IDartApi {
   grok_Legend_Get_Position(legend: any): any;
   grok_Legend_Set_Position(legend: any, pos: any): any;
   grok_Legend_Set_OnViewerLegendChanged(legend: any, handler: any): any;
-  grok_Legend_Get_FilterBy(legend: any): any;
+  grok_Legend_Get_SelectedCategories(legend: any): any;
+  grok_Legend_Get_SelectedExtraCategories(legend: any): any;
+  grok_Legend_Get_IsToolTipMode(legend: any): any;
   grok_Get_Settings(): any;
   grok_Get_StartUri(): any;
   grok_PropMixin_GetProperties(target: any): any;

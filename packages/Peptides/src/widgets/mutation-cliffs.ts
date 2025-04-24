@@ -50,7 +50,7 @@ export function mutationCliffsWidget(
             const uniqueSequencesGridParent = parts!.uniqueSequencesGrid.canvas?.parentElement;
             if (pairsGridParent && uniqueSequencesGridParent) {
               pairsGridParent.style.height = '100%';
-              uniqueSequencesGridParent.style.height = '100%';
+              uniqueSequencesGridParent.style.height = 'calc(100% - 20px)';
               uniqueSequencesGridParent.style.marginTop = '20px';
               if (dW > 400) {
                 const macroMolWidth = Math.max(dW * 0.33, 200);

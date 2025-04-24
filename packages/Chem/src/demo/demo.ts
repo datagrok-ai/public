@@ -1,12 +1,10 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
-import {_importSdf} from '../open-chem/sdf-importer';
 import {_package, activityCliffs} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -185,32 +183,32 @@ export async function _demoMMPA(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
   const filterStates = {
     '2': {
-      "type": "histogram",
-      "column": "\u0394 CYP3A4",
-      "active": true,
-      "filterOutMissingValues": false,
-      "showMissingValuesOnly": false,
-      "min": 4.69,
-      "max": 7.40,
-      "showHistogram": true,
-      "showSlider": true,
-      "showMinMax": false,
-      "boolInput": null
+      'type': 'histogram',
+      'column': '\u0394 CYP3A4',
+      'active': true,
+      'filterOutMissingValues': false,
+      'showMissingValuesOnly': false,
+      'min': 4.69,
+      'max': 7.40,
+      'showHistogram': true,
+      'showSlider': true,
+      'showMinMax': false,
+      'boolInput': null,
     },
     '3': {
-      "type": "histogram",
-      "column": "\u0394 hERG_pIC50",
-      "active": true,
-      "filterOutMissingValues": false,
-      "showMissingValuesOnly": false,
-      "min": 0.89,
-      "max": 7,
-      "showHistogram": true,
-      "showSlider": true,
-      "showMinMax": false,
-      "boolInput": null
-    }
-  }
+      'type': 'histogram',
+      'column': '\u0394 hERG_pIC50',
+      'active': true,
+      'filterOutMissingValues': false,
+      'showMissingValuesOnly': false,
+      'min': 0.89,
+      'max': 7,
+      'showHistogram': true,
+      'showSlider': true,
+      'showMinMax': false,
+      'boolInput': null,
+    },
+  };
 
   _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
@@ -245,12 +243,10 @@ export async function _demoMMPA(): Promise<void> {
 
 export async function _demoMoleculesVisualizations(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
-  let table: DG.DataFrame;
   let tv: DG.TableView;
   await demoScript
     .step('Loading table', async () => {
       tv = await openMoleculeDataset('r-groups.csv');
-      table = tv.dataFrame;
       grok.shell.windows.showContextPanel = false;
       grok.shell.windows.showHelp = false;
     }, {description: 'Load dataset with molecule columns', delay: 2000})
@@ -353,7 +349,7 @@ export async function _demoActivityCliffs(): Promise<void> {
           }
         }
         return false;
-      }, '', 10000)
+      }, '', 10000);
       await delay(1000);
     }, {description: `Results are shown on a scatter plot. Each point on a scatter plot corresponds to a molecule from a dataset.
     Pairs of molecules with similarity higher than specified cutoff, are connected by lines. Marker color corresponds to molecule activity.
@@ -363,7 +359,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       await delay(1000);
       const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
       if (link.length)
-        (link[0]  as HTMLElement).click();
+        (link[0] as HTMLElement).click();
       await delay(1000);
     }, {description: `Detected cliffs are available in a separate table. 
     Cliffs are pairs of molecules with similarity higher than cutoff. Cliffs are sorted by SALI value.`, delay: 2000})
@@ -387,7 +383,7 @@ export async function _demoActivityCliffs(): Promise<void> {
 export async function _demoActivityCliffsLayout(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showHelp = true;
-  const p  = await grok.functions.eval('Chem:DemoActivityCliffs');
+  const p = await grok.functions.eval('Chem:DemoActivityCliffs');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   let scatterPlot: DG.Viewer | null = null;
@@ -413,7 +409,7 @@ export async function _demoActivityCliffsLayout(): Promise<void> {
 export async function _demoRGroups(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showHelp = true;
-  const p  = await grok.functions.eval('Chem:RGroupsDemo');
+  const p = await grok.functions.eval('Chem:RGroupsDemo');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#r-groups-analysis'), 1000);
@@ -422,14 +418,14 @@ export async function _demoRGroups(): Promise<void> {
 export async function _demoChemicalSpace(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showHelp = true;
-  const p  = await grok.functions.eval('Chem:ChemicalSpaceDemo');
+  const p = await grok.functions.eval('Chem:ChemicalSpaceDemo');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   grok.functions.call('Dendrogram:HierarchicalClustering', {
     df: grok.shell.project.children.find((it) => it instanceof DG.TableInfo)?.dataFrame,
     colNameList: ['molecule'],
     distance: 'euclidian',
-    linkage: 'average'
+    linkage: 'average',
   });
   //for dendrogram to render correctly
   const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {

@@ -57,7 +57,7 @@ Mappings:
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
-      version: v1.12.1
+      version: v1.19.1
     Rabbitmq:
       domain: docker.io
       repo: rabbitmq
@@ -2776,6 +2776,7 @@ Resources:
           - ecs:DescribeServices
           - ecs:UpdateService
           - ecs:DeleteService
+          - ecs:ListServices
           Condition:
             ArnEquals:
               ecs:cluster:
@@ -2793,6 +2794,30 @@ Resources:
                 Ref: DatagrokCluster
           - Fn::Sub:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:ListContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:DescribeContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
             - cluster_name:
                 Ref: CvmCluster
         - Action:
@@ -3007,7 +3032,7 @@ Resources:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
           Value:
-            Fn::Sub: FARGATE
+            Fn::Sub: EC2
         - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
           Value:
             Fn::Sub:
@@ -3042,7 +3067,7 @@ Resources:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
           Value:
-            Fn::Sub: FARGATE
+            Fn::Sub: EC2
         - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:

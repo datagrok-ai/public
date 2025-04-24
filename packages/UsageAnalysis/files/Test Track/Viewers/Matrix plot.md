@@ -1,15 +1,23 @@
 ### Matrix plot
 
-1. Open the **SPGI dataset** by pressing 'star' icon in TestTrack (tooltip "Open test data").
-2. On the **Viewers tab**, click **Matrix plot**. The viewer opens.
-3. Interact with all elements on the viewer. All changes should be reflected in the viewer without errors.  
-4. Clicking on the single data on the viewer should highlight same data line in the grid.
-5. Zooming in and out should work by scrolling the mouse wheel.  
-6. On the **Matrix plot** viewer, click the **Gear** icon. The **Property Pane** opens.
-7. Modify Column/Row Visibility in Viewer Settings: In the X or Y axis menu hide some of the columns or rows by unchecking their checkboxes.
-  * Expected Result: The Matrix plot should reflect the changes in the column or row visibility.
-8. Modify various properties in **Property Pane**:
-  * Expected Result: Changes to the properties should be reflected in the Matrix plot without errors, and the plot should update accordingly.
+1. Open dataset
+- In TestTrack, click the star icon (tooltip: "Open test data").
+- The **SPGI dataset** should open.
+2. Open Matrix Plot viewer
+- Go to the Viewers tab and select **Matrix plot**.
+3. Interact with the plot elements: **hover, click, drag**.
+- Clicking a data point should highlight the corresponding row in the grid.
+4. **Zoom** functionality
+- Use the mouse wheel to zoom in and out on the plot.
+5. Open **context** panel
+- Click the **gear icon** on the Matrix plot to open the Context Panel.
+6. **Column/Row visibility**
+- In the X or Y axis menu, uncheck a few columns or rows to hide them.
+- Expected result: Hidden elements are no longer displayed on the plot.
+7. Update **properties**
+- Modify other settings in the Context Panel (e.g., color scale, layout, display style).
+- Expected result: The plot updates to reflect the new settings.
+
 
 ---
 {

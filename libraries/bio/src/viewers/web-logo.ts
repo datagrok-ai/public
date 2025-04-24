@@ -62,15 +62,16 @@ export const WebLogoPropsDefault = new class {
   // -- Style --
   backgroundColor: number = 0xFFFFFFFF;
   positionHeight: string = PositionHeight.Entropy; // that is the way in the bioinformatics domain
-  positionWidth: number = 16;
+  positionWidth: number = 20;
 
   // -- Layout --
   verticalAlignment: VerticalAlignments = VerticalAlignments.MIDDLE;
   horizontalAlignment: HorizontalAlignments = HorizontalAlignments.CENTER;
   fixWidth: boolean = false;
   fitArea: boolean = true;
-  minHeight: number = 50;
-  maxHeight: number = 100;
+  minHeight: number = 25;
+  maxHeight: number | null = 300;
+  maxMonomerLetters: number = 5;
   showPositionLabels: boolean = true;
   positionMarginState: PositionMarginStates = PositionMarginStates.AUTO;
   positionMargin: number = 0;

@@ -9,7 +9,7 @@
   "description": "WebComponents runtime code",
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "^0.1.0",
-    "@datagrok-libraries/utils": "^4.5.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "@datagrok-libraries/webcomponents": "^0.1.0",
     "cash-dom": "^8.1.4",
     "css-loader": "^7.1.2",

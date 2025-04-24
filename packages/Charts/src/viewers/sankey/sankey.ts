@@ -69,9 +69,9 @@ export class SankeyViewer extends DG.JsViewer {
   constructor() {
     super();
     // Properties
-    this.sourceColumnName = this.string('sourceColumnName');
-    this.targetColumnName = this.string('targetColumnName');
-    this.valueColumnName = this.string('valueColumnName');
+    this.sourceColumnName = this.string('sourceColumnName', '', {nullable: false});
+    this.targetColumnName = this.string('targetColumnName', '', {nullable: false});
+    this.valueColumnName = this.string('valueColumnName', '', {nullable: false});
     this.addRowSourceAndFormula();
 
     this.initialized = false;

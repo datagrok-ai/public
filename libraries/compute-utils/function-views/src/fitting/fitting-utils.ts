@@ -5,11 +5,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {InconsistentTables} from './optimizer-misc';
+import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {TARGET_DATAFRAME_INFO} from './constants';
+import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -156,6 +156,14 @@ export function getShowInfoWidget(root: HTMLElement, dfName: string) {
   return infoIcon;
 } // getShowInfoWidget
 
+/** Return the open help widget */
+export function getHelpIcon(): HTMLElement {
+  const icon = ui.icons.help(() => window.open(HELP_LINK, '_blank'), 'Open help in a new tab');
+  icon.classList.add('fit-view-help-icon');
+
+  return icon;
+}
+
 /** Return fitting widget */
 export function getFittingWgt(): HTMLElement {
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -212,8 +220,12 @@ export function getFittingWgt(): HTMLElement {
 
   [path, circle1, circle2, circle3, circle4].forEach((element) => svg.appendChild(element));
 
-  const div = ui.div([svg]);
-  div.classList.add('fit-view-svg-icon');
+  const span = ui.span(['Fit']);
+  span.classList.add('fit-view-ribbon-text');
+
+  svg.classList.add('fit-view-svg-icon');
+  const div = ui.div([svg, span]);
+
   ui.tooltip.bind(div, 'Fit parameters. Opens a separate view');
 
   return div;
@@ -232,10 +244,173 @@ export function getSensAnWgt(): HTMLElement {
   path.setAttribute('d', 'M5 5.5L5 16.5C5 17.3438 5.65625 18 6.5 18H19.5C19.75 18 20 18.25 20 18.5C20 18.7813 19.75 19 19.5 19H6.5C5.09375 19 4 17.9063 4 16.5L4 5.5C4 5.25 4.21875 5 4.5 5C4.75 5 5 5.25 5 5.5ZM15.5 7C15.2188 7 15 6.78125 15 6.5C15 6.25 15.2188 6 15.5 6L18.5 6C18.75 6 19 6.25 19 6.5V9.5C19 9.78125 18.75 10 18.5 10C18.2188 10 18 9.78125 18 9.5V7.71875L13.3438 12.375C13.1562 12.5625 12.8125 12.5625 12.625 12.375L10.5 10.2188L7.84375 12.875C7.65625 13.0625 7.3125 13.0625 7.125 12.875C6.9375 12.6875 6.9375 12.3438 7.125 12.1563L10.125 9.15625C10.2188 9.0625 10.3438 9 10.5 9C10.625 9 10.75 9.0625 10.8438 9.15625L13 11.3125L17.2812 7L15.5 7ZM15.5 16C15.2188 16 15 15.7813 15 15.5C15 15.25 15.2188 15 15.5 15H17.2812L15.125 12.875L15.8438 12.1563L18 14.3125V12.5C18 12.25 18.2188 12 18.5 12C18.75 12 19 12.25 19 12.5V15.5C19 15.7813 18.75 16 18.5 16H15.5Z');
   path.setAttribute('fill', '#40607F');
   svg.appendChild(path);
-
-  const div = ui.div([svg]);
-  div.classList.add('sensitivity-analysis-svg-icon');
+  const span = ui.span(['Sensitivity']);
+  span.classList.add('fit-view-ribbon-text');
+  svg.classList.add('sensitivity-analysis-svg-icon');
+  const div = ui.div([svg, span]);
   ui.tooltip.bind(div, 'Run sensitivity analysis. Opens a separate view');
 
   return div;
+}
+
+/** Return dataframe with loss function vals */
+export function getLossFuncDf(extr: Extremum): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount)),
+  ]);
+}
+
+/** Transform RGB-color to hex number */
+export function rgbToHex(rgbString: string) {
+  // Extract the RGB values using a regular expression
+  const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match)
+    throw new Error('Invalid RGB format. Expected format: \'rgb(r, g, b)\'');
+
+
+  // Parse the RGB values
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+
+  // Convert each component to a 2-digit hexadecimal string
+  const toHex = (value: number) => value.toString(16).padStart(2, '0');
+
+  const hexR = toHex(r);
+  const hexG = toHex(g);
+  const hexB = toHex(b);
+
+  // Return the concatenated hex color string
+  return `#${hexR}${hexG}${hexB}`;
+}
+
+/** Return RGB-color lightened with respect to the given percentage */
+export function lightenRGB(rgbString: string, percentage: number) {
+  // Extract the RGB values using a regular expression
+  const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match)
+    throw new Error('Invalid RGB format. Expected format: \'rgb(r, g, b)\'');
+
+
+  // Parse the RGB values
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+
+  // Calculate the lighter values
+  const lighten = (value: number) => Math.min(255, Math.round(value + (255 - value) * (percentage / 100)));
+
+  const newR = lighten(r);
+  const newG = lighten(g);
+  const newB = lighten(b);
+
+  // Return the new RGB string
+  return `rgb(${newR}, ${newG}, ${newB})`;
+}
+
+/** Return options for single scalar goodness of fit bar chart */
+function getSingleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE], DG.Color.categoricalPalette[INDICES.OLIVE]],
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    barSortType: 'by category',
+  };
+}
+
+/** Return options for the first chart of double scalar goodness of fit bar chart */
+function getFirstDoubleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.LIGHT_OLIVE], DG.Color.categoricalPalette[INDICES.OLIVE]],
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    description: valColName,
+    descriptionVisibilityMode: 'Always',
+    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+    barSortType: 'by category',
+  };
+}
+
+/** Return options for the second chart of double scalar goodness of fit bar chart */
+function getSecondDoubleScalarBarChartOpts(valColName: string, catColName: string): Partial<DG.IBarChartSettings> {
+  return {
+    showValueAxis: false,
+    showStackSelector: false,
+    showCategorySelector: false,
+    valueColumnName: valColName,
+    splitColumnName: catColName,
+    colorColumnName: valColName,
+    colorAggrType: DG.AGG.AVG,
+    linearColorScheme: [DG.Color.categoricalPalette[INDICES.GREY], DG.Color.categoricalPalette[INDICES.LIGHT_GREY]],
+    valueAggrType: DG.AGG.AVG,
+    showValueSelector: false,
+    description: valColName,
+    descriptionVisibilityMode: 'Always',
+    maxBarHeight: GRID_SIZE.BAR_HEIGHT,
+    barSortType: 'by category',
+  };
+}
+
+/** Return goodness of fit viewer for scalar targets */
+export function getScalarsGoodnessOfFitViewer(table: DG.DataFrame): HTMLElement {
+  const cols = table.columns;
+  const colsCount = cols.length;
+
+  if (colsCount < 2)
+    throw new Error(`Incorrect scalars fit table. Columns: ${colsCount}, expected: > 1`);
+
+  switch (colsCount) {
+  case 2:
+    return DG.Viewer.barChart(table, getSingleScalarBarChartOpts(
+      cols.byIndex(INDICES.SINGLE_VAL).name,
+      cols.byIndex(INDICES.SINGLE_CAT).name,
+    )).root;
+
+  case 3:
+    const catColName = cols.byIndex(INDICES.DOUBLE_CAT).name;
+
+    const first = DG.Viewer.barChart(table, getFirstDoubleScalarBarChartOpts(
+      cols.byIndex(INDICES.DOUBLE_VAL1).name,
+      catColName,
+    )).root;
+
+    const second = DG.Viewer.barChart(table, getSecondDoubleScalarBarChartOpts(
+      cols.byIndex(INDICES.DOUBLE_VAL2).name,
+      catColName,
+    )).root;
+
+    const container = ui.splitV([first, second], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+    setTimeout(() => container.style.height = '100%', TIMEOUT.STYLE_TIMEOUT);
+
+    return container;
+
+  default:
+    return DG.Viewer.grid(table).root;
+  }
+} // getScalarsGoodnessOfFitViewer
+
+/** Return radar tooltip */
+export function getRadarTooltip(): HTMLElement {
+  const colors = DG.Color.categoricalPalette;
+  const simLabel = ui.label(NAME.SIMULATION);
+  simLabel.style.color = rgbToHex(DG.Color.toRgb(colors[INDICES.BLUE]));
+  const targetLabel = ui.label(NAME.TARGET);
+  targetLabel.style.color = rgbToHex(DG.Color.toRgb(colors[INDICES.ORANGE]));
+
+  return ui.divV([simLabel, targetLabel]);
 }

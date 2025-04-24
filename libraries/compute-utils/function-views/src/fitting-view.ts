@@ -12,19 +12,24 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  DIFF_STUDIO_OUTPUT_IDX,
-  CATEGORY,
-  LINE_CHART_LINE_WIDTH} from './fitting/constants';
+  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
+  MIN_RADAR_COLS_COUNT,
+  TIMEOUT} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
+import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
+import {color} from 'html2canvas/dist/types/css/types/color';
+
+const colors = DG.Color.categoricalPalette;
+const colorsCount = colors.length;
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -57,9 +62,11 @@ type FittingConstStore = {
 } & InputValues;
 
 /** Goodness of fit (GoF) viewer */
-type GoFViewer = {
+type GoFtable = {
   caption: string,
-  root: HTMLElement,
+  table: DG.DataFrame,
+  chart: DG.VIEWER,
+  opts: Partial<DG.IBarChartSettings | DG.IScatterPlotSettings>,
 };
 
 export type RangeDescription = {
@@ -85,6 +92,36 @@ type FittingOutputsStore = {
   argColInput: DG.ChoiceInput<string | null>,
   funcColsInput: DG.InputBase<DG.Column[]>,
 };
+
+type ValidationInfo = {
+  isValid: boolean,
+  msg: string,
+};
+
+/** Check validness of outputs */
+function getValidation(store: FittingOutputsStore): ValidationInfo {
+  if (store.prop.propertyType !== DG.TYPE.DATA_FRAME)
+    return {isValid: true, msg: ''};
+
+  const argName = store.argName;
+  const funcColsVals = store.funcColsInput.value;
+
+  if ((funcColsVals === null) || (funcColsVals === null)) {
+    return {
+      isValid: false,
+      msg: `Incomplete the "${store.input.caption}" target`,
+    };
+  }
+
+  if (funcColsVals.map((col) => col.name).includes(argName)) {
+    return {
+      isValid: false,
+      msg: `Invalid ${store.input.caption}: functions should not contain argument ('${argName}')`,
+    };
+  }
+
+  return {isValid: true, msg: ''};
+}
 
 export type DiffGrok = {
   ivp: IVP,
@@ -262,6 +299,26 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
+        const validator = (_: string) => {
+          const validation = getValidation(temp);
+
+          if (validation.isValid) {
+            temp.argColInput.input.classList.remove('d4-invalid');
+            temp.funcColsInput.input.classList.remove('d4-invalid');
+            ui.tooltip.bind(temp.argColInput.input, 'Independent variable');
+            ui.tooltip.bind(temp.funcColsInput.input, 'Target dependent variables');
+
+            return null;
+          }
+
+          temp.argColInput.input.classList.add('d4-invalid');
+          temp.funcColsInput.input.classList.add('d4-invalid');
+          ui.tooltip.bind(temp.argColInput.input, validation.msg);
+          ui.tooltip.bind(temp.funcColsInput.input, validation.msg);
+
+          return validation.msg;
+        };
+
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -342,22 +399,17 @@ export class FittingView {
 
             return input;
           })(),
-          argName: '',
+          argName: '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
               value: null,
               items: [null],
               tooltipText: 'Independent variable',
               onValueChanged: (value) => {
-                if (value !== null) {
+                if (value !== null)
                   temp.argName = value;
-
-                  if (temp.funcColsInput.value !== null) {
-                    if (temp.funcColsInput.value.map((col) => col.name).includes(value))
-                      temp.funcColsInput.value = temp.funcColsInput.value.filter((col) => col.name !== value);
-                  }
-                } else
-                  temp.argName = '';
+                else
+                  temp.argName = '_';
 
                 this.updateApplicabilityState();
               },
@@ -369,6 +421,7 @@ export class FittingView {
             infoIcon.classList.add('sa-switch-input');
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
+            input.addValidator(validator);
 
             return input;
           })(),
@@ -378,19 +431,13 @@ export class FittingView {
             const input = ui.input.columns('functions', {
               nullable: false,
               tooltipText: 'Target dependent variables',
-              onValueChanged: (cols) => {
-                if (cols.map((col) => col.name).includes(temp.argName)) {
-                  temp.argColInput.value = null;
-                  temp.argName = '';
-                }
-
-                this.updateApplicabilityState();
-              },
+              onValueChanged: (cols) => this.updateApplicabilityState(),
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             this.toSetSwitched = false;
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
+            input.addValidator(validator);
 
             return input;
           })(),
@@ -440,9 +487,7 @@ export class FittingView {
     this.acceptedFitting$.next(chosenCall);
   });
 
-  private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute/function-analysis#parameter-optimization', '_blank');
-  }, 'Open help in a new tab');
+  private helpIcon = getHelpIcon();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {
@@ -758,6 +803,7 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  /** Return value lookup widget */
   private async getLookupElement(inputsLookup?: string) {
     if (inputsLookup === undefined)
       return null;
@@ -1007,6 +1053,13 @@ export class FittingView {
         cur = (val !== null) && (val !== undefined);
 
         if (output.prop.propertyType === DG.TYPE.DATA_FRAME) {
+          const validation = getValidation(output);
+
+          if (!validation.isValid) {
+            this.updateRunIconDisabledTooltip(validation.msg);
+            return false;
+          }
+
           cur &&= (output.funcColsInput.value !== null);
 
           if (cur)
@@ -1185,6 +1238,8 @@ export class FittingView {
       if (this.method === METHOD.NELDER_MEAD) {
         if (this.diffGrok !== undefined) {
           try {
+            const index = INDICES.DIFF_STUDIO_OUTPUT;
+
             optResult = await getFittedParams(
               this.loss,
               this.diffGrok.ivp,
@@ -1195,9 +1250,9 @@ export class FittingView {
               minVals,
               maxVals,
               inputs,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].argName,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].funcColsInput.value,
-              outputsOfInterest[DIFF_STUDIO_OUTPUT_IDX].target as DG.DataFrame,
+              outputsOfInterest[index].argName,
+              outputsOfInterest[index].funcColsInput.value,
+              outputsOfInterest[index].target as DG.DataFrame,
               this.samplesCount,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
@@ -1268,41 +1323,9 @@ export class FittingView {
 
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
-      const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
-      const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
-      const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
-      let toAddGofCols = true;
-      const outputColNames: string[] = [];
 
-      this.currentFuncCalls = calledFuncCalls;
-
-      nonSimilarExtrema.forEach(async (extr, idx) => {
-        lossVals[idx] = extr.cost;
-        const lossRoot = this.getLossGraph(extr);
-        lossFuncGraphRoots[idx] = lossRoot;
-
-        const gofElems = new Map<string, HTMLElement>();
-        const calledFuncCall = await getCalledFuncCall(extr.point);
-        calledFuncCalls[idx] = calledFuncCall;
-        outputsOfInterest.forEach((output) => {
-          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
-          gofs.forEach((item) => gofElems.set(item.caption, item.root));
-        });
-        gofViewers[idx] = gofElems;
-
-        if (toAddGofCols) {
-          gofElems.forEach((_, name) => {
-            tooltips.set(name, 'Goodness of fit');
-            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.STRING);
-            const gridCol = this.comparisonView.grid.columns.byName(name);
-            gridCol!.cellType = 'html';
-            gridCol!.width = GRID_SIZE.GOF_VIEWER_WIDTH;
-            outputColNames.push(name);
-          });
-          toAddGofCols = false;
-        }
-      });
+      nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
 
       // Add fitting results to the table: iteration & loss
       const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
@@ -1327,13 +1350,53 @@ export class FittingView {
       grid.props.showAddNewRowIcon = false;
       grid.props.allowEdit = false;
 
-      // Add linecharts of loss function
+      // Add goodness of fit viewers
+      const gofTables = new Array<Map<string, GoFtable>>(rowCount);
+
+      for (let idx = 0; idx < rowCount; ++idx) {
+        const gofDfs = new Map<string, GoFtable>();
+        const scalarGoFs: GoFtable[] = [];
+
+        const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+
+        outputsOfInterest.forEach((output) => {
+          const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
+          gofs.forEach((item) => {
+            if (item.chart !== DG.VIEWER.BAR_CHART)
+              gofDfs.set(item.caption, item);
+            else
+              scalarGoFs.push(item);
+          });
+        });
+
+        if (scalarGoFs.length > 0) {
+          const gof = this.getScalarsGofTable(scalarGoFs);
+          const name = gof.table.columns.length > 2 ? NAME.SCALARS : gof.table.columns.byIndex(0).name;
+          gofDfs.set(name, gof);
+        }
+
+        gofTables[idx] = gofDfs;
+      }
+
+      // Add goodness of fit columns
+      gofTables[0].forEach((_, name) => {
+        reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
+        tooltips.set(name, 'Goodness of fit');
+        const lossFuncGraphGridCol = grid.columns.byName(name);
+        lossFuncGraphGridCol!.cellType = 'html';
+        lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
+      });
+
+      // Add dataframe with loss function values
       const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
       tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
-      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => getLossFuncDf(nonSimilarExtrema[row]));
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
+
+      let toAddRadars = false;
+      gofTables[0].forEach((gof) => toAddRadars ||= (gof.table.columns.length >= MIN_RADAR_COLS_COUNT));
 
       // Add viewers to the grid
       let toReorderCols = true;
@@ -1347,12 +1410,33 @@ export class FittingView {
         if (gc.isColHeader || gc.isRowHeader) return;
 
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
-          gc.style.element = lossFuncGraphRoots[gc.gridRow];
+          gc.style.element = gc.cell.value.plot.line(LOSS_FUNC_CHART_OPTS).root;
 
-        outputColNames.forEach((name) => {
-          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null && gofViewers[gc.gridRow] !== undefined)
-            gc.style.element = gofViewers[gc.gridRow].get(name) ?? ui.label('');
-        });
+        const row = gc.gridRow;
+
+        if (gc.isTableCell && (row < rowCount)) {
+          const gof = gofTables[row].get(gc.gridColumn.name);
+
+          if (gof !== undefined) {
+            if (gof.chart === DG.VIEWER.SCATTER_PLOT)
+              gc.style.element = gc.cell.value.plot.scatter(gof.opts).root;
+            else {
+              if (toAddRadars) {
+                const container = ui.divV([], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+                ui.tooltip.bind(container, () => getRadarTooltip());
+                gc.style.element = container;
+                setTimeout(async () => {
+                  const rViewer = new ScalarsFitRadar(gc.cell.value as DG.DataFrame);
+                  const root = await rViewer.getRoot();
+                  root.style.marginTop = '0px';
+                  root.style.marginLeft = '0px';
+                  container.append(root);
+                }, TIMEOUT.RADAR);
+              } else
+                gc.style.element = getScalarsGoodnessOfFitViewer(gc.cell.value as DG.DataFrame);
+            }
+          }
+        }
       });
 
       // Set loss-column format & sort by loss-vals
@@ -1365,8 +1449,14 @@ export class FittingView {
           const cellCol = cell.tableColumn;
           if (cellCol) {
             const name = cell.tableColumn.name;
-            const msg = tooltips.get(name);
-            ui.tooltip.show(msg ?? '', x, y);
+
+            if ((name === NAME.SCALARS) && toAddRadars)
+              ui.tooltip.show(getRadarTooltip(), x, y);
+            else {
+              const msg = tooltips.get(name);
+              ui.tooltip.show(msg ?? '', x, y);
+            }
+
             return true;
           }
         }
@@ -1381,7 +1471,8 @@ export class FittingView {
           return;
 
         const row = cell.tableRowIndex ?? 0;
-        const selectedRun = calledFuncCalls[row];
+        //const selectedRun = calledFuncCalls[row];
+        const selectedRun = await getCalledFuncCall(nonSimilarExtrema[row].point);
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1461,30 +1552,27 @@ export class FittingView {
     return outputsOfInterest;
   } // getOutputsOfInterest
 
-  /** Return loss function line chart root  */
-  private getLossGraph(extr: Extremum): HTMLElement {
-    return DG.Viewer.lineChart(
-      DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
-      {
-        showYAxis: true,
-        showXAxis: true,
-        showXSelector: true,
-        showYSelectors: true,
-        lineColoringType: 'custom',
-        lineColor: 15274000,
-        markerColor: 15274000,
-      }).root;
-  } // getLossGraph
+  /** Return a table with scalar output results */
+  private getScalarsGofTable(gofs: GoFtable[]): GoFtable {
+    const cols: DG.Column[] = [];
+    gofs.forEach((gof) => cols.push(gof.table.columns.byIndex(INDICES.SCALAR_VALS_COL)));
+    cols.push(DG.Column.fromStrings(NAME.CATEGORY, [NAME.SIMULATION, NAME.TARGET]));
 
-  /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFViewer[] {
+    return {
+      caption: NAME.SCALARS,
+      table: DG.DataFrame.fromColumns(cols),
+      chart: cols.length > 2 ? DG.VIEWER.RADAR_VIEWER : DG.VIEWER.BAR_CHART,
+      opts: {},
+    };
+  } // getScalarsGofTable
+
+  /** Return output goodness of fit (GOF) table */
+  private getOutputGofTable(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFtable[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
 
-    // Provide an approprate viewer for each output
+    // Provide an appropriate viewer for each output
     switch (type) {
     // bar chart for each scalar
     case DG.TYPE.FLOAT:
@@ -1492,26 +1580,17 @@ export class FittingView {
     case DG.TYPE.BIG_INT:
       return [{
         caption: caption,
-        root: DG.Viewer.barChart(
-          DG.DataFrame.fromColumns([
-            DG.Column.fromStrings(caption, ['obtained', 'target']),
-            DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
-          ]),
-          {
-            valueColumnName: TITLE.VALUE,
-            splitColumnName: caption,
-            valueAggrType: DG.AGG.AVG,
-            showValueSelector: false,
-            showCategorySelector: false,
-            showStackSelector: false,
-            showEmptyBars: true,
-          },
-        ).root,
+        chart: DG.VIEWER.BAR_CHART,
+        table: DG.DataFrame.fromColumns([
+          DG.Column.fromStrings(NAME.SCALARS, [NAME.SIMULATION, NAME.TARGET]),
+          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, caption, [call.getParamValue(name), target]),
+        ]),
+        opts: {},
       }];
 
     // a set of linecharts comparing columns of output dataframe to their targets
     case DG.TYPE.DATA_FRAME:
-      const result: GoFViewer[] = [];
+      const result: GoFtable[] = [];
       const simDf = call.getParamValue(name) as DG.DataFrame;
       const expDf = target as DG.DataFrame;
       const simArgCol = simDf.col(argColName);
@@ -1536,27 +1615,55 @@ export class FittingView {
       })), true);
 
       // Add category column (for splitting data)
-      const categories = new Array<string>(simDf.rowCount).fill('Simulation').concat(new Array<string>(expDf.rowCount).fill('Target'));
-      expVsSimDf.columns.add(DG.Column.fromStrings(CATEGORY, categories));
+      const funcColNames = expVsSimDf.columns.names().filter((name) => name !== argColName);
+
+      // Add style cols
+      const categories = new Array<string>(simDf.rowCount).fill(NAME.SIMULATION).concat(new Array<string>(expDf.rowCount).fill(NAME.TARGET));
+      const rowsCount = categories.length;
+
+      funcColNames.forEach((name) => {
+        expVsSimDf.columns.add(DG.Column.fromStrings(`${NAME.CATEGORY}_${name}`, categories));
+      });
+
+      const sizes = new Int32Array(rowsCount).fill(SIZE.SIMULATION, 0, simDf.rowCount).fill(SIZE.TARGET, simDf.rowCount);
+      expVsSimDf.columns.add(DG.Column.fromInt32Array(NAME.SIZE, sizes));
+
+      // Coloring scheme
+      const simFuncColNames = simDf.columns.names().filter((name) => name !== argColName);
 
       // Create linecharts
-      expVsSimDf.columns.names().forEach((name) => {
-        if ((name !== argColName) && (name !== CATEGORY)) {
-          result.push({
-            caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            root: DG.Viewer.lineChart(expVsSimDf, {
-              xColumnName: argColName,
-              yColumnNames: [name],
-              splitColumnName: CATEGORY,
-              showSplitSelector: false,
-              legendVisibility: 'Always',
-              legendPosition: 'Top',
-              showMarkers: 'Always',
-              lineWidth: LINE_CHART_LINE_WIDTH,
-              yGlobalScale: true,
-            }).root,
-          });
-        }
+      funcColNames.forEach((name) => {
+        const catColName = `${NAME.CATEGORY}_${name}`;
+        const catCol = expVsSimDf.col(catColName);
+        const colorIdx = simFuncColNames.indexOf(name) % colorsCount;
+        const color = colors[colorIdx];
+        const rgb = DG.Color.toRgb(color);
+
+        catCol!.colors.setCategorical({
+          'Simulation': color,
+          'Target': simFuncColNames.length > 1 ? lightenRGB(rgb, SIZE.LIGHTER_PERC) : colors[colorIdx + 1],
+        });
+
+        result.push({
+          caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
+          table: expVsSimDf,
+          chart: DG.VIEWER.SCATTER_PLOT,
+          opts: {
+            xColumnName: argColName,
+            yColumnName: name,
+            showColorSelector: false,
+            showSizeSelector: false,
+            legendVisibility: 'Always',
+            legendPosition: 'Top',
+            linesWidth: SIZE.LINE_CHART_LINE_WIDTH,
+            linesOrderColumnName: argColName,
+            markerType: DG.MARKER_TYPE.CIRCLE,
+            markerMinSize: SIZE.MIN_MARKER,
+            markerMaxSize: SIZE.MAX_MARKER,
+            colorColumnName: catColName,
+            sizeColumnName: NAME.SIZE,
+          } as DG.IScatterPlotSettings,
+        });
       });
 
       return result;
@@ -1564,7 +1671,7 @@ export class FittingView {
     default:
       throw new Error('Unsupported output type');
     }
-  } // getOutputGof
+  } // getOutputGofTable
 
   /** Clear previous results: close dock nodes and unsubscribe from events */
   private clearPrev(): void {

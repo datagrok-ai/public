@@ -153,10 +153,8 @@ category('top menu similarity/diversity', () => {
     const tv = grok.shell.addTableView(empty);
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
-    try {
-      expect(viewer.renderMolIds.length, 12);
-    } finally {tv.close();}
+    await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
+    tv.close()
   });
 
   test('diversity.malformedData', async () => {
@@ -164,9 +162,8 @@ category('top menu similarity/diversity', () => {
     DG.Balloon.closeAll();
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
     try {
-      expect(viewer.renderMolIds.length, 12);
+      await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
@@ -299,11 +296,10 @@ async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
   const diversitySearchviewer: ChemDiversityViewer = (await molecules.dataFrame.plot
     .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-  await testEvent(diversitySearchviewer.renderCompleted, () => {}, () => {}, 5000);
+  await awaitCheck(() => diversitySearchviewer.renderMolIds.length > 0, `Molecules haven't been rendered`, 10000);
   expect(diversitySearchviewer.fingerprint, Fingerprint.Morgan);
   expect(diversitySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(diversitySearchviewer.initialized, true);
-  expect(diversitySearchviewer.renderMolIds.length > 0, true);
   molecules.close();
 }
 

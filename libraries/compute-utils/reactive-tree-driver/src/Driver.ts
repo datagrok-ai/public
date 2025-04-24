@@ -241,11 +241,11 @@ export class Driver {
       concatMap(([stateLoaded, metaCall, isFavorite]) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
-        if (!stateLoaded.provider)
-          throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing provider`);
+        if (!stateLoaded.nqName)
+          throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing nqName`);
         if (msg.config)
           return of([stateLoaded, msg.config] as const);
-        return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
+        return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
           map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
         );

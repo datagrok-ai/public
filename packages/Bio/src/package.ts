@@ -524,7 +524,6 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //tags: dim-red-preprocessing-function
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
-//meta.supportedUnits: fasta,separator,helm
 //meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
