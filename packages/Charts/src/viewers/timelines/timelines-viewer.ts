@@ -154,12 +154,11 @@ export class TimelinesViewer extends EChartViewer {
     if (!this.initialized) return;
     if (property.name === 'axisPointer')
       this.option.tooltip.axisPointer.type = property.get(this);
-      if (property.name === 'table') {
-        this.updateTable();
-        this.onTableAttached();
-        this.render();
-      }
-    else if (property.name === 'showZoomSliders') {
+    if (property.name === 'table') {
+      this.updateTable();
+      this.onTableAttached();
+      this.render();
+    } else if (property.name === 'showZoomSliders') {
       (this.option.dataZoom as echarts.EChartOption.DataZoom[]).forEach((z) => {
         if (z.type === 'slider') (<echarts.EChartOption.DataZoom.Slider>z).show = this.showZoomSliders;
       });
@@ -469,8 +468,8 @@ export class TimelinesViewer extends EChartViewer {
     legend.onViewerLegendChanged = () => {
       const filteredIdxs = legend.selectedCategories;
       const legendLabels = this.legendDiv.innerText.split('\n');
-      this.updateOnLegendChange(Array.from(filteredIdxs), legendLabels);
-    }
+      this.updateOnLegendChange(Array.from(filteredIdxs!), legendLabels);
+    };
     this.legendDiv.appendChild(legend.root);
     $(legend.root).addClass('charts-legend');
   }
@@ -667,7 +666,7 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   updateOnLegendChange(filteredIdxs: number[], legendLabels: string[]): void {
-    const filteredNames = filteredIdxs.map(idx => legendLabels[idx]);
+    const filteredNames = filteredIdxs.map((idx) => legendLabels[idx]);
     const data = this.getSeriesData();
     this.option.series[0].data = data.filter((item: any) => {
       return filteredNames.includes(item[3][0]);
