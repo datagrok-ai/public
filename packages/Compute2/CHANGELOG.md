@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.0 (2025-04-24)
+
+- Update Compute2 API
+
 ## 1.2.2 (2025-04-22)
 
 - Compute-utils update
