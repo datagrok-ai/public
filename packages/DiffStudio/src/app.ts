@@ -1838,11 +1838,17 @@ export class DiffStudio {
   /** Return folder with built-in models (examples/templates) */
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
-    folder.onSelected.subscribe(() => {
+    folder.onSelected.subscribe(async () => {
+      //const func = await grok.functions.find('DiffStudio:runDiffStudio');
+      const func: DG.Func = DG.Func.find({package: _package.name, name: 'runDiffStudio'})[0];
+      const funcCall = func.prepare({});
+      await funcCall.call();
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
-      grok.shell.addPreview(view, undefined, undefined, null);
-      view.basePath = 'apps/DiffStudio/';
+      view.parentCall = funcCall;
+
+      setTimeout(() => grok.shell.addPreview(view, undefined, undefined, null), 200);
+      //view.basePath = 'apps/DiffStudio/';
       view.path = `${title}`;
     });
 
