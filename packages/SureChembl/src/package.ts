@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/surechembl.css';
 import {downloadPatentDocuments} from './download-patents';
+import {SearchType} from './constants';
 
 export const _package = new DG.Package();
 
@@ -56,7 +57,8 @@ function patentSearch(molecule: string,
 
   const molLimit = ui.input.int('Molecules limit', {value: 10});
   DG.debounce(molLimit.onChanged, 1000).subscribe(() => {
-    runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit, similarityThreshold?.value ?? undefined);
+    runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
+      isSimilarity ? SearchType.similarity: SearchType.substructure, similarityThreshold?.value ?? undefined);
   });
 
   widget.append(molLimit.root);
@@ -65,35 +67,62 @@ function patentSearch(molecule: string,
   if (isSimilarity) {
     similarityThreshold = ui.input.float('Similarity cutoff', {value: defaultSimilarityThreshold, min: 0, max: 1, step: 0.05, showSlider: true});
     DG.debounce(similarityThreshold.onChanged, 1000).subscribe(() => {
-      runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit, similarityThreshold!.value ?? defaultSimilarityThreshold);
+      runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
+        isSimilarity ? SearchType.similarity: SearchType.substructure, similarityThreshold!.value ?? defaultSimilarityThreshold);
     });
     widget.append(similarityThreshold.root);
   }
 
   widget.append(compsHost);
 
-  runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
+  runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit, isSimilarity ? SearchType.similarity: SearchType.substructure,
     similarityThreshold && similarityThreshold.value ? similarityThreshold.value : defaultSimilarityThreshold );
   return new DG.Widget(widget);
 }
 
+//these two variables are required to terminate previous searches if new one has started while previous was running
+let currentSimSearch: string = '';
+let currentSubSearch: string = '';
+
+
 function runSearch(molecule: string,
   searchFunction: (molecule: string, limit: number, threshold?: number) => Promise<DG.DataFrame | null>,
-  compsHost: HTMLDivElement, limit: number, threshold?: number) {
+  compsHost: HTMLDivElement, limit: number, searchType: SearchType, threshold?: number) {
+  const currentSearch = `${molecule}|${limit}|${threshold}`;
+  if (searchType === SearchType.substructure) {
+    if (currentSubSearch == currentSearch)
+      return;
+    else
+      currentSubSearch = currentSearch;
+  } else {
+    if (currentSimSearch == currentSearch)
+      return;
+    else
+      currentSimSearch = currentSearch;
+  }
+
   ui.empty(compsHost);
   compsHost.append(ui.loader());
 
-  searchFunction(molecule, limit, threshold).then((table: DG.DataFrame | null) => {
-    updateSearchPanel(table, compsHost);
-  }).catch((err: any) => {
-    if (compsHost.children.length > 0)
-      compsHost.removeChild(compsHost.firstChild!);
+  searchFunction(molecule, limit, threshold)
+    .then((table: DG.DataFrame | null) => {
+      if ((searchType === SearchType.substructure && currentSearch == currentSubSearch) ||
+        (searchType === SearchType.similarity && currentSearch == currentSimSearch))
+        updateSearchPanel(table, compsHost);
+    })
+    .catch((err: any) => {
+      if ((searchType === SearchType.substructure && currentSearch !== currentSubSearch) ||
+        (searchType === SearchType.similarity && currentSearch !== currentSimSearch))
+        return;
 
-    const div = ui.divText('Error');
-    grok.shell.error(err);
-    ui.tooltip.bind(div, `${err}`);
-    compsHost.appendChild(div);
-  });
+      if (compsHost.children.length > 0)
+        compsHost.removeChild(compsHost.firstChild!);
+
+      const div = ui.divText('Error');
+      grok.shell.error(err);
+      ui.tooltip.bind(div, `${err}`);
+      compsHost.appendChild(div);
+    });
 }
 
 function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement) {
