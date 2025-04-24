@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -63,8 +64,8 @@ export class SankeyViewer extends DG.JsViewer {
   nodeWidth?: number;
   nodePadding?: number;
 
-  sourceCol?: DG.Column;
-  targetCol?: DG.Column;
+  sourceCol: DG.Column | null = null;
+  targetCol: DG.Column | null = null;
 
   constructor() {
     super();
@@ -131,9 +132,9 @@ export class SankeyViewer extends DG.JsViewer {
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
     const selectedIndexes = this.filter.getSelectedIndexes();
     const { rowCount } = this.dataFrame;
-    const filteredIndexList = selectedIndexes.length > 0 
-    ? selectedIndexes 
-    : Array.from({ length: rowCount }, (_, index) => index);
+    const filteredIndexList = selectedIndexes.length > 0 ?
+      selectedIndexes :
+      Array.from({ length: rowCount }, (_, index) => index);
 
 
     const sourceList = new Array<string>(filteredIndexList.length);
@@ -188,10 +189,24 @@ export class SankeyViewer extends DG.JsViewer {
 
   _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
+  rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
+    rowIndex: number, sourceName: string, targetName: string, operator: 'AND' | 'OR' = 'AND',
+  ): boolean {
+    if (!sourceCol || !targetCol)
+      return false;
+
+    const sourceMatch = this.dataFrame.get(sourceCol.name, rowIndex) === sourceName;
+    const targetMatch = this.dataFrame.get(targetCol.name, rowIndex) === targetName;
+
+    switch (operator) {
+    case 'AND': return sourceMatch && targetMatch;
+    case 'OR': return sourceMatch || targetMatch;
+    }
+  }
+
   render() {
     $(this.root).empty();
     if (!this._testColumns()) {
-      // eslint-disable-next-line max-len
       this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.');
       return;
     }
@@ -229,8 +244,7 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('fill', (d: any) => DG.Color.toRgb(this.color!(d.name)))
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.sourceCol!.get(i) === d.name ||
-            this.targetCol!.get(i) === d.name;
+          return this.rowMatchesColumnValues(this.sourceCol, this.targetCol, i, d.name, d.name, 'OR');
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
@@ -239,8 +253,7 @@ export class SankeyViewer extends DG.JsViewer {
       .on('click', (event, d: any) => {
         if (event.defaultPrevented) return; // dragging
         this.dataFrame.selection.handleClick((i) => {
-          return dataFrameSourceColumn.get(i) === d.name ||
-            dataFrameTargetColumn.get(i) === d.name;
+          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.name, d.name, 'OR');
         }, event);
       });
 
@@ -253,15 +266,13 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('stroke-width', (d) => Math.max(1, d.width!))
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.sourceCol!.get(i) === d.source.name &&
-            this.targetCol!.get(i) === d.target.name;
+          return this.rowMatchesColumnValues(this.sourceCol, this.targetCol, i, d.source.name, d.target.name);
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
       .on('click', (event, d: any) => {
         this.dataFrame.selection.handleClick((i) => {
-          return dataFrameSourceColumn.get(i) === d.source.name &&
-            dataFrameTargetColumn.get(i) === d.target.name;
+          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.source.name, d.target.name);
         }, event);
       });
 
