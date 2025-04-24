@@ -549,7 +549,7 @@ export const TreeWizard = Vue.defineComponent({
           {
             !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&  !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={(chosenStepState.value.provider && chosenStepState.value.nqName) ?
+              funcCall={chosenStepState.value.nqName ?
                 DG.Func.byName(chosenStepState.value.nqName!).prepare() :
                 undefined
               }

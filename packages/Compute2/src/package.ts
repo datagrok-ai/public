@@ -122,7 +122,7 @@ export async function TreeWizardTestApp() {}
 //input: funccall call
 //output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
-  const providerFunc = call?.func?.options?.provider;
+  const providerFunc = call?.func?.options?.provider ?? call?.func?.nqName;
   if (!providerFunc)
     throw new Error(`Model ${call?.func?.name} has no provider`);
 
@@ -185,17 +185,16 @@ export async function HistoryTestApp() {
   grok.shell.addView(view);
 }
 
-//name: MockWrapper1
-export async function MockWrapper1() {}
 
-//name: MockProvider1
 //input: object params
 //output: object result
-export async function MockProvider1(params: any) {
+//editor: Compute2:TreeWizardEditor
+//tags: test, compute2
+export async function MockPipeline1(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipeline1',
-    nqName: 'Compute2:MockWrapper1',
-    provider: 'Compute2:MockProvider1',
+    friendlyName: 'Pipeline 1',
+    nqName: 'Compute2:MockPipeline1',
     version: '1.0',
     type: 'static',
     steps: [
@@ -203,10 +202,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'Compute2:LongScript',
       },
-      // {
-      //   id: 'step2',
-      //   nqName: 'Compute2:LongFailingScript',
-      // },
+      {
+        id: 'step2',
+        nqName: 'Compute2:LongFailingScript',
+      },
     ],
     links: [{
       id: 'link1',
@@ -217,18 +216,16 @@ export async function MockProvider1(params: any) {
   return c;
 }
 
-//name: MockWrapper2
-export async function MockWrapper2() {}
 
-
-//name: MockProvider2
 //input: object params
 //output: object result
-export async function MockProvider2(params: any) {
+//editor: Compute2:TreeWizardEditor
+//tags: test, compute2
+export async function MockPipeline2(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
-    nqName: 'Compute2:MockWrapper2',
-    provider: 'Compute2:MockProvider2',
+    nqName: 'Compute2:MockPipeline2',
+    friendlyName: 'Pipeline 2',
     version: '1.0',
     type: 'sequential',
     stepTypes: [{
@@ -283,7 +280,7 @@ export async function MockProvider2(params: any) {
       friendlyName: 'long',
     }, {
       type: 'ref',
-      provider: 'Compute2:MockProvider1',
+      provider: 'Compute2:MockPipeline1',
       version: '1.0',
     }],
     initialSteps: [
@@ -357,9 +354,6 @@ export async function MockProvider2(params: any) {
   return c;
 }
 
-//name: MockWrapper3
-export async function MockWrapper3() {}
-
 //name: TestAdd2
 //input: double a
 //input: double b
@@ -432,9 +426,9 @@ class MyView extends CustomFunctionView {
 }
 
 //name: Custom View (Compute 2 Test)
-//tags: demo, test
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
+//tags: test, compute2
 export async function TestCustomView() {
   const view = new MyView();
   return view;

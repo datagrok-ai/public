@@ -94,6 +94,7 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P> | PipelineSelectorConfiguration<P>;
 
 export type ActionInfo = {
+  id: string;
   position: ActionPositions;
   friendlyName?: string;
   description?: string;
@@ -142,7 +143,6 @@ export interface CustomExport {
 export type PipelineConfigurationBase<P> = {
   id: ItemId;
   nqName?: NqName;
-  provider?: NqName;
   approversGroup?: string;
   version?: string;
   friendlyName?: string;

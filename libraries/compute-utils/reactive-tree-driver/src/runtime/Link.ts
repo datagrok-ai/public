@@ -78,7 +78,7 @@ export class Link {
         if (minfos.length > 1)
           grok.shell.warning(`Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`);
         const nodeActions = minfos.map((minfo) => {
-          const node = state.getNode(minfo.path);
+          const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
           return new Map(actions.map((action) => [action.matchInfo.spec.id, action.uuid]));
         })[0];

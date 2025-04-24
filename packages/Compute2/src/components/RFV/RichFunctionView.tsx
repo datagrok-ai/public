@@ -444,7 +444,7 @@ export const RichFunctionView = Vue.defineComponent({
             <RibbonMenu groupName={category} view={currentView.value}>
               {
                 actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
-                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
+                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
                 </span>, [[tooltip, action.description]]))
               }
             </RibbonMenu>)
@@ -533,7 +533,7 @@ export const RichFunctionView = Vue.defineComponent({
                     buttonActions.value?.map((action) => Vue.withDirectives(
                       <Button onClick={() => emit('actionRequested', action.uuid)}>
                         { action.icon && <IconFA name={action.icon} /> }
-                        { action.friendlyName ?? action.uuid }
+                        { action.friendlyName ?? action.id }
                       </Button>
                       , [[tooltip, action.description]]))
                   }
