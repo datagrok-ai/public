@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.43.3 (2025-04-24)
+
+Update Compute2 public API
+
 ## 1.43.2 (2025-04-22)
 
 Updated the Fitting feature:
