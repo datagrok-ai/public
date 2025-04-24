@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/surechembl.css';
+import {downloadPatentDocuments} from './download-patents';
 
 export const _package = new DG.Package();
 
@@ -102,26 +103,48 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
     return;
   }
 
-  let totalPatentsDf: DG.DataFrame | null = null;
-  const addAllPatentsToWorkspace = ui.icons.add(async () => {
-    if (!totalPatentsDf) {
-      const totalPatents: PatentInfo[] = Object.values(numPatentsByMol).reduce((acc, val) => acc.concat(val), []);
-      totalPatentsDf = DG.DataFrame.fromObjects(totalPatents)!;
-      await grok.data.detectSemanticTypes(totalPatentsDf);
-    }
-    grok.shell.addTableView(totalPatentsDf);
-  }, 'Add all found patents to workspace');
-  addAllPatentsToWorkspace.classList.add('surechembl-add-all-patents-to-workspace-button');
-  compsHost.append(addAllPatentsToWorkspace);
+  const createAddToWorkspaceButton = (objects: any[], dfName: string, tooltip: string, className: string): HTMLElement => {
+    const addToWorkspaceButton = ui.icons.add(async () => {
+      const df = DG.DataFrame.fromObjects(objects)!;
+      df.name = dfName;
+      await grok.data.detectSemanticTypes(df);
+      grok.shell.addTableView(df);
+    }, tooltip);
+    addToWorkspaceButton.classList.add(className);
+    return addToWorkspaceButton;
+  };
+
+  const downloadPatents = (patentsIds: string[], className: string): HTMLElement => {
+    const downloadPatentsButton = ui.iconFA('arrow-to-bottom', () => {
+      grok.shell.info('Started downloading patents');
+      downloadPatentDocuments(patentsIds).then((res: any) => {
+        const infoDiv = ui.div([ui.divText('Patents download finished')]);
+        const df = DG.DataFrame.fromObjects(res);
+        if (df) {
+          df.name = 'Patents download results';
+          const openResultsButton = ui.button('Open', () => {
+            grok.shell.addTableView(DG.DataFrame.fromObjects(res)!);
+          });
+          infoDiv.append(openResultsButton);
+        }
+        grok.shell.info(infoDiv);
+      });
+    }, 'Download patents');
+    downloadPatentsButton.classList.add(className);
+    return downloadPatentsButton;
+  };
 
   const numPatentsByMol: {[key: string]: PatentInfo[]} = {};
   const similarities: {[key: string]: number} = {};
   const isSimilarity = table.col('similarity');
+  const patentsIdsByMol: {[key: string]: string[]} = {};
 
   for (let i = 0; i < table.rowCount; i++) {
     const smiles: string = table.col('smiles')?.get(i);
     if (!numPatentsByMol[smiles])
       numPatentsByMol[smiles] = [];
+    if (!patentsIdsByMol[smiles])
+      patentsIdsByMol[smiles] = [];
     const patentId = table.col('doc_id')?.get(i);
     const patentInfo: PatentInfo = {
       smiles: smiles,
@@ -132,11 +155,18 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
       published: table.col('published')?.get(i).toString(),
     };
     numPatentsByMol[smiles].push(patentInfo);
+    patentsIdsByMol[smiles].push(patentId);
     if (isSimilarity) {
       if (!similarities[smiles])
         similarities[smiles] = table.col('similarity')?.get(i);
     }
   }
+
+  const addAllPatentsToWorkspace = createAddToWorkspaceButton(Object.values(numPatentsByMol).reduce((acc, val) => acc.concat(val), []),
+    `All patents`, 'Add all found patents to workspace', 'surechembl-add-all-patents-to-workspace-button');
+  const downloadAllPatentsButton = downloadPatents(Object.values(patentsIdsByMol).reduce((acc, val) => acc.concat(val), []),
+    'surechembl-download-all-patents-to-workspace-button');
+  compsHost.append(ui.divH([addAllPatentsToWorkspace, downloadAllPatentsButton]));
 
   Object.keys(numPatentsByMol).forEach((key: string) => {
     const molHost = ui.div();
@@ -150,15 +180,16 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
       df.columns.remove('smiles');
       return df.plot.grid().root;
     });
-    const addToWorkspaceButton = ui.icons.add(() => {
-      const df = DG.DataFrame.fromObjects(numPatentsByMol[key])!;
-      df.name = `Patents for ${key}`;
-      grok.shell.addTableView(df);
-    }, 'Add table to workspace');
-    addToWorkspaceButton.classList.add('surechembl-add-patents-to-workspace-button');
+
+    const addToWorkspaceButton = createAddToWorkspaceButton(numPatentsByMol[key], `Patents for ${key}`,
+      'Add table to workspace', 'surechembl-add-patents-to-workspace-button');
+    const downloadPatentsButton = downloadPatents(patentsIdsByMol[key], 'surechembl-add-patents-to-workspace-button');
+
     const accPaneHeader = accPane.root.getElementsByClassName('d4-accordion-pane-header');
-    if (accPaneHeader.length)
+    if (accPaneHeader.length) {
       accPaneHeader[0].append(addToWorkspaceButton);
+      accPaneHeader[0].append(downloadPatentsButton);
+    }
     const molDiv = ui.divV([molHost], {style: {paddingBottom: '15px'}});
     if (isSimilarity)
       molDiv.prepend(ui.divText(similarities[key].toFixed(4).toString()));
@@ -204,3 +235,4 @@ export async function sureChemblSimilaritySearch(molecule: string, limit: number
     throw e;
   }
 }
+
