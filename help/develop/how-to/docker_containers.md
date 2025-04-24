@@ -24,8 +24,8 @@ Follow all the best practices for writing dockerfiles in order to make them
 simple, small and efficient.
 
 Example of such
- [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/PepSeA/dockerfiles/Dockerfile)
- is located in PepSeA package.
+ [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/dockerfiles/Dockerfile)
+ is located in Admetica package.
 
 ## 2. Container Configuration
 

@@ -150,7 +150,7 @@ We provide a diverse set of code snippets of the API use, and sample packages wi
   at [GitHub](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)
 
 * Check all our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find
-  there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a
+  there a package [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts) which showcases a
   variety of viewers one can build on Datagrok, or
   a [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), which shows how in-browser
   computations with WebAssembly may be organized on the platform

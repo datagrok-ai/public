@@ -54,9 +54,7 @@ _Links:_
 The platform comes with a diverse set of visualizations (see the
 [Viewers](../../../visualize/viewers/viewers.md) article). Moreover, it is possible to
 [create a custom viewer](../../how-to/develop-custom-viewer.md) using our API. For this task, you can use such libraries
-as `d3`, `three.js`, or `echarts`. Datagrok's public repository contains packages with examples:
-[Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers)
-and [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts). For scientific applications, you may
+as `d3`, `three.js`, or `echarts`. Datagrok’s public repository offers an example implementation in the [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts) package. For scientific applications, you may
 find useful such projects as
 [NGL](https://www.npmjs.com/package/ngl), [RDKit](https://www.npmjs.com/package/@rdkit/rdkit),
 and [OpenChemLib](https://www.npmjs.com/package/openchemlib), but first look at what solutions already exist to

@@ -567,13 +567,12 @@ You can find more inspiring examples in our [public repository](https://github.c
 * JavaScript-based viewers:
   * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
     using the [Echarts](https://echarts.apache.org) framework
-  * [Leaflet](https://github.com/datagrok-ai/labs/tree/master/packages/Leaflet): integrates with
-    the [Leaflet](https://leafletjs.com/) library to build interactive maps
-  * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
-    viewers using various visualization libraries
+  * [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS): integrates with
+    the [OpenLayers](https://openlayers.org/) library to display map tiles, vector data and markers loaded from any source
+  * [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer): showcases building 3‑D visualizations of proteins and other biological structures in JavaScript
 * Scripting viewers (R, Python, Julia):
-  * [ChaRPy](https://github.com/datagrok-ai/labs/tree/master/packages/ChaRPy): translates a Datagrok viewer to
-    Python and R code using scripting viewers for the respective programming languages
+  <!--* [ChaRPy](https://github.com/datagrok-ai/labs/tree/master/packages/ChaRPy): translates a Datagrok viewer to
+    Python and R code using scripting viewers for the respective programming languages-->
   * [Demo]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script

@@ -5,7 +5,7 @@ title: "Extending Datagrok"
 Datagrok is built highly extensible, composable and customizable. Many parts of the Datagrok platform can be enhanced by
 plugins using our [JavaScript API](js-api.md). The plugins are structured and delivered to the platform
 using [Datagrok packages](../develop.md#packages). Many features of the platform, such as a
-[Timelines](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) or
+[Timelines](https://github.com/datagrok-ai/public/tree/master/packages/Charts#timelines) or
 [cheminformatics package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), are already built as
 plugins. It is straightforward to create your own ones, using
 the [existing packages](https://github.com/datagrok-ai/public/tree/master/packages) as examples, and following

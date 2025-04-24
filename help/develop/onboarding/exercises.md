@@ -1021,6 +1021,6 @@ A simple keyword search in the ENA database (with navigation)
 
 [020]: ../../access/open-api#troubleshooting "OpenAPI connections troubleshooting"
 
-[021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
+<!--[021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"-->
 
 [022]: #exercise-9-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"

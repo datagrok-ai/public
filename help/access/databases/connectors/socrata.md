@@ -2,7 +2,7 @@
 title: "Socrata"
 ---
 
-Provides access to various data sources based on [Socrata](https://www.tylertech.com/products/socrata)
+Provides access to various data sources based on [Socrata](https://open-source.socrata.com/)
 server using Socrata Query.
 
 ## Connection parameters

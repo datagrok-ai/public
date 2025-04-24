@@ -79,7 +79,7 @@ calculated for a column.
 If the columns you are working with contain a lot of unique categories, use a special sampling
 method `DG.Detector.sampleCategories()` to run your checks on a random subset of column values (see an example in the
 public package
-[NglViewer](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer/detectors.js)).
+[Biostructure Viewer](https://github.com/datagrok-ai/public/blob/master/packages/BiostructureViewer/detectors.js)).
 
 Empty values deserve special attention: make sure you don't match them with your semantic type, for example, empty
 strings should not match your regular expressions. Otherwise, this type might be assigned to a column consisting solely
