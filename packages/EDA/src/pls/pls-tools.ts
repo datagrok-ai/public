@@ -30,8 +30,11 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
+  isQuadratic?: boolean,
   names : DG.Column | undefined,
 };
+
+type TypedArray = Int32Array | Float32Array | Uint32Array | Float64Array;
 
 /** Return lines */
 export function getLines(names: string[]): DG.FormulaLine[] {
@@ -113,12 +116,64 @@ function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
   return DG.Column.fromFloat32Array('Debiased', debiased, samples);
 }
 
+/** */
+function getQuadraticPlsInput(input: PlsInput): PlsInput {
+  if (!input.isQuadratic)
+    return input;
+
+  const cols: DG.Column[] = input.features.toList();
+  const colsCount = cols.length;
+  const rowsCount = input.table.rowCount;
+  const quadrCols: DG.Column[] = [];
+  let col1: DG.Column;
+  let raw1: TypedArray;
+  let col2: DG.Column;
+  let raw2: TypedArray;
+  let qaudrRaw: Float32Array;
+
+  for (let i = 0; i < colsCount; ++i) {
+    col1 = cols[i];
+    raw1 = col1.getRawData();
+
+    for (let j = i; j < colsCount; ++j) {
+      col2 = cols[j];
+      raw2 = col2.getRawData();      
+      qaudrRaw = new Float32Array(rowsCount);
+
+      for (let k = 0; k < rowsCount; ++k)
+        qaudrRaw[k] = raw1[k] * raw2[k];
+
+      const quadrCol = DG.Column.fromFloat32Array(`${col1.name} x ${col2.name}`, qaudrRaw);
+
+      if (quadrCol.stats.stdev > 0)
+        quadrCols.push(quadrCol);
+    }
+  }
+
+  const extendedTable = DG.DataFrame.fromColumns(cols.concat(quadrCols));
+  //grok.shell.addTableView(extendedTable);
+
+  return {
+    table: extendedTable,
+    features: extendedTable.columns,
+    isQuadratic: true,
+    names: input.names,
+    predict: input.predict,
+    components: input.components,
+  };
+}
+
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
+  const sourceTable = input.table;
+
+  if (input.isQuadratic)
+    input = getQuadraticPlsInput(input);
+
   const result = await getPlsAnalysis(input);
 
   const plsCols = result.tScores;
-  const cols = input.table.columns;
+  const cols = sourceTable.columns;
   const features = input.features;
   const featuresNames = features.names();
   const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
@@ -132,7 +187,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  const view = grok.shell.tableView(input.table.name);
+  const view = grok.shell.tableView(sourceTable.name);
 
   // 0.1 Buffer table
   const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
@@ -140,7 +195,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     result.regressionCoefficients,
   ]);
 
-  loadingsRegrCoefsTable.name = `${input.table.name}(${TITLE.ANALYSIS})`;
+  loadingsRegrCoefsTable.name = `${sourceTable.name}(${TITLE.ANALYSIS})`;
   grok.shell.addTable(loadingsRegrCoefsTable);
 
   // 0.2. Add X-Loadings
@@ -154,7 +209,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const pred = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
-  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(input.table, {
+  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(sourceTable, {
     title: TITLE.MODEL,
     xColumnName: input.predict.name,
     yColumnName: pred.name,
@@ -203,7 +258,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.2) create scatter
-  const scoresScatter = DG.Viewer.scatterPlot(input.table, {
+  const scoresScatter = DG.Viewer.scatterPlot(sourceTable, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
@@ -224,7 +279,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   //      here, we use notations from this paper
   const q = result.yLoadings.getRawData();
   const p = result.xLoadings.map((col) => col.getRawData());
-  const n = input.table.rowCount;
+  const n = sourceTable.rowCount;
   const m = featuresNames.length;
   const A = input.components;
   const yExplVars = new Float32Array(A);
@@ -249,7 +304,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
-  explVarsDF.name = `${input.table.name}(${TITLE.EXPL_VAR})`;
+  explVarsDF.name = `${sourceTable.name}(${TITLE.EXPL_VAR})`;
   grok.shell.addTable(explVarsDF);
 
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
@@ -381,8 +436,16 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);
 
+  // quadratic/linear model
+  let isQuadratic = false;
+  const isQuadraticInput = ui.input.bool(TITLE.QUADRATIC, {
+    value: isQuadratic,
+    tooltipText: HINT.QUADRATIC,
+    onValueChanged: (val) => isQuadratic = val,
+  });
+
   const dlg = ui.dialog({title: dlgTitle, helpUrl: dlgHelpUrl})
-    .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
+    .add(ui.form([predictInput, featuresInput, componentsInput, isQuadraticInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
       dlg.close();
 
@@ -391,6 +454,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
         features: DG.DataFrame.fromColumns(features).columns,
         predict: predict,
         components: components,
+        isQuadratic: isQuadratic,
         names: names,
       }, analysisType);
     }, undefined, dlgRunBtnTooltip)

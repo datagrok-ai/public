@@ -278,6 +278,7 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
     features: features,
     predict: predict,
     components: components,
+    isQuadratic: false,
     names: names,
   });
 }

@@ -37,6 +37,7 @@ export enum TITLE {
   FEATURES = 'Feature names',
   BROWSE = 'Browse',
   ANALYSIS = 'Features Analysis',
+  QUADRATIC = 'Quadratic',
 }
 
 /** Tooltips */
@@ -47,6 +48,7 @@ export enum HINT {
   PLS = 'Compute PLS components',
   MVA = 'Perform multivariate analysis',
   NAMES = 'Names of data samples',
+  QUADRATIC = 'Specifies whether to include squared terms as additional predictors in the PLS model',
 }
 
 /** Links to help */
