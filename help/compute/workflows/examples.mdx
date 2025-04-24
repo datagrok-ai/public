@@ -3,4 +3,30 @@ title: "Examples"
 sidebar_position: 4
 ---
 
+### Development setup and test
+
+Setup a dev environment as described
+[here](../develop/dev-process/set-up-environment).
+
+To create a package run the following commands:
+
+```
+grok create myworkflowpackage
+cd myworkflowpackage
+npm i @datagrok-libraries/compute-api
+```
+
+Add the follwing code to `src/package.ts`
 __TODO__
+
+
+After run the following from the package root directory (change local to
+the actual Datagrok instance if needed).
+```
+ run build && grok publish local --release
+```
+
+__TODO gif with results__
+
+
+__TODO More real examples__
