@@ -6,13 +6,14 @@ import '../css/aizynthfinder.css';
 import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
-import {SAMPLE_TREE} from './mock-data';
+import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
 
 export const _package = new DG.Package();
 
 const STORAGE_NAME = 'retrosynthesis';
 const KEY = 'config';
 const DEFAULT_CONFIG_NAME = 'default';
+const DEMO_MOLECULE = 'demo_molecule';
 
 //name: CalculateRetroSynthesisPaths
 //meta.cache: all
@@ -33,7 +34,7 @@ export async function calculateRetroSynthesisPaths(molecule: string, configName?
   console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
   const resJson = await response.json();
   if (!resJson['success'])
-    throw new Error('Error occured during paths generation');
+    throw new Error(`Error occured during paths generation: ${resJson['error']}`);
 
   return resJson['result'];
 }
@@ -45,34 +46,36 @@ export async function calculateRetroSynthesisPaths(molecule: string, configName?
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
-  if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule))
-    return new DG.Widget(ui.divText('Molecule is empty'));
-  if (DG.chem.isSmarts(molecule) || isFragment(molecule))
-    return new DG.Widget(ui.divText('Not applicable for smarts or moleculer fragments'));
+  if (molecule !== DEMO_MOLECULE) {
+    if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule))
+      return new DG.Widget(ui.divText('Molecule is empty'));
+    if (DG.chem.isSmarts(molecule) || isFragment(molecule))
+      return new DG.Widget(ui.divText('Not applicable for smarts or moleculer fragments'));
 
-  //check molecule is valid and convert to smiles
-  try {
-    molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
-  } catch {
-    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+    //check molecule is valid and convert to smiles
+    try {
+      molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+    } catch {
+      return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+    }
   }
 
   const configName = grok.userSettings.getValue(STORAGE_NAME, KEY);
 
-  // Call retrosynthesis function
-  let result: string;
-  try {
-    result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-      {molecule: molecule, configName: configName ?? ''});
-  } catch (e: any) {
-    return new DG.Widget(ui.divText(e));
-  }
+  let paths: Tree[] = [];
+  if (molecule !== DEMO_MOLECULE) {
+    try {
+      const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
+        {molecule: molecule, configName: configName ?? ''});
+      const reactionData: ReactionData = JSON.parse(result);
+      paths = reactionData?.data?.[0]?.trees;
+    } catch (e: any) {
+      return new DG.Widget(ui.divText(e));
+    }
+  } else
+    paths = DEMO_DATA;
 
-  // Parse and process reaction data
   try {
-    const reactionData: ReactionData = JSON.parse(result);
-    const paths: Tree[] = reactionData?.data?.[0]?.trees;
-    // const paths = SAMPLE_TREE;
     if (paths.length) {
       const w = new DG.Widget(createPathsTreeTabs(paths, false).root);
       //workaround to make tree visible in undocked panel
@@ -212,5 +215,42 @@ export async function addUserDefinedConfig(file: DG.FileInfo): Promise<void> {
     grok.shell.error(`Error adding configuration: ${error}`);
     throw error;
   }
+}
+
+//name: Retrosynthesis Demo
+//description: Generate retrosynthesis paths
+//meta.demoPath: Cheminformatics | Retrosynthesis
+export function retrosynthesisDemo(): void {
+  const view = DG.View.create();
+  view.name = 'Retrosynthesis Demo';
+
+  const sketcher = new DG.chem.Sketcher();
+  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5');
+  const retrosynthesisDiv = ui.div('', 'retrosynthesis-demo');
+
+  const container = ui.divH([
+    sketcher.root,
+    retrosynthesisDiv,
+  ], {style: {height: '100%'}});
+
+  view.append(container);
+
+  let demoInited = false;
+  sketcher.onChanged.subscribe(async () => {
+    const smiles = sketcher.getSmiles();
+    if (smiles) {
+      try {
+        ui.empty(retrosynthesisDiv);
+        ui.setUpdateIndicator(retrosynthesisDiv, true, 'Calculating retrosyntehsis paths...');
+        const widget = await retroSynthesisPath(!demoInited ? DEMO_MOLECULE : smiles);
+        demoInited = true;
+        retrosynthesisDiv.append(widget.root);
+        ui.setUpdateIndicator(retrosynthesisDiv, false);
+      } catch (e) {
+        grok.shell.error('Invalid or empty molecule');
+      }
+    }
+  });
+  grok.shell.addPreview(view);
 }
 
