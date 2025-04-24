@@ -465,7 +465,7 @@ export async function runTests(options?: TestExecutionOptions) {
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<any[]> {
     let t = category.tests ?? [];
     const res = [];
-    let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+    // let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = getWidgetsCountSafe();
 
     if (category.clear) {
@@ -485,17 +485,18 @@ export async function runTests(options?: TestExecutionOptions) {
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
-        console.log(`********${isGBEnable}`);
-        if (isGBEnable)
-          await (window as any).gc();
-        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        // console.log(`********${isGBEnable}`);
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
 
-        if (isGBEnable)
-          await (window as any).gc();
+        // if (isGBEnable)
+        //   await (window as any).gc();
         if (testRun)
-          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
+          res.push({ ...testRun,  widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
+        // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
 
         grok.shell.closeAll();
         DG.Balloon.closeAll();
@@ -507,21 +508,22 @@ export async function runTests(options?: TestExecutionOptions) {
           if (options.test.toLowerCase() !== test.name.toLowerCase())
             continue;
 
-        let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        console.log(`********${isGBEnable}`);
-        if (isGBEnable)
-          await (window as any).gc();
-        memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        // console.log(`********${isGBEnable}`);
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
 
-        if (isGBEnable)
-          await (window as any).gc();
+        // if (isGBEnable)
+        //   await (window as any).gc();
         
         if (testRun)
-          res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+          res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+        // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
 
       }
     }
