@@ -20,7 +20,7 @@
     "papaparse": "^5.4.1",
     "path": "^0.12.7",
     "puppeteer": "22.10.0",
-    "puppeteer-screen-recorder": "3.0.6"
+    "puppeteer-screen-recorder": "3.0.3"
   },
   "scripts": {
     "link": "npm link",
