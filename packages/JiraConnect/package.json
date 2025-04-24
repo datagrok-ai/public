@@ -8,7 +8,7 @@
     "email": "ssavenko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
     "cors": "^2.8.5",
     "datagrok-api": "^1.25.0",

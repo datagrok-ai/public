@@ -19,7 +19,7 @@
     }
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.6",
+    "@datagrok-libraries/utils": "^4.5.7",
     "@jbrowse/react-linear-genome-view": "^3.0.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.4",
