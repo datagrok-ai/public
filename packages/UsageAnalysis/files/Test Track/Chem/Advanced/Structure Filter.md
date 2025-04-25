@@ -10,7 +10,7 @@ Open linked datasets
 
 1. Set a filter.
 2. Close the filter panel.
-3. Use Current value > Use as filter.
+3. Use Current value > Use as filter. Check that filter UI is correct
 
 ***
 
@@ -19,24 +19,6 @@ Open linked datasets
 3. Go to the mol column's hamburger menu > filter.
 4. Draw another structure.
 5. Click Add filter.
-
-***
-
-1. Add filters.
-2. View > Layout > Clone View.
-3. Disable filters on the clone.
-3. Close-open the filter panel.
-4. Enable filters.
-5. Clear filters on clone.
-
-***
-
-1. Clone a view.
-2. Open the FP on the original view.
-3. Open the FP on the clone.
-2. Add a structure filter on the clone.
-3. Close the filter on the clone.
-3. Go to the original view and close the FP - the highlight shouldn't remain.
 
 ***
 
