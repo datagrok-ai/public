@@ -863,7 +863,9 @@ export class StateTree {
       if (this.mockMode)
         return of(undefined);
       const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
-      return saveInstanceState(nqName, state, metaData);
+      const item = root.getItem();
+      const version = !isFuncCallNode(item) ? item.config.version : undefined;
+      return saveInstanceState(nqName, state, metaData, version);
     });
   }
 }

@@ -33,10 +33,10 @@ export const HistoryApp = Vue.defineComponent({
       (showHistory.value && func.value) ?
         <History
           func={func.value}
-          showActions={true}
-          showBatchActions={true}
-          isHistory={true}
           onRunChosen={(fc) => props.updateFCBus.next(Vue.markRaw(fc))}
+          allowCompare={true}
+          forceHideInputs={false}
+          showIsComplete={true}
         /> :
         <div></div>
     );

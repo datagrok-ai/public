@@ -61,6 +61,7 @@ export const PipelineView = Vue.defineComponent({
     const buttonActions = Vue.computed(() => props.buttonActions);
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const isRoot = Vue.computed(() => props.isRoot);
 
     const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
 
@@ -92,9 +93,8 @@ export const PipelineView = Vue.defineComponent({
           { (!historyHidden.value && props.funcCall) &&
             <History
               func={props.funcCall.func}
-              showActions
-              showBatchActions
-              isHistory
+              version={!isFuncCallState(state.value) ? state.value.version : undefined}
+              allowOtherVersions={isRoot.value}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.7}

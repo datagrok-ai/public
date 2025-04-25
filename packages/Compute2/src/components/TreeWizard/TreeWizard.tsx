@@ -38,6 +38,9 @@ export const TreeWizard = Vue.defineComponent({
       type: String,
       required: true,
     },
+    version: {
+      type: String,
+    },
     modelName: {
       type: String,
       required: true,
@@ -75,7 +78,7 @@ export const TreeWizard = Vue.defineComponent({
       removeStep,
       moveStep,
       changeFuncCall,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'));
 
     const chosenStepUuid = Vue.ref<string | undefined>();
     const currentView = Vue.computed(() => Vue.markRaw(props.view));

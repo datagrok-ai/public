@@ -119,6 +119,22 @@ export class ModelHandler extends DG.ObjectHandler {
     return missingMandatoryGroups;
   }
 
+  static openVersionSelectDialog(func: DG.Func) {
+    const versions = JSON.parse(func.options['versions'] ? `${func.options['versions']}` : '[]') as string[];
+    if ((versions?.length ?? 0) < 2) {
+      grok.shell.info('No other versions avaliable');
+      return
+    }
+    const dlg = ui.dialog({title: 'Choose version'});
+    const selInput = ui.input.choice('Select version', { items: versions, value: versions[0] });
+    dlg.add(selInput).onOK(() => {
+      const version = selInput.value;
+      const fc = func.prepare({params: {version}});
+      fc.edit();
+    });
+    dlg.show();
+  }
+
   // Checks whether this is the handler for [x]
   override isApplicable(x: any) {
     const js = DG.toJs(x);
@@ -273,6 +289,10 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override init(): void {
+    this.registerParamFunc('Choose version', (func: DG.Func) => {
+      ModelHandler.openVersionSelectDialog(DG.toJs(func));
+    });
+
     this.registerParamFunc('Help', (func: DG.Func) => {
       ModelHandler.openHelp(DG.toJs(func));
     });
