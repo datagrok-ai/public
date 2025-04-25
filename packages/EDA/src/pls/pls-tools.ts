@@ -30,7 +30,7 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
-  isQuadratic?: boolean,
+  isQuadratic: boolean,
   names : DG.Column | undefined,
 };
 
@@ -116,7 +116,7 @@ function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
   return DG.Column.fromFloat32Array('Debiased', debiased, samples);
 }
 
-/** */
+/** Return an input for the quadratic PLS regression */
 function getQuadraticPlsInput(input: PlsInput): PlsInput {
   if (!input.isQuadratic)
     return input;
@@ -151,7 +151,6 @@ function getQuadraticPlsInput(input: PlsInput): PlsInput {
   }
 
   const extendedTable = DG.DataFrame.fromColumns(cols.concat(quadrCols));
-  //grok.shell.addTableView(extendedTable);
 
   return {
     table: extendedTable,
@@ -373,33 +372,62 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     return;
   }
 
-  // responce (to predict)
+  const isPredictValid = () => {
+    for (const col of features)
+      if (col.name === predict.name)
+        return false;
+    return true;
+  };
+
+  const isCompConsistent = () => {
+    if (components < 1)
+      return false;
+
+    const n = features.length;
+
+    if (isQuadratic)      
+      return components <= (n + 1) * n / 2 + n;
+
+    return components <= n;
+  }
+
+  // response (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
-    predict = value;
-    updateIputs();
-  }, filter: (col: DG.Column) => isValidNumeric(col)},
-  );
-  predictInput.setTooltip(HINT.PREDICT);
+  const predictInput = ui.input.column(TITLE.PREDICT, {
+    table: table,
+    value: predict,
+    onValueChanged: (value) => {
+      predict = value;
+      updateIputs();
+    },
+    filter: (col: DG.Column) => isValidNumeric(col),
+    tooltipText: HINT.PREDICT,
+  });
 
   // predictors (features)
   let features: DG.Column[];
-  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
-  featuresInput.onInput.subscribe(() => updateIputs());
-  featuresInput.setTooltip(HINT.FEATURES);
+  const featuresInput = ui.input.columns(TITLE.USING, {
+    table: table,
+    available: numColNames,
+    value: numCols.slice(0, numCols.length - 1),
+    onValueChanged: (val) => {
+      features = val;
+      updateIputs();      
+    },
+    tooltipText: HINT.FEATURES,
+  });
 
   // components count
   let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
-  const componentsInput = ui.input.forProperty(DG.Property.fromOptions({
-    name: TITLE.COMPONENTS,
-    inputType: INT,
-    defaultValue: components,
-    //@ts-ignore
+  const componentsInput = ui.input.int(TITLE.COMPONENTS, {
+    value: components,
     showPlusMinus: true,
-    min: COMPONENTS.MIN,
-  }));
-  componentsInput.onInput.subscribe(() => updateIputs());
-  componentsInput.setTooltip(HINT.COMPONENTS);
+    onValueChanged: (val) => {
+      components = val;
+      updateIputs();
+    },
+    tooltipText: HINT.COMPONENTS,
+  });
 
   let dlgTitle: string;
   let dlgHelpUrl: string;
@@ -415,14 +443,57 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     dlgRunBtnTooltip = HINT.MVA;
   }
 
+  const setStyle = (valid: boolean, element: HTMLElement, tooltip: string, errorMsg: string) => {
+    if (valid) {
+      element.style.color = COLOR.VALID_TEXT;
+      element.style.borderBottomColor = COLOR.VALID_LINE;
+      ui.tooltip.bind(element, tooltip);
+    } else {
+      element.style.color = COLOR.INVALID;
+      element.style.borderBottomColor = COLOR.INVALID;
+      ui.tooltip.bind(element, () => {
+        const hint = ui.label(tooltip);
+        const err = ui.label(errorMsg);
+        err.style.color = COLOR.INVALID;
+        return ui.divV([hint, err]);
+      });
+    }    
+  };
+
   const updateIputs = () => {
-    featuresInput.value = featuresInput.value.filter((col) => col !== predict);
-    features = featuresInput.value;
+    const predValid = isPredictValid();
+    let compValid: boolean;
 
-    componentsInput.value = min(max(componentsInput.value ?? components, COMPONENTS.MIN), features.length);
-    components = componentsInput.value;
+    if (predValid) {
+      setStyle(true, predictInput.input, HINT.PREDICT, '');
+      setStyle(true, featuresInput.input, HINT.FEATURES, '');
+    } else {
+      setStyle(false, predictInput.input, HINT.PREDICT, ERROR_MSG.PREDICT);
+      setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.PREDICT);
+    }
 
-    dlg.getButton(TITLE.RUN).disabled = (features.length === 0) || (components <= 0);
+    if (components < 1) {
+      setStyle(false, componentsInput.input, HINT.COMPONENTS, ERROR_MSG.COMPONENTS);
+      compValid = false;  
+    } else {
+      compValid = isCompConsistent();
+
+      if (compValid) {
+        setStyle(true, componentsInput.input, HINT.COMPONENTS, '');
+        if (predValid)
+          setStyle(true, featuresInput.input, HINT.FEATURES, '');
+      } else {
+        const errMsg = isQuadratic ? ERROR_MSG.COMP_QUA_PLS : ERROR_MSG.COMP_LIN_PLS;
+        setStyle(false, componentsInput.input, HINT.COMPONENTS, errMsg);
+        setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.ENOUGH);
+      }
+    }
+
+    const isValid = predValid && compValid;
+
+    dlg.getButton(TITLE.RUN).disabled = !isValid;
+
+    return isValid;
   };
 
   // names of samples
@@ -441,7 +512,10 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const isQuadraticInput = ui.input.bool(TITLE.QUADRATIC, {
     value: isQuadratic,
     tooltipText: HINT.QUADRATIC,
-    onValueChanged: (val) => isQuadratic = val,
+    onValueChanged: (val) => {
+      isQuadratic = val;
+      updateIputs();
+    },
   });
 
   const dlg = ui.dialog({title: dlgTitle, helpUrl: dlgHelpUrl})

@@ -13,6 +13,12 @@ export enum ERROR_MSG {
   NO_COLS = 'No numeric columns without missing values',
   ONE_COL = 'No columns to be used as features (just one numeric columns without missing values)',
   EMPTY_DF = 'Dataframe is empty',
+  PREDICT = 'Predictors must not contain a response variable',
+  ENOUGH = 'Not enough of features',
+  COMP_LIN_PLS = 'Components count must be less than the number of features',
+  COMP_QUA_PLS = 'Too large components count for the quadratic PLS regression',
+  COMPONENTS = 'Components count must be greater than 1',
+  INV_INP = 'Invalid inputs',
 }
 
 /** Widget titles */
@@ -98,6 +104,9 @@ export const DELAY = 2000;
 export enum COLOR {
   AXIS = '#838383',
   CIRCLE = '#0000FF',
+  INVALID = '#EB6767',
+  VALID_TEXT = '#4d5261',
+  VALID_LINE = '#dbdcdf',
 };
 
 /** Intro markdown for demo app */
@@ -133,7 +142,7 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.REGR_COEFS,
-    text: 'Parameters of the obtained linear model: features make different contribution to the prediction.',
+    text: 'Parameters of the obtained model: features make different contribution to the prediction.',
   },
   {
     caption: TITLE.EXPL_VAR,
