@@ -42,6 +42,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
           cache: maven
+        continue-on-error: true  
       - name: Debug Cache Key
         run: |
           echo "Cache Key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}"
@@ -50,7 +51,8 @@ jobs:
           echo "Listing contents of ~/.m2/repository:"
           ls -R ~/.m2/repository
           echo "Listing contents of pom.xml:"
-          cat ./connectors/pom.xml     
+          cat ./connectors/pom.xml
+          exit 1
       - name: Build with Maven
         working-directory: ./connectors
         run: mvn --batch-mode -DskipTests package
