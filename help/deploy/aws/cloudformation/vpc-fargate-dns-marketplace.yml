@@ -2321,6 +2321,7 @@ Resources:
           - ecs:ListTaskDefinitions
           - ecs:DeregisterTaskDefinition
           - ecs:RegisterTaskDefinition
+          - ec2:DescribeInstances
           Condition: {}
           Effect: Allow
           Resource: '*'
@@ -2423,7 +2424,7 @@ Resources:
           Effect: Allow
           Resource:
             Fn::Sub:
-            - ${log_group}:log-stream:grok_spawner/*
+            - ${log_group}
             - log_group:
                 Fn::GetAtt:
                 - DatagrokLogGroup
