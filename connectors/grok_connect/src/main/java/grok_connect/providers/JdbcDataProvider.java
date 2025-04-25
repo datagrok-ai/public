@@ -58,7 +58,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
-    public Properties getProperties(DataConnection conn) {
+    public Properties getProperties(DataConnection conn) throws GrokConnectException {
         return defaultConnectionProperties(conn);
     }
 
