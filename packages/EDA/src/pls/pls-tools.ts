@@ -372,6 +372,11 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     return;
   }
 
+  let features: DG.Column[] = numCols.slice(0, numCols.length - 1);
+  let predict = numCols[numCols.length - 1];
+  let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
+  let isQuadratic = false;
+
   const isPredictValid = () => {
     for (const col of features)
       if (col.name === predict.name)
@@ -392,10 +397,10 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   }
 
   // response (to predict)
-  let predict = numCols[numCols.length - 1];
   const predictInput = ui.input.column(TITLE.PREDICT, {
     table: table,
     value: predict,
+    nullable: false,
     onValueChanged: (value) => {
       predict = value;
       updateIputs();
@@ -405,11 +410,10 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   });
 
   // predictors (features)
-  let features: DG.Column[];
   const featuresInput = ui.input.columns(TITLE.USING, {
     table: table,
     available: numColNames,
-    value: numCols.slice(0, numCols.length - 1),
+    value: features,
     onValueChanged: (val) => {
       features = val;
       updateIputs();      
@@ -418,7 +422,6 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   });
 
   // components count
-  let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
   const componentsInput = ui.input.int(TITLE.COMPONENTS, {
     value: components,
     showPlusMinus: true,
@@ -508,7 +511,6 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);
 
   // quadratic/linear model
-  let isQuadratic = false;
   const isQuadraticInput = ui.input.bool(TITLE.QUADRATIC, {
     value: isQuadratic,
     tooltipText: HINT.QUADRATIC,
