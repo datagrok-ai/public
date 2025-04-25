@@ -17,8 +17,31 @@ npm i @datagrok-libraries/compute-api
 ```
 
 Add the follwing code to `src/package.ts`
-__TODO__
+```
+//tags: model
+//editor: Compute2:TreeWizardEditor
+//input: object params
+//output: object result
+export async function MyWorkflow(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'my_workflow',
+    nqName: 'myworkflowpackage:MyWorkflow',
+    type: 'static',
+    steps: [{
+      id: 'step1',
+      nqName: 'myworkflowpackage:MyAddScript',
+    }]
+  };
+  return c;
+}
 
+//input: double a
+//input: double b
+//output: double c
+export function MyAddScript(a: number, b: number) {
+  return a + b;
+}
+```
 
 After run the following from the package root directory (change local to
 the actual Datagrok instance if needed).
@@ -28,5 +51,6 @@ the actual Datagrok instance if needed).
 
 __TODO gif with results__
 
+### Some realistic demos/examples
 
 __TODO More real examples__

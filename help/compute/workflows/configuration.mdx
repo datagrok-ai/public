@@ -3,13 +3,63 @@ title: "Configuration"
 sidebar_position: 1
 ---
 
-Configuration is a typescript object with type
-`PipelineConfiguration`. In this section the configuration object will
+In this section the configuration object will
 be described in depth, including an intial workflow package setup.
 
 ### Setup
 
+There is a example of a minimal setup
+[here](examples#development-setup-and-test). To register a pipeline a package
+function with at least these annotations is needed:
+```
+//tags: model
+//editor: Compute2:TreeWizardEditor
+//input: object params
+//output: object result
+```
+
+Tag `model` means that it will be added to ModelHub (__TODO__ Docs and
+link), and `editor` specifies that when launching via ModelHub a
+workflow will be started. Output of the function should be of type
+`PipelineConfiguration`, and input will be an object with `version`
+field, so it is possible to have multiple workflow versions at the
+same time.
+
+__TODO__ multi-versioning
+
+### General conventions
+
+Configuration is a n-ary tree of JavaScript objects and arrays of type
+`PipelineConfiguration`.
+
+- Most objects will have a mandatory `id` field, for definitions
+  object `id` should be unique inside an array, for reference arrays
+  `id` might be repeated.
+- If a field could have configuration objects of different types,
+  field `type` is used to specify the type. Typescript will figure out
+  type of the object and its fields by `type` field.
+
 ### Pipelines
+
+Pipeline is an object of `PipelineConfiguration`, which is used to
+define a set of steps. Each step is either another
+[pipeline](#pipelines), a [pipeline reference](#reusing-pipelines) or a
+[script node](#script-nodes).
+
+There are three pipeline types, specified by the `type` field:
+
+- `static`
+- `parallel`
+- `sequential`
+
+[Static pipeline](#static-pipelines) is an immutable sequence of steps. It is using
+field `steps` to define its steps.
+
+Parallel and sequential are [dynamic
+pipelines](#dynamic-pipelines). The difference between them is mostly
+conventional, sequential pipeline is the name suggest a mutable
+sequence of steps, and parallel pipeline steps should not depend on
+each other. Both are using `stepTypes` field to define steps.
 
 ### Static pipelines
 
