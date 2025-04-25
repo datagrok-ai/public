@@ -101,8 +101,8 @@ export function modelCatalog() {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
-  await makeModelTreeBrowser(treeNode);
+export function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
+  makeModelTreeBrowser(treeNode);
 }
 
 ////
