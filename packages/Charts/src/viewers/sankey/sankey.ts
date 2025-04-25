@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import {drag} from 'd3-drag';
 import {ScaleOrdinal, scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
+import * as graphlib from 'graphlib';
 
 import {
   sankey,
@@ -20,6 +21,7 @@ import {
 } from 'd3-sankey';
 
 import '../../../css/sankey-viewer.css';
+import { MessageHandler } from '../../utils/utils';
 
 interface Node {
   node: number,
@@ -175,6 +177,18 @@ export class SankeyViewer extends DG.JsViewer {
     };
   }
 
+  detectGraphCycles(graph: { nodes: Node[], links: Link[] }): string[][] {
+    const g = new graphlib.Graph();
+
+    for (const link of graph.links) {
+      const source = graph.nodes[link.source].name;
+      const target = graph.nodes[link.target].name;
+      g.setEdge(source, target);
+    }
+
+    return graphlib.alg.findCycles(g);
+  }
+
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
     if (this.initialized) {
@@ -186,8 +200,6 @@ export class SankeyViewer extends DG.JsViewer {
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
-
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
   rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
     rowIndex: number, sourceName: string, targetName: string, operator: 'AND' | 'OR' = 'AND',
@@ -207,11 +219,17 @@ export class SankeyViewer extends DG.JsViewer {
   render() {
     $(this.root).empty();
     if (!this._testColumns()) {
-      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.');
+      MessageHandler._showMessage(this.root, 'The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.', 'd4-viewer-error');
       return;
     }
 
     this.prepareData();
+
+    const cycles = this.detectGraphCycles(this.graph);
+    if (cycles.length > 0) {
+      MessageHandler._showMessage(this.root, 'The graph contains cycles. Please remove circular dependencies.', 'd4-viewer-error');
+      return;
+    }
 
     const width = this.root.parentElement!.clientWidth - this.margin!.left - this.margin!.right;
     const height = this.root.parentElement!.clientHeight - this.margin!.top - this.margin!.bottom;
