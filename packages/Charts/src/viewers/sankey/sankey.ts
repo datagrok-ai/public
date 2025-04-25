@@ -70,9 +70,9 @@ export class SankeyViewer extends DG.JsViewer {
   constructor() {
     super();
     // Properties
-    this.sourceColumnName = this.string('sourceColumnName', '', {nullable: false});
-    this.targetColumnName = this.string('targetColumnName', '', {nullable: false});
-    this.valueColumnName = this.string('valueColumnName', '', {nullable: false});
+    this.sourceColumnName = this.string('sourceColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.CATEGORICAL});
+    this.targetColumnName = this.string('targetColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.CATEGORICAL});
+    this.valueColumnName = this.string('valueColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL});
     this.addRowSourceAndFormula();
 
     this.initialized = false;
