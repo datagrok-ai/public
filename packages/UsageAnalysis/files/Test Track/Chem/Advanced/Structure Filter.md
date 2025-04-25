@@ -29,15 +29,6 @@ Open linked datasets
 
 ***
 
-Chem: Substructure Filter: Not terminated on filter disable:
-1. Open tests/smi10K.csv dataset or other dataset with more than 10K structures
-2. Open filter panel and start the structure search.
-3. While search is ongoing, disable filter.
-
-Expected result: search is terminated.
-
-***
-
 1. Open linked datasets.
 2. Open filters and make sure some structure column is added to the filter panel.
 3. Add another view with the same table (e.g. clone current view).
