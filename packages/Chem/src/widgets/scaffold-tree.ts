@@ -1538,6 +1538,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const rowCount = this.dataFrame.rowCount;
     const columnName = this.title;
     this.fragmentsColumn = this.dataFrame.columns.byName(columnName);
+    this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
     const isNewColumn = !this.fragmentsColumn;
 
     // First, we create an auxiliary column by prefixing its name with '~'.
