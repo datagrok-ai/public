@@ -83,8 +83,8 @@ As a result of the function execution you should see an info notification with u
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
 
 Details: [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md),
-[How to define semantic type detectors](../how-to/define-semantic-type-detectors.md),
-[How to add an info panel](../how-to/add-info-panel.md).
+[How to define semantic type detectors](../how-to/functions/define-semantic-type-detectors.md),
+[How to add an info panel](../how-to/ui/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.
 
@@ -160,8 +160,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
 7. Now let's put the result of the previously created `complement` function into an
-   [info panel](../how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to
-   allow Datagrok system recognize it and upload properly (see an example [here](../how-to/add-info-panel.md#functions)).
+   [info panel](../how-to/ui/add-info-panel.md): Create function `complementWidget` and add special comments block to
+   allow Datagrok system recognize it and upload properly (see an example [here](../how-to/ui/add-info-panel.md#functions)).
 
    ```javascript
     //name: complementWidget
@@ -383,9 +383,9 @@ functions.
    </div>
    </details>
    :::
-1. Read instructions for [package testing](../../develop/how-to/add-package-tests.md#testing-functions) and add several tests
+1. Read instructions for [package testing](../how-to/tests/add-package-tests.md#testing-functions) and add several tests
    to the `CountSubsequencePython` script annotation. Publish you package and check that tests run successfully in
-   the [Test Manager](../../develop/how-to/test-packages.md#test-manager), or by calling the `test` function of your package.
+   the [Test Manager](../how-to/tests/test-packages.md#test-manager), or by calling the `test` function of your package.
 
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
@@ -439,7 +439,7 @@ functions.
 *Prerequisites:* basic SQL knowledge
 
 *Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
-[How to Access Data](../../develop/how-to/access-data)
+[How to Access Data](../how-to/db/access-data.md)
 
 *Note:* Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -478,7 +478,7 @@ from our server.
       command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../../develop/how-to/access-data#creating-queries), update credentials, create the '.sql' file under the `queries` folder, and
+   as instructed [here](../how-to/db/access-data.md#creating-queries), update credentials, create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -499,8 +499,8 @@ from our server.
 
 *Prerequisites:* basic TypeScript/JavaScript knowledge
 
-*Details:* [How to access data](../../develop/how-to/access-data),
-[How to work with package files](../../develop/how-to/work-with-package-files.md)
+*Details:* [How to access data](../how-to/db/access-data.md),
+[How to work with package files](../how-to/packages/work-with-package-files.md)
 
 *You will learn*: different ways to read files programmatically
 
@@ -886,7 +886,7 @@ contained in a currently selected grid cell.
    }
    ```
 
-2. Use [`fetchProxy`](../../develop/how-to/access-data#rest-endpoints) to get a sequence for the potential corresponding ENA ID in
+2. Use [`fetchProxy`](../how-to/db/access-data.md#rest-endpoints) to get a sequence for the potential corresponding ENA ID in
    fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425) Use
    the following structure for the into panel function in your `src/package.ts`:

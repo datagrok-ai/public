@@ -269,7 +269,7 @@ Examples of built-in renderers include molecules, URL based images, fit lines, c
 
 :::note developers
 
-[Create custom cell renderers](../../develop/how-to/custom-cell-renderers.md)
+[Create custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md)
 
 :::
 
@@ -347,7 +347,7 @@ Datagrok supports two types of images in cells: embedded and linked. Supported f
 
 To embed an image, double click a cell and select the source file.
 
-![](../../develop/how-to/binary-cell-renderer.gif)
+![](../../develop/how-to/grid/binary-cell-renderer.gif)
 
 For linked images, Datagrok automatically detects and visualizes images from URLs (starting with "http://" or "https://"
 and ending with a supported image extension) as well as images stored as Datagrok paths (beginning with "System:" and
@@ -484,7 +484,7 @@ Click the hamburger menu on the right of the input field to access these options
 
 <!--To edit column permissions, use:
 `table.col('myColumn').tags['editableBy'] = "username"`. <br/>-->
-[Customize the grid programmatically](../../develop/how-to/customize-grid.md)
+[Customize the grid programmatically](../../develop/how-to/grid/customize-grid.md)
 
 :::
 
@@ -516,7 +516,7 @@ To change a cell's format:
 See:
 
 * [Formatting notation](../../govern/catalog/tags.md#format) for dates and numbers
-* [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
+* [Formatting via JS API](../../develop/how-to/grid/customize-grid.md#formatting)
 
 :::
 

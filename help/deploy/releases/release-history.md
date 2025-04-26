@@ -2076,7 +2076,7 @@ We've separated **Images** and **Docker Containers** in the platform.
 
 We've added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added canvas grid cell renderers to the gridext library to render multiple values in a grid cell using a vertical layout.
 * Cell renderer now can estimate the desired cell size based on the entire column
@@ -2813,7 +2813,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ### Improvements for developers
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added the ability to specify default viewer settings for the dataframe,
   see [annotation](https://github.com/datagrok-ai/public/issues/1395#issuecomment-1364325511).

@@ -51,7 +51,7 @@ grok add function panel <name>
 grok add script panel <language> <name>
 ```
 
-*Details:* [How to add an info panel](how-to/add-info-panel.md)
+*Details:* [How to add an info panel](how-to/ui/add-info-panel.md)
 
 ## Package initialization
 
@@ -109,14 +109,14 @@ cd <package-name>
 grok add detector <semantic-type-name>
 ```
 
-*Details:* [How to define semantic type detectors](how-to/define-semantic-type-detectors.md)
+*Details:* [How to define semantic type detectors](how-to/functions/define-semantic-type-detectors.md)
 
 ## Cell renderers
 
 Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md). These functions
 are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
-*Details:* [How to develop custom cell renderers](how-to/custom-cell-renderers.md)
+*Details:* [How to develop custom cell renderers](how-to/grid/custom-cell-renderers.md)
 
 ## File viewers
 
@@ -124,14 +124,14 @@ File viewers are used in Datagrok's [file share browser](../access/files/files.m
 to define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 
-*Details:* [How to develop custom file viewers](how-to/create-custom-file-viewers.md)
+*Details:* [How to develop custom file viewers](how-to/files/create-custom-file-viewers.md)
 
 ## File exporters
 
 A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
 Exporters reside in the platform's top menu "export" section.
 
-*Details:* [How to create file exporters](how-to/file-exporters.md)
+*Details:* [How to create file exporters](how-to/files/file-exporters.md)
 
 ## Settings editors
 
@@ -139,4 +139,4 @@ Settings editors work with [package properties](develop.md#package-settings) and
 the `Settings` pane of the context panel. An editor function should return a widget (`DG.Widget`) and be tagged as
 `#packageSettingsEditor`.
 
-*Details:* [How to write custom package settings editors](how-to/custom-package-settings-editors.md)
+*Details:* [How to write custom package settings editors](how-to/packages/custom-package-settings-editors.md)

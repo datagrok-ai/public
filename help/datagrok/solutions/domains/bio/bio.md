@@ -220,7 +220,7 @@ To learn how to use viewers to explore data, complete [this tutorial](https://pu
 
 :::note developers
 
-You can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md).
+You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md).
 
 :::
 
