@@ -989,8 +989,6 @@ dialog-based function which forms such files automatically by a given search inp
 5. (*) You may notice the sequences you get in this order are not too different. Add more diversity to these tables. For
    example, you can use the `offset` parameter of the `GET` query.
 
-## Exercise 11: Test Implementation 
-
 
 <!---
 Search for a keyword to form a table with limits
