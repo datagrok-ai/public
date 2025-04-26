@@ -21,7 +21,6 @@ Explore the following sections to earn how to:
 * [Specify the meaning of your data with semantic types](detect-semantic-type.mdx)
 * Execute, debug, and share your scripts with [Datagrok script editor](datagrok-script-editor.md)
 * [Integrate your scripts in Datagrok UI](integrate-scripts-into-datagrok.mdx)
-* [Automate inputs](automate-inputs.md) with suggestions, autocompletions, and validators.
 * [Manage Conda environments](specify-env.mdx)
 * [Integrate script output into Datagrok](integrate-scripts-into-datagrok.mdx)
 
