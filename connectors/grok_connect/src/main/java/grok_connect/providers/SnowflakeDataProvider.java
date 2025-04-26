@@ -68,6 +68,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     @Override
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
         prepareProvider();
+        if (conn.credentials == null)
+            throw new GrokConnectException("Credentials can't be null");
         String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
         if (GrokConnectUtil.isNotEmpty(method) && method.equals(RSA_METHOD)) {
             SnowflakeBasicDataSource ds = getDataSource(conn);
