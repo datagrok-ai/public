@@ -121,6 +121,7 @@ export class PlsModel {
       predict: target,
       components: components,
       names: undefined,
+      isQuadratic: false,
     });
 
     // 1. Names of features
