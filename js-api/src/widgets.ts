@@ -7,7 +7,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy, Completer} from "./utils";
+import {MapProxy, Completer, Utils} from './utils';
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -67,6 +67,9 @@ export type ICodeEditorOptions = {
   root?: HTMLDivElement;
 }
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+export type MarkdownConfig = {
+  value?: string;
+};
 export type CodeConfig = {
   script?: string;
   mode?: string;
@@ -806,7 +809,7 @@ export class ToolboxPage {
         acc[input.caption] = input;
       }
       return acc;
-    }, {} as Record<string, InputBase>) as Inputs; 
+    }, {} as Record<string, InputBase>) as Inputs;
   }
 
   /** Closes the dialog. */
@@ -1681,7 +1684,7 @@ export class Color {
   static get continuousSchemes(): number[] {
     return api.grok_Color_ContinuousSchemes();
   }
-  
+
 
   static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
     return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
@@ -2503,11 +2506,12 @@ export class MarkdownInput extends JsInputBase<string> {
     this.addCaption(caption ?? '');
   }
 
-  static async create(caption?: string): Promise<MarkdownInput> {
+  static async create(caption?: string, options?: MarkdownConfig): Promise<MarkdownInput> {
     const input = new MarkdownInput(caption);
-    await DG.Utils.loadJsCss([
+    await Utils.loadJsCss([
       '/js/common/quill/quill.min.js',
       '/js/common/quill/quill.snow.css',
+      '/js/common/quill/quilljs-markdown.min.js',
     ]);
     //@ts-ignore
     input.editor = new Quill(input._editorRoot, {
@@ -2521,11 +2525,19 @@ export class MarkdownInput extends JsInputBase<string> {
       },
       theme: 'snow', // or 'bubble'
     });
+    if (options && options.value != null && options.value !== '')
+      //@ts-ignore
+      input.editor.setText(options.value);
     input.editor.on('text-change', (_: any, __: any, source: string) => {
       if (source === 'api')
         input.fireChanged();
       else if (source === 'user')
         input.fireInput();
+    });
+    //@ts-ignore
+    new QuillMarkdown(input.editor, {
+      syntax: true, // enables code blocks, etc.
+      preview: true,
     });
 
     return input;
