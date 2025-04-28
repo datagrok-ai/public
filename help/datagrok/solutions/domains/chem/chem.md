@@ -196,7 +196,7 @@ To learn how to use viewers to explore chemical data, complete [this tutorial](h
 
 :::note developers
 
-You can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md).
+You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md).
 
 :::
 

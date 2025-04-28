@@ -12,6 +12,10 @@ Metadata:
           - RabbitmqVersion
           - GrokSpawnerVersion
           - JKGVersion
+      - Label:
+          default: "Advanced"
+        Parameters:
+          - Postfix
     ParameterLabels:
       DatagrokVersion:
         default: 'Datagrok Version'
@@ -55,3 +59,6 @@ Parameters:
     Default: 1.14.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
+  Postfix:
+    Type: String
+    Description: URL postfix for backward compatibility. Leave blank for new installations

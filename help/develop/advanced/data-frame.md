@@ -660,7 +660,7 @@ property setter).
 
 [112]: https://github.com/datagrok-ai/public/tree/master/packages/Chem "Chem package"
 
-[113]: ../../develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
+[113]: ../how-to/functions/define-semantic-type-detectors.md "Defining semantic types detectors"
 
 [114]: #tags-and-temp-collections "Tags and Temp collections"
 
@@ -680,7 +680,7 @@ property setter).
 
 [123]: https://public.datagrok.ai/js/samples/data-frame/find-columns "Find columns"
 
-[124]: ../how-to/customize-grid.md#color-coding "Color coding"
+[124]: ../how-to/grid/customize-grid.md#color-coding "Color coding"
 
 [125]: #numerical-and-categorical-columns "Numerical and categorical columns"
 

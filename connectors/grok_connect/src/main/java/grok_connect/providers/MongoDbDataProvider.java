@@ -11,7 +11,6 @@ import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.QueryCancelledByUser;
-import org.slf4j.Logger;
 import serialization.DataFrame;
 import serialization.Types;
 import java.sql.Connection;
@@ -29,7 +28,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         descriptor.type = "MongoDB";
         descriptor.description = "Query MongoDB database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.aggregations = null;
     }
 

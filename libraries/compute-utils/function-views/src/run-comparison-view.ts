@@ -125,7 +125,7 @@ export class RunComparisonView extends DG.TableView {
 
       if (gc.tableColumn!.name === RUN_NAME_COL_LABEL) {
         gc.customText = '';
-        const rows = gc.cell.value.split(' - ') as string[];
+        const rows = String(gc.cell.value).split(' - ');
         const elems = (rows.length > 1) ? [rows[0], ui.element('br'), rows[1]]: rows;
         gc.element = ui.div(elems, {style: {
           writingMode: 'vertical-rl',

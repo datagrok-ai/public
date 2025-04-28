@@ -23,6 +23,6 @@ automatically in the **Context Panel** when you select a molecule in a dataset.
 
 :::note developers
 
-You can [create custom info panes](../../../../../develop/how-to/add-info-panel.md).
+You can [create custom info panes](../../../../../develop/how-to/ui/add-info-panel.md).
 
 :::

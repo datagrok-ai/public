@@ -1,19 +1,20 @@
 ### Statistics viewer
 
 1. Open the **demog** dataset.
-2. Click the **Add viewer** icon, find **Statistics** viewer and press on it. 
-*Expected result: **Statistics** viewer opens without errors in console. 
-2. Close previously opened viewer. On the **Viewers tab**, click **Statistics** icon. 
-*Expected result: **Statistics** viewer opens without errors in console. 
-3. Check Column Width and Height Adjustment. Click and drag the edges of the column headers to resize column`s width and height.
-* Expected Result: The column width/height should adjust smoothly, and the data should be not overlap or disappear from the cell.
-4. Check changing the order of columns. Click on any column header in the Statistics viewer. While holding down the left mouse button, drag the column header to the left or right.
-* Expected Result: The order of the columns should change according to the direction in which the column was dragged.
-5. Interact with all elements directly on the viewer.
-* Expected Result: Changes should be reflected quickly and without errors. 
-4. On the **Statistics** viewer, click the **Gear** icon. The **Property Pane** opens.
-5. Modify various properties in **Property Pane**:
-  * Expected Result: Changes to the properties should be reflected in the Statistics viewer without errors, and the viewer should be updated accordingly.
+2. Click the **Add viewer** icon, find **Statistics** viewer and press on it. - The Statistics viewer opens.
+3. Close previously opened viewer. On the **Viewers tab**, click **Statistics** icon. 
+- Same **Statistics** viewer opens. 
+4. Resize columns and rows
+- Click and drag the edges of column headers to adjust the width and height.
+- Column and row sizes should adjust smoothly, with no overlapping or missing data.
+5. Reorder columns
+- Click and hold any column header, drag it left or right.
+- Column order updates according to the drag direction.
+6. Interact with the viewer. All interactions are responsive and error-free
+7. **Property Pane**
+- On the **Statistics** viewer, click the **Gear** icon. The **Property Pane** opens.
+- Modify various properties in **Property Pane**. All changes should apply immediately and correctly in the viewer.
+  
 
 ---
 {

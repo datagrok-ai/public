@@ -65,7 +65,7 @@ do this, simply start a tag name with the `.` prefix.
 
 ### Detectors
 
-Sematic type [detectors](define-semantic-type-detectors.md) are meant to be lightweight, simple, and efficient. Keep
+Sematic type [detectors](functions/define-semantic-type-detectors.md) are meant to be lightweight, simple, and efficient. Keep
 this fact in mind when designing these functions. If columns you are interested in generally contain a lot of unique
 values, use a special sampling method to run your checks on a random subset of column categories. Empty values deserve
 special attention: make sure you don't match them with your semantic type as it will be confusing to find it assigned to

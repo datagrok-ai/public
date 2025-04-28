@@ -25,7 +25,7 @@ class SapHanaDataProvider() : JdbcDataProvider() {
         descriptor.type = "SAP HANA"
         descriptor.description = "Query SAP HANA database"
         descriptor.connectionTemplate = getConnectionTemplate()
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate()
         descriptor.canBrowseSchema = true
         descriptor.nameBrackets = "\""
         descriptor.aggregations.add(AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes))

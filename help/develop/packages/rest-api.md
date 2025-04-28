@@ -40,7 +40,7 @@ Datagrok Rest API supports managing tables, including downloading and uploading 
 This section includes endpoints to manage [dashboards](../../datagrok/concepts/project/dashboard) in Datagrok, such as creating dashboards and sharing them with specific groups. To learn more about identifiers of dashboards and tables, refer to [this section](#identifiers).
 
 **Endpoints**
-* `POST /public/v1/dashboards/{name}/{table_ids}` – Create a new dashboard containing specified tables. Supports upload of [project layout](../how-to/layouts.md#project-layouts) in the request body.
+* `POST /public/v1/dashboards/{name}/{table_ids}` – Create a new dashboard containing specified tables. Supports upload of [project layout](../how-to/views/layouts.md#project-layouts) in the request body.
 * `GET /public/v1/dashboards/{id}/shares{?groups,access}` – Share access to a dashboard with specified groups or users by their names.
 
 ## Functions
@@ -67,5 +67,5 @@ Grok name uses colons (:) as a separator character. Rest API uses periods (.). B
 ## See also
 * [Python client](https://github.com/datagrok-ai/public/tree/master/python-api)
 * [OpenAPI specification](https://public.datagrok.ai/api/public/api.yaml)
-* [View layout](../how-to/layouts.md)
-* [Upload data](../how-to/upload-data.md)
+* [View layout](../how-to/views/layouts.md)
+* [Upload data](../how-to/data/upload-data.md)

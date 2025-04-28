@@ -322,7 +322,7 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-async function helloTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
+async function runTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
   let failed = false;
   let verbosePassed = "";
   let verboseSkipped = "";
@@ -368,7 +368,7 @@ async function helloTests(testsParams: { package: any, params: any }[], stopOnFa
 
       df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
       df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
-      df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
+      // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
         resultDF = df;
@@ -432,7 +432,7 @@ async function helloTests(testsParams: { package: any, params: any }[], stopOnFa
 
 export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
   let testsToRun = {
-    func: helloTests.toString(),
+    func: runTests.toString(),
     tests: testExecutionData
   };
   return await timeout(async () => {
@@ -473,10 +473,10 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
         (<any>window).DG.Test.isInDebug = true;
 
       return new Promise<any>((resolve, reject) => {
+        
+        (<any>window).runTests = eval('(' + testData.func  + ')');
 
-        (<any>window).helloTests = eval('(' + testData.func  + ')');
-
-        (<any>window).helloTests(testData.tests, options.stopOnTimeout).then((results: any) => {
+        (<any>window).runTests(testData.tests, options.stopOnTimeout).then((results: any) => {
               resolve(results);
             })
             .catch((e: any) => {
@@ -572,7 +572,6 @@ export interface BrowserOptions {
 }
 
 export type ResultObject = {
-  error: string,
   failed: boolean,
   verbosePassed: string,
   verboseSkipped: string,

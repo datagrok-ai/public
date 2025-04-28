@@ -16,6 +16,9 @@ Parameters:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: The certificate is used for both Datagrok endpoint. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
+  Postfix:
+    Type: String
+    Description: URL postfix for backward compatibility. Leave blank for new installations
 #Conditions:
 #  CreateDNS:
 #    Fn::Equals:

@@ -22,7 +22,7 @@ Datagrok can connect to most relational databases
 :::note Developers
 
 You can [create custom connectors](create-custom-connectors.md). 
-You can also [connect to a data source, query data, and share connections programmatically](../../develop/how-to/access-data.md#connections).
+You can also [connect to a data source, query data, and share connections programmatically](../../develop/how-to/db/access-data.md#connections).
 
 :::
 
@@ -75,7 +75,7 @@ options).
 ### Caching data
 
 You can cache query results to improve query performance. To learn more, see
-[Caching function results](../../develop/how-to/function_results_cache.md)
+[Caching function results](../../develop/how-to/functions/cache-function-results.md)
 
 ### Modifying connection
 
@@ -104,8 +104,8 @@ options. To learn more about the **Context Panel**, see
 
 :::note developers
 
-**Context Panel** can be extended. You can add custom [info panes](../../develop/how-to/add-info-panel.md)
- and [context actions](../../develop/how-to/context-actions.md).
+**Context Panel** can be extended. You can add custom [info panes](../../develop/how-to/ui/add-info-panel.md)
+ and [context actions](../../develop/how-to/ui/context-actions.md).
 
 :::
 
@@ -509,7 +509,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 To run a query programmatically, see this 
 [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query).
-Learn how to [expose the parameter dialog to end-users as an application](../../develop/how-to/create-package.md).
+Learn how to [expose the parameter dialog to end-users as an application](../../develop/how-to/packages/create-package.md).
 <!--Mention?: when the
 cartridge is not deployed on that particular database, the query returns an
 error-->

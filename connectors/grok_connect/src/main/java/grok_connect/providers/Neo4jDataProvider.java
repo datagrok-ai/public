@@ -33,7 +33,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         descriptor.commentStart = "//";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.aggregations = null;
     }
 

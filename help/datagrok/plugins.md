@@ -87,7 +87,7 @@ sidebar_position: 1.2
 | Database search |[ChEMBL API](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI) | Optional| Webservice integration: ChEMBL | Stable|
 | Database search |[PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 | Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
-| Database search |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChEMBL)| Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
+| Database search |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl)| Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
 | Virtual screening | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 | Virtual screening<br/>Hit to lead |[Hit Triage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
 | Synthetic planning | [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Optional |Creates retrosynthesis paths for the selected molecule | Beta |

@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXP_COLUMN_NAME, EXPERIMENTAL_TAG, FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, SYNC_FIELD, SyncFields, syncParams, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, ValidationRequestPayload, VIEWER_PATH, viewerTypesMapping, storageName} from './consts';
+import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXP_COLUMN_NAME, EXPERIMENTAL_TAG, FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, SYNC_FIELD, SyncFields, syncParams, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, ValidationRequestPayload, VIEWER_PATH, viewerTypesMapping, storageName, VERSION_COLUMN_NAME} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
@@ -651,6 +651,7 @@ export const getRunsDfFromList = async (
     ),
     DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
     DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
+    DG.Column.string(VERSION_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['version']),
   ]);
 
   getVisibleProps(func).map((key) => getColumn(key)).forEach((col) => {
@@ -660,6 +661,14 @@ export const getRunsDfFromList = async (
 
   newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
 
+  if (!options?.allowOtherVersions) {
+    const rowMask = DG.BitSet.create(newRunsGridDf.rowCount, () => false);
+    for (let idx = 0; idx < newRunsGridDf.rowCount; idx++) {
+      if (options?.version == newRunsGridDf.get(VERSION_COLUMN_NAME, idx))
+        rowMask.set(idx, true)
+    }
+    return newRunsGridDf.clone(rowMask);
+  }
   return newRunsGridDf;
 };
 

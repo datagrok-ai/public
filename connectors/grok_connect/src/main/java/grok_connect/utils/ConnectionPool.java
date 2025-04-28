@@ -6,6 +6,8 @@ import com.zaxxer.hikari.pool.HikariPool;
 import grok_connect.connectors_info.DbCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
@@ -39,6 +41,44 @@ public class ConnectionPool {
         }
     }
 
+    public static Connection getConnection(DataSource dataSource, String key)
+            throws GrokConnectException {
+        LOGGER.debug("getConnection was called for DataSource");
+        if (dataSource == null || GrokConnectUtil.isEmpty(key))
+            throw new GrokConnectException("Connection parameters are null");
+        try {
+            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(dataSource));
+            return ds.getConnection();
+        } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+            if (connectionPool.containsKey(key)) {
+                HikariDataSource pool = connectionPool.remove(key);
+                if (pool != null)
+                    pool.close();
+            }
+            Throwable cause = e.getCause();
+            throw new GrokConnectException(cause != null ? cause : e);
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
+    }
+
+    private static HikariDataSource getDataSource(DataSource dataSource) {
+        LOGGER.info("Initializing pool from DataSource");
+
+        String poolName = "CustomDS - " +  " - " + dataSource.hashCode();
+        LOGGER.debug("Pool name: {}", poolName);
+
+        HikariConfig config = new HikariConfig();
+        config.setPoolName(poolName);
+        config.setDataSource(dataSource);
+        config.setMaximumPoolSize(SettingsManager.getInstance().getSettings().connectionPoolMaximumPoolSize);
+        config.setMinimumIdle(0);
+        config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
+        config.setLeakDetectionThreshold(60 * 1000);
+
+        return new HikariDataSource(config);
+    }
+
     private static HikariDataSource getDataSource(String url, Properties properties, String driverClassName) {
         LOGGER.info("Initializing pool for driver {} with url {}", driverClassName, url);
         Properties propertiesWithoutPass = new Properties();
@@ -47,6 +87,7 @@ public class ConnectionPool {
         propertiesWithoutPass.remove(DbCredentials.PASSWORD);
         propertiesWithoutPass.remove(DbCredentials.ACCESS_KEY);
         propertiesWithoutPass.remove(DbCredentials.SECRET_KEY);
+        propertiesWithoutPass.remove(DbCredentials.PRIVATE_KEY);
         propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
         propertiesWithoutPass.remove(DbCredentials.UID);
         propertiesWithoutPass.remove(DbCredentials.PWD);

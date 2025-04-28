@@ -175,7 +175,7 @@ We've introduced caching for [file shares](../../access/files/files.md) (includi
 * Configurable caching for individual files and file shares
 * Automatic cache invalidation when files are modified within the platform
 
-[Learn more](../../develop/how-to/function_results_cache.md).
+[Learn more](../../develop/how-to/functions/cache-function-results.md).
 
 
 ## 1.19 || 2024-Jun
@@ -357,7 +357,7 @@ You can now integrate with Datagrok using Datagrok's [REST API](../../develop/pa
 
 ### Platform performance
 
-We now support client and server-side [caching for function results](../../develop/how-to/function_results_cache.md). This feature is
+We now support client and server-side [caching for function results](../../develop/how-to/functions/cache-function-results.md). This feature is
 particularly useful for functions that produce consistent outputs, like queries
 and scripts. The client-side cache, limited to 100 MB or 100,000 records, speeds
 up data access and improves network efficiency. The unrestricted server-side

@@ -21,7 +21,7 @@ Here are a few examples of the said packages and plugins:
 * [Biosignals]
 * [Cheminformatics]
 * [Cell renderers]
-* [Viewers]
+* [Charts]
 * [Filters]
 
 ## 3. Tooling for local development
@@ -123,7 +123,7 @@ extensions.
 
 [Cell renderers]:https://github.com/datagrok-ai/public/blob/master/libraries/chem-meta/src/rdkit-api.ts
 
-[viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
+[Charts]: https://github.com/datagrok-ai/public/tree/master/packages/Charts
 
 [filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts
 

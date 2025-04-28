@@ -19,7 +19,7 @@ In Datagrok, there are two types of projects:
   that `CoffeeCompany` is a child project under the root project `Demo`. Child projects inherit [privileges](../../../govern/access-control/access-control.md#permissions) from the root project.
 
 Datagrok automatically creates root projects for
-[plugins](../../../develop/how-to/create-package.md) and users:
+[plugins](../../../develop/how-to/packages/create-package.md) and users:
 * **Plugins**: Each plugin version is a child project under the corresponding
   root project.
 * **Users**: Unless you choose an existing project, any entity you create is

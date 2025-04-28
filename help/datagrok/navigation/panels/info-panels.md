@@ -80,7 +80,7 @@ opens a table with matching structures.
 
 :::note developers
 
-[Create custom info panes](../../../develop/how-to/add-info-panel.md).
+[Create custom info panes](../../../develop/how-to/ui/add-info-panel.md).
 
 :::
 

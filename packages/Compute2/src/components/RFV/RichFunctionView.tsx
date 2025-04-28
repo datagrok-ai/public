@@ -493,10 +493,10 @@ export const RichFunctionView = Vue.defineComponent({
             { !historyHidden.value && props.historyEnabled &&
               <History
                 func={currentCall.value.func}
-                showActions
-                showBatchActions
-                isHistory
                 onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+                allowCompare={true}
+                forceHideInputs={false}
+                showIsComplete={true}
                 dock-spawn-dock-type='right'
                 dock-spawn-dock-ratio={0.2}
                 dock-spawn-title='History'
@@ -521,7 +521,7 @@ export const RichFunctionView = Vue.defineComponent({
                     consistencyStates={consistencyState.value}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
                     onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
-                    onFormReplaced={(ev) =>emit('formReplaced', ev)}
+                    onFormReplaced={(ev) => emit('formReplaced', ev)}
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}

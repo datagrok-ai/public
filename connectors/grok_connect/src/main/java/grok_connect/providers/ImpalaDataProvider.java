@@ -34,7 +34,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#.*char.*", Types.STRING);
             put("string", Types.STRING);

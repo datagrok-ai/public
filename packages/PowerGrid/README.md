@@ -27,7 +27,7 @@ code:  ```dataFrame.columns.addNewBytes('my image')```.
 
 To add an image, double-click on the cell and choose the file. Supported extensions are `.jpg`, `.png`, and `.jpeg`.
 
-![adding image](../../help/develop/how-to/binary-cell-renderer.gif "adding image")
+![adding image](../../help/develop/how-to/grid/binary-cell-renderer.gif "adding image")
 
 ### Linked images
 

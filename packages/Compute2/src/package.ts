@@ -130,8 +130,9 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   setViewHierarchyData(call, view);
 
   const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
+  const version = call.inputs.params?.version;
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, view: Vue.markRaw(view)});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   setVueAppOptions(app);

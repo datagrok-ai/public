@@ -17,7 +17,7 @@ function makeMergedItems<T>(input: Record<string, Observable<T>>) {
 
 export type DriverAPI = ReturnType<typeof useReactiveTreeDriver>;
 
-export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
+export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>, version: Vue.Ref<string | undefined>) {
   const driver = new Driver();
 
   const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
@@ -84,20 +84,20 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
-  Vue.watch(() => providerFunc.value, (providerFunc) => {
-    initPipeline(providerFunc);
+  Vue.watch([() => providerFunc.value, () => version.value], ([providerFunc, version]) => {
+    initPipeline(providerFunc, version);
   });
 
   Vue.onMounted(() => {
-    initPipeline(providerFunc.value);
+    initPipeline(providerFunc.value, version.value);
   });
 
   Vue.onUnmounted(() => {
     driver.close();
   });
 
-  const initPipeline = (provider: string) => {
-    driver.sendCommand({event: 'initPipeline', provider});
+  const initPipeline = (provider: string, version?: string) => {
+    driver.sendCommand({event: 'initPipeline', provider, version});
   };
 
   const loadPipeline = (funcCallId: string) => {

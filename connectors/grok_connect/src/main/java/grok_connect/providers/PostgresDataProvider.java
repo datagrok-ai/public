@@ -26,7 +26,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.description = "Query Postgres database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.nameBrackets = "\"";
 
         descriptor.canBrowseSchema = true;

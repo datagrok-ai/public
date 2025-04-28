@@ -81,12 +81,14 @@ export async function saveInstanceState(
   nqName: string,
   state: any,
   metaData?: ItemMetadata,
+  version?: string,
 ) {
   const metaCall = await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
   if (metaData?.title) metaCall.options['title'] = metaData.title;
   if (metaData?.description) metaCall.options['description'] = metaData.description;
   if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
+  if (version) metaCall.options['version'] = version;
   metaCall.newId();
   await metaCall.call();
   await historyUtils.saveRun(metaCall);

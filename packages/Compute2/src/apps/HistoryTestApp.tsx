@@ -8,11 +8,13 @@ import {History} from '../components/History/History';
 export const HistoryTestApp = Vue.defineComponent({
   name: 'HistoryTestApp',
   setup: () => {
-    return () => <History
-      func={DG.Func.byName('Compute2:ObjectCooling2')}
-      showActions={true}
-      showBatchActions={true}
-      isHistory={true}
-    />;
+    return () => (
+      <History
+        func={DG.Func.byName('Compute2:ObjectCooling2')}
+        allowCompare={true}
+        forceHideInputs={false}
+        showIsComplete={true}
+      />
+    );
   },
 });
