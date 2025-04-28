@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.4.3 (2025-03-28)
+
+Updated grok tools
+
 ## 1.4.2 (2025-03-28)
 
 Updated Multivariate Analysis:
