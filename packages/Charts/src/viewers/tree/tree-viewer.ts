@@ -85,6 +85,8 @@ export class TreeViewer extends EChartViewer {
   private hoveredPath: string | null = null;
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  viewerFilter: DG.BitSet | null = null;
+  capturedFilterState: DG.BitSet | null = null;
   constructor() {
     super();
 
@@ -144,7 +146,7 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): void {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): DG.BitSet {
     bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
@@ -154,6 +156,7 @@ export class TreeViewer extends EChartViewer {
         return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
       });
     }, event);
+    return bitset;
   }
 
   initChartEventListeners(): void {
@@ -171,9 +174,28 @@ export class TreeViewer extends EChartViewer {
           selectedSectors.push(pathString);
       }
 
-      if (this.onClick === 'Filter')
-        this.applySelectionFilter(this.dataFrame.filter, path, event.event);
-      else
+      if (this.onClick === 'Filter') {
+        const filterClone = this.dataFrame.filter.clone();
+        const viewerFilter = this.applySelectionFilter(filterClone, path, event.event);
+
+
+        if (this.viewerFilter === null)
+          this.viewerFilter = viewerFilter.clone();
+        else {
+          const pathString = path.join('|');
+          const isSectorSelected = selectedSectors.includes(pathString);
+          if (isSectorSelected)
+            this.viewerFilter = this.viewerFilter.or(viewerFilter);
+          else
+            this.viewerFilter = this.viewerFilter.and(viewerFilter);
+        }
+
+        if (this.capturedFilterState) {
+          this.dataFrame.filter.copyFrom(this.capturedFilterState);
+          this.dataFrame.filter.and(this.viewerFilter);
+        } else
+          this.dataFrame.filter.copyFrom(this.viewerFilter);
+      } else
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
@@ -576,6 +598,11 @@ export class TreeViewer extends EChartViewer {
     }));
     this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
       this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
+    }));
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
+      this.capturedFilterState = this.dataFrame.filter.clone();
+      if (this.viewerFilter)
+        this.dataFrame.filter.and(this.viewerFilter);
     }));
   }
 
