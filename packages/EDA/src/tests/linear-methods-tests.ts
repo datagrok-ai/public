@@ -61,6 +61,7 @@ category('Partial least squares regression', () => {
       predict: cols.byIndex(COLS - 1),
       components: COMPONENTS,
       names: undefined,
+      isQuadratic: false,
     });
   }, {timeout: TIMEOUT, benchmark: true});
 
@@ -76,6 +77,7 @@ category('Partial least squares regression', () => {
       features: cols,
       predict: target,
       components: COMPONENTS,
+      isQuadratic: false,
       names: undefined,
     });
 

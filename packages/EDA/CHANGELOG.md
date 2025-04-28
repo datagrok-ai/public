@@ -1,5 +1,16 @@
 # EDA changelog
 
+## 1.4.3 (2025-03-28)
+
+Updated grok tools
+
+## 1.4.2 (2025-03-28)
+
+Updated Multivariate Analysis:
+
+* Implemented the Quadratic PLS regression
+* Improved MVA and PLS UI/UX
+
 ## 1.3.5 (2025-03-07)
 
 Vector distance functions support for dimensionality reduction on webGPU and without

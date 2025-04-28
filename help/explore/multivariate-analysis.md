@@ -19,12 +19,13 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
    * the column with response variable (in the `Predict` field)
    * the columns with the predictors (in the `Using` field)
    * the number of `Components`, i.e. latent factors
+   * whether to include squared terms as additional predictors (in the `Quadratic` field)
    * `Names` of data samples
 4. Press `Run` to execute. You get
    * the [Observed vs. Predicted](#observed-vs-predicted) scatterplot comparing the response to its prediction
    * the [Scores](#scores) scatterplot reflecting data samples similarities and dissimilarities
    * the [Loadings](#loadings) scatterplot indicating the impact of each feature on the latent factors
-   * the [Regression Coefficients](#regression-coefficients) bar chart presenting parameters of the obtained linear model 
+   * the [Regression Coefficients](#regression-coefficients) bar chart presenting parameters of the obtained linear model
    * the [Explained Variance](#explained-variance) bar chart measuring how well the latent factors fit source data
 
 ![add-to-workspace](multivariate-analysis/pls-run.gif)
@@ -92,6 +93,7 @@ Compute the predictors representation by the latent factors:
    * the column with response variable (in the `Predict` field)
    * the columns with the predictors (in the `Using` field)
    * the number of `Components`, i.e. latent factors
+   * whether to include squared terms as additional predictors (in the `Quadratic` field)
 
 PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)). The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates this:
 

@@ -9,6 +9,7 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * Stochastic proximity embedding ([SPE](https://pubmed.ncbi.nlm.nih.gov/12820129/))
 * Multivariate analysis
   * Partial least squares regression ([PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression))
+  * Quadratic PLS regression
 * Supervised machine learning
   * Least-squares support vector machine ([LS-SVM](https://en.wikipedia.org/wiki/Least-squares_support_vector_machine))
   * [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)

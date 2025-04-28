@@ -288,7 +288,7 @@ export const TreeWizard = Vue.defineComponent({
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
@@ -433,11 +433,11 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
-              exports.value.map(({name, handler}) =>
+              exports.value.map(({id, friendlyName, handler}) =>
                 <span onClick={() => (treeState.value)
                   ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
                   : null}>
-                  <div> {name} </div>
+                  <div> {friendlyName ?? id} </div>
                 </span>,
               )
             }
