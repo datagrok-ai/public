@@ -957,8 +957,8 @@ export namespace input {
     return _create(d4.InputType.Image, name, options);
   }
 
-  export async function markdown(caption?: string, options?: MarkdownConfig): Promise<MarkdownInput> {
-    return (await MarkdownInput.create(caption, options));
+  export function markdown(caption?: string, options?: MarkdownConfig): MarkdownInput {
+    return MarkdownInput.create(caption, options);
   }
 
   export function code(name: string, options?: CodeConfig): CodeInput {
