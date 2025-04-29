@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import {
   createBaseInputs,
   createTooltip, getRenderColor,
@@ -13,6 +14,8 @@ import {
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
+import {desirabilityScore} from '@datagrok/chem/src/analysis/mpo/mpo';
+
 let minRadius: number;
 
 enum PieChartStyle {
@@ -23,9 +26,8 @@ enum PieChartStyle {
 
 export interface Subsector {
   name: string;
-  low: number;
-  high: number;
   weight: number;
+  line: [number, number][];
 }
 
 export interface Sector {
@@ -68,16 +70,7 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 }
 
 function normalizeValue(value: number, subsector: Subsector): number {
-  const { low, high } = subsector;
-  const isMax = high > low;
-  if (isMax ? value < low : value > low)
-    return 0;
-  else if (isMax ? value > high : value < high)
-    return 1;
-  else
-    return isMax
-      ? (value - low) / (high - low)
-      : (value - high) / (low - high);
+  return desirabilityScore(value, subsector.line);
 }
 
 function renderDiagonalStripes(

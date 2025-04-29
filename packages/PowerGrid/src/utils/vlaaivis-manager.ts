@@ -46,9 +46,8 @@ class VlaaiVisManager {
       sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) ?? defaultGroupProps[CONSTANTS.SECTOR_COLOR_PROPERTY],
       subsectors: columns.map(col => ({
         name: col.name,
-        low: parseFloat(col.getTag(TAGS.LOW)) ?? DEFAULTS.LOW,
-        high: parseFloat(col.getTag(TAGS.HIGH)) ?? DEFAULTS.HIGH,
         weight: parseFloat(col.getTag(TAGS.WEIGHT)) ?? parseFloat(this.generateRandomNumber().toFixed(1)),
+        line: []
       }))
     }));
 
@@ -198,9 +197,8 @@ class VlaaiVisManager {
   private createSubsector(column: DG.Column | undefined): Subsector {
     return {
       name: column?.name ?? '',
-      low: parseFloat(column?.getTag(TAGS.LOW) ?? DEFAULTS.LOW),
-      high: parseFloat(column?.getTag(TAGS.HIGH) ?? DEFAULTS.HIGH),
       weight: parseFloat(column?.getTag(TAGS.WEIGHT) ?? this.generateRandomNumber().toFixed(1)),
+      line: []
     };
   }
 

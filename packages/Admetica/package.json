@@ -20,8 +20,8 @@
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
-    "@datagrok/chem": "^1.13.0",
-    "@datagrok/power-grid": "^1.5.0",
+    "@datagrok/chem": "../../packages/chem",
+    "@datagrok/power-grid": "../../packages/PowerGrid",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",

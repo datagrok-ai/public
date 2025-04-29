@@ -34,10 +34,12 @@ export interface Model {
   name: string;
   checked: boolean;
   units: string;
-  min: number | string;
-  max: number | string;
+  min: number;
+  max: number;
   properties: ModelProperty[];
   coloring: ModelColoring;
+  line: any;
+  weight: number;
 }
 
 export interface Template {

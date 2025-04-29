@@ -20,7 +20,7 @@ async function getAdmeticaContainer() {
 
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
   try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
+    const response = await fetch(path, params);
     return await response.json();
   } catch (error) {
     //grok.log.error(error);
@@ -31,7 +31,7 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 export async function runAdmeticaFunc(csvString: string, queryParams: string, raiseException: boolean): Promise<string | null> {
   let admeticaContainer = await getAdmeticaContainer();
 
-  const path = `/predict?models=${queryParams}&raiseException=${raiseException}`;
+  const path = `http://127.0.0.1:8000/predict?models=${queryParams}&raiseException=${raiseException}`;
   const params: RequestInit = {
     method: 'POST',
     headers: { 'Content-type': 'text/csv' },
@@ -43,7 +43,7 @@ export async function runAdmeticaFunc(csvString: string, queryParams: string, ra
   admeticaContainer = await grok.dapi.docker.dockerContainers.find(admeticaContainer.id);
   const started = admeticaContainer.status.startsWith('started') || admeticaContainer.status.startsWith('checking');
 
-  if (!response || !started)
+  if (!response && !started)
     throwError('Container failed to start.');
 
   if (!response?.success) {
@@ -179,33 +179,35 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
     for (const model of subgroup.models) {
       const modelName = columnNames.find((name: string) => name.includes(model.name));
       if (modelName) {
-        let { min, max } = model;
+        /*let { min, max } = model;
         if (model.properties) {
           const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
           if (directionProperty && directionProperty.object.direction === 'Lower is better')
             [min, max] = [max, min];
-        }
+        }*/
 
         const column = table.col(modelName);
+        const line = model.line;
         let weight = Number(generateNumber().toFixed(2));
 
         if (column) {
-          min = column.getTag(TAGS.LOW) ? Number(column.getTag(TAGS.LOW)) : min;
-          max = column.getTag(TAGS.HIGH) ? Number(column.getTag(TAGS.HIGH)) : max;
-          weight = column.getTag(TAGS.WEIGHT) ? Number(column.getTag(TAGS.WEIGHT)) : weight;
+          //min = column.getTag(TAGS.LOW) ? Number(column.getTag(TAGS.LOW)) : min;
+          //max = column.getTag(TAGS.HIGH) ? Number(column.getTag(TAGS.HIGH)) : max;
+          weight = column.getTag(TAGS.WEIGHT) ? Number(column.getTag(TAGS.WEIGHT)) : (model.weight ?? weight);
           
           column.setTag(TAGS.GROUP_NAME, subgroup.name);
-          column.setTag(TAGS.HIGH, max);
-          column.setTag(TAGS.LOW, min);
+          //column.setTag(TAGS.HIGH, max);
+          //column.setTag(TAGS.LOW, min);
           column.setTag(TAGS.WEIGHT, weight.toString());
           column.setTag(TAGS.SECTOR_COLOR, subgroupColor);
         }
           
         sector.subsectors.push({
           name: modelName,
-          low: min,
-          high: max,
+          //low: min,
+          //high: max,
           weight: weight,
+          line: line,
         });
       }
     }
