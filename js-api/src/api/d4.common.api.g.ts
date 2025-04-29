@@ -75,6 +75,8 @@ export class InputType {
 
   static JsInputProxy = 'JsInputProxy';
 
+  static Pem = 'Pem';
+
 }
 export class GridCellStyleEx {
   public dart: any;
