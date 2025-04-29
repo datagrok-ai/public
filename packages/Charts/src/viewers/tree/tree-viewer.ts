@@ -85,6 +85,8 @@ export class TreeViewer extends EChartViewer {
   private hoveredPath: string | null = null;
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  viewerFilter: DG.BitSet | null = null;
+  capturedFilterState: DG.BitSet | null = null;
   constructor() {
     super();
 
@@ -144,7 +146,7 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): void {
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): DG.BitSet {
     bitset.handleClick((index: number) => {
       if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
@@ -154,6 +156,7 @@ export class TreeViewer extends EChartViewer {
         return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
       });
     }, event);
+    return bitset;
   }
 
   initChartEventListeners(): void {
@@ -171,9 +174,20 @@ export class TreeViewer extends EChartViewer {
           selectedSectors.push(pathString);
       }
 
-      if (this.onClick === 'Filter')
-        this.applySelectionFilter(this.dataFrame.filter, path, event.event);
-      else
+      if (this.onClick === 'Filter') {
+        const filterClone = this.viewerFilter ?? this.dataFrame.filter.clone();
+        const viewerFilter = this.applySelectionFilter(filterClone, path, event.event);
+
+        if (this.viewerFilter === null)
+          this.viewerFilter = viewerFilter.clone();
+
+        if (this.capturedFilterState) {
+          this.dataFrame.filter.copyFrom(this.capturedFilterState);
+          if (this.viewerFilter.trueCount > 0)
+            this.dataFrame.filter.and(this.viewerFilter);
+        } else
+          this.dataFrame.filter.copyFrom(this.viewerFilter);
+      } else
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
@@ -570,12 +584,22 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
-    this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.updatePaths()));
+    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
+      if (this.filteredPaths)
+        this.cleanTree(this.filteredPaths);
+      this.viewerFilter = null;
+      this.capturedFilterState = null;
+    }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
       this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
     }));
     this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => {
       this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
+    }));
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
+      this.capturedFilterState = this.dataFrame.filter.clone();
+      if (this.viewerFilter)
+        this.dataFrame.filter.and(this.viewerFilter);
     }));
   }
 
@@ -585,7 +609,10 @@ export class TreeViewer extends EChartViewer {
     if (paths && !changedProp)
       this.cleanTree(paths);
 
-    const treeData = this.getSelectionFilterData(bitset);
+    const { filter, rowCount } = this.dataFrame;
+    const hasActiveFilter = this.capturedFilterState && filter.trueCount !== rowCount;
+    const treeData = hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
+
     const pathKeys = Object.keys(treeData);
     const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
 
@@ -780,11 +807,6 @@ export class TreeViewer extends EChartViewer {
     };
 
     data.forEach((rootNode) => traverse(rootNode, 1));
-  }
-
-  updatePaths(changedProp: boolean = false): void {
-    this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, changedProp);
-    this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, changedProp, true);
   }
 
   detach(): void {
