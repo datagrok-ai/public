@@ -1033,6 +1033,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       thisViewer.updateSizes();
       thisViewer.updateUI();
+      // We forcibly trigger a label update because the group's bitset hasn't changed, 
+      // even though the structure has been modified.
+      await updateLabel(thisViewer, group, true);
+
       thisViewer.updateFilters();
       thisViewer.updateTag();
       thisViewer.treeEncodeUpdateInProgress = true;
@@ -1538,7 +1542,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const rowCount = this.dataFrame.rowCount;
     const columnName = this.title;
     this.fragmentsColumn = this.dataFrame.columns.byName(columnName);
-    this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
     const isNewColumn = !this.fragmentsColumn;
 
     // First, we create an auxiliary column by prefixing its name with '~'.
@@ -1547,8 +1550,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.fragmentsColumn) {
       this.fragmentsColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
       this.fragmentsColumn.name = columnName;
-      this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
     }
+
+    this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
 
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
     if (isNewColumn && gridColorColumn)
