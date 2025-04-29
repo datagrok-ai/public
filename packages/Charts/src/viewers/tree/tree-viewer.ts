@@ -175,24 +175,16 @@ export class TreeViewer extends EChartViewer {
       }
 
       if (this.onClick === 'Filter') {
-        const filterClone = this.dataFrame.filter.clone();
+        const filterClone = this.viewerFilter ?? this.dataFrame.filter.clone();
         const viewerFilter = this.applySelectionFilter(filterClone, path, event.event);
-
 
         if (this.viewerFilter === null)
           this.viewerFilter = viewerFilter.clone();
-        else {
-          const pathString = path.join('|');
-          const isSectorSelected = selectedSectors.includes(pathString);
-          if (isSectorSelected)
-            this.viewerFilter = this.viewerFilter.or(viewerFilter);
-          else
-            this.viewerFilter = this.viewerFilter.and(viewerFilter);
-        }
 
         if (this.capturedFilterState) {
           this.dataFrame.filter.copyFrom(this.capturedFilterState);
-          this.dataFrame.filter.and(this.viewerFilter);
+          if (this.viewerFilter.trueCount > 0)
+            this.dataFrame.filter.and(this.viewerFilter);
         } else
           this.dataFrame.filter.copyFrom(this.viewerFilter);
       } else
@@ -592,7 +584,12 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
-    this.subs.push(grok.events.onResetFilterRequest.subscribe(() => this.updatePaths()));
+    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
+      if (this.filteredPaths)
+        this.cleanTree(this.filteredPaths);
+      this.viewerFilter = null;
+      this.capturedFilterState = null;
+    }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
       this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
     }));
@@ -807,11 +804,6 @@ export class TreeViewer extends EChartViewer {
     };
 
     data.forEach((rootNode) => traverse(rootNode, 1));
-  }
-
-  updatePaths(changedProp: boolean = false): void {
-    this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, changedProp);
-    this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, changedProp, true);
   }
 
   detach(): void {
