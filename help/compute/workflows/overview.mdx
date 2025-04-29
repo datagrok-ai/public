@@ -15,6 +15,8 @@ in a real time and are used to trigger links. Also a user is able to
 save the current state and load it later. Basically scripts with
 generated UI are reused in workflows as is.
 
+__TODO: ui example__
+
 ### Links as edges
 
 Links are connections that are either pass data directly from source
@@ -36,7 +38,7 @@ scripts. For example, a script output will probably be a link input,
 and a link output will be a script input. More details about different
 link types are available [here](link-types).
 
-__TODO: some simple drawing illustrating the above__
+__TODO: simple diagram illustrating the above__
 
 ### Configuration
 
@@ -45,8 +47,11 @@ workflows are targeted to be deployed via Datagrok
 [packages](../../develop#packages), you can access typescript
 configuration typing by installing `@datagrok-libraries/compute-api`
 package. `PipelineConfiguration` type describes an n-ary tree
-structure where leafs are scripts. Each nested level is (referred as
-pipeline) might have links definitions which target own or nested
-scripts io. The main restriction for links is to have information
-propagated only forward (depth first graph ordering). More information
-about configuration is available [here](configuration).
+structure where leafs are scripts. Each nested level is might have
+links definitions which target own or nested scripts io. The main
+restriction for links is to have information propagated only forward
+(depth first graph ordering). More information about configuration is
+available [here](configuration). The configuration is used to make a
+navigation tree.
+
+__TODO: ui gif example__
