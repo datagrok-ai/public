@@ -220,12 +220,13 @@ export async function addUserDefinedConfig(file: DG.FileInfo): Promise<void> {
 //name: Retrosynthesis Demo
 //description: Generate retrosynthesis paths
 //meta.demoPath: Cheminformatics | Retrosynthesis
-export function retrosynthesisDemo(): void {
+export async function retrosynthesisDemo(): Promise<void> {
+  await grok.functions.call('Chem:initChemAutostart');
   const view = DG.View.create();
   view.name = 'Retrosynthesis Demo';
 
-  const sketcher = new DG.chem.Sketcher();
-  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5');
+  const sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
+  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5')
   const retrosynthesisDiv = ui.div('', 'retrosynthesis-demo');
 
   const container = ui.divH([
