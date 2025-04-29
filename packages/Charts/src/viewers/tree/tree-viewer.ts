@@ -609,7 +609,10 @@ export class TreeViewer extends EChartViewer {
     if (paths && !changedProp)
       this.cleanTree(paths);
 
-    const treeData = this.getSelectionFilterData(bitset);
+    const { filter, rowCount } = this.dataFrame;
+    const hasActiveFilter = this.capturedFilterState && filter.trueCount !== rowCount;
+    const treeData = hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
+
     const pathKeys = Object.keys(treeData);
     const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
 
