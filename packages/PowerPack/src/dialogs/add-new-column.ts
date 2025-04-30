@@ -739,20 +739,21 @@ export class AddNewColumnDialog {
     }
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
-      if (funcCall.inputs[key] instanceof DG.FuncCall) {
+      const value = funcCall.inputs[key];
+      if (value instanceof DG.FuncCall) {
         //do not allow functions with multiple outputs
-        if (funcCall.inputs[key].func.outputs.length > 1)
-          return `Function ${funcCall.inputs[key].func} returns multiple values`;
+        if (value.func.outputs.length > 1)
+          return `Function ${value.func} returns multiple values`;
         //treat $COLUMN_NAME as scalar
-        if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
+        if (value.func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        if (funcCall.inputs[key].func.outputs.length) {
-          actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
-          actualInputSemTypes[key] = funcCall.inputs[key].func.outputs[0].semType;
+        if (value.func.outputs.length) {
+          actualInputParamTypes[key] = value.func.outputs[0].propertyType;
+          actualInputSemTypes[key] = value.func.outputs[0].semType;
         } else
           actualInputParamTypes[key] = 'dynamic';
       } else
-        actualInputParamTypes[key] = typeof funcCall.inputs[key];
+        actualInputParamTypes[key] = Array.isArray(value) && value.length !== 0 ? typeof value[0] : value == null ? 'undefined' : typeof value; // temp for debug
     }
 
     //validate types for current function
@@ -789,6 +790,9 @@ export class AddNewColumnDialog {
       }
       //dynamic allows any type
       if (property.propertyType === DG.TYPE.DYNAMIC || actualInputType === DG.TYPE.DYNAMIC)
+        continue;
+      //check for optional parameter
+      if (property.nullable && actualInputType === 'undefined')
         continue;
       //check for semType match
       if (property.semType && actualSemType && property.semType !== actualSemType)
@@ -1045,25 +1049,35 @@ export class AddNewColumnDialog {
     this.currentCalculatedColName = colName;
     // Making the Column List for the Preview Grid:
     const columnIds = this.findUniqueColumnNamesInExpression(expression);
-    columnIds.push(colName);
 
     const type = this.getSelectedType()[0];
     // Making the Preview Grid:
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
     ui.setUpdateIndicator(this.gridPreview!.root, true);
-      await call.call(false, undefined, {processed: true, report: false});
-      /*    await this.previwDf!.columns.addNewCalculated(
-          colName,
-          this.inputExpression!.value,
-          ...this.getSelectedType()
-      );*/
+    const potentialColIds: string[] = [];
+    const sub = this.previwDf!.onColumnsAdded.subscribe((args: DG.ColumnsArgs) => {
+      potentialColIds[potentialColIds.length] = args.columns[0].name;
+    });
+    await call.call(false, undefined, {processed: true, report: false});
+    /*    await this.previwDf!.columns.addNewCalculated(
+        colName,
+        this.inputExpression!.value,
+        ...this.getSelectedType()
+    );*/
+    sub.unsubscribe();
+
     ui.setUpdateIndicator(this.gridPreview!.root, false);
 
+    if (potentialColIds.length === 0)
+      potentialColIds[0] = colName;
+    columnIds.push(...potentialColIds);
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
-    this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
-    this.resultColumnType = this.previwDf!.col(colName)!.type;
-    this.previwDf!.columns.remove(colName);
+    for (const colName of potentialColIds)
+      this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
+    this.resultColumnType = this.previwDf!.col(potentialColIds.length > 1 ? potentialColIds[0] : colName)!.type;
+    for (const colName of potentialColIds)
+      this.previwDf!.columns.remove(colName);
 
     if (FLOATING_POINT_TYPES.includes(this.resultColumnType) && this.gridPreview!.dataFrame.col(colName))
       this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
