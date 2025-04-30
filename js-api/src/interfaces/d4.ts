@@ -2077,6 +2077,18 @@ export interface INetworkDiagramSettings {
 
   hoverColor: number;
 
+  edgeLinearColorScheme: Array<number>;
+
+  edgeCategoricalColorScheme: Array<number>;
+
+  nodeOneLinearColorScheme: Array<number>;
+
+  nodeOneCategoricalColorScheme: Array<number>;
+
+  nodeTwoLinearColorScheme: Array<number>;
+
+  nodeTwoCategoricalColorScheme: Array<number>;
+
   showColumnSelectors: boolean;
 
   selectRowsOnClick: boolean;
