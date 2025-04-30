@@ -3,7 +3,7 @@ title: "Link types"
 sidebar_position: 2
 ---
 
-This section provides descriptions of different link types. Links
+This section provides a description of different link types. Links
 should be defined in workflows `links` field, and actions should in
 workflows/scripts `actions` field. The main difference between them is
 that action handlers need to be triggered separately (for example,
@@ -37,16 +37,16 @@ There are several types of links/actions:
 #### `from`
 
 Describes link inputs via a [Link Query Language](./link-spec). Could
-be either a LQL string or an array of 0 or more LQL strings. All from
-LQL queries should have at least one match, otherwise a link will not
-be created.
+be either a [LQL](./link-spec) string or an array of 0 or more
+[LQL](./link-spec) strings. All from [LQL](./link-spec)queries should
+have at least one match, otherwise a link will not be created.
 
 #### `to`
 
 Describes link outputs via a [Link Query Language](./link-spec) Could
-be either a LQL string or an array of 0 or more LQL strings. All to
-LQL queries should have at least one match, otherwise a link will not
-be created.
+be either a [LQL](./link-spec) string or an array of 0 or more
+[LQL](./link-spec) strings. All to [LQL](./link-spec)queries should
+have at least one match, otherwise a link will not be created.
 
 #### `handler`
 
@@ -66,15 +66,16 @@ handler](#default-handler) might be used if non is provided.
 
 _Optional_
 
-Could be either a LQL string or an array of 0 or more
-[LQL](./link-spec) strings. If all LQL queries match the link will not
-be created. Queries are targeting script nodes or workflows.
+Could be either a [LQL](./link-spec)string or an array of 0 or more
+[LQL](./link-spec) strings. If all [LQL](./link-spec) queries match
+the link will not be created. Queries are targeting script nodes or
+workflows.
 
 #### `base`
 
 _Optional_
 
-Could be either a LQL string or an array of exactly 1
+Could be either a [LQL](./link-spec) string or an array of exactly 1
 [LQL](./link-spec) string. Queries are targeting script nodes or
 workflows. Used in [reference selectors](./link-spec).
 
@@ -115,7 +116,7 @@ items or undefined.
 getFirst<T = any>(name: string): T | undefined;
 ```
 
-Receives an input query name. Returns the first matched items or
+Receives an input query name. Returns the first matched item or
 undefined.
 
 #### `getMatchedInputs`
@@ -125,8 +126,8 @@ getMatchedInputs(): Readonly<Set<string>>;
 ```
 
 Returns a set of all matched input queries names. The set is ordered
-based on DFS traversal, if query returns multiple matches, the
-first one is used.
+based on depth first traversal, if a query returns multiple matches,
+the first one is used for ordering.
 
 #### `getMatchedOutputs`
 
@@ -135,8 +136,8 @@ getMatchedOutputs(): Readonly<Set<string>>;
 ```
 
 Returns a set of all matched outputs queries names. The set is ordered
-based on DFS traversal, if query returns multiple matches, the
-first one is used.
+based on depth first traversal, if a query returns multiple matches,
+the first one is used for ordering.
 
 #### `getAdditionalParam`
 
@@ -218,8 +219,8 @@ more details about restriction see [Consistency](#consistency).
 ### Default handler
 
 For [data links](#data-links) it is possible to omit `hander` and use
-a default one. For each LQL input query the first matched input is
-passed to the corresponding by order LQL output. It is also possible
+a default one. For each [LQL](./link-spec) input query the first matched input is
+passed to the corresponding by order [LQL](./link-spec) output. It is also possible
 to configure restrictions, via
 
 #### `defaultRestrictions`
@@ -235,7 +236,7 @@ For [data links](#data-links) a consistency mechanism is used. There
 are several restriction types restricting a user's ability to edit
 script inputs that were set by data link.
 
-- `disabled` user is not allowed to edit input
+- `disabled` user is not allowed to edit input, consistency is tracked
 - `restricted` user is allowed to edit an input, however changes will
   make input inconsistent
 - `info` user is allowed to edit an input without make input
@@ -246,12 +247,15 @@ script inputs that were set by data link.
 Consistency is tracked based on the value, stored separately from a
 script io.
 
-If a script was never run in the current workflow instance, data links
-just set data directly to scripts io. However, if a script was run,
-links will not overwrite script io data, but rather only trigger
-consistency changes.
+Consistency is also applicable to changes propagated via data
+links. If a script was never run in the current workflow instance,
+data links just set data directly to scripts io. However, if a script
+was run, links will not overwrite script io data, but rather only
+trigger consistency changes. User has either to manual review, apply
+changes and rerun scripts. Or do it via "rerun with consistent" on a
+scope of workflow, nested workflow or a scipt.
 
-__TODO__ ui consistency examples docs and link here
+__TODO__ ui consistency examples gifs
 
 
 ### Validators
@@ -268,7 +272,7 @@ Validators has the following additional configuration options:
 
 _Optional_
 
-Could be either a LQL string or an array of multiple
+Could be either a [LQL](./link-spec) string or an array of multiple
 [LQL](./link-spec) strings. Queries are targeting script nodes or
 workflows. Actions descriptors could be retrieved using
 [`getValidationAction`](#getvalidationaction) controller method and
@@ -291,19 +295,22 @@ are several validations result type in `ValidationResult`:
 - `warnings` non-blocking warnings
 - `notifications` non-blocking suggestions
 
-Each of those field could have an array of `Adives` items:
+Each of those field could have an array of `ValidationItem` items with
+the following type:
 
 ```
-ActionItem {
+export interface ActionItem {
   actionName: string;
   action: string;
   additionalParams?: Record<string, any>;
 }
 
-interface Advice {
+export interface Advice {
   description: string;
   actions?: ActionItem[];
 }
+
+export type ValidationItem = string | Advice;
 ```
 
 Where `description` is a validation message, `actionName` is a visible
