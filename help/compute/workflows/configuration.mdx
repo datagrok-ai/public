@@ -26,7 +26,7 @@ versions](#workflow-versioning) at the same time.
 
 `PipelineConfiguration` is a workflow configuration, which is used to
 define a set of steps and workflow options. Where step is either
-another [workflow](#workflows), a [workflow
+another [workflow](#workflow-providers), a [workflow
 reference](#reusing-workflows) or a [script
 node](#script-nodes). Depending on a workflow [type](#type), steps are
 configured slightly different.
@@ -215,6 +215,10 @@ provide additional configuration for scripts.
 #### `id`
 
 This id is used in [links](./links-spec) for paths.
+
+#### `nqName`
+
+Mandatory script full name (__TODO__ link to nqName).
 
 #### `type`
 
