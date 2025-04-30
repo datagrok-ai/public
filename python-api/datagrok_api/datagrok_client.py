@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Dict, Any, Union, BinaryIO
 import requests
 import pandas as pd
 import json
@@ -7,7 +7,7 @@ from io import StringIO
 from .group import Group, GroupMembershipRequest 
 
 class DatagrokClient:
-    def __init__(self, api_key, base_url):
+    def __init__(self, api_key: str, base_url: str) -> None:
         '''
         Create a datagrok api client.
 
@@ -30,7 +30,7 @@ class DatagrokClient:
             "Authorization": self.api_key
         }
 
-    def download_table(self, name):
+    def download_table(self, name: str) -> pd.DataFrame:
         '''
         Downloads a table from Datagrok.
 
@@ -50,7 +50,7 @@ class DatagrokClient:
         response = self._request('GET', endpoint, content_type="text/plain")
         return pd.read_csv(StringIO(response.text))
 
-    def upload_table(self, name, dataframe):
+    def upload_table(self, name: str, dataframe: pd.DataFrame) -> Dict[str, Any]:
         '''
         Uploads a table to Datagrok.
 
@@ -64,7 +64,7 @@ class DatagrokClient:
 
         Returns
         -------
-        object
+        Dict[str, Any]
             set of identifiers for the uploaded table
         '''
         name = name.replace(':', '.')
@@ -73,7 +73,7 @@ class DatagrokClient:
         response = self._request('POST', endpoint, content_type="text/csv", data=csv_data)
         return response.json()
 
-    def download_file(self, connector, path):
+    def download_file(self, connector: str, path: str) -> Union[pd.DataFrame, bytes]:
         '''
         Download a file from Datagrok.
 
@@ -86,9 +86,9 @@ class DatagrokClient:
 
         Returns
         -------
-        object
-            If requested file is csv, returns corresponding pd.Datafrme.
-            Otherwise returns list of bytes with file content.
+        Union[pd.DataFrame, bytes]
+            If requested file is csv, returns corresponding pd.DataFrame.
+            Otherwise returns bytes with file content.
         '''
         connector = connector.replace(':', '.')
         endpoint = f"/public/v1/files/{connector}/{path}"
@@ -97,7 +97,7 @@ class DatagrokClient:
             return pd.read_csv(StringIO(response.content.decode('utf-8')))
         return response.content
 
-    def upload_file(self, connector, path, file_path):
+    def upload_file(self, connector: str, path: str, file_path: str) -> None:
         '''
         Uploads a file to Datagrok.
 
@@ -115,7 +115,7 @@ class DatagrokClient:
         with open(file_path, 'rb') as file:
             self._request('POST', endpoint, content_type="application/octet-stream", data=file)
 
-    def share_dashboard(self, id, groups, access="View"):
+    def share_dashboard(self, id: str, groups: str, access: str = "View") -> None:
         '''
         Shares a dashboard.
 
@@ -136,9 +136,9 @@ class DatagrokClient:
         }
         self._request('GET', endpoint, params=params)
 
-    def create_dashboard(self, name, table_ids, layout_filename=None):
+    def create_dashboard(self, name: str, table_ids: str, layout_filename: Optional[str] = None) -> Dict[str, Any]:
         '''
-        Shares a dashboard.
+        Creates a dashboard.
 
         Parameters
         ----------
@@ -146,12 +146,12 @@ class DatagrokClient:
             Name for new dashboard.
         table_ids: str
             Comma-separated list of table ids
-        layout_filename: str
+        layout_filename: Optional[str]
             Optional. Filename for a project layout.
 
         Returns
         -------
-        object
+        Dict[str, Any]
             Identifiers of a project.
         '''
         name = name.replace(':', '.')
@@ -165,7 +165,7 @@ class DatagrokClient:
             response = self._request('POST', endpoint, content_type="application/json")
         return response.json()
 
-    def call_function(self, name, invocation_parameters):
+    def call_function(self, name: str, invocation_parameters: Dict[str, Any]) -> Any:
         '''
         Performs a call of datagrok function.
 
@@ -173,12 +173,12 @@ class DatagrokClient:
         ----------
         name: str
             Function name.
-        invocation_parameters: dict
+        invocation_parameters: Dict[str, Any]
             Dict with parameter values for function call.
 
         Returns
         -------
-        object
+        Any
             Result of invocation: either a single value or a list or outputs.
         '''
         name = name.replace(':', '.')
@@ -186,13 +186,14 @@ class DatagrokClient:
         response = self._request('POST', endpoint, json=invocation_parameters, content_type="application/json")
         return response.json()
 
-    def list_groups(self, smart_filter: str = None, include_personal: bool = False, include_members: bool = False, include_memberships: bool = False) -> List["Group"]:
+    def list_groups(self, smart_filter: Optional[str] = None, include_personal: bool = False, 
+                   include_members: bool = False, include_memberships: bool = False) -> List[Group]:
         '''
         Lists user groups from Datagrok.
 
         Parameters
         ----------
-        smart_filter: str
+        smart_filter: Optional[str]
             Optional. Smart search filter.
         include_personal: bool
             Optional. Include also personal groups. 
@@ -206,7 +207,6 @@ class DatagrokClient:
         List[Group]
             A list of Group instances.
         '''
-
         personal = str(include_personal).lower()
         smart_filter = smart_filter or f"personal={personal}"
         if smart_filter and not smart_filter.endswith(f"personal={personal}"):
@@ -228,7 +228,7 @@ class DatagrokClient:
         
         return [Group(self, **group_data) for group_data in response.json()]
     
-    def lookup_groups(self, query: str) -> List["Group"]:
+    def lookup_groups(self, query: str) -> List[Group]:
         '''
         Looks up groups from Datagrok by name.
 
@@ -248,7 +248,7 @@ class DatagrokClient:
 
         return [Group(self, **group_data) for group_data in response.json()]
 
-    def get_group(self, group_id: str) -> "Group":
+    def get_group(self, group_id: str) -> Group:
         '''
         Retrieves the details of a specific group by its ID. Includes group members and memberships.
 
@@ -266,7 +266,7 @@ class DatagrokClient:
         response = self._request('GET', endpoint)
         return Group(self, **response.json())
     
-    def get_group_members(self, group_id: str, admin: bool = None) -> List["Group"]:
+    def get_group_members(self, group_id: str, admin: Optional[bool] = None) -> List[Group]:
         '''
         Retrieves the members of a specific group by its ID.
 
@@ -274,7 +274,7 @@ class DatagrokClient:
         ----------
         group_id: str
             The ID of the group to retrieve members for.
-        admin: bool, optional
+        admin: Optional[bool]
             If set to True, only admin members will be included. If False, only non-admin members will be included.
             If not provided, only non-admin members are included.
 
@@ -283,7 +283,6 @@ class DatagrokClient:
         List[Group]
             A list of Group instances representing the members of the group.
         '''
-
         endpoint = f"/public/v1/groups/{group_id}/members"
         params = {}
         if admin is not None:
@@ -291,7 +290,7 @@ class DatagrokClient:
         response = self._request('GET', endpoint, params=params)
         return [Group(self, **group_data) for group_data in response.json()]
 
-    def get_group_memberships(self, group_id: str, admin: bool = None) -> List["Group"]:
+    def get_group_memberships(self, group_id: str, admin: Optional[bool] = None) -> List[Group]:
         '''
         Retrieves the memberships of a specific group by its ID.
 
@@ -299,7 +298,7 @@ class DatagrokClient:
         ----------
         group_id: str
             The ID of the group to retrieve members for.
-        admin: bool, optional
+        admin: Optional[bool]
             If set to True, only admin memberships will be included. If False, only non-admin memberships will be included.
             If not provided, only non-admin memberships are included.
 
@@ -308,14 +307,10 @@ class DatagrokClient:
         List[Group]
             A list of Group instances representing the members of the group.
         '''
-        # Prepare the URL and endpoint with the group ID
         endpoint = f"/public/v1/groups/{group_id}/memberships"
-        
-        # Prepare the query parameters
         params = {}
         if admin is not None:
             params["admin"] = admin
-
         response = self._request('GET', endpoint, params=params)
         return [Group(self, **group_data) for group_data in response.json()]
 
@@ -330,15 +325,14 @@ class DatagrokClient:
 
         Returns
         -------
-        None
-            This method does not return any data but raises an exception if the request fails.
+        GroupMembershipRequest
+            The created membership request.
         '''
-
         endpoint = f"/public/v1/groups/{group_id}/request"
         response = self._request('POST', endpoint)
         return GroupMembershipRequest(self, **response.json())
 
-    def get_group_membership_requests(self, group_id: str) -> List["GroupMembershipRequest"]:
+    def get_group_membership_requests(self, group_id: str) -> List[GroupMembershipRequest]:
         '''
         Retrieves a list of membership requests for a specific group.
 
@@ -352,7 +346,6 @@ class DatagrokClient:
         List[GroupMembershipRequest]
             A list of GroupMembershipRequest instances representing the requests for the group.
         '''
-
         endpoint = f"/public/v1/groups/{group_id}/requests"
         response = self._request('GET', endpoint)
         return [GroupMembershipRequest(self, **request_data) for request_data in response.json()]
@@ -404,22 +397,47 @@ class DatagrokClient:
         response = self._request('GET', endpoint)
         return Group(self, **response.json())
 
-    def save_group(self, group: Group, save_relations = False) -> Group:
+    def save_group(self, group: Group, save_relations: bool = False) -> Group:
         """
         Saves or updates group.
+
+        Parameters
+        ----------
+        group: Group
+            The group to save or update.
+        save_relations: bool
+            Whether to save group relations (members and memberships).
 
         Returns
         -------
         Group
-            Created group
+            The saved group instance.
         """
-
         group.ensure_id() 
         endpoint = "/public/v1/groups"
         response = self._request('POST', endpoint, json=group.to_dict(), params={'saveRelations': str(save_relations).lower()})
         return Group(self, **response.json())
     
-    def _request(self, method, endpoint, content_type="application/json", **kwargs):
+    def _request(self, method: str, endpoint: str, content_type: str = "application/json", **kwargs: Any) -> requests.Response:
+        """
+        Internal method to make HTTP requests to the Datagrok API.
+
+        Parameters
+        ----------
+        method: str
+            HTTP method to use (GET, POST, etc.)
+        endpoint: str
+            API endpoint to call
+        content_type: str
+            Content type for the request
+        **kwargs: Any
+            Additional arguments to pass to requests.request
+
+        Returns
+        -------
+        requests.Response
+            The response from the API
+        """
         url = f"{self.base_url}{endpoint}"
         headers = self.headers.copy()
         headers["Content-Type"] = content_type
