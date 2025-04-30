@@ -191,23 +191,23 @@ export class MonomerManager implements IMonomerManager {
           args.context.tableView.id !== (this.tv!.id ?? '') || !args.item || !args.item.isTableCell || (args.item.tableRowIndex ?? -1) < 0)
           return;
         const rowIdx = args.item.tableRowIndex;
-        args.menu.item('Edit Monomer', () => {
-          this.cloneMonomer(this.tv!.dataFrame.rows.get(rowIdx));
+        args.menu.item('Edit Monomer', async () => {
+          await this.editMonomer(this.tv!.dataFrame.rows.get(rowIdx));
         });
         if (this.tv!.dataFrame.selection.trueCount > 0) {
-          args.menu.item('Remove Selected Monomers', () => {
-            const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
-              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
+          args.menu.item('Remove Selected Monomers', async () => {
+            const monomers = await Promise.all(Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
+              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r))));
             this._newMonomerForm.removeMonomers(monomers, this.libInput.value!);
           });
-          args.menu.item('Selection To New Library', () => {
-            const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
-              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
+          args.menu.item('Selection To New Library', async () => {
+            const monomers = await Promise.all(Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
+              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r))));
             this.createNewLibDialog(monomers);
           });
         } else {
-          args.menu.item('Remove Monomer', () => {
-            const monomer = monomerFromDfRow(this.tv!.dataFrame.rows.get(rowIdx));
+          args.menu.item('Remove Monomer', async () => {
+            const monomer = await monomerFromDfRow(this.tv!.dataFrame.rows.get(rowIdx));
             this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
           });
         }
@@ -271,9 +271,9 @@ export class MonomerManager implements IMonomerManager {
       this._newMonomerForm.setEmptyMonomer();
     }, 'Add New Monomer');
 
-    const editButton = ui.icons.edit(() => {
+    const editButton = ui.icons.edit(async () => {
       if ((this.tv?.dataFrame?.currentRowIdx ?? -1) < 0) return;
-      this.cloneMonomer(this.tv!.dataFrame.rows.get(this.tv!.dataFrame.currentRowIdx));
+      await this.editMonomer(this.tv!.dataFrame.rows.get(this.tv!.dataFrame.currentRowIdx));
     }, 'Edit Monomer');
 
     const deleteButton = ui.icons.delete(async () => {
@@ -282,16 +282,16 @@ export class MonomerManager implements IMonomerManager {
       if (currentRowIdx < 0 && selectedRows.length === 0) return;
 
       if (selectedRows.length > 0) {
-        const monomers = selectedRows.map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
+        const monomers = await Promise.all(selectedRows.map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r))));
         await this._newMonomerForm.removeMonomers(monomers, this.libInput.value!);
         return;
       }
-      const monomer = monomerFromDfRow(this.tv!.dataFrame.rows.get(currentRowIdx));
+      const monomer = await monomerFromDfRow(this.tv!.dataFrame.rows.get(currentRowIdx));
       await this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
     });
 
     ui.tooltip.bind(deleteButton, () =>
-      `${(this.tv?.dataFrame?.selection?.getSelectedIndexes() ?? []).length > 0 ? 'Delete selected monomers' : 'Delete monomer'}`);
+      `${(this.tv?.dataFrame?.selection?.trueCount ?? 0) > 0 ? 'Delete selected monomers' : 'Delete monomer'}`);
 
     const downloadButton = ui.iconFA('arrow-to-bottom', async () => {
       const libName = this.libInput.value;
@@ -333,8 +333,8 @@ export class MonomerManager implements IMonomerManager {
     return this.tv;
   }
 
-  cloneMonomer(dfRow: DG.Row): Monomer {
-    this._newMonomer = monomerFromDfRow(dfRow);
+  async editMonomer(dfRow: DG.Row): Promise<Monomer> {
+    this._newMonomer = await monomerFromDfRow(dfRow);
     this._newMonomerForm.setMonomer(this._newMonomer);
     return this._newMonomer;
   }
@@ -384,6 +384,17 @@ export class MonomerManager implements IMonomerManager {
           const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
           return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
         });
+        let date: number | null = null;
+
+        if (monomers[i].createDate) {
+          try {
+            date = Date.parse(monomers[i].createDate!);
+          } catch (e) {
+            console.error(`Error parsing date ${monomers[i].createDate}`);
+          }
+        }
+
+
         df.rows.setValues(i, [
           molSmiles,
           monomers[i].symbol,
@@ -394,23 +405,30 @@ export class MonomerManager implements IMonomerManager {
           monomers[i].polymerType,
           monomers[i].naturalAnalog,
           monomers[i].author,
-          monomers[i].createDate,
+          date,
           monomers[i].id,
           JSON.stringify(monomers[i].meta ?? {}),
           monomers[i].lib?.source ?? '',
         ]);
+        // something is wrong with setting dates, so setting it manually for now
+        try {
+          if (date)
+            df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);
+        } catch (e) {
+          console.error(`Error setting date ${monomers[i].createDate}`);
+        }
       }
       df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
       uniqueRgroupNames.forEach((rgName) => {
         df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
       });
       df.currentRowIdx = -1;
-      // eslint-disable-next-line rxjs/no-ignored-subscription
-      df.onCurrentRowChanged.subscribe((_) => {
+      // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
+      df.onCurrentRowChanged.subscribe(async (_) => {
         try {
           if (df.currentRowIdx === -1 || this._newMonomerForm.molChanged)
             return;
-          this.cloneMonomer(df.rows.get(df.currentRowIdx));
+          await this.editMonomer(df.rows.get(df.currentRowIdx));
         } catch (e) {
           console.error(e);
         }
@@ -753,7 +771,7 @@ class MonomerForm implements INewMonomerForm {
     this.metaGrid.render();
     this.rgroupsGridRoot.style.display = 'flex';
     this.onMonomerInputChanged();
-    if (!monomer.naturalAnalog) {
+    if (!monomer.naturalAnalog && monomer.polymerType) {
       mostSimilarNaturalAnalog(capSmiles(monomer.smiles, this.rgroupsGrid.items as RGroup[]), monomer.polymerType).then((mostSimilar) => {
         if (mostSimilar)
           this.monomerNaturalAnalogInput.value = mostSimilar;
@@ -824,7 +842,7 @@ class MonomerForm implements INewMonomerForm {
       this.molSketcher.root,
       this.inputsTabControl.root,
       saveB,
-    ], {classes: 'ui-form', style: {paddingLeft: '10px', overflow: 'scroll'}});
+    ], {classes: 'ui-form', style: {paddingLeft: '10px', overflow: 'scroll', maxWidth: 'unset'}});
   }
 
   get fieldInputs() {
@@ -933,7 +951,7 @@ class MonomerForm implements INewMonomerForm {
       infoTable = this.getMonomerInfoTable(libJSON[existingMonomerIdx]);
       promptMessage = `Monomer with symbol '${monomer.symbol}' already exists in library ${libName}.\nAre you sure you want to overwrite it?`;
     } else if ((existingStructureIdx ?? -1) >= 0) {
-      const m = monomerFromDfRow(this.getMonomersDataFrame()!.rows.get(existingStructureIdx!));
+      const m = await monomerFromDfRow(this.getMonomersDataFrame()!.rows.get(existingStructureIdx!));
       infoTable = this.getMonomerInfoTable(m);
       promptMessage = `Monomer with the same structure already exists in library ${libName} with different symbol (${m.symbol}).\nAre you sure you want to duplicate it?`;
     }
@@ -1098,12 +1116,22 @@ function capSmiles(smiles: string, rgroups: RGroup[]) {
   return newSmiles;
 }
 
-function monomerFromDfRow(dfRow: DG.Row): Monomer {
+async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
   // hacky way for now, but meta object for now only supports key value pairs and not nested objects
-  const metaJSON = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}');
-  for (const key in metaJSON) {
-    if (typeof metaJSON[key] === 'object')
-      metaJSON[key] = JSON.stringify(metaJSON[key]);
+  let metaJSON: any;
+  try {
+    metaJSON = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}');
+    for (const key in metaJSON) {
+      if (typeof metaJSON[key] === 'object')
+        metaJSON[key] = JSON.stringify(metaJSON[key]);
+      // post-fix for detecting null values in meta object
+      if ((typeof metaJSON[key] === 'string' && (metaJSON[key] === DG.INT_NULL.toString() || metaJSON[key] === DG.FLOAT_NULL.toString())) ||
+        (typeof metaJSON[key] === 'number' && (metaJSON[key] === DG.INT_NULL || metaJSON[key] === DG.FLOAT_NULL))
+      )
+        metaJSON[key] = null;
+    }
+  } catch (e) {
+    console.error(e);
   }
   const smiles = dfRow.get(MONOMER_DF_COLUMN_NAMES.MONOMER);
   if (!smiles)
@@ -1118,16 +1146,30 @@ function monomerFromDfRow(dfRow: DG.Row): Monomer {
     console.error(e);
   }
 
+  let naturalAnalog = dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG);
+  const polymerType = dfRow.get(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+  let rGroups: RGroup[] = [];
+  try {
+    rGroups = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]');
+    if (!naturalAnalog && polymerType) {
+      const mostSimilar = await mostSimilarNaturalAnalog(capSmiles(smiles, rGroups), polymerType);
+      if (mostSimilar)
+        naturalAnalog = mostSimilar;
+    }
+  } catch (_) {
+    rGroups ??= [];
+  }
+
   return {
     symbol: dfRow.get(MONOMER_DF_COLUMN_NAMES.SYMBOL),
     name: dfRow.get(MONOMER_DF_COLUMN_NAMES.NAME),
     molfile: molfile,
     smiles: smiles,
-    polymerType: dfRow.get(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE),
+    polymerType: polymerType,
     monomerType: dfRow.get(MONOMER_DF_COLUMN_NAMES.MONOMER_TYPE),
-    naturalAnalog: dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG),
+    naturalAnalog: naturalAnalog,
     id: dfRow.get(MONOMER_DF_COLUMN_NAMES.ID),
-    rgroups: JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]'),
+    rgroups: rGroups,
     meta: metaJSON,
     author: dfRow.get(MONOMER_DF_COLUMN_NAMES.AUTHOR),
     createDate: dfRow.get(MONOMER_DF_COLUMN_NAMES.CREATE_DATE),

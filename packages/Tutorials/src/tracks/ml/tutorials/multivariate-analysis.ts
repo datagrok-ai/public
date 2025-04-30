@@ -47,6 +47,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     }));
   
     dlg.add(ui.input.int('Components'));
+    dlg.add(ui.input.bool('Quadratic', {value: false}));
   
     dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 

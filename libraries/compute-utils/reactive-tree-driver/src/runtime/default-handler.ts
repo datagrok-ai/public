@@ -12,7 +12,9 @@ export function defaultLinkHandler(
 ) {
   for (let i = 0; i < Math.min(inputs.length, outputs.length); i++) {
     const input = ctrlInstance.getFirst(inputs[i]);
-    const restriction = typeof defaultRestrictions === 'string' ? defaultRestrictions : defaultRestrictions?.[outputs[i]];
+    const restriction = typeof defaultRestrictions === 'string'
+      ? defaultRestrictions
+      : (defaultRestrictions?.[outputs[i]] ?? defaultRestrictions?.['*']);
     ctrlInstance.setAll(outputs[i], input, restriction);
   }
   ctrlInstance.close();

@@ -24,7 +24,7 @@ export interface IMonomerManager {
   /** Creates new monomer library in correct folder and adds given monomers */
   createNewMonomerLib(libName: string, monomers: Monomer[]): Promise<void>;
 
-  cloneMonomer(dfRow: DG.Row): Monomer;
+  editMonomer(dfRow: DG.Row): Promise<Monomer>;
 
   getNewMonomerForm(): INewMonomerForm;
 

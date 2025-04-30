@@ -5,7 +5,6 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {of} from 'rxjs';
 import {concatMap, delay} from 'rxjs/operators';
-import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {expectTreeConsistency, expectTreeData, expectTreeMeta, expectTreeValidations, getTreeStates, runRXTreeSnapshotTest} from '../../../test-utils';
 
@@ -74,7 +73,7 @@ category('ComputeUtils: Driver workflow test', async () => {
             from: 'in1:same(@base,stepSub)/a',
             to: 'out1:same(@base,stepSub)/a',
             handler({controller}) {
-              controller.setValidation('out1', makeValidationResult({warnings: ['warning from link 32']}));
+              controller.setValidation('out1', ({warnings: ['warning from link 32']}));
             },
           },
           {
@@ -94,7 +93,7 @@ category('ComputeUtils: Driver workflow test', async () => {
             from: 'in1:same(@base,stepDiv)/a',
             to: 'out1:same(@base,stepDiv)/a',
             handler({controller}) {
-              controller.setValidation('out1', makeValidationResult({warnings: ['warning from link 34']}));
+              controller.setValidation('out1', ({warnings: ['warning from link 34']}));
             },
           },
           {
@@ -207,7 +206,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         from: 'in1:stepAdd/res',
         to: 'out1:stepDiv/b',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['warning from link 7']}));
+          controller.setValidation('out1', ({warnings: ['warning from link 7']}));
         },
       }, {
         id: 'link8',
@@ -223,7 +222,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         from: 'in1:stepAdd/res',
         to: 'out1:stepSub/b',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['warning from link 9']}));
+          controller.setValidation('out1', ({warnings: ['warning from link 9']}));
         },
       }, {
         id: 'link10',

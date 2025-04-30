@@ -747,9 +747,13 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper());
     const positionColumns = splitSeqDf.columns.names();
-    if (positionColumns.every((colName) => cols.contains(colName)))
-      positionColumns.forEach((colName) => CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet));
-    else {
+    if (positionColumns.every((colName) => cols.contains(colName))) {
+      positionColumns.forEach((colName) => {
+        this.df.col(colName)!.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+        this.df.col(colName)!.setTag(C.TAGS.POSITION_COL, `${true}`);
+        CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet);
+      });
+    } else {
       for (const colName of positionColumns) {
         let col = this.df.col(colName);
         const newCol = splitSeqDf.getCol(colName);

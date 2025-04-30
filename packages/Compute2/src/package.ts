@@ -12,7 +12,6 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import './tailwind.css';
-import {makeAdvice, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
@@ -341,11 +340,11 @@ export async function MockPipeline2(params: any) {
           if (!action) return;
 
           controller.setValidation('toInitTemp',
-            makeValidationResult({errors: [
-              makeAdvice(
-                `Initial temperature should be more than ambient temperature ${ambTemp}`,
-                [{actionName: `Set reasonable initial temperature`, action}],
-              ),
+            ({errors: [
+              {
+                description: `Initial temperature should be more than ambient temperature ${ambTemp}`,
+                actions: [{actionName: `Set reasonable initial temperature`, action}],
+              },
             ]}));
         } else
           controller.setValidation('toInitTemp');

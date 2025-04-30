@@ -29,7 +29,7 @@ const inputs = [
   ui.input.image('image', {value: 'https://datagrok.ai/img/logo.svg'}),
   ui.input.tags('tags', {tags: ['Tag 1', 'Tag2', 'Tag3'], showButton: true}),
   ui.input.code('code', {script: 'print(\'Hello world!\')', mode: 'python', placeholder: 'print(\'Hello world!\')'}),
-  await ui.input.markdown('markdown', {value: await grok.dapi.files.readAsText('System:DemoFiles/bio/ngl-formats/README.md')}),
+  ui.input.markdown('markdown', {value: await grok.dapi.files.readAsText('System:DemoFiles/bio/ngl-formats/README.md')}),
 ];
 
 const form = DG.InputForm.forInputs(inputs);

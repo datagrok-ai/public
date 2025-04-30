@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of} from 'rxjs';
 import {HandlerBase} from './config/PipelineConfiguration';
-import {ActionItem, Advice, ValidationPayload, ValidationResult} from './data/common-types';
+import {ValidationResult} from './data/common-types';
 import {NodeAddressSegment, NodePathSegment, TreeNode} from './data/BaseTree';
 import {StateTreeNode} from './runtime/StateTreeNodes';
 
@@ -39,19 +39,6 @@ export function mergeValidationResults(...results: (ValidationResult | undefined
     }
   }
   return {errors, warnings, notifications};
-}
-
-export function makeAdvice(description: string, actions?: ActionItem[]) {
-  return {description, actions};
-}
-
-export function makeValidationResult(payload?: ValidationPayload): ValidationResult {
-  const wrapper = (item: string | Advice) => typeof item === 'string' ? makeAdvice(item) : item;
-  return {
-    errors: payload?.errors?.map((err) => wrapper(err)),
-    warnings: payload?.warnings?.map((warn) => wrapper(warn)),
-    notifications: payload?.notifications?.map((note) => wrapper(note)),
-  };
 }
 
 export function pathToUUID(

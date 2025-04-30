@@ -10,7 +10,6 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of, Subject} from 'rxjs';
 import {delay, filter, mapTo, skip, switchMap, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {snapshotCompare} from '../../../test-utils';
 
@@ -57,7 +56,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       to: 'out1:step1/a',
       type: 'validator',
       handler({controller}) {
-        controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
+        controller.setValidation('out1', ({warnings: [{description: 'test warn'}]}));
         return;
       },
     }],
@@ -448,7 +447,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         to: 'out1:step1/a',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['some warn']}));
+          controller.setValidation('out1', ({warnings: [{description: 'some warn'}]}));
           return;
         },
       }, {
@@ -457,7 +456,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         to: 'out1:step1/a',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['another warn']}));
+          controller.setValidation('out1', ({warnings: [{description: 'another warn'}]}));
           return;
         },
       }],

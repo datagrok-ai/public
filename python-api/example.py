@@ -1,6 +1,9 @@
 from datagrok_api import DatagrokClient
+from datagrok_api.group import Group
+
 import pandas as pd
 from sklearn.datasets import load_iris
+
 
 api = DatagrokClient('YOUR_TOKEN', 'API_URL')
 
@@ -29,3 +32,20 @@ dashboard_id = api.create_dashboard('python-test', iris_id, layout_filename='iri
 
 # Shares dashboard with admin
 api.share_dashboard(dashboard_id, 'Test')
+
+# List all groups that are not personal
+api.list_groups(include_personal=False, include_members=True, include_memberships=True)
+
+# Lookup for group by name
+developers_group = api.lookup_groups("Developers")[0]
+# Request group membership
+request = developers_group.request_membership()
+# Get all membership requests
+requests = developers_group.get_membership_requests()
+# Deny or approve requests. You should be admin of the group
+if requests[0].from_group.friendly_name == "John Doe" and not requests[0].is_viewed:
+	requests[0].approve()
+requests[1].deny()
+
+created_group = api.save_group(Group(friendlyName="R&D", description="Bio research group"))
+

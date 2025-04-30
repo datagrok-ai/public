@@ -71,6 +71,36 @@ Scaffold tree highlighting issue
   - The Scaffold Tree viewer name updates accordingly.Scaffold Tree`s name should be updated. 
   - The Color setting in the Scatterplot viewer also updates to reflect the new column name.
 
+### Modifying scaffold structure
+
+1. Open the file **SPGI.csv**.
+2. Navigate to **Chem > Analyze > Scaffold Tree**.  
+   **Expected:** The **Scaffold Tree viewer** should be added.
+3. In the Scaffold Tree toolbar, click the **plus (+)** icon to add new root structure.
+4. In the sketcher, draw the structure: **C1CCCC1**. Click **Add**.  
+   **Expected:** The scaffold is added as a root node in the tree.
+5. Filter the dataframe using the newly added scaffold.  
+   **Expected:** The dataframe displays **185 rows**, corresponding to the **185 hits** for this scaffold.
+6. Hover over the newly added scaffold node and click **Edit scaffold** from the floating toolbar.  
+7. Replace the structure with **C1CCCCC1** and click **Save**.  
+   **Expected:**  
+   - The scaffold node is updated.  
+   - The dataframe is now filtered to **332 rows**, reflecting the **332 hits** for the new structure.
+
+### Handling empty scaffold values
+
+1. Hover over any existing scaffold node and click **Edit scaffold** from the floating toolbar.  
+2. In the sketcher, **delete the structure**, then click **Save**.  
+   **Expected:**  
+   - The scaffold is updated to an empty structure.  
+   - The dataframe is filtered to **0 rows**, indicating **0 hits**.
+3. In the Scaffold Tree toolbar, click the **plus (+)** icon.
+4. In the sketcher, do not draw anything and click **Add**.  
+   **Expected:**  
+   - A new scaffold node is added to the tree.  
+   - The scaffold has **0 hits**.  
+   - The dataframe remains filtered to **0 rows**.
+
 ---
 {
 "order": 2,

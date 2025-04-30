@@ -2499,6 +2499,7 @@ export class MarkdownInput extends JsInputBase<string> {
   // Quill.js instance - loaded from the core .min.js file
   private editor: any;
   private readonly _editorRoot: HTMLDivElement = ui.div([], 'markdown-input');
+  private _textToSet?: string | null;
 
   private constructor(caption?: string) {
     super();
@@ -2506,38 +2507,45 @@ export class MarkdownInput extends JsInputBase<string> {
     this.addCaption(caption ?? '');
   }
 
-  static async create(caption?: string, options?: MarkdownConfig): Promise<MarkdownInput> {
+  static create(caption?: string, options?: MarkdownConfig): MarkdownInput {
     const input = new MarkdownInput(caption);
-    await Utils.loadJsCss([
+    ui.setUpdateIndicator(input.root, true, 'Loading markdown input...');
+    Utils.loadJsCss([
       '/js/common/quill/quill.min.js',
       '/js/common/quill/quill.snow.css',
       '/js/common/quill/quilljs-markdown.min.js',
-    ]);
-    //@ts-ignore
-    input.editor = new Quill(input._editorRoot, {
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          ['blockquote', 'code-block', 'image'],
-        ],
-      },
-      theme: 'snow', // or 'bubble'
-    });
-    if (options && options.value != null && options.value !== '')
+    ]).then(() => {
       //@ts-ignore
-      input.editor.setText(options.value);
-    input.editor.on('text-change', (_: any, __: any, source: string) => {
-      if (source === 'api')
-        input.fireChanged();
-      else if (source === 'user')
-        input.fireInput();
-    });
-    //@ts-ignore
-    new QuillMarkdown(input.editor, {
-      syntax: true, // enables code blocks, etc.
-      preview: true,
+      input.editor = new Quill(input._editorRoot, {
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['blockquote', 'code-block', 'image'],
+          ],
+        },
+        theme: 'snow', // or 'bubble'
+      });
+      if (input._textToSet != null || (options && options.value != null && options.value !== '')) {
+        //@ts-ignore
+        input.editor.setText(input._textToSet ?? options.value);
+        input._textToSet = null;
+      }
+      input.editor.on('text-change', (_: any, __: any, source: string) => {
+        if (source === 'api')
+          input.fireChanged();
+        else if (source === 'user')
+          input.fireInput();
+      });
+      //@ts-ignore
+      new QuillMarkdown(input.editor, {
+        syntax: true, // enables code blocks, etc.
+        preview: true,
+      });
+      ui.setUpdateIndicator(input.root, false);
+    }).catch((_) => {
+      ui.setUpdateIndicator(input.root, false);
     });
 
     return input;
@@ -2566,11 +2574,11 @@ export class MarkdownInput extends JsInputBase<string> {
   }
 
   setStringValue(value: string): void {
-    this.editor?.setText(value);
+    this.editor ? this.editor.setText(value): this._textToSet = value;
   }
 
   setValue(value: any): void {
-    this.editor?.setText(value);
+    this.editor ? this.editor.setText(value): this._textToSet = value;
   }
 }
 

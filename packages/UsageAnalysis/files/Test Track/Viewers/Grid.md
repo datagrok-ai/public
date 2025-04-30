@@ -23,7 +23,7 @@
 1. Check the other menu items.
 1. Repeate for molecular, numeric, bool and string columns
 
-#### 4. Column's context menu 
+#### 3. Column's context menu 
 
 1. Right-click the **Structure** column's header
 1. Switch **Renderer** to `As Text` and back to `As Structure`
@@ -36,24 +36,24 @@
   * Sort
   * Change type
 
-#### 3. Context Panel
+#### 4. Context Panel
 
  **Column**
 1. Open the **Context Panel** 
 1. Click any column's header
-1. Open the Filter Panel
-1. Check the sync between filters on the Context and Filter Panels
+1. Open the **Filter Panel**
+1. Check the sync between filters on the **Context** and **Filter Panels**
 1. Check color coding sync between the Context Panel and the column's menus
 1. Check the ability to change style
 1. Go to **Advanced** > **Permissions** > **Edited by** and enter your user name - **you should have the ability to edit the column**
-1. Go to Advanced > Permissions > Edited by and enter only your colleague's user name - **you should NOT have the ability to edit the column, a balloon should appear**
+1. Go to **Advanced** > **Permissions** > **Edited by** and enter only your colleague's user name - **you should NOT have the ability to edit the column, a balloon should appear when trying to edit**
  1. Check the other menu items
 
 **Grid**
-1. Click the Gear icon
+1. Click the **Gear** icon
 1. Modify the settings and check that the changes are reflected in the grid
 
-#### 4. Context menu
+#### 5. Context menu
 
 1. Right-click the grid
 1. Use **Add** item and add 
@@ -89,10 +89,11 @@
 #### 8. Filtering
 
 1. Open the **Filter Panel**  
-2. Apply structure, categorical, and numeric filters.  
+2. Apply structure, categorical, and numeric filters
+
 **Verify: The grid updates continuously as filters are adjusted**
 
-#### 7. Layout and Project save/restore
+#### 9. Layout and Project save/restore
 1. Save the layout
 2. Change the layout (e.g. add some viewers)
 1. Apply the saved layout - **Verify that all formatting, styling, coloring, column order, and other changes are preserved.**
