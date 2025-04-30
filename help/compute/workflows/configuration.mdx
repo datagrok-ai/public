@@ -3,11 +3,11 @@ title: "Configuration"
 sidebar_position: 1
 ---
 
-In this section the configuration object will be described in depth.
+In this section the configuration object is described in depth.
 
 ### Workflow providers
 
-There is a example of a minimal setup
+There is a example of a minimal workflow package setup
 [here](examples#development-setup-and-test). To register a workflow, a package
 function (called a provider), with at least these annotations is needed:
 ```
@@ -112,24 +112,25 @@ Actions specification, described [here](./link-types).
 
 _Optional_
 
-Init hook specification, described [here](./link-types).
+Init hook specification, described [here](./link-types#init-hook).
 
 #### `states`
 
 _Optional_
 
 A list states, each state is just an object with `id`. Could be used
-to store data from onInit hook, or some derived state based on scripts
-inputs/outputs. These states could be used in links the same way as
-scripts inputs/outputs.
+to store data from [onInit](./link-types#init-hook) hook, or some
+derived state based on scripts inputs/outputs. These states could be
+used in links the same way as scripts inputs/outputs.
 
 #### `tags`
 
 _Optional_
 
-A list of strings. The primary use case if for annotating that an item
-has a certain structural compatibility, like interfaces concept in
-programming. Could be matched in [links](./link-spec#tag-selectors).
+A list of strings. The primary use case if for annotating that a
+step/workflow has a certain structural invariants, like interfaces
+concept in programming. Could be matched in
+[links](./link-spec#tag-selectors).
 
 #### `structureCheck`
 
@@ -159,7 +160,7 @@ node](#script-nodes) . Each item must have an unique
 id. This array defines an immutable sequence of steps, but if nested
 workflows are dynamic, those could be internally mutated.
 
-__TODO ui example__
+__TODO ui gif example__
 
 ### Dynamic workflows
 
@@ -252,8 +253,9 @@ values.
 
 _Optional_
 
-A key-value object if input initial restrictions. Read more about
-restrictions [here](./link-types).
+A key-value object with input initial restrictions. Used with
+[initialValues](#initialvalues). Read more about restrictions
+[here](./link-types).
 
 #### `viewersHook`
 

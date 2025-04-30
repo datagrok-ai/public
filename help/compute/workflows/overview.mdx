@@ -4,24 +4,24 @@ sidebar_position: 0
 ---
 
 In this section a brief overview of primary concepts of workflows
-graph is provided.
+sre provided.
 
-### Scripts io as vertexes
+### Scripts nodes
 
 As described in [scripting](../scripting) section, scripts are just
 functions with a set of inputs and outputs (usually abbreviated to io
 in workflows documentation). Changes of inputs and outputs are tracked
 in a real time and are used to trigger links. Also a user is able to
-save the current state and load it later. Basically scripts with
-generated UI are reused in workflows as is.
+save the current workflow state and load it later. Basically scripts
+with generated UI are reused in workflows as is.
 
 __TODO: ui example__
 
-### Links as edges
+### Links
 
-Links are connections that are either pass data directly from source
-to target or do some transformations via Typescript. There are
-multiple types of links, some of them use source scripts
+Links are connections that are either pass data directly from a source
+script io to target or do some transformations via Typescript. There
+are multiple types of links, some of them use source scripts
 inputs/outputs to pass data to a virtual target, which is not stored
 in a script io. This way it is possible to have a derived state, for
 example a validation state.
@@ -38,20 +38,20 @@ scripts. For example, a script output will probably be a link input,
 and a link output will be a script input. More details about different
 link types are available [here](link-types).
 
-__TODO: simple diagram illustrating the above__
-
 ### Configuration
 
-To describe a graph a special typescript object is used. Since
+To describe a workflow a special typescript object is used. Since
 workflows are targeted to be deployed via Datagrok
 [packages](../../develop#packages), you can access typescript
 configuration typing by installing `@datagrok-libraries/compute-api`
 package. `PipelineConfiguration` type describes an n-ary tree
-structure where leafs are scripts. Each nested level is might have
-links definitions which target own or nested scripts io. The main
+structure where leafs are scripts. Each nested level might have links
+definitions which target own or nested scripts io. The main
 restriction for links is to have information propagated only forward
 (depth first graph ordering). More information about configuration is
 available [here](configuration). The configuration is used to make a
 navigation tree.
 
-__TODO: ui gif example__
+__TODO: simple diagram and code illustrating the above__
+
+__TODO: simple nav tree gif__

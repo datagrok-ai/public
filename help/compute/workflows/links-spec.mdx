@@ -3,13 +3,145 @@ title: "Link query language"
 sidebar_position: 3
 ---
 
-This section provides Link query language description.
+This section provides Link query language (abbreviated as LQL) description.
 
+### Query structure
 
-### DSL
+`NAME(FLAGS?):PATH`
+
+`NAME` is the LQL query name, this name is used in controllers to get
+results. Mandatory for any LQL query.
+
+`FLAGS` is an optional coma separated flag list. `optional` flag means
+that for creating a link matching this query is not necessary. `call`
+flag is used in [funccall](link-types/funccall-actions) actions, to
+specify that instead of a script io, FuncCall itself should be matched
+and returned.
+
+`PATH` is a mandatory path, where items are delimited by `/`. For
+example, assuming its data link input:
+
+```
+value(optional):myworkflow/subworkflow/script/input1
+```
+
+This query is named `value` and is optional. `myworkflow` is workflow
+id, that is a direct descendant of the workflow where the link is
+defined. `subworkflow` is a direct child of `myworkflow`. Since it is
+a data link, which targets script io, the last two item must be script
+and script io, in this example script id `script` and io name is
+`input1`. Links are allowed to match relatively nested items, so
+absolute paths with leading `/` are forbidden. The example above is an
+abbreviated form for the following:
+
+```
+value(optional):first(myworkflow)/first(subworkflow)/first(script)/input1
+```
+
+Meaning that the first item with the provided id will be matched. So
+by default `first` selector is used.
+
 
 ### Plain selectors
 
+All plain selectors support matching multiple ids via `or`. For
+example, `first(script1|script2)` will match the first item with id
+either `script1` or `script2`.
+
+#### `first`
+
+Matches the first item with provided ids among direct descendant.
+
+#### `last`
+
+Matches the last item with provided ids among direct descendant.
+
+#### `all`
+
+Matches all items with provided ids among direct descendant.
+
+
 ### Reference selectors
 
+These selectors are required for a link to have a
+[base](link-types#base) path. A special `expand` selector is available
+for base queries. Selector `expand` is working like `all` in terms of
+matching, but has a special meaning. For each match a separate link
+instance will be created (provided all other queries are matching as
+well). Each link instance will be triggered separately and pass data
+only from its own matched inputs to own matched outputs.
+
+For example, here is a part of link definition with base and reference
+selectors:
+
+```
+{
+  base: "base:myworkflow/expand(workflow1|workflow2)/script1",
+  from: "in:myworkflow/same(@base,workflow1|workflow2)/script1/output1"
+  to: "out:myworkflow/after+(@base,workflow1|workflow2)/script2/input1"
+}
+```
+
+If there are multiple grandchildren in the workflow with ids workflow1
+or workflow2, multiple links instances will be created. Each matched
+link instance will pass its own matched script1 output1 to the
+adjacent script2 input1. Reference selectors are using `@` base query
+name as the first argument, and id list as the second. Note that
+reference selectors should be on the same depth level as expand
+selectors in the base query. Use [tag selectors](#tag-selectors) if a
+more general matching is needed.
+
+#### `same`
+
+Matching same item as in the link instance base path.
+
+#### `before`
+
+Matching the first precising item with specified ids before the link instance base path.
+
+#### `after`
+
+Matching the first following item with specified ids before the link instance base path.
+
+#### `modifiers`
+
+For [before](#before) and [after](#after) special suffixes are
+available. `*` forcing to match all items, and `+` forcing to match an
+adjacent only items, both in the direction of a selector.
+
+Also for [before](#before) and [after](#after) a third parameter
+called stop ids is available. If during matching an id from this list
+is encountered (depending on the selector direction), matching is
+stopped.
+
+
 ### Tag selectors
+
+All selectors could used [tags](configuration#tags) instead of ids to
+make matching, by using prefix `#` selector prefix. Unlike ids, tags
+lists are matching using `and`, since it is possible to define
+multiple tags on the same script node or workflow. Also tags could be
+used to match items on different nested levels.
+
+For example:
+
+```
+`#first(tag1&tag2)`
+```
+
+Will match the first item that has both tag1 and tag2, regardless of
+how deeply it is nested. The order is defined by depth first
+traversal.
+
+It is also possible to combine tag and id selector in the same path:
+
+```
+`#all(tag1&tag2)`/last(script1|scirpt2)
+```
+
+Will match all items with both tag1 and tag2 first, regardless of how
+deep they are nested, and then match last child item that has id
+script1 or script2.
+
+Note that is possible to match only nested items, tags that are higher
+in the tree than a link definition will not be matched.
