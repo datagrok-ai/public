@@ -1,5 +1,5 @@
 ---
-title: "Develop Widgets for Home Page"
+title: "Develop widgets for home page"
 ---
 
 When you start Datagrok, the [Home page](../../../datagrok/navigation/views/browse.md#home-page)

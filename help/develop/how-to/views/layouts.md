@@ -1,5 +1,5 @@
 ---
-title: "Use Layouts"
+title: "Use layouts"
 ---
 
 [Layouts](../../../visualize/view-layout.md) define the way visualizations are positioned in a table view, allowing to
