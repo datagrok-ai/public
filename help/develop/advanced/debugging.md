@@ -112,7 +112,7 @@ Below we explain what the debugging configuration does. The first file, `launch.
 It allows VS Code to launch an isolated Chrome session in debugging mode linked to IDE, targeting the desired web
 address from `url`. In case you are working on a [package application](../function-roles.md#applications), put the
 application's URL in the configuration: `https://<GROK_HOST>/apps/<APP_NAME>` (see the
-[article](../how-to/build-an-app.md#launching-applications) on applications).
+[article](../how-to/apps/build-an-app.md#launching-applications) on applications).
 
 The second file, `tasks.json`, contains the following:
 

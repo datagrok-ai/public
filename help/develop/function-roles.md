@@ -38,7 +38,7 @@ cd <package-name>
 grok add app <name>
 ```
 
-*Details:* [How to build an application](how-to/build-an-app.md)
+*Details:* [How to build an application](how-to/apps/build-an-app.md)
 
 ## Info panels
 

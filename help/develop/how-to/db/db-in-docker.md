@@ -65,6 +65,6 @@ For a complete working example, please refer to the source code of our [DbTests 
 See also:
 
 - [Connect to a plugin Postgres database](db-in-plugin.md)
-- [Packages Docker containers](docker_containers.md)
-- [Packages](../develop.md#packages)
+- [Packages Docker containers](../packages/docker-containers.md)
+- [Packages](../../develop.md#packages)
 - [Data Access](./access-data.md)

@@ -291,7 +291,7 @@ Your package might contain the following additional folders, depending on your n
 
 [annotated functions]: ../../datagrok/functions/function.md
 
-[applications]: ../how-to/build-an-app.md#applications
+[applications]: ../how-to/apps/build-an-app.md#applications
 
 [competitor for jQuery]: https://www.npmjs.com/package/cash-dom
 

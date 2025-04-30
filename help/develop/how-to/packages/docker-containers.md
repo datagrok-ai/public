@@ -165,4 +165,4 @@ open the Property pane, and select **Logs** (for containers) or **Build logs** (
 
 See also:
 - [Packages](../../develop.md#packages)
-- [Connecting to database inside package Docker container](access-data-docker.md)
+- [Connecting to database inside package Docker container](../db/access-data.md)

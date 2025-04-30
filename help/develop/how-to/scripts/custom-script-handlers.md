@@ -11,7 +11,7 @@ Here’s a step-by-step guide on how to register custom script handler in the pa
 
 Start by defining your function that should accept [FuncCall](../../datagrok/concepts/functions/function-call) object.
 This function should execute the call and set the corresponding output parameters. The implementation details are up to you. 
-You may choose to use [WebAssembly](https://webassembly.org/) solutions or execute code in a [Docker container](../docker-containers.md).
+You may choose to use [WebAssembly](https://webassembly.org/) solutions or execute code in a [Docker container](../packages/docker-containers.md).
 
 ```typescript
 export async function myCustomScriptHandler(call: DG.FuncCall): Promise<void> {

@@ -212,7 +212,7 @@ After Day 7, you will learn how to:
 
 1. Create a simple application from the template:
    1. Read about [function roles](../function-roles.md)
-   1. See [instructions](../how-to/build-an-app.md) for building applications
+   1. See [instructions](../how-to/apps/build-an-app.md) for building applications
    1. Add a template application via `grok add`
    1. Publish your package and launch your app on the platform
 1. Modify the application:

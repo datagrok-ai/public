@@ -85,7 +85,7 @@ extensions.
 
 [Extending and customizing Datagrok]: ../packages/extensions.md
 
-[Building an application]: ../how-to/build-an-app.md
+[Building an application]: ../how-to/apps/build-an-app.md
 
 [Building a UI]: ../advanced/ui.md
 
