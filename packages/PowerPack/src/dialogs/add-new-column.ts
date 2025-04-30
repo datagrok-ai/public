@@ -129,7 +129,7 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
-  codeMirrorDiv = ui.div('', {style: {height: '140px', border: 'dotted 1px var(--grey-3)'}});
+  codeMirrorDiv = ui.div('', {style: {border: 'dotted 1px var(--grey-3)'}});
   errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
   hintDiv = ui.div('', 'cm-hint-div');
   columnNames: string[] = [];
@@ -137,6 +137,7 @@ export class AddNewColumnDialog {
   coreFunctionsNames: string[] = [];
   coreFunctionsParams: {[key: string]: FuncInfo} = {};
   packageFunctionsNames: {[key: string]: string[]} = {};
+  fullPackageFunctionNames: string[] = [];
   packageFunctionsParams: {[key: string]: FuncInfo} = {};
   packageNames: string[] = [];
   packageAutocomplete = false;
@@ -147,8 +148,17 @@ export class AddNewColumnDialog {
   mutationObserver: MutationObserver | null = null;
   mouseDownOnCm = false;
   updatePreviewEvent = new Subject<UpdatePreviewParams>();
+  widget?: DG.Widget;
+  applyFormulaButton?: HTMLButtonElement;
 
-  constructor(call: DG.FuncCall) {
+  constructor(call: DG.FuncCall, widget?: DG.Widget) {
+    if (widget)
+      this.widget = widget;
+    else {
+      this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
+      this.uiDialog = ui.dialog({ title: this.dialogTitle, helpUrl: this.helpUrl });
+    }
+    this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
     this.call = call;
     const table = call.getParamValue('table');
 
@@ -179,37 +189,59 @@ export class AddNewColumnDialog {
 
   /** Initializes all parameters and opens a Dialog Window. */
   async init(): Promise<void> {
-    this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
+    if (!this.widget) {
 
-    this.uiDialog = ui.dialog({title: this.dialogTitle, helpUrl: this.helpUrl});
+      this.inputName = this.initInputName();
+      this.inputType = this.initInputType();
 
-    this.inputName = this.initInputName();
-    this.inputType = this.initInputType();
+      // Not necessary, but if the Dialog knows about inputs, then it can implement extra-logic:
+      this.uiDialog!
+        .add(this.inputName)
+        .add(this.inputType);
 
-    // Not necessary, but if the Dialog knows about inputs, then it can implement extra-logic:
-    this.uiDialog
-      .add(this.inputName)
-      .add(this.inputType)
+      this.uiDialog!
+        .add(await this.initUiLayout())
+        .onOK(async () => {
+          await this.addNewColumnAction();
+        })
+        .show({ resizable: true, width: 750, height: 500 });
 
-    this.uiDialog
-      .add(await this.initUiLayout())
-      .onOK(async () => {
+      this.uiDialog!.onClose.subscribe((_) => {
         this.codeMirror?.destroy();
+        this.mutationObserver?.disconnect();
+      });
+
+      this.uiDialog!.history(
+        () => this.saveInputHistory(),
+        (x) => this.loadInputHistory(x),
+      );
+      this.prepareForSeleniumTests();
+    } else {
+      const editButton = ui.button('Edit', () => {
+        this.call.setParamValue('expression', this.codeMirror!.state.doc.toString());
+        this.applyFormulaButton!.disabled = true;
+        editButton.disabled = true;
+        const editDlg = new AddNewColumnDialog(this.call);
+        editDlg.uiDialog?.onCancel(() => {
+          this.applyFormulaButton!.disabled = false;
+          editButton.disabled = false;
+        });
+      }, 'Edit with preview');
+      this.applyFormulaButton = ui.button('Apply', async () => {
+        this.applyFormulaButton!.disabled = true;
         await this.addNewColumnAction();
-      })
-      .onCancel(async () => {
+        this.applyFormulaButton!.disabled = false;
+      }, 'Apply to the column');
+      this.widget.root.append(ui.divV([
+        this.codeMirrorDiv!,
+        this.errorDiv,
+        ui.divH([editButton, this.applyFormulaButton], {style: {justifyContent: 'right'}}),
+      ], {style: {maxWidth: '400px'}}));
+      this.widget.detach = () => {
+        this.mutationObserver?.disconnect();
         this.codeMirror?.destroy();
-      })
-      .show({resizable: true, width: 750, height: 500});
-
-    this.uiDialog.onClose.subscribe((_) => {
-      this.mutationObserver?.disconnect();
-    });
-
-    this.uiDialog.history(
-      () => this.saveInputHistory(),
-      (x) => this.loadInputHistory(x),
-    );
+      };
+    }
 
     this.codeMirror = this.initCodeMirror();
     this.codeMirrorDiv.addEventListener("keydown", (e: KeyboardEvent) => {
@@ -228,17 +260,17 @@ export class AddNewColumnDialog {
         });
       }
     });
-
-    this.prepareForSeleniumTests();
-    if (!this.call.getParamValue('expression'))
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
-    this.prepareFunctionsListForAutocomplete();
     //set initial focus on code mirror
     ui.tools.waitForElementInDom(this.codeMirrorDiv).then(() => setTimeout(() => this.codeMirror?.focus(), 50));
+
+    //update preview only for dialog
+    if (!this.call.getParamValue('expression') && !this.widget)
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
+    this.prepareFunctionsListForAutocomplete();
   }
 
   prepareFunctionsListForAutocomplete() {
-    //filter functions with one input (multiple inputs or functions returning void are not included)
+    //filter functions with one output (multiple outputs or functions returning void are not included)
     //also filter functions returning scalar param unless it is a vector function
     const returnTypeCond = (it: DG.Func) => {
       return (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType))
@@ -262,6 +294,7 @@ export class AddNewColumnDialog {
           this.packageFunctionsNames[packageName] = [];
         }
         this.packageFunctionsNames[packageName].push(func.name);
+        this.fullPackageFunctionNames.push(`${packageName}:${func.name}`);
         this.packageFunctionsParams[`${packageName}:${func.name}`] = {params: params, isVectorFunc: func.options['vectorFunc']};
       } catch { //in case of core functions calling func.package throws an exception
         const funcName = func.nqName.startsWith('core:') ? func.name : func.nqName;
@@ -348,32 +381,34 @@ export class AddNewColumnDialog {
       this.mouseDownOnCm = true;
     };
 
-    this.uiDialog!.root.onmouseleave = () => {
-      if(this.mouseDownOnCm) {
-        this.mouseDownOnCm = false;
-        cm.focus();
-      }
-    };
+    if (!this.widget) {
+      this.uiDialog!.root.onmouseleave = () => {
+        if (this.mouseDownOnCm) {
+          this.mouseDownOnCm = false;
+          cm.focus();
+        }
+      };
 
-    this.uiDialog!.root.onclick = () => {
-      setTimeout(() => {
-        this.setCodeMirrorFocus(cm);
-      }, 100);
-    };
+      this.uiDialog!.root.onclick = () => {
+        setTimeout(() => {
+          this.setCodeMirrorFocus(cm);
+        }, 100);
+      };
 
-    // Columns and functions can be drag-n-dropped into the Expression field:
-    ui.makeDroppable(this.codeMirrorDiv!, {
-      acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
-      doDrop: (dragObject, _) => {
-        cm.focus();
-        this.insertIntoCodeMirror(dragObject, cm);
-      },
-    });
+      // Columns and functions can be drag-n-dropped into the Expression field:
+      ui.makeDroppable(this.codeMirrorDiv!, {
+        acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
+        doDrop: (dragObject, _) => {
+          cm.focus();
+          this.insertIntoCodeMirror(dragObject, cm);
+        },
+      });
+    }
 
     //autocompletion extension
     const autocomplete = autocompletion({
-      override: [this.functionsCompletions(this.columnNames, this.packageNames, this.coreFunctionsNames,
-        this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
+      override: [this.functionsCompletions(this.columnNames, this.packageNames, this.fullPackageFunctionNames,
+        this.coreFunctionsNames, this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
       activateOnCompletion: ({ apply }) => {
         this.autocompleteEnter = true;
         //check for column autocompletion
@@ -416,7 +451,7 @@ export class AddNewColumnDialog {
       ".cm-column-name": {
         'color': 'var(--blue-2)',
         'font-weight': 'bold'
-       },
+      },
       ".cm-unmatched-bracket": {
         'color': 'red',
         'font-weight': 'bold'
@@ -532,8 +567,10 @@ export class AddNewColumnDialog {
 
             setSelection(cm, columnsAndSelections.unmatchedBracketsSelections, addUnmatchedParentheses);
 
-            (this.inputName!.input as HTMLInputElement).placeholder =
-              ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
+            if (!this.widget) {
+              (this.inputName!.input as HTMLInputElement).placeholder =
+                ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
+            }
             this.error = '';
             if (cmValue) {
               if (this.packageAutocomplete)
@@ -559,9 +596,12 @@ export class AddNewColumnDialog {
             ui.empty(this.errorDiv);
             if (this.error)
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
-            //in case os syntax error we try to run expression to save string interpolation functionality
-            this.updatePreviewEvent.next({expression: cmValue, changeName: false , error: !!this.error && this.error !== SYNTAX_ERROR});
-            this.uiDialog!.getButton('OK').disabled = !!this.error && this.error !== SYNTAX_ERROR;
+            const buttonToDisable = this.widget ? this.applyFormulaButton : this.uiDialog!.getButton('OK');
+            buttonToDisable!.disabled = !!this.error && this.error !== SYNTAX_ERROR;
+            if (!this.widget) {
+              //in case of syntax error we try to run expression to save string interpolation functionality
+              this.updatePreviewEvent.next({ expression: cmValue, changeName: false, error: !!this.error && this.error !== SYNTAX_ERROR });
+            }
           }),
         ],
       }),
@@ -592,11 +632,13 @@ export class AddNewColumnDialog {
   }
 
   setCodeMirrorFocus(cm: EditorView) {
-    if (!this.inputName!.root.contains(document.activeElement)
-      && !this.uiColumns!.contains(document.activeElement)
-      && !this.uiFunctions!.contains(document.activeElement)
-      && !this.inputType!.root.contains(document.activeElement)) {
+    if (!this.widget) {
+      if (!this.inputName!.root.contains(document.activeElement)
+        && !this.uiColumns!.contains(document.activeElement)
+        && !this.uiFunctions!.contains(document.activeElement)
+        && !this.inputType!.root.contains(document.activeElement)) {
         cm!.focus();
+      }
     }
   }
 
@@ -702,8 +744,8 @@ export class AddNewColumnDialog {
     const unmatchedCols: string[] = [];
     for (const colName of columnNames) {
       const unescapedMatch = grok.functions.handleOuterBracketsInColName(colName, false);
-        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()) && !unmatchedCols.includes(colName))
-          unmatchedCols.push(colName);
+      if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()) && !unmatchedCols.includes(colName))
+        unmatchedCols.push(colName);
     }
     if (unmatchedCols.length)
       return unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
@@ -1052,8 +1094,8 @@ export class AddNewColumnDialog {
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
     ui.setUpdateIndicator(this.gridPreview!.root, true);
-      await call.call(false, undefined, {processed: true, report: false});
-      /*    await this.previwDf!.columns.addNewCalculated(
+    await call.call(false, undefined, {processed: true, report: false});
+    /*    await this.previwDf!.columns.addNewCalculated(
           colName,
           this.inputExpression!.value,
           ...this.getSelectedType()
@@ -1213,15 +1255,28 @@ export class AddNewColumnDialog {
 
   /** Adds a New Column to the source table or edit formula for an existing column. */
   async addNewColumnAction(): Promise<void> {
-    if (!this.call.getParamValue('table'))
-      this.call.setParamValue('table', this.sourceDf);
-    this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName());
-    this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
-    this.call.setParamValue('type', this.getSelectedType()[0]);
-    this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
-    if (!this.edit)
-      this.call.setParamValue('subscribeOnChanges', true);
-    await this.call.call(false, undefined, {processed: false});
+    if (this.edit) {
+      const colToUpdate = this.sourceDf?.col(this.call!.getParamValue('name'));
+      if (colToUpdate) {
+        const name = this.widget ? this.call!.getParamValue('name') : this.inputName!.value;
+        const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
+        const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
+        await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
+        colToUpdate.name = name;
+        grok.shell.o = colToUpdate;
+      } else
+        grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
+    } else {
+      if (!this.call.getParamValue('table'))
+        this.call.setParamValue('table', this.sourceDf);
+      this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName());
+      this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
+      this.call.setParamValue('type', this.getSelectedType()[0]);
+      this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
+      if (!this.edit)
+        this.call.setParamValue('subscribeOnChanges', true);
+      await this.call.call(false, undefined, {processed: false});
+    }
   }
 
   /** Closes Add New Column Dialog Window. */
@@ -1234,34 +1289,42 @@ export class AddNewColumnDialog {
     this.uiDialog!.show({resizable: true});
   }
 
-  functionsCompletions(colNames: string[], packageNames: string[],
+  functionsCompletions(colNames: string[], packageNames: string[], fullPackageFunctionNames: string[],
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
-    packageFunctionsParams: {[key: string]: FuncInfo}, coreFunctionsParams:  {[key: string]: FuncInfo}) {
+    packageFunctionsParams: {[key: string]: FuncInfo}, coreFunctionsParams: {[key: string]: FuncInfo}) {
     return (context: CompletionContext) => {
-      let word = context.matchBefore(/[\w|:|$|${|$\[|'|"]*/);
+      const word = context.matchBefore(/[\w|:|$|${|$\[|'|"]*/);
       if (!word || word?.from === word?.to && !context.explicit)
         return null;
 
       //check if word is inside quotes and if yes - do not show autocomplete
-      const {quotesSelection, intervalsWithoutQuotes} = this.getIntervalsWithinAndOutsideQuotes(context.state.doc.toString());
+      const {quotesSelection, intervalsWithoutQuotes} =
+        this.getIntervalsWithinAndOutsideQuotes(context.state.doc.toString());
       for (let i = 0; i < quotesSelection.length; i++) {
         if (word.from >= quotesSelection[i].from && word.to <= quotesSelection[i].to)
           return null;
       }
 
-      let options: Completion[] = [];
+      const options: Completion[] = [];
       let index = word!.from;
       let filter = true;
+      const getFuncSignature = (name: string, propInfo: PropInfo[]) => {
+        return `${name}(${propInfo
+          .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
+          .map((it)=> it.propType).join(',')})`;
+      };
       if (word.text.includes(':')) {
-        const colonIdx = word.text.indexOf(":");
-        const packName = word.text.substring(0, word.text.indexOf(":"));
-        if (packageFunctionsNames[packName])
+        const colonIdx = word.text.indexOf(':');
+        const packName = word.text.substring(0, word.text.indexOf(':'));
+        if (packageFunctionsNames[packName]) {
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
-            options.push({ label: name, type: "variable",
-              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`].params
-                .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
-                .map((it)=> it.propType).join(',')})` })
+            options.push({
+              label: name,
+              type: 'variable',
+              apply: getFuncSignature(name, packageFunctionsParams[`${packName}:${name}`].params),
+            });
           });
+        }
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
@@ -1273,25 +1336,30 @@ export class AddNewColumnDialog {
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
           apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` :
             `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
-              closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` :
-                `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
-        index = word!.from + (openingBracketIdx === -1 ? word.text.lastIndexOf("$") + 1 : openingBracketIdx + 1);
+            closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` :
+              `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
+        index = word!.from + (openingBracketIdx === -1 ? word.text.lastIndexOf('$') + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
-      } else
-        coreFunctionsNames.concat(packageNames)
+      } else {
+        //number of core functions
+        const cf = coreFunctionsNames.length;
+        //number of core functions + package functions
+        const cpf = cf + fullPackageFunctionNames.length;
+        coreFunctionsNames.concat(fullPackageFunctionNames).concat(packageNames)
           .forEach((name: string, idx: number) => options.push({
-            label: name, type: "variable",
-            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name].params
-              .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
-              .map((it)=> it.propType).join(',')})` : `${name}:`,
-            detail: idx < coreFunctionsNames.length ? '' : 'package',
-            section: idx < coreFunctionsNames.length ? '' : 'packages'
+            label: name, type: 'variable',
+            apply: idx < cf ? getFuncSignature(name, coreFunctionsParams[name].params) :
+              idx < cpf ? getFuncSignature(name, packageFunctionsParams[name].params) :
+                `${name}:`,
+            detail: idx < cpf ? '' : 'package',
+            section: idx < cpf ? '' : 'packages',
           }));
+      }
       return {
         from: index,
         options: options,
-        filter: filter
-      } as CompletionResult
+        filter: filter,
+      } as CompletionResult;
     };
   }
 
@@ -1319,9 +1387,9 @@ export class AddNewColumnDialog {
         else  //in case columns is passed as parameter (GetCurrentRowFieldFunc) - we take column type
           pType = (ip as DG.FuncCallParam).value instanceof DG.FuncCall ? (ip as DG.FuncCallParam).value.func.name === 'GetCurrentRowField' ?
             this.sourceDf?.col((ip as DG.FuncCallParam).value.inputs['field'])?.type ?? 'null' :
-              Object.keys((ip as DG.FuncCallParam).value.outputParams).length > 0 ?
-                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType : 'null' :
-                  this.getValueType((ip as DG.FuncCallParam).value);
+            Object.keys((ip as DG.FuncCallParam).value.outputParams).length > 0 ?
+              (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType : 'null' :
+            this.getValueType((ip as DG.FuncCallParam).value);
         if (outType == '') {
           outType = pType;
           continue;
@@ -1357,4 +1425,17 @@ export class AddNewColumnDialog {
       }
     }
   }
+}
+
+export function prepareAddNewColumnFuncCall(col: DG.Column): DG.FuncCall {
+  const expression = col.getTag(DG.Tags.Formula);
+  const table = col.dataFrame;
+  const f = DG.Func.byName('AddNewColumn');
+  const fc = f.prepare({
+    'table': table,
+    'expression': expression,
+    'name': col.name,
+    'type': col.type,
+  });
+  return fc;
 }
