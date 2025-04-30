@@ -21,14 +21,10 @@ export interface Advice {
   actions?: ActionItem[];
 }
 
-export interface ValidationResult {
-  errors?: Advice[];
-  warnings?: Advice[];
-  notifications?: Advice[];
-}
+export type ValidationItem = string | Advice;
 
-export interface ValidationPayload {
-  errors?: (string | Advice)[],
-  warnings?: (string | Advice)[],
-  notifications?: (string | Advice)[],
+export interface ValidationResult {
+  errors?: ValidationItem[];
+  warnings?: ValidationItem[];
+  notifications?: ValidationItem[];
 }

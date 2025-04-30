@@ -6,7 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {callHandler, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const config1: PipelineConfiguration = {
@@ -64,7 +64,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         to: 'out1:step1/a',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
+          controller.setValidation('out1', ({warnings: ['test warn']}));
           return;
         },
       }, {
@@ -73,7 +73,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         to: 'out1:step1/b',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['another test warn']}));
+          controller.setValidation('out1', ({warnings: ['another test warn']}));
           return;
         },
       }],
@@ -98,31 +98,19 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const b = {
         'a': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'test warn',
-            },
-          ],
+          'warnings': ['test warn'],
           'notifications': [],
         },
       };
       const c = {
         'a': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'test warn',
-            },
-          ],
+          'warnings': ['test warn'],
           'notifications': [],
         },
         'b': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'another test warn',
-            },
-          ],
+          'warnings': ['another test warn'],
           'notifications': [],
         },
       };

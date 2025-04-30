@@ -6,7 +6,6 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {switchMap} from 'rxjs/operators';
-import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode, PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 
@@ -41,7 +40,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       to: 'out1:step3/a',
       type: 'validator',
       handler({controller}) {
-        controller.setValidation('out1', makeValidationResult({warnings: ['test warning']}));
+        controller.setValidation('out1', ({warnings: [{description: 'test warning'}]}));
       },
     }, {
       id: 'link3',
@@ -167,7 +166,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
 
       cold('-a').subscribe(() => {
-        (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', makeValidationResult({warnings: ['test warning2']}));
+        (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', ({warnings: [{description: 'test warning2'}]}));
       });
       cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
