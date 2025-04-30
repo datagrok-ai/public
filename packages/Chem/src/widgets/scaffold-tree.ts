@@ -610,7 +610,6 @@ async function handleMalformedStructures(molColumn: DG.Column, smiles: string): 
   return bitset;
 }
 
-const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
 const MAX_MOL_NUMBER = 500;
 const EXCEED_MAX_MOL_ERROR_MSG = `The row count exceeds the maximum allowed number of ${MAX_MOL_NUMBER}. Generation has been disabled.`;
@@ -1033,7 +1032,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       thisViewer.updateSizes();
       thisViewer.updateUI();
-      // We forcibly trigger a label update because the group's bitset hasn't changed, 
+      // We forcibly trigger a label update because the group's bitset hasn't changed,
       // even though the structure has been modified.
       await updateLabel(thisViewer, group, true);
 
@@ -2182,8 +2181,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clearFilters();
     this.setScaffoldTag(this.molColumn!, [], true);
 
-    if (this.fragmentsColumn && this.dataFrame)
+    if (this.fragmentsColumn && this.dataFrame) {
       this.dataFrame.columns.remove(this.fragmentsColumn.name);
+      this.fragmentsColumn = null;
+    }
 
     disconnectExistingObservers(this);
     super.detach();
@@ -2205,7 +2206,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
-    this.assignScaffoldColors();
+    if (!detach)
+      this.assignScaffoldColors();
   }
 
   selectGroup(group: DG.TreeViewNode) : void {
