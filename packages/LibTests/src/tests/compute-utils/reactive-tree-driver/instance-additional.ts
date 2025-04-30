@@ -6,7 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {callHandler, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const config1: PipelineConfiguration = {
@@ -64,7 +64,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         to: 'out1:step1/a',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
+          controller.setValidation('out1', ({warnings: ['test warn']}));
           return;
         },
       }, {
@@ -73,7 +73,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         to: 'out1:step1/b',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['another test warn']}));
+          controller.setValidation('out1', ({warnings: ['another test warn']}));
           return;
         },
       }],
@@ -98,31 +98,19 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const b = {
         'a': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'test warn',
-            },
-          ],
+          'warnings': ['test warn'],
           'notifications': [],
         },
       };
       const c = {
         'a': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'test warn',
-            },
-          ],
+          'warnings': ['test warn'],
           'notifications': [],
         },
         'b': {
           'errors': [],
-          'warnings': [
-            {
-              'description': 'another test warn',
-            },
-          ],
+          'warnings': ['another test warn'],
           'notifications': [],
         },
       };
@@ -314,7 +302,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved consistency state', async () => {
-    const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -336,7 +324,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved outdated state', async () => {
-    const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -358,7 +346,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Handle script errors', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -377,7 +365,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Remove script errors on success', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -398,7 +386,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   });
 
   test('Restore saved error state', async () => {
-    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockWrapper4', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config2);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();

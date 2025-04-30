@@ -4,32 +4,34 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
 import {AiZynthFinderViewer} from './aizynthfinder-viewer';
-import {createPathsTreeTabs, isFragment} from './utils';
+import {createPathsTreeTabs, isFragment, TAB_ID} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
-import { SAMPLE_TREE } from './mock-data';
+import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
+import { getUserConfigsFromDocker, KEY, settingsIcon, STORAGE_NAME } from './config-utils';
 
 export const _package = new DG.Package();
-
+const DEMO_MOLECULE = 'demo_molecule';
 
 //name: CalculateRetroSynthesisPaths
 //meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
+//meta.cache.invalidateOn: 0 0 * * 1
 //input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
+//input: string configName
 //output: string paths
-export async function calculateRetroSynthesisPaths(molecule: string): Promise<string> {
+export async function calculateRetroSynthesisPaths(molecule: string, configName?: string): Promise<string> {
   const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
   const startTime = performance.now();
   const currentUser = await grok.dapi.users.current();
   const userId = currentUser.id;
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
     method: 'POST',
-    body: JSON.stringify({smiles: molecule, id: userId}),
+    body: JSON.stringify({smiles: molecule, user_id: userId, config_name: configName}),
     headers: {'Content-Type': 'application/json'},
   });
   console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
   const resJson = await response.json();
   if (!resJson['success'])
-    throw new Error('Error occured during paths generation');
+    throw new Error(`Error occured during paths generation: ${resJson['error']}`);
 
   return resJson['result'];
 }
@@ -41,34 +43,61 @@ export async function calculateRetroSynthesisPaths(molecule: string): Promise<st
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
-  if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule))
-    return new DG.Widget(ui.divText('Molecule is empty'));
-  if (DG.chem.isSmarts(molecule) || isFragment(molecule))
-    return new DG.Widget(ui.divText('Not applicable for smarts or moleculer fragments'));
+  if (molecule !== DEMO_MOLECULE) {
+    if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule))
+      return new DG.Widget(ui.divText('Molecule is empty'));
+    if (DG.chem.isSmarts(molecule) || isFragment(molecule))
+      return new DG.Widget(ui.divText('Not applicable for smarts or moleculer fragments'));
 
-  //check molecule is valid and convert to smiles
-  try {
-    molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
-  } catch {
-    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+    //check molecule is valid and convert to smiles
+    try {
+      molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+    } catch {
+      return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+    }
   }
 
-  // Call retrosynthesis function
-  let result: string;
-  try {
-    result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-      {molecule: molecule});
-  } catch (e: any) {
-    return new DG.Widget(ui.divText(e));
-  }
+  const configName = grok.userSettings.getValue(STORAGE_NAME, KEY);
 
-  // Parse and process reaction data
+  let paths: Tree[] = [];
+  if (molecule !== DEMO_MOLECULE) {
+    try {
+      const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
+        {molecule: molecule, configName: configName ?? ''});
+      const reactionData: ReactionData = JSON.parse(result);
+      paths = reactionData?.data?.[0]?.trees;
+    } catch (e: any) {
+      return new DG.Widget(ui.divText(e));
+    }
+  } else
+    paths = DEMO_DATA;
+
   try {
-    const reactionData: ReactionData = JSON.parse(result);
-    const paths: Tree[] = reactionData?.data?.[0]?.trees;
-    // const paths = SAMPLE_TREE;
     if (paths.length) {
-      const w = new DG.Widget(createPathsTreeTabs(paths, false).root);
+      const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
+      let currentTreeObjId: string | null = null;
+      const tabControl = createPathsTreeTabs(paths, pathsObjects, false);
+      const settings = settingsIcon(configName);
+      const addToWorkSpace = ui.icons.add(() => {
+        if (currentTreeObjId) {
+          const df = DG.DataFrame.fromObjects(pathsObjects[currentTreeObjId]);
+          if (df) {
+            df.name = tabControl.currentPane.name;
+            grok.shell.addTableView(df);
+          }
+        }
+      }, 'Add paths to workspace as dataframe');
+      addToWorkSpace.classList.add('retrosynthesis-add-to-workspace-icon');
+      const iconsDiv = ui.divH([addToWorkSpace, settings], 'retrosynthesis-icons-div');
+      const updateCurrentPane = () => {
+        tabControl.currentPane.content.append(iconsDiv);
+        currentTreeObjId = tabControl.currentPane.content.getAttribute(TAB_ID);
+      };
+      tabControl.onTabChanged.subscribe(() => {
+        updateCurrentPane();
+      });
+      updateCurrentPane();
+      const w = new DG.Widget(tabControl.root);
       //workaround to make tree visible in undocked panel
       ui.tools.waitForElementInDom(w.root).then(() => {
         if (w.root.closest('.dialog-floating')) {
@@ -103,5 +132,49 @@ export function retrosynthesisViewer(): AiZynthFinderViewer {
 //name: retrosynthesisTopMenu
 export function retrosynthesisTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
+}
+
+//name: GetUserConfigs
+//output: list<string> configs
+export async function getUserConfigs(): Promise<string[]> {
+  return getUserConfigsFromDocker();
+}
+
+//name: Retrosynthesis Demo
+//description: Generate retrosynthesis paths
+//meta.demoPath: Cheminformatics | Retrosynthesis
+export async function retrosynthesisDemo(): Promise<void> {
+  await grok.functions.call('Chem:initChemAutostart');
+  const view = DG.View.create();
+  view.name = 'Retrosynthesis Demo';
+
+  const sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
+  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5')
+  const retrosynthesisDiv = ui.div('', 'retrosynthesis-demo');
+
+  const container = ui.divH([
+    sketcher.root,
+    retrosynthesisDiv,
+  ], {style: {height: '100%'}});
+
+  view.append(container);
+
+  let demoInited = false;
+  sketcher.onChanged.subscribe(async () => {
+    const smiles = sketcher.getSmiles();
+    if (smiles) {
+      try {
+        ui.empty(retrosynthesisDiv);
+        ui.setUpdateIndicator(retrosynthesisDiv, true, 'Calculating retrosyntehsis paths...');
+        const widget = await retroSynthesisPath(!demoInited ? DEMO_MOLECULE : smiles);
+        demoInited = true;
+        retrosynthesisDiv.append(widget.root);
+        ui.setUpdateIndicator(retrosynthesisDiv, false);
+      } catch (e) {
+        grok.shell.error('Invalid or empty molecule');
+      }
+    }
+  });
+  grok.shell.addPreview(view);
 }
 

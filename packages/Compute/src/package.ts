@@ -18,11 +18,6 @@ import {
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/validation';
-export {
-  makeValidationResult as makeValidationResult2,
-  makeAdvice as makeAdvice2,
-  mergeValidationResults as mergeValidationResults2,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {ModelCatalogView, ModelHandler, startModelCatalog, makeModelTreeBrowser, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst,
@@ -101,8 +96,8 @@ export function modelCatalog() {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
-  await makeModelTreeBrowser(treeNode);
+export function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
+  makeModelTreeBrowser(treeNode);
 }
 
 ////

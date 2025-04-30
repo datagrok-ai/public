@@ -28,7 +28,7 @@ Datagrok, a personal directory called **Home** is automatically created for you.
 :::note developers
 
 You can [create custom connectors](../databases/create-custom-connectors.md) 
-and [read files programmatically](../../develop/how-to/access-data.md#reading-files).
+and [read files programmatically](../../develop/how-to/db/access-data.md#reading-files).
 
 :::
 
@@ -172,13 +172,15 @@ HTML files.
 
 File preview is limited to files under 10MB. The platform won't display larger
 files. Unsupported file formats cannot be previewed, but you can download them.
+File upload is limited to 100MB if no explicit limit is set. Format-specific
+limits also apply: XLSX – 10MB, CSV – ~536MB, XML – 10MB, D42 – 500MB, ZIP – 50MB.
 
 :::
 
 :::note developers
 
 You can develop custom file viewers, folder viewers, and content viewers 
-[as plugins](../../develop/how-to/create-package.md). 
+[as plugins](../../develop/how-to/packages/create-package.md). 
 
 <details>
 <summary>Example: Create custom file viewers</summary>
@@ -194,14 +196,14 @@ To add a custom viewer, you have two options:
 * Develop in JavaScript using the [Datagrok JavaScript API](../../develop/packages/js-api.md).
 * Use the visualizations available for popular programming languages like Python, R, or Julia.
 
-To learn more about each option, see [Develop custom viewer](../../develop/how-to/develop-custom-viewer.md).
+To learn more about each option, see [Develop custom viewer](../../develop/how-to/viewers/develop-custom-viewer.md).
 
 </details>
 
 <details>
 <summary>Example: Create custom folder viewers</summary>
 
-In this example, a [script](../../develop/how-to/folder-content-preview.md) is
+In this example, a [script](../../develop/how-to/files/folder-content-preview.md) is
 executed against the folder content. If the folder contains files matching the
 file extension parameter, the **Preview** shows a custom
 [widget](../../visualize/widgets.md) (in this case - the application launch
@@ -213,7 +215,7 @@ link) every time the folder is opened.
 <details>
 <summary>Example: Create custom cell renderers</summary>
 
-In this example, a [script](../../develop/how-to/custom-cell-renderers.md) is executed 
+In this example, a [script](../../develop/how-to/grid/custom-cell-renderers.md) is executed 
 against the [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) 
 strings within the CSV file. The script computes the structure graph and 2D positional data, 
 and renders the structure graphically.
@@ -238,13 +240,13 @@ the column under **Stats**, or its data and semantic types under **Details**.
 :::note developers
 
 **Context Panel** can be extended. You can add custom 
-[info panes](../../develop/how-to/add-info-panel.md) and 
-[context actions](../../develop/how-to/context-actions.md).
+[info panes](../../develop/how-to/ui/add-info-panel.md) and 
+[context actions](../../develop/how-to/ui/context-actions.md).
 
 <details>
 <summary> Example: Image augmentation </summary>
 
-In this example, a [Python script](../../develop/how-to/create-custom-file-viewers.md) 
+In this example, a [Python script](../../develop/how-to/files/create-custom-file-viewers.md) 
 creates a custom _info pane_ called **Cell Imaging Segmentation**. This script executes 
 against JPEG and JPG files during the indexing process and extracts custom metadata 
 (such as the number of cells) and performs predefined transformations (such as cell segmentation). 

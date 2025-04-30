@@ -8,8 +8,8 @@ sidebar_position: 0
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
 platform. Use the [JS API](packages/js-api.md) to control pretty much anything within Datagrok,
 including [data manipulation](packages/js-api.md#data-manipulation), adding [views](packages/js-api.md#views)
-or [viewers](how-to/manipulate-viewers.md),
-[developing custom viewers](how-to/develop-custom-viewer.md),
+or [viewers](how-to/viewers/manipulate-viewers.md),
+[developing custom viewers](how-to/viewers/develop-custom-viewer.md),
 [registering functions](packages/js-api.md#registering-functions), training and
 applying [predictive models](../learn/learn.md), and
 even [building custom apps](../develop/how-to/build-an-app.md).
@@ -33,7 +33,7 @@ package might contain different things:
 * [Tables](../access/files/supported-formats.md#tabular-formats), files, and other objects
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
-the [step-by-step guide](how-to/create-package.md) for creating your own package.
+the [step-by-step guide](how-to/packages/create-package.md) for creating your own package.
 
 ## Package structure
 
@@ -57,7 +57,7 @@ In addition to that, it might contain the following folders:
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
-  Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
+  Examples: [EnamineStore](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
 * `connections` and `queries`: [connections](../access/access.md#data-connection)
   and [queries](../access/access.md#data-query) for data retrieval.
@@ -65,11 +65,11 @@ In addition to that, it might contain the following folders:
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.
   Example: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
-  <!--, [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)-->
+  <!--, [Discovery](https://github.com/datagrok-ai/labs/tree/master/packages/Discovery)-->
 * `files` and `tables`: data for demonstration and testing.
   Example: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)-->
-* `layouts`: `json` files with table view [layouts](how-to/layouts.md)
+  <!--, [Sunburst](https://github.com/datagrok-ai/labs/tree/master/packages/Sunburst)-->
+* `layouts`: `json` files with table view [layouts](how-to/views/layouts.md)
 * `schemas`: `yaml` files with property schemas
 * `jobs`: data jobs
 
@@ -221,7 +221,7 @@ consider:
   the [rules](https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name) for `npm` packages, e.g. `api-samples`
   and `octave-scripts`, are accepted as well. That being said, you can still write the desired name in the `fullName`
   field of `package.json`
-* When defining new [views](how-to/custom-views.md) and [viewers](how-to/develop-custom-viewer.md), we recommend
+* When defining new [views](how-to/views/custom-views.md) and [viewers](how-to/viewers/develop-custom-viewer.md), we recommend
   postfixing your classes with `View` and `Viewer` respectively
 * Functions that register an application don't need an `App` prefix/postfix. Split multi-word names with spaces and use
   title case, e.g., `Test Manager` instead of `testManagerApp`.
@@ -356,7 +356,7 @@ Standard package development includes the stages below:
 
 Most of the above steps can be automated
 using [CI/CD tools](https://www.redhat.com/en/topics/devops/what-is-ci-cd#ci/cd-tools). You can use [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml)
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml)
 in [GitHub Actions](https://github.com/features/actions) as an example. It builds, tests, and publishes
 our [public packages](https://github.com/datagrok-ai/public/tree/master/packages).
 
@@ -367,12 +367,12 @@ To test a package in CI, you need the following:
 1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose/docker-compose.md)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
-4. Run tests using [grok test](how-to/test-packages.md#local-testing)
+4. Run tests using [grok test](how-to/tests/test-packages.md#local-testing)
 
 ##### Install dependencies in GitHub Actions
 
 To install dependent grok packages in [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml), you can
 use `devDependencies` in [package.json](#packagejson) We used an individual `grokDependencies`
 section earlier, but now this content is moved to `devDependencies` for a better CI process
 
@@ -387,7 +387,7 @@ section earlier, but now this content is moved to `devDependencies` for a better
 ##### Skip tests in GitHub Actions
 
 To skip running tests in [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml) you can use `skipCI`
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yaml) you can use `skipCI`
 in [package.json](#packagejson)
 
 ```json
@@ -551,4 +551,4 @@ See also:
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
-[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Samples/scripts

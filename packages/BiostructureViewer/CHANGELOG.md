@@ -1,5 +1,9 @@
 # Biostructure Viewer changelog
 
+## 1.4.2 (2025-04-17)
+
+ * Error handling for ligands and semtype check fix
+
 ## 1.3.3 (2025-02-06)
 
 * * [#3244](https://github.com/datagrok-ai/public/issues/3244): BsV: Does not maintain opened structure file

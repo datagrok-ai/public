@@ -9,8 +9,6 @@ import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
-import { LruCache } from './utils';
-import * as DG from "./dataframe";
 
 
 const api: IDartApi = <any>window;
@@ -95,14 +93,14 @@ export class Rect {
     let minY = y[0];
     let maxX = x[0];
     let maxY = y[0];
-  
+
     for (let i = 1; i < x.length; i++) {
       minX = Math.min(minX, x[i]);
       minY = Math.min(minY, y[i]);
       maxX = Math.max(maxX, x[i]);
       maxY = Math.max(maxY, y[i]);
     }
-  
+
     return new Rect(minX, minY, maxX - minX, maxY - minY);
   }
 
@@ -1268,80 +1266,18 @@ export class GridCellRenderer extends CanvasRenderer {
   }
 
   hasContextValue(gridCell: GridCell): boolean { return false; }
-  async getContextValue (gridCell: GridCell): Promise<any> { return null; }
+  async getContextValue(gridCell: GridCell): Promise<any> { return null; }
 
-  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
-  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
+  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void { }
+  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void { }
 
-  onMouseEnter(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseLeave(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseUp(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseMove(gridCell: GridCell, e: MouseEvent): void {}
-  onClick(gridCell: GridCell, e: MouseEvent): void {}
-  onDoubleClick(gridCell: GridCell, e: MouseEvent): void {}
-}
-
-export abstract class BatchCellRenderer extends GridCellRenderer {
-  currentTimeout: any = null;
-  isRunning: boolean = false;
-  loadedValues: Map<string, any> = new Map<string, any>();
-  cellsToLoad: GridCell[] = [];
-  cellsToLoadOnTimeoutComplete: GridCell[] = [];
-  cache: LruCache<string, any>;
-
-  constructor(cache: LruCache<string, any>) {
-      super();
-
-      this.cache = cache;
-  }
-
-  abstract loadData(keys: string[]) : Promise<Map<string, any>>;
-
-  async retrieveBatch(gridCell: GridCell) {
-      let found = this.cellsToLoad.filter((e) => {
-          return e.grid === gridCell.grid && e.value === gridCell.value && e.gridColumn.name === gridCell.gridColumn.name && e.gridRow === gridCell.gridRow;
-      }) ?? [];
-
-      if (found.length > 0)
-          return;
-
-      if (this.isRunning) {
-          this.cellsToLoadOnTimeoutComplete.push(gridCell)
-          return;
-      }
-
-      this.cellsToLoad.push(gridCell)
-
-      if (this.currentTimeout)
-          clearTimeout(this.currentTimeout);
-
-
-      this.currentTimeout = setTimeout(async () => {
-          this.isRunning = true;
-
-
-          this.loadedValues = await this.loadData(this.cellsToLoad.map((e) => e.cell.valueString));
-
-          for (const [key, value] of this.loadedValues) {
-              this.cache.set(key, value);
-          }
-
-          this.cellsToLoad.forEach((x) => {
-              if (!this.loadedValues.has(x.cell.valueString))
-                  this.cache.set(x.cell.valueString, null);
-              x.grid.invalidate();
-          })
-
-          this.loadedValues.clear();
-          this.cellsToLoad = []
-          this.currentTimeout = null;
-          this.isRunning = false;
-          if (this.cellsToLoadOnTimeoutComplete.length > 0)
-              this.cellsToLoadOnTimeoutComplete.forEach((cell) => { this.retrieveBatch(cell) })
-          this.cellsToLoadOnTimeoutComplete = [];
-      });
-  }
+  onMouseEnter(gridCell: GridCell, e: MouseEvent): void { }
+  onMouseLeave(gridCell: GridCell, e: MouseEvent): void { }
+  onMouseDown(gridCell: GridCell, e: MouseEvent): void { }
+  onMouseUp(gridCell: GridCell, e: MouseEvent): void { }
+  onMouseMove(gridCell: GridCell, e: MouseEvent): void { }
+  onClick(gridCell: GridCell, e: MouseEvent): void { }
+  onDoubleClick(gridCell: GridCell, e: MouseEvent): void { }
 }
 
 /** Proxy class for the Dart-based grid cell renderers. */
@@ -1461,7 +1397,7 @@ export class ColumnGrid extends Widget {
       options?.applyVisibility ? (cg: any) => options?.applyVisibility?.(toJs(cg)) : null,
       options?.gridOptions, options?.addServiceColumns));
   }
-  
+
   /** Creates a new popup grid. */
   static popup(dfSource: DataFrame, options?: {
     filter?: (c: Column) => boolean;
@@ -1472,7 +1408,7 @@ export class ColumnGrid extends Widget {
   }): ColumnGrid {
     return new ColumnGrid(api.grok_ColumnGrid_Create_Popup(dfSource.dart, options?.filter, options?.addEmpty ?? false,
       options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName ?? null));
-    }
+  }
 
   /** Creates a new column selector grid. */
   static columnSelector(dfSource: DataFrame, options?: {
@@ -1480,9 +1416,9 @@ export class ColumnGrid extends Widget {
     filter?: (c: Column) => boolean;
     isChecked?: (c: Column) => boolean;
   }): ColumnGrid {
-    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnSelector(dfSource.dart, options?.checkAll ?? false, options?.filter, options?.isChecked));  
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnSelector(dfSource.dart, options?.checkAll ?? false, options?.filter, options?.isChecked));
   }
-  
+
   get dfColumns(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfColumns(this.dart)); }
   get dfSource(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfSource(this.dart)); }
   get gridSource(): Grid { return toJs(api.grok_ColumnGrid_Get_GridSource(this.dart)); }
@@ -1492,7 +1428,7 @@ export class ColumnGrid extends Widget {
 
   get filter(): (c: Column) => boolean { return api.grok_ColumnGrid_Get_Filter(this.dart); }
   set filter(f: (c: Column) => boolean) { api.grok_ColumnGrid_Set_Filter(this.dart, f); }
-  
+
   addCheckedSelect(): void { api.grok_ColumnGrid_AddCheckedSelect(this.dart); }
   filterColumns(): void { api.grok_ColumnGrid_FilterColumns(this.dart); }
   shouldShowColumnTooltip(col: Column): boolean { return api.grok_ColumnGrid_ShouldShowColumnTooltip(this.dart, col.dart); }
@@ -1511,7 +1447,7 @@ export class ColumnGrid extends Widget {
   initColumnTooltips(): void { api.grok_ColumnGrid_InitColumnTooltips(this.dart); }
   initColumnDragDrop(): void { api.grok_ColumnGrid_InitColumnDragDrop(this.dart); }
   init(dfSource: DataFrame, gridSource?: Grid, filter?: (c: Column) => boolean,
-  syncSelections?: boolean, order?: Column[], addServiceColumns?: boolean): void {
+    syncSelections?: boolean, order?: Column[], addServiceColumns?: boolean): void {
     api.grok_ColumnGrid_Init(this.dart, dfSource.dart, gridSource?.dart, filter,
       syncSelections ?? true, order?.map((c) => c.dart), addServiceColumns ?? false);
   }

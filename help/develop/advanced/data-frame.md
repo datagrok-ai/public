@@ -3,7 +3,7 @@ title: "Dataframe"
 ---
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
-[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame)
+[DG.DataFrame](https://datagrok.ai/js-api/dg/classes/DataFrame)
 is used in virtually any Datagrok extension or application. It operates via a columnar in-memory data engine which
 Datagrok implemented from scratch to support highly efficient operation with data in a modern browser together with fast
 in-browser data visualizations.
@@ -14,7 +14,7 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.Cell) are
+[`DG.Row`](https://datagrok.ai/js-api/dg/classes/Row) and [`DG.Cell`](https://datagrok.ai/js-api/dg/classes/Cell) are
 used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
@@ -660,7 +660,7 @@ property setter).
 
 [112]: https://github.com/datagrok-ai/public/tree/master/packages/Chem "Chem package"
 
-[113]: ../../develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
+[113]: ../how-to/functions/define-semantic-type-detectors.md "Defining semantic types detectors"
 
 [114]: #tags-and-temp-collections "Tags and Temp collections"
 
@@ -680,7 +680,7 @@ property setter).
 
 [123]: https://public.datagrok.ai/js/samples/data-frame/find-columns "Find columns"
 
-[124]: ../how-to/customize-grid.md#color-coding "Color coding"
+[124]: ../how-to/grid/customize-grid.md#color-coding "Color coding"
 
 [125]: #numerical-and-categorical-columns "Numerical and categorical columns"
 

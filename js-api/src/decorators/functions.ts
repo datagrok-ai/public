@@ -1,6 +1,6 @@
 export namespace decorators {
 
-  /** A function that registers [DG.JsViewer](https://datagrok.ai/js-api/classes/dg.JsViewer).
+  /** A function that registers [DG.JsViewer](https://datagrok.ai/js-api/dg/classes/JsViewer).
    * @param name - function name in UI.
    * @param description - function description in UI.
    * @param icon - path to an icon file from the package root.
@@ -45,7 +45,7 @@ export namespace decorators {
     return function(constructor: Function) {};
   }
 
-  /** A function that registers [DG.Filter](https://datagrok.ai/js-api/classes/dg.Filter).
+  /** A function that registers [DG.Filter](http://datagrok.ai/js-api/dg/classes/Filter).
    * @param name - function name in UI.
    * @param description - function description in UI.
    * @param semType - semantic type name (e.g., "Molecule"). See [DG.SEMTYPE](https://datagrok.ai/js-api/enums/dg.SEMTYPE)
@@ -60,7 +60,7 @@ export namespace decorators {
     return function(constructor: Function) {};
   }
 
-  /** A function that registers [DG.GridCellRender](https://datagrok.ai/js-api/classes/dg.GridCellRenderer).
+  /** A function that registers [DG.GridCellRender](https://datagrok.ai/js-api/grok/namespaces/decorators/functions/cellRenderer).
    * @param name - function name in UI.
    * @param description - function description in UI.
    * @param cellType - cell type name (e.g., "html", "image").

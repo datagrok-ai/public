@@ -1,8 +1,47 @@
 .retrosynthesis-reaction-container {
   position: relative;
   margin-top: 15px;
+  width: fit-content;
+}
+
+.retrosynthesis-reaction-container:hover .retrosynthesis-icons-div {
+  visibility: visible;
 }
 
 .retrosynthesis-mol-rect {
   cursor: pointer;
+}
+
+.retrosynthesis-icons-div {
+  position: absolute;
+  font-size: 16px;
+  top: 0px;
+  gap: 5px;
+  right: 0px;
+  visibility: hidden;
+}
+
+.retrosynthesis-add-to-workspace-icon {
+  color: var(--blue-1);
+}
+
+.retrosynthesis-settings-dlg .dlg-settings {
+  min-height: 10px;
+}
+
+.retrosynthesis-add-config-icon {
+    color: var(--blue-1);
+    padding-left: 8px;
+    padding-top: 10px;
+}
+
+.retrosynthesis-demo {
+  width: 100%;
+  height: 100%; 
+  position: relative;
+}
+
+.retrosynthesis-demo .d4-tab-host {
+  width: 100%!important;
+  height: 100%!important;
 }

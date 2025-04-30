@@ -350,7 +350,7 @@ export class HttpDataSource<T> {
   /** Applies filter to current request.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search}
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search}
    *  @param {string} w
    *  @returns {HttpDataSource} */
   filter(w: string): HttpDataSource<T> {
@@ -603,7 +603,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
 /**
  * Functionality for handling connections collection from server and working with credentials remote endpoint
  * Allows to manage {@link DataConnection}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security}
  * @extends HttpDataSource
  * */
 export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
@@ -657,7 +657,7 @@ export class FuncsDataSource extends HttpDataSource<Func> {
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
  * Allows to manage {@link Credentials}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource<Credentials> {

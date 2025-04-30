@@ -2021,8 +2021,13 @@ export async function getContainer() {
   return container;
 }
 
+export async function getChempropError(response: Response): Promise<string> {
+  const match = (await response.text()).match(/[\w.]+Error:\s*(.*)/);
+  return match ? match[1] : response.statusText;
+}
+
 export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
-  const container = await getContainer();
+  let chempropContainer = await getContainer();
 
   const body = {
     type: 'Chemprop',
@@ -2038,15 +2043,17 @@ export async function trainModelChemprop(table: string, predict: string, paramet
   });
 
   if (response.status !== 201) {
-    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+    chempropContainer = await grok.dapi.docker.dockerContainers.find(chempropContainer.id);
+    const started = chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking');
+    if (!started)
       throw new Error(`Failed to start container: ${container.friendlyName}`);
-    throw new Error(`Error training model: ${response.statusText}`);
+    throw new Error(await getChempropError(response));
   }
   return new Uint8Array(await response.arrayBuffer());
 }
 
 export async function applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
-  const container = await getContainer();
+  let chempropContainer = await getContainer();
 
   const body = {
     modelBlob: Array.from(modelBlob),
@@ -2060,9 +2067,11 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
   });
 
   if (response.status !== 201) {
-    if (!container.status.startsWith('started') && !container.status.startsWith('checking'))
+    chempropContainer = await grok.dapi.docker.dockerContainers.find(chempropContainer.id);
+    const started = chempropContainer.status.startsWith('started') || chempropContainer.status.startsWith('checking');
+    if (!started)
       throw new Error(`Failed to start container: ${container.friendlyName}`);
-    throw new Error(`Error applying model: ${response.statusText}`);
+    throw new Error(await getChempropError(response));
   }
 
   const data = await response.json();
@@ -2076,7 +2085,7 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 //input: dataframe df
 //input: column predictColumn
 //input: string dataset_type = 'regression' {category: General; choices: ['regression', 'classification']} [Type of dataset, e.g. classification or regression. This determines the loss function used during training.]
-//input: string metric = 'rmse' {category: General; choices: ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy']} [Metric to use during evaluation. Note: Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).]
+//input: string metric = 'rmse' {category: General; choices: ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1']} [Metric to use during evaluation. Note: Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).]
 //input: int multiclass_num_classes = 3 {category: General} [Number of classes when running multiclass classification]
 //input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
 //input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]

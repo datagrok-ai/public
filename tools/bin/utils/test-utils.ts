@@ -322,7 +322,119 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
+async function runTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
+  let failed = false;
+  let verbosePassed = "";
+  let verboseSkipped = "";
+  let verboseFailed = "";
+  let error = "";
+  let countPassed = 0;
+  let countSkipped = 0;
+  let countFailed = 0;
+  let resultDF: any = undefined;
+  let lastTest: any = null;
+  let res: string  = '';
+  try {
+    for (let testParam of testsParams) {
+      lastTest = testParam;
+      let df: any = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
+      let flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+      df.columns.add(flakingCol);
+      let packageNameCol = (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+      df.columns.add(packageNameCol);
+      if (df.rowCount === 0) {
+        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+        countFailed += 1;
+        failed = true;
+        continue;
+      }
+
+      let row = df.rows.get(0);
+      if (df.rowCount > 1) {
+        let unhandledErrorRow = df.rows.get(1);
+        if (!unhandledErrorRow.get("success")) {
+          unhandledErrorRow["category"] = row.get("category");
+          unhandledErrorRow["name"] = row.get("name");
+          row = unhandledErrorRow;
+        }
+      }
+      const category = row.get("category");
+      const testName = row.get("name");
+      const time = row.get("ms");
+      const result = row.get("result");
+      const success = row.get("success");
+      const skipped = row.get("skipped");
+      row["flaking"] = success && (<any>window).DG.Test.isReproducing;
+
+      df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
+      df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
+      // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
+
+      if (resultDF === undefined)
+        resultDF = df;
+      else
+        resultDF = resultDF.append(df);
+
+      if (row["skipped"]) {
+        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countSkipped += 1;
+      }
+      else if (row["success"]) {
+        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countPassed += 1;
+      }
+      else {
+        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countFailed += 1;
+        failed = true;
+      }
+      if ((success !== true && skipped !== true) && stopOnFail)
+        break;
+    }
+
+    if ((<any>window).DG.Test.isInDebug) {
+      console.log('on browser closing debug point');
+      debugger
+    }
+
+    res = '';
+    if (resultDF) {
+      const bs = (<any>window).DG.BitSet.create(resultDF.rowCount)
+      bs.setAll(true);
+      for (let i = 0; i < resultDF.rowCount; i++) {
+        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
+          bs.set(i, false);
+        }
+      }
+      resultDF = resultDF.clone(bs);
+      res = resultDF.toCsv();
+    }
+  } catch (e) {
+    failed =true;
+
+    error = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+      `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+  }
+
+  return {
+    failed: failed,
+    verbosePassed: verbosePassed,
+    verboseSkipped: verboseSkipped,
+    verboseFailed: verboseFailed,
+    passedAmount: countPassed,
+    skippedAmount: countSkipped,
+    failedAmount: countFailed,
+    error: error,
+    csv: res,
+    // df: resultDF?.toJson()
+  };
+}
+
 export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+  let testsToRun = {
+    func: runTests.toString(),
+    tests: testExecutionData
+  };
   return await timeout(async () => {
     const params = Object.assign({
       devtools: browserOptions.debug
@@ -361,26 +473,46 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
         (<any>window).DG.Test.isInDebug = true;
 
       return new Promise<any>((resolve, reject) => {
-        (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
-          .then((results: any) => {
-            resolve(results);
-          })
-          .catch((e: any) => {
-            resolve({
-              failed: true,
-              verbosePassed: "",
-              verboseSkipped: "",
-              verboseFailed: "Tests execution failed",
-              error: JSON.stringify(e),
-              passedAmount: 0,
-              skippedAmount: 0,
-              failedAmount: 1,
-              csv: "",
-              df: undefined
+        
+        (<any>window).runTests = eval('(' + testData.func  + ')');
+
+        (<any>window).runTests(testData.tests, options.stopOnTimeout).then((results: any) => {
+              resolve(results);
             })
-          });
+            .catch((e: any) => {
+              resolve({
+                failed: true,
+                verbosePassed: "",
+                verboseSkipped: "",
+                verboseFailed: "",
+                error: JSON.stringify(e),
+                passedAmount: 0,
+                skippedAmount: 0,
+                failedAmount: 1,
+                csv: "",
+                df: undefined
+              })
+            });
+
+        // (<any>window).DG.Utils.executeTests(testData.tests, options.stopOnTimeout)
+        //   .then((results: any) => {
+        //     resolve(results);
+        //   })
+        //   .catch((e: any) => {
+        //     resolve({
+        //       failed: true,
+        //       verbosePassed: "",
+        //       verboseSkipped: "",
+        //       verboseFailed: "Tests execution failed",
+        //       passedAmount: 0,
+        //       skippedAmount: 0,
+        //       failedAmount: 1,
+        //       csv: "",
+        //       df: undefined
+        //     })
+        //   });
       })
-    }, testExecutionData, browserOptions);
+    }, testsToRun, browserOptions);
 
     if (browserOptions.record) {
       await recorder.stop();
@@ -403,7 +535,8 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     passedAmount: browsersResults[0].passedAmount,
     skippedAmount: browsersResults[0].skippedAmount,
     failedAmount: browsersResults[0].failedAmount,
-    csv: browsersResults[0].csv
+    csv: browsersResults[0].csv,
+    error: '',
   }
 
   for (let browsersResult of browsersResults) {

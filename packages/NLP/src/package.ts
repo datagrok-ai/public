@@ -37,7 +37,8 @@ class NLPPackage extends DG.Package {
     if (await this.files.exists('cache/embeddingsCache.d42')) {
       const file = (await this.files.readBinaryDataFrames('cache/embeddingsCache.d42'));
       const df = file[0];
-      const sentences = df.col('s')!.toList();
+      // trim the sentences and remove empty ones
+      const sentences = df.col('s')!.categories.map((s: string) => s?.trim() ?? '');
       const embeddings: Uint8Array[] = df.col('e')!.toList();
       // conversion to temporary Uint8Array is needed because DG returns a view on arrayBuffer that is large and undeterministic
       for (let i = 0; i < sentences.length; i++)
@@ -410,8 +411,8 @@ export async function getEmbeddings(sentences: string[]): Promise<Float32Array[]
   const missingSentences: string[] = [];
   const missingIndices: number[] = [];
   for (let i = 0; i < sentences.length; i++) {
-    if (_package.sentenceEmbeddingsCache[sentences[i]])
-      resultingEmbeddings[i] = _package.sentenceEmbeddingsCache[sentences[i]];
+    if (_package.sentenceEmbeddingsCache[sentences[i]?.trim()])
+      resultingEmbeddings[i] = _package.sentenceEmbeddingsCache[sentences[i]?.trim()];
     else {
       missingSentences.push(sentences[i]);
       missingIndices.push(i);
@@ -460,7 +461,7 @@ export async function getEmbeddings(sentences: string[]): Promise<Float32Array[]
 
   for (let i = 0; i < missingIndices.length; i++) {
     // update cache
-    _package.sentenceEmbeddingsCache[missingSentences[i]] = new Float32Array(result.embeddings[i]);
+    _package.sentenceEmbeddingsCache[missingSentences[i]?.trim()] = new Float32Array(result.embeddings[i]);
     resultingEmbeddings[missingIndices[i]] = new Float32Array(result.embeddings[i]);
   }
   _package.saveCachedEmbeddings(); // do this lazy style in the background.

@@ -137,7 +137,7 @@ category('ComputeUtils: Driver state tree init', async () => {
   });
 
   test('Process initial config with additional data', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider5', {version: '1.0'}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper5', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     const state = tree.toSerializedState({disableNodesUUID: true});

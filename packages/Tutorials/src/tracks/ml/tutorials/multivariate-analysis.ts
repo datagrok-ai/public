@@ -14,7 +14,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   get steps() { return 7; }
     
   demoTable: string = 'cars.csv';
-  helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
+  helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis';
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -47,6 +47,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     }));
   
     dlg.add(ui.input.int('Components'));
+    dlg.add(ui.input.bool('Quadratic', {value: false}));
   
     dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 

@@ -126,18 +126,17 @@ export function startModelCatalog(options: ModelCatalogConfig) {
     segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded,
   } = options;
   const view = ViewClass.findOrCreateCatalogView(viewName);
+  fixParentCall(view, options);
 
   if (!getStartUriLoaded()) {
-    handleInitialUri(segment);
     setStartUriLoaded();
+    setTimeout(async () => await handleInitialUri(segment));
   }
-
-  fixParentCall(view, options);
 
   return view;
 }
 
-function handleInitialUri(segment: string) {
+async function handleInitialUri(segment: string) {
   const url = new URL(grok.shell.startUri);
   const startPathSegments = url.pathname.split('/');
   const catlogUriSegmentIdx = startPathSegments.findIndex((x) => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
@@ -145,10 +144,16 @@ function handleInitialUri(segment: string) {
   if (catlogUriSegmentIdx > 0) {
     if (catlogUriSegmentIdx + 1 < startPathSegments.length) {
       const shortName = startPathSegments[catlogUriSegmentIdx + 1];
-      grok.dapi.functions.filter(`shortName = "${shortName}" and #model`).list().then((lst) => {
-        if (lst.length == 1)
-          ModelHandler.openModel(lst[0]);
-      });
+      const lst = await grok.dapi.functions.filter(`shortName = "${shortName}" and #model`).list();
+      if (lst.length == 1) {
+        const func = lst[0];
+        const userGroups = await ModelHandler.getUserGroups();
+        const missingGroups = ModelHandler.getMissingGroups(func, userGroups);
+        if (missingGroups?.length)
+          grok.shell.error(`User is not a part of the following user groups: ${missingGroups.map(g => g.name).join(',')}`);
+        else
+          ModelHandler.openModel(func);
+      }
     }
   }
 }

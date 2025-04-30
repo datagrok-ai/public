@@ -13,6 +13,9 @@ export const TreeWizardApp = Vue.defineComponent({
       type: String,
       required: true,
     },
+    version: {
+      type: String,
+    },
     modelName: {
       type: String,
       required: true,
@@ -25,7 +28,7 @@ export const TreeWizardApp = Vue.defineComponent({
   setup(props) {
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} modelName={props.modelName} view={currentView.value} />
+      <TreeWizard providerFunc={props.providerFunc} version={props.version} modelName={props.modelName} view={currentView.value} />
     );
   },
 });

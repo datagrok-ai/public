@@ -105,6 +105,36 @@ export class ModelHandler extends DG.ObjectHandler {
     funcCall.edit();
   }
 
+  static async getUserGroups() {
+    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
+    const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+    return userGroups;
+  }
+
+  static getMissingGroups(func: DG.Func, userGroups: DG.Group[]) {
+    const mandatoryUserGroups = JSON.parse(
+      func.options['mandatoryUserGroups'] ? `${func.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
+    const missingMandatoryGroups = mandatoryUserGroups
+      .filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
+    return missingMandatoryGroups;
+  }
+
+  static openVersionSelectDialog(func: DG.Func) {
+    const versions = JSON.parse(func.options['versions'] ? `${func.options['versions']}` : '[]') as string[];
+    if ((versions?.length ?? 0) < 2) {
+      grok.shell.info('No other versions avaliable');
+      return
+    }
+    const dlg = ui.dialog({title: 'Choose version'});
+    const selInput = ui.input.choice('Select version', { items: versions, value: versions[0] });
+    dlg.add(selInput).onOK(() => {
+      const version = selInput.value;
+      const fc = func.prepare({params: {version}});
+      fc.edit();
+    });
+    dlg.show();
+  }
+
   // Checks whether this is the handler for [x]
   override isApplicable(x: any) {
     const js = DG.toJs(x);
@@ -127,7 +157,8 @@ export class ModelHandler extends DG.ObjectHandler {
     const markup = ui.divH([], {style: {justifyContent: 'space-between', width: '100%'}});
 
     setTimeout(async () => {
-      const missingMandatoryGroups = await this.getMissingGroups(x);
+      const userGroups = await this.awaitUserGroups();
+      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
       const hasMissingMandatoryGroups = missingMandatoryGroups.length > 0;
       const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
       mandatoryGroupsIcon.classList.remove('grok-icon');
@@ -162,7 +193,6 @@ export class ModelHandler extends DG.ObjectHandler {
         markup.append(ui.span([mandatoryGroupsIcon], {style: {paddingLeft: '10px'}}));
     });
 
-
     return markup;
   }
 
@@ -193,7 +223,8 @@ export class ModelHandler extends DG.ObjectHandler {
     v.name = (x.friendlyName ?? x.name) + ' description';
     return DG.View.fromViewAsync(async () => {
       const help = await ModelHandler.getHelp(x);
-      const missingMandatoryGroups = await this.getMissingGroups(x);
+      const userGroups = await this.awaitUserGroups();
+      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
       const startBtnDiv = missingMandatoryGroups.length ?
         ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
           border: '2px solid var(--red-3)',
@@ -258,13 +289,16 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override init(): void {
+    this.registerParamFunc('Choose version', (func: DG.Func) => {
+      ModelHandler.openVersionSelectDialog(DG.toJs(func));
+    });
+
     this.registerParamFunc('Help', (func: DG.Func) => {
       ModelHandler.openHelp(DG.toJs(func));
     });
 
     setTimeout(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      const userGroups = await ModelHandler.getUserGroups();
       this.userGroups.next(userGroups);
     });
   }
@@ -282,13 +316,6 @@ export class ModelHandler extends DG.ObjectHandler {
       ])),
     ], {style: {gap: '10px'}})) as HTMLElement;
     return mandatoryGroupsInfo;
-  }
-
-  private async getMissingGroups(x: DG.Func) {
-    const userGroups = await this.awaitUserGroups();
-    const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
-    const missingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
-    return missingMandatoryGroups;
   }
 
   private async awaitUserGroups() {

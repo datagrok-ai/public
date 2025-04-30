@@ -52,7 +52,7 @@ float independently in a separate window. To toggle the visibility of the entire
 <details>
 <summary>Info pane examples</summary>
 
-Developers: You can [create custom info panes](../../../develop/how-to/add-info-panel.md).
+Developers: You can [create custom info panes](../../../develop/how-to/ui/add-info-panel.md).
 
 <Tabs>
 <TabItem value="details-actions" label="Details and actions" default>

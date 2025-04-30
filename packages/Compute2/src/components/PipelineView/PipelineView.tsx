@@ -61,6 +61,7 @@ export const PipelineView = Vue.defineComponent({
     const buttonActions = Vue.computed(() => props.buttonActions);
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const isRoot = Vue.computed(() => props.isRoot);
 
     const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
 
@@ -75,11 +76,19 @@ export const PipelineView = Vue.defineComponent({
       if (el === helpRef.value?.$el) helpHidden.value = true;
     };
 
-    const hasInnerStep = Vue.ref(false)
+    const hasInnerStep = Vue.ref(false);
+    const name = Vue.ref('');
+    const version = Vue.ref<string | undefined>(undefined);
 
     Vue.watch(state, (state) => {
       hasInnerStep.value = !isFuncCallState(state) && state.steps.length > 0;
+      name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
+      version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
     }, { immediate: true });
+
+    const description = Vue.computed(() => {
+      return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`
+    });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
 
@@ -92,9 +101,8 @@ export const PipelineView = Vue.defineComponent({
           { (!historyHidden.value && props.funcCall) &&
             <History
               func={props.funcCall.func}
-              showActions
-              showBatchActions
-              isHistory
+              version={!isFuncCallState(state.value) ? state.value.version : undefined}
+              allowOtherVersions={isRoot.value}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.7}
@@ -185,7 +193,7 @@ export const PipelineView = Vue.defineComponent({
               style={{minWidth: '200px'}}
             >
               <span>
-              This is a sequence of steps. You may:
+                {description.value}
               </span>
 
               <div class={'grok-gallery-grid'}>
@@ -218,7 +226,7 @@ export const PipelineView = Vue.defineComponent({
                   onClick={() => emit('proceedClicked')}
                 >
                   <IconFA name='plane-departure' class={'d4-picture'} />
-                  <div> Proceed to the sequence's first step </div>
+                  <div> Proceed to the first step </div>
                 </div> }
               </div>
             </div>

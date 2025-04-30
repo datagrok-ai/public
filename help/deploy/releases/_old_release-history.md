@@ -3145,7 +3145,7 @@ traditionally on the platform stability.
 * Getting cell colors: [overview](https://community.datagrok.ai/t/javascript-api-updates/526/14)
 * Adding custom machine learning models to Datagrok in R, Python, or from external models deployed
   in clusters: [video](https://www.youtube.com/watch?v=G66MN30ZPGQ)
-  , [package](https://github.com/datagrok-ai/public/tree/master/packages/CustomML)
+  , [package](https://github.com/datagrok-ai/labs/tree/master/packages/CustomML)
   , [help](https://datagrok.ai/help/learn/custom-machine-learning-models)
 
 ## Enhancements in public packages
@@ -4434,7 +4434,7 @@ presenting a few new of them:
 
 * Biosignals – Physionet annotations file viewer, dynamic scripting capabilities for constructing
   signal processing
-  pipelines: [overview](https://github.com/datagrok-ai/public/tree/master/packages/BioSignals#readme)
+  pipelines: [overview](https://github.com/datagrok-ai/labs/tree/master/packages/BioSignals#readme)
   , [video](https://www.youtube.com/watch?v=0QxzllnBreI&t=1932s)
 * ClinicalCase — working with clinical data in SDTM
   format: [overview](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#readme)
@@ -7911,18 +7911,18 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 
 #### New scripting demos
 
-* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/image_classification.py)
-* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/cell_imaging_segmentation.py)
+* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Samples/scripts/python/image_classification.py)
+* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Samples/scripts/python/cell_imaging_segmentation.py)
 
 #### File metadata extractors
 
-* [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
-* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/exif.py)
+* [Tika](https://github.com/datagrok-ai/labs/tree/master/packages/Tika)
+* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Samples/scripts/python/exif.py)
 
 #### First class support of command-line Interface tools for Linux in scripting:
 
-* [CLI](https://github.com/datagrok-ai/public/tree/master/packages/CLI)
-* [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
+* [CLI](https://github.com/datagrok-ai/labs/tree/master/packages/CLI)
+* [Tika](https://github.com/datagrok-ai/labs/tree/master/packages/Tika)
 
 #### [ChemSpace integration](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)
 

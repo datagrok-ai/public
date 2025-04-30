@@ -319,7 +319,7 @@ Your package might contain the following additional folders, depending on your n
 
 [header parameters]: ../../datagrok/functions/func-params-annotation.md#header-parameters
 
-[javaScript API]: https://datagrok.ai/help/develop/js-api
+[javaScript API]: https://datagrok.ai/js-api
 
 [LTS version of Node.js]: https://nodejs.org/en/download/
 
@@ -333,7 +333,7 @@ Your package might contain the following additional folders, depending on your n
 
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
 
-[package section]: https://datagrok.ai/js-api/classes/dg.Package
+[package section]: https://datagrok.ai/js-api/dg/classes/Package
 
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 
@@ -345,7 +345,7 @@ Your package might contain the following additional folders, depending on your n
 
 [scripts]: ../../compute/scripting/scripting.mdx "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
 
-[semantic type detectors]: ../how-to/define-semantic-type-detectors.md
+[semantic type detectors]: ../how-to/functions/define-semantic-type-detectors.md
 
 [sequence package]: https://github.com/datagrok-ai/public/tree/master/packages/Sequence
 
@@ -355,7 +355,7 @@ Your package might contain the following additional folders, depending on your n
 
 [viewers]: ../../visualize/viewers.md "A viewer is a visual component associated with a table."
 
-[views]: ../how-to/custom-views.md
+[views]: ../how-to/views/custom-views.md
 
 [webpack documentation]: https://webpack.js.org/configuration/
 

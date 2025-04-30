@@ -8,7 +8,7 @@ import {snapshotCompare} from '../../../test-utils';
 
 category('ComputeUtils: Driver state tree mutations', async () => {
   test('Pipeline append step subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -20,7 +20,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
   });
 
   test('Pipeline append static pipeline subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -32,7 +32,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
   });
 
   test('Pipeline append dynamic pipeline subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -44,7 +44,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
   });
 
   test('Pipeline insert subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -56,7 +56,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
   });
 
   test('Pipeline remove subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
@@ -67,7 +67,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
   });
 
   test('Pipeline move subtree', async () => {
-    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();

@@ -1,5 +1,20 @@
 # Bio changelog
 
+## 2.21.2 (2025-04-28)
+
+Monomer Manager:
+
+* Style fixes
+* Calculations of missing monomer properties when saving/loading monomer libraries
+* Date column fixes
+* Null meta fixes
+
+## 2.21.1 (2025-04-22)
+
+* Weblogo: Fix behavior, correct fitting, reaction to slider, property harmonization
+* Better formatting of source monomer lib name
+* Support of sequence space for custom notation
+
 ## 2.21.0 (2025-04-14)
 
 * Move separator refinement to seq-handler stage

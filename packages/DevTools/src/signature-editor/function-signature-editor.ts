@@ -270,7 +270,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     const helpIcon = ui.iconFA('question', () => {
       window.open(
-        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation', 
         '_blank'
       );
     });

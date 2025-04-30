@@ -378,20 +378,27 @@ export class PeptidesModel {
       model.subs.push(DG.debounce(dataFrame.onSelectionChanged, 10).subscribe((_) => {
       //clear all selections if user cleared the selection.
         if (wasEmptySelectionBefore || dataFrame.selection.anyTrue || !model._analysisView || !document.contains(model._analysisView.root) ||
-        model._analysisView.dataFrame !== dataFrame || !model.positionColumns) {
+        model._analysisView.dataFrame !== dataFrame) {
           wasEmptySelectionBefore = !dataFrame?.selection?.anyTrue;
           return;
         }
-        model.webLogoSelection = initSelection(model.positionColumns!);
+        if (model.positionColumns)
+          model.webLogoSelection = initSelection(model.positionColumns);
         const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
         if (mpViewer != null) {
-          mpViewer.invariantMapSelection = initSelection(model.positionColumns!);
-          mpViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
+          const posCols = model.positionColumns ?? mpViewer.positionColumns;
+          if (posCols) {
+            mpViewer.invariantMapSelection = initSelection(posCols);
+            mpViewer.mutationCliffsSelection = initSelection(posCols);
+          }
         }
         const mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
         if (mprViewer != null) {
-          mprViewer.mutationCliffsSelection = initSelection(model.positionColumns!);
-          mprViewer.invariantMapSelection = initSelection(model.positionColumns!);
+          const posCols = model.positionColumns ?? mprViewer.positionColumns;
+          if (posCols) {
+            mprViewer.mutationCliffsSelection = initSelection(posCols);
+            mprViewer.invariantMapSelection = initSelection(posCols);
+          }
         }
         const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
         if (lstViewer != null) {
@@ -740,9 +747,13 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper());
     const positionColumns = splitSeqDf.columns.names();
-    if (positionColumns.every((colName) => cols.contains(colName)))
-      positionColumns.forEach((colName) => CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet));
-    else {
+    if (positionColumns.every((colName) => cols.contains(colName))) {
+      positionColumns.forEach((colName) => {
+        this.df.col(colName)!.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+        this.df.col(colName)!.setTag(C.TAGS.POSITION_COL, `${true}`);
+        CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet);
+      });
+    } else {
       for (const colName of positionColumns) {
         let col = this.df.col(colName);
         const newCol = splitSeqDf.getCol(colName);

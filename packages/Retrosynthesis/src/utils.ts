@@ -3,22 +3,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode, Tree} from './aizynth-api';
-import {HORIZONTAL_SPACING, MOL_HEIGHT, MOL_WIDTH, PADDING, VERTICAL_SPACING} from './const';
+import {HORIZONTAL_SPACING, MOL_HEIGHT, MOL_WIDTH, PADDING, StructureType, VERTICAL_SPACING} from './const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import '../css/aizynthfinder.css';
 
-export function createPathsTreeTabs(paths: Tree[], isHorizontal: boolean = true): DG.TabControl {
+export const TAB_ID = 'tab_id';
+
+export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:{smiles: string, type: string}[]},
+  isHorizontal: boolean = true): DG.TabControl {
   const tabControl = ui.tabControl();
 
   for (let i = 0; i < paths.length; i++) {
     tabControl.addPane(paths[i].scores['state score'].toFixed(3),
       () => {
         const pathObject = buildNestedStructure(paths[i]);
+        pathsObjects[`${i}`] = processNestedStructure(pathObject, [], 0);
         const container = ui.div([], {classes: 'retrosynthesis-reaction-container'});
-        createReactionTreeSVG(pathObject, isHorizontal).then((svgTree) => {
-          container.appendChild(svgTree);
-          //this.rotate !== 'None' && this.rotateCanvas90Degrees(c, this.rotate === 'Clockwise');
-        });
+        const svgTree = createReactionTreeSVG(pathObject, isHorizontal);
+        container.setAttribute(TAB_ID, `${i}`);
+        container.appendChild(svgTree);
+        //this.rotate !== 'None' && this.rotateCanvas90Degrees(c, this.rotate === 'Clockwise');
         return container;
       });
   }
@@ -55,6 +59,25 @@ export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: an
 }
 
 
+export function processNestedStructure(paths: { [key: string]: any },
+  result: {smiles: string, type: string}[], depth: number): {smiles: string, type: string}[] {
+  for (const [smiles, children] of Object.entries(paths)) {
+    let type;
+    if (depth === 0 && Object.keys(children).length > 0)
+      type = StructureType.Root;
+    else if (Object.keys(children).length > 0)
+      type = StructureType.Interim;
+    else
+      type = StructureType.Leaf;
+
+    result.push({smiles, type});
+
+    if (Object.keys(children).length > 0)
+      processNestedStructure(children, result, depth + 1);
+  }
+  return result;
+}
+
 function stringToColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -75,7 +98,7 @@ export function isFragment(molString: string) {
 }
 
 
-export async function createReactionTreeSVG(reactionData: any, isHorizontal: boolean = true): Promise<SVGElement> {
+export function createReactionTreeSVG(reactionData: any, isHorizontal: boolean = true): SVGElement {
   const moleculesPerLevel: any = {};
 
   // Traverse the reaction data to determine the number of molecules per level
@@ -127,13 +150,13 @@ export async function createReactionTreeSVG(reactionData: any, isHorizontal: boo
   const reagentStartHeights = new Array(maxLevel + 1).fill(-1);
   const reagentStartWidths = new Array(maxLevel + 1).fill(-1);
 
-  await drawTreeSVG(svg, levelHeights, levelWidths, reagentStartHeights, reagentStartWidths,
+  drawTreeSVG(svg, levelHeights, levelWidths, reagentStartHeights, reagentStartWidths,
     neededHeight, neededWidth, reactionData, 0, 0, 0, null, isHorizontal);
 
   return svg;
 }
 
-async function drawTreeSVG(
+function drawTreeSVG(
   svg: SVGElement,
   levelHeights: number[],
   levelWidths: number[],
@@ -169,9 +192,9 @@ async function drawTreeSVG(
         reactionLinesToMoleculeSVG(svg, startX, startY, reagentStartWidths[level], levelStartY, isHorizontal);
     }
 
-    await drawMoleculeSVG(svg, mol, reagentStartWidths[level], reagentStartHeights[level], color);
+    drawMoleculeSVG(svg, mol, reagentStartWidths[level], reagentStartHeights[level], color);
 
-    await drawTreeSVG(
+    drawTreeSVG(
       svg,
       levelHeights,
       levelWidths,
@@ -231,7 +254,7 @@ function reactionLinesToMoleculeSVG(
   svg.appendChild(group);
 }
 
-async function drawMoleculeSVG(svg: SVGElement, smiles: string, x: number, y: number, color: string) {
+function drawMoleculeSVG(svg: SVGElement, smiles: string, x: number, y: number, color: string) {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
   // Create clickable rectangle
@@ -246,7 +269,7 @@ async function drawMoleculeSVG(svg: SVGElement, smiles: string, x: number, y: nu
   setAttributes(foreignObject, {'x': x.toString(), 'y': y.toString(), 'width': MOL_WIDTH.toString(),
     'height': MOL_HEIGHT.toString()});
 
-  const molDiv = await grok.chem.drawMolecule(smiles, MOL_WIDTH, MOL_HEIGHT);
+  const molDiv = grok.chem.drawMolecule(smiles, MOL_WIDTH, MOL_HEIGHT);
   molDiv.classList.add('retrosynthesis-mol-rect');
 
   foreignObject.appendChild(molDiv);

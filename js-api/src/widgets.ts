@@ -7,7 +7,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy, Completer} from "./utils";
+import {MapProxy, Completer, Utils} from './utils';
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -67,6 +67,9 @@ export type ICodeEditorOptions = {
   root?: HTMLDivElement;
 }
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+export type MarkdownConfig = {
+  value?: string;
+};
 export type CodeConfig = {
   script?: string;
   mode?: string;
@@ -806,7 +809,7 @@ export class ToolboxPage {
         acc[input.caption] = input;
       }
       return acc;
-    }, {} as Record<string, InputBase>) as Inputs; 
+    }, {} as Record<string, InputBase>) as Inputs;
   }
 
   /** Closes the dialog. */
@@ -1681,7 +1684,7 @@ export class Color {
   static get continuousSchemes(): number[] {
     return api.grok_Color_ContinuousSchemes();
   }
-  
+
 
   static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
     return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
@@ -2175,7 +2178,18 @@ export class Legend extends DartWidget {
     api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
   }
 
-  get filterBy() { return api.grok_Legend_Get_FilterBy(this.dart); }
+  /** Mapped indices of filtered (selected) categories. */
+  get selectedCategories(): Set<number> | null {
+    return api.grok_Legend_Get_SelectedCategories(this.dart);
+  }
+
+  /** Mapped indices of extra (selected) categories. */
+  get selectedExtraCategories(): Set<number> | null {
+    return api.grok_Legend_Get_SelectedExtraCategories(this.dart);
+  }
+
+  /** Whether the legend is in tooltip (collapsed) mode. */
+  get isTooltipMode(): boolean { return api.grok_Legend_Get_IsToolTipMode(this.dart); }
 }
 
 
@@ -2485,6 +2499,7 @@ export class MarkdownInput extends JsInputBase<string> {
   // Quill.js instance - loaded from the core .min.js file
   private editor: any;
   private readonly _editorRoot: HTMLDivElement = ui.div([], 'markdown-input');
+  private _textToSet?: string | null;
 
   private constructor(caption?: string) {
     super();
@@ -2492,29 +2507,45 @@ export class MarkdownInput extends JsInputBase<string> {
     this.addCaption(caption ?? '');
   }
 
-  static async create(caption?: string): Promise<MarkdownInput> {
+  static create(caption?: string, options?: MarkdownConfig): MarkdownInput {
     const input = new MarkdownInput(caption);
-    await DG.Utils.loadJsCss([
+    ui.setUpdateIndicator(input.root, true, 'Loading markdown input...');
+    Utils.loadJsCss([
       '/js/common/quill/quill.min.js',
       '/js/common/quill/quill.snow.css',
-    ]);
-    //@ts-ignore
-    input.editor = new Quill(input._editorRoot, {
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          ['blockquote', 'code-block', 'image'],
-        ],
-      },
-      theme: 'snow', // or 'bubble'
-    });
-    input.editor.on('text-change', (_: any, __: any, source: string) => {
-      if (source === 'api')
-        input.fireChanged();
-      else if (source === 'user')
-        input.fireInput();
+      '/js/common/quill/quilljs-markdown.min.js',
+    ]).then(() => {
+      //@ts-ignore
+      input.editor = new Quill(input._editorRoot, {
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['blockquote', 'code-block', 'image'],
+          ],
+        },
+        theme: 'snow', // or 'bubble'
+      });
+      if (input._textToSet != null || (options && options.value != null && options.value !== '')) {
+        //@ts-ignore
+        input.editor.setText(input._textToSet ?? options.value);
+        input._textToSet = null;
+      }
+      input.editor.on('text-change', (_: any, __: any, source: string) => {
+        if (source === 'api')
+          input.fireChanged();
+        else if (source === 'user')
+          input.fireInput();
+      });
+      //@ts-ignore
+      new QuillMarkdown(input.editor, {
+        syntax: true, // enables code blocks, etc.
+        preview: true,
+      });
+      ui.setUpdateIndicator(input.root, false);
+    }).catch((_) => {
+      ui.setUpdateIndicator(input.root, false);
     });
 
     return input;
@@ -2543,11 +2574,11 @@ export class MarkdownInput extends JsInputBase<string> {
   }
 
   setStringValue(value: string): void {
-    this.editor?.setText(value);
+    this.editor ? this.editor.setText(value): this._textToSet = value;
   }
 
   setValue(value: any): void {
-    this.editor?.setText(value);
+    this.editor ? this.editor.setText(value): this._textToSet = value;
   }
 }
 

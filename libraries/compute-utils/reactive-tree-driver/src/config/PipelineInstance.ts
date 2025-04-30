@@ -121,7 +121,6 @@ export type PipelineInstanceBase<I, T> = {
   configId: string;
   isReadonly: boolean;
   friendlyName: string | undefined;
-  provider: NqName | undefined;
   version: string | undefined;
   nqName: string | undefined;
 } & I & T;
