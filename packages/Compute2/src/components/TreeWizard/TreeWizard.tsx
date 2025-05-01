@@ -26,8 +26,8 @@ import {
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
-import {EditDialog} from './EditDialog';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -120,7 +120,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const saveSubTreeState = (uuid: string) => {
       const chosenStepDesc = states.descriptions[uuid];
-      const dialog = new EditDialog({
+      const dialog = new EditRunMetadataDialog({
         title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
         description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
         tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
@@ -136,7 +136,7 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value) return;
 
       const rootDesc = states.descriptions[treeState.value.uuid];
-      const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
+      const dialog = new EditRunMetadataDialog({...rootDesc, ...currentMetaCallData.value});
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         savePipeline(editOptions);
       });

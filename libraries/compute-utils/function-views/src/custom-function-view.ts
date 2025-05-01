@@ -2,8 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
-import {deepCopy} from '../../shared-utils/utils';
+import {deepCopy, saveIsFavorite } from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
+import {take} from 'rxjs/operators';
+import {EditRunMetadataDialog} from '../../shared-components/src/history-dialogs';
 
 declare global {
   var initialURLHandled: boolean;
@@ -91,6 +93,18 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     return loadedCall;
   }
 
+  public async saveRunWithDialog(currentFuncCall: DG.FuncCall) {
+    const dialog = EditRunMetadataDialog.forFuncCall(currentFuncCall);
+    dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
+      currentFuncCall.options['title'] = editOptions.title;
+      currentFuncCall.options['description'] = editOptions.description;
+      currentFuncCall.options['tags'] = editOptions.tags;
+      const loadedRun = await this.saveRun(currentFuncCall);
+      await saveIsFavorite(loadedRun, !!editOptions.isFavorite);
+    });
+    dialog.show({center: true, width: 500});
+  }
+
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const pulledRun = await historyUtils.loadRun(funcCallId);
 
@@ -114,7 +128,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => this.showHistory.next(!this.showHistory.value));
-    const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRun(this.funcCall) : undefined);
+    const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined);
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
       this.getFormats(),

@@ -9,8 +9,8 @@ import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
-import {EditDialog} from '../components/TreeWizard/EditDialog';
 import {saveIsFavorite} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -122,7 +122,7 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const saveRun = async () => {
-      const dialog = new EditDialog({
+      const dialog = new EditRunMetadataDialog({
         title: currentFuncCall.value.options['title'] ?? '',
         description: currentFuncCall.value.options['description'] ?? '',
         tags: currentFuncCall.value.options['tags'] ?? [],
@@ -133,7 +133,7 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.options['tags'] = editOptions.tags;
         currentFuncCall.value.newId();
         await historyUtils.saveRun(currentFuncCall.value, false);
-        await saveIsFavorite(currentFuncCall.value, editOptions.isFavorite ?? false);
+        await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
         Vue.triggerRef(currentFuncCall);
       });
       dialog.show({center: true, width: 500});

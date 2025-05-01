@@ -428,7 +428,7 @@ class MyView extends CustomFunctionView {
 //name: Custom View (Compute 2 Test)
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
-//tags: test, compute2
+//tags: test, compute2, model
 export async function TestCustomView() {
   const view = new MyView();
   return view;
