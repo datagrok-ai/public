@@ -5,7 +5,22 @@ import * as DG from 'datagrok-api/dg';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
 
+declare global {
+  interface Window {
+    compute: {
+      CFV: ConstructorTypeOf<CustomFunctionView>,
+    },
+  }
+}
+
 export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+
+import {
+  CustomFunctionView, createCFV
+} from './src/views';
+export {
+  createCFV
+};
 
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
