@@ -11,6 +11,8 @@
           "name": "Caco2",
           "checked": false,
           "units": "cm/s",
+          "min": -6,
+          "max": -5.5,
           "line": [[-8, 0], [-6, 1], [-4, 0]],
           "weight": 0.8,
           "properties": [
@@ -22,6 +24,20 @@
               },
               "object": {
                 "description": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s. High values indicate good permeability characteristics."
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "< -6": "bad",
+                  "-6 - -5.5": "intermediate",
+                  "> -5.5": "good"
+                }
               }
             }
           ],
@@ -37,6 +53,8 @@
           "name": "Lipophilicity",
           "checked": false,
           "units": "log-ratio",
+          "min": 0,
+          "max": 5,
           "line": [[-2, 0], [2, 1], [3, 1], [5, 0.5]],
           "weight": 1,
           "properties": [
@@ -48,6 +66,22 @@
               },
               "object": {
                 "description": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "2 - 3": "ideal",
+                  "0 - 5": "intermediate",
+                  "3 - 5": "intermediate",
+                  "< 0": "bad",
+                  "> 5": "bad"
+                }
               }
             }
           ],
@@ -63,6 +97,8 @@
           "name": "Solubility",
           "checked": false,
           "units": "log mol/L",
+          "min": -4.5,
+          "max": -1,
           "line": [[-9, 0], [-8, 0.1], [-7, 0.3], [-6, 0.7], [-5, 0.9], [0, 1]],
           "weight": 1,
           "properties": [

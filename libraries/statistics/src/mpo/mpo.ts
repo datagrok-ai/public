@@ -7,7 +7,7 @@ import {MpoProfileEditor} from './mpo-profile-editor';
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
-type DesirabilityLine = number[][];
+export type DesirabilityLine = number[][];
 
 /// A desirability line with its weight
 export type PropertyDesirability = {
@@ -129,7 +129,6 @@ export async function _mpoDialog(table: DG.DataFrame): Promise<void> {
 
   loadProfile(templateInput.value!);
 }
-
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {

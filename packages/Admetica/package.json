@@ -22,6 +22,7 @@
   "devDependencies": {
     "@datagrok/chem": "../../packages/chem",
     "@datagrok/power-grid": "../../packages/PowerGrid",
+    "@datagrok-libraries/statistics": "../../libraries/statistics",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",

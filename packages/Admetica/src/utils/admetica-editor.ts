@@ -6,7 +6,7 @@ import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './co
 import { getTemplates } from './admetica-utils';
 import '../css/admetica.css';
 
-import { MpoDesirabilityLineEditor } from '@datagrok/chem/src/analysis/mpo/mpo-line-editor';
+import { MpoDesirabilityLineEditor } from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;

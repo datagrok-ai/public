@@ -1,6 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+
 import {DesirabilityProfile} from './mpo';
 import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 import {Subject} from 'rxjs';

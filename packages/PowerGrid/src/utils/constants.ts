@@ -1,95 +1,93 @@
+import {Subsector} from '../sparklines/piechart';
+
 export enum SectorType {
-  SECTOR = "sector",
-  SUBSECTOR = "subsector"
+  SECTOR = 'sector',
+  SUBSECTOR = 'subsector'
 }
 
-export const CONSTANTS = {
-  TAG_PREFIX: ".",
-  SECTOR_COLOR_PROPERTY: "sectorColor",
-  LOWER_BOUND: "lowerBound",
-  UPPER_BOUND: "upperBound",
-  VLAAIVIS: "VlaaiVis"
-};
+export interface VlaaivisColumnMetadata extends Subsector {
+  groupName?: string;
+  sectorColor?: string;
+}
 
 export const TAGS = {
-  SECTOR_COLOR: ".sectorColor",
-  LOW: ".low",
-  HIGH: ".high",
-  WEIGHT: ".weight",
-  GROUP_NAME: ".group-name"
+  VLAAIVIS_METADATA: '.vlaaivis-metadata',
+};
+
+export const CONSTANTS = {
+  SECTOR_COLOR_PROPERTY: 'sectorColor',
+  LOWER_BOUND: 'lowerBound',
+  UPPER_BOUND: 'upperBound',
+  VLAAIVIS: 'VlaaiVis'
 };
 
 export const DEFAULTS = {
-  LOW: "0",
-  HIGH: "1",
-  WEIGHT: "0.2"
+  WEIGHT: '0.2'
 };
 
 export const groupProps = [
   {
-    "property": {
-      "name": "sectorColor",
-      "inputType": "Color",
-      "description": "Defines the color used for sector"
+    'property': {
+      'name': 'sectorColor',
+      'inputType': 'Color',
+      'description': 'Defines the color used for sector'
     },
-    "object": {
-      "sectorColor": "#e66465"
+    'object': {
+      'sectorColor': '#e66465'
     }
   }
 ];
 
 export const generalProps = [
   {
-    "property": {
-      "name": "lowerBound",
-      "inputType": "Float",
-      "description": "Defines the minimum acceptable value within the TPP"
+    'property': {
+      'name': 'lowerBound',
+      'inputType': 'Float',
+      'description': 'Defines the minimum acceptable value within the TPP'
     },
-    "object": {
-      "lowerBound": 0.8
+    'object': {
+      'lowerBound': 0.8
     }
   },
   {
-    "property": {
-      "name": "upperBound",
-      "inputType": "Float",
-      "description": "Defines the maximum acceptable value within the TPP"
+    'property': {
+      'name': 'upperBound',
+      'inputType': 'Float',
+      'description': 'Defines the maximum acceptable value within the TPP'
     },
-    "object": {
-      "upperBound": 0.9
+    'object': {
+      'upperBound': 0.9
     }
   }
 ];
 
 export const subGroupProps = [
   {
-    "property": {
-      "name": "low",
-      "inputType": "Float",
-      "description": "Sets the minimum value for a sub-sector"
+    'property': {
+      'name': 'min',
+      'inputType': 'Float',
+      'enabled': false,
+      'description': 'min value of the property (optional; used for editing the line)'
     },
-    "object": {
-      "low": 0
-    }
+    'object': {}
   },
   {
-    "property": {
-      "name": "high",
-      "inputType": "Float",
-      "description": "Sets the maximum value for a sub-sector"
+    'property': {
+      'name': 'max',
+      'inputType': 'Float',
+      'enabled': false,
+      'description': 'max value of the property (optional; used for editing the line)'
     },
-    "object": {
-      "high": 1
-    }
+    'object': {}
   },
   {
-    "property": {
-      "name": "weight",
-      "inputType": "Float",
-      "description": "Determines the thickness of the wedge"
+    'property': {
+      'name': 'weight',
+      'inputType': 'Float',
+      'description': 'Determines the thickness of the wedge'
     },
-    "object": {
-      "weight": 0.2
+    'object': {
+      'weight': 0.2
     }
   }
 ];

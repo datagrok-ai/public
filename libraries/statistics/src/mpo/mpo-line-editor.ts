@@ -1,10 +1,9 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import Konva from 'konva';
-import {PropertyDesirability} from './mpo';
+import {DesirabilityLine, PropertyDesirability} from './mpo';
 import {Subject} from 'rxjs'; // Import type from mpo.ts
 
 // Constants for the editor layout
@@ -15,8 +14,10 @@ const POINT_RADIUS = 3;
 export class MpoDesirabilityLineEditor {
   root = ui.div();
   onChanged = new Subject();
+  private _prop: PropertyDesirability;
 
   constructor(prop: PropertyDesirability, width: number, height: number) {
+    this._prop = prop;
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative'; // Needed for absolute positioning of Konva stage
@@ -266,6 +267,10 @@ export class MpoDesirabilityLineEditor {
       // Initial draw
       redraw(false);
     }, 0);
+  }
+
+  get line(): DesirabilityLine {
+    return this._prop.line;
   }
 }
 

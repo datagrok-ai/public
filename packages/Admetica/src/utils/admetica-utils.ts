@@ -161,10 +161,6 @@ export async function getQueryParams(): Promise<string> {
       .map((model: Model) => model.name).join(',');
 }
 
-function generateNumber(): number {
-  return Math.random() * (1 - Number.MIN_VALUE) + Number.MIN_VALUE;
-}
-
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
   let sectors: any[] = [];
 
@@ -179,33 +175,16 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
     for (const model of subgroup.models) {
       const modelName = columnNames.find((name: string) => name.includes(model.name));
       if (modelName) {
-        /*let { min, max } = model;
-        if (model.properties) {
-          const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
-          if (directionProperty && directionProperty.object.direction === 'Lower is better')
-            [min, max] = [max, min];
-        }*/
-
         const column = table.col(modelName);
-        const line = model.line;
-        let weight = Number(generateNumber().toFixed(2));
+        let line = model.line;
+        let weight = model.weight;
 
         if (column) {
-          //min = column.getTag(TAGS.LOW) ? Number(column.getTag(TAGS.LOW)) : min;
-          //max = column.getTag(TAGS.HIGH) ? Number(column.getTag(TAGS.HIGH)) : max;
-          weight = column.getTag(TAGS.WEIGHT) ? Number(column.getTag(TAGS.WEIGHT)) : (model.weight ?? weight);
-          
-          column.setTag(TAGS.GROUP_NAME, subgroup.name);
-          //column.setTag(TAGS.HIGH, max);
-          //column.setTag(TAGS.LOW, min);
-          column.setTag(TAGS.WEIGHT, weight.toString());
-          column.setTag(TAGS.SECTOR_COLOR, subgroupColor);
+          // Set the tag for the column (.vlaaivis-metadata)
         }
           
         sector.subsectors.push({
           name: modelName,
-          //low: min,
-          //high: max,
           weight: weight,
           line: line,
         });
