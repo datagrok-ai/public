@@ -95,7 +95,9 @@ _Optional_
 
 Used to specify link running order if multiple links has the same link
 output script node targets, links with a higher priority will run
-before those with a lower one.
+before those with a lower one. This is primary used to order data
+links between script own inputs, since they doesn't have a well
+defined order in the workflow.
 
 ### Common controller methods
 
@@ -355,7 +357,12 @@ It is possible to hide script inputs setting the following meta:
 { hidden: true }
 ```
 
-For choice inputs (__TODO__: link to doc) it is possible to set items list:
+Also an input annotation (__TODO__: link to annotation doc) should
+include `optional: true`
+
+For choice inputs (__TODO__: link to doc) it is possible to update an
+items list:
+
 ```
 { items: ['one', 'two', 'three'] }
 ```
