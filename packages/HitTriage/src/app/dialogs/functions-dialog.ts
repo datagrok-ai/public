@@ -75,6 +75,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       }
       return ui.divText('Failed to load descriptors');
   })
+  descriptorsGroupHost.classList.add('oy-scroll');
   
   const descriptorsName = 'Descriptors';
   const funcNamesMap: {[key: string]: string} = {[descriptorsName]: descriptorsName};
