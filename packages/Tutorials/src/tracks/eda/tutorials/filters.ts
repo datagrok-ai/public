@@ -4,6 +4,7 @@ import $, { Cash } from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
+import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 
 export class FiltersTutorial extends Tutorial {
@@ -18,6 +19,7 @@ export class FiltersTutorial extends Tutorial {
   get steps() { return 18; }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
+  platform: Platform = getPlatform();
 
   findFilterHeaderByColName(columnName: string) {
     return $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
@@ -115,7 +117,7 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Hover over the histogram bins', this.t!.onMouseOverRowGroupChanged, null, hoverInfo);
 
     const selectionInfo = 'Click on a bin to select it. To select multiple bins, hold <b>Shift</b> and ' +
-      'either pick bins one by one or drag a rectangle to form a group. If you hold <b>Ctrl</b> while ' +
+      `either pick bins one by one or drag a rectangle to form a group. If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
     await this.action('Select one of the histogram bins', this.t!.onSelectionChanged, null, selectionInfo);

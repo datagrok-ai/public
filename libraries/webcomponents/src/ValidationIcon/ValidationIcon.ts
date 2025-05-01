@@ -149,13 +149,14 @@ export class ValidationIcon extends HTMLElement {
           const sectionIconOptions = this.getIconOptions(category)!;
           const icon = ui.iconFA(sectionIconOptions.name);
           $(icon).css({'color': sectionIconOptions.color, 'margin-right': '4px'});
-
+          const description = typeof advice === 'string' ? advice : advice.description;
+          const actions = typeof advice !== 'string' ? (advice.actions ?? []) : [];
           root.appendChild(ui.divV([
             ui.divH([
               icon,
-              ui.divText(advice.description),
+              ui.divText(description),
             ], {style: {alignItems: 'center'}}),
-            ...(advice.actions ?? []).map(
+            ...(actions).map(
               (action) => ui.link(
                 action.actionName,
                 () => this.requestAction(action.action),

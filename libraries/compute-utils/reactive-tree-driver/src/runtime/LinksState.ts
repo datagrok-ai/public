@@ -9,7 +9,6 @@ import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
 import {parseLinkIO} from '../config/LinkSpec';
-import {makeValidationResult} from '../utils';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
@@ -96,8 +95,8 @@ export class LinksState {
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
     if (actions) {
-      return actions.map(({uuid, spec: {position, description, menuCategory, friendlyName, icon, confirmationMessage}}) =>
-        ({uuid, position, description, menuCategory, friendlyName, icon, confirmationMessage}));
+      return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage}}) =>
+        ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage}));
     }
     return actions;
   }
@@ -203,7 +202,7 @@ export class LinksState {
           handler({controller}) {
             const val = controller.getFirst('in');
             if (val == null || val === '')
-              controller.setValidation('out', makeValidationResult({errors: ['Missing value']}));
+              controller.setValidation('out', ({errors: [{description: 'Missing value'}]}));
             else
               controller.setValidation('out', undefined);
           },

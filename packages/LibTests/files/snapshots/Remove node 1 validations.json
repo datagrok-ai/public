@@ -71,9 +71,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 9"
-              }
+              "warning from link 9"
             ],
             "notifications": []
           },
@@ -154,9 +152,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 32"
-              }
+              "warning from link 32"
             ],
             "notifications": []
           },
@@ -170,12 +166,8 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 32"
-              },
-              {
-                "description": "warning from link 32"
-              }
+              "warning from link 32",
+              "warning from link 32"
             ],
             "notifications": []
           },
@@ -189,9 +181,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 32"
-              }
+              "warning from link 32"
             ],
             "notifications": []
           },
@@ -319,9 +309,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 34"
-              }
+              "warning from link 34"
             ],
             "notifications": []
           },
@@ -335,12 +323,8 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 34"
-              },
-              {
-                "description": "warning from link 34"
-              }
+              "warning from link 34",
+              "warning from link 34"
             ],
             "notifications": []
           },
@@ -354,9 +338,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 34"
-              }
+              "warning from link 34"
             ],
             "notifications": []
           },
@@ -661,9 +643,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 7"
-              }
+              "warning from link 7"
             ],
             "notifications": []
           },
@@ -677,12 +657,8 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 7"
-              },
-              {
-                "description": "warning from link 7"
-              }
+              "warning from link 7",
+              "warning from link 7"
             ],
             "notifications": []
           },
@@ -696,9 +672,7 @@
           "value": {
             "errors": [],
             "warnings": [
-              {
-                "description": "warning from link 7"
-              }
+              "warning from link 7"
             ],
             "notifications": []
           },

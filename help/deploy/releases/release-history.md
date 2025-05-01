@@ -1558,7 +1558,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improvements for Timelines and Sunburst plot, Radar chart fixes.
 * [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): RDKit rendering for various databases (Chembl, ChemblAPI, PubChem, and DrugBank) when OCL is used, **Scaffold Tree** integration into the **Filters Panel**, and other improvements.
 * [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): rendering for curves and confidence intervals, user-defined Javascript function support for running curves with caching, enhanced rendering in small cells, and more. 
-* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): new [Bioreactors](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors), [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
+* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): new Bioreactors, [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
 * [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): ability to select leaves from specific nodes, separate loader view, and ability to switch distance calculation methods for macromolecules, while also supporting the semType `macromolecules`.
 * [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/CHANGELOG.md): addressed issues.
 * [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md):  **Invariant Map** now selects sequences instead of filtering.
@@ -1734,7 +1734,7 @@ We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and ins
 
 We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis).
 
-#### [Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors#readme)
+#### [Bioreactors](https://github.com/datagrok-ai/public/blob/master/packages/DiffStudio/README.md)
 
 We've created the Bioreactors package for the simulation of the mechanism of [Controlled Fab-Arm Exchange](https://www.jbc.org/article/S0021-9258(20)40445-4/fulltext). The unique Datagrok WebAutosolver tool provides an in-browser solution for implementing simulations of the considered phenomena. To ensure high performance, we utilize wasm-computations.
 
@@ -2076,7 +2076,7 @@ We've separated **Images** and **Docker Containers** in the platform.
 
 We've added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added canvas grid cell renderers to the gridext library to render multiple values in a grid cell using a vertical layout.
 * Cell renderer now can estimate the desired cell size based on the entire column
@@ -2805,7 +2805,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * [Radar viewer](../../visualize/viewers/radar.md):
   * Fixed changing color issue: synchronized the color of percentiles on the legend and **Context Pane**.
 
-#### [MLB](https://github.com/datagrok-ai/public/tree/master/packages/MolecularLiabilityBrowser#readme)
+#### MLB
 
 * VRs tree for grid.
 * Revert database connection dataSource `PostgresNet`.
@@ -2813,7 +2813,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ### Improvements for developers
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added the ability to specify default viewer settings for the dataframe,
   see [annotation](https://github.com/datagrok-ai/public/issues/1395#issuecomment-1364325511).

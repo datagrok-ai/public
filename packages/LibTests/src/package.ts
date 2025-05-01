@@ -8,11 +8,6 @@ import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 
 export const _package = new DG.Package();
 
-//tags: init
-export async function init() {
-  await DG.Func.byName('WebComponents:init').prepare().call();
-}
-
 //
 // Validators manual testing
 //
@@ -20,6 +15,7 @@ export async function init() {
 
 //tags: test
 export async function TestViewerComponent() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const view = new DG.ViewBase();
   const viewerComponent = document.createElement('dg-viewer') as ViewerT;
 
@@ -58,6 +54,7 @@ export async function TestViewerComponent() {
 
 //tags: test
 export async function TestFromComponent() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
   const fc1 = func.prepare({
     a: 1,
@@ -90,6 +87,7 @@ export async function TestFromComponent() {
 
 //tags: test
 export async function TestElements() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   const bnt = document.createElement('button', {is: 'dg-button'});
   bnt.textContent = 'Click me';
   const bigBtn = document.createElement('button', {is: 'dg-big-button'});
@@ -155,16 +153,12 @@ export async function TestMultiarg5(a: number, b: number, c: number, d: number, 
   return a + b + c + d + e;
 }
 
-//name: MockWrapper1
-export async function MockWrapper1() {}
-
 //input: object params
 //output: object result
-export async function MockProvider1(params: any) {
+export async function MockWrapper1(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipeline1',
     nqName: 'LibTests:MockWrapper1',
-    provider: 'LibTests:MockProvider1',
     version: '1.0',
     type: 'static',
     steps: [
@@ -186,16 +180,12 @@ export async function MockProvider1(params: any) {
   return c;
 }
 
-//name: MockWrapper2
-export async function MockWrapper2() {}
-
 //input: object params
 //output: object result
-export async function MockProvider2(params: any) {
+export async function MockWrapper2(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
     nqName: 'LibTests:MockWrapper2',
-    provider: 'LibTests:MockProvider2',
     version: '1.0',
     type: 'parallel',
     stepTypes: [{
@@ -208,7 +198,7 @@ export async function MockProvider2(params: any) {
       friendlyName: 'mul',
     }, {
       type: 'ref',
-      provider: 'LibTests:MockProvider1',
+      provider: 'LibTests:MockWrapper1',
       version: '1.0',
     }],
     initialSteps: [
@@ -222,21 +212,17 @@ export async function MockProvider2(params: any) {
   return c;
 }
 
-//name: MockWrapper3
-export async function MockWrapper3() {}
-
 //input: object params
 //output: object result
-export async function MockProvider3(params: any) {
+export async function MockWrapper3(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
     nqName: 'LibTests:MockWrapper3',
-    provider: 'LibTests:MockProvider3',
     version: '1.0',
     type: 'parallel',
     stepTypes: [{
       type: 'ref',
-      provider: 'LibTests:MockProvider2',
+      provider: 'LibTests:MockWrapper2',
       version: '1.0',
     }],
     initialSteps: [
@@ -248,17 +234,13 @@ export async function MockProvider3(params: any) {
   return c;
 }
 
-//name: MockWrapper4
-export async function MockWrapper4() {}
-
 //input: object params
 //output: object result
-export async function MockProvider4(params: any) {
+export async function MockWrapper4(params: any) {
   const config2: PipelineConfiguration = {
     id: 'pipeline1',
     type: 'static',
     nqName: 'LibTests:MockWrapper4',
-    provider: 'LibTests:MockProvider4',
     version: '1.0',
     steps: [
       {
@@ -283,17 +265,14 @@ export async function MockProvider4(params: any) {
   return config2;
 }
 
-//name: MockWrapper5
-export async function MockWrapper5() {}
 
 //input: object params
 //output: object result
-export async function MockProvider5(params: any) {
+export async function MockWrapper5(params: any) {
   const config2: PipelineConfiguration = {
     id: 'pipeline1',
     type: 'sequential',
     nqName: 'LibTests:MockWrapper5',
-    provider: 'LibTests:MockProvider5',
     version: '1.0',
     approversGroup: 'MockGroup',
     stepTypes: [

@@ -1,5 +1,13 @@
 # Peptides changelog
 
+## 1.23.6 (2025-04-30)
+
+* Fix Peptides analysis not starting on data with existing position columns
+
+## 1.23.5 (2025-04-22)
+
+* Fix invisible Scroller in mutations cliffs 
+
 ## 1.23.4 (2025-04-21)
 
 * Fixes for selection table for DG null values

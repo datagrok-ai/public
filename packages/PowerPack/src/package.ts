@@ -245,8 +245,8 @@ function _viewerGallery(view: DG.ViewBase): void {
 export async function markdownFileViewer(file: DG.FileInfo): Promise<DG.View> {
   const viewFile = DG.View.create();
   viewFile.name = file.name.slice(0, file.name.indexOf('.'));
-  const input = await ui.input.markdown('');
-  input.value = await file.readAsString();
-  viewFile.append(input.root);
+  const mdText = await file.readAsString();
+  const preview = await ui.input.markdownPreview(mdText);
+  viewFile.append(preview);
   return viewFile;
 }

@@ -10,7 +10,7 @@ import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
+import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
@@ -192,9 +192,6 @@ export class StateTree {
         throw new Error(`Cannot save mock tree`);
       if (nqName == null)
         throw new Error(`Attempting to save pipeline with no nqName`);
-      const rootItem = root.getItem() as PipelineNodeBase;
-      if (rootItem.config.provider == null)
-        throw new Error(`Attempting to save pipeline with no nqName provider`);
       const pendingFuncCallSaves = this.nodeTree.traverse(root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {
@@ -866,7 +863,9 @@ export class StateTree {
       if (this.mockMode)
         return of(undefined);
       const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
-      return saveInstanceState(nqName, state, metaData);
+      const item = root.getItem();
+      const version = !isFuncCallNode(item) ? item.config.version : undefined;
+      return saveInstanceState(nqName, state, metaData, version);
     });
   }
 }

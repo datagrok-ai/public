@@ -2,11 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import {snapshotCompare} from '../../../test-utils';
-import {LoadedPipeline} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
-import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {switchMap} from 'rxjs/operators';
 
@@ -40,7 +37,7 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
         to: 'out1:step1/a',
         type: 'validator',
         handler({controller}) {
-          controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
+          controller.setValidation('out1', {warnings: [{description: 'test warn'}]});
           return;
         },
       }],

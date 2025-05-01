@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {historyUtils, RunComparisonView} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
-import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
+import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME, VERSION_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, mergeMap, take, toArray} from 'rxjs/operators';
 import {from} from 'rxjs';
@@ -23,21 +23,29 @@ export const History = Vue.defineComponent({
       type: DG.Func,
       required: true,
     },
+    version: {
+      type: String,
+      required: false,
+    },
+    allowOtherVersions: {
+      type: Boolean,
+      default: false,
+    },
+    allowCompare: {
+      type: Boolean,
+      default: false,
+    },
+    showIsComplete: {
+      type: Boolean,
+      default: false,
+    },
+    forceHideInputs: {
+      type: Boolean,
+      default: true,
+    },
     fallbackText: {
       type: String,
       default: 'No historical runs found',
-    },
-    showActions: {
-      type: Boolean,
-      default: false,
-    },
-    showBatchActions: {
-      type: Boolean,
-      default: false,
-    },
-    isHistory: {
-      type: Boolean,
-      default: false,
     },
   },
   emits: {
@@ -56,6 +64,11 @@ export const History = Vue.defineComponent({
 
     const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
     const func = Vue.computed(() => Vue.markRaw(props.func));
+    const showIsComplete = Vue.computed(() => props.showIsComplete);
+
+    const forceHideInputs = Vue.computed(() => props.forceHideInputs);
+    const allowCompare = Vue.computed(() => props.allowCompare);
+    const allowOtherVersions = Vue.computed(() => props.allowOtherVersions);
 
     const currentSelection = new Set<DG.FuncCall>();
 
@@ -92,6 +105,7 @@ export const History = Vue.defineComponent({
       DG.Column.string(TAGS_COLUMN_NAME, 0),
       DG.Column.string(TITLE_COLUMN_NAME, 0),
       DG.Column.string(DESC_COLUMN_NAME, 0),
+      DG.Column.string(VERSION_COLUMN_NAME, 0),
     ]);
 
     const getRunByIdx = (idx: number) => {
@@ -116,8 +130,6 @@ export const History = Vue.defineComponent({
       editDialog.show({center: true, width: 500});
       const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
       try {
-        if (!props.isHistory)
-          return updateRun(funcCall);
         if (editOptions.favorite !== 'same')
           await Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
         const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
@@ -154,8 +166,7 @@ export const History = Vue.defineComponent({
     const deleteRun = async (id: string) => {
       try {
         const loadedRun = await historyUtils.loadRun(id, true, false);
-        if (props.isHistory)
-          await historyUtils.deleteRun(loadedRun);
+        await historyUtils.deleteRun(loadedRun);
         historicalRuns.value.delete(id);
         Vue.triggerRef(historicalRuns);
         await Utils.saveIsFavorite(loadedRun, false);
@@ -187,7 +198,7 @@ export const History = Vue.defineComponent({
       const df = await Utils.getRunsDfFromList(
         historicalRuns,
         func,
-        Vue.toValue(() => props),
+        Vue.toValue(() => ({...props, isHistory: true})),
       );
       historicalRunsDf.value = Vue.markRaw(df);
     });
@@ -219,10 +230,12 @@ export const History = Vue.defineComponent({
       const tagCol = currentGrid.value.dataFrame.getCol(TAGS_COLUMN_NAME);
       const cols = [
         ID_COLUMN_NAME,
-        ...showMetadata.value ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]: [],
+        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
+        ...(showMetadata.value && showIsComplete.value) ? [COMPLETE_COLUMN_NAME]: [],
         ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
         ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
+        ...(showMetadata.value && allowOtherVersions) ? [VERSION_COLUMN_NAME]: [],
         ...showInputs.value && currentFunc.value ? Utils.getVisibleProps(currentFunc.value)
           .map((key) => {
             const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
@@ -300,8 +313,17 @@ export const History = Vue.defineComponent({
       }
     };
 
+    const compareSelected = async () => {
+      if (isLoading.value || currentSelection.size === 0)
+        return;
+      const currentFunc = func.value;
+      const fullFuncCalls = await Promise.all([...currentSelection].map((call) => historyUtils.loadRun(call.id)));
+      const compareView = await RunComparisonView.fromComparedRuns(fullFuncCalls, currentFunc);
+      grok.shell.addView(compareView);
+      compareView.defaultCustomize();
+    }
+
     const currentFunc = Vue.computed(() => Vue.markRaw(props.func));
-    const isHistory = Vue.computed(() => props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;
       const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
@@ -319,7 +341,7 @@ export const History = Vue.defineComponent({
         currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value &&
         currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
-        ...currentFunc.value && showInputs.value ? Utils.getVisibleProps(currentFunc.value)
+        ...currentFunc.value && (showInputs.value && !forceHideInputs.value) ? Utils.getVisibleProps(currentFunc.value)
           .map((key) => {
             const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
             currentFunc.value.outputs.find((prop) => prop.name === key);
@@ -329,10 +351,7 @@ export const History = Vue.defineComponent({
             else
               return Utils.getColumnName(key);
           })
-          .filter((columnName) => {
-            return !isHistory.value ||
-            currentDf.getCol(columnName).categories.length > 1;
-          })
+          .filter((columnName) => currentDf.getCol(columnName).categories.length > 1)
           .map((columnName) => columnName): [],
       ];
     });
@@ -352,11 +371,11 @@ export const History = Vue.defineComponent({
             value={showMetadata.value}
             onUpdate:value={(val) => showMetadata.value = val}
           />
-          <ToggleInput
+          { !forceHideInputs.value && <ToggleInput
             caption='Params'
             value={showInputs.value}
             onUpdate:value={(val) => showInputs.value = val}
-          />
+          />}
         </div>
         <div style={{display: 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA
@@ -365,6 +384,12 @@ export const History = Vue.defineComponent({
             onClick={refresh}
             style={{alignContent: 'center'}}
           />
+          { hasSelected.value && allowCompare.value && <IconFA
+            name='exchange'
+            tooltip={'Compare'}
+            onClick={compareSelected}
+            style={{alignContent: 'center'}}
+          />}
           { hasSelected.value && <IconFA
             name='trash-alt'
             tooltip={'Delete'}

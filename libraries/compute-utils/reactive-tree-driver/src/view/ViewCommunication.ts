@@ -80,7 +80,7 @@ export interface LoadPipeline {
 export interface InitPipeline {
   event: 'initPipeline';
   provider: NqName;
-  version?: number;
+  version?: string;
 }
 
 export interface ResetToConsistent {

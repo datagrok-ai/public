@@ -154,7 +154,7 @@ export async function getFittedParams(
         if (percentage < 99.9)
           pi.update(percentage, `Fitting... (${percentage}%)`);
         else
-          pi.update(percentage, 'Fitting... (preparing charts)');
+          pi.update(percentage, 'Fitting... (100%)');
 
         if (e.data.callResult === RESULT_CODE.SUCCEED) {
           e.data.extremums.forEach((extr: Extremum) => resultsArray.push(extr));

@@ -5,7 +5,7 @@
 1. Open smiles.csv
 2. Go to **ML > Models > Train model**
 3. Set **Predict** to `Ring Count`
-4. Set **Features** to `canonical_smiles` - a model starts training
+4. Set **Features** to `canonical_smiles` - **a model starts training, check the progress bar for correct info**
 5. After the training is complete, check the interactive dashboard
 5. Change values for **Activation**, **Split_type**, **Epochs** and click TRAIN
 5. After the training is complete, save model with name "test_chemprop"

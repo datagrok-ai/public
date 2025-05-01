@@ -4,7 +4,7 @@ title: "Predictive modeling"
 
 Predictive modeling uses statistics to predict outcomes.
 
-![Predictive Modeling](../uploads/gifs/predictive-modeling.gif "Predictive Modeling")
+![Predictive Modeling](predictive-modeling.gif "Predictive Modeling")
 
 ## Algorithms
 
@@ -51,7 +51,7 @@ Under the hood, Chemprop uses message passing neural networks. The model engine 
 Example for R Caret engine:
 
 * Open table
-* Run from menu: **Tools** | **ML** | **Train model**
+* Run **Top Menu** > **ML** > **Models** > **Train model**
 * Select table that contains features
 * Select feature columns
 * Select outcome column
@@ -65,7 +65,7 @@ Example for R Caret engine:
 ## Apply model
 
 * Open table
-* Run from menu: **Tools** | **Predictive modeling** | **Apply**
+* Run **Top Menu** > **ML** > **Models** > **Apply**
 * Select table that contains features
 * Select applicable model
 * Set checkbox to impute missing values, if required
@@ -73,10 +73,10 @@ Example for R Caret engine:
 * Apply model
 * Result of modelling will be concatenated to source table as a new column.
 
-Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**)
-or as suggested models in table properties in **Toolbox**
-or [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
+Also apply model available through **Models Browser** (**Browse** > **Platform** > **Predictive Models**)
+or as suggested models on the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 
+![Apply Model](apply-model.gif "Apply Model")
 
 ## Deployment
 

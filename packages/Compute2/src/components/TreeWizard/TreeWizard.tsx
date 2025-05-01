@@ -38,6 +38,9 @@ export const TreeWizard = Vue.defineComponent({
       type: String,
       required: true,
     },
+    version: {
+      type: String,
+    },
     modelName: {
       type: String,
       required: true,
@@ -75,7 +78,7 @@ export const TreeWizard = Vue.defineComponent({
       removeStep,
       moveStep,
       changeFuncCall,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'));
 
     const chosenStepUuid = Vue.ref<string | undefined>();
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -285,7 +288,7 @@ export const TreeWizard = Vue.defineComponent({
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{name: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
@@ -430,11 +433,11 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
-              exports.value.map(({name, handler}) =>
+              exports.value.map(({id, friendlyName, handler}) =>
                 <span onClick={() => (treeState.value)
                   ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
                   : null}>
-                  <div> {name} </div>
+                  <div> {friendlyName ?? id} </div>
                 </span>,
               )
             }
@@ -549,7 +552,7 @@ export const TreeWizard = Vue.defineComponent({
           {
             !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&  !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={(chosenStepState.value.provider && chosenStepState.value.nqName) ?
+              funcCall={chosenStepState.value.nqName ?
                 DG.Func.byName(chosenStepState.value.nqName!).prepare() :
                 undefined
               }

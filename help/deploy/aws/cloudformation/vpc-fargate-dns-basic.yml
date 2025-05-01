@@ -54,7 +54,7 @@ Mappings:
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
-      version: v1.12.1
+      version: v1.19.1
     Rabbitmq:
       domain: docker.io
       repo: rabbitmq
@@ -102,6 +102,10 @@ Metadata:
       - RabbitmqVersion
       - GrokSpawnerVersion
       - JKGVersion
+    - Label:
+        default: Advanced
+      Parameters:
+      - Postfix
     ParameterLabels:
       CIDR:
         default: 'CIDR: VPC CIDR'
@@ -263,6 +267,9 @@ Parameters:
     Default: 1.14.0
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
+  Postfix:
+    Description: URL postfix for backward compatibility. Leave blank for new installations
+    Type: String
   RabbitmqVersion:
     Default: 4.0.5-management
     Description: Enter rabbitmq docker image version.
@@ -298,7 +305,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-cvm-alb-int
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-cvm-alb-int
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -307,7 +317,10 @@ Resources:
   CvmCluster:
     Properties:
       ClusterName:
-        Fn::Sub: ${AWS::StackName}-cvm
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-cvm
+        - postfix:
+            Ref: Postfix
       ClusterSettings:
       - Name: containerInsights
         Value: enabled
@@ -345,7 +358,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-cvm
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-cvm
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -581,7 +597,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-alb-int
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-alb-int
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       VpcId:
@@ -594,7 +613,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-alb
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-alb
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       VpcId:
@@ -632,7 +654,10 @@ Resources:
   DatagrokCluster:
     Properties:
       ClusterName:
-        Fn::Sub: ${AWS::StackName}
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}
+        - postfix:
+            Ref: Postfix
       ClusterSettings:
       - Name: containerInsights
         Value: enabled
@@ -649,7 +674,10 @@ Resources:
       BackupRetentionPeriod: 3
       DBInstanceClass: db.t3.large
       DBInstanceIdentifier:
-        Fn::Sub: ${AWS::StackName}-rds
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rds
+        - postfix:
+            Ref: Postfix
       DBName: datagrok
       DBSubnetGroupName:
         Ref: DatagrokDBSubnetGroup
@@ -702,7 +730,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-rds
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-rds
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       VpcId:
@@ -713,7 +744,10 @@ Resources:
       DBSubnetGroupDescription:
         Fn::Sub: ${AWS::StackName} Datagrok DatagrokDB Subnet Group
       DBSubnetGroupName:
-        Fn::Sub: ${AWS::StackName}-rds-subnet
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rds-subnet
+        - postfix:
+            Ref: Postfix
       SubnetIds:
       - Ref: DatagrokDataSubnet1
       - Ref: DatagrokDataSubnet2
@@ -935,7 +969,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-cvm-jupyter_kernel_gateway
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-cvm-jupyter_kernel_gateway
+        - postfix:
+            Ref: Postfix
       Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1024,7 +1061,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-grok_spawner_kaniko
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-grok_spawner_kaniko
+        - postfix:
+            Ref: Postfix
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1057,7 +1097,10 @@ Resources:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
       Name:
-        Fn::Sub: ${AWS::StackName}
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}
+        - postfix:
+            Ref: Postfix
       Scheme:
         Fn::If:
         - InternetIngressAccess
@@ -1075,7 +1118,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-alb
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-alb
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       Type: application
@@ -1086,7 +1132,10 @@ Resources:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
       Name:
-        Fn::Sub: ${AWS::StackName}-int
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-int
+        - postfix:
+            Ref: Postfix
       Scheme: internal
       SecurityGroups:
       - Ref: DatagrokALBIntSecurityGroup
@@ -1096,7 +1145,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-alb-int
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-alb-int
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       Type: application
@@ -1105,7 +1157,10 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName:
-        Fn::Sub: /ecs/${AWS::StackName}-${AWS::Region}
+        Fn::Sub:
+        - /ecs/${AWS::StackName}${postfix}-${AWS::Region}
+        - postfix:
+            Ref: Postfix
       RetentionInDays: 7
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -1186,8 +1241,10 @@ Resources:
             SSEAlgorithm: AES256
       BucketName:
         Fn::Sub:
-        - ${AWS::StackName}-s3-${uuid}
-        - uuid:
+        - ${AWS::StackName}${postfix}-s3-${uuid}
+        - postfix:
+            Ref: Postfix
+          uuid:
             Fn::Select:
             - 2
             - Fn::Split:
@@ -1344,7 +1401,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       VpcId:
@@ -1553,7 +1613,10 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-i
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-i
+        - postfix:
+            Ref: Postfix
       Port: 8080
       Protocol: HTTP
       Tags:
@@ -1571,7 +1634,10 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}
+        - postfix:
+            Ref: Postfix
       Port: 8080
       Protocol: HTTP
       Tags:
@@ -1750,7 +1816,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}
+        - postfix:
+            Ref: Postfix
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1988,7 +2057,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-grok_connect
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-grok_connect
+        - postfix:
+            Ref: Postfix
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2203,7 +2275,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-grok_pipe
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-grok_pipe
+        - postfix:
+            Ref: Postfix
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2321,6 +2396,7 @@ Resources:
           - ecs:ListTaskDefinitions
           - ecs:DeregisterTaskDefinition
           - ecs:RegisterTaskDefinition
+          - ec2:DescribeInstances
           Condition: {}
           Effect: Allow
           Resource: '*'
@@ -2328,6 +2404,7 @@ Resources:
           - ecs:DescribeServices
           - ecs:UpdateService
           - ecs:DeleteService
+          - ecs:ListServices
           Condition:
             ArnEquals:
               ecs:cluster:
@@ -2345,6 +2422,30 @@ Resources:
                 Ref: DatagrokCluster
           - Fn::Sub:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:ListContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+            - cluster_name:
+                Ref: CvmCluster
+        - Action:
+          - ecs:DescribeContainerInstances
+          Effect: Allow
+          Resource:
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+            - cluster_name:
+                Ref: DatagrokCluster
+          - Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
             - cluster_name:
                 Ref: CvmCluster
         - Action:
@@ -2398,7 +2499,7 @@ Resources:
           Effect: Allow
           Resource:
             Fn::Sub:
-            - ${log_group}:log-stream:grok_spawner/*
+            - ${log_group}
             - log_group:
                 Fn::GetAtt:
                 - DatagrokLogGroup
@@ -2559,7 +2660,7 @@ Resources:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
           Value:
-            Fn::Sub: FARGATE
+            Fn::Sub: EC2
         - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
           Value:
             Fn::Sub:
@@ -2594,7 +2695,7 @@ Resources:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
           Value:
-            Fn::Sub: FARGATE
+            Fn::Sub: EC2
         - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:
@@ -2664,7 +2765,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-grok_spawner
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-grok_spawner
+        - postfix:
+            Ref: Postfix
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2728,7 +2832,10 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}
+          - postfix:
+              Ref: Postfix
       - Key: datagrok.component
         Value: datagrok
       VpcId:
@@ -2967,7 +3074,10 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-rabbitmq
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rabbitmq
+        - postfix:
+            Ref: Postfix
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:

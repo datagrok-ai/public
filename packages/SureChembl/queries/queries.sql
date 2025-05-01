@@ -16,7 +16,7 @@ with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@patter
  join schembl_document_chemistry sdc on sdc.schembl_chem_id = mols.schembl_chem_id and sdc.frequency > 0
  join schembl_document sd on sdc.schembl_doc_id = sd.id
  join schembl_document_title sdt on sdt.schembl_doc_id = sd.id
- group by m, text, sd.id, lang, assign_applic, scpn, published
+ group by m, text, sd.id, lang, assign_applic, scpn, published, sdc.schembl_chem_id
 --end
 
 
@@ -42,6 +42,6 @@ select m as smiles, similarity, text as title, sd.id as doc_surechembl_id, lang 
  join schembl_document_chemistry sdc on sdc.schembl_chem_id = mols.schembl_chem_id and sdc.frequency > 0
  join schembl_document sd on sdc.schembl_doc_id = sd.id
  join schembl_document_title sdt on sdt.schembl_doc_id = sd.id
- group by m, text, sd.id, lang, assign_applic, scpn, published, similarity
+ group by m, text, sd.id, lang, assign_applic, scpn, published, similarity, sdc.schembl_chem_id
  order by similarity desc
 --end

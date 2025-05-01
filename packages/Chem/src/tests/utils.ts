@@ -4,7 +4,7 @@ import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
 
-export const CONTAINER_TIMEOUT = 900000;
+export const CONTAINER_TIMEOUT = 90000;
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);

@@ -361,7 +361,6 @@ export class PipelineNodeBase implements IStoreProvider {
     const res = {
       configId: this.config.id,
       uuid: this.uuid,
-      provider: this.config.provider,
       version: this.config.version,
       nqName: this.config.nqName,
       friendlyName: this.config.friendlyName,

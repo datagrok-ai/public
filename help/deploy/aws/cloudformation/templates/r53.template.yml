@@ -22,6 +22,9 @@ Parameters:
     Type: String
     MinLength: 3
     Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName.subdomain.domain.com'.
+  Postfix:
+    Type: String
+    Description: URL postfix for backward compatibility. Leave blank for new installations
 #Conditions:
 #  CreateDNS:
 #    Fn::And:
@@ -64,8 +67,10 @@ Resources:
         Ref: DNSZoneId
       Name:
         Fn::Sub:
-          - "${AWS::StackName}.${domain}."
-          - domain:
+          - "${AWS::StackName}${postfix}.${domain}."
+          - postfix:
+              Ref: Postfix
+            domain:
               Ref: DNSDomain
   DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
@@ -73,14 +78,18 @@ Resources:
     Properties:
       DomainName:
         Fn::Sub:
-          - "${AWS::StackName}.${domain}"
+          - "${AWS::StackName}${postfix}.${domain}"
           - domain:
               Ref: DNSDomain
+            postfix:
+              Ref: Postfix
       DomainValidationOptions:
         - DomainName:
             Fn::Sub:
-              - "${AWS::StackName}.${domain}"
-              - domain:
+              - "${AWS::StackName}${postfix}.${domain}"
+              - postfix:
+                  Ref: Postfix
+                domain:
                   Ref: DNSDomain
           HostedZoneId:
             Ref: DNSZoneId
@@ -89,7 +98,10 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}"
+            Fn::Sub:
+              - "${AWS::StackName}${postfix}"
+              - postfix:
+                  Ref: Postfix
       ValidationMethod: DNS
   DatagrokR53CleanupLambdaRole:
     Type: AWS::IAM::Role

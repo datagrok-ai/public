@@ -52,11 +52,16 @@ def run_aizynthfind(config_path, smiles, user_id):
       smiles_file.write(smiles.encode())
       smiles_file.flush()
 
+      res_output_dir = os.path.join(os.getcwd(), "aizynthcli_data", user_id)
+      
+      # Create output directory if it doesn't exist
+      os.makedirs(res_output_dir, exist_ok=True)
+
       command = [
         "aizynthcli",
         "--config", config_path,
         "--smiles", smiles_file.name,
-        "--output", "trees.json"
+        "--output", f"{res_output_dir}/trees.json"
       ]
 
     logging.info(f"Executing: {' '.join(command)}")
@@ -76,7 +81,7 @@ def run_aizynthfind(config_path, smiles, user_id):
     shared_state[user_id].update({"status": "completed", "return_code": return_code})
 
     if return_code == 0:
-      with open("trees.json", "r") as result_file:
+      with open(f"{res_output_dir}/trees.json", "r") as result_file:
         result_content = result_file.read()
       logging.info("aizynthcli completed successfully")
       return {"result": result_content, "success": True}

@@ -9,6 +9,7 @@
 
 .monomer-manager-sketcher .ketcher-host {
     height: 100% !important;
+    width: unset !important;
 } 
 
 .monomer-manager-root > div:first-child {

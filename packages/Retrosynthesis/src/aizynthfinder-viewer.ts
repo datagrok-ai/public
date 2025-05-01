@@ -62,7 +62,8 @@ export class AiZynthFinderViewer extends DG.JsViewer {
       if (reactionData.data?.length) {
         const paths = reactionData.data[0].trees as Tree[];
         if (paths?.length) {
-          const tabControl = createPathsTreeTabs(this.paths);
+          const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
+          const tabControl = createPathsTreeTabs(this.paths, pathsObjects);
           this.root.append(tabControl.root);
         } else
           this.root.append(ui.divText('No paths found for the molecule'));

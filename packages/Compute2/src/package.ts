@@ -12,7 +12,6 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import './tailwind.css';
-import {makeAdvice, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
@@ -122,7 +121,7 @@ export async function TreeWizardTestApp() {}
 //input: funccall call
 //output: view result
 export async function TreeWizardEditor(call: DG.FuncCall) {
-  const providerFunc = call?.func?.options?.provider;
+  const providerFunc = call?.func?.options?.provider ?? call?.func?.nqName;
   if (!providerFunc)
     throw new Error(`Model ${call?.func?.name} has no provider`);
 
@@ -130,8 +129,9 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   setViewHierarchyData(call, view);
 
   const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
+  const version = call.inputs.params?.version;
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, view: Vue.markRaw(view)});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   setVueAppOptions(app);
@@ -185,17 +185,16 @@ export async function HistoryTestApp() {
   grok.shell.addView(view);
 }
 
-//name: MockWrapper1
-export async function MockWrapper1() {}
 
-//name: MockProvider1
 //input: object params
 //output: object result
-export async function MockProvider1(params: any) {
+//editor: Compute2:TreeWizardEditor
+//tags: test, compute2
+export async function MockPipeline1(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipeline1',
-    nqName: 'Compute2:MockWrapper1',
-    provider: 'Compute2:MockProvider1',
+    friendlyName: 'Pipeline 1',
+    nqName: 'Compute2:MockPipeline1',
     version: '1.0',
     type: 'static',
     steps: [
@@ -203,10 +202,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'Compute2:LongScript',
       },
-      // {
-      //   id: 'step2',
-      //   nqName: 'Compute2:LongFailingScript',
-      // },
+      {
+        id: 'step2',
+        nqName: 'Compute2:LongFailingScript',
+      },
     ],
     links: [{
       id: 'link1',
@@ -217,18 +216,16 @@ export async function MockProvider1(params: any) {
   return c;
 }
 
-//name: MockWrapper2
-export async function MockWrapper2() {}
 
-
-//name: MockProvider2
 //input: object params
 //output: object result
-export async function MockProvider2(params: any) {
+//editor: Compute2:TreeWizardEditor
+//tags: test, compute2
+export async function MockPipeline2(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
-    nqName: 'Compute2:MockWrapper2',
-    provider: 'Compute2:MockProvider2',
+    nqName: 'Compute2:MockPipeline2',
+    friendlyName: 'Pipeline 2',
     version: '1.0',
     type: 'sequential',
     stepTypes: [{
@@ -283,7 +280,7 @@ export async function MockProvider2(params: any) {
       friendlyName: 'long',
     }, {
       type: 'ref',
-      provider: 'Compute2:MockProvider1',
+      provider: 'Compute2:MockPipeline1',
       version: '1.0',
     }],
     initialSteps: [
@@ -343,11 +340,11 @@ export async function MockProvider2(params: any) {
           if (!action) return;
 
           controller.setValidation('toInitTemp',
-            makeValidationResult({errors: [
-              makeAdvice(
-                `Initial temperature should be more than ambient temperature ${ambTemp}`,
-                [{actionName: `Set reasonable initial temperature`, action}],
-              ),
+            ({errors: [
+              {
+                description: `Initial temperature should be more than ambient temperature ${ambTemp}`,
+                actions: [{actionName: `Set reasonable initial temperature`, action}],
+              },
             ]}));
         } else
           controller.setValidation('toInitTemp');
@@ -356,9 +353,6 @@ export async function MockProvider2(params: any) {
   };
   return c;
 }
-
-//name: MockWrapper3
-export async function MockWrapper3() {}
 
 //name: TestAdd2
 //input: double a
@@ -432,9 +426,9 @@ class MyView extends CustomFunctionView {
 }
 
 //name: Custom View (Compute 2 Test)
-//tags: demo, test
 //editor: Compute2:CustomFunctionViewEditor
 //output: view result
+//tags: test, compute2
 export async function TestCustomView() {
   const view = new MyView();
   return view;

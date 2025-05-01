@@ -24,13 +24,13 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig,
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs} from './src/events';
-import {HtmlUtils, _isDartium, _options} from './src/utils';
+import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Property, User} from './src/entities';
@@ -957,8 +957,8 @@ export namespace input {
     return _create(d4.InputType.Image, name, options);
   }
 
-  export async function markdown(caption?: string): Promise<MarkdownInput> {
-    return (await MarkdownInput.create(caption));
+  export function markdown(caption?: string, options?: MarkdownConfig): MarkdownInput {
+    return MarkdownInput.create(caption, options);
   }
 
   export function code(name: string, options?: CodeConfig): CodeInput {
@@ -967,6 +967,14 @@ export namespace input {
 
   export function tags(name: string, config?: TagsInputConfig) {
     return new TagsInput(name, config);
+  }
+
+  export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
+    await Utils.loadJsCss(['js/common/quill/marked.min.js']);
+    const markdownPreview = div([], { style: { padding: '12px' } });
+    //@ts-ignore
+    markdownPreview.innerHTML = marked.parse(markdown ?? '');
+    return markdownPreview;
   }
 }
 

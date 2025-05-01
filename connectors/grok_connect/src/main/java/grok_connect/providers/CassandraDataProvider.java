@@ -46,7 +46,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("text", Types.STRING);

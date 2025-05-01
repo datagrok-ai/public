@@ -4,11 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-export {
-  makeValidationResult as makeValidationResult2,
-  makeAdvice as makeAdvice2,
-  mergeValidationResults as mergeValidationResults2,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {
+  CustomFunctionView as CustomFunctionViewInst,
+} from '@datagrok-libraries/compute-utils';
 import {ModelCatalogView, ModelHandler, startModelCatalog, makeModelTreeBrowser, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 
 export const _package = new DG.Package();
@@ -68,6 +66,6 @@ export function modelCatalog() {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
-  await makeModelTreeBrowser(treeNode);
+export function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
+  makeModelTreeBrowser(treeNode);
 }

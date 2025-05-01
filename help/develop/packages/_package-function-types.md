@@ -46,7 +46,7 @@ grok add app <application-name>
 ```
 
 For more information on developing an application, refer to
-the [How to build an application section](../how-to/build-an-app.md)
+the [How to build an application section](../how-to/apps/build-an-app.md)
 
 ## Dashboards
 
@@ -93,14 +93,14 @@ File viewers are used in Datagrok's [file share browser](../../access/files/file
 define custom viewers or editors in addition to the native ones. These functions work with files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 
-*See more:* [How to Develop Custom File Viewers](../how-to/create-custom-file-viewers.md)
+*See more:* [How to Develop Custom File Viewers](../how-to/files/create-custom-file-viewers.md)
 
 ## File exporters
 
 A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
 Exporters reside in the platform's top menu "export" section.
 
-*See more:* [How to Create File Exporters](../how-to/file-exporters.md)
+*See more:* [How to Create File Exporters](../how-to/files/file-exporters.md)
 
 ## Package settings editors
 

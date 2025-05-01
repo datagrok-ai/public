@@ -3,6 +3,12 @@
   padding-bottom: 10px;
 }
 
+.surechembl-download-all-patents-to-workspace-button {
+  color: #2083d5!important;
+  padding-bottom: 10px;
+  padding-left: 10px;
+}
+
 .surechembl-add-patents-to-workspace-button {
   color: #2083d5!important;
   visibility: hidden;

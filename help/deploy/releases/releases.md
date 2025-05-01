@@ -9,6 +9,18 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.25 || 2025-Mar
+
+### Navigation and usability 
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../datagrok/navigation/views/table-view.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
+
+### Developer updates
+
+* **Breaking changes**: Site markup, UI API, and CSS styles have been updated. If your packages or integrations rely on specific UI elements or styling, it is recommended to check for compatibility and make the necessary adjustments.
+
 ## 1.24 || 2025-Feb
 
 ### Visualization and analysis
@@ -175,7 +187,7 @@ We've introduced caching for [file shares](../../access/files/files.md) (includi
 * Configurable caching for individual files and file shares
 * Automatic cache invalidation when files are modified within the platform
 
-[Learn more](../../develop/how-to/function_results_cache.md).
+[Learn more](../../develop/how-to/functions/cache-function-results.md).
 
 
 ## 1.19 || 2024-Jun
@@ -357,7 +369,7 @@ You can now integrate with Datagrok using Datagrok's [REST API](../../develop/pa
 
 ### Platform performance
 
-We now support client and server-side [caching for function results](../../develop/how-to/function_results_cache.md). This feature is
+We now support client and server-side [caching for function results](../../develop/how-to/functions/cache-function-results.md). This feature is
 particularly useful for functions that produce consistent outputs, like queries
 and scripts. The client-side cache, limited to 100 MB or 100,000 records, speeds
 up data access and improves network efficiency. The unrestricted server-side

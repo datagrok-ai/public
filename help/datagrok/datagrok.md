@@ -117,7 +117,7 @@ Customize anything, from context actions to UI elements. Fast development and
 deployment time with seamless integration.
 
 * [JavaScript API](../develop/packages/js-api.md) for [extending Datagrok](../develop/packages/extensions.md#what-can-be-extended)
-* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/build-an-app.md), or integrate with third party apps
+* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/apps/build-an-app.md), or integrate with third party apps
 * [Developer tools](../develop/dev-process/tools/inspector.md), [UI toolkit](../develop/advanced/ui.md)
 * Comprehensive help: [wiki](../develop/develop.md), [exercises](../develop/onboarding/exercises.md), [community forum](https://community.datagrok.ai/).
 
@@ -127,7 +127,7 @@ deployment time with seamless integration.
 detects the semantics, like zip codes or molecules, and has built-in support
 for areas like [cheminformatics](solutions/domains/chem/chem.md),
 [bioinformatics](solutions/domains/bio/bio.md), [data science](solutions/domains/data-science.md),
- and others. Need more? Create [your own plugin](../develop/how-to/create-package.md).
+ and others. Need more? Create [your own plugin](../develop/how-to/packages/create-package.md).
 
 **Skillset**: Datagrok is for anyone who works with data: 
 

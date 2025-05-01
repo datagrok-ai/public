@@ -725,6 +725,55 @@ category('clone and layout tests', async () => {
       'highlight hasn\'t been reset after all filter closed', 3000);
   });
 
+  test('33_clone_layout_scenario', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tvInitial = await createTableView(df);
+    const filter1 = (await getFilterGroupAndFilter(tvInitial, 'Structure')).filter;
+    await initializeFilter(filter1);
+    await filterByStructure(df, filter1, molFileForCloneTest1, 5);
+    const tvCloned = await cloneView(tvInitial, df);
+    let cloneFgAndFilter = await getFilterGroupAndFilter(tvCloned, 'Structure');
+    await checkFilterSynchronized(cloneFgAndFilter.filter, 'C1CCCCC1');
+    await disableSubstructureFilter(df, 100, cloneFgAndFilter.group, cloneFgAndFilter.filter);
+    await closeFilterGroup(cloneFgAndFilter.group);
+    cloneFgAndFilter = await getFilterGroupAndFilter(tvCloned, 'Structure');
+    await enableSubstructureFilter(df, 5, cloneFgAndFilter.group, cloneFgAndFilter.filter);
+    await filterByStructure(df, filter1, DG.WHITE_MOLBLOCK, 100);
+  });
+
+  test('34_clone_layout_scenario', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tvInitial = await createTableView(df);
+    const initialFgAndFilter = (await getFilterGroupAndFilter(tvInitial, 'Structure'));
+    const tvCloned = await cloneView(tvInitial, df);
+    let cloneFgAndFilter = await getFilterGroupAndFilter(tvCloned, 'Structure');
+    await initializeFilter(cloneFgAndFilter.filter);
+    await filterByStructure(df, cloneFgAndFilter.filter, molFileForCloneTest1, 5);
+    await closeFilterGroup(cloneFgAndFilter.group);
+    await switchToView(tvInitial);
+    await closeFilterGroup(initialFgAndFilter.group);
+    //check that filter and highlight have been reset
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+    await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null,
+      'highlight hasn\'t been reset after all filter closed', 3000);
+  });
+
+  test('terminate search by filter disable', async () => {
+    const df = await readDataframe('tests/smi10K.csv');
+    const tvInitial = await createTableView(df);
+    const fgAndFilter = (await getFilterGroupAndFilter(tvInitial, 'smiles'));
+    await initializeFilter(fgAndFilter.filter);
+    const substr1 = 'C1CCCCC1';
+    //starting filtering by 1st structure
+    fgAndFilter.filter.sketcher.setSmiles(substr1);
+    await delay(500);
+    //terminating filtering by 1st structure
+    await awaitCheck(() => df.filter.trueCount !== df.rowCount, 'filtering by 1st structure hasn\'t been started', 60000);
+    await disableSubstructureFilter(df, df.rowCount, fgAndFilter.group, fgAndFilter.filter);
+    await awaitCheck(() => df.col('smiles')!.temp[FILTER_SCAFFOLD_TAG] === null,
+    'highlight hasn\'t been reset after all filter closed', 3000);
+  });
+
   test('simple layout apply', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tvInitial = await createTableView(df);
@@ -867,4 +916,12 @@ async function closeFilterGroup(fg: DG.FilterGroup) {
   await delay(50);
 }
 
+async function disableSubstructureFilter(df: DG.DataFrame, trueCount: number, fg: DG.FilterGroup, filter: DG.Filter) {
+  fg.setEnabled(filter, false);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter disable', 3000);
+} 
 
+async function enableSubstructureFilter(df: DG.DataFrame, trueCount: number, fg: DG.FilterGroup, filter: DG.Filter) {
+  fg.setEnabled(filter, true);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter enable', 3000);
+} 
