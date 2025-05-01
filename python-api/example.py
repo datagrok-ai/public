@@ -92,3 +92,30 @@ created_group.description = "Updated description for Data Science Team"
 updated_group = api.save_group(created_group, save_relations=True)
 print("Updated group:", updated_group.friendly_name, updated_group.description)
 
+# Add Member Examples
+
+# Find John Doe's personal group
+john_doe_groups = api.lookup_groups("John Doe")
+john_doe_group = next((g for g in john_doe_groups if g.personal), None)
+if john_doe_group:
+    print(f"Found John Doe's personal group: {john_doe_group.friendly_name}")
+    
+    # Add John Doe as regular member
+    created_group.add_member(john_doe_group)
+    print(f"Added {john_doe_group.friendly_name} as regular member to {created_group.friendly_name}")
+    
+    # Verify the member was added
+    updated_group = api.get_group(created_group.id)
+    print(f"Members after adding: {[m.friendly_name for m in updated_group.members]}")
+    
+    # Add John Doe as admin
+    created_group.add_member(john_doe_group, is_admin=True)
+    print(f"Added {john_doe_group.friendly_name} as admin to {created_group.friendly_name}")
+    
+    # Verify the admin member was added
+    updated_group = api.get_group(created_group.id)
+    print(f"Admin members: {[m.friendly_name for m in updated_group.admin_members]}")
+    print(f"All members: {[m.friendly_name for m in updated_group.members]}")
+else:
+    print("John Doe's personal group not found")
+
