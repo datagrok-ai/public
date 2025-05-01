@@ -46,7 +46,7 @@ grok add app <application-name>
 ```
 
 For more information on developing an application, refer to
-the [How to build an application section](../how-to/build-an-app.md)
+the [How to build an application section](../how-to/apps/build-an-app.md)
 
 ## Dashboards
 

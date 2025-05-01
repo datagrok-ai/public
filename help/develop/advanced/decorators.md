@@ -11,7 +11,7 @@ such package functions as:
 
 * [custom viewers](../how-to/viewers/develop-custom-viewer.md)
 * [custom filters](../how-to/viewers/custom-filters.md)
-* [custom cell renderers](../how-to/custom-cell-renderers.md)
+* [custom cell renderers](../how-to/grid/custom-cell-renderers.md)
 
 If a function uses a subclass that extends classes from [Datagrok JS API](https://datagrok.ai/js-api), you can use a
 decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. There is no need

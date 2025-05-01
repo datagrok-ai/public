@@ -5,6 +5,12 @@ export enum RotatePath {
     None = 'None'
 }
 
+export enum StructureType {
+    Root = 'Root',
+    Interim = 'Interim',
+    Leaf = 'Leaf'
+}
+
 export const PADDING = 4;
 export const MOL_HEIGHT = 60; // Height of each molecule representation
 export const MOL_WIDTH = 120; // Width of each molecule representation

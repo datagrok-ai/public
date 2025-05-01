@@ -193,7 +193,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 1. Open Datagrok and navigate to `Functions | Scripts | Actions | New Python Script`.
 2. Observe a default script created for you. All script attributes are specified in the beginning in comments. There we
    have the script name, language, one input value of type `dataframe`, and one output value of type `int`. The script
-   simply computes number of cells in the dataframe. [Dataframe](../../develop/how-to/build-an-app.md) is a high-performance, easy
+   simply computes number of cells in the dataframe. [Dataframe](../../develop/how-to/apps/build-an-app.md) is a high-performance, easy
    to use tabular structure with strongly-typed columns of different types (supported types are: `string`, `bool`, `int`
    , `bigint`, `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script;
    there is another exercise to learn manipulating dataframes in JavaScript.

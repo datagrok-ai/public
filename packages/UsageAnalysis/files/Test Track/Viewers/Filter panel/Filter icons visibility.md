@@ -8,6 +8,6 @@
 4. Open the Filter Panel  - the filter icons should be visible constantly
 ---
 {
-"order": 10,
+"order": 9,
 "datasets": ["System:DemoFiles/SPGI.csv"]
 }

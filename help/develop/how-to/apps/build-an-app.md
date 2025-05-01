@@ -590,7 +590,7 @@ included in another group, which is useful for both reflecting organization hier
 role-based [security](../../../govern/access-control/access-control.md).
 
 Many types of objects within the Datagrok platform can be shared with other users or
-[groups](../../govern/access-control/users-and-groups#groups). Such shareable objects are called [entities](../../../datagrok/concepts/objects.md). When an object
+[groups](../../../govern/access-control/users-and-groups#groups). Such shareable objects are called [entities](../../../datagrok/concepts/objects.md). When an object
 is shared, you are essentially granting a [privilege](../../../govern/access-control/access-control.md#authorization)
 (typically, 'view' or 'edit') to a grantee. See the [Security](../../../govern/access-control/access-control.md#permissions) article for details.
 

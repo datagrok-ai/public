@@ -117,7 +117,7 @@ Customize anything, from context actions to UI elements. Fast development and
 deployment time with seamless integration.
 
 * [JavaScript API](../develop/packages/js-api.md) for [extending Datagrok](../develop/packages/extensions.md#what-can-be-extended)
-* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/build-an-app.md), or integrate with third party apps
+* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/apps/build-an-app.md), or integrate with third party apps
 * [Developer tools](../develop/dev-process/tools/inspector.md), [UI toolkit](../develop/advanced/ui.md)
 * Comprehensive help: [wiki](../develop/develop.md), [exercises](../develop/onboarding/exercises.md), [community forum](https://community.datagrok.ai/).
 

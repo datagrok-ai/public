@@ -1,0 +1,8 @@
+#name: ExceptionScriptGrok
+#language: grok
+#input: int a
+#output: int out
+
+if a == 0
+    throw 'exception'
+out = a + 1
