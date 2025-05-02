@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.5.8 (2025-05-02)
+
+Fixes JSON serialization for NaN/Infinity
+
 ## 4.5.6 (2025-04-22)
 
 Fixed error in invokeTestsInCategory
@@ -22,15 +26,15 @@ Testing output info minor update
 
 ## 4.3.9 (2024-13-07)
 
-Added ability to set test owner in core tests 
+Added ability to set test owner in core tests
 
 ## 4.3.9 (2024-11-07)
 
-Added ability to set category responsivness 
+Added ability to set category responsivness
 
 ## 4.3.8 (2024-11-06)
 
-Added ability to set test responsivness 
+Added ability to set test responsivness
 
 ## 4.3.7 (2024-10-31)
 

@@ -118,6 +118,10 @@ export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;
 export const historyPanel = UiUtils.historyPanel;
 
+// Compatibility for older compute-api
+export const makeAdvice2 = makeAdviceInst;
+export const makeValidationResult2 = makeValidationResultInst;
+
 
 ////
 // For testing only

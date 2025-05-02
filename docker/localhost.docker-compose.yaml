@@ -134,7 +134,6 @@ services:
     environment:
       GROK_PARAMETERS: |
         {
-          "jupyterToken":"4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
           "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped

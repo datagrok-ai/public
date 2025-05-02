@@ -8,7 +8,7 @@ import {historyUtils, RunComparisonView} from '@datagrok-libraries/compute-utils
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
 import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME, VERSION_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
-import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import {EditRunMetadataDialog, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, mergeMap, take, toArray} from 'rxjs/operators';
 import {from} from 'rxjs';
 import wu from 'wu';
@@ -126,12 +126,12 @@ export const History = Vue.defineComponent({
     };
 
     const showEditDialog = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
-      const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
+      const editDialog = EditRunMetadataDialog.forFuncCall(funcCall, isFavorite);
       editDialog.show({center: true, width: 500});
       const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
       try {
-        if (editOptions.favorite !== 'same')
-          await Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        if (!!editOptions.isFavorite !== isFavorite)
+          await Utils.saveIsFavorite(funcCall, !!editOptions.isFavorite);
         const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
         if (editOptions.title) fullCall.options['title'] = editOptions.title;
         if (editOptions.description) fullCall.options['description'] = editOptions.description;

@@ -12,6 +12,24 @@ export function serialize(obj: any, options: SerializeOptions = {}) {
   return JSON.stringify(
     obj,
     (_key, value) => {
+      if (value === Infinity) {
+        return {
+          [customTypeKey]: 'Infinity',
+          value: true,
+        };
+      }
+      if (value === -Infinity) {
+        return {
+          [customTypeKey]: '-Infinity',
+          value: true,
+        };
+      }
+      if (Number.isNaN(value)) {
+        return {
+          [customTypeKey]: 'NaN',
+          value: true,
+        };
+      }
       if (value instanceof DG.DataFrame && !options.useJsonDF) {
         return {
           [customTypeKey]: 'DataFrame',
@@ -73,6 +91,12 @@ export function transform(_key: string, value: any) {
       return new Map(value.value);
     case 'Set':
       return new Set(value.value);
+    case 'Infinity':
+      return Infinity;
+    case '-Infinity':
+      return -Infinity;
+    case 'NaN':
+      return NaN;
     }
   }
   return value;

@@ -2081,13 +2081,13 @@ export interface INetworkDiagramSettings {
 
   edgeCategoricalColorScheme: Array<number>;
 
-  nodeOneLinearColorScheme: Array<number>;
+  node1LinearColorScheme: Array<number>;
 
-  nodeOneCategoricalColorScheme: Array<number>;
+  node1CategoricalColorScheme: Array<number>;
 
-  nodeTwoLinearColorScheme: Array<number>;
+  node2LinearColorScheme: Array<number>;
 
-  nodeTwoCategoricalColorScheme: Array<number>;
+  node2CategoricalColorScheme: Array<number>;
 
   showColumnSelectors: boolean;
 

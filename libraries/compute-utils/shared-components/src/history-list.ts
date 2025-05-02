@@ -6,15 +6,14 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {take} from 'rxjs/operators';
 import {historyUtils} from '../../history-utils';
-import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
+import {HistoricalRunsDelete, EditRunMetadataDialog} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   COMPLETE_COLUMN_NAME,
-  DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
+  DESC_COLUMN_NAME, EXP_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
-  , storageName} from '../../shared-utils/consts';
+} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps, saveIsFavorite, setGridCellRendering, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
-import {getStarted} from '../../function-views/src/shared/utils';
+import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -102,14 +101,14 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   private showEditDialog(funcCall: DG.FuncCall, isFavorite: boolean) {
-    const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
+    const editDialog = EditRunMetadataDialog.forFuncCall(funcCall, isFavorite);
 
     editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
       if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
-        return ((editOptions.favorite !== 'same') ?
-          saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
+        return ((!!editOptions.isFavorite !== isFavorite) ?
+          saveIsFavorite(funcCall, !!editOptions.isFavorite) :
           Promise.resolve())
           .then(() => historyUtils.loadRun(funcCall.id, false))
           .then((fullCall) => {

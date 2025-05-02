@@ -443,7 +443,10 @@ class DatagrokClient:
         headers["Content-Type"] = content_type
         response = requests.request(method, url, headers=headers, **kwargs)
         response.raise_for_status()
-        content = response.content.decode()
-        if 'ApiError' in content:
-            raise Exception(content)
+        if 'api-error' in response.headers:
+            content = response.content.decode()
+            if 'ApiError' in content:
+                raise Exception(content)
+            else:
+                raise Exception("Something went wrong during request") 
         return response

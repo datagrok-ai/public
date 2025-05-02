@@ -73,6 +73,8 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         let prevTimer: any = null;
         const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
           prevTimer && clearTimeout(prevTimer);
+          if ((resDf.currentRowIdx ?? -1) < 0)
+            return;
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
           prevTimer = setTimeout(() => { this.createPropertyPanel(resDf); }, 300);
           this.gridSelect = true;

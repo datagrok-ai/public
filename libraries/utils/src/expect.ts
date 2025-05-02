@@ -17,10 +17,10 @@ export interface CheckerItem {
   checker: ExpectChecker;
 }
 
-
 // default checkers sequence, order matters!
 export const defaulCheckersSeq: CheckerItem[] = [
-  {name: 'Null', predicate: nullPredicate, checker: nullChecker},
+  {name: 'NaN', predicate: nanPredicate, checker: nopChecker},
+  {name: 'Null', predicate: nullPredicate, checker: nopChecker},
   {name: 'Boolean', predicate: boolPredicate, checker: eqChecker},
   {name: 'String', predicate: stringPredicate, checker: eqChecker},
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
@@ -32,7 +32,6 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
 ];
-
 
 // custom error class, just in case
 export class ExpectError extends Error {}
@@ -59,12 +58,15 @@ export interface ExpectRunnerState {
   currentPath: string[];
 }
 
+function nanPredicate(actual: any, expected: any) {
+  return Number.isNaN(actual) && Number.isNaN(expected);
+}
 
 function nullPredicate(actual: any, expected: any) {
   return actual == null && expected == null;
 }
 
-function nullChecker() {
+function nopChecker() {
   return;
 }
 
