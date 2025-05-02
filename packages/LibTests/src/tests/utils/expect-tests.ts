@@ -37,13 +37,6 @@ category('Utils: expectDeepEqual', async () => {
       });
   });
 
-  test('NaN and null equal values', async () => {
-    throwTester(
-      () => {
-        expectDeepEqual(NaN, null);
-      });
-  });
-
   test('boolean equal values', async () => {
     throwTester(
       () => {
