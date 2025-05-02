@@ -18,6 +18,20 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+dependencies = [
+  "pandas",
+  "requests",
+  "requests_toolbelt"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-xml",
+    "pytest-item-dict",
+    "data_to_xml"
+]
+
 [project.urls]
 Homepage = "https://github.com/datagrok-ai/public"
 Issues = "https://github.com/datagrok-ai/public/issues"
