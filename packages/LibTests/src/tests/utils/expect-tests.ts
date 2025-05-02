@@ -23,10 +23,24 @@ category('Utils: expectDeepEqual', async () => {
   before(async () => {
   });
 
+  test('NaN equal values', async () => {
+    throwTester(
+      () => {
+        expectDeepEqual(NaN, NaN);
+      });
+  });
+
   test('null equal values', async () => {
     throwTester(
       () => {
         expectDeepEqual(null, undefined);
+      });
+  });
+
+  test('NaN and null equal values', async () => {
+    throwTester(
+      () => {
+        expectDeepEqual(NaN, null);
       });
   });
 

@@ -17,10 +17,9 @@ export interface CheckerItem {
   checker: ExpectChecker;
 }
 
-
 // default checkers sequence, order matters!
 export const defaulCheckersSeq: CheckerItem[] = [
-  {name: 'Null', predicate: nullPredicate, checker: nullChecker},
+  {name: 'Null', predicate: nullPredicate, checker: nopChecker},
   {name: 'Boolean', predicate: boolPredicate, checker: eqChecker},
   {name: 'String', predicate: stringPredicate, checker: eqChecker},
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
@@ -32,7 +31,6 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
 ];
-
 
 // custom error class, just in case
 export class ExpectError extends Error {}
@@ -59,15 +57,14 @@ export interface ExpectRunnerState {
   currentPath: string[];
 }
 
-
+// Treat NaN as null, as it is done in JSON...
 function nullPredicate(actual: any, expected: any) {
-  return actual == null && expected == null;
+  return (actual == null || Number.isNaN(actual)) && (expected == null || Number.isNaN(expected));
 }
 
-function nullChecker() {
+function nopChecker() {
   return;
 }
-
 
 function integerPredicate(actual: any, expected: any) {
   return (Number.isInteger(actual) && Number.isInteger(expected));
