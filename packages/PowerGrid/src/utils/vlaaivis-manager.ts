@@ -24,7 +24,6 @@ class VlaaiVisManager {
   private columns: DG.Column[];
   private tree: DG.TreeViewGroup;
   private metadataMap: Map<string, VlaaivisColumnMetadata> = new Map();
-  private sectorLookupCache: Map<string, { entity: Sector | Subsector; type: SectorType } | null> = new Map();
 
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.settings = settings;
@@ -55,12 +54,14 @@ class VlaaiVisManager {
       const meta: VlaaivisColumnMetadata = {...JSON.parse(tag), name: col.name};
       this.metadataMap.set(col.name, meta);
 
-      let group = groupMap.get(meta.groupName!);
+      if (!meta.groupName) continue;
+
+      let group = groupMap.get(meta.groupName);
       if (!group) {
         group = [];
-        groupMap.set(meta.groupName!, group);
+        groupMap.set(meta.groupName, group);
       }
-      group[group.length] = meta;
+      group.push(meta);
     }
 
     const sectors: Sector[] = Array.from(groupMap, ([groupName, metas]) => ({
@@ -78,30 +79,21 @@ class VlaaiVisManager {
   }
 
   private findSectorOrSubsector(name: string): { entity: Sector | Subsector; type: SectorType } | null {
-    //Use this.lookupCache instead of const cache because it doesn't even cache smth
-    const cache = new Map<string, { entity: Sector | Subsector; type: SectorType } | null>();
-    if (cache.has(name))
-      return cache.get(name)!;
-
     const sectors = this.settings.sectors;
     if (!sectors) return null;
 
     for (const sector of sectors.sectors) {
       if (sector.name === name) {
         const result = {entity: sector, type: SectorType.SECTOR};
-        cache.set(name, result);
         return result;
       }
 
       const subsector = sector.subsectors.find((sub) => sub.name === name);
       if (subsector) {
         const result = {entity: subsector, type: SectorType.SUBSECTOR};
-        cache.set(name, result);
         return result;
       }
     }
-
-    cache.set(name, null);
     return null;
   }
 
@@ -128,14 +120,13 @@ class VlaaiVisManager {
   }
 
   private updateSectorColorTags(name: string, value: any): void {
-    for (const col of this.columns) {
-      const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
-
-      if (meta?.groupName !== name)
-        continue;
-
-      meta.sectorColor = value;
-      col.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
+    for (const [colName, meta] of this.metadataMap) {
+      if (meta.groupName === name) {
+        meta.sectorColor = value;
+        const col = this.columns.find((c) => c.name === colName);
+        if (col)
+          col.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
+      }
     }
   }
 
@@ -144,8 +135,9 @@ class VlaaiVisManager {
   ): void {
     const column = columnMap.get(name);
     const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
-    meta![propertyName] = value;
-    column?.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
+    if (!meta || !column) return;
+    meta[propertyName] = value;
+    column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
   }
 
   private createInputForProperty(property: any, name: string): HTMLElement {
@@ -155,17 +147,17 @@ class VlaaiVisManager {
     const propName = property.property.name;
 
     const existingValue = this.getSectorProperty(name, propName);
-    const column = this.columns.find((c) => c.name === name);
 
     if (existingValue !== undefined) {
       input.value = existingValue;
-    } else if (column) {
+    } else {
+      const column = this.columns.find((c) => c.name === name);
       switch (propName) {
       case 'min':
-        input.value = Number.parseFloat(column.min.toFixed(1));
+        input.value = +column!.min.toFixed(1);
         break;
       case 'max':
-        input.value = Number.parseFloat(column.max.toFixed(1));
+        input.value = +column!.max.toFixed(1);
         break;
       default:
         input.value = property.object?.[propName];
@@ -223,12 +215,14 @@ class VlaaiVisManager {
     if (newGroup && !newGroup.subsectors.some((subsector) => subsector.name === itemText))
       newGroup.subsectors = [...newGroup.subsectors, this.createSubsector(column)];
 
-    if (column) {
-      const {name} = column;
-      const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
-      meta!.groupName = groupNode.text;
-      column?.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
-    }
+    if (!column) return;
+
+    const {name} = column;
+    const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
+    if (!meta) return;
+
+    meta.groupName = groupNode.text;
+    column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     const newItem = groupNode.item(itemText);
     this.makeItemDraggable(newItem);
   }
@@ -272,9 +266,9 @@ class VlaaiVisManager {
     const tag = column.getTag(TAGS.VLAAIVIS_METADATA);
     const meta: VlaaivisColumnMetadata = tag ? JSON.parse(tag) : {};
 
-    meta.min ??= Number.parseFloat(column.min.toFixed(1));
-    meta.max ??= Number.parseFloat(column.max.toFixed(1));
-    meta.weight ??= parseFloat(defaultWeight);
+    meta.min ??= +column.min.toFixed(1);
+    meta.max ??= +column.max.toFixed(1);
+    meta.weight ??= +defaultWeight;
 
     column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     this.metadataMap.set(column.name, meta);
@@ -440,26 +434,31 @@ class VlaaiVisManager {
     const groupChildren = group.children;
     group.remove();
 
-    if (groupChildren) {
-      groupChildren.forEach((child) => {
-        if (child instanceof DG.TreeViewNode) {
-          const newChild = this.tree.item(child.text);
-          const column = this.columns.find((col) => col.name === child.text);
-          if (column) {
-            const meta = this.metadataMap.get(column.name);
-            if (meta) {
-              delete meta.groupName;
-              delete meta.sectorColor;
-              column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
-            }
-          }
-          this.makeItemDraggable(newChild);
-        }
-      });
+    if (!groupChildren) return;
 
-    this.settings.sectors!.sectors = this.settings.sectors!.sectors.filter((sector) => sector.name !== group.text);
-    this.gc.grid.invalidate();
+    const sectors = this.settings.sectors!.sectors;
+    const groupName = group.text;
+
+    for (let i = 0; i < groupChildren.length; i++) {
+      const child = groupChildren[i];
+      if (!(child instanceof DG.TreeViewNode)) continue;
+
+      const columnName = child.text;
+      const column = this.columns.find((col) => col.name === columnName);
+      if (!column) continue;
+
+      const meta = this.metadataMap.get(columnName);
+      if (!meta) continue;
+
+      delete meta.groupName;
+      delete meta.sectorColor;
+
+      column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
+      this.makeItemDraggable(this.tree.item(columnName));
     }
+
+    this.settings.sectors!.sectors = sectors.filter((sector) => sector.name !== groupName);
+    this.gc.grid.invalidate();
   }
 
   private getUntaggedColumns(): DG.Column[] {

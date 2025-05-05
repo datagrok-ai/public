@@ -67,7 +67,7 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 }
 
 function normalizeValue(value: number, subsector: Subsector): number {
-  if (!subsector.line) return 1;
+  if (!subsector.line) return 0;
   return desirabilityScore(value, subsector.line);
 }
 
