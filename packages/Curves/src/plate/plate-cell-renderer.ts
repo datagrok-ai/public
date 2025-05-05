@@ -27,6 +27,12 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
   getDefaultSize(gridColumn: GridColumn) { return { width: 120, height: 80 }  }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    if (gridCell.value == null) {
+      g.fillStyle = 'white';
+      g.fillRect(x, y, w, h);
+      return;
+    }
+
     this.plate.plateData = gridCell.value;
     this.plate.grid.props.colHeaderHeight = h > 120 ? 16 : 0;
     this.plate.grid.props.showRowHeader = w > 100;

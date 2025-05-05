@@ -2,7 +2,7 @@
 title: "Custom machine learning models"
 ---
 
-Datagrok supports three ML engines out of the box: H2O, Caret, Chemprop. In addition, the platform allows users to build
+Datagrok supports two ML engines out of the box: Caret and Chemprop. In addition, the platform allows users to build
 their own customizable ML models. This capability provides full access and control to algorithms available in ML
 libraries in any of the [supported languages](../compute/compute.md#functions-and-cross-language-support). The users may construct and
 configure any chosen model in their custom data pipeline.
@@ -22,12 +22,12 @@ Once implemented, custom models can be chosen from the list of model engines.
 * `#meta.mlname: CustomName` – Name of the custom train function
 * `#meta.mlrole: train` – Action (train or apply)
 * `#description: Custom ML train function for KNN algorithm` – Description of the function
-* `#language: Python` – Language (Python, R, Julia)
+* `#language: python` – Language (python, r, julia)
 
 ### Train input data parameters
 
 * `#input: dataframe df` – Dataframe for training
-* `#input: string predict_column` – List of features/column names separated by a comma
+* `#input: string predictColumn` – List of features/column names separated by a comma
 
 ### Train input model parameters
 
@@ -36,7 +36,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 
 ### Train output model parameters
 
-* `#output: blob modelName` – Trained model object name. Complete trained model with an absolute path address is stored
+* `#output: blob model` – Trained model object name. Complete trained model with an absolute path address is stored
   as a blob object to be retrieved and applied by the Apply function
 
 ## Apply
@@ -46,7 +46,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 * `#meta.mlname: CustomName` – Name of the custom apply function (should match corresponding train function name)
 * `#meta.mlrole: apply` – Action (train or apply)
 * `#description: Custom ML apply function for KNN algorithm` – Description of the function
-* `#language: Python` – Language (Python, R, Julia)
+* `#language: python` – Language (python, r, julia)
 
 ### Apply input model parameters
 
@@ -56,9 +56,9 @@ Once implemented, custom models can be chosen from the list of model engines.
 ### Apply input data parameters
 
 * `#input: dataframe df` - dataframe for prediction (contains only prediction features)
-* `#input: string namesKeys` – optional list of original features/column names separated by comma
-* `#input: string namesValues` – optional list of new features/column names separated by comma. If both `namesKeys`
-  and `namesValues` are supplied, `namesKeys` will replace corresponding namesValues feature names before accessing the
+* `#input: string nameskeys` – optional list of original features/column names separated by comma
+* `#input: string namesvalues` – optional list of new features/column names separated by comma. If both `nameskeys`
+  and `namesvalues` are supplied, `nameskeys` will replace corresponding `namesvalues` feature names before accessing the
   dataframe
 
 ### Apply output parameters
@@ -69,12 +69,14 @@ Once implemented, custom models can be chosen from the list of model engines.
 
 `IsApplicable` is a predicate used to determine if a model can be trained to predict the target column using the feature columns. It usually checks the types of input columns as well as their sizes.
 
+Defining `IsApplicable` is required. If it is not defined, the model will not appear in the list of available model engines.
+
 ### IsApplicable Header Parameters
 
 * `#meta.mlname: CustomName` – Name of the custom IsApplicable function (should match the corresponding train function name)
 * `#meta.mlrole: isApplicable` – Predicate name (isApplicable)
 * `#description: Custom ML IsApplicable function for KNN algorithm` – Description of the function
-* `#language: Python` – Language (Python, R, Julia)
+* `#language: python` – Language (python, r, julia)
 
 ### IsApplicable Input Data Parameters
 
@@ -89,6 +91,13 @@ Once implemented, custom models can be chosen from the list of model engines.
 
 `IsInteractive` is an optional predicate that operates in the same manner as `IsApplicable` but is used to determine if a model can be trained quickly, allowing interactive training.
 
+## Parameter naming convention
+
+**Important:**
+All parameter names must **exactly match** those used in the examples.
+
+Do **not** rename, abbreviate, or reformat parameter names — even minor changes can cause errors or unintended behavior.
+
 ## Example
 
 ### `Train` function
@@ -100,7 +109,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 #description: Custom Python train function for KNN
 #language: python
 #input: dataframe df
-#input: string predict_column
+#input: string predictColumn
 #input: int n_neighbors {category: FirstParm}
 #input: string weights=uniform {category: Parameters; choices: ["uniform", "distance"]}
 #input: int leaf_size=30 {category: Parameters}
@@ -115,8 +124,8 @@ import pickle
 from sklearn.neighbors import KNeighborsClassifier
 
 # Extract/prepare train features and target variable
-trainX = df.loc[ :,df.columns != predict_column]
-trainY = np.asarray (df[predict_column])
+trainX = df.loc[ :,df.columns != predictColumn]
+trainY = np.asarray (df[predictColumn])
 
 # Build and train model
 trained_model = KNeighborsClassifier(
@@ -130,7 +139,7 @@ trained_model = KNeighborsClassifier(
 trained_model.fit(trainX, trainY)
 
 # Save trained model
-pickle.dump(trained_model, open(model, 'wb'))
+model = pickle.dumps(trained_model)
 ```
 
 ### `Apply` function
@@ -152,17 +161,17 @@ import numpy as np
 import pickle
 
 # If original(nameskeys) and new(namesvalues) passed, map original names to new
-namesKeys = namesKeys.split(",")
-namesValues = namesValues.split(",")
-if len(namesKeys) > 0:
+nameskeys = nameskeys.split(",")
+namesvalues = namesvalues.split(",")
+if len(nameskeys) > 0:
     featuresNames = list(df)
-    for i in range(len(namesKeys)):
-        df = df.rename(columns = {namesValues[i]: namesKeys[i]})
+    for i in range(len(nameskeys)):
+        df = df.rename(columns = {namesvalues[i]: nameskeys[i]})
 
 testX = np.asarray(df)
 
 # Retrieve saved/trained model
-trained_model = pickle.load(open(model, 'rb'))
+trained_model = pickle.loads(model)
 
 # Predict using trained model
 predY = trained_model.predict(testX)

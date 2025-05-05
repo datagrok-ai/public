@@ -4,6 +4,7 @@ import logging
 import subprocess
 from tempfile import NamedTemporaryFile
 from werkzeug.utils import secure_filename
+from datagrok_api import DatagrokClient
 
 from multiprocessing import Manager
 from flask import Flask, request, jsonify
@@ -106,7 +107,7 @@ def aizynthfind():
     if not smiles or not user_id:
       return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
     
-    config_path = os.path.join(output_dir, "aizynthcli_data", user_id, f"{config_name}") if (config_name and config_name != '') else os.path.join(output_dir, "aizynthcli_data", "config.yml")
+    config_path = os.path.join(output_dir, "aizynthcli_data", f"{config_name}", "config.yml") if (config_name and config_name != '') else os.path.join(output_dir, "aizynthcli_data", "config.yml")
     if not os.path.exists(config_path):
       return jsonify({"success": False, "error": f"File {config_path} not found"}), 404
 
@@ -127,6 +128,98 @@ def aizynthfind():
   except Exception as e:
     logging.exception(f"Error handling request for user {user_id}")
     return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/save_config_files', methods=['POST'])
+def save_config_files():
+  try:
+      token = request.json.get('token')
+      files = request.json.get('files', [])
+      folder_name = request.json.get('folder')
+      
+      if not files:
+          return jsonify({"success": False, "error": "No files provided"}), 400
+      
+      if not folder_name:
+          return jsonify({"success": False, "error": "No config folder name provided"}), 400
+
+      if not token:
+          return jsonify({ "success": False, "error": "No token provided"}), 400
+
+      api = DatagrokClient(token, 'http://host.docker.internal:8082')
+      
+      # Create config directory if it doesn't exist
+      config_dir = os.path.join(os.getcwd(), "aizynthcli_data", "config")
+      if not os.path.exists(config_dir):
+          os.makedirs(config_dir)
+
+      # Create config folder if it doesn't exist and clear if exists
+      custom_config_dir = os.path.join(config_dir, folder_name)
+      if not os.path.exists(custom_config_dir):
+          os.makedirs(custom_config_dir)
+      else:
+          for file in os.listdir(custom_config_dir):
+              file_path = os.path.join(custom_config_dir, file)
+              try:
+                  if os.path.isfile(file_path):
+                      os.unlink(file_path)
+              except Exception as e:
+                  logging.error(f"Error deleting file {file_path}: {str(e)}")
+
+      saved_files = []
+      for file_path in files:
+          try:
+              file_content = api.download_file('System:AppData', file_path)
+              
+              # Get filename from path
+              filename = os.path.basename(file_path)
+              
+              save_path = os.path.join(custom_config_dir, filename)
+              with open(save_path, 'wb') as f:
+                  f.write(file_content)
+              
+              saved_files.append(filename)
+              logging.info(f"Successfully saved {filename} to {save_path}")
+              
+          except Exception as e:
+              logging.error(f"Error processing file {file_path}: {str(e)}")
+              continue
+
+      if not saved_files:
+          return jsonify({"success": False, "error": "Failed to save any files"}), 500
+
+      return jsonify({
+          "success": True, "result": saved_files}), 200
+
+  except Exception as e:
+      logging.error(f"Error in save_config_files: {str(e)}")
+      return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/get_configs', methods=['GET'])
+def get_configs():
+  try:
+      config_dir = os.path.join(os.getcwd(), "aizynthcli_data", "config")
+      
+      if not os.path.exists(config_dir):
+          return jsonify({
+              "success": True,
+              "result": []
+          }), 200
+
+      folders = [f for f in os.listdir(config_dir) 
+                if os.path.isdir(os.path.join(config_dir, f))]
+      
+      return jsonify({
+          "success": True,
+          "result": folders
+      }), 200
+
+  except Exception as e:
+      logging.error(f"Error in get_user_configs: {str(e)}")
+      return jsonify({
+          "success": False,
+          "error": str(e)
+      }), 500
 
 
 @app.route('/get_user_configs', methods=['POST'])
@@ -185,6 +278,7 @@ def add_user_config():
   except Exception as e:
       logging.error(f"Error uploading config: {str(e)}")
       return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/health_check', methods=['GET'])
 def health_check():

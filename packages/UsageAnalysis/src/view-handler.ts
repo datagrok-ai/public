@@ -27,7 +27,7 @@ export class ViewHandler {
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       this.view.addView(currentView.name, () => {
-        currentView.tryToinitViewers(path);
+        currentView.tryToInitViewers(path);
         return currentView;
       }, false);
     }
@@ -143,7 +143,7 @@ export class ViewHandler {
         }
         helpShown = true;
       }
-      
+
       if (view.name === 'Packages')
         pButtons.style.display = 'flex';
       else

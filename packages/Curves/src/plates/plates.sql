@@ -1,15 +1,42 @@
 DROP SCHEMA if exists plates cascade;
 CREATE SCHEMA plates;
 
-CREATE TABLE plates.plates (
+-- Explains the meaning of a scalar property.
+CREATE TABLE plates.semantic_types (
     id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,    -- e.g., "Molecule", "Cell", "Tissue", "Organism", "Treatment", "Drug", "Image"
+    description TEXT
+);
+
+-- Similar to core.properties or MolTrack.properties
+-- Consider merging
+CREATE TABLE plates.properties (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    required BOOLEAN NOT NULL DEFAULT FALSE,   -- if true, used for validation of the submitted data
+    value_type TEXT CHECK (value_type IN ('int', 'double', 'bool', 'datetime', 'string')),
+    semantic_type_id INTEGER REFERENCES plates.semantic_types(id),
+    unit TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Allowed values for properties that are strings, floats, or integers.
+-- When allowed values are present, the property value must be one of the allowed values.
+CREATE TABLE plates.property_allowed_values (
+    id SERIAL PRIMARY KEY,
+    property_id INTEGER NOT NULL REFERENCES plates.properties(id),
+    value_string TEXT,
+    value_float REAL,
+    value_int INTEGER
+);
+
+-- maximum volume per well, material, shape (round bottom, conical).
+CREATE TABLE plates.plate_types (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
     rows SMALLINT,
     cols SMALLINT,
-    barcode TEXT,
-    description TEXT,
-    details JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID references users(id)
+    max_volume REAL  -- microliters
 );
 
 -- layouts are reused across assay runs
@@ -23,19 +50,37 @@ CREATE TABLE plates.layouts (
     created_by UUID references users(id)
 );
 
-CREATE TABLE plates.well_roles (
+-- represents an assay plate
+CREATE TABLE plates.plates (
     id SERIAL PRIMARY KEY,
-    name TEXT
+    layout_id INTEGER references plates.layouts(id),
+    plate_type_id INTEGER references plates.plate_types(id),
+    barcode TEXT,
+    description TEXT,
+    details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID references users(id)
+);
+
+-- User-defined plate details
+-- Stored in the Plate.meta in TypeScript
+CREATE TABLE plates.plate_details (
+    plate_id INTEGER NOT NULL REFERENCES plates.plates(id),
+    property_id INTEGER NOT NULL REFERENCES plates.properties(id),
+
+    value_datetime TIMESTAMP WITH TIME ZONE,
+    value_uuid uuid,
+    value_num REAL,
+    value_string TEXT,
+    value_bool BOOLEAN,
+
+    PRIMARY KEY (plate_id, property_id)
 );
 
 CREATE TABLE plates.plate_layout_wells (
     layout_id INTEGER NOT NULL references plates.plates(id),
     row SMALLINT,
     col SMALLINT,
-    well_role_id INTEGER NOT NULL references plates.well_roles(id),
-    compound TEXT,
-    volume FLOAT8,         -- microliters
-    concentration FLOAT8,  -- micromolars
     PRIMARY KEY (layout_id, row, col)
 );
 
@@ -43,16 +88,43 @@ CREATE TABLE plates.plate_wells (
     plate_id INTEGER NOT NULL references plates.plates(id),
     row SMALLINT,
     col SMALLINT,
-    compound TEXT,
     details JSONB,
     PRIMARY KEY (plate_id, row, col)
 );
 
-INSERT INTO plates.well_roles (name) values ('Empty');
-INSERT INTO plates.well_roles (name) values ('SAMPLE');
-INSERT INTO plates.well_roles (name) values ('DMSO');
-INSERT INTO plates.well_roles (name) values ('Low Control');
-INSERT INTO plates.well_roles (name) values ('High Control');
+CREATE TABLE plates.plate_well_values (
+  plate_id INTEGER NOT NULL references plates.plates(id),
+  row SMALLINT,
+  col SMALLINT,
+  property_id INTEGER references plates.properties(id),
+
+  value_num REAL,
+  value_string TEXT,
+  value_bool BOOLEAN
+);
+
+
+INSERT INTO plates.semantic_types (name) values ('Molecule');
+INSERT INTO plates.semantic_types (name) values ('Solvent');
+INSERT INTO plates.semantic_types (name) values ('URL');
+INSERT INTO plates.semantic_types (name) values ('Image');
+
+INSERT INTO plates.properties (id, name, value_type, unit) values (1000, 'Volume', 'double', 'uL');
+INSERT INTO plates.properties (id, name, value_type, unit) values (1001, 'Concentration', 'double', 'uM');
+INSERT INTO plates.properties (id, name, value_type) values (1002, 'Sample', 'string');
+INSERT INTO plates.properties (id, name, value_type) values (1003, 'Well Role', 'string');
+
+INSERT INTO plates.plate_types (id, name, rows, cols) values (1, 'Generic 96 wells', 8, 12);
+INSERT INTO plates.plate_types (id, name, rows, cols) values (2, 'Generic 384 wells', 16, 24);
+INSERT INTO plates.plate_types (id, name, rows, cols) values (3, 'Generic 1536 wells', 32, 48);
+
+INSERT INTO plates.property_allowed_values (property_id, value_string)
+VALUES
+  (1003, 'Empty'),
+  (1003, 'Sample'),
+  (1003, 'DMSO'),
+  (1003, 'Low Control'),
+  (1003, 'High Control');
 
 GRANT ALL PRIVILEGES ON SCHEMA plates TO CURRENT_USER;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA plates TO CURRENT_USER;

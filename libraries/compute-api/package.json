@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-api",
   "friendlyName": "ComputeApi",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"

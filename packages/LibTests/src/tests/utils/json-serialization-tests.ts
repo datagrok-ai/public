@@ -4,6 +4,12 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 category('Utils: jsonSerialization', async () => {
+  test('serialize/deserialize works Infinity and NaN', async () => {
+    const initial = {a: Infinity, b: -Infinity, c: NaN};
+    const results = deserialize(serialize(initial));
+    expectDeepEqual(results, initial);
+  });
+
   test('serialize/deserialize works with DF', async () => {
     const initial = {a: DG.DataFrame.fromColumns([
       DG.Column.fromList('string', 'a', ['a', 'b']),

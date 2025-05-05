@@ -150,7 +150,7 @@ async function handleInitialUri(segment: string) {
         const userGroups = await ModelHandler.getUserGroups();
         const missingGroups = ModelHandler.getMissingGroups(func, userGroups);
         if (missingGroups?.length)
-          grok.shell.error(`User is not a part of the following user groups: ${missingGroups.map(g => g.name).join(',')}`);
+          grok.shell.error(`User is not a part of the following user groups: ${missingGroups.map((g) => g.name).join(',')}`);
         else
           ModelHandler.openModel(func);
       }

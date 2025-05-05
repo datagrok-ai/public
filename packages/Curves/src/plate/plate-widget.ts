@@ -11,6 +11,7 @@ import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPo
 import { FitConstants } from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
+import {savePlate} from "../plates/plates_crud";
 
 
 export type AnalysisOptions = {
@@ -325,7 +326,10 @@ export class PlateWidget extends DG.Widget {
     });
 
     if (actOptions.submitAction) {
-      const btn = ui.button('Save to ELN', () => actOptions.submitAction!(plate, df));
+      const btn = ui.button('Save to ELN', () => {
+        savePlate(plate).then((_) => grok.shell.info('Plate saved'));
+        //actOptions.submitAction!(plate, df);
+      });
       pw.plateActionsDiv!.appendChild(btn);
     }
     return pw;

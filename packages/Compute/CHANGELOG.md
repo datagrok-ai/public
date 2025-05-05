@@ -1,5 +1,13 @@
 # Compute changelog
 
+## 1.43.5 (2025-05-02)
+
+- `OutliersSelectionViewer` improvements
+
+## 1.43.4 (2025-05-02)
+
+- Compute2 small changes/fixes
+
 ## 1.43.1 (2025-04-22)
 
 Updated the Fitting feature:

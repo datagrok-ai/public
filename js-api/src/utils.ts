@@ -177,6 +177,11 @@ export class Utils {
     return res;
   }
 
+  /** Returns random element from the array. Useful for demo data, tests, etc. */
+  static random<T>(items: T[]): T {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
   static replaceAll(string: string, search: string, replace: string) {
     return string.split(search).join(replace);
   }

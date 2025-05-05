@@ -544,11 +544,11 @@ export const getRunsDfFromList = async (
 
   newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
 
-  if (!options?.allowOtherVersions) {
+  if (!options?.allowOtherVersions && options?.version) {
     const rowMask = DG.BitSet.create(newRunsGridDf.rowCount, () => false);
     for (let idx = 0; idx < newRunsGridDf.rowCount; idx++) {
       if (options?.version == newRunsGridDf.get(VERSION_COLUMN_NAME, idx))
-        rowMask.set(idx, true)
+        rowMask.set(idx, true);
     }
     return newRunsGridDf.clone(rowMask);
   }

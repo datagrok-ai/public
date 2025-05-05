@@ -26,8 +26,9 @@ import {
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
-import {EditDialog} from './EditDialog';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -40,6 +41,11 @@ export const TreeWizard = Vue.defineComponent({
     },
     version: {
       type: String,
+      required: false,
+    },
+    instanceConfig: {
+      type: Object as Vue.PropType<PipelineInstanceConfig>,
+      required: false,
     },
     modelName: {
       type: String,
@@ -78,7 +84,7 @@ export const TreeWizard = Vue.defineComponent({
       removeStep,
       moveStep,
       changeFuncCall,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'));
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'));
 
     const chosenStepUuid = Vue.ref<string | undefined>();
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -120,7 +126,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const saveSubTreeState = (uuid: string) => {
       const chosenStepDesc = states.descriptions[uuid];
-      const dialog = new EditDialog({
+      const dialog = new EditRunMetadataDialog({
         title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
         description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
         tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
@@ -136,7 +142,7 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value) return;
 
       const rootDesc = states.descriptions[treeState.value.uuid];
-      const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
+      const dialog = new EditRunMetadataDialog({...rootDesc, ...currentMetaCallData.value});
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         savePipeline(editOptions);
       });

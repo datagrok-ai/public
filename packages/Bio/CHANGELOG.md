@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.21.3 (2025-05-01)
+
+* Similarity search viewer: Fix for clearing selection
+* Substructure filter: Corrected even management for setting separator
+
 ## 2.21.2 (2025-04-28)
 
 Monomer Manager:

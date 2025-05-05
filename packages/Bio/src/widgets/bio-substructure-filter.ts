@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Macromolecules substructure filter that uses Datagrok's collaborative filtering.
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
@@ -9,23 +10,21 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
-import $ from 'cash-dom';
-import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
+
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
-import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
-import {updateDivInnerHTML} from '../utils/ui-utils';
-import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps} from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
+import {linearSubstructureSearch} from '../substructure-search/substructure-search';
+import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps}
+  from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
 import {HelmBioFilter} from './bio-substructure-filter-helm';
-import { _package } from '../package';
+import {_package} from '../package';
 
 const FILTER_SYNC_EVENT: string = 'bio-substructure-filter';
 
@@ -334,14 +333,18 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
         this.props = new SeparatorFilterProps(value, this.props.separator, _package.logger);
-        if (!this._propsChanging) this.onChanged.next();
+        setTimeout(() => {
+          if (!this._propsChanging) this.onChanged.next();
+        });
       }, placeholder: 'Substructure'
     });
     this.separatorInput = ui.input.string('', {
       value: this.colSeparator = colSeparator, onValueChanged: (value) => {
-        const separator: string | undefined = !!value ? value : undefined;
+        const separator: string | undefined = !!value ? value : '';
         this.props = new SeparatorFilterProps(this.props.substructure, separator, _package.logger);
-        if (!this._propsChanging) this.onChanged.next();
+        setTimeout(() => {
+          if (!this._propsChanging) this.onChanged.next();
+        });
       }, placeholder: 'Separator'
     });
   }
@@ -356,7 +359,7 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
   }
 
   get filterSummary(): string {
-    const sep: string = this.props.separator ? this.props.separator : this.colSeparator;
+    const _sep: string = this.props.separator ? this.props.separator : this.colSeparator;
     return `${this.props.substructure}, {sep}`;
   };
 

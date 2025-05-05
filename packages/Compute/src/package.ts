@@ -69,3 +69,9 @@ export function modelCatalog() {
 export function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
   makeModelTreeBrowser(treeNode);
 }
+
+////
+// Compute-utils API section
+///
+
+export const CFV = CustomFunctionViewInst;

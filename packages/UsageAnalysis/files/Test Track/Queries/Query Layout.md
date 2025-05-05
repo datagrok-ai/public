@@ -11,7 +11,7 @@
 7. Save the project
 7. Close All
 7. Open the project - check the layout
-6. Go to the Toolbox > File and click Refresh - the layout shouldn't change
+6. Go to the **Toolbox > File** and click **Refresh** - the layout shouldn't change
 ---
 {
   "order": 12

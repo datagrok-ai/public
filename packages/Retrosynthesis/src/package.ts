@@ -7,7 +7,7 @@ import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment, TAB_ID} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
 import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
-import { getUserConfigsFromDocker, KEY, settingsIcon, STORAGE_NAME } from './config-utils';
+import { configIcon, getUserConfigsFromDocker, KEY, settingsIcon, STORAGE_NAME } from './config-utils';
 
 export const _package = new DG.Package();
 const DEMO_MOLECULE = 'demo_molecule';
@@ -77,7 +77,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
       const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
       let currentTreeObjId: string | null = null;
       const tabControl = createPathsTreeTabs(paths, pathsObjects, false);
-      const settings = settingsIcon(configName);
+      const settings = configIcon(configName);
       const addToWorkSpace = ui.icons.add(() => {
         if (currentTreeObjId) {
           const df = DG.DataFrame.fromObjects(pathsObjects[currentTreeObjId]);
@@ -177,4 +177,5 @@ export async function retrosynthesisDemo(): Promise<void> {
   });
   grok.shell.addPreview(view);
 }
+
 

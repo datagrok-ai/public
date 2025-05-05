@@ -16,6 +16,7 @@ import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {AnalysisOptions, PlateWidget} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
+import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates_crud";
 
 
 /** Represents a well in the experimental plate */
@@ -77,7 +78,12 @@ export function randomizeTableId() {
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  data: DG.DataFrame;
+  id?: number;           // database id
+  plateTypeId?: number;  // database plate type id
+  barcode?: string;      // database barcode
+
+  data: DG.DataFrame;    // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
+  details: {[index: string]: any} = {};  // dynamic plate properties, stored in db: plates.plate_details
   //layers: PlateLayer[];
   rows: number = 8;
   cols: number = 12;
@@ -86,6 +92,8 @@ export class Plate {
     this.data = DG.DataFrame.create(rows * cols);
     this.rows = rows;
     this.cols = cols;
+    this.plateTypeId = plateTypes.find(pt => pt.rows == this.rows && pt.cols == this.cols)?.id;
+    this.barcode = Math.round(Math.random() * 10000).toString().padStart(10, '0');
   }
 
   /** Creates an empty plate of the standard size to fit the specified positions. t*/
@@ -124,7 +132,9 @@ export class Plate {
     })
   }
 
-  static fromTable(table: DG.DataFrame, field?: string): Plate {
+  /** Constructs a plate from a table of size 8x12, 16x24 or 32x48
+   * This plate will have one layer */
+  static fromGridTable(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
     // remove row letters
     function containsRowLetters(c: DG.Column): boolean {
@@ -177,8 +187,28 @@ export class Plate {
     return plate;
   }
 
+  /** Constructs a plate from the Datagrok database format. The dataframe should have these columns:
+   *  property_id, row, col, value_num, value_string, value_bool.
+   *  See also plates-crud.sql/getWellValuesByBarcode
+   * */
+  static fromDbDataFrame(df: DG.DataFrame): Plate {
+    const plate = new Plate(df.col('row')!.stats.max + 1, df.col('col')!.stats.max + 1);
+    const pidCol = df.col('property_id');
+    for (let propBlock = 0; propBlock < df.rowCount / (plate.rows * plate.cols); propBlock++) {
+      const start = propBlock * plate.rows * plate.cols;
+      const pid = pidCol?.get(start);
+      const property = wellProperties.find(p => p.id == pid)!;
+      const valueColumn = df.col(plateDbColumn[property.value_type])!;
+      //@ts-ignore
+      plate.data.columns.addNew(property.name, property.value_type)
+        .init(i => valueColumn.get(start + i));
+    }
+
+    return plate;
+  }
+
   static async fromCsvTableFile(csvPath: string, field: string, options?: DG.CsvImportOptions): Promise<Plate> {
-    return this.fromTable(await grok.dapi.files.readCsv(csvPath, options), field);
+    return this.fromGridTable(await grok.dapi.files.readCsv(csvPath, options), field);
   }
 
   // getClosestRoleName(fileName: string): string {
@@ -190,7 +220,7 @@ export class Plate {
   // }
 
   static fromCsvTable(csv: string, field: string, options?: DG.CsvImportOptions): Plate {
-    return this.fromTable(DG.DataFrame.fromCsv(csv, options), field);
+    return this.fromGridTable(DG.DataFrame.fromCsv(csv, options), field);
   }
 
   static fromCsv(csv: string, options?: IPlateCsvImportOptions): Plate {
@@ -208,7 +238,7 @@ export class Plate {
     // if (df.columns.contains('pos'))
     //   return new Plate(0, 0);
 
-    return this.fromTable(df, options?.field ?? 'value');
+    return this.fromGridTable(df, options?.field ?? 'value');
   }
 
   /** Merges the attributes from {@link plates} into one plate. */
@@ -251,10 +281,16 @@ export class Plate {
     return Plate.fromPlates(platePositions.map(p => getPlateFromSheet(p)), name);
   }
 
+  static demo(): Plate {
+    const plate = Plate.fromTableByRow(grok.data.demo.wells(96));
+    plate.barcode = 'demo-' + Math.round(Math.random() * 10000).toString().padStart(6, '0');
+    return plate;
+  }
+
   /** Generates [count] increasing integer numbers, starting with 0. */
-  get wells(): IterableIterator<PlateWell> {
+  get wells(): wu.WuIterable<PlateWell> {
     const self = this; // Capture this context
-    return (function* () {
+    return wu((function* () {
       for (let row = 0; row < self.rows; row++) {
         for (let col = 0; col < self.cols; col++) {
           const well: PlateWell = {
@@ -262,14 +298,14 @@ export class Plate {
             col: col,
           };
           for (const field of self.data.columns) {
-            if (!field.isNone(self._idx(row, col))) {
+            if (field.name.toLowerCase() != 'row' && field.name.toLowerCase() != 'col' && !field.isNone(self._idx(row, col))) {
               well[field.name] = field.get(self._idx(row, col));
             }
           }
           yield well;
         }
       }
-    })();
+    })());
   }
 
   /** Returns the specified field value at the specified positions (0-based).
@@ -345,6 +381,10 @@ export class Plate {
 
   fieldValues(field: string, filter?: IPlateWellFilter): Array<any> {
     return this.values([field], filter).map((v) => v[field]);
+  }
+
+  getLayerNames(): string[] {
+    return this.data.columns.names();
   }
 
   static inspectSeriesByName(records: Record<string, FitSeries>, seriesName: string, fitFunctionName: FitFunctionType): void {

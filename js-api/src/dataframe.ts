@@ -27,6 +27,7 @@ import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
 import {IDartApi} from "./api/grok_api.g";
+import wu, {WuIterable} from "wu";
 
 declare let grok: any;
 declare let DG: any;
@@ -1512,8 +1513,8 @@ export class RowList {
     return api.grok_RowList_MouseOverRowFunc(this.dart);
   }
 
-  where(indexPredicate: IndexPredicate) {
-    return _toIterable(api.grok_RowList_Where(this.dart, indexPredicate));
+  where(indexPredicate: IndexPredicate): WuIterable<number> {
+    return wu(_toIterable(api.grok_RowList_Where(this.dart, indexPredicate)));
   }
 
   /** Removes specified rows

@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.7.3 (2025-05-01)
+
+* Fix descriptors tree not scrolling
+
 ## 1.7.2 (2025-04-09)
 
 * Ability to reorder/hide functions in new template or functions dialog.
