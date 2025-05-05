@@ -2,7 +2,7 @@
 2. Delete `new_test_query`:
     * Right-click the connection and select **Delete** from the context menu
     * In the confirmation dialog, click DELETE
-3. Reftesh **Browse** view and check that query has been deleted and is no longer present
+3. Reftesh **Browse** view - verify that query has been deleted and is no longer present
 ---
 {
   "order": 4

@@ -4,17 +4,19 @@
 3. Right-click the `NorthwindTest` connection and select **New query** from the context menu.
 4. Enter `test_query_ms_sql` to the Name field.
 5. Enter query: `select * from products`.
-6. On the top toolbar, click the **Play** button.
-7. On the **Sidebar**, on the **Actions** tab, click **Run query…**. Result should open in another view. 
-8. On the top toolbar, click the **Save** button.
+1. Run the query using both:
+  * **Menu Ribbon > Play button** — result appears at the bottom of the current view
+  * **Toolbox > Actions > Run query…** — result opens in a new view
+8. Save the query
 
 ### Editing
 1. Refresh view on **Browse**. Right-click the query from the previous step and select **Edit…** from context menu
 2. Change name to `new_test_query_ms_sql`.
 3. Change the query test to: `select * from orders`
-4. On the top toolbar, click the **Play** button
-5. On the **Sidebar**, on the **Actions** tab, click **Run query…**. Result should open in another view
-6. On the top toolbar, click the **Save** button
+1. Run the query using both:
+   * **Menu Ribbon > Play button** — result appears at the bottom of the current view
+   * **Toolbox > Actions > Run query…** — result opens in a new view
+8. Save the query
 
 ### Browse
 1. Refresh **Browse**
