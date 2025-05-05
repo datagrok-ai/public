@@ -5,6 +5,7 @@ import * as Vue from 'vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {TreeWizard} from '../components/TreeWizard/TreeWizard';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 export const TreeWizardApp = Vue.defineComponent({
   name: 'TreeWizardApp',
@@ -20,6 +21,10 @@ export const TreeWizardApp = Vue.defineComponent({
       type: String,
       required: true,
     },
+    instanceConfig: {
+      type: Object as Vue.PropType<PipelineInstanceConfig>,
+      required: false,
+    },
     view: {
       type: DG.ViewBase,
       required: true,
@@ -28,7 +33,7 @@ export const TreeWizardApp = Vue.defineComponent({
   setup(props) {
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} version={props.version} modelName={props.modelName} view={currentView.value} />
+      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} />
     );
   },
 });

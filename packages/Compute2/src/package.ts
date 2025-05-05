@@ -15,6 +15,8 @@ import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 declare global {
   var initialURLHandled: boolean;
@@ -107,15 +109,6 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   return view;
 }
 
-
-//name: Tree Wizard Test
-//tags: test, vue
-//meta.icon: icons/tree-wizard.png
-//meta.provider: Compute2:MockProvider2
-//editor: Compute2:TreeWizardEditor
-export async function TreeWizardTestApp() {}
-
-
 //name: Tree Wizard Editor
 //tags: editor
 //input: funccall call
@@ -130,8 +123,12 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 
   const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
   const version = call.inputs.params?.version;
+  let instanceConfig = deserialize(call.options?.instanceConfig ?? 'null');
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, view: Vue.markRaw(view)});
+  if (instanceConfig)
+    instanceConfig = Vue.markRaw(instanceConfig);
+
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   setVueAppOptions(app);
@@ -148,6 +145,16 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   });
 
   return view;
+}
+
+//input: string nqName
+//input: string version
+//input: object instanceConfig
+export async function StartWorkflow(nqName: string, version: string, instanceConfig: PipelineInstanceConfig) {
+  const func = DG.Func.byName(nqName);
+  const call = func.prepare({version});
+  call.options.instanceConfig = serialize(instanceConfig);
+  call.edit();
 }
 
 ////
