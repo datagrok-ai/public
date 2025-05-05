@@ -23,7 +23,8 @@ class VlaaiVisManager {
   private gc: DG.GridColumn;
   private columns: DG.Column[];
   private tree: DG.TreeViewGroup;
-  private metadataMap: Map<string, VlaaivisColumnMetadata> = new Map(); //to avoid redundant lookups
+  private metadataMap: Map<string, VlaaivisColumnMetadata> = new Map();
+  private sectorLookupCache: Map<string, { entity: Sector | Subsector; type: SectorType } | null> = new Map();
 
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.settings = settings;
@@ -47,28 +48,25 @@ class VlaaiVisManager {
     const groupMap = new Map<string, VlaaivisColumnMetadata[]>();
     const columns = dataFrame.columns.byNames(columnNames);
 
-    columns.forEach((col) => {
+    for (const col of columns) {
       const tag = col.getTag(TAGS.VLAAIVIS_METADATA);
-      if (!tag) return;
+      if (!tag) continue;
 
-      const meta: VlaaivisColumnMetadata = JSON.parse(tag);
-      meta.name = col.name;
-      this.metadataMap.set(col.name, meta); // <- Store parsed metadata
-      const group = groupMap.get(meta.groupName!) ?? [];
-      group.push(meta);
-      groupMap.set(meta.groupName!, group);
-    });
+      const meta: VlaaivisColumnMetadata = {...JSON.parse(tag), name: col.name};
+      this.metadataMap.set(col.name, meta);
 
-    const sectors: Sector[] = Array.from(groupMap.entries()).map(([groupName, metas]) => ({
+      let group = groupMap.get(meta.groupName!);
+      if (!group) {
+        group = [];
+        groupMap.set(meta.groupName!, group);
+      }
+      group[group.length] = meta;
+    }
+
+    const sectors: Sector[] = Array.from(groupMap, ([groupName, metas]) => ({
       name: groupName,
       sectorColor: metas[0].sectorColor ?? defaultGroupProps[CONSTANTS.SECTOR_COLOR_PROPERTY],
-      subsectors: metas.map((meta) => ({
-        name: meta.name,
-        weight: meta.weight,
-        line: meta.line,
-        min: meta.min,
-        max: meta.max
-      }))
+      subsectors: metas.map(({name, weight, line, min, max}) => ({name, weight, line, min, max}))
     }));
 
     return {
@@ -80,9 +78,10 @@ class VlaaiVisManager {
   }
 
   private findSectorOrSubsector(name: string): { entity: Sector | Subsector; type: SectorType } | null {
+    //Use this.lookupCache instead of const cache because it doesn't even cache smth
     const cache = new Map<string, { entity: Sector | Subsector; type: SectorType } | null>();
-
-    if (cache.has(name)) return cache.get(name)!;
+    if (cache.has(name))
+      return cache.get(name)!;
 
     const sectors = this.settings.sectors;
     if (!sectors) return null;
@@ -123,17 +122,20 @@ class VlaaiVisManager {
       propertyName === CONSTANTS.SECTOR_COLOR_PROPERTY ?
         this.updateSectorColorTags(name, value) :
         this.updateColumnTag(name, propertyName, value, columnMap);
-    } else if (name === '') { (this.settings.sectors as any)[propertyName] = value; }
+    } else if (name === '') {
+      (this.settings.sectors as any)[propertyName] = value;
+    }
   }
 
   private updateSectorColorTags(name: string, value: any): void {
-    for (const [colName, meta] of this.metadataMap) {
-      if (meta.groupName === name) {
-        meta.sectorColor = value;
-        const col = this.columns.find((c) => c.name === colName);
-        if (col)
-          col.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
-      }
+    for (const col of this.columns) {
+      const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
+
+      if (meta?.groupName !== name)
+        continue;
+
+      meta.sectorColor = value;
+      col.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     }
   }
 
@@ -141,12 +143,8 @@ class VlaaiVisManager {
     name: string, propertyName: keyof (Sector | Subsector), value: any, columnMap: Map<string, DG.Column>
   ): void {
     const column = columnMap.get(name);
-    let meta = this.metadataMap.get(name);
-    if (!meta) {
-      meta = {} as VlaaivisColumnMetadata;
-      this.metadataMap.set(name, meta);
-    }
-    meta[propertyName] = value;
+    const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
+    meta![propertyName] = value;
     column?.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
   }
 
@@ -155,19 +153,19 @@ class VlaaiVisManager {
     const input = DG.InputBase.forProperty(prop, {});
     input.enabled = property.property.enabled ?? true;
     const propName = property.property.name;
+
     const existingValue = this.getSectorProperty(name, propName);
+    const column = this.columns.find((c) => c.name === name);
 
     if (existingValue !== undefined) {
       input.value = existingValue;
-    } else {
-      const column = this.columns.find((c) => c.name === name);
-
+    } else if (column) {
       switch (propName) {
       case 'min':
-        input.value = Number.parseFloat(column?.min.toFixed(1)!);
+        input.value = Number.parseFloat(column.min.toFixed(1));
         break;
       case 'max':
-        input.value = Number.parseFloat(column?.max.toFixed(1)!);
+        input.value = Number.parseFloat(column.max.toFixed(1));
         break;
       default:
         input.value = property.object?.[propName];
@@ -177,10 +175,7 @@ class VlaaiVisManager {
 
     input.onChanged.subscribe((value) => {
       this.updateSectorProperty(name, propName, value);
-      //TODO: think of the cases when min and max can be changed
-      /*if (['min', 'max'].includes(property.property.name)) {
-        this.createLineEditor(name, inputs);
-      }*/
+      // TODO: Handle min/max change if needed
       this.gc.grid.invalidate();
     });
 
@@ -189,7 +184,7 @@ class VlaaiVisManager {
 
   private makeItemDraggable(item: DG.TreeViewNode<any>): void {
     item.root.onmouseenter = (e) => ui.tooltip.show('To visualise, drag item into existing group', e.x, e.y);
-    item.root.onmouseleave = (e) => ui.tooltip.hide();
+    item.root.onmouseleave = () => ui.tooltip.hide();
 
     ui.makeDraggable(item.root, {
       getDragObject: () => item,
@@ -229,12 +224,9 @@ class VlaaiVisManager {
       newGroup.subsectors = [...newGroup.subsectors, this.createSubsector(column)];
 
     if (column) {
-      let meta = this.metadataMap.get(column.name);
-      if (!meta) {
-        meta = {} as VlaaivisColumnMetadata;
-        this.metadataMap.set(column.name, meta);
-      }
-      meta.groupName = groupNode.text;
+      const {name} = column;
+      const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
+      meta!.groupName = groupNode.text;
       column?.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     }
     const newItem = groupNode.item(itemText);
@@ -274,26 +266,15 @@ class VlaaiVisManager {
   }
 
   private updateColumnTags(column: DG.Column | undefined): void {
-    if (!column)
-      return;
+    if (!column) return;
 
     const defaultWeight = this.generateRandomNumber().toFixed(1);
-
-    let meta: VlaaivisColumnMetadata;
-
     const tag = column.getTag(TAGS.VLAAIVIS_METADATA);
-    if (tag)
-      meta = JSON.parse(tag) as VlaaivisColumnMetadata;
-    else
-      meta = {} as VlaaivisColumnMetadata;
+    const meta: VlaaivisColumnMetadata = tag ? JSON.parse(tag) : {};
 
-
-    if (meta.min === undefined)
-      meta.min = Number.parseFloat(column.min.toFixed(1));
-    if (meta.max === undefined)
-      meta.max = Number.parseFloat(column.max.toFixed(1));
-    if (meta.weight === undefined)
-      meta.weight = parseFloat(defaultWeight);
+    meta.min ??= Number.parseFloat(column.min.toFixed(1));
+    meta.max ??= Number.parseFloat(column.max.toFixed(1));
+    meta.weight ??= parseFloat(defaultWeight);
 
     column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     this.metadataMap.set(column.name, meta);
@@ -320,20 +301,22 @@ class VlaaiVisManager {
 
     const lineProp: PropertyDesirability = {
       line,
-      min: min ?? +Number.parseFloat(column.min.toFixed(1)),
-      max: max ?? +Number.parseFloat(column.max.toFixed(1)),
+      min: min ?? +column.min.toFixed(1),
+      max: max ?? +column.max.toFixed(1),
       weight: weight ?? +DEFAULTS.WEIGHT,
     };
 
     const lineEditor = new MpoDesirabilityLineEditor(lineProp, 200, 80);
     lineEditor.root.classList.add('mpo-line-editor');
+    this.updateSectorProperty(nodeText, 'line' as keyof (Sector | Subsector), lineEditor.line);
+
     lineEditor.onChanged.subscribe(() => {
       this.updateSectorProperty(nodeText, 'line' as keyof (Sector | Subsector), lineEditor.line);
       this.gc.grid.invalidate();
     });
 
     const oldEditor = container.querySelector('.mpo-line-editor');
-    if (oldEditor) oldEditor.remove();
+    oldEditor?.remove();
 
     container.appendChild(lineEditor.root);
   }
