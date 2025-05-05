@@ -81,10 +81,10 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
-import { oclMol } from './utils/chem-common-ocl';
-import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
-import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
-import { OCLService } from './open-chem/ocl-service';
+import {oclMol} from './utils/chem-common-ocl';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {OCLService} from './open-chem/ocl-service';
+import {_mpoDialog} from './analysis/mpo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1580,10 +1580,11 @@ export function copyAsAction(value: DG.SemanticValue) {
 
   formats.forEach((format) => {
     const func = DG.Func.find({package: 'Chem', name: `copyAs${format}`})[0];
-    if (func)
+    if (func) {
       menu.item(format, () => {
         func.apply({value: value});
       });
+    }
   });
   menu.show();
 }
@@ -1838,9 +1839,9 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
     return;
   }
 
-  if (demo) {
+  if (demo)
     view = grok.shell.getTableView(table.name) as DG.TableView;
-  } else
+  else
     view = grok.shell.getTableView(table.name) as DG.TableView;
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
@@ -1954,7 +1955,6 @@ export async function demoMoleculeActivityCliffs(): Promise<void> {
 export async function demoChemicalSpace(): Promise<void> {
   await _demoChemicalSpace();
 }
-
 
 
 //name: Demo Scaffold Tree
