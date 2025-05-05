@@ -83,7 +83,9 @@ export const subGroupProps = [
   {
     'property': {
       'name': 'weight',
-      'inputType': 'Float',
+      'inputType': 'Slider',
+      'min': 0,
+      'max': 1,
       'description': 'Determines the thickness of the wedge'
     },
     'object': {

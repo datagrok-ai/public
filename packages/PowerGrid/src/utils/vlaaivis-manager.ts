@@ -164,10 +164,10 @@ class VlaaiVisManager {
 
       switch (propName) {
       case 'min':
-        input.value = column?.min;
+        input.value = Number.parseFloat(column?.min.toFixed(1)!);
         break;
       case 'max':
-        input.value = column?.max;
+        input.value = Number.parseFloat(column?.max.toFixed(1)!);
         break;
       default:
         input.value = property.object?.[propName];
@@ -289,9 +289,9 @@ class VlaaiVisManager {
 
 
     if (meta.min === undefined)
-      meta.min = column.min;
+      meta.min = Number.parseFloat(column.min.toFixed(1));
     if (meta.max === undefined)
-      meta.max = column.max;
+      meta.max = Number.parseFloat(column.max.toFixed(1));
     if (meta.weight === undefined)
       meta.weight = parseFloat(defaultWeight);
 
@@ -320,12 +320,12 @@ class VlaaiVisManager {
 
     const lineProp: PropertyDesirability = {
       line,
-      min: min ?? +column.min,
-      max: max ?? +column.max,
+      min: min ?? +Number.parseFloat(column.min.toFixed(1)),
+      max: max ?? +Number.parseFloat(column.max.toFixed(1)),
       weight: weight ?? +DEFAULTS.WEIGHT,
     };
 
-    const lineEditor = new MpoDesirabilityLineEditor(lineProp, 300, 80);
+    const lineEditor = new MpoDesirabilityLineEditor(lineProp, 200, 80);
     lineEditor.root.classList.add('mpo-line-editor');
     lineEditor.onChanged.subscribe(() => {
       this.updateSectorProperty(nodeText, 'line' as keyof (Sector | Subsector), lineEditor.line);
@@ -339,7 +339,7 @@ class VlaaiVisManager {
   }
 
   public createTreeGroup(): HTMLElement {
-    const inputs = ui.divV([]);
+    const inputs = ui.divV([], {style: {alignItems: 'end'}});
     const groupMap = this.initializeTreeGroups();
     const untaggedColumns = this.getUntaggedColumns();
 
