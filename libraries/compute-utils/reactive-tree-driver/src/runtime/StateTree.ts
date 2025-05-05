@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
 import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
-import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
+import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/graph-traverse-utils';
-import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
@@ -494,7 +494,7 @@ export class StateTree {
         const items = (data?.initialSteps ?? []).map((step, idx) => {
           const item = data.stepTypes.find((t) => {
             if (isPipelineSelfRef(t)) {
-              const derefedStep = refMap.get(t.selfRef);
+              const derefedStep = getPipelineRef(refMap, t.nqName, t.version);
               return derefedStep?.id === step.id;
             }
             return t.id === step.id;
@@ -509,9 +509,9 @@ export class StateTree {
       } else if (isPipelineStaticConfig(data))
         return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}]] as const);
       else if (isPipelineSelfRef(data)) {
-        const next = refMap.get(data.selfRef);
+        const next = getPipelineRef(refMap, data.nqName, data.version);
         if (!next)
-          throw new Error(`Failed to deref ${data.selfRef} on path ${JSON.stringify(path)}`);
+          throw new Error(`Failed to deref nqName ${data.nqName} version ${data.version} on path ${JSON.stringify(path)}`);
 
         return [[next, [...path, {id: next.id, idx: 0}]]] as const;
       }
@@ -605,7 +605,7 @@ export class StateTree {
 
   private static makeTreeNode(
     config: PipelineConfigurationProcessed,
-    refMap: Map<string, PipelineConfigurationProcessed>,
+    refMap: PipelineRefMap,
     path: Readonly<NodePath>,
     isReadonly: boolean,
   ) {

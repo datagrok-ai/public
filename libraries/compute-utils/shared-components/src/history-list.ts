@@ -10,7 +10,7 @@ import {HistoricalRunsDelete, EditRunMetadataDialog} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXP_COLUMN_NAME,
-  FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
+  FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME,
 } from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
 import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
-import {deepCopy, saveIsFavorite } from '../../shared-utils/utils';
+import {deepCopy, saveIsFavorite} from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
 import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '../../shared-components/src/history-dialogs';
