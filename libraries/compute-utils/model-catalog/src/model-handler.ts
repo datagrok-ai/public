@@ -123,10 +123,10 @@ export class ModelHandler extends DG.ObjectHandler {
     const versions = JSON.parse(func.options['versions'] ? `${func.options['versions']}` : '[]') as string[];
     if ((versions?.length ?? 0) < 2) {
       grok.shell.info('No other versions avaliable');
-      return
+      return;
     }
     const dlg = ui.dialog({title: 'Choose version'});
-    const selInput = ui.input.choice('Select version', { items: versions, value: versions[0] });
+    const selInput = ui.input.choice('Select version', {items: versions, value: versions[0]});
     dlg.add(selInput).onOK(() => {
       const version = selInput.value;
       const fc = func.prepare({params: {version}});

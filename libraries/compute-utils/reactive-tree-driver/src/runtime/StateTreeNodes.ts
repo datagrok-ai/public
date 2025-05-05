@@ -375,13 +375,12 @@ export class PipelineNodeBase implements IStoreProvider {
     if (this.config.structureCheck) {
       try {
         return this.config.structureCheck(state);
-      } catch(e: any) {
+      } catch (e: any) {
         grok.shell.error(e);
         console.error(e);
       }
     }
   }
-
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {

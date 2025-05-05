@@ -1,4 +1,4 @@
-1. Open **demog** dataset
+1. Open **demog**
 2. Open the **Filter Panel**
 3. Add a new column: **SEX_bool**: `case ${SEX} when "F" then true else false end`  
 4. Go to **Filter Panel > Hamburger menu > Add filter > Combined Boolean**

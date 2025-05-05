@@ -14,7 +14,7 @@ export function dealGroups(col: DG.Column<string>): void {
     col.set(i, col.get(i)!.replaceAll('Oh', 'O').replaceAll('OH', 'O'));
     col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
     col.set(i, col.get(i)!.replaceAll('?', 'O'));
-    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
+    col.set(i, col.get(i)!.replaceAll(' 0 3\n', ' 0 0\n'));
     col.set(i, col.get(i)!.replaceAll('RGROUPS=(1 1)', ''));
   }
 }

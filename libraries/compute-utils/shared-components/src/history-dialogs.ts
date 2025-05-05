@@ -19,9 +19,9 @@ export class EditRunMetadataDialog extends DG.Dialog {
   public onMetadataEdit = this._onMetadataEdit.asObservable();
 
   static forFuncCall(funcCall: DG.FuncCall, isFavorite = false) {
-    let title = funcCall.options['title'] ?? '';
-    let description = funcCall.options['description'] ?? '';
-    let tags = funcCall.options['tags'] ?? [];
+    const title = funcCall.options['title'] ?? '';
+    const description = funcCall.options['description'] ?? '';
+    const tags = funcCall.options['tags'] ?? [];
     const editDialog = new EditRunMetadataDialog({title, description, tags, isFavorite});
     return editDialog;
   }

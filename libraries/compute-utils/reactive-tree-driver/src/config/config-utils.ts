@@ -1,6 +1,6 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/graph-traverse-utils';
-import {FuncCallIODescription, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from './config-processing-utils';
+import {addPipelineRef, containsPipelineRef, FuncCallIODescription, getPipelineRef, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed, PipelineRefStore} from './config-processing-utils';
 import {LinkIOParsed} from './LinkSpec';
 import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
@@ -34,17 +34,18 @@ export function isPipelineStepConfig(c: ConfigTraverseItem): c is PipelineStepCo
   return !isPipelineConfig(c) && !isPipelineSelfRef(c);
 }
 
+export type PipelineRefMap = PipelineRefStore<PipelineConfigurationProcessed>
 
-export function buildRefMap(config: PipelineConfigurationProcessed): Map<string, PipelineConfigurationProcessed> {
-  const refMap = new Map<string, PipelineConfigurationProcessed>();
+export function buildRefMap(config: PipelineConfigurationProcessed): PipelineRefMap {
+  const refMap: PipelineRefMap = new Map();
 
   function getNextItem(item: ConfigTraverseItem, path: ItemPathArray) {
     if (isPipelineStepConfig(item))
       return null;
     else if (isPipelineSelfRef(item)) {
-      const next = refMap.get(item.selfRef);
+      const next = getPipelineRef(refMap, item.nqName, item.version);
       if (next == null)
-        throw new Error(`SelfRef ${item.selfRef} on path ${path.join('/')} not found`);
+        throw new Error(`SelfRef nqName ${item.nqName} version ${item.version} on path ${path.join('/')} not found`);
       return null;
     }
     const npath = [...path, item.id];
@@ -62,8 +63,8 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
 
   traverse(config, (res, item) => {
     if (isPipelineConfig(item) && item.nqName) {
-      if (!res.has(item.nqName))
-        res.set(item.nqName, item);
+      if (!containsPipelineRef(res, item.nqName, item.version))
+        addPipelineRef(res, item.nqName, item.version, item);
     }
     return res;
   }, refMap);
@@ -74,7 +75,7 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
 export function getConfigByInstancePath(
   instancePath: ItemPathArray,
   config: PipelineConfigurationProcessed,
-  refMap: Map<string, PipelineConfigurationProcessed>,
+  refMap: PipelineRefMap,
 ) {
   if (instancePath.length == 0)
     return config;
@@ -83,11 +84,11 @@ export function getConfigByInstancePath(
     items: ConfigTraverseItem[],
     targetSegment: string,
     currentPath: ItemPathArray,
-    refMap: Map<string, PipelineConfigurationProcessed>,
+    refMap: PipelineRefMap,
   ) {
     for (const item of items) {
       if (isPipelineSelfRef(item)) {
-        const nitem = refMap.get(item.selfRef)!;
+        const nitem = getPipelineRef(refMap, item.nqName, item.version)!;
         if (nitem.id === targetSegment)
           return nitem;
       } else {

@@ -11,25 +11,28 @@
         {
           "id": "a",
           "type": "double",
-          "direction": "input"
+          "direction": "input",
+          "nullable": false
         },
         {
           "id": "b",
           "type": "double",
-          "direction": "input"
+          "direction": "input",
+          "nullable": false
         },
         {
           "id": "res",
           "type": "double",
-          "direction": "output"
+          "direction": "output",
+          "nullable": false
         }
       ],
       "actions": []
     },
     {
-      "type": "selfRef",
       "id": "pipelineSeq",
-      "selfRef": "mockNqName"
+      "nqName": "mockNqName",
+      "type": "selfRef"
     }
   ],
   "actions": []

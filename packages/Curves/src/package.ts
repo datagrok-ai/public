@@ -20,6 +20,8 @@ import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {PlateReader} from "./plate/plate-reader";
+import {initPlatesAppTree, platesAppView} from "./plates/plates_app";
+import {_createDummyPlateData, initPlates, savePlate} from "./plates/plates_crud";
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -214,36 +216,6 @@ export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInf
   return getPlatesFolderPreview(files);
 }
 
-// //name: Plates
-// //tags: app
-// //meta.browsePath: Chem
-// export function plateApp() {
-//   const plateFileInput = ui.input.file('Plate file', {nullable: false});
-//   ui.dialog('Select Plate File').add(plateFileInput).onOK(async () => {
-//     const file = plateFileInput.value;
-//     if (!file || file.extension !== 'xlsx') {
-//       grok.shell.warning('Please, select an Excel file with plates');
-//       return;
-//     }
-//
-//     try {
-//       const plate = await Plate.fromExcelFileInfo(file);
-//       const pw = PlateWidget.analysisView(plate);
-//       const view = DG.View.fromRoot(pw.root);
-//       view.name = file.name;
-//       grok.shell.addView(view);
-//     } catch (e) {
-//       grok.shell.error('Error parsing plate file');
-//       _package.logger.error(e);
-//     }
-//   }).show();
-//   // if (file.extension !== 'xlsx') {
-//   //   grok.shell.warning('Please, select an Excel file with plates');
-//   //   return;
-//   // }
-//   // console.log(file);
-//   // const plate = Plate.fromExcel(file.fullPath);
-// }
 
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
@@ -337,6 +309,35 @@ export function checkFileIsPlate(content: string): boolean {
   if (content.length > 1_000_000)
       return false;
   return PlateReader.getReader(content) != null;
+}
+
+
+//name: Browse
+//tags: app
+//meta.browsePath: Plates
+//output: view result
+export function platesApp() {
+  return platesAppView();
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  await initPlatesAppTree(treeNode);
+}
+
+//name: getPlateByBarcode
+//input: string barcode
+//output: dynamic plate
+export async function getPlateByBarcode(barcode: string): Promise<Plate> {
+  await initPlates();
+  const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesByBarcode', {barcode: barcode});
+  return Plate.fromDbDataFrame(df);
+}
+
+//name: createDummyPlateData
+export async function createDummyPlateData() {
+  await _createDummyPlateData();
 }
 
 

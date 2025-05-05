@@ -277,13 +277,22 @@ export class Driver {
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromPipelineConfig({
-        config,
-        isReadonly: false,
-        defaultValidators: true,
-        mockMode: this.mockMode,
-        logger: this.logger,
-      })),
+      map((config) => msg.instanceConfig ?
+        StateTree.fromInstanceConfig({
+          config,
+          instanceConfig: msg.instanceConfig,
+          isReadonly: false,
+          defaultValidators: true,
+          mockMode: this.mockMode,
+          logger: this.logger,
+        }) :
+        StateTree.fromPipelineConfig({
+          config,
+          isReadonly: false,
+          defaultValidators: true,
+          mockMode: this.mockMode,
+          logger: this.logger,
+        })),
       concatMap((state) => state.init()),
       tap((state) => {
         this.states$.next(state);

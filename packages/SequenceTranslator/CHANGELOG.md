@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.19.5 (2025-05-02)
+
+* Fix changing bond numbers when fixing molblocks
+
 ## 1.9.4 (2025-04-08)
 
 * Linearization fix for polytool convert.

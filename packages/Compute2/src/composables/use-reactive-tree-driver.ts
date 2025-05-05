@@ -9,6 +9,7 @@ import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
@@ -17,7 +18,11 @@ function makeMergedItems<T>(input: Record<string, Observable<T>>) {
 
 export type DriverAPI = ReturnType<typeof useReactiveTreeDriver>;
 
-export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>, version: Vue.Ref<string | undefined>) {
+export function useReactiveTreeDriver(
+  providerFunc: Vue.Ref<string>,
+  version: Vue.Ref<string | undefined>,
+  instanceConfig: Vue.Ref<PipelineInstanceConfig | undefined>,
+) {
   const driver = new Driver();
 
   const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
@@ -84,20 +89,20 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>, version: Vu
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
-  Vue.watch([() => providerFunc.value, () => version.value], ([providerFunc, version]) => {
-    initPipeline(providerFunc, version);
+  Vue.watch([() => providerFunc.value, () => version.value, () => instanceConfig.value], ([providerFunc, version, instanceConfig]) => {
+    initPipeline(providerFunc, version, instanceConfig);
   });
 
   Vue.onMounted(() => {
-    initPipeline(providerFunc.value, version.value);
+    initPipeline(providerFunc.value, version.value, instanceConfig.value);
   });
 
   Vue.onUnmounted(() => {
     driver.close();
   });
 
-  const initPipeline = (provider: string, version?: string) => {
-    driver.sendCommand({event: 'initPipeline', provider, version});
+  const initPipeline = (provider: string, version?: string, instanceConfig?: PipelineInstanceConfig) => {
+    driver.sendCommand({event: 'initPipeline', provider, version, instanceConfig});
   };
 
   const loadPipeline = (funcCallId: string) => {

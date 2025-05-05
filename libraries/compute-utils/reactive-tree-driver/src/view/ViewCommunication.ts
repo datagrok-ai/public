@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {ItemId, NqName} from '../data/common-types';
+import {PipelineInstanceConfig} from '../config/PipelineInstance';
 
 // view config update requests
 
@@ -81,6 +82,7 @@ export interface InitPipeline {
   event: 'initPipeline';
   provider: NqName;
   version?: string;
+  instanceConfig?: PipelineInstanceConfig;
 }
 
 export interface ResetToConsistent {

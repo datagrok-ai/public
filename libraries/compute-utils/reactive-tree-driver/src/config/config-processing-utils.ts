@@ -53,16 +53,36 @@ function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
-  const pconf = await configProcessing(conf, new Set());
+  const pconf = await configProcessing(conf, new Map());
   return pconf as PipelineConfigurationProcessed;
+}
+
+export type PipelineRefStore<T> = Map<string, Map<string | undefined, T>>;
+
+export function addPipelineRef<T>(store: PipelineRefStore<T>, nqName: string, version: string | undefined, item: T) {
+  if (!store.has(nqName))
+    store.set(nqName, new Map());
+  const versionsStore = store.get(nqName)!;
+  versionsStore.set(version, item);
+}
+
+export function getPipelineRef<T>(store: PipelineRefStore<T>, nqName: string, version: string | undefined): T | undefined {
+  if (store.has(nqName))
+    return store.get(nqName)!.get(version);
+}
+
+export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: string, version: string | undefined) {
+  if (store.has(nqName))
+    return store.get(nqName)!.has(version);
+  return false;
 }
 
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
-  loadedPipelines: Set<string>,
+  loadedPipelines: PipelineRefStore<null>,
 ): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
-    loadedPipelines.add(conf.nqName);
+    addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
   if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf);
@@ -73,6 +93,7 @@ async function configProcessing(
       const sconf = await configProcessing(step, loadedPipelines);
       return sconf;
     }));
+    checkUniqId(steps);
     return {...pconf, steps};
   } else if (isPipelineParallelInitial(conf)) {
     const pconf = processParallelConfig(conf);
@@ -80,6 +101,7 @@ async function configProcessing(
       const nconf = await configProcessing(item, loadedPipelines);
       return nconf;
     }));
+    checkUniqId(stepTypes);
     return {...pconf, stepTypes};
   } else if (isPipelineSequentialInitial(conf)) {
     const pconf = processSequentialConfig(conf);
@@ -87,12 +109,13 @@ async function configProcessing(
       const nconf = await configProcessing(item, loadedPipelines);
       return nconf;
     }));
+    checkUniqId(stepTypes);
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
     const pconf = await callHandler<LoadedPipeline>(conf.provider, conf).toPromise();
-    if (loadedPipelines.has(pconf.nqName))
-      return {id: pconf.id, selfRef: pconf.nqName, type: 'selfRef'};
-    loadedPipelines.add(pconf.nqName);
+    if (containsPipelineRef(loadedPipelines, pconf.nqName, pconf.version))
+      return {id: pconf.id, nqName: pconf.nqName, version: pconf.version, type: 'selfRef'};
+    addPipelineRef(loadedPipelines, pconf.nqName, pconf.version, null);
     return configProcessing(pconf, loadedPipelines);
   }
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
@@ -143,11 +166,13 @@ function isOptional(prop: DG.Property) {
 }
 
 function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
+  checkUniqId(actionsInput);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
 
 function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
+  checkUniqId(actionsInput);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
@@ -172,4 +197,13 @@ function processLink(io: LinkSpecString, ioType: IOType) {
     return [parseLinkIO(io, ioType)];
   else
     return [];
+}
+
+function checkUniqId(items: {id: string}[]) {
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (ids.has(item.id))
+      grok.shell.error(`Id ${item.id} is not unique`);
+    ids.add(item.id);
+  }
 }

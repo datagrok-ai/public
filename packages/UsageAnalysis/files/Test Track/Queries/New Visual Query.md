@@ -8,13 +8,12 @@
 7. Add **Group by**: `orders.shipcounty`
 7. Set **Pivot** to `orders.shipcity`
 7. Add **Order by**: `orders.shipcounty`
-7. Set different order for the **
-Order by** fields - check
-8. Open the **Debug** pane and press a bug icon to **debug query**. No errors should appear
-9. On the Sidebar, on**Actions** tab, click **Run query...**. Query result should open in new view
+7. Set different order for the **Order by** fields - check
+8. Open the **Debug** tab and press a bug icon to **debug query**. No errors should appear
+9. **Toolbar > Actions** > **Run query...** - query result should open in new view
 8. Save the query. Close All
 8. Run the saved query - check the parameter
-8. On the **Sidebar**, change the parameter value and click **Refresh** - check
+8. On the **Toolbar**, change the parameter value and click **Refresh** - check
 8. Close all
 ---
 {

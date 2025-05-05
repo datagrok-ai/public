@@ -14,8 +14,9 @@ to provide abstractions on top of FuncCalls.
 
 - `Rich Function View` - is a Vue.js framework component which
   generates UI for FuncCalls. It includes input form, output viewers,
-  scalars, help, history. Dock manager is used as a container,
-  providing layout customization.
+  scalars, help, history. Dock manager is used as a container for
+  components. Also provides integrations with fitting and optimization
+  tools.
 
 - `Reactive Tree Driver` - is a configurable state store, backed by
   FuncCalls, and a linking mechanism between those states. For an end
@@ -34,9 +35,6 @@ to provide abstractions on top of FuncCalls.
   Wizard` has a navigation tree and additional driver integration
   logic/ui elements. Also integrates into Model Hub.
 
-Additional RFV view variations with Model Hub integration will be
-available (TODO):
-
 - `Standalone Rich Function View` - an integration of `Rich Function
   View` with Model Hub. Provides a simple way to make FuncCall UI only
   using annotations.
@@ -54,22 +52,25 @@ multiple packages and libraries.
 
 - `compute-utils` library is the main source of all code related to
   dealing with FuncCalls. The main things here are `Model Hub`,
-  `Reactive Tree Driver`, `Rich Function View` and `Tree Wizard`.
+  `Reactive Tree Driver`, `Rich Function View` and `Tree Wizard`. It
+  also includes fitting and optimization related code with ui.
 
-- `Compute` package is the primary consumer of `compute-utils`
-  library. it depends on `compute-utils`.
+- `Compute` Provides `Model Hub` app via package functions.
+
+- `Compute2` contains Vue.js UI code for, `Rich Function View` and
+  `Tree Wizard` and provides Vue.js based editors.
 
 - `compute-api` is a library which provides a way for other packages
   to depend on a dynamically loaded version of `compute-utils`. The
-  code is loaded in the `compute` package initialization, so for it to
-  work, `compute` must be loaded before using `compute-api`. It is
+  code is loaded in the `Compute` package initialization, so for it to
+  work, `Compute` must be loaded before using `compute-api`. It is
   used to update `Standalone Function View` without a need to rebuild
   and redeploy custom JS UI models.
 
 - `webcomponents` library has wrappers around platform forms and
-  viewers. It also includes a web component version of docker
-  WM. (TODO: move docker WM to a separate package, or even merge with
-  the platform core one).
+  viewers.
+
+- `dock-spawn-dg` provides dock manager web component.
 
 - `webomponents-vue` library is a consumer of `webcomponents` library
   typings, providing typed vue.js components.
@@ -97,4 +98,5 @@ Here is an initialization sequence:
 
 Note that `Compute` depends only on `webomponents-vue` library, which
 doesn't include web components themselves, that is why `WebComponents`
-init is necessary. Also a global platform vue.js library must be used.
+init is necessary. Also a global platform shared Vue.js library is
+used.

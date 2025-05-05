@@ -60,7 +60,8 @@ export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: an
 
 
 export function processNestedStructure(paths: { [key: string]: any },
-  result: {smiles: string, type: string}[], depth: number): {smiles: string, type: string}[] {
+  result: {smiles: string, type: string, depth: number}[], depth: number):
+  {smiles: string, type: string, depth: number}[] {
   for (const [smiles, children] of Object.entries(paths)) {
     let type;
     if (depth === 0 && Object.keys(children).length > 0)
@@ -70,7 +71,7 @@ export function processNestedStructure(paths: { [key: string]: any },
     else
       type = StructureType.Leaf;
 
-    result.push({smiles, type});
+    result.push({smiles, type, depth});
 
     if (Object.keys(children).length > 0)
       processNestedStructure(children, result, depth + 1);

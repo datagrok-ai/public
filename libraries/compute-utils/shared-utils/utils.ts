@@ -665,7 +665,7 @@ export const getRunsDfFromList = async (
     const rowMask = DG.BitSet.create(newRunsGridDf.rowCount, () => false);
     for (let idx = 0; idx < newRunsGridDf.rowCount; idx++) {
       if (options?.version == newRunsGridDf.get(VERSION_COLUMN_NAME, idx))
-        rowMask.set(idx, true)
+        rowMask.set(idx, true);
     }
     return newRunsGridDf.clone(rowMask);
   }

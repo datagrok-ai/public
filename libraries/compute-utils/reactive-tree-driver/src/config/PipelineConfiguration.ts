@@ -22,7 +22,8 @@ export type LoadedPipelineToplevelNode = {
 
 export type PipelineSelfRef = {
   type: 'selfRef',
-  selfRef: string,
+  nqName: string,
+  version: string | undefined,
   id: string,
 }
 
