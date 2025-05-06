@@ -54,6 +54,8 @@ export const typesToAnnotation : Record<string, string> = {
   'DG.SemanticValue': 'semantic_value',
   'SemanticValue': 'semantic_value',
   'any': 'dynamic',
+  'void': 'void',
+  'string': 'string'
 }
 
 /** Generates an annotation header for a function based on provided metadata. */
@@ -67,7 +69,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
   else if (data.description)
     s += `${comment}description: ${data.description}${sep}`;
-  if (data.tags) {
+  if (data.tags && data.tags?.length > 0) {
     s += `${comment}tags: ${isFileViewer && data[pseudoParams.EXTENSIONS] ?
       data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join(', ') :
       data.tags.join(', ')}${sep}`;
@@ -94,14 +96,14 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     }
     else
       type = 'dynamic';
-    console.log(input);
     const options = ((input?.options as any)?.options? buildStringOfOptions((input.options as any).options ?? {}) : '');
-    const functionName  = ((input.options as any)?.name ?  ((input?.options as any)?.name ?? ` ${input.name?.replaceAll('.', '')}`) : '')?.trim();
+    const functionName  = ((input.options as any)?.name ?  (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs)
-      s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}` : '') + sep;
+      if (output.type  !== 'void')
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}` : '') + sep;
   }
   
   if (data.meta) {

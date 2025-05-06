@@ -12,7 +12,7 @@ const {
   typesToAnnotation
 } = require("../bin/utils/func-generation");
 
-const baseImport = '\nimport * as DG from \'datagrok-api/dg\';\n\n';
+const baseImport = '\n';
 
 class FuncGeneratorPlugin {
   constructor(options = { outputPath: "./src/package.g.ts" }) {
@@ -100,7 +100,8 @@ class FuncGeneratorPlugin {
       ...Object.fromEntries(decoratorOptions),
       ...{inputs: functionParams},
     };    
-
+    if (!funcAnnotaionOptions.name)
+      funcAnnotaionOptions.name = identifierName;
     functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation(funcAnnotaionOptions), identifierName,'\n', (className ?? ''), functionParams));
 
     genImports.push(generateImport(funcName, modifyImportPath(srcDirPath, this.options.outputPath)));
