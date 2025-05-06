@@ -54,13 +54,16 @@ export interface FuncMetadata extends Indexable {
   tags?: string[],
   description?: string,
   cache?: string,
+  meta?: Record<string,string>,
   invalidateOn?: string,
   isInvalidateOnWithoutCache?: boolean,
 }
 
 export interface FuncParam {
-  name: string,
-  type: string,
+  name?: string, 
+  type?: string, 
+  defaultValue?: string, 
+  options?: any[] 
 }
 
 export type FuncValidator = ({}: FuncMetadata) => ValidationResult;
