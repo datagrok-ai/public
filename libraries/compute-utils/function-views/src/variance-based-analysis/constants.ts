@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Specific sensitivity analysis constants
 
 /** Dock ratios */
@@ -75,3 +76,5 @@ Sobol' indices:
  
  This method provides the same visualization as the previous ones. Unlike them, it evaluates a function 
  at the points of uniform grid within the specified ranges.`;
+
+export const DIFF_GROK_OUT_IDX = 0;

@@ -15,6 +15,8 @@ import {OutputDataFromUI, getOutput,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 import {DiffGrok} from '../fitting-view';
+import {ModelEvaluator} from './diff-studio/model-evaluator';
+import {DIFF_GROK_OUT_IDX} from './constants';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -73,10 +75,15 @@ export class RandomAnalysis {
 
   /** Performs variance-based sensitivity analysis */
   async perform(): Promise<SensitivityAnalysisResult> {
-    // if (this.diffGrok !== undefined) {
-    // TODO: implement computations in webworkers
-    // return ...;
-    // }
+    if (this.diffGrok !== undefined) {
+      const evaluator = new ModelEvaluator(
+        this.diffGrok,
+        this.funcInputs,
+        this.outputsOfInterest[DIFF_GROK_OUT_IDX],
+      );
+
+      return await evaluator.getResults();
+    }
 
     this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 
