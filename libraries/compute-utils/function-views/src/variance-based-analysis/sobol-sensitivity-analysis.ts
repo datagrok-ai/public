@@ -50,6 +50,7 @@ export class SobolAnalysis {
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
+  private funcInputs: any[];
 
   private outputsOfInterest: OutputDataFromUI[];
 
@@ -89,6 +90,7 @@ export class SobolAnalysis {
     this.runsCount = samplesCount * (this.dimension + 2);
 
     this.funcCalls = [];
+    this.funcInputs = [];
 
     // create an array of funccalls
     for (let i = 0; i < this.runsCount; ++i) {
@@ -101,12 +103,13 @@ export class SobolAnalysis {
         inputs[input.prop.name] = input.column.get(i);
 
       this.funcCalls.push(func.prepare(inputs));
+      this.fixedInputs.push(inputs);
     }
 
     this.outputsOfInterest = outputsOfInterest;
   }
 
-  // Returns 1-st and totoal order Sobol' indices.
+  // Returns 1-st and total order Sobol' indices.
   private getSobolIndeces(outputColumn: DG.Column): SobolIndeces {
     /* 1-st order and total order Sobol' indices are defined by
        the formulas (2) and (4) respectively [1]. Computations requires:
@@ -206,7 +209,7 @@ export class SobolAnalysis {
 
     return {
       funcEvalResults: funcEvalResults,
-      funcCalls: this.funcCalls,
+      funcInputs: this.funcInputs,
       firstOrderSobolIndices: firstOrderSobolIndicesDF,
       totalOrderSobolIndices: totalOrderSobolIndicesDF,
     };
