@@ -15,13 +15,14 @@
   "dependencies": {
     "@datagrok-libraries/tutorials": "^1.6.2",
     "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/statistics": "../../libraries/statistics",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",
-    "@datagrok/power-grid": "^1.5.0",
+    "@datagrok/power-grid": "../../packages/PowerGrid",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
@@ -30,7 +31,7 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
     "debug-admetica": "webpack && grok publish ",
     "release-admetica": "webpack && grok publish --release",
     "build-admetica": "webpack",
@@ -41,7 +42,8 @@
     "debug-admetica-local": "grok publish local --rebuild",
     "release-admetica-local": "grok publish local --rebuild --release",
     "debug-admetica-local2": "grok publish local2 --rebuild",
-    "release-admetica-local2": "grok publish local2 --rebuild --release"
+    "release-admetica-local2": "grok publish local2 --rebuild --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Administrators"

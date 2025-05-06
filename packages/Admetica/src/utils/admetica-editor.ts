@@ -6,6 +6,8 @@ import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './co
 import { getTemplates } from './admetica-utils';
 import '../css/admetica.css';
 
+import { MpoDesirabilityLineEditor } from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
+
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   colInput!: DG.InputBase<DG.Column | null>;
@@ -35,7 +37,7 @@ export class AdmeticaBaseEditor {
     });
     this.saveButton.classList.add('admetica-save-button');
     
-    this.templatesInput = ui.input.choice('Template', {
+    this.templatesInput = ui.input.choice('Profile', {
       onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv),
       nullable: false
     }) as DG.ChoiceInput<string>;
@@ -234,6 +236,15 @@ export class AdmeticaBaseEditor {
       if (input) inputs.appendChild(input);
     });
     
+    if (model.line) {
+      const lineEditor = new MpoDesirabilityLineEditor(model, 300, 80);
+      lineEditor.onChanged.subscribe((_) => {
+        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
+        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
+      });
+      inputs.appendChild(lineEditor.root);
+    }
+
     const coloring = model.coloring;
     if (coloring.type === 'Conditional')
       inputs.appendChild(this.createConditionalInput(coloring, model));

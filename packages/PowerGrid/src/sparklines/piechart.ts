@@ -1,5 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+
+import {desirabilityScore, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+
 import {
   createBaseInputs,
   createTooltip, getRenderColor,
@@ -21,11 +24,8 @@ enum PieChartStyle {
   Vlaaivis = 'VlaaiVis'
 }
 
-export interface Subsector {
+export interface Subsector extends PropertyDesirability {
   name: string;
-  low: number;
-  high: number;
-  weight: number;
 }
 
 export interface Sector {
@@ -44,7 +44,6 @@ export interface PieChartSettings extends SummarySettingsBase {
       values: string | null;
   };
 }
-
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   const sectors = gc.settings.sectors;
@@ -68,50 +67,8 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 }
 
 function normalizeValue(value: number, subsector: Subsector): number {
-  const { low, high } = subsector;
-  const isMax = high > low;
-  if (isMax ? value < low : value > low)
-    return 0;
-  else if (isMax ? value > high : value < high)
-    return 1;
-  else
-    return isMax
-      ? (value - low) / (high - low)
-      : (value - high) / (low - high);
-}
-
-function renderDiagonalStripes(
-  g: CanvasRenderingContext2D, box: DG.Rect, r: number,
-  currentAngle: number, subsectorAngle: number
-) {
-  const patternSize = r;
-  const patternCanvas = ui.canvas();
-  patternCanvas.width = patternSize;
-  patternCanvas.height = patternSize;
-  const patternCtx = patternCanvas.getContext('2d')!;
-  patternCtx.strokeStyle = '#535659';
-  patternCtx.lineWidth = 0.5;
-  const numLines = 15;
-  const spacing = patternSize / (numLines + 1);
-  for (let i = 1; i <= numLines; i++) {
-    const y = i * spacing;
-    patternCtx.beginPath();
-    patternCtx.moveTo(0, y);
-    patternCtx.lineTo(patternSize, y);
-    patternCtx.stroke();
-  }
-  const pattern = g.createPattern(patternCanvas, 'repeat')!;
-  g.beginPath();
-  g.moveTo(box.midX, box.midY);
-  g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
-  g.closePath();
-  g.save();
-  g.translate(box.midX, box.midY);
-  g.rotate(Math.PI / 6);
-  g.translate(-box.midX, -box.midY);
-  g.fillStyle = pattern;
-  g.fill();
-  g.restore();
+  if (!subsector.line) return 0;
+  return desirabilityScore(value, subsector.line);
 }
 
 function renderSubsector(
@@ -126,26 +83,21 @@ function renderSubsector(
   const subsectorName = subsector.name;
   const subsectorCol = cols.find((col) => col.name === subsectorName);
   let value;
-  let erroneous = false;
   if (subsectorCol) {
     value = subsectorCol.get(row);
     const normalizedValue = value ? normalizeValue(value, subsector) : 1;
     r = normalizedValue * (Math.min(box.width, box.height) / 2);
     r = Math.max(r, minRadius);
   }
-  if (erroneous)
-    renderDiagonalStripes(g, box, r, currentAngle, subsectorAngle);
-  else {
-    g.beginPath();
-    g.moveTo(box.midX, box.midY);
-    g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
-    g.closePath();
-    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
-    g.lineWidth = 0.6;
-    g.stroke();
-    g.fillStyle = hexToRgbA(sectorColor, 0.6);
-    g.fill();
-  }
+  g.beginPath();
+  g.moveTo(box.midX, box.midY);
+  g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
+  g.closePath();
+  g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+  g.lineWidth = 0.6;
+  g.stroke();
+  g.fillStyle = hexToRgbA(sectorColor, 0.6);
+  g.fill();
   return currentAngle + subsectorAngle;
 }
 
@@ -160,7 +112,6 @@ function hexToRgbA(hex: string, opacity: number): string {
 function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsector[]; }): number {
   return sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
 }
-
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);

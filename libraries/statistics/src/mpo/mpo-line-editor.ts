@@ -1,21 +1,23 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import Konva from 'konva';
-import { PropertyDesirability } from './mpo';
-import {Subject} from "rxjs"; // Import type from mpo.ts
+import {DesirabilityLine, PropertyDesirability} from './mpo';
+import {Subject} from 'rxjs'; // Import type from mpo.ts
 
 // Constants for the editor layout
-const EDITOR_PADDING = { top: 10, right: 10, bottom: 20, left: 30 };
+const EDITOR_PADDING = {top: 10, right: 10, bottom: 20, left: 30};
 const POINT_RADIUS = 3;
 
 
 export class MpoDesirabilityLineEditor {
   root = ui.div();
   onChanged = new Subject();
+  private _prop: PropertyDesirability;
 
   constructor(prop: PropertyDesirability, width: number, height: number) {
+    this._prop = prop;
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative'; // Needed for absolute positioning of Konva stage
@@ -38,8 +40,8 @@ export class MpoDesirabilityLineEditor {
       const layer = new Konva.Layer();
       stage.add(layer);
 
-      const minX = prop.min ?? Math.min(...prop.line.map(p => p[0]));
-      const maxX = prop.max ?? Math.max(...prop.line.map(p => p[0]));
+      const minX = prop.min ?? Math.min(...prop.line.map((p) => p[0]));
+      const maxX = prop.max ?? Math.max(...prop.line.map((p) => p[0]));
 
       // --- Draw Axes ---
       const xAxis = new Konva.Line({
@@ -60,7 +62,7 @@ export class MpoDesirabilityLineEditor {
         y: height - EDITOR_PADDING.bottom + 3, // Below axis
         text: minX.toFixed(1), // Fewer decimals for smaller space
         fontSize: 9,
-        fill: 'grey'
+        fill: 'grey',
       });
       const maxXLabel = new Konva.Text({
         x: width - EDITOR_PADDING.right - 15, // Adjust position
@@ -68,21 +70,21 @@ export class MpoDesirabilityLineEditor {
         text: maxX.toFixed(1), // Fewer decimals
         fontSize: 9,
         align: 'right',
-        fill: 'grey'
+        fill: 'grey',
       });
       const zeroYLabel = new Konva.Text({
         x: EDITOR_PADDING.left - 20, // Left of axis
         y: height - EDITOR_PADDING.bottom - 5, // Align with axis bottom
         text: '0.0',
         fontSize: 9,
-        fill: 'grey'
+        fill: 'grey',
       });
       const oneYLabel = new Konva.Text({
         x: EDITOR_PADDING.left - 20, // Left of axis
         y: EDITOR_PADDING.top - 5, // Align with axis top
         text: '1.0',
         fontSize: 9,
-        fill: 'grey'
+        fill: 'grey',
       });
       layer.add(minXLabel, maxXLabel, zeroYLabel, oneYLabel);
 
@@ -93,7 +95,7 @@ export class MpoDesirabilityLineEditor {
         stroke: '#2077b4',
         strokeWidth: 2,
         lineCap: 'round',
-        lineJoin: 'round'
+        lineJoin: 'round',
       });
       layer.add(konvaLine);
 
@@ -119,7 +121,7 @@ export class MpoDesirabilityLineEditor {
             stroke: 'black',
             strokeWidth: 1,
             draggable: true, // Make points draggable
-            hitStrokeWidth: 5 // Easier to hit for dragging/clicking
+            hitStrokeWidth: 5, // Easier to hit for dragging/clicking
           });
           // Store index directly on the node for easy access
           pointCircle.setAttr('_pointIndex', index);
@@ -155,9 +157,9 @@ export class MpoDesirabilityLineEditor {
             // Update the connecting line during drag
             const currentKonvaPoints = prop.line.map((pData, idx) => {
               // Use dragged circle position directly for the point being dragged
-              if (idx === currentPointIndex) {
+              if (idx === currentPointIndex)
                 return [pos.x, pos.y];
-              } else {
+              else {
                 const c = toCanvasCoords(pData[0], pData[1], minX, maxX, width, height);
                 return [c.x, c.y];
               }
@@ -178,7 +180,7 @@ export class MpoDesirabilityLineEditor {
             // Keep at least 2 points for a line segment
             if (prop.line.length <= 2) {
               // Use DG tooltip or simple alert/warning
-              grok.shell.warning("Cannot remove points, minimum of 2 required.");
+              grok.shell.warning('Cannot remove points, minimum of 2 required.');
               return;
             }
 
@@ -222,9 +224,8 @@ export class MpoDesirabilityLineEditor {
 
         // Ensure click is within the plot area boundaries
         if (pos.x < EDITOR_PADDING.left || pos.x > width - EDITOR_PADDING.right ||
-          pos.y < EDITOR_PADDING.top || pos.y > height - EDITOR_PADDING.bottom) {
+          pos.y < EDITOR_PADDING.top || pos.y > height - EDITOR_PADDING.bottom)
           return;
-        }
 
         const dataCoords = toDataCoords(pos.x, pos.y, minX, maxX, width, height);
         // Add the new point
@@ -239,25 +240,23 @@ export class MpoDesirabilityLineEditor {
         if (!(evt.target instanceof Konva.Circle)) {
           const pos = stage.getPointerPosition();
           if (pos && pos.x >= EDITOR_PADDING.left && pos.x <= width - EDITOR_PADDING.right &&
-            pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom) {
+            pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom)
             stage.container().style.cursor = 'crosshair';
-          }
         }
       });
 
       stage.on('mouseleave', (evt: Konva.KonvaEventObject<MouseEvent>) => {
-        if (!(evt.target instanceof Konva.Circle)) {
+        if (!(evt.target instanceof Konva.Circle))
           stage.container().style.cursor = 'default';
-        }
       });
 
       stage.on('mousemove', (evt: Konva.KonvaEventObject<MouseEvent>) => {
         if (!(evt.target instanceof Konva.Circle)) {
           const pos = stage.getPointerPosition();
           if (pos && pos.x >= EDITOR_PADDING.left && pos.x <= width - EDITOR_PADDING.right &&
-            pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom) {
+            pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom)
             stage.container().style.cursor = 'crosshair';
-          }
+
           else
             stage.container().style.cursor = 'default';
         }
@@ -267,8 +266,11 @@ export class MpoDesirabilityLineEditor {
 
       // Initial draw
       redraw(false);
-
     }, 0);
+  }
+
+  get line(): DesirabilityLine {
+    return this._prop.line;
   }
 }
 
@@ -284,7 +286,7 @@ function toCanvasCoords(x: number, y: number, minX: number, maxX: number, width:
   const canvasX = EDITOR_PADDING.left + (x - minX) * scaleX;
   const canvasY = EDITOR_PADDING.top + plotHeight - (y * scaleY); // Flip y-axis
 
-  return { x: canvasX, y: canvasY };
+  return {x: canvasX, y: canvasY};
 }
 
 // Function to transform canvas coordinates to data coordinates
@@ -302,5 +304,5 @@ function toDataCoords(canvasX: number, canvasY: number, minX: number, maxX: numb
   dataX = Math.max(minX, Math.min(maxX, dataX));
   dataY = Math.max(0, Math.min(1, dataY));
 
-  return { x: dataX, y: dataY };
+  return {x: dataX, y: dataY};
 }
