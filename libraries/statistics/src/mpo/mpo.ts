@@ -1,9 +1,6 @@
 /* eslint-disable guard-for-in */
 /* eslint-disable max-len */
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import {MpoProfileEditor} from './mpo-profile-editor';
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
