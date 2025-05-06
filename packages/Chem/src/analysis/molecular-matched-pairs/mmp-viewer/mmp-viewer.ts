@@ -29,7 +29,7 @@ import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
 import {chemDescriptor} from '../../../package';
 import {getZoomCoordinates} from '../../../utils/ui-utils';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -54,6 +54,12 @@ export type SortData = {
   mw?: Float32Array,
 }
 
+type MMPHint = {
+  text: string,
+  element: HTMLElement,
+  position: ui.hints.POSITION
+}
+
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
 
@@ -64,6 +70,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   totalData: string;
   totalDataUpdated: boolean = false;
   onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
+  hintsShown: {[key: string]: boolean} = {};
 
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
@@ -114,6 +121,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   spCorrDiv = ui.divV([]);
   showFragmentsChoice: DG.InputBase | null = null;
   lastCurrentRowOnCliffsTab = - 1;
+  lastOpenedHint: HTMLDivElement | null = null;
 
   constructor() {
     super();
@@ -226,6 +234,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     let refilter = true;
     tabs.onTabChanged.subscribe(() => {
+      this.lastOpenedHint?.remove();
       if (this.currentTab === MMP_NAMES.TAB_CLIFFS && tabs.currentPane.name !== MMP_NAMES.TAB_CLIFFS) {
         if (this.parentTableFilterBackup)
           this.parentTable!.filter.copyFrom(this.parentTableFilterBackup);
@@ -299,7 +308,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
     this.showFragmentsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
-    ui.tooltip.bind(this.showFragmentsChoice.input, `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
+    ui.tooltip.bind(this.showFragmentsChoice.input,
+      `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, this.showFragmentsChoice.root);
@@ -310,10 +320,57 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       showError ? fpGrid.classList.add('chem-mmp-no-fragments') : fpGrid.classList.remove('chem-mmp-no-fragments');
     }));
 
+    const hints: MMPHint[] = [
+      {
+        element: fpGrid,
+        text: FRAGMENTS_GRID_TOOLTIP,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: mmPairsRoot1,
+        text: MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: grok.shell.tv.grid.root,
+        text: `Observe two molecules from the selected pair pinned on top of the grid.`,
+        position: ui.hints.POSITION.RIGHT,
+      },
+      {
+        element: this.showFragmentsChoice.root,
+        text: `Change mode to 'Current molecule' to filter all subtitutions for current molecule from the initial dataset on the left.`,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: grok.shell.tv.grid.root,
+        text: `Change current row to see the changes in Fragments grid`,
+        position: ui.hints.POSITION.RIGHT,
+      },
+    ];
+
+    setTimeout(() => {
+      this.setupHint(hints, 0);
+    }, 1000);
+
     return ui.splitV([
       fpGrid,
       mmPairsRoot1,
     ], {}, true);
+  }
+
+  setupHint(hints: MMPHint[], i: number) {
+    this.lastOpenedHint?.remove();
+    if (i === hints.length - 1)
+      this.lastOpenedHint = ui.hints.addHint(hints[i].element, ui.divText(hints[i].text), hints[i].position);
+    else {
+      const hintContent = ui.div();
+      hintContent.append(ui.divText(hints[i].text));
+      const nextButton = ui.button('Next', () => {
+        this.setupHint(hints, i + 1);
+      });
+      hintContent.append(nextButton);
+      this.lastOpenedHint = ui.hints.addHint(hints[i].element, hintContent, hints[i].position);
+    }
   }
 
   setupFragmentsTab(): void {
@@ -398,6 +455,23 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridFrag, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
 
+    const hints: MMPHint[] = [
+      {
+        element: this.tp.root,
+        text: FRAGMENTS_TAB_TOOLTIP,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: this.pairedGrids!.filters.root,
+        text: `Use trellis plot filters to filter fragments of interest`,
+        position: ui.hints.POSITION.LEFT,
+      },
+    ];
+
+    setTimeout(() => {
+      this.setupHint(hints, 0);
+    }, 1000);
+
     ui.empty(this.fragmentsDiv);
     ui.setUpdateIndicator(this.fragmentsDiv, false);
     this.fragmentsDiv.append(ui.splitV([
@@ -411,12 +485,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (defaultFiltersStates.length) {
       const lastFilterIdx = defaultFiltersStates[defaultFiltersStates.length - 1];
       try {
-        awaitCheck(() => this.pairedGrids!.filters!.filters.length >= parseInt(lastFilterIdx) - 1, '', 10000).then(async () => {
+        awaitCheck(() => this.pairedGrids!.filters!.filters.length >= parseInt(lastFilterIdx) - 1,
+          '', 10000).then(async () => {
           ui.setUpdateIndicator(tpDiv, true, 'Applying filters');
-          for (let key of defaultFiltersStates)
-            this.pairedGrids!.filters!.updateOrAdd(this.defaultFragmentsFiltersStates[key as any], key === lastFilterIdx);
+          for (const key of defaultFiltersStates) {
+            this.pairedGrids!.filters!
+              .updateOrAdd(this.defaultFragmentsFiltersStates[key as any], key === lastFilterIdx);
+          }
           try {
-            await awaitCheck(this.filterStatesUpdatedCondition, '', 20000)
+            await awaitCheck(this.filterStatesUpdatedCondition, '', 20000);
           } catch (e) {
             grok.shell.error('Default filters haven\'t been applyed');
           } finally {
@@ -441,9 +518,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.setupFilters(this.mmpFilters, linesActivityCorrespondance);
     console.log(`created mmpa filters`);
 
-    this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames, this.moleculesCol!.name, this.activitiesCols!.byIndex(0).name);
+    this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames,
+      this.moleculesCol!.name, this.activitiesCols!.byIndex(0).name);
     //show scatter plot context menu instead of mmp viewer's context menu
-    this.subs.push(grok.events.onContextMenu.subscribe(e => {
+    this.subs.push(grok.events.onContextMenu.subscribe((e) => {
       if (e.causedBy && e.causedBy.target && this.sp!.root.contains(e.causedBy.target)) {
         e.causedBy.preventDefault();
         e.causedBy.stopPropagation();
@@ -510,6 +588,33 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     showPairs.root.classList.add('chem-mmp-show-pairs-checkbox');
 
     ui.setUpdateIndicator(this.sp.root, true, 'Genarating cliffs scatter plot...');
+
+    const hints: MMPHint[] = [
+      {
+        element: this.sp.root,
+        text: `Scatter plot where similar molecules are close to each other. Lines connect matched molecular pairs. Arrow points to a molecule with a greater activity value. Click on a line to show molecule pair in the table below and show details in a context panel.`,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: this.mmpFilters.filtersDiv,
+        text: `Use filters on the scatter plot to change activity difference cutoff or switch of/on the lines for any activity.`,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: mmPairsRoot3,
+        text: MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS,
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: showPairs.root,
+        text: `Use checkbox to show/hide molecule pairs grid`,
+        position: ui.hints.POSITION.LEFT,
+      },
+    ];
+
+    setTimeout(() => {
+      this.setupHint(hints, 0);
+    }, 1000);
 
     const spDiv = ui.splitV([
       ui.box(
@@ -626,7 +731,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
       ui.setUpdateIndicator(this.generationsGridDiv, false);
       ui.empty(this.generationsGridDiv);
-      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, GENERATIONS_TAB_TOOLTIP, ui.div()));
+      this.generationsGridDiv.append(
+        this.createGridDiv('Generated Molecules', this.generationsGrid!, GENERATIONS_TAB_TOOLTIP, ui.div()));
 
       for (const activity of this.activities!) {
         const generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
@@ -656,6 +762,16 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           generationsSp.root,
         ]));
         this.spCorrDiv.append(spActivityCorrDiv);
+        const hints: MMPHint[] = [
+          {
+            element: this.generationsGrid.root,
+            text: GENERATIONS_TAB_TOOLTIP,
+            position: ui.hints.POSITION.LEFT,
+          },
+        ];
+        setTimeout(() => {
+          this.setupHint(hints, 0);
+        }, 1000);
       }
       ui.setUpdateIndicator(this.spCorrDiv, false);
       this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
