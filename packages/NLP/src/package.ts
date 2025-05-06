@@ -59,6 +59,15 @@ class NLPPackage extends DG.Package {
 
 export const _package = new NLPPackage();
 
+let apiKey: string = '';
+const url = 'https://api.openai.com/v1/chat/completions';
+
+//tags: init
+export async function init() {
+  // @ts-ignore
+  apiKey = (await _package.getSettings())['apiKey'];
+}
+
 // AWS service instances
 let translate: AWS.Translate;
 //let comprehendMedical;
@@ -228,8 +237,6 @@ export async function translationPanel(textfile: DG.FileInfo) {
 //   return entWidget;
 // }
 
-//name: exportFunc
-//tags: init
 export async function initAWS() {
   AWS.config.update({
     apiVersion: 'latest',
@@ -386,6 +393,29 @@ export function similar(query: string): DG.Widget {
   }
 
   return new DG.Widget(ui.divV(uiElements));
+}
+
+//name: Sentiment analysis
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function sentiment(query: string): DG.Widget {
+  const widget = new DG.Widget(ui.div([ui.loader()]));
+
+  (async () => {
+    try {
+      const res: string = await grok.functions.call('Nlp:SentimentAnalysisGPT', { text: query });
+      const fixed = res.replace(/'/g, '"');
+      const parsed = JSON.parse(fixed);;
+      ui.empty(widget.root);
+      widget.root.append(ui.tableFromMap(parsed));
+    } catch (e: any) {
+      ui.empty(widget.root);
+      widget.root.append(ui.divText(`Error: ${e.message}`, 'd4-error-text'));
+    }
+  })();
+
+  return widget;
 }
 
 //name: Sentence Embeddings

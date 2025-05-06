@@ -59,5 +59,13 @@
   "canView": [
     "All users"
   ],
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "properties": [
+    {
+      "name": "apiKey",
+      "propertyType": "string",
+      "defaultValue": "Enter ChatGPT API key",
+      "nullable": false
+    }
+  ]
 }
