@@ -198,7 +198,7 @@ class DatagrokClient:
             return
         
         if not response.headers.get('Content-Type', '').startswith('multipart/'):
-            raise Exception(f'Incorrect response type. Expected multipart but received {response.headers.get('Content-Type', '')}')
+            raise Exception(f"Incorrect response type. Expected multipart but received {response.headers.get('Content-Type', '')}")
         
         multipart_data = decoder.MultipartDecoder.from_response(response)
 
