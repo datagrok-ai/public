@@ -20,7 +20,7 @@ async function getAdmeticaContainer() {
 
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
   try {
-    const response = await fetch(path, params);
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
     return await response.json();
   } catch (error) {
     //grok.log.error(error);
@@ -31,7 +31,7 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 export async function runAdmeticaFunc(csvString: string, queryParams: string, raiseException: boolean): Promise<string | null> {
   let admeticaContainer = await getAdmeticaContainer();
 
-  const path = `http://127.0.0.1:8000/predict?models=${queryParams}&raiseException=${raiseException}`;
+  const path = `/predict?models=${queryParams}&raiseException=${raiseException}`;
   const params: RequestInit = {
     method: 'POST',
     headers: { 'Content-type': 'text/csv' },
@@ -43,7 +43,7 @@ export async function runAdmeticaFunc(csvString: string, queryParams: string, ra
   admeticaContainer = await grok.dapi.docker.dockerContainers.find(admeticaContainer.id);
   const started = admeticaContainer.status.startsWith('started') || admeticaContainer.status.startsWith('checking');
 
-  if (!response && !started)
+  if (!response || !started)
     throwError('Container failed to start.');
 
   if (!response?.success) {
