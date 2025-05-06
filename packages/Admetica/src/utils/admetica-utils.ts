@@ -180,7 +180,14 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
         let weight = model.weight;
 
         if (column) {
-          // Set the tag for the column (.vlaaivis-metadata)
+          const updatedMeta = {
+            groupName: subgroup.name,
+            weight: weight,
+            line: line,
+            sectorColor: subgroupColor
+          };
+        
+          column.setTag('.vlaaivis-metadata', JSON.stringify(updatedMeta));
         }
           
         sector.subsectors.push({
