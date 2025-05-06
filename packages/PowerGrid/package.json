@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "datagrok-tools": "latest",
-    "@datagrok/chem": "../../packages/chem",
     "@datagrok-libraries/statistics": "../../libraries/statistics",
     "@types/node": "^22.7.5",
     "@types/wu": "^2.1.44",
