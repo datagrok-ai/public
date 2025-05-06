@@ -61,7 +61,7 @@ class VlaaiVisManager {
         group = [];
         groupMap.set(meta.groupName, group);
       }
-      group.push(meta);
+      group[group.length] = meta;
     }
 
     const sectors: Sector[] = Array.from(groupMap, ([groupName, metas]) => ({
@@ -219,9 +219,11 @@ class VlaaiVisManager {
 
     const {name} = column;
     const meta = this.metadataMap.get(name) || this.metadataMap.set(name, {} as VlaaivisColumnMetadata).get(name);
+    const groupMeta = [...this.metadataMap.values()].find((m) => m.groupName === groupNode.text);
     if (!meta) return;
 
     meta.groupName = groupNode.text;
+    meta.sectorColor = groupMeta?.sectorColor;
     column.setTag(TAGS.VLAAIVIS_METADATA, JSON.stringify(meta));
     const newItem = groupNode.item(itemText);
     this.makeItemDraggable(newItem);
@@ -233,9 +235,8 @@ class VlaaiVisManager {
 
     let newGroup = this.settings.sectors?.sectors.find((sector) => sector.name === groupName);
     if (!newGroup) {
-      const column = this.columns.find((col) => col.name === groupName);
       const defaultColor = groupProps[0].object['sectorColor'];
-      const sectorColor = this.metadataMap.get(column?.name ?? '')?.sectorColor ?? defaultColor;
+      const sectorColor = this.metadataMap.get(groupName ?? '')?.sectorColor ?? defaultColor;
 
       newGroup = {
         name: groupName,
@@ -249,13 +250,14 @@ class VlaaiVisManager {
 
   private createSubsector(column?: DG.Column): Subsector {
     const name = column?.name ?? '';
-    const metadataWeight = name ? this.metadataMap.get(name)?.weight : undefined;
+    const meta = name ? this.metadataMap.get(name) : {} as VlaaivisColumnMetadata;
+    const metadataWeight = meta?.weight ?? undefined;
     const weight = typeof metadataWeight === 'number' ? metadataWeight : +this.generateRandomNumber().toFixed(1);
 
     return {
       name,
       weight,
-      line: []
+      line: meta?.line ?? []
     };
   }
 
