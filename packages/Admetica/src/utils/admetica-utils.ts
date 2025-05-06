@@ -184,7 +184,9 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
             groupName: subgroup.name,
             weight: weight,
             line: line,
-            sectorColor: subgroupColor
+            sectorColor: subgroupColor,
+            min: model.min,
+            max: model.max
           };
         
           column.setTag('.vlaaivis-metadata', JSON.stringify(updatedMeta));
