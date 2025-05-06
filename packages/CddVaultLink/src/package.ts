@@ -9,7 +9,7 @@ import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, que
 import { CDDVaultSearchType } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDD_HOST, createLinksFromIds, createObjectViewer, getAsyncResults, getAsyncResultsAsDf, reorderColummns } from './utils';
+import { CDD_HOST, createLinksFromIds, createObjectViewer, getAsyncResults, getAsyncResultsAsDf, prepareDataForDf, reorderColummns } from './utils';
 
 export const _package = new DG.Package();
 
@@ -422,6 +422,7 @@ export async function cDDVaultSearch2(vaultId: number, structure?: string, struc
   if (cddMols.data?.objects && cddMols.data?.objects.length) {
     //in case we had both protocol and structure conditions - combine results together
     const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
+    prepareDataForDf(cddMols.data?.objects);
     const df = DG.DataFrame.fromObjects(molsRes)!;
     if (!df)
       return DG.DataFrame.create();
@@ -472,6 +473,7 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
   if (cddMols.data?.objects && cddMols.data?.objects.length) {
     //in case we had both protocol and structure conditions - combine results together
     const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
+    prepareDataForDf(cddMols.data?.objects);
     const df = DG.DataFrame.fromObjects(molsRes)!;
     if (!df)
       return DG.DataFrame.create();
@@ -498,7 +500,11 @@ export async function getMolecules(vaultId: number, moleculesIds: string): Promi
     grok.shell.error(molecules.error);
     return DG.DataFrame.create();
   }
-  const df = DG.DataFrame.fromObjects(molecules.data!.objects!)!;
+  let df: DG.DataFrame | null = null;
+  if (molecules.data?.objects) {
+    prepareDataForDf(molecules.data?.objects as any[]);
+    df = DG.DataFrame.fromObjects(molecules.data.objects)!;
+  }
   if (!df)
     return DG.DataFrame.create();
   createLinksFromIds(vaultId, df);
@@ -672,7 +678,11 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
 
 
   const cddMols = await queryMolecules(vaultId, params);
-  const df = DG.DataFrame.fromObjects(cddMols.data!.objects!)!;
+  let df: DG.DataFrame | null = null;
+  if (cddMols.data?.objects) {
+    prepareDataForDf(cddMols.data?.objects as any[]);
+    df = DG.DataFrame.fromObjects(cddMols.data.objects)!;
+  }
   if (!df)
     return DG.DataFrame.create();
   if (params.fields_search) {

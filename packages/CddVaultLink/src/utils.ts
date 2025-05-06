@@ -29,7 +29,7 @@ export async function getAsyncResultsAsDf(vaultId: number, exportResponse: ApiRe
 
 const EXCLUDE_FIELDS = ['udfs', 'source_files']; 
 
-function prepareDataForDf(objects: any[]) {
+export function prepareDataForDf(objects: any[]) {
   for (let i = 0; i < objects.length; i++) {
     EXCLUDE_FIELDS.forEach((key) => delete objects[i][key]);
     if (objects[i]['batches']) {
