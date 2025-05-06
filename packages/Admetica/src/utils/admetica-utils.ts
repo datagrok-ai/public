@@ -176,8 +176,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
       const modelName = columnNames.find((name: string) => name.includes(model.name));
       if (modelName) {
         const column = table.col(modelName);
-        let line = model.line;
-        let weight = model.weight;
+        const {line, weight, min, max} = model;
 
         if (column) {
           const updatedMeta = {
@@ -185,8 +184,8 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
             weight: weight,
             line: line,
             sectorColor: subgroupColor,
-            min: model.min,
-            max: model.max
+            min: min,
+            max: max
           };
         
           column.setTag('.vlaaivis-metadata', JSON.stringify(updatedMeta));
