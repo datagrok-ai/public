@@ -14,8 +14,11 @@ import {checkSize, getCalledFuncCalls} from './utils';
 import {OutputDataFromUI, getOutput,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
+import {DiffGrok} from '../fitting-view';
+
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
+/** Monte-Carlo analyzer */
 export class RandomAnalysis {
   private dimension: number;
 
@@ -24,6 +27,7 @@ export class RandomAnalysis {
   private funcCalls: DG.FuncCall[];
   private outputsOfInterest: OutputDataFromUI[];
   private funcInputs: any[];
+  private diffGrok: DiffGrok | undefined;
 
   constructor(
     func: DG.Func,
@@ -31,6 +35,7 @@ export class RandomAnalysis {
     variedInputs: VariedNumericalInputInfo[],
     outputsOfInterest: OutputDataFromUI[],
     samplesCount: number,
+    diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -47,6 +52,7 @@ export class RandomAnalysis {
 
     this.funcCalls = [];
     this.funcInputs = [];
+    this.diffGrok = diffGrok;
 
     // create an array of funccalls
     for (let i = 0; i < samplesCount; ++i) {
@@ -63,11 +69,14 @@ export class RandomAnalysis {
     }
 
     this.outputsOfInterest = outputsOfInterest;
-  }
+  } // constructor
 
-  // Performs variance-based sensitivity analysis
+  /** Performs variance-based sensitivity analysis */
   async perform(): Promise<SensitivityAnalysisResult> {
-    //await this.run();
+    // if (this.diffGrok !== undefined) {
+    // TODO: implement computations in webworkers
+    // return ...;
+    // }
 
     this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 

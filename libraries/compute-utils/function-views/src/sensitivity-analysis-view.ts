@@ -902,7 +902,15 @@ export class SensitivityAnalysisView {
 
     const outputsOfInterest = this.getOutputsOfInterest();
 
-    const analysis = new SobolAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
+    const analysis = new SobolAnalysis(
+      options.func,
+      options.fixedInputs,
+      options.variedInputs,
+      outputsOfInterest,
+      options.samplesCount,
+      this.diffGrok,
+    );
+
     const analysisResults = await analysis.perform();
     this.closeOpenedViewers();
     const funcEvalResults = analysisResults.funcEvalResults;
@@ -1055,7 +1063,14 @@ export class SensitivityAnalysisView {
     };
 
     const outputsOfInterest = this.getOutputsOfInterest();
-    const analysis = new RandomAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
+    const analysis = new RandomAnalysis(
+      options.func,
+      options.fixedInputs,
+      options.variedInputs,
+      outputsOfInterest,
+      options.samplesCount,
+      this.diffGrok,
+    );
     const analysiResults = await analysis.perform();
     const funcEvalResults = analysiResults.funcEvalResults;
     const calledFuncCalls = analysiResults.funcCalls;

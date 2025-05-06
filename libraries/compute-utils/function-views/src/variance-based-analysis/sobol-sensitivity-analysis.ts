@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 // sobol-sensitivity-analysis.ts
 
 /* Tools that perform variance-based sensitivity analysis (VSA).
@@ -27,9 +28,11 @@ import {checkSize, getCalledFuncCalls} from './utils';
 import {getOutput, OutputDataFromUI,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
+import {DiffGrok} from '../fitting-view';
+
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
-type SobolIndeces = {
+type SobolIndices = {
   firstOrder: DG.Column,
   totalOrder: DG.Column
 };
@@ -41,6 +44,7 @@ export type ResultOfSobolAnalysis = {
   totalOrderSobolIndices: DG.DataFrame
 } & SensitivityAnalysisResult;
 
+/** Sobol sensitivity analysis */
 export class SobolAnalysis {
   private samplesCount: number;
   private dimension: number;
@@ -51,6 +55,7 @@ export class SobolAnalysis {
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
   private funcInputs: any[];
+  private diffGrok: DiffGrok | undefined;
 
   private outputsOfInterest: OutputDataFromUI[];
 
@@ -60,6 +65,7 @@ export class SobolAnalysis {
     variedInputs: VariedNumericalInputInfo[],
     outputsOfInterest: OutputDataFromUI[],
     samplesCount: number,
+    diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -106,11 +112,13 @@ export class SobolAnalysis {
       this.fixedInputs.push(inputs);
     }
 
-    this.outputsOfInterest = outputsOfInterest;
-  }
+    this.diffGrok = diffGrok;
 
-  // Returns 1-st and total order Sobol' indices.
-  private getSobolIndeces(outputColumn: DG.Column): SobolIndeces {
+    this.outputsOfInterest = outputsOfInterest;
+  } // constructor
+
+  /** Returns 1-st and total order Sobol' indices. */
+  private getSobolIndeces(outputColumn: DG.Column): SobolIndices {
     /* 1-st order and total order Sobol' indices are defined by
        the formulas (2) and (4) respectively [1]. Computations requires:
          - the variance V(Y);
@@ -173,7 +181,11 @@ export class SobolAnalysis {
 
   // Performs variance-based sensitivity analysis
   async perform(): Promise<ResultOfSobolAnalysis> {
-    //await this.run();
+    // if (this.diffGrok !== undefined) {
+    // TODO: implement computations in webworkers
+    // return ...;
+    // }
+
     this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 
     // columns with the varied inputs values
@@ -187,7 +199,7 @@ export class SobolAnalysis {
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
     // compute 1-st & total order Sobol' indices
-    const sobolIndeces: SobolIndeces[] = outputCols.map((col) => this.getSobolIndeces(col));
+    const sobolIndeces: SobolIndices[] = outputCols.map((col) => this.getSobolIndeces(col));
 
     // create dataframes with 1-st & total order Sobol' indices
 
