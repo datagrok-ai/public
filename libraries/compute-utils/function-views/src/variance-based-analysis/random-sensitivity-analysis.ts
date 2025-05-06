@@ -23,6 +23,7 @@ export class RandomAnalysis {
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
   private outputsOfInterest: OutputDataFromUI[];
+  private funcInputs: any[];
 
   constructor(
     func: DG.Func,
@@ -45,6 +46,7 @@ export class RandomAnalysis {
     );
 
     this.funcCalls = [];
+    this.funcInputs = [];
 
     // create an array of funccalls
     for (let i = 0; i < samplesCount; ++i) {
@@ -57,6 +59,7 @@ export class RandomAnalysis {
         inputs[input.prop.name] = input.column.get(i);
 
       this.funcCalls.push(func.prepare(inputs));
+      this.funcInputs.push(inputs);
     }
 
     this.outputsOfInterest = outputsOfInterest;
@@ -79,6 +82,6 @@ export class RandomAnalysis {
 
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
-    return {funcEvalResults: funcEvalResults, funcCalls: this.funcCalls};
+    return {funcEvalResults: funcEvalResults, funcInputs: this.funcInputs};
   }
 };

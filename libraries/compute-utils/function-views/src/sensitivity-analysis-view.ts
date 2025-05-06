@@ -18,6 +18,8 @@ import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/c
 import {getLookupChoiceInput} from './shared/lookup-tools';
 import {getCategoryWidget} from './fitting/fitting-utils';
 
+import {DiffGrok} from './fitting-view';
+
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -422,10 +424,14 @@ export class SensitivityAnalysisView {
   private helpIcon: HTMLElement;
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
-  private gridSubscription: any = null;
+
+  private gridSubscription: any = null; // TODO: fix subscr. like in the fitting view
+  // add gridcell ... see fitting
 
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
+
+  private diffGrok: DiffGrok | undefined = undefined;
 
   static async fromEmpty(
     func: DG.Func,
@@ -434,11 +440,13 @@ export class SensitivityAnalysisView {
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
       ranges?: Record<string, RangeDescription>,
+      diffGrok?: DiffGrok,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
       ranges: undefined,
+      diffGrok: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -455,7 +463,7 @@ export class SensitivityAnalysisView {
       v,
       options,
     );
-  }
+  } // fromEmpty
 
   constructor(
     public func: DG.Func,
@@ -466,12 +474,14 @@ export class SensitivityAnalysisView {
       configFunc?: undefined,
       inputsLookup?: string,
       ranges?: Record<string, RangeDescription>,
+      diffGrok?: DiffGrok,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
       ranges: undefined,
+      diffGrok: undefined,
     },
   ) {
     this.runButton = ui.bigButton('Run', async () => await this.runAnalysis());
@@ -511,7 +521,9 @@ export class SensitivityAnalysisView {
       helpMD.style.overflow = 'auto';
       this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
     });
-  }
+
+    this.diffGrok = options.diffGrok;
+  } // constructor
 
   private closeOpenedViewers() {
     for (const v of this.openedViewers)
@@ -529,7 +541,7 @@ export class SensitivityAnalysisView {
       this.gridSubscription.unsubscribe();
       this.gridSubscription = null;
     }
-  }
+  } // closeOpenedViewers
 
   private getFuncCallCount(analysisInputs: AnalysisProps, inputs: Record<string, SensitivityStore>): number {
     let variedInputsCount = 0;
@@ -571,7 +583,7 @@ export class SensitivityAnalysisView {
     default:
       return 0;
     }
-  }
+  } // getFuncCallCount
 
   private getFuncCallCountAsString(): string {
     if (!this.canEvaluationBeRun())
@@ -589,7 +601,7 @@ export class SensitivityAnalysisView {
       return String(Math.ceil(funcCallCount / 10000) / 100) + 'm';
 
     return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
-  }
+  } // getFuncCallCountAsString
 
   private updateRunWidgetsState(): void {
     this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
@@ -734,7 +746,7 @@ export class SensitivityAnalysisView {
       'padding-right': '4px',
     });
     return form;
-  }
+  } // buildFormWithBtn
 
   private setAnalysisInputTooltip(): void {
     let msg: string;
@@ -814,7 +826,7 @@ export class SensitivityAnalysisView {
       (propConfig as SensitivityNumericStore).max.input.setTooltip(`Max value of '${name}'`);
       (propConfig as SensitivityNumericStore).lvl.input.setTooltip(`Number of samples along the axis '${name}'`);
     }
-  }
+  } // addTooltips
 
   private isAnyInputSelected(): boolean {
     for (const propName of Object.keys(this.store.inputs)) {
@@ -944,6 +956,9 @@ export class SensitivityAnalysisView {
     this.openedViewers = this.openedViewers.concat([bChartSobol1, bChartSobolT]);
 
     this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      if (calledFuncCalls === undefined)
+        return;
+
       const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
       const scalarParams = ([...selectedRun.outputParams.values()])
@@ -1000,7 +1015,7 @@ export class SensitivityAnalysisView {
 
       grok.shell.o = overviewPanel.root;
     });
-  }
+  } // runSobolAnalysis
 
   private getFixedInputs() {
     return Object.keys(this.store.inputs).filter((propName) => {
@@ -1082,6 +1097,9 @@ export class SensitivityAnalysisView {
     this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
 
     this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      if (calledFuncCalls === undefined)
+        return;
+
       const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
       const scalarParams = ([...selectedRun.outputParams.values()])
@@ -1138,7 +1156,7 @@ export class SensitivityAnalysisView {
 
       grok.shell.o = overviewPanel.root;
     });
-  }
+  } // runRandomAnalysis
 
   private async runGridAnalysis() {
     const paramValues = Object.keys(this.store.inputs).reduce((acc, propName) => {
@@ -1343,7 +1361,7 @@ export class SensitivityAnalysisView {
 
     this.openedViewers.push(graphViewer);
     this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
-  }
+  } // runGridAnalysis
 
   private getOutputNameForScatterPlot(names: string[], table: DG.DataFrame, start: number): string {
     for (let i = start; i < names.length; ++i) {
@@ -1389,7 +1407,7 @@ export class SensitivityAnalysisView {
     }
 
     return outputsOfInterest;
-  }
+  } // getOutputsOfInterest
 
   private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<DG.IScatterPlotSettings> {
     return {
