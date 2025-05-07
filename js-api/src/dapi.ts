@@ -1198,6 +1198,8 @@ export class FileSource {
       url += `&ext=${ext}`;
     }
     const response = await fetch(url);
+    if (response.status == 204)
+      return {};
     const formData: FormData = await response.formData();
     const files: {[key: string]: any} = {};
 
