@@ -212,19 +212,11 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
   });
 
-  //need to apply filtering by cliffs on each d4-before-draw-scene since redrawing scatter plot on zoom or move resets the filter
-  let cliffsFilterApplied = false;
-  sp.onEvent('d4-before-draw-scene')
-    .subscribe((_: any) => {
-      if (!cliffsFilterApplied) {
-        if (filterCliffsButton.value) {
-          setTimeout(() => { df.filter.and(cliffsBitSet); }, 100);
-          cliffsFilterApplied = true;
-        }
-      } else {
-        cliffsFilterApplied = false;
-      }
-    });
+  df.onRowsFiltering.subscribe(() => {
+    if (filterCliffsButton.value) {
+      df.filter.and(cliffsMetrics.cliffsBitSet);
+    }
+  });
 
 
   //closing docked grid when viewer is closed
@@ -474,19 +466,12 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     filterCliffsButton.enabled = s !== '' ? s !== axesNames[0] ? false : true : true;
   });
 
-  //need to apply filtering by cliffs on each d4-before-draw-scene since redrawing scatter plot on zoom or move resets the filter
-  let cliffsFilterApplied = false;
-  sp.onEvent('d4-before-draw-scene')
-    .subscribe((_: any) => {
-      if (!cliffsFilterApplied) {
-        if (filterCliffsButton.value) {
-          setTimeout(() => { df.filter.and(cliffsMetrics.cliffsBitSet); }, 100);
-          cliffsFilterApplied = true;
-        }
-      } else {
-        cliffsFilterApplied = false;
-      }
-    });
+
+  df.onRowsFiltering.subscribe(() => {
+    if (filterCliffsButton.value) {
+      df.filter.and(cliffsMetrics.cliffsBitSet);
+    }
+  });
 
 
   //closing docked grid when viewer is closed
