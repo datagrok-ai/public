@@ -7,7 +7,8 @@ import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment, TAB_ID} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
 import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
-import { configIcon, getUserConfigsFromDocker, KEY, settingsIcon, STORAGE_NAME } from './config-utils';
+import {configIcon, getUserConfigsFromDocker, KEY, STORAGE_NAME, syncConfig} from './config-utils';
+import { CONFIGS_PATH } from './const';
 
 export const _package = new DG.Package();
 const DEMO_MOLECULE = 'demo_molecule';
@@ -16,24 +17,36 @@ const DEMO_MOLECULE = 'demo_molecule';
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * 1
 //input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
-//input: string configName
+//input: string configDir
 //output: string paths
-export async function calculateRetroSynthesisPaths(molecule: string, configName?: string): Promise<string> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-  const startTime = performance.now();
-  const currentUser = await grok.dapi.users.current();
-  const userId = currentUser.id;
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
-    method: 'POST',
-    body: JSON.stringify({smiles: molecule, user_id: userId, config_name: configName}),
-    headers: {'Content-Type': 'application/json'},
-  });
-  console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
-  const resJson = await response.json();
-  if (!resJson['success'])
-    throw new Error(`Error occured during paths generation: ${resJson['error']}`);
-
-  return resJson['result'];
+export async function calculateRetroSynthesisPaths(molecule: string, configDir?: string): Promise<string> {
+  let progressBar: DG.TaskBarProgressIndicator | null = null;
+  try {
+    const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
+    if (configDir) {
+      const syncStartTime = performance.now();
+      progressBar = DG.TaskBarProgressIndicator.create(`Config synchronization in progress...`);
+      await syncConfig(`${CONFIGS_PATH}/${configDir}`);
+      console.log(`Synchronized ${CONFIGS_PATH}/${configDir} in ${performance.now() - syncStartTime} ms`);
+      progressBar.close();
+    }
+    const startTime = performance.now();
+    progressBar = DG.TaskBarProgressIndicator.create(`Calculating retrosynthesis paths...`);
+    const currentUser = await grok.dapi.users.current();
+    const userId = currentUser.id;
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
+      method: 'POST',
+      body: JSON.stringify({smiles: molecule, user_id: userId, config_dir: `${CONFIGS_PATH}/${configDir}`}),
+      headers: {'Content-Type': 'application/json'},
+    });
+    console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
+    const resJson = await response.json();
+    if (!resJson['success'])
+      throw new Error(`Error occured during paths generation: ${resJson['error']}`);
+    return resJson['result'];
+  } finally {
+    progressBar?.close();
+  }
 }
 
 
@@ -63,11 +76,11 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
   if (molecule !== DEMO_MOLECULE) {
     try {
       const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-        {molecule: molecule, configName: configName ?? ''});
+        {molecule: molecule, configDir: configName ?? ''});
       const reactionData: ReactionData = JSON.parse(result);
       paths = reactionData?.data?.[0]?.trees;
     } catch (e: any) {
-      return new DG.Widget(ui.divText(e));
+      return new DG.Widget(ui.divText(e?.message ?? e));
     }
   } else
     paths = DEMO_DATA;
@@ -77,7 +90,7 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
       const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
       let currentTreeObjId: string | null = null;
       const tabControl = createPathsTreeTabs(paths, pathsObjects, false);
-      const settings = configIcon(configName);
+      const settings = configIcon();
       const addToWorkSpace = ui.icons.add(() => {
         if (currentTreeObjId) {
           const df = DG.DataFrame.fromObjects(pathsObjects[currentTreeObjId]);
