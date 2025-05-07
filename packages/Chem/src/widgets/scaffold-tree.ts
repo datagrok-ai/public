@@ -1551,7 +1551,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.fragmentsColumn.name = columnName;
     }
 
-    this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
+    this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
 
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
     if (isNewColumn && gridColorColumn)
