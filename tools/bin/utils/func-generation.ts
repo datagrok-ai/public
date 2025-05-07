@@ -14,7 +14,7 @@ export enum FUNC_TYPES {
   APP = 'app',
   CELL_RENDERER = 'cellRenderer',
   FILE_EXPORTER = 'fileExporter',
-  FILE_IMPORTER = 'file-handler',
+  FILE_HANDLER = 'file-handler',
   FILE_VIEWER = 'fileViewer',
   SETTINGS_EDITOR = 'packageSettingsEditor',
   VIEWER = 'viewer',
@@ -61,7 +61,7 @@ export const typesToAnnotation : Record<string, string> = {
 /** Generates an annotation header for a function based on provided metadata. */
 export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', sep: string = '\n'): string {
   const isFileViewer = data.tags?.includes(FUNC_TYPES.FILE_VIEWER) ?? false;
-  const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_IMPORTER) ?? false;
+  const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_HANDLER) ?? false;
   let s = '';
   if (data.name)
     s += `${comment}name: ${data.name}${sep}`;
@@ -169,9 +169,9 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     },
     genFunc: generateFunc,
   },
-  fileImporter: {
+  fileHandler: {
     metadata: {
-      tags: [FUNC_TYPES.FILE_IMPORTER],
+      tags: [FUNC_TYPES.FILE_HANDLER],
       inputs: [{ name: 'content', type: 'string' }],
       outputs: [{ name: 'tables', type: 'list' }],
     },

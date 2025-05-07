@@ -135,6 +135,16 @@ export namespace decorators {
     order?: string
   }
 
+  interface FileViewerOptions extends FunctionOptions{
+    fileViewer: string;
+    fileViewerCheck?: string;
+  }
+  
+  interface FileHandlerOptions extends FunctionOptions{
+    ext: string;
+    fileViewerCheck?: string;
+  }
+
   export function func(config: FunctionOptions) {
     return function (
       target: any,
@@ -232,6 +242,30 @@ export namespace decorators {
   }
 
   export function converter(config: FunctionOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function fileViewer(config: FileViewerOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function fileExporter(config: FunctionOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function fileHandler(config: FileHandlerOptions) {
     return function (
       target: any,
       propertyKey: string,
