@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
-import {AiZynthFinderViewer} from './aizynthfinder-viewer';
 import {createPathsTreeTabs, isFragment, TAB_ID} from './utils';
 import {ReactionData, Tree} from './aizynth-api';
 import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
@@ -133,14 +132,6 @@ export async function retroSynthesisPath(molecule: string): Promise<DG.Widget> {
   }
 }
 
-
-//name: Retrosynthesis Viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: files/icons/chem-similarity-search-viewer.svg
-export function retrosynthesisViewer(): AiZynthFinderViewer {
-  return new AiZynthFinderViewer();
-}
 
 //name: retrosynthesisTopMenu
 export function retrosynthesisTopMenu(): void {
