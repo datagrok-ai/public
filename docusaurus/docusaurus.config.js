@@ -39,7 +39,7 @@ const config = {
                 readme: '../help/develop/packages/js-api.md',
                 mergeReadme: true,
                 entryFileName: "index",
-                out: './js-api',
+                out: './api/js',
                 indexFormat: "table",
                 parametersFormat: "table",
                 propertiesFormat: "table",
@@ -93,10 +93,10 @@ const config = {
         [
             '@docusaurus/plugin-content-docs',
             {
-                sidebarPath: require.resolve('./typedoc-sidebar.js'),
+                sidebarPath: require.resolve('./api/api-sidebar.js'),
                 id: 'api',
-                path: './js-api',
-                routeBasePath: '/js-api',
+                path: './api',
+                routeBasePath: '/api',
             }
         ],
     ],
@@ -142,7 +142,7 @@ const config = {
                     label: 'Help',
                 },
                 {
-                    to: 'js-api',
+                    to: 'api',
                     label: 'API',
                     position: 'left',
                 },

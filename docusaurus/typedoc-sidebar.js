@@ -21,7 +21,16 @@ const sidebars = {
                 type: 'doc',
                 id: 'index',
             },
-            items: require('./js-api/typedoc-sidebar.cjs'),
+            items: require('./api/js/typedoc-sidebar.cjs'),
+        },
+        {
+            type: 'category',
+            label: 'Python API',
+            link: {
+                type: 'doc',
+                id: 'index',
+            },
+            items: require('./api/py/typedoc-sidebar.cjs'),
         },
     ],
 };

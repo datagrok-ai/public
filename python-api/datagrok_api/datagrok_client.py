@@ -12,23 +12,39 @@ import shutil
 from .group import Group, GroupMembershipRequest 
 
 class DatagrokClient:
+    """A client for interacting with the Datagrok API.
+    
+    This class provides methods to interact with various Datagrok services including:
+    - Table operations (download/upload)
+    - File operations (download/upload/sync)
+    - Dashboard management
+    - Group management
+    - Function calls
+    
+    The client handles authentication and provides a convenient interface for making
+    API calls to the Datagrok server.
+    
+    Attributes
+    ----------
+    api_key : str
+        The API key used for authentication. Should start with "Bearer".
+    base_url : str
+        The base URL of the Datagrok API (e.g., "https://public.datagrok.ai/api")
+    headers : Dict[str, str]
+        HTTP headers used for authentication in API requests
+    """
+    
     def __init__(self, api_key: str, base_url: str) -> None:
-        '''
-        Create a datagrok api client.
-
+        """Initialize a new DatagrokClient instance.
+        
         Parameters
         ----------
-        api_key: str
-            Api key for a client. Can be obtained from user profile page.
-            Starts with "Bearer".
-        base_url: str
-            Url of datagrok API. For example, "https://public.datagrok.ai/api"
-        
-        Returns
-        -------
-        DatagrokClient
-            New instance of Datagrok Client
-        '''
+        api_key : str
+            API key for authentication. Can be obtained from user profile page.
+            Should start with "Bearer".
+        base_url : str
+            Base URL of the Datagrok API (e.g., "https://public.datagrok.ai/api")
+        """
         self.api_key = api_key
         self.base_url = base_url
         self.headers = {
@@ -62,8 +78,7 @@ class DatagrokClient:
         Parameters
         ----------
         name: str
-            Name for new table.
-            If in grok format, can also specify project and namespace.
+            Name for new table. If in grok format, can also specify project and namespace.
         dataframe: pandas.Dataframe
             table data to save
 
@@ -79,8 +94,7 @@ class DatagrokClient:
         return response.json()
 
     def download_file(self, connector: str, path: str) -> Union[pd.DataFrame, bytes]:
-        '''
-        Download a file from Datagrok.
+        '''Download a file from Datagrok.
 
         Parameters
         ----------
@@ -143,24 +157,12 @@ class DatagrokClient:
         ext: str, optional
             A file extension filter to limit the types of files to sync. If not specified, all files are synced.
 
-        recursive: bool, optional, default=True
+        recursive: bool
             Whether to sync the directory recursively, including subdirectories. If False, only files in the root of the directory are synced.
 
         sync_meta_file: str, optional, default=".sync_meta.json"
             The name of the metadata file that stores the eTags and sync information for the files. This file is used to track the current 
             state of the local directory and should be present for syncing to work correctly.
-
-        Raises
-        ------
-        Exception
-            If the server response does not contain a multipart body when expected.
-
-        Notes
-        -----
-        - If the server returns a `204 No Content` response, it indicates the folder is empty on the remote, so the local directory
-            will be cleared and the sync metadata will be updated accordingly.
-        - If a file is marked as "deleted" on the remote server, it will be removed from the local directory.
-        - The function uses multipart responses for efficient file transfer and parsing of updates.
         """
         os.makedirs(dir, exist_ok=True)
         sync_meta_file_path = Path(dir, sync_meta_file)
@@ -261,23 +263,22 @@ class DatagrokClient:
         self._request('GET', endpoint, params=params)
 
     def create_dashboard(self, name: str, table_ids: str, layout_filename: Optional[str] = None) -> Dict[str, Any]:
-        '''
-        Creates a dashboard.
-
+        """Create a new dashboard in Datagrok.
+        
         Parameters
         ----------
-        name: str
-            Name for new dashboard.
-        table_ids: str
-            Comma-separated list of table ids
-        layout_filename: Optional[str]
-            Optional. Filename for a project layout.
-
+        name : str
+            Name for the new dashboard
+        table_ids : str
+            Comma-separated list of table IDs to include in the dashboard
+        layout_filename : Optional[str]
+            Optional path to a JSON file containing the dashboard layout
+            
         Returns
         -------
         Dict[str, Any]
-            Identifiers of a project.
-        '''
+            Dictionary containing the dashboard identifiers and metadata
+        """
         name = name.replace(':', '.')
         table_ids = table_ids.replace(':', '.')
         endpoint = f"/public/v1/dashboards/{name}/{table_ids}"
@@ -290,21 +291,20 @@ class DatagrokClient:
         return response.json()
 
     def call_function(self, name: str, invocation_parameters: Dict[str, Any]) -> Any:
-        '''
-        Performs a call of datagrok function.
-
+        """Call a Datagrok function with the specified parameters.
+        
         Parameters
         ----------
-        name: str
-            Function name.
-        invocation_parameters: Dict[str, Any]
-            Dict with parameter values for function call.
-
+        name : str
+            Name of the function to call
+        invocation_parameters : Dict[str, Any]
+            Dictionary of parameters to pass to the function
+            
         Returns
         -------
         Any
-            Result of invocation: either a single value or a list or outputs.
-        '''
+            The result of the function call
+        """
         name = name.replace(':', '.')
         endpoint = f"/public/v1/{name}/call"
         response = self._request('POST', endpoint, json=invocation_parameters, content_type="application/json")
@@ -312,25 +312,24 @@ class DatagrokClient:
 
     def list_groups(self, smart_filter: Optional[str] = None, include_personal: bool = False, 
                    include_members: bool = False, include_memberships: bool = False) -> List[Group]:
-        '''
-        Lists user groups from Datagrok.
-
+        """List groups from Datagrok with optional filtering and inclusion of related data.
+        
         Parameters
         ----------
-        smart_filter: Optional[str]
-            Optional. Smart search filter.
-        include_personal: bool
-            Optional. Include also personal groups. 
-        include_members: bool
-            Optional. Include group members. 
-        include_memberships: bool
-            Optional. Include group memberships.          
-
+        smart_filter : Optional[str]
+            Optional smart search filter to apply
+        include_personal : bool, default=False
+            Whether to include personal groups in the results
+        include_members : bool, default=False
+            Whether to include group members in the results
+        include_memberships : bool, default=False
+            Whether to include group memberships in the results
+            
         Returns
         -------
         List[Group]
-            A list of Group instances.
-        '''
+            List of Group instances matching the criteria
+        """
         personal = str(include_personal).lower()
         smart_filter = smart_filter or f"personal={personal}"
         if smart_filter and not smart_filter.endswith(f"personal={personal}"):
@@ -353,19 +352,18 @@ class DatagrokClient:
         return [Group(self, **group_data) for group_data in response.json()]
     
     def lookup_groups(self, query: str) -> List[Group]:
-        '''
-        Looks up groups from Datagrok by name.
-
+        """Search for groups by name.
+        
         Parameters
         ----------
-        query: str
-            Query string to match groups by name.
-
+        query : str
+            Search query to match against group names
+            
         Returns
         -------
         List[Group]
-            A list of Group instances that match the query.
-        '''
+            List of Group instances matching the search query
+        """
         params = {"query": query}
         endpoint = "/public/v1/groups/lookup"
         response = self._request('GET', endpoint, params=params)
@@ -373,40 +371,38 @@ class DatagrokClient:
         return [Group(self, **group_data) for group_data in response.json()]
 
     def get_group(self, group_id: str) -> Group:
-        '''
-        Retrieves the details of a specific group by its ID. Includes group members and memberships.
-
+        """Get detailed information about a specific group.
+        
         Parameters
         ----------
-        group_id: str
-            The ID of the group to retrieve details for.
-
+        group_id : str
+            ID of the group to retrieve
+            
         Returns
         -------
         Group
-            A Group instance containing the details of the group.
-        '''
+            Group instance with detailed information
+        """
         endpoint = f"/public/v1/groups/{group_id}"
         response = self._request('GET', endpoint)
         return Group(self, **response.json())
     
     def get_group_members(self, group_id: str, admin: Optional[bool] = None) -> List[Group]:
-        '''
-        Retrieves the members of a specific group by its ID.
-
+        """Get members of a specific group.
+        
         Parameters
         ----------
-        group_id: str
-            The ID of the group to retrieve members for.
-        admin: Optional[bool]
-            If set to True, only admin members will be included. If False, only non-admin members will be included.
-            If not provided, only non-admin members are included.
-
+        group_id : str
+            ID of the group to get members for
+        admin : Optional[bool]
+            If True, returns only admin members. If False, returns only non-admin members.
+            If None, returns all members.
+            
         Returns
         -------
         List[Group]
-            A list of Group instances representing the members of the group.
-        '''
+            List of Group instances representing the members
+        """
         endpoint = f"/public/v1/groups/{group_id}/members"
         params = {}
         if admin is not None:
@@ -415,22 +411,21 @@ class DatagrokClient:
         return [Group(self, **group_data) for group_data in response.json()]
 
     def get_group_memberships(self, group_id: str, admin: Optional[bool] = None) -> List[Group]:
-        '''
-        Retrieves the memberships of a specific group by its ID.
-
+        """Get memberships of a specific group.
+        
         Parameters
         ----------
-        group_id: str
-            The ID of the group to retrieve members for.
-        admin: Optional[bool]
-            If set to True, only admin memberships will be included. If False, only non-admin memberships will be included.
-            If not provided, only non-admin memberships are included.
-
+        group_id : str
+            ID of the group to get memberships for
+        admin : Optional[bool]
+            If True, returns only admin memberships. If False, returns only non-admin memberships.
+            If None, returns all memberships.
+            
         Returns
         -------
         List[Group]
-            A list of Group instances representing the members of the group.
-        '''
+            List of Group instances representing the memberships
+        """
         endpoint = f"/public/v1/groups/{group_id}/memberships"
         params = {}
         if admin is not None:
@@ -439,103 +434,87 @@ class DatagrokClient:
         return [Group(self, **group_data) for group_data in response.json()]
 
     def request_group_membership(self, group_id: str) -> GroupMembershipRequest:
-        '''
-        Submits a request to join a specific group by its ID.
-
+        """Request membership in a group.
+        
         Parameters
         ----------
-        group_id: str
-            The ID of the group to request membership for.
-
+        group_id : str
+            ID of the group to request membership for
+            
         Returns
         -------
         GroupMembershipRequest
-            The created membership request.
-        '''
+            The created membership request
+        """
         endpoint = f"/public/v1/groups/{group_id}/request"
         response = self._request('POST', endpoint)
         return GroupMembershipRequest(self, **response.json())
 
     def get_group_membership_requests(self, group_id: str) -> List[GroupMembershipRequest]:
-        '''
-        Retrieves a list of membership requests for a specific group.
-
+        """Get pending membership requests for a group.
+        
         Parameters
         ----------
-        group_id: str
-            The ID of the group to retrieve membership requests for.
-
+        group_id : str
+            ID of the group to get membership requests for
+            
         Returns
         -------
         List[GroupMembershipRequest]
-            A list of GroupMembershipRequest instances representing the requests for the group.
-        '''
+            List of pending membership requests
+        """
         endpoint = f"/public/v1/groups/{group_id}/requests"
         response = self._request('GET', endpoint)
         return [GroupMembershipRequest(self, **request_data) for request_data in response.json()]
     
     def approve_membership_request(self, request_id: str) -> None:
-        """
-        Approve a membership request for a group.
-
+        """Approve a membership request.
+        
         Parameters
         ----------
-        request_id: str
-            The ID of the membership request to approve.
-
-        Returns
-        -------
-        None
-            This method performs an approval action and does not return anything.
+        request_id : str
+            ID of the membership request to approve
         """
         endpoint = f"/public/v1/groups/requests/{request_id}/approve"
         self._request('POST', endpoint)
     
     def deny_membership_request(self, request_id: str) -> None:
-        """
-        Deny a membership request for a group.
-
+        """Deny a membership request.
+        
         Parameters
         ----------
-        request_id: str
-            The ID of the membership request to deny.
-
-        Returns
-        -------
-        None
-            This method performs a denial action and does not return anything.
+        request_id : str
+            ID of the membership request to deny
         """
         endpoint = f"/public/v1/groups/requests/{request_id}/deny"
         self._request('POST', endpoint)
 
     def get_current_user_group(self) -> Group:
-        """
-        Get the current user's group. Includes members and memberships
-
+        """Get the current user's group.
+        
         Returns
         -------
         Group
-            The current user's group instance.
+            Group instance representing the current user's group
         """
         endpoint = "/public/v1/user/group"
         response = self._request('GET', endpoint)
         return Group(self, **response.json())
 
     def save_group(self, group: Group, save_relations: bool = False) -> Group:
-        """
-        Saves or updates group.
-
+        """Save or update a group.
+        
         Parameters
         ----------
-        group: Group
-            The group to save or update.
-        save_relations: bool
-            Whether to save group relations (members and memberships).
-
+        group : Group
+            The group to save or update
+        save_relations : bool, default=False
+            Whether to save group relations (members and memberships)
+            
         Returns
         -------
         Group
-            The saved group instance.
+            The saved group instance
         """
         group.ensure_id() 
         endpoint = "/public/v1/groups"
@@ -543,24 +522,28 @@ class DatagrokClient:
         return Group(self, **response.json())
     
     def _request(self, method: str, endpoint: str, content_type: str = "application/json", **kwargs: Any) -> requests.Response:
-        """
-        Internal method to make HTTP requests to the Datagrok API.
-
+        """Make an HTTP request to the Datagrok API.
+        
         Parameters
         ----------
-        method: str
+        method : str
             HTTP method to use (GET, POST, etc.)
-        endpoint: str
+        endpoint : str
             API endpoint to call
-        content_type: str
+        content_type : str, default="application/json"
             Content type for the request
-        **kwargs: Any
+        **kwargs : Any
             Additional arguments to pass to requests.request
-
+            
         Returns
         -------
         requests.Response
             The response from the API
+            
+        Raises
+        ------
+        Exception
+            If the API returns an error or if the response is not successful
         """
         url = f"{self.base_url}{endpoint}"
         headers = self.headers.copy()
@@ -576,6 +559,20 @@ class DatagrokClient:
         return response
     
     def _list_files_unix_style(self, root_dir: str, excludes: set = None) -> list[str]:
+        """List files in a directory using Unix-style paths.
+        
+        Parameters
+        ----------
+        root_dir : str
+            Root directory to list files from
+        excludes : set, optional
+            Set of file paths to exclude from the listing
+            
+        Returns
+        -------
+        list[str]
+            List of file paths relative to the root directory
+        """
         root = Path(root_dir)
 
         if excludes is None:
@@ -591,6 +588,13 @@ class DatagrokClient:
         return files
 
     def _clear_directory(self, path: str):
+        """Remove all files and subdirectories from a directory.
+        
+        Parameters
+        ----------
+        path : str
+            Path to the directory to clear
+        """
         dir_path = Path(path)
         for item in dir_path.iterdir():
             if item.is_file() or item.is_symlink():
