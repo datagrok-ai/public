@@ -181,7 +181,7 @@ def generate_sidebar(output_path, modules_info: dict):
             for cls in module_classes:
                 classes_category["items"].append({
                     "type": "doc",
-                    "id": f"py/{py_file}/classes/{cls["name"]}",
+                    "id": f"py/{py_file}/classes/{cls['name']}",
                     "label": cls["name"]
                 })
             category["items"].append(classes_category)
@@ -195,7 +195,7 @@ def generate_sidebar(output_path, modules_info: dict):
             for func in module_functions:
                 func_category["items"].append({
                     "type": "doc",
-                    "id": f"py/{py_file}/functions/{func["name"]}",
+                    "id": f"py/{py_file}/functions/{func['name']}",
                     "label": func["name"]
                 }) 
             category["items"].append(func_category) 
@@ -244,7 +244,7 @@ def generate_docs(src_dir, output_dir):
            continue 
         module_md = [
             f"# {py_file}\n\n",
-            f"{modules_info[py_file]["module_doc"] or '-'}\n\n"
+            f"{modules_info[py_file]['module_doc'] or '-'}\n\n"
         ]
 
         if module_classes:
