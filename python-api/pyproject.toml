@@ -18,6 +18,12 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+dependencies = [
+  "pandas",
+  "requests",
+  "requests_toolbelt"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["datagrok_api"]
 
@@ -30,12 +36,6 @@ exclude = [
   "docs/**",
   "tests/**",
   "venv/**"
-]
-
-dependencies = [
-  "pandas",
-  "requests",
-  "requests_toolbelt"
 ]
 
 [project.optional-dependencies]
