@@ -40,25 +40,22 @@ export function _MultiCurveViewer() {
 //name: Curve fitting
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
 //meta.demoPath: Curves | Curve Fitting
-export function _curveFitDemo() {
+export async function curveFitDemo() {
   return PackageFunctions.curveFitDemo();
 }
-
 
 //name: Assay Plates
 //description: Assasy plates with concentration, layout and readout data
 //meta.demoPath: Curves | Assay Plates
-export function _assayPlatesDemo() {
+export async function assayPlatesDemo() {
   return PackageFunctions.assayPlatesDemo();
 }
 
-
 //name: _initCurves
 //tags: init
-export function __initCurves() {
+export function _initCurves() {
   return PackageFunctions._initCurves();
 }
-
 
 //name: addStatisticsColumn
 //tags: Transform
@@ -68,10 +65,9 @@ export function __initCurves() {
 //input: string seriesName 
 //input: double seriesNumber 
 //input: string newColName 
-export function _addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName: string) {
+export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName: string) {
   return PackageFunctions.addStatisticsColumn(df, colName, propName, seriesName, seriesNumber, newColName);
 }
-
 
 //name: addAggrStatisticsColumn
 //tags: Transform
@@ -79,20 +75,18 @@ export function _addStatisticsColumn(df: DG.DataFrame, colName: string, propName
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
-export function _addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string) {
+export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string) {
   return PackageFunctions.addAggrStatisticsColumn(df, colName, propName, aggrType);
 }
-
 
 //name: platesFolderPreview
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
 //output: widget result
-export function _platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
   return PackageFunctions.platesFolderPreview(folder, files);
 }
-
 
 //name: previewPlate
 //tags: fileViewer
@@ -100,10 +94,9 @@ export function _platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) 
 //output: view result
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
-export function _previewPlate(file: DG.FileInfo) {
+export function previewPlate(file: DG.FileInfo) {
   return PackageFunctions.previewPlate(file);
 }
-
 
 //name: importPlate
 //tags: file-handler
@@ -111,74 +104,66 @@ export function _previewPlate(file: DG.FileInfo) {
 //output: list<dataframe> result
 //meta.ext: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
-export function _importPlate(fileContent: string) {
+export async function importPlate(fileContent: string) {
   return PackageFunctions.importPlate(fileContent);
 }
-
 
 //name: importPlateXlsx
 //tags: file-handler
 //input: blob fileContent 
 //meta.ext: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
-export function _importPlateXlsx(fileContent: Uint8Array) {
+export async function importPlateXlsx(fileContent: Uint8Array) {
   return PackageFunctions.importPlateXlsx(fileContent);
 }
 
-
-//name: previewPlateXlsx
+//name: viewPlateXlsx
 //tags: fileViewer
 //input: file file 
 //output: view result
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
-export function _previewPlateXlsx(file: DG.FileInfo) {
+export async function previewPlateXlsx(file: DG.FileInfo) {
   return PackageFunctions.previewPlateXlsx(file);
 }
-
 
 //name: checkExcelIsPlate
 //input: blob content 
 //output: bool result
-export function _checkExcelIsPlate(content: Uint8Array) {
+export async function checkExcelIsPlate(content: Uint8Array) {
   return PackageFunctions.checkExcelIsPlate(content);
 }
-
 
 //name: checkFileIsPlate
 //input: string content 
 //output: bool result
-export function _checkFileIsPlate(content: string) {
+export function checkFileIsPlate(content: string) {
   return PackageFunctions.checkFileIsPlate(content);
 }
-
 
 //name: Browse
 //tags: app
 //output: view result
 //meta.browsePath: Plates
-export function _platesApp() {
+export function platesApp() {
   return PackageFunctions.platesApp();
 }
 
-
 //name: platesAppTreeBrowser
 //input: dynamic treeNode 
-export function _platesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   return PackageFunctions.platesAppTreeBrowser(treeNode);
 }
-
 
 //name: getPlateByBarcode
 //input: string barcode 
 //output: dynamic result
-export function _getPlateByBarcode(barcode: string) {
+export async function getPlateByBarcode(barcode: string) {
   return PackageFunctions.getPlateByBarcode(barcode);
 }
 
-
 //name: createDummyPlateData
-export function _createDummyPlateData() {
+export async function createDummyPlateData() {
   return PackageFunctions.createDummyPlateData();
 }
 

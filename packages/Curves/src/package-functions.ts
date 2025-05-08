@@ -106,12 +106,7 @@ export class PackageFunctions {
       });
     df.columns.insert(column, chartColumn.idx);
   }
-
-  //name: platesFolderPreview
-  //tags: folderViewer
-  //input: file folder
-  //input: list<file> files
-  //output: widget res
+  
   @grok.decorators.folderViewer({})
   static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
     const nameLowerCase = folder.name?.toLowerCase();
@@ -120,11 +115,6 @@ export class PackageFunctions {
     return getPlatesFolderPreview(files);
   }
 
-
-  //meta.fileViewer: txt
-  //meta.fileViewerCheck: Curves:checkFileIsPlate
-  //input: file file
-  //output: view result
   @grok.decorators.fileViewer({  fileViewer: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate' })
   static previewPlate(file: DG.FileInfo): DG.View {
     const view = DG.View.create();
@@ -137,13 +127,7 @@ export class PackageFunctions {
     });
     return view;
   }
-
-  //name: importPlate
-  //tags: file-handler
-  //meta.ext: txt
-  //meta.fileViewerCheck: Curves:checkFileIsPlate
-  //input: string fileContent
-  //output: list tables
+  
   @grok.decorators.fileHandler({ ext: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate' })
   static async importPlate(fileContent: string): Promise<DG.DataFrame[]> {
     const plate = PlateReader.read(fileContent);
@@ -155,13 +139,7 @@ export class PackageFunctions {
     grok.shell.addView(view);
     return [];
   }
-
-  //name: importPlateXlsx
-  //tags: file-handler
-  //meta.ext: xlsx
-  //meta.fileViewerCheck: Curves:checkExcelIsPlate
-  //input: blob fileContent
-  //output: list tables
+  
   @grok.decorators.fileHandler({ outputs:[], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate' })
   static async importPlateXlsx(fileContent: Uint8Array) : Promise<any[]> {
     const view = DG.View.create();
@@ -171,13 +149,8 @@ export class PackageFunctions {
     grok.shell.addView(view);
     return [];
   }
-
-  //name: viewPlateXlsx
-  //meta.fileViewer: xlsx
-  //meta.fileViewerCheck: Curves:checkExcelIsPlate
-  //input: file file
-  //output: view result
-  @grok.decorators.fileViewer({ fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate' })
+  
+  @grok.decorators.fileViewer({ name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate' })
   static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
     const view = DG.View.create();
     view.name = file.friendlyName;
@@ -185,10 +158,7 @@ export class PackageFunctions {
     view.root.appendChild(PlateWidget.analysisView(plate).root);
     return view;
   }
-
-  //name checkExcelIsPlate
-  //input: blob content
-  //output: bool isPlate
+  
   @grok.decorators.func({ })
   static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
@@ -210,10 +180,7 @@ export class PackageFunctions {
     } else
       return await Plate.fromExcel(content, name);
   }
-
-  //name: checkFileIsPlate
-  //input: string content
-  //output: bool isPlate
+  
   @grok.decorators.func({ })
   static checkFileIsPlate(content: string): boolean {
     if (content.length > 1_000_000)
@@ -221,26 +188,16 @@ export class PackageFunctions {
     return PlateReader.getReader(content) != null;
   }
 
-
-  //name: Browse
-  //tags: app
-  //meta.browsePath: Plates
-  //output: view result
   @grok.decorators.app({ name: 'Browse', browsePath: 'Plates'})
   static platesApp() : any {
     return platesAppView();
   }
-
-  //input: dynamic treeNode
-  //input: view browseView
+  
   @grok.decorators.func({ })
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }
-
-  //name: getPlateByBarcode
-  //input: string barcode
-  //output: dynamic plate
+  
   @grok.decorators.func({ })
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
@@ -248,10 +205,8 @@ export class PackageFunctions {
     return Plate.fromDbDataFrame(df);
   }
 
-  //name: createDummyPlateData
   @grok.decorators.func({ })
   static async createDummyPlateData() : Promise<void> {
     await __createDummyPlateData();
   }
-
 }

@@ -215,7 +215,7 @@ export class PlateWidget extends DG.Widget {
     // add statistics columns
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
       const params = {df: df, colName: curveCol.name, propName: statName, seriesName: 'series 0', seriesNumber: 0, newColName: alias};
-      DG.Func.find({name: '_addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
+      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
     });
     if (actualStatNames['interceptX'])
       df.col(actualStatNames['interceptX']) && (df.col(actualStatNames['interceptX'])!.meta.format = 'scientific');

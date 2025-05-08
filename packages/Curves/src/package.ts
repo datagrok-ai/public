@@ -1,22 +1,3 @@
-import {_previewPlateXlsx} from './package.g';
-import {_importPlateXlsx} from './package.g';
-import {_importPlate} from './package.g';
-import {_previewPlate} from './package.g';
-import {_platesFolderPreview} from './package.g';
-import {_assayPlatesDemo} from './package.g';
-import {__initCurves} from './package.g';
-import {_curveFitDemo} from './package.g';
-import {_PlateGridCellRenderer} from './package.g';
-import {_createDummyPlateData} from './package.g';
-import {_getPlateByBarcode} from './package.g';
-import {_platesAppTreeBrowser} from './package.g';
-import {_platesApp} from './package.g';
-import {_checkFileIsPlate} from './package.g';
-import {_checkExcelIsPlate} from './package.g';
-import {_addAggrStatisticsColumn} from './package.g';
-import {_addStatisticsColumn} from './package.g';
-import {_MultiCurveViewer} from './package.g';
-import {_FitChartCellRenderer} from './package.g';
 
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
@@ -131,22 +112,5 @@ export function autostart() {
 
 
 }
-export {_FitChartCellRenderer};
-export {_MultiCurveViewer};
-export {_addStatisticsColumn};
-export {_addAggrStatisticsColumn}; 
-export {_checkExcelIsPlate};
-export {_checkFileIsPlate};
-export {_platesApp};
-export {_platesAppTreeBrowser};
-export {_getPlateByBarcode};
-export {_createDummyPlateData};
-export {_PlateGridCellRenderer};
-export {_curveFitDemo};
-export {__initCurves};
-export {_assayPlatesDemo};
-export {_platesFolderPreview};
-export {_previewPlate};
-export {_importPlate};
-export {_importPlateXlsx};
-export {_previewPlateXlsx};
+
+export * from './package.g';
