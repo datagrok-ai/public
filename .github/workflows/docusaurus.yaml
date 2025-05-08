@@ -127,6 +127,7 @@ jobs:
             sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
             sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
           fi
+          chmod +x ./generate_docs_py.sh
           npm run build > ../help/_docusaurus_build.txt 2>&1
           cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
