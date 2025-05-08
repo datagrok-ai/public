@@ -237,8 +237,7 @@ To add a new column, on the **Top Menu**, click the **Add new column** (![Add ne
 icon. This opens a dialog where you can specify a column name, type, and
 formula, as applicable.  
 
-For more details, including formula syntax, read [Add new
-column](../../transform/add-new-column.md) or watch [this video](https://youtu.be/4_NS3q7uvjs?si=yGXl0Y4PCD0S-MBG&t=1655).
+For more details, including formula syntax, read [Add new column](../../transform/add-new-column.md) or watch [this video](https://youtu.be/4_NS3q7uvjs?si=yGXl0Y4PCD0S-MBG&t=1655).
 
 ### Column groups
 
