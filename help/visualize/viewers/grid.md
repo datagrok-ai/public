@@ -231,6 +231,15 @@ particularly useful if you are exploring a big and wide dataset in the zoomed-ou
 
 ![](img/grid-mouse-pan-content.gif)
 
+### Adding new columns
+
+To add a new column, on the **Top Menu**, click the **Add new column** (![Add new column icon](../../uploads/icons/add-new-column.png))
+icon. This opens a dialog where you can specify a column name, type, and
+formula, as applicable.  
+
+For more details, including formula syntax, read [Add new
+column](../../transform/add-new-column.md) or watch [this video](https://youtu.be/4_NS3q7uvjs?si=yGXl0Y4PCD0S-MBG&t=1655).
+
 ### Column groups
 
 Group columns together by selecting them and then choosing the "Group columns..." action 
