@@ -74,6 +74,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join(', ') :
       data.tags.join(', ')}${sep}`;
   }
+  
   for(let input of data.inputs ?? [])
   {
     if(!input)
@@ -112,7 +113,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   }
 
   for (const parameter in data) {
-    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta')
+    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
       if (isFileViewer)
@@ -290,11 +291,12 @@ export function generateClassFunc(annotation: string, className: string, sep: st
 }
 
 /** Generates a DG function. */
-export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = []): string 
+export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string 
 {
   let funcSigNature = (inputs.map((e)=>`${e.name}: ${e.type}`)).join(', ');
   let funcArguments = (inputs.map((e)=>e.name)).join(', ');
-  return annotation + `export function _${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+  
+  return annotation + `export ${isAsync? 'async ': ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {
@@ -304,3 +306,4 @@ export function generateImport(className: string, path: string, sep: string = '\
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
 }
+

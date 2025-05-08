@@ -60,10 +60,12 @@ class FuncGeneratorPlugin {
             this._addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports, parentClass);
           });
         this._insertImports([...imports]);
-        fs.appendFileSync(this.options.outputPath, functions.join("\n"), "utf-8");
+        fs.appendFileSync(this.options.outputPath, functions.join(""), "utf-8");
       }
+      this._checkPackageFileForDecoratorsExport(packageFilePath);
+      // Uncommment to add obvious import/export 
+      // this._writeToPackageFile(packageFilePath, genImports, genExports);
 
-      this._writeToPackageFile(packageFilePath, genImports, genExports);
     });
   }
 
@@ -87,25 +89,31 @@ class FuncGeneratorPlugin {
     const decoratorOptions = this._readDecoratorOptions(exp.arguments[0].properties);
     decoratorOptions.set('tags', [...(reservedDecorators[name]['metadata']['tags'] ?? [] ), ...(decoratorOptions.get('tags') ?? [])])
     const functionParams = node?.type === 'MethodDefinition' ? this._readMethodParamas(node) : [];
-
     const annotationByReturnType = node?.type === 'MethodDefinition' ? this._readFunctionReturnTypeInfo(node) : '';
     const annotationByReturnTypeObj = { name: 'result', type: annotationByReturnType };
-    
+    const isMethodAsync = this._isMethodAsync(node);
     let importString = generateImport(node?.type === 'MethodDefinition' ? className : identifierName, modifyImportPath(path.dirname(this.options.outputPath), file));
     imports.add(importString);
-    const funcName = `_${identifierName}`;
+    const funcName = `${node?.type === 'MethodDefinition' ? '' : '_'}${identifierName}`;
     const funcAnnotaionOptions = {
       ...reservedDecorators[name]['metadata'],
       ...(annotationByReturnType ? {outputs: [annotationByReturnTypeObj ?? {}]} : {}),
       ...Object.fromEntries(decoratorOptions),
       ...{inputs: functionParams},
+      ...{isAsync: isMethodAsync}
     };    
     if (!funcAnnotaionOptions.name)
       funcAnnotaionOptions.name = identifierName;
-    functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation(funcAnnotaionOptions), identifierName,'\n', (className ?? ''), functionParams));
-
+    functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation(funcAnnotaionOptions), identifierName,'\n', (className ?? ''), functionParams, funcAnnotaionOptions.isAsync ?? false));
     genImports.push(generateImport(funcName, modifyImportPath(srcDirPath, this.options.outputPath)));
     genExports.push(generateExport(funcName));
+  }
+
+  _isMethodAsync(node){
+    let result = false;
+    if (node.type === 'MethodDefinition')
+      result = node.value.async;
+    return result;
   }
 
   _readImports (content) {
@@ -319,12 +327,19 @@ class FuncGeneratorPlugin {
     fs.writeFileSync(this.options.outputPath, baseImport);
   }
 
-  _writeToPackageFile(filePath, imports, exports) {
-    if (imports.length !== exports.length) return;
+  _checkPackageFileForDecoratorsExport(packagePath){    
+    const content = fs.readFileSync(packagePath, "utf-8");
+    const decoratorsExportRegex = /export\s*\*\s*from\s*'\.\/package\.g';/;
+    if (!decoratorsExportRegex.test(content))
+      console.warn(`\nWARNING: Your package doesn't export package.g.ts file to package.ts \n please add "export * from './package.g';" to the package.ts file.\n`);
+  }
+
+  _writeToPackageFile(filePath, imports, exp) {
+    if (imports.length !== exp.length) return;
     let content = fs.readFileSync(filePath, "utf-8");
     for (let i = 0; i < imports.length; i++) {
       const importStatement = imports[i];
-      const exportStatement = exports[i];
+      const exportStatement = exp[i];
       if (!content.includes(importStatement.trim()))
         content = importStatement + content + exportStatement;
     }
