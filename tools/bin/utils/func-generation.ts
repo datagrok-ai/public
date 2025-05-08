@@ -112,8 +112,20 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
   }
 
+  if (data.test)
+  {
+    for(let entry of Object.entries(data.test)){
+      if (entry[0] === 'test' || entry[0] === 'wait')
+        s += `${comment}`;
+      else 
+        s+= `, `;
+      s += `${entry[0]}: ${entry[1]} `;
+    }
+    s += `${sep}`;
+  }
+
   for (const parameter in data) {
-    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync')
+    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
       if (isFileViewer)
@@ -279,6 +291,14 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
       tags: [FUNC_TYPES.CONVERTER],
       inputs: [{ name: 'value', type: 'dynamic' }],
       outputs: [{ name: 'result', type: 'dynamic' }],
+    },
+    genFunc: generateFunc,
+  },
+  demo: {
+    metadata: {
+      tags: [],
+      inputs: [],
+      outputs: [],
     },
     genFunc: generateFunc,
   },

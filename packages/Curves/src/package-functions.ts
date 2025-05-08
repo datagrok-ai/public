@@ -25,12 +25,11 @@ const STATISTICS_TAG = '.statistics';
 
 export class PackageFunctions {
 
-  // TODO
-  // test: curveFitDemo() //wait: 2000
-  @grok.decorators.func({
+  @grok.decorators.demo({
     name: 'Curve fitting',
     description: 'Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points',
-    meta: { demoPath: 'Curves | Curve Fitting' }
+    meta: { demoPath: 'Curves | Curve Fitting' },
+    test: { test: 'curveFitDemo()', wait: '2000' }
   })
   static async curveFitDemo(): Promise<void> {
     await curveDemo();

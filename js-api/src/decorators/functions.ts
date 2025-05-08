@@ -144,6 +144,13 @@ export namespace decorators {
     ext: string;
     fileViewerCheck?: string;
   }
+  
+  interface DemoOptions extends FunctionOptions{
+    path?: string;
+    demoWait?: string;
+    demoSkip?: string;
+    test?: { test: string, wait: string, timeout?: string, skip?: string }
+  }
 
   export function func(config: FunctionOptions) {
     return function (
@@ -266,6 +273,14 @@ export namespace decorators {
   }
 
   export function fileHandler(config: FileHandlerOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function demo(config: DemoOptions) {
     return function (
       target: any,
       propertyKey: string,
