@@ -1,9 +1,9 @@
 export const STORAGE_NAME = 'admet_models';
 export const KEY = 'selected';
 export const TEMPLATES_FOLDER = 'System:AppData/Admetica/templates';
-export let DEFAULT_LOWER_VALUE = 0.8;
-export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_TABLE_NAME = 'table';
+export const DEFAULT_LOWER_VALUE = 0.8;
+export const DEFAULT_UPPER_VALUE = 1.0;
+export const DEFAULT_TABLE_NAME = 'table';
 
 export interface AdmeticaResponse {
   success: boolean;
@@ -56,16 +56,16 @@ export interface Subgroup {
 }
 
 export const TAGS = {
-  SECTOR_COLOR: ".sectorColor",
-  LOW: ".low",
-  HIGH: ".high",
-  WEIGHT: ".weight",
-  GROUP_NAME: ".group-name"
+  SECTOR_COLOR: '.sectorColor',
+  LOW: '.low',
+  HIGH: '.high',
+  WEIGHT: '.weight',
+  GROUP_NAME: '.group-name',
 };
 
 export const ERROR_MESSAGES = {
   MALFORMED: 'Molecule is possibly malformed',
-  EMPTY: 'Molecule is empty'
+  EMPTY: 'Molecule is empty',
 };
 
 export const colorsDictionary: { [key: string]: string } = {
@@ -73,5 +73,5 @@ export const colorsDictionary: { [key: string]: string } = {
   'Distribution': '#cf5a0c',
   'Metabolism': '#2ca02c',
   'Excretion': '#d62728',
-  'Toxicity': '#9467bd'
+  'Toxicity': '#9467bd',
 };

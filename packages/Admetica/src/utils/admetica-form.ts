@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 
 import { tablePieChartIndexMap } from './admetica-utils';
@@ -20,30 +21,30 @@ export class FormStateGenerator {
   private createElementState(table: string, left: number, top: number, width: number, column: string) {
     return [
       {
-        "left": left + width,
-        "top": top,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": table,
-          "column": column,
-          "format": null
-        }
+        'left': left + width,
+        'top': top,
+        'width': 100,
+        'height': 20,
+        'type': 'field',
+        'viewerSettings': {
+          'table': table,
+          'column': column,
+          'format': null,
+        },
       },
       {
-        "left": left,
-        "top": top,
-        "width": width,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-          "table": table,
-          "column": column,
-          "input-value": column
-        }
-      }
+        'left': left,
+        'top': top,
+        'width': width,
+        'height': 20,
+        'type': 'html',
+        'viewerSettings': {
+          'markup': '<input type="text" class="d4-sketch-column-name ui-input-editor">',
+          'table': table,
+          'column': column,
+          'input-value': column,
+        },
+      },
     ];
   }
 
@@ -58,17 +59,17 @@ export class FormStateGenerator {
 
   private createCategoryHeader(left: number, top: number, categoryName: string) {
     return {
-      "left": left,
-      "top": top,
-      "width": 280,
-      "height": 20,
-      "type": "html",
-      "viewerSettings": {
-        "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-        "input-value": `                         ${categoryName}`,
-        "backgroundColor": 4293717745,
-        "textColor": 4278190080
-      }
+      'left': left,
+      'top': top,
+      'width': 280,
+      'height': 20,
+      'type': 'html',
+      'viewerSettings': {
+        'markup': '<input type="text" class="d4-sketch-column-name ui-input-editor">',
+        'input-value': `                         ${categoryName}`,
+        'backgroundColor': 4293717745,
+        'textColor': 4278190080,
+      },
     };
   }
 
@@ -83,35 +84,36 @@ export class FormStateGenerator {
     let currentTopOffset = 180;
     let currentLeftOffset = leftOffset;
     let currentColsNumber = 1;
-    let piechartIndex = tablePieChartIndexMap.get(this.table);
+    const piechartIndex = tablePieChartIndexMap.get(this.table);
 
     elementStates.push(
       {
-        "left": 3,
-        "top": 21,
-        "width": 183,
-        "height": 139,
-        "type": "field",
-        "viewerSettings": {
-          "table": this.table,
-          "column": this.molColName,
-          "format": null
-        }
-      }
+        'left': 3,
+        'top': 21,
+        'width': 183,
+        'height': 139,
+        'type': 'field',
+        'viewerSettings': {
+          'table': this.table,
+          'column': this.molColName,
+          'format': null,
+        },
+      },
     );
 
-    if (this.addPiechart)
+    if (this.addPiechart) {
       elementStates.push({
-        "left": 154,
-        "top": 22,
-        "width": 209,
-        "height": 140,
-        "type": "sparkline-cell",
-        "viewerSettings": {
-          "table": this.table,
-          "column": piechartIndex === 0 ? "piechart" : `piechart (${piechartIndex})`
-        }
+        'left': 154,
+        'top': 22,
+        'width': 209,
+        'height': 140,
+        'type': 'sparkline-cell',
+        'viewerSettings': {
+          'table': this.table,
+          'column': piechartIndex === 0 ? 'piechart' : `piechart (${piechartIndex})`,
+        },
       });
+    }
 
     const allColumns = Object.values(this.categories).flat();
     const longestColumnName = allColumns.reduce((longest, columnName) => columnName.length > longest.length ? columnName : longest, '');
@@ -127,9 +129,8 @@ export class FormStateGenerator {
           if (!exceedsContainerWidth) {
             currentLeftOffset += colWidth + columnGap;
             currentTopOffset = 30;
-          } else {
+          } else
             currentColsNumber -= 1;
-          }
         }
       }
 
@@ -138,7 +139,7 @@ export class FormStateGenerator {
       currentTopOffset += headerHeight;
 
       columns.forEach((column: string, index: number) => {
-        const elementState = 
+        const elementState =
           this.createElementState(this.table, currentLeftOffset, currentTopOffset + index * rowHeight, textWidth, column);
         elementStates.push(...elementState);
       });
@@ -147,10 +148,10 @@ export class FormStateGenerator {
     }
 
     return {
-      "#type": "SketchState",
-      "elementStates": elementStates,
-      "table": this.table,
-      "formDesigned": true
+      '#type': 'SketchState',
+      'elementStates': elementStates,
+      'table': this.table,
+      'formDesigned': true,
     };
   }
 
@@ -161,11 +162,10 @@ export class FormStateGenerator {
       const categoryName = subgroup.name;
 
       const modelNames = updatedModelNames
-        .filter(name => subgroup.models.some(model => name.includes(model.name)));
+        .filter((name) => subgroup.models.some((model) => name.includes(model.name)));
 
-      if (modelNames.length > 0) {
+      if (modelNames.length > 0)
         categoryModelMapping[categoryName] = modelNames;
-      }
     });
 
     return categoryModelMapping;
