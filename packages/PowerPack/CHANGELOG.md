@@ -1,5 +1,11 @@
 # Power Pack changelog
 
+## 1.5.1  (2025-03-18)
+
+### Features
+
+* Ability to disable viewers in the viewers gallery using 'disableInViewerGallery' meta tag
+
 ## 1.4.1  (2025-03-18)
 
 ### Bug Fixes

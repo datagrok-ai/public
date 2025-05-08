@@ -32,7 +32,7 @@ are taken into account.
 
 There are several ways to read files that reside within your package. The first is to download
 them via HTTP. The package root for client-side can be found with the `webRoot` property of class
-[Package](https://datagrok.ai/js-api/dg/classes/Package). Here are some examples:
+[Package](https://datagrok.ai/api/js/dg/classes/Package). Here are some examples:
 
 ```js
 // `_package` is defined in package.js
@@ -49,7 +49,7 @@ root.style.backgroundImage = `url(${_package.webRoot}images/night-sky.png)`;
 
 These methods work with any URL, be it a link to an external resource or a file from a package.
 Data under `files`, however, can be accessed via standard file methods exposed in Datagrok JS
-API (check out the [FileSource](https://datagrok.ai/js-api/dg/classes/FileSource) class):
+API (check out the [FileSource](https://datagrok.ai/api/js/dg/classes/FileSource) class):
 
 ```js
 // `_package` is defined in package.js

@@ -32,7 +32,7 @@ RUN python3.10 -m venv /app/venv
 
 RUN /app/venv/bin/pip install --upgrade pip
 
-RUN /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors gunicorn datagrok-api==0.0.4
+RUN /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors gunicorn datagrok-api==0.0.6
 
 # Download public data
 RUN mkdir ./aizynthcli_data && \

@@ -1818,6 +1818,7 @@ export function addScaffoldTree(): void {
 
 //name: Matched Molecular Pairs Analysis
 //tags: viewer
+//meta.disableInViewerGallery: true
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
@@ -2208,7 +2209,8 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   const module = getRdKitModule();
   const cut = cutFragments(module, molecules.toList(), fragment);
   const res = cut.map((c) => c[0]);
-  const col = DG.Column.fromStrings('deprotected', res);
+  const columnName = table.columns.getUnusedName('deprotected');
+  const col = DG.Column.fromStrings(columnName, res);
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
 }

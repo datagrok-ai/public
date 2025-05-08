@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -14,17 +15,16 @@ category('Admetica', () => {
   let v: DG.TableView;
   let molecules: DG.DataFrame;
   let smilesColumn: DG.Column;
-  let admeticaContainer: DG.DockerContainer | null;
-    
+
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = false;
 
     await Promise.all([
       setProperties(),
-      delay(1000)
+      delay(1000),
     ]);
-  });  
+  });
 
   test('Container. Post request', async () => {
     await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
@@ -51,7 +51,7 @@ category('Admetica', () => {
       'column inside Admetica dialog is different than expected', 5000);
     const models = properties.subgroup
       .flatMap((subgroup: any) => subgroup.models
-      .map((model: any) => model.name));
+        .map((model: any) => model.name));
     expectArray(Array.from(admeticaDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
@@ -77,40 +77,40 @@ category('Admetica', () => {
     const molecules = grok.data.demo.molecules(20);
     const v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Table failed to load', 3000);
-    
+
     grok.shell.windows.showProperties = true;
-  
+
     const table = v.dataFrame;
     table.currentCell = table.cell(0, 'smiles');
     await delay(3000);
-  
+
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology', 6000);
-  
+
     const expandPanel = async (panelTitle: string, timeout = 3000) => {
       const panel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === panelTitle) as HTMLElement;
-  
+
       if (!panel) throw new Error(`Panel "${panelTitle}" not found`);
-      
+
       if (!panel.classList.contains('expanded')) {
         panel.click();
         await awaitCheck(() => panel.classList.contains('expanded'), `Failed to expand "${panelTitle}"`, timeout);
       }
     };
-  
+
     await expandPanel('Biology');
     await awaitPanel(pp, 'Admetica');
     await expandPanel('Admetica');
     await awaitPanel(pp, 'Distribution');
     await expandPanel('Distribution');
-  
+
     const admePanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Admetica') as HTMLElement;
-      
+
     const propertiesTable = admePanel?.parentElement?.querySelector('.d4-table.d4-item-table.d4-info-table') as HTMLElement;
     await awaitCheck(() => propertiesTable?.innerText.trim() !== '', 'Properties weren’t calculated', 8000);
-  }, { timeout: CONTAINER_TIMEOUT + 100000 });  
+  }, { timeout: CONTAINER_TIMEOUT + 100000 });
 
   test('Calculate.Benchmark column', async () => {
     await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
@@ -127,13 +127,13 @@ category('Admetica', () => {
     await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
+    const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
     const args = [smiles, distributionModels, false];
     await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmeticaFunc, ...args));
   }, {timeout: CONTAINER_TIMEOUT + 1000000, benchmark: true});
 });
-  
+
 async function runOnce(func: (...args: any[]) => Promise<string | null>, ...args: any[]) {
   return await func(...args);
 }
