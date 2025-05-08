@@ -74,17 +74,17 @@ const config = {
                         {
                             "pattern": "\\(\\.\\.\\/\\.\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/$1.$2"
+                            "replace": "(../../../help/$1.$2"
                         },
                         {
                             "pattern": "\\(\\.\\.(?!/\\.\\.)/(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/$1.$2"
+                            "replace": "(../../../help/develop/$1.$2"
                         },
                         {
                             "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/packages/$1.$2"
+                            "replace": "(../../../help/develop/packages/$1.$2"
                         }
                     ]
                 }
@@ -93,7 +93,7 @@ const config = {
         [
             '@docusaurus/plugin-content-docs',
             {
-                sidebarPath: require.resolve('./api/api-sidebar.js'),
+                sidebarPath: require.resolve('./typedoc-sidebar.js'),
                 id: 'api',
                 path: './api',
                 routeBasePath: '/api',
@@ -163,7 +163,7 @@ const config = {
                 },
                 {
                     label: 'API Docs',
-                    to: '/js-api',
+                    to: 'api',
                 },
                 {
                     label: 'Community',

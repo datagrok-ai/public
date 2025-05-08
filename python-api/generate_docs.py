@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import ast
 from pathlib import Path
@@ -216,7 +217,6 @@ def generate_docs(src_dir, output_dir):
     src_path = Path(src_dir)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-
     modules_info = {}
     for py_file in src_path.rglob("*.py"):
         if py_file.name.startswith("__"):
@@ -280,5 +280,6 @@ def generate_docs(src_dir, output_dir):
     generate_sidebar(output_path, modules_info)            
 
 if __name__ == "__main__":
-    out = sys.argv[1] or "docs_out"
-    generate_docs("datagrok_api", out)
+    src_dir = sys.argv[1] if len(sys.argv) > 1 else "datagrok_api"
+    out = sys.argv[2] if len(sys.argv) > 2 else "docs_out"
+    generate_docs(src_dir, out)

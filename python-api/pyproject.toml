@@ -18,6 +18,20 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["datagrok_api"]
+
+[tool.hatch.build.targets.sdist]
+include = ["datagrok_api/**", "README.md", "pyproject.toml"]
+
+[tool.hatch.build]
+exclude = [
+  "generate_docs.py",
+  "docs/**",
+  "tests/**",
+  "venv/**"
+]
+
 dependencies = [
   "pandas",
   "requests",

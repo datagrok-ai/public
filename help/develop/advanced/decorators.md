@@ -13,7 +13,7 @@ such package functions as:
 * [custom filters](../how-to/viewers/custom-filters.md)
 * [custom cell renderers](../how-to/grid/custom-cell-renderers.md)
 
-If a function uses a subclass that extends classes from [Datagrok JS API](https://datagrok.ai/js-api), you can use a
+If a function uses a subclass that extends classes from [Datagrok JS API](https://datagrok.ai/api/js), you can use a
 decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. There is no need
 to add anything other than the class itself. When you run the `build` script for your package, the webpack plugin called
 `FuncGeneratorPlugin` will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so
