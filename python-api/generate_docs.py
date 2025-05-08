@@ -31,7 +31,7 @@ def write_func_md(output_dir, func_data, classes: dict):
         lines.append("| Name | Type | Description |\n")
         lines.append("| :--- | :--- | :---------- |\n")
         for p in params:
-            param_type = re.sub(classes_patern, lambda m: f'[{m.group(0)}]({f'../../' + classes.get(m.group(0))})', p['type'])
+            param_type = re.sub(classes_patern, lambda m: f"[{m.group(0)}]({'../../' + classes.get(m.group(0))})", p['type'])
             param_type = classes.get(param_type, param_type)
             lines.append(f"| {p['name']} | {param_type} | {p['description']} |\n")
         lines.append("\n")
@@ -41,7 +41,7 @@ def write_func_md(output_dir, func_data, classes: dict):
         lines.append("| Type | Description |\n")
         lines.append("| :--- | :---------- |\n")
         for r in returns:
-            return_type = re.sub(classes_patern, lambda m: f'[{m.group(0)}]({f'../../' + classes.get(m.group(0))})', r['type'])
+            return_type = re.sub(classes_patern, lambda m: f"[{m.group(0)}]({'../../' + classes.get(m.group(0))})", r['type'])
             return_type = classes.get(return_type, return_type)
             lines.append(f"| {return_type} | {r['description']} |\n")
         lines.append("\n")   
@@ -68,7 +68,7 @@ def write_class_md(output_dir, class_data, classes: dict):
         lines.append("| Name | Type | Description |\n")
         lines.append("| :--- | :--- | :---------- |\n")
         for attr in class_docs["attributes"]:
-            attr_type = re.sub(classes_patern, lambda m: f'[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})', attr['type'])
+            attr_type = re.sub(classes_patern, lambda m: f"[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})", attr['type'])
             attr_type = classes.get(attr_type, attr_type)
             lines.append(f"| {attr['name']} | {attr_type} | {attr['description']} |\n")
         lines.append('\n')
@@ -101,7 +101,7 @@ def build_methods(methods: list, lines: list, classes: dict, class_name: str):
             lines.append("| Name | Type | Description |\n")
             lines.append("| :--- | :--- | :---------- |\n")
             for p in params:
-                param_type = re.sub(classes_patern, lambda m: f'[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})', p['type'])
+                param_type = re.sub(classes_patern, lambda m: f"[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})", p['type'])
                 param_type = classes.get(param_type, param_type)
                 lines.append(f"| {p['name']} | {param_type} | {p['description']} |\n")
             lines.append("\n")
@@ -111,7 +111,7 @@ def build_methods(methods: list, lines: list, classes: dict, class_name: str):
             lines.append("| Type | Description |\n")
             lines.append("| :--- | :---------- |\n")
             for r in returns:
-                return_type = re.sub(classes_patern, lambda m: f'[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})', r['type'])
+                return_type = re.sub(classes_patern, lambda m: f"[{m.group(0)}]({f'{class_name}.md' if class_name in classes.get(m.group(0)) else '../../' + classes.get(m.group(0))})", r['type'])
                 return_type = classes.get(return_type, return_type)
                 lines.append(f"| {return_type} | {r['description']} |\n")
             lines.append("\n")
