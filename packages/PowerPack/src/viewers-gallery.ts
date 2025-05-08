@@ -206,6 +206,9 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
+    } else {
+      if (v.options['disableInViewerGallery'])
+        isViewerEnabled = false;
     }
     Object.assign(jsViewers, {
       [i]: {
