@@ -892,3 +892,10 @@
 .chem-activity-cliffs-context-panel-content {
   gap: 8px;
 }
+
+.chem-similarity-diversity-search-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+}

@@ -129,6 +129,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   async render(computeData = true): Promise<void> {
     try {
+      if (!this.moleculeColumn) {
+        ui.empty(this.root);
+        this.root.append(ui.div(ui.divText(`No molecule columns found in dataset`, {style: {color: 'red'}}),
+          'chem-similarity-diversity-search-error'));
+        return;
+      }
       await this.renderInternal(computeData);
     } finally {
       if (this.isComputing) {
