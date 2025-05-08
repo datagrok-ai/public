@@ -605,7 +605,7 @@ that you do not have to specify):
 Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
 for more input types.  
 
-For developers: [DG.InputBase](https://datagrok.ai/js-api/dg/classes/InputBase)
+For developers: [DG.InputBase](https://datagrok.ai/api/js/dg/classes/InputBase)
 
 ### Inputs for semantic types
 

@@ -13,7 +13,7 @@ First of all, to work with your project, you need a utility to publish
 for installation instructions and usage examples. Upon completing package setup, you will see a set of default
 dependencies listed in the `package.json`
 file. One of them is `datagrok-api` that provides TypeScript API to the platform's core functionality. Whenever you need
-details about a particular class or endpoint, consult the [API reference](https://datagrok.ai/js-api).
+details about a particular class or endpoint, consult the [API reference](https://datagrok.ai/api/js).
 
 _Links:_
 

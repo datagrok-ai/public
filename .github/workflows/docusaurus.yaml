@@ -26,6 +26,7 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'python-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
   pull_request:
@@ -42,6 +43,7 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'python-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
 
@@ -88,6 +90,7 @@ jobs:
             help
             packages
             js-api
+            python-api
       - uses: actions/setup-node@v4
         with:
           node-version: 18

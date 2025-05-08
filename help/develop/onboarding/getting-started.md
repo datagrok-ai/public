@@ -111,7 +111,7 @@ extensions.
 
 [a few JavaScript samples]: https://public.datagrok.ai/js
 
-[powerful JavaScript API]: https://datagrok.ai/js-api/
+[powerful JavaScript API]: https://datagrok.ai/api/js/api/
 
 [Digital Signal Processing]: https://github.com/datagrok-ai/labs/tree/master/packages/DSP
 

@@ -66,7 +66,7 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
-docusaurus/js-api
+docusaurus/api
 docusaurus/temp_*
 docusaurus/output.csv
 
