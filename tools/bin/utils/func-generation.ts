@@ -10,6 +10,11 @@ export enum pseudoParams {
   INPUT_TYPE = 'inputType',
 }
 
+let nonMetaData = [
+  'sidebar',
+  'editor'
+];
+
 export enum FUNC_TYPES {
   APP = 'app',
   CELL_RENDERER = 'cellRenderer',
@@ -74,6 +79,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join(', ') :
       data.tags.join(', ')}${sep}`;
   }
+  
   for(let input of data.inputs ?? [])
   {
     if(!input)
@@ -111,16 +117,31 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
   }
 
+  if (data.test)
+  {
+    for(let entry of Object.entries(data.test)){
+      if (entry[0] === 'test' || entry[0] === 'wait')
+        s += `${comment}`;
+      else 
+        s+= `, `;
+      s += `${entry[0]}: ${entry[1]} `;
+    }
+    s += `${sep}`;
+  }
+
   for (const parameter in data) {
-    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta')
+    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
       if (isFileViewer)
         continue;
       s += `${comment}meta.ext: ${data[parameter]}${sep}`;
-    } else if (!headerParams.includes(parameter))
-      s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
-
+    } else if (!headerParams.includes(parameter)){
+      if (nonMetaData.includes(parameter))
+        s += `${comment}${parameter}: ${data[parameter]}${sep}`;
+      else
+        s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
+    }
   }
   return s;
 }
@@ -281,6 +302,22 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     },
     genFunc: generateFunc,
   },
+  demo: {
+    metadata: {
+      tags: [],
+      inputs: [],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  },
+  treeBrowser: {
+    metadata: {
+      tags: [],
+      inputs: [{ name: 'treeNode', type: 'dynamic' }, { name: 'browseView', type: 'view' }],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  },
 
 };
 
@@ -290,11 +327,12 @@ export function generateClassFunc(annotation: string, className: string, sep: st
 }
 
 /** Generates a DG function. */
-export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = []): string 
+export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string 
 {
   let funcSigNature = (inputs.map((e)=>`${e.name}: ${e.type}`)).join(', ');
   let funcArguments = (inputs.map((e)=>e.name)).join(', ');
-  return annotation + `export function _${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+  
+  return annotation + `export ${isAsync? 'async ': ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {
@@ -304,3 +342,4 @@ export function generateImport(className: string, path: string, sep: string = '\
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
 }
+
