@@ -44,7 +44,6 @@ export class SunburstViewer extends EChartViewer {
   private latestRenderToken = 0;
   constructor() {
     super();
-    this.initCommonProperties();
     this.initEventListeners();
 
     this.title = this.string('title', 'Sunburst', {category: 'Description'});
