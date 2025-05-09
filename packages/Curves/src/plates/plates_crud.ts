@@ -81,7 +81,7 @@ export async function savePlate(plate: Plate){
     `insert into plates.plates(plate_type_id, barcode)
      values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
      returning id`;
-     plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);   
+  plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);   
 
   // register new plate level properties
   for (const layer of Object.keys(plate.details))
@@ -107,7 +107,7 @@ export async function savePlate(plate: Plate){
       grok.shell.info('Well layer created: ' + layer);
     }
     
-    await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
+  await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
   grok.shell.info('Plate saved');
 }
 

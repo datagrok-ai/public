@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-
 import { FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats } from './fit/fit-grid-cell-handler';
 import { getOrCreateParsedChartData, substituteZeroes } from './fit/fit-renderer';
 import { curveDemo } from './fit/fit-demo';
@@ -38,7 +37,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Assay Plates',
     description: 'Assasy plates with concentration, layout and readout data',
-    meta: { demoPath: 'Curves | Assay Plates' }
+    meta: { demoPath: 'Curves | Assay Plates' },
   })
   static async assayPlatesDemo(): Promise<void> {
     const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
@@ -192,7 +191,7 @@ export class PackageFunctions {
     return platesAppView();
   }
   
-  @grok.decorators.func({ })
+  @grok.decorators.treeBrowser({ })
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }

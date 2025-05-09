@@ -158,7 +158,9 @@ export namespace decorators {
     description?: string,
     inputs?: Input[],
     meta?: Meta | Record<string, string>,
-    outputs?: Output[]
+    outputs?: Output[],
+    sidebar?: string;
+    editor?: string;
   }
 
   interface AppOptions extends FunctionOptions{
@@ -321,6 +323,14 @@ export namespace decorators {
   }
 
   export function demo(config: DemoOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function treeBrowser(config: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,

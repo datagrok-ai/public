@@ -10,6 +10,11 @@ export enum pseudoParams {
   INPUT_TYPE = 'inputType',
 }
 
+let nonMetaData = [
+  'sidebar',
+  'editor'
+];
+
 export enum FUNC_TYPES {
   APP = 'app',
   CELL_RENDERER = 'cellRenderer',
@@ -131,9 +136,12 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       if (isFileViewer)
         continue;
       s += `${comment}meta.ext: ${data[parameter]}${sep}`;
-    } else if (!headerParams.includes(parameter))
-      s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
-
+    } else if (!headerParams.includes(parameter)){
+      if (nonMetaData.includes(parameter))
+        s += `${comment}${parameter}: ${data[parameter]}${sep}`;
+      else
+        s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
+    }
   }
   return s;
 }
@@ -298,6 +306,14 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [],
       inputs: [],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  },
+  treeBrowser: {
+    metadata: {
+      tags: [],
+      inputs: [{ name: 'treeNode', type: 'dynamic' }, { name: 'browseView', type: 'view' }],
       outputs: [],
     },
     genFunc: generateFunc,
