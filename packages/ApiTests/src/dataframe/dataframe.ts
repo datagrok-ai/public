@@ -165,7 +165,7 @@ category('DataFrame: Methods', () => {
     const t2 = DG.DataFrame.fromJson(data);
     expectTable(t2, t);
   });
-  
+
   test('toString', async () => {
     const df = createDf();
     df.name = 'Table';
@@ -233,9 +233,9 @@ category('DataFrame: Column', () => {
 
   test('applyFormula', async () => {
     const df = createDf2();
-    const col = df.getCol('population');
+    const col = df.columns.add(DG.Column.fromInt32Array('population2', Int32Array.from([0, 1, 2, 3])));
     await col.applyFormula('${population} + 5', 'int');
-    expectArray(df.getCol('population').toList(), [6, 9, 7, 8]);
+    expectArray(df.getCol('population2').toList(), [6, 9, 7, 8]);
   });
 
   // test('compact', async () => {
@@ -315,57 +315,57 @@ category('DataFrame: Column', () => {
     col.set(0, 'UK');
     expect(col.get(0), 'UK');
   });
-  
+
   test('toList', async () => {
     expectArray(createCol2().toList(), [1, 4, 2, 3]);
   });
-  
+
   test('toString', async () => {
     expect(COL1.toString(), 'countries');
   });
-  
+
   test('values', async () => {
     const gen = COL1.values()[Symbol.iterator]();
     expect(gen.next().value, 'USA');
     expect(gen.next().value, 'Canada');
   });
-  
+
   test('bool', async () => {
     const col = DG.Column.bool('col', 3);
     col.init((_) => true);
     expect(col.type, 'bool');
     expectArray(col.toList(), [true, true, true]);
   });
-  
+
   test('dataFrame', async () => {
     const col = DG.Column.dataFrame('col', 3);
     expect(col.type, 'dataframe');
   });
-  
+
   test('dateTime', async () => {
     const col = DG.Column.dateTime('col', 3);
     col.init((_) => Date.now());
     expect(col.type, 'datetime');
   });
-  
+
   test('float', async () => {
     const col = DG.Column.float('col', 3);
     col.init((_) => 1.1);
     expect(col.type, 'double');
     expectFloat(col.get(0) ?? 0, 1.1);
   });
-  
+
   test('fromBitSet', async () => {
     const bitset = DG.BitSet.create(COL1.length, (_) => true);
     bitset.set(0, false);
     expectArray(DG.Column.fromBitSet('a', bitset).toList(), [false, true, true, true]);
   });
-  
+
   test('fromFloat32Array', async () => {
     const col = DG.Column.fromFloat32Array('col', Float32Array.from([1.23, 4.45, 3.34]), 3);
     expectFloat(col.get(0) ?? 0, 1.23);
   });
-  
+
   test('fromInt32Array', async () => {
     const col = DG.Column.fromInt32Array('col', Int32Array.from([1, 2, 3]), 3);
     expect(col.get(0) ?? 0, 1);
