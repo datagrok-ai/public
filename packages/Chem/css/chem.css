@@ -899,3 +899,19 @@
   align-content: center;
   justify-content: center;
 }
+
+.chem-mmp-active-hint-element {
+  border: solid grey 2px;
+}
+
+.chem-mmp-active-hint-element-horz {
+  width: 98%!important;
+}
+
+.chem-mmp-active-hint-adjust-vert-2px {
+  padding-top: 2px;
+}
+
+.chem-mmp-active-hint-adjust-vert-5px {
+  padding-top: 5px;
+}

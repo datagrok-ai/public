@@ -57,7 +57,9 @@ export type SortData = {
 type MMPHint = {
   text: string,
   element: HTMLElement,
-  position: ui.hints.POSITION
+  position: ui.hints.POSITION,
+  class?: string,
+  parentClass?: string,
 }
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
@@ -325,26 +327,31 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         element: fpGrid,
         text: FRAGMENTS_GRID_TOOLTIP,
         position: ui.hints.POSITION.LEFT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: mmPairsRoot1,
         text: MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
         position: ui.hints.POSITION.LEFT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: grok.shell.tv.grid.root,
         text: `Observe two molecules from the selected pair pinned on top of the grid.`,
         position: ui.hints.POSITION.RIGHT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: this.showFragmentsChoice.root,
         text: `Change mode to 'Current molecule' to filter all subtitutions for current molecule from the initial dataset on the left.`,
         position: ui.hints.POSITION.LEFT,
+        parentClass: 'chem-mmp-active-hint-adjust-vert-2px',
       },
       {
         element: grok.shell.tv.grid.root,
         text: `Change current row to see the changes in Fragments grid`,
         position: ui.hints.POSITION.RIGHT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
     ];
 
@@ -359,9 +366,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   setupHint(hints: MMPHint[], i: number) {
+    const addHint = (i: number, el: HTMLElement) => {
+      this.lastOpenedHint = ui.hints.addHint(hints[i].element, el, hints[i].position);
+      this.lastOpenedHint.classList.add(`chem-mmp-hint-${i}`);
+      hints[i].element.classList.add('chem-mmp-active-hint-element');
+      if (hints[i].class)
+        hints[i].element.classList.add(hints[i].class);
+      if (hints[i].parentClass)
+        hints[i].element.parentElement?.classList.add(hints[i].parentClass);
+    };
     this.lastOpenedHint?.remove();
     if (i === hints.length - 1)
-      this.lastOpenedHint = ui.hints.addHint(hints[i].element, ui.divText(hints[i].text), hints[i].position);
+      addHint(i, ui.divText(hints[i].text));
     else {
       const hintContent = ui.div();
       hintContent.append(ui.divText(hints[i].text));
@@ -369,8 +385,24 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.setupHint(hints, i + 1);
       });
       hintContent.append(nextButton);
-      this.lastOpenedHint = ui.hints.addHint(hints[i].element, hintContent, hints[i].position);
+      addHint(i, hintContent);
     }
+    const hintMutationObserver = new MutationObserver((mutationsList) => {
+      for (let j = 0; j < mutationsList.length; j++) {
+        for (const node of Array.from(mutationsList[j].removedNodes)) {
+          const removedHint = (node as HTMLElement).classList.contains(`chem-mmp-hint-${i}`);
+          if (removedHint) {
+            hints[i].element.classList.remove('chem-mmp-active-hint-element');
+            if (hints[i].class)
+              hints[i].element.classList.remove(hints[i].class);
+            if (hints[i].parentClass)
+              hints[i].element.parentElement?.classList.remove(hints[i].parentClass);
+            hintMutationObserver?.disconnect();
+          }
+        }
+      }
+    });
+    hintMutationObserver.observe(document.body, {attributes: true, childList: true});
   }
 
   setupFragmentsTab(): void {
@@ -414,7 +446,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
-      ui.splitH([this.tp.root, this.pairedGrids!.filters.root], {}, true),
+      ui.splitH([this.tp.root, this.pairedGrids!.filters.root], {style: {paddingBottom: '4px'}}, true),
     ], {style: {width: '100%', height: '100%'}});
     this.updateTrellisFiltersWithDefaultValues(tpDiv);
 
@@ -594,6 +626,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         element: this.sp.root,
         text: `Scatter plot where similar molecules are close to each other. Lines connect matched molecular pairs. Arrow points to a molecule with a greater activity value. Click on a line to show molecule pair in the table below and show details in a context panel.`,
         position: ui.hints.POSITION.LEFT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: this.mmpFilters.filtersDiv,
@@ -604,11 +637,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         element: mmPairsRoot3,
         text: MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS,
         position: ui.hints.POSITION.LEFT,
+        class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: showPairs.root,
         text: `Use checkbox to show/hide molecule pairs grid`,
         position: ui.hints.POSITION.LEFT,
+        parentClass: 'chem-mmp-active-hint-adjust-vert-5px',
       },
     ];
 
@@ -762,21 +797,24 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           generationsSp.root,
         ]));
         this.spCorrDiv.append(spActivityCorrDiv);
-        const hints: MMPHint[] = [
-          {
-            element: this.generationsGrid.root,
-            text: GENERATIONS_TAB_TOOLTIP,
-            position: ui.hints.POSITION.LEFT,
-          },
-        ];
-        setTimeout(() => {
-          this.setupHint(hints, 0);
-        }, 1000);
       }
       ui.setUpdateIndicator(this.spCorrDiv, false);
       this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
       grok.shell.windows.showContextPanel = true;
       grok.shell.o = this.spCorrDiv;
+
+      const hints: MMPHint[] = [
+        {
+          element: this.generationsGridDiv,
+          text: GENERATIONS_TAB_TOOLTIP,
+          position: ui.hints.POSITION.LEFT,
+          class: 'chem-mmp-active-hint-element-horz',
+        },
+      ];
+
+      setTimeout(() => {
+        this.setupHint(hints, 0);
+      }, 1000);
     }).catch((error: any) => {
       const errorStr = `Generations haven't been completed due to error: ${error}`;
       ui.setUpdateIndicator(this.generationsGridDiv, false);
@@ -799,7 +837,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         ui.divH([ui.divH([header, extraEl ?? ui.div(),
           this.addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpBUtton]),
         messageBox], {style: {justifyContent: 'space-between'}}),
-        {style: {maxHeight: '30px'}},
+        {style: {maxHeight: '32px'}},
       ),
       grid.root,
     ], {style: {width: '100%', height: '100%'}});
