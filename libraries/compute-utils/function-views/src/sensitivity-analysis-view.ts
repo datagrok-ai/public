@@ -14,7 +14,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
+import {DOCK_RATIO, FIRST_ROW_IDX, LAST_ROW_IDX, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 import {getCategoryWidget} from './fitting/fitting-utils';
 
@@ -1416,10 +1416,10 @@ export class SensitivityAnalysisView {
 
         switch (output.value.returning) {
         case DF_OPTIONS.LAST_ROW:
-          rowVal = -1;
+          rowVal = LAST_ROW_IDX;
           break;
         case DF_OPTIONS.FIRST_ROW:
-          rowVal = 0;
+          rowVal = FIRST_ROW_IDX;
           break;
 
         default:

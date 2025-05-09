@@ -75,6 +75,12 @@ export class RandomAnalysis {
 
   /** Performs variance-based sensitivity analysis */
   async perform(): Promise<SensitivityAnalysisResult> {
+    // columns with the varied inputs values
+    const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
+
+    // columns with outputs
+    let outputCols: DG.Column[];
+
     if (this.diffGrok !== undefined) {
       const evaluator = new ModelEvaluator(
         this.diffGrok,
@@ -82,16 +88,11 @@ export class RandomAnalysis {
         this.outputsOfInterest[DIFF_GROK_OUT_IDX],
       );
 
-      return await evaluator.getResults();
+      outputCols = await evaluator.getResults();
+    } else {
+      this.funcCalls = await getCalledFuncCalls(this.funcCalls);
+      outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
     }
-
-    this.funcCalls = await getCalledFuncCalls(this.funcCalls);
-
-    // columns with the varied inputs values
-    const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
-
-    // columns with outputs
-    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);

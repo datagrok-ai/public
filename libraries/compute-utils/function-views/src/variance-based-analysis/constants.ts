@@ -78,3 +78,7 @@ Sobol' indices:
  at the points of uniform grid within the specified ranges.`;
 
 export const DIFF_GROK_OUT_IDX = 0;
+
+export const LAST_ROW_IDX = -1;
+export const FIRST_ROW_IDX = 0;
+export const NULL_RAW = -2;
