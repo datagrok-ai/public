@@ -29,6 +29,8 @@ import {getOutput, OutputDataFromUI,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 import {DiffGrok} from '../fitting-view';
+import {ModelEvaluator} from './diff-studio/model-evaluator';
+import {DIFF_GROK_OUT_IDX} from './constants';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -109,7 +111,7 @@ export class SobolAnalysis {
         inputs[input.prop.name] = input.column.get(i);
 
       this.funcCalls.push(func.prepare(inputs));
-      this.fixedInputs.push(inputs);
+      this.funcInputs.push(inputs);
     }
 
     this.diffGrok = diffGrok;
@@ -181,18 +183,24 @@ export class SobolAnalysis {
 
   // Performs variance-based sensitivity analysis
   async perform(): Promise<ResultOfSobolAnalysis> {
-    // if (this.diffGrok !== undefined) {
-    // TODO: implement computations in webworkers
-    // return ...;
-    // }
-
-    this.funcCalls = await getCalledFuncCalls(this.funcCalls);
-
     // columns with the varied inputs values
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
-    // extract the required outputs
-    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    // columns with outputs
+    let outputCols: DG.Column[];
+
+    if (this.diffGrok !== undefined) {
+      const evaluator = new ModelEvaluator(
+        this.diffGrok,
+        this.funcInputs,
+        this.outputsOfInterest[DIFF_GROK_OUT_IDX],
+      );
+
+      outputCols = await evaluator.getResults();
+    } else {
+      this.funcCalls = await getCalledFuncCalls(this.funcCalls);
+      outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    }
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);
