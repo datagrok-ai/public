@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {Plate} from "../plate/plate";
 
 
-type PlateType = {
+export type PlateType = {
   id: number;
   name: string;
   rows: number;
@@ -11,11 +11,15 @@ type PlateType = {
   maxVolume?: number;
 }
 
-type PlateProperty = {
+export type PlateProperty = {
   id: number;
   name: string;
   unit?: string;
   value_type: string; //DG.COLUMN_TYPE;
+}
+
+export type PlateQuery = {
+  platePropertyValues: {[propId: number]: string[]};
 }
 
 export let wellProperties: PlateProperty[] = [
@@ -34,6 +38,8 @@ export let plateTypes: PlateType[] = [
   {id: 3, name: 'Generic 1536 wells', rows: 32, cols: 48},
 ]
 
+export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+
 export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.FLOAT]: 'value_num',
   [DG.COLUMN_TYPE.INT]: 'value_num',
@@ -48,7 +54,23 @@ export async function initPlates() {
   plateProperties = (await grok.functions.call('Curves:getPlateLevelProperties') as DG.DataFrame).toJson();
   wellProperties = (await grok.functions.call('Curves:getWellLevelProperties') as DG.DataFrame).toJson();
   plateTypes = (await grok.functions.call('Curves:getPlateTypes') as DG.DataFrame).toJson();
+  plateUniquePropertyValues = await grok.functions.call('Curves:getUniquePlatePropertyValues');
+
   _initialized = true;
+}
+
+export function getPlateProperty(name: string): PlateProperty {
+  return plateProperties.find(p => p.name === name)!;
+}
+
+export function getPlateUniquePropertyValues(prop: PlateProperty): string[] {
+  const nameCol = plateUniquePropertyValues.col('name')!;
+  const valueCol = plateUniquePropertyValues.col('value_string')!;
+
+  return plateUniquePropertyValues.rows
+    .where(i => nameCol.get(i) == prop.name)
+    .map(i => valueCol.get(i))
+    .toArray();
 }
 
 function getValueType(x: any): string {
@@ -72,6 +94,53 @@ function sqlStr(s?: string | number) {
     return `${s}`;
 }
 
+
+function getPlateSearchSql(query: PlateQuery): string {
+  const conditions: string[] = [];
+
+  for (const [propIdStr, values] of Object.entries(query.platePropertyValues)) {
+    const propId = parseInt(propIdStr, 10);
+
+    if (values.length === 0) continue;
+
+    // Escape single quotes and wrap values in single quotes
+    const escapedValues = values.map((v) => `'${v.replace(/'/g, "''")}'`).join(", ");
+
+    const condition = `
+      EXISTS (
+        SELECT 1 FROM plates.plate_details pd
+        WHERE pd.plate_id = p.id
+          AND pd.property_id = ${propId}
+          AND pd.value_string IN (${escapedValues})
+      )
+    `;
+
+    conditions.push(condition);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  return `
+    SELECT p.*
+    FROM plates.plates p
+    ${whereClause};
+  `.trim();
+}
+
+
+export async function queryPlates(query: PlateQuery) {
+
+  return await grok.data.db.query('Admin:Plates', getPlateSearchSql(query));
+
+  // const plateValuesSql = Object.keys(query.platePropertyValues)
+  //   .map(pid => `(pd.property_id = ${pid})`)
+  //   .join('\n AND ');
+  //
+  // const sql =
+  //   `select * from plates.plates p
+  //    join plates.plate_details pd on p.plate_id = pd.plate_id
+  //    where ${plateValuesSql}`;
+}
 
 /** Saves the plate to the database. */
 export async function savePlate(plate: Plate){
