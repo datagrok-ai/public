@@ -1,5 +1,12 @@
 # Peptides changelog
 
+## 1.23.7 (2025-05-12)
+
+* Performance improvements to Peptide viewers
+* LST white space reduction
+* Bug fixes
+* Position statistics viewer
+
 ## 1.23.6 (2025-04-30)
 
 * Fix Peptides analysis not starting on data with existing position columns

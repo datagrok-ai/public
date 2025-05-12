@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.21.5 (2025-05-12)
+
+* Shifted sequence rendering support
+
 ## 2.21.4 (2025-05-12)
 
 * Support monomer renderer in viewers
