@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.3.6 (2025-05-12)
+
+Sensitivity analysis in workers
+
 ## 1.3.5 (2025-04-22)
 
 Updated parameters optimization:
