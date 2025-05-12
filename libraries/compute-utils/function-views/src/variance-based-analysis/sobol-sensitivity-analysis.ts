@@ -55,7 +55,7 @@ export class SobolAnalysis {
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
-  private funcCalls: DG.FuncCall[];
+  private funcCalls: DG.FuncCall[] | null = null;
   private funcInputs: any[];
   private diffGrok: DiffGrok | undefined;
 
@@ -97,7 +97,7 @@ export class SobolAnalysis {
     // number of the function runs (this formula is given in [1])
     this.runsCount = samplesCount * (this.dimension + 2);
 
-    this.funcCalls = [];
+    this.funcCalls = (diffGrok === undefined) ? [] : null;
     this.funcInputs = [];
 
     // create an array of funccalls
@@ -110,7 +110,8 @@ export class SobolAnalysis {
       for (const input of this.variedInputs)
         inputs[input.prop.name] = input.column.get(i);
 
-      this.funcCalls.push(func.prepare(inputs));
+      if (this.funcCalls !== null)
+        this.funcCalls.push(func.prepare(inputs));
       this.funcInputs.push(inputs);
     }
 
@@ -198,6 +199,9 @@ export class SobolAnalysis {
 
       outputCols = await evaluator.getResults();
     } else {
+      if (this.funcCalls ===null)
+        throw new Error('Failed Sobol analysis: empty list of funccalls');
+
       this.funcCalls = await getCalledFuncCalls(this.funcCalls);
       outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
     }

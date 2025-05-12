@@ -26,7 +26,7 @@ export class RandomAnalysis {
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
-  private funcCalls: DG.FuncCall[];
+  private funcCalls: DG.FuncCall[] | null = null;
   private outputsOfInterest: OutputDataFromUI[];
   private funcInputs: any[];
   private diffGrok: DiffGrok | undefined;
@@ -52,9 +52,9 @@ export class RandomAnalysis {
         column: numericalColumns[i]}),
     );
 
-    this.funcCalls = [];
     this.funcInputs = [];
     this.diffGrok = diffGrok;
+    this.funcCalls = (diffGrok === undefined) ? [] : null;
 
     // create an array of funccalls
     for (let i = 0; i < samplesCount; ++i) {
@@ -66,7 +66,9 @@ export class RandomAnalysis {
       for (const input of this.variedInputs)
         inputs[input.prop.name] = input.column.get(i);
 
-      this.funcCalls.push(func.prepare(inputs));
+      if (this.funcCalls !== null)
+        this.funcCalls.push(func.prepare(inputs));
+
       this.funcInputs.push(inputs);
     }
 
@@ -90,6 +92,9 @@ export class RandomAnalysis {
 
       outputCols = await evaluator.getResults();
     } else {
+      if (this.funcCalls === null)
+        throw new Error('Failed Monte-Carlo analysis: empty list of funccalls');
+
       this.funcCalls = await getCalledFuncCalls(this.funcCalls);
       outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
     }

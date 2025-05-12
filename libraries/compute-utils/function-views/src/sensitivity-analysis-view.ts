@@ -19,6 +19,7 @@ import {getLookupChoiceInput} from './shared/lookup-tools';
 import {getCategoryWidget} from './fitting/fitting-utils';
 
 import {DiffGrok} from './fitting-view';
+import {GridAnalysis} from './variance-based-analysis/grid-sensitivity-analysis';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -972,10 +973,8 @@ export class SensitivityAnalysisView {
 
       /** Show current run output in the content panel */
       const cellEffect = async (cell: DG.GridCell) => {
-        if (funcInputs === undefined)
+        if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
           return;
-
-        console.log('We call func');
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
@@ -1094,7 +1093,6 @@ export class SensitivityAnalysisView {
       const analysiResults = await analysis.perform();
       const funcEvalResults = analysiResults.funcEvalResults;
       const funcInputs = analysiResults.funcInputs;
-      console.log('Func inputs: ', funcInputs);
 
       this.clearPrev();
       this.comparisonView.dataFrame = funcEvalResults;
@@ -1134,18 +1132,12 @@ export class SensitivityAnalysisView {
 
       /** Show current run output in the content panel */
       const cellEffect = async (cell: DG.GridCell) => {
-        console.log('We call cell effect');
-
-        if (funcInputs === undefined)
+        if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
           return;
-
-        console.log('We call func');
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call();
-
-        console.log('Func called');
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1256,83 +1248,78 @@ export class SensitivityAnalysisView {
         runParams = newRunParams;
       }
 
-      const funccalls = runParams.map((runParams) => this.func.prepare(
-        this.func.inputs
-          .map((input, idx) => ({name: input.name, idx}))
-          .reduce((acc, {name, idx}) => {
-            acc[name] = runParams[idx];
-            return acc;
-          }, {} as Record<string, any>),
-      ));
+      const funcInputs = runParams.map((runParams) => this.func.inputs
+        .map((input, idx) => ({name: input.name, idx}))
+        .reduce((acc, {name, idx}) => {
+          acc[name] = runParams[idx];
+          return acc;
+        }, {} as Record<string, any>),
+      );
 
-      const calledFuncCalls = await getCalledFuncCalls(funccalls);
-
-      this.clearPrev();
-
-      const variedInputsColumns = [] as DG.Column[];
-      const rowCount = calledFuncCalls.length;
-      const fixedInputsColumns = this.getFixedInputColumns(rowCount);
-
-      for (const inputName of Object.keys(this.store.inputs)) {
-        const input = this.store.inputs[inputName];
-        const prop = input.prop;
-
-        if (input.isChanging.value) {
-          variedInputsColumns.push(DG.Column.fromType(
-          prop.propertyType as unknown as DG.COLUMN_TYPE,
-          prop.caption ?? prop.name,
-          rowCount,
-          ));
-        }
-      }
-
-      const inputsOfInterestColumns = [...variedInputsColumns];
-
-      const len = inputsOfInterestColumns.length;
-      const funcEvalResults = DG.DataFrame.fromColumns([inputsOfInterestColumns[0]]);
-
-      for (let i = 1; i < len; ++i) {
-        inputsOfInterestColumns[i].name = funcEvalResults.columns.getUnusedName(inputsOfInterestColumns[i].name);
-        funcEvalResults.columns.add(inputsOfInterestColumns[i]);
-      }
-
-      for (let row = 0; row < rowCount; ++row) {
-        for (const inputName of Object.keys(this.store.inputs)) {
-          const input = this.store.inputs[inputName];
-          const prop = input.prop;
-
-          if (input.isChanging.value)
-            funcEvalResults.set(prop.caption ?? prop.name, row, calledFuncCalls[row].inputs[inputName]);
-        }
-      }
-
-      const outputsOfInterest = this.getOutputsOfInterest();
-      const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;
-
-      for (const outCol of outputsOfInterestColumns) {
-        inputsOfInterestColumns.forEach((inCol) => {
-          if (inCol.name === outCol.name) {
-            inCol.name = `${inCol.name} (input)`;
-            outCol.name = `${outCol.name} (output)`;
-          }
+      const variedInputsTypes = this.getVariedInputs()
+        .map((propName) => {
+          const prop = (this.store.inputs[propName] as SensitivityNumericStore).prop;
+          return {
+            name: propName,
+            caption: prop.caption ?? propName,
+            type: prop.propertyType,
+          };
         });
 
-        outCol.name = funcEvalResults.columns.getUnusedName(outCol.name);
+      const outputsOfInterest = this.getOutputsOfInterest();
+      const analysis = new GridAnalysis(
+        this.func,
+        funcInputs,
+        variedInputsTypes,
+        outputsOfInterest,
+        this.diffGrok,
+      );
+      const funcEvalResults = await analysis.perform();
 
-        funcEvalResults.columns.add(outCol);
-      }
-
+      this.clearPrev();
+      this.comparisonView.dataFrame = funcEvalResults;
       const colNamesToShow = funcEvalResults.columns.names();
+      const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
 
-      for (const col of fixedInputsColumns) {
+      // add columns with fixed inputs & mark them as fixed
+      for (const col of fixedInputs) {
         col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
         funcEvalResults.columns.add(col);
       }
 
-      this.comparisonView.dataFrame = funcEvalResults;
+      // hide columns with fixed inputs
+      this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
+      this.comparisonView.grid.columns.setVisible(colNamesToShow);
+      this.comparisonView.grid.props.rowHeight = ROW_HEIGHT;
 
-      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-        const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
+      // add correlation plot
+      const corPlot = DG.Viewer.correlationPlot(funcEvalResults, {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow});
+      const corPlotDockNode = this.comparisonView.dockManager.dock(corPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.COR_PLOT);
+      this.openedViewers.push(corPlot);
+
+      // add PC plot
+      const pcPlot = DG.Viewer.pcPlot(funcEvalResults, {columnNames: colNamesToShow});
+      this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.DOWN, corPlotDockNode, '', DOCK_RATIO.PC_PLOT);
+      this.openedViewers.push(pcPlot);
+
+      const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsTypes.length);
+
+      // other visualizations depending on the varied inputs dimension
+      const graphViewer = (variedInputsTypes.length === 1) ?
+        DG.Viewer.lineChart(funcEvalResults, this.getLineChartOpt(colNamesToShow)) :
+        DG.Viewer.scatterPlot(funcEvalResults, this.getScatterOpt(colNamesToShow, nameOfNonFixedOutput));
+
+      this.openedViewers.push(graphViewer);
+      this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
+
+      /** Show current run output in the content panel */
+      const cellEffect = async (cell: DG.GridCell) => {
+        if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
+          return;
+
+        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const funcCall = this.func.prepare(selectedInput);
+        const selectedRun = await funcCall.call();
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1387,33 +1374,10 @@ export class SensitivityAnalysisView {
         overviewPanel.panes[paneToExpandIdx].expanded = true;
 
         grok.shell.o = overviewPanel.root;
-      });
+      }; // cellEffect
 
-      // hide columns with fixed inputs
-      this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
-      this.comparisonView.grid.columns.setVisible(colNamesToShow);
-
-      this.comparisonView.grid.props.rowHeight = ROW_HEIGHT;
-
-      // add correlation plot
-      const corPlot = DG.Viewer.correlationPlot(funcEvalResults, {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow});
-      const corPlotDockNode = this.comparisonView.dockManager.dock(corPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.COR_PLOT);
-      this.openedViewers.push(corPlot);
-
-      // add PC plot
-      const pcPlot = DG.Viewer.pcPlot(funcEvalResults, {columnNames: colNamesToShow});
-      this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.DOWN, corPlotDockNode, '', DOCK_RATIO.PC_PLOT);
-      this.openedViewers.push(pcPlot);
-
-      const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsColumns.length);
-
-      // other vizualizations depending on the varied inputs dimension
-      const graphViewer = (variedInputsColumns.length === 1) ?
-        DG.Viewer.lineChart(funcEvalResults, this.getLineChartOpt(colNamesToShow)) :
-        DG.Viewer.scatterPlot(funcEvalResults, this.getScatterOpt(colNamesToShow, nameOfNonFixedOutput));
-
-      this.openedViewers.push(graphViewer);
-      this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
+      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe(cellEffect);
+      this.gridCellChangeSubscription = this.comparisonView.grid.onCurrentCellChanged.subscribe(cellEffect);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
