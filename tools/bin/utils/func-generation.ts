@@ -36,7 +36,8 @@ export enum FUNC_TYPES {
   SEM_TYPE_DETECTOR = 'semTypeDetector',
   DASHBOARD = 'dashboard',
   FUNCTION_ANALYSIS = 'functionAnalysis',
-  CONVERTER = 'converter'
+  CONVERTER = 'converter',
+  MODEL = 'model'
 }
 
 export const typesToAnnotation : Record<string, string> = {
@@ -325,6 +326,14 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     },
     genFunc: generateFunc,
   },
+  model: {
+    metadata: {
+      tags: [FUNC_TYPES.MODEL],
+      inputs: [],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  }
 
 };
 

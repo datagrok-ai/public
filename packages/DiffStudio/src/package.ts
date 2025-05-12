@@ -115,18 +115,15 @@ export class PackageFunctions {
     new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
   }
 
-  @grok.decorators.func({
+  @grok.decorators.model({
     name: 'Ball flight',
-    tags: ['model'],  
     description: 'Ball flight simulation',
     editor: 'Compute:RichFunctionViewEditor',
     sidebar: '@compute',
-    meta: {
-      runOnOpen: 'true',
-      runOnInput: 'true',
-      features: '{"sens-analysis": true, "fitting": true}',
-      icon: 'files/icons/ball.png'
-    },
+    runOnOpen: 'true',
+    runOnInput: 'true',
+    features: '{"sens-analysis": true, "fitting": true}',
+    icon: 'files/icons/ball.png',
     outputs: [
       {
         name: 'maxDist', 
@@ -189,9 +186,8 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
-  @grok.decorators.func({ 
-    tags: ['model'],
-    meta: { icon: 'files/icons/pkpd.png' }
+  @grok.decorators.model({ 
+    icon: 'files/icons/pkpd.png'
   })
   static async pkPdNew(): Promise<void> {
     await PK_PD_DEMO.run();
@@ -210,10 +206,9 @@ export class PackageFunctions {
     await PK_PD_DEMO.runDemo();
   }
 
-  @grok.decorators.func({ 
-    tags: ['model'],
+  @grok.decorators.model({ 
     description: 'Controlled fab-arm exchange mechanism simulation',
-    meta: { icon: 'files/icons/bioreactor.png' }
+    icon: 'files/icons/bioreactor.png'
   })
   static async Bioreactor(): Promise<void> {
     await BIOREACTOR_DEMO.run();

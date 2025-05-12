@@ -172,6 +172,13 @@ export namespace decorators {
     url?: string
   }
 
+  interface ModelOptions extends FunctionOptions{
+    icon?: string,
+    features?: string,
+    runOnInput?: string,
+    runOnOpen?: string
+  }
+
   interface CellRendererOptions extends FunctionOptions{
     cellType?: string,
     columnTags?: string
@@ -336,6 +343,14 @@ export namespace decorators {
   }
 
   export function treeBrowser(config: FunctionOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function model(config: ModelOptions) {
     return function (
       target: any,
       propertyKey: string,

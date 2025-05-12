@@ -75,12 +75,12 @@ export async function runDiffStudioTreeBrowser(treeNode: any, browsePanel: any) 
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
+//editor: Compute:RichFunctionViewEditor
+//sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ball.png
-//editor: Compute:RichFunctionViewEditor
-//sidebar: @compute
 export function ballFlight(dB: number, roB: number, v: number, a: number) {
   return PackageFunctions.ballFlight(dB, roB, v, a);
 }
