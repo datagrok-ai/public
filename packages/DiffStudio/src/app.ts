@@ -1528,7 +1528,15 @@ export class DiffStudio {
       const script = DG.Script.create(scriptText);
       await SensitivityAnalysisView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        diffGrok: {
+          ivp: ivp,
+          ivpWW: getIvp2WebWorker(ivp),
+          pipelineCreator: getPipelineCreator(ivp),
+        },
       });
+      // await SensitivityAnalysisView.fromEmpty(script, {
+      //   inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      // });
     } catch (err) {
       this.processError(err);
     }
