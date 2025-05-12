@@ -327,7 +327,7 @@ export interface IDartApi {
   grok_Dialog_Show(d: any, modal: Bool, resizable: Bool, fullScreen: Bool, center: Bool, centerAt: any, x: Num, y: Num, width: Num, height: Num, backgroundColor: String, showNextTo: any): any;
   grok_Dialog_OnInputChanged(d: any, handler: any): any;
   grok_Dialog_OnCancel(d: any, handler: any): any;
-  grok_Dialog_OnOK(d: any, handler: any): any;
+  grok_Dialog_OnOK(d: any, handler: any, closeOnEnter: Bool): any;
   grok_Dialog_Close(d: any): any;
   grok_Dialog_OnClose(d: any, handler: any): any;
   grok_Dialog_Clear(d: any): any;
