@@ -10,10 +10,8 @@ const MODEL = `#name: PK-PD
   d(centr)/dt = KA * depot - CL * C2 - Q * C2 + Q * C3
   d(peri)/dt  = Q * C2 - Q * C3
   d(eff)/dt  = Rate - Rate * (1 - C2/(EC50 + C2)) * eff
-
-#expressions:
-  C2 = centr / V2
-  C3 = peri / V3
+  d(C2)/dt = (KA * depot - CL * C2 - Q * C2 + Q * C3) / V2
+  d(C3)/dt = (Q * C2 - Q * C3) / V3
 
 #output:
   t {caption: Time [h]}
@@ -36,8 +34,10 @@ const MODEL = `#name: PK-PD
 #inits:  
   depot = 0 {category: Misc}
   centr = 0 {caption: central; category: Misc}
-  peri = 0 {caption: peripheral; category: Misc}
+  peri = 0  {caption: peripheral; category: Misc}
   eff = 0.2 {caption: init effect; category: Misc}
+  C2 = 0    {caption: central; category: Initial concentrations}
+  C3 = 0    {caption: peripheral; category: Initial concentrations}
 
 #parameters:  
   dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
