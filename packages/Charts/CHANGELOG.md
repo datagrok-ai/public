@@ -1,5 +1,23 @@
 # Charts changelog
 
+## 1.5.2 (2025-05-12)
+
+### Features
+
+* [3298](https://github.com/datagrok-ai/public/issues/3298): Tree:
+  * Added Ctrl+Click support for branch selection to enable filtering
+  * Implemented collaborative filtering
+
+### Bug Fixes
+
+* GROK-18010: Charts | Sunburst: Viewer formatting reset on property changes
+* GROK-18011: Charts | Sunburst: Molecules appear smaller/bigger than expected
+* GROK-18009: Charts | Sunburst: Errors after changing table with opened 'Select columns' dialog
+* GROK-18036: Charts | Sankey: Selecting an empty column in the context panel causes errors
+* GROK-18035: Charts | Sankey: Errors on hover after applying filters
+* GROK-18087: Charts | Tree viewer: Size aggregation types 'nulls' and '#selected' break the viewer
+* GROK-18085: Charts | Radar: Empty chart after restoring from project
+
 ## 1.5.1 (2025-04-01)
 
 ### Bug Fixes
