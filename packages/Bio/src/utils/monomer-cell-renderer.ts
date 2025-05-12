@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {GridCell} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -25,8 +26,8 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
   ): void {
     g.save();
     try {
-      if (gridCell.gridRow < 0) return;
-      const applyToBackground = gridCell.cell?.column && gridCell.cell.column.getTag(MONOMER_RENDERER_TAGS.applyToBackground) === 'true';
+      if (!gridCell.isTableCell) return;
+      const applyToBackground = gridCell.cell?.column && gridCell.cell.column?.dart && gridCell.cell.column.getTag(MONOMER_RENDERER_TAGS.applyToBackground) === 'true';
 
       g.font = `12px monospace`;
       g.textBaseline = 'middle';
@@ -44,9 +45,8 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
           const colors = this.monomerLib.getMonomerColors(biotype, symbol);
           textcolor = colors?.textcolor ?? textcolor;
           backgroundcolor = colors?.backgroundcolor ?? backgroundcolor;
-        } else {
+        } else
           textcolor = this.monomerLib.getMonomerTextColor(biotype, symbol);
-        }
       }
 
       //cell width of monomer should dictate how many characters can be displayed

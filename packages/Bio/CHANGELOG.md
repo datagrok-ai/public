@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.21.4 (2025-05-12)
+
+* Support monomer renderer in viewers
+
 ## 2.21.3 (2025-05-01)
 
 * Similarity search viewer: Fix for clearing selection
