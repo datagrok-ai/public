@@ -1529,9 +1529,6 @@ export class DiffStudio {
       await SensitivityAnalysisView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
       });
-      // await SensitivityAnalysisView.fromEmpty(script, {
-      //   inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
-      // });
     } catch (err) {
       this.processError(err);
     }
