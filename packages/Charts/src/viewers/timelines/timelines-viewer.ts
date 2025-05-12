@@ -467,9 +467,9 @@ export class TimelinesViewer extends EChartViewer {
     $(this.legendDiv).empty();
     const legend = DG.Legend.create(column);
     legend.onViewerLegendChanged = () => {
-      const filteredIdxs = legend.selectedCategories;
+      const filteredIdxs = legend.filterBy;
       const legendLabels = this.legendDiv.innerText.split('\n');
-      this.updateOnLegendChange(Array.from(filteredIdxs!), legendLabels);
+      this.updateOnLegendChange(filteredIdxs, legendLabels);
     };
     this.legendDiv.appendChild(legend.root);
     $(legend.root).addClass('charts-legend');

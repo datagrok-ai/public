@@ -135,9 +135,10 @@ export class SunburstViewer extends EChartViewer {
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
 
-      if (this.onClick === 'Filter')
-        this.applySelectionFilter(this.dataFrame.filter, path, event);
-      else
+      if (this.onClick === 'Filter') {
+        this.handleDataframeFiltering(path, this.dataFrame);
+        return;
+      } else
         this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
