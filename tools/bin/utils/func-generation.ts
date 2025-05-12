@@ -10,10 +10,14 @@ export enum pseudoParams {
   INPUT_TYPE = 'inputType',
 }
 
-let nonMetaData = [
+const nonMetaData = [
   'sidebar',
   'editor'
 ];
+
+const decoratorOptionToAnnotation = new Map<string, string>([
+  ['initialValue', 'default']
+]);
 
 export enum FUNC_TYPES {
   APP = 'app',
@@ -109,24 +113,12 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   if (data.outputs) {
     for (const output of data.outputs)
       if (output.type  !== 'void')
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}` : '') + sep;
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options?` ${buildStringOfOptions(output.options)}`:''}` : '') + sep;
   }
   
   if (data.meta) {
     for(let entry of Object.entries(data.meta))
       s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
-  }
-
-  if (data.test)
-  {
-    for(let entry of Object.entries(data.test)){
-      if (entry[0] === 'test' || entry[0] === 'wait')
-        s += `${comment}`;
-      else 
-        s+= `, `;
-      s += `${entry[0]}: ${entry[1]} `;
-    }
-    s += `${sep}`;
   }
 
   for (const parameter in data) {
@@ -143,6 +135,18 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
         s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
     }
   }
+
+  if (data.test)
+  {
+    for(let entry of Object.entries(data.test)){
+      if (entry[0] === 'test' || entry[0] === 'wait')
+        s += `${comment}`;
+      else 
+        s+= `, `;
+      s += `${entry[0]}: ${entry[1]} `;
+    }
+    s += `${sep}`;
+  }
   return s;
 }
 
@@ -150,9 +154,12 @@ function buildStringOfOptions(options: any){
   let optionsInString : string[] = [];
   for (const [key, value] of Object.entries(options ?? {})) {
     let val = value;
+    let option = key;
+    option = decoratorOptionToAnnotation.get(option) ?? option;
+
     if(Array.isArray(value))
       val = JSON.stringify(value);
-    optionsInString.push(`${key}: ${val}`);
+    optionsInString.push(`${option}: ${val}`);
   }
   return `{ ${optionsInString.join('; ')} }`;
 }

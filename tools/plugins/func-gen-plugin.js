@@ -33,6 +33,9 @@ class FuncGeneratorPlugin {
 
       for (const file of tsFiles) {
         const content = fs.readFileSync(file, "utf-8");
+        if(!content.includes('@grok.decorators.'))
+          continue;
+        
         if (!content) continue;
         const ast = tsParser.parse(content, {
           sourceType: "module",
@@ -44,11 +47,6 @@ class FuncGeneratorPlugin {
         });
         const functions = [];
         let imports = new Set();
-
-        const fileName = path.basename(file);
-        if(fileName === 'package-functions.ts')
-          imports = new Set([... this._readImports(content)]);
-
         this._walk(ast, (node, parentClass) => {
           const decorators = node.decorators;
           if (!decorators || decorators.length === 0) return;
@@ -58,7 +56,7 @@ class FuncGeneratorPlugin {
 
           if (node?.type === "MethodDefinition")
             this._addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports, parentClass);
-          });
+        });
         this._insertImports([...imports]);
         fs.appendFileSync(this.options.outputPath, functions.join(""), "utf-8");
       }
@@ -161,13 +159,14 @@ class FuncGeneratorPlugin {
   _readMethodParamas(node) {
     const params = node?.value?.params?.map(param => {
       let baseParam = param.type === 'TSNonNullExpression' ? param.expression : param;
-      let defaultValue = undefined;
       const options   = param.decorators?.length > 0?  Object.fromEntries(this._readDecoratorOptions(param.decorators[0]?.expression?.arguments[0].properties)) : undefined;
       
+      // Commented code finds value by default of function's variable  
+      // let defaultValue = undefined; 
       if(baseParam.type === 'AssignmentPattern')
       {
-        if (baseParam?.right?.type  === 'Literal')
-          defaultValue = baseParam?.right?.raw;
+        // if (baseParam?.right?.type  === 'Literal')
+        //   defaultValue = baseParam?.right?.raw;
         baseParam = baseParam?.left;
       } 
 
@@ -176,50 +175,52 @@ class FuncGeneratorPlugin {
           baseParam.type === 'RestElement'
             ? `...${baseParam.argument.name}`
             : baseParam.name;
-    
         if (baseParam?.argument?.typeAnnotation)
           name += ': ' + generate(baseParam.argument.typeAnnotation.typeAnnotation).code;
     
         let type = '';
-        if (baseParam?.typeAnnotation)
-          type = generate(baseParam.typeAnnotation.typeAnnotation).code;
-        else
+        if (baseParam?.typeAnnotation?.typeAnnotation?.typeName || baseParam?.typeAnnotation?.typeAnnotation?.elementType?.typeName)
           type = 'any';
-    
-        return { name: name, type: type, defaultValue: defaultValue, options: options };
+        else if (baseParam?.typeAnnotation?.typeAnnotation)
+          type = generate(baseParam.typeAnnotation.typeAnnotation).code;
+        let params = baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
+        if(type !== 'any' && params && params.length > 0)
+          type += `<${params.map((e)=>e.typeName.name).join(',')}>`;
+        return { name: name, type: type, options: options };
       }
-      else if (baseParam.type === 'ObjectPattern' || baseParam.type === 'ArrayPattern') {
-        let name = '';
-        if (baseParam.type === 'ObjectPattern') {
-          const properties = baseParam.properties.map(prop => {
-            if (prop.type === 'Property' && prop.key.type === 'Identifier')
-              return prop.key.name;
-            else if (prop.type === 'RestElement' && prop.argument.type === 'Identifier')
-              return `...${prop.argument.name}`;
-            else
-              return generate(prop).code;
-          });
-          name = `{ ${properties.join(', ')} }`;
-        } else {
-          const elements = baseParam.elements.map(elem => {
-            if (elem) {
-              if (elem.type === 'Identifier')
-                return elem.name;
-              else
-                return generate(elem).code;
-            } else return '';
-          });
-          name = `[${elements.join(', ')}]`;
-        }
+      // Commented code belove sets more strong types for ObjectPatterns and ArrayPatterns
+      // else if (baseParam.type === 'ObjectPattern' || baseParam.type === 'ArrayPattern') {
+      //   let name = '';
+      //   if (baseParam.type === 'ObjectPattern') {
+      //     const properties = baseParam.properties.map(prop => {
+      //       if (prop.type === 'Property' && prop.key.type === 'Identifier')
+      //         return prop.key.name;
+      //       else if (prop.type === 'RestElement' && prop.argument.type === 'Identifier')
+      //         return `...${prop.argument.name}`;
+      //       else
+      //         return generate(prop).code;
+      //     });
+      //     name = `{ ${properties.join(', ')} }`;
+      //   } else {
+      //     const elements = baseParam.elements.map(elem => {
+      //       if (elem) {
+      //         if (elem.type === 'Identifier')
+      //           return elem.name;
+      //         else
+      //           return generate(elem).code;
+      //       } else return '';
+      //     });
+      //     name = `[${elements.join(', ')}]`;
+      //   }
     
-        let type = '';
-        if (baseParam.typeAnnotation)
-          type = generate(baseParam.typeAnnotation.typeAnnotation).code;
-        else
-          type = 'any';
+      //   let type = '';
+      //   if (baseParam.typeAnnotation)
+      //     type = generate(baseParam.typeAnnotation.typeAnnotation).code;
+      //   else
+      //     type = 'any';
 
-        return { name: name, type: type, defaultValue: defaultValue, options: options };
-      }
+      //   return { name: name, type: type, options: options };
+      // }
       return { name: 'value', type: 'any', options: undefined };
     });
     return params;
@@ -228,7 +229,7 @@ class FuncGeneratorPlugin {
   _getTsFiles(root) {
     const tsFiles = [];
     const extPattern = /\.tsx?$/;
-    const excludedFiles = ["package.ts", "package-test.ts", "package.g.ts"];
+    const excludedFiles = ["package-test.ts", "package.g.ts"];
 
     function findFiles(dir) {
       const files = fs.readdirSync(dir);
@@ -266,41 +267,42 @@ class FuncGeneratorPlugin {
   _readFunctionReturnTypeInfo(node) { 
     let resultType = 'any';
     let isArray = false;
-    const annotation = node.value.returnType.typeAnnotation;
-    if (annotation?.typeName?.name === 'Promise')
-    {
-      const argumnets = annotation.typeArguments?.params;
-      if (argumnets && argumnets.length===1)
+    const annotation = node.value?.returnType?.typeAnnotation;
+    if (annotation) {
+      if (annotation?.typeName?.name === 'Promise')
       {
-        if (argumnets[0].typeName)
-          resultType = argumnets[0].typeName?.right?.name ?? argumnets[0].typeName?.name;
-        else if (argumnets[0].type !== 'TSArrayType')
-          resultType = this._getTypeNameFromNode(argumnets[0]);
-        else if (argumnets[0].elementType.type !== 'TSTypeReference'){
+        const argumnets = annotation.typeArguments?.params;
+        if (argumnets && argumnets.length===1)
+        {
+          if (argumnets[0].typeName)
+            resultType = argumnets[0].typeName?.right?.name ?? argumnets[0].typeName?.name;
+          else if (argumnets[0].type !== 'TSArrayType')
+            resultType = this._getTypeNameFromNode(argumnets[0]);
+          else if (argumnets[0].elementType.type !== 'TSTypeReference'){
+            isArray = true;
+            resultType = this._getTypeNameFromNode(argumnets[0]?.elementType);
+          }
+          else{
+            isArray = true;
+            resultType = argumnets[0].elementType?.typeName?.name || argumnets[0].elementType?.typeName?.right?.name;
+          }
+        }
+      }    
+      else{      
+        if (annotation.type === 'TSTypeReference')
+          resultType = annotation.typeName?.right?.name ?? annotation.typeName?.name;
+        else if (annotation.type !== 'TSArrayType')
+          resultType = this._getTypeNameFromNode(annotation);
+        else if  (annotation.elementType.type !== 'TSTypeReference'){
           isArray = true;
-          resultType = this._getTypeNameFromNode(argumnets[0]?.elementType);
+          resultType = this._getTypeNameFromNode(annotation?.elementType);
         }
         else{
           isArray = true;
-          resultType = argumnets[0].elementType?.typeName?.name || argumnets[0].elementType?.typeName?.right?.name;
+          resultType = (annotation?.elementType?.typeName?.name || annotation?.elementType?.typeName?.right?.name);
         }
       }
     }    
-    else{      
-      if (annotation.type === 'TSTypeReference')
-        resultType = annotation.typeName?.right?.name ?? annotation.typeName?.name;
-      else if (annotation.type !== 'TSArrayType')
-        resultType = this._getTypeNameFromNode(annotation);
-      else if  (annotation.elementType.type !== 'TSTypeReference'){
-        isArray = true;
-        resultType = this._getTypeNameFromNode(annotation?.elementType);
-      }
-      else{
-        isArray = true;
-        resultType = (annotation?.elementType?.typeName?.name || annotation?.elementType?.typeName?.right?.name);
-      }
-    }
-    
     resultType = typesToAnnotation[resultType];
     if (isArray && resultType)
       resultType = `list<${resultType}>`

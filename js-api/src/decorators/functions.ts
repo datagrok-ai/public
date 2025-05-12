@@ -92,8 +92,9 @@ export namespace decorators {
     max?: string;
     caption?: string;
     description?: string;
-    default?: string;
+    initialValue?: string;
     viewer?: string;
+    units?: string;
   }
 
   interface Input {
@@ -105,7 +106,7 @@ export namespace decorators {
   interface Output {
     name?: string;
     type?: string;
-    options?: string;
+    options?: Record<string, string>;
   }
 
   interface Meta {
@@ -161,11 +162,14 @@ export namespace decorators {
     outputs?: Output[],
     sidebar?: string;
     editor?: string;
+    cache?: string;
+    ['cache.invalidateOn']?: string;
   }
 
   interface AppOptions extends FunctionOptions{
     browsePath?: string,
-    icon?: string
+    icon?: string, 
+    url?: string
   }
 
   interface CellRendererOptions extends FunctionOptions{
@@ -189,8 +193,9 @@ export namespace decorators {
   
   interface DemoOptions extends FunctionOptions{
     path?: string;
-    demoWait?: string;
+    demoPath?: string;
     demoSkip?: string;
+    demoWait?: string;
     test?: { test: string, wait: string, timeout?: string, skip?: string }
   }
 
