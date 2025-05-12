@@ -114,11 +114,6 @@ export class PackageFunctions {
   static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
     new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
   }
-  
-  //input: double dB = 0.01 
-  //input: double roB = 200 {category: Ball; caption: Density; units: kg/m^3; min: 200; max: 1200}
-  //input: double v = 50 {category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec}
-  //input: double a = 45 {category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg}
 
   @grok.decorators.func({
     name: 'Ball flight',
