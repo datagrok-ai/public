@@ -29,8 +29,7 @@ export type OutputInfo = {
 
 export type SensitivityAnalysisResult = {
   funcEvalResults: DG.DataFrame,
-  funcCalls?: DG.FuncCall[],
-  funcInputs?: any[],
+  funcInputs: any[],
 };
 
 function getCellCoordinatesFromRow(df: DG.DataFrame, spec: OutputDataFromUI): CellCoordinates[] {

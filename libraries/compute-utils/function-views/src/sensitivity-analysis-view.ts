@@ -425,8 +425,8 @@ export class SensitivityAnalysisView {
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
 
-  private gridSubscription: any = null; // TODO: fix subscr. like in the fitting view
-  // add gridcell ... see fitting
+  private gridClickSubscription: any = null;
+  private gridCellChangeSubscription: any = null;
 
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
@@ -525,7 +525,7 @@ export class SensitivityAnalysisView {
     this.diffGrok = options.diffGrok;
   } // constructor
 
-  private closeOpenedViewers() {
+  private clearPrev() {
     for (const v of this.openedViewers)
       v.close();
 
@@ -537,9 +537,14 @@ export class SensitivityAnalysisView {
       this.helpMdNode = undefined;
     }
 
-    if (this.gridSubscription) {
-      this.gridSubscription.unsubscribe();
-      this.gridSubscription = null;
+    if (this.gridClickSubscription) {
+      this.gridClickSubscription.unsubscribe();
+      this.gridClickSubscription = null;
+    }
+
+    if (this.gridCellChangeSubscription) {
+      this.gridCellChangeSubscription.unsubscribe();
+      this.gridCellChangeSubscription = null;
     }
   } // closeOpenedViewers
 
@@ -914,9 +919,9 @@ export class SensitivityAnalysisView {
       );
 
       const analysisResults = await analysis.perform();
-      this.closeOpenedViewers();
+      this.clearPrev();
       const funcEvalResults = analysisResults.funcEvalResults;
-      const calledFuncCalls = analysisResults.funcCalls;
+      const funcInputs = analysisResults.funcInputs;
       const firstOrderIndeces = analysisResults.firstOrderSobolIndices;
       const totalOrderIndeces = analysisResults.totalOrderSobolIndices;
       const outputNames = firstOrderIndeces.columns.names();
@@ -965,11 +970,16 @@ export class SensitivityAnalysisView {
 
       this.openedViewers = this.openedViewers.concat([bChartSobol1, bChartSobolT]);
 
-      this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-        if (calledFuncCalls === undefined)
+      /** Show current run output in the content panel */
+      const cellEffect = async (cell: DG.GridCell) => {
+        if (funcInputs === undefined)
           return;
 
-        const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
+        console.log('We call func');
+
+        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const funcCall = this.func.prepare(selectedInput);
+        const selectedRun = await funcCall.call();
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1024,7 +1034,10 @@ export class SensitivityAnalysisView {
         overviewPanel.panes[paneToExpandIdx].expanded = true;
 
         grok.shell.o = overviewPanel.root;
-      });
+      }; // cellEffect
+
+      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe(cellEffect);
+      this.gridCellChangeSubscription = this.comparisonView.grid.onCurrentCellChanged.subscribe(cellEffect);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -1080,9 +1093,10 @@ export class SensitivityAnalysisView {
       );
       const analysiResults = await analysis.perform();
       const funcEvalResults = analysiResults.funcEvalResults;
-      const calledFuncCalls = analysiResults.funcCalls;
+      const funcInputs = analysiResults.funcInputs;
+      console.log('Func inputs: ', funcInputs);
 
-      this.closeOpenedViewers();
+      this.clearPrev();
       this.comparisonView.dataFrame = funcEvalResults;
       const colNamesToShow = funcEvalResults.columns.names();
       const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
@@ -1118,11 +1132,20 @@ export class SensitivityAnalysisView {
       this.openedViewers.push(graphViewer);
       this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
 
-      this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-        if (calledFuncCalls === undefined)
+      /** Show current run output in the content panel */
+      const cellEffect = async (cell: DG.GridCell) => {
+        console.log('We call cell effect');
+
+        if (funcInputs === undefined)
           return;
 
-        const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
+        console.log('We call func');
+
+        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const funcCall = this.func.prepare(selectedInput);
+        const selectedRun = await funcCall.call();
+
+        console.log('Func called');
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1177,7 +1200,10 @@ export class SensitivityAnalysisView {
         overviewPanel.panes[paneToExpandIdx].expanded = true;
 
         grok.shell.o = overviewPanel.root;
-      });
+      }; // cellEffect
+
+      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe(cellEffect);
+      this.gridCellChangeSubscription = this.comparisonView.grid.onCurrentCellChanged.subscribe(cellEffect);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -1241,7 +1267,7 @@ export class SensitivityAnalysisView {
 
       const calledFuncCalls = await getCalledFuncCalls(funccalls);
 
-      this.closeOpenedViewers();
+      this.clearPrev();
 
       const variedInputsColumns = [] as DG.Column[];
       const rowCount = calledFuncCalls.length;
@@ -1305,7 +1331,7 @@ export class SensitivityAnalysisView {
 
       this.comparisonView.dataFrame = funcEvalResults;
 
-      this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
         const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
 
         const scalarParams = ([...selectedRun.outputParams.values()])
