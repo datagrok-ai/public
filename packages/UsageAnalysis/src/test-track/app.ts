@@ -538,7 +538,7 @@ export class TestTrack extends DG.ViewBase {
   private UpdateReportAccordingTestTrackSelection(node: any) {
     if (this.tableViewReport !== null) {
       this.tableViewReport?.dataFrame?.selection?.setAll(false);
-      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || []);
       if (foundRows.length === 1)
         this.tableViewReport!.dataFrame.currentRowIdx = foundRows[0];
     }
@@ -1287,7 +1287,7 @@ export class TestTrack extends DG.ViewBase {
   private updateReportData(node: DG.TreeViewNode) {
     if (this.tableViewReport !== null) {
       this.tableViewReport?.dataFrame?.selection?.setAll(false);
-      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || []);
       if (foundRows.length === 1) {
         this.tableViewReport?.dataFrame?.set('status', foundRows[0], node.value.status || '')
         this.tableViewReport?.dataFrame?.set('reason', foundRows[0], node.value.fullReason || '')
