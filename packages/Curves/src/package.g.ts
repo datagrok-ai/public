@@ -44,7 +44,7 @@ export function _initCurves() {
 
 //name: addStatisticsColumn
 //tags: Transform
-//input: dynamic df 
+//input: dataframe df 
 //input: string colName 
 //input: string propName 
 //input: string seriesName 
@@ -56,7 +56,7 @@ export function addStatisticsColumn(df: any, colName: string, propName: string, 
 
 //name: addAggrStatisticsColumn
 //tags: Transform
-//input: dynamic df 
+//input: dataframe df 
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
@@ -66,8 +66,8 @@ export function addAggrStatisticsColumn(df: any, colName: string, propName: stri
 
 //name: platesFolderPreview
 //tags: folderViewer
-//input: dynamic folder 
-//input: dynamic files 
+//input: file folder 
+//input: list<file> files 
 //output: widget result
 export async function platesFolderPreview(folder: any, files: any) {
   return PackageFunctions.platesFolderPreview(folder, files);
@@ -75,7 +75,7 @@ export async function platesFolderPreview(folder: any, files: any) {
 
 //name: previewPlate
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
@@ -95,7 +95,7 @@ export async function importPlate(fileContent: string) {
 
 //name: importPlateXlsx
 //tags: file-handler
-//input: dynamic fileContent 
+//input: blob fileContent 
 //meta.ext: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
 export async function importPlateXlsx(fileContent: any) {
@@ -104,7 +104,7 @@ export async function importPlateXlsx(fileContent: any) {
 
 //name: viewPlateXlsx
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
@@ -113,7 +113,7 @@ export async function previewPlateXlsx(file: any) {
 }
 
 //name: checkExcelIsPlate
-//input: dynamic content 
+//input: blob content 
 //output: bool result
 export async function checkExcelIsPlate(content: any) {
   return PackageFunctions.checkExcelIsPlate(content);

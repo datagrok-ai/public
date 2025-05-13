@@ -179,10 +179,11 @@ class FuncGeneratorPlugin {
           name += ': ' + generate(baseParam.argument.typeAnnotation.typeAnnotation).code;
     
         let type = '';
-        if (baseParam?.typeAnnotation?.typeAnnotation?.typeName || baseParam?.typeAnnotation?.typeAnnotation?.elementType?.typeName)
-          type = 'any';
-        else if (baseParam?.typeAnnotation?.typeAnnotation)
+        if (baseParam?.typeAnnotation?.typeAnnotation)
           type = generate(baseParam.typeAnnotation.typeAnnotation).code;
+        else 
+          type = 'any';
+        
         let params = baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
         if(type !== 'any' && params && params.length > 0)
           type += `<${params.map((e)=>e.typeName.name).join(',')}>`;
