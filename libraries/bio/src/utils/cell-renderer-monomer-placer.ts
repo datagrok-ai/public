@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -27,7 +28,15 @@ type MonomerPlacerProps = {
 
 export const undefinedColor = 'rgb(100,100,100)';
 
-export function hitBounds(bounds: number[], x: number): number | null {
+export const shiftedLeftPaddingText = '...';
+
+/** Be ware, this can return -1 meaning that hovering/clicking happened on the three dots
+ * and not on the monomer itself */
+export function hitBounds(bounds: number[], x: number, positionShiftPixels?: number): number | null {
+  if ((positionShiftPixels ?? 0) > 0 && x < (bounds[0] ?? 0) + positionShiftPixels!)
+    return -1;
+  x -= positionShiftPixels ?? 0;
+
   let iterationCount: number = 100;
   let leftI: number = 0;
   let rightI = bounds.length - 1;
@@ -178,7 +187,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
   private getSummedMonomerLengths(res: number[]): number[] {
     const resSum: number[] = new Array<number>(res.length + 1);
-    resSum[0] = 5; // padding
+    resSum[0] = this.padding; // padding
     for (let pos: number = 1; pos < resSum.length; pos++)
       resSum[pos] = resSum[pos - 1] + res[pos - 1];
     // due to implementation specifics and performance, resSum can have NaN s at the end for stuff that is not visible
@@ -298,13 +307,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   /** Returns seq position for pointer x */
-  public getPosition(rowIdx: number, x: number, width: number): number | null {
+  public getPosition(rowIdx: number, x: number, width: number, positionShiftPadding?: number): number | null {
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] =
       this.getCellMonomerLengths(rowIdx, width);
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(rowIdx);
     if (seqSS.length === 0) return null;
-    return hitBounds(monomerMaxLengthSumList, x);
+    return hitBounds(monomerMaxLengthSumList, x, positionShiftPadding);
   }
 
   public setMonomerLengthLimit(value: number): void {
@@ -324,8 +333,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private padding: number = 5;
 
   get positionShift(): number {
-    return Number.parseInt(this.tableCol?.tags[bioTAGS.positionShift] ?? '0') ?? 0;
+    const parsed = Number.parseInt(this.tableCol?.tags[bioTAGS.positionShift] ?? '0') ?? 0;
+    return isNaN(parsed) ? 0 : Math.max(parsed, 0);
   }
+
+  private _leftThreeDotsPadding: number = 0;
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
@@ -406,7 +418,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const seqSS = splitterFunc(
           ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
             tempReferenceSequence : tempCurrentWord ?? '');
-        return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
+        return wu.count(0).take(seqSS.length).slice(positionShift).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
       })();
 
       const subParts: ISeqSplitted = isRenderedOnGrid ? sh.getSplitted(rowIdx) : sh.splitter(value);
@@ -418,6 +430,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
 
+      // if the sequence is rendered in shifted mode, we will also render three dots at start, indicating the shift
+      this._leftThreeDotsPadding = positionShift > 0 ? g.measureText(shiftedLeftPaddingText).width : 0;
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
       for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
         const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
@@ -439,8 +453,17 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
           monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
         };
-        printLeftOrCentered(g, om, x + this.padding, y, w, h, opts);
+        printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         if (minDistanceRenderer > w) break;
+      }
+      if (positionShift > 0) {
+        const opts: Partial<PrintOptions> = {
+          color: undefinedColor, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: false,
+          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
+          maxLengthOfMonomer: maxLengthOfMonomer,
+          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
+        };
+        printLeftOrCentered(g, shiftedLeftPaddingText, x + this.padding, y, w, h, opts);
       }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
@@ -458,7 +481,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     // if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
     //   return;
-
+    const positionShift = this.positionShift;
     const gridCellBounds: DG.Rect = gridCell.bounds;
     // const value: any = gridCell.cell.value;
     //
@@ -468,17 +491,18 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     //   maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
     // const maxIndex = maxLengthWords.length;
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
-    const left: number | null = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
+    const leftPadding = positionShift > 0 && (this._leftThreeDotsPadding ?? 0) > 0 ? this._leftThreeDotsPadding : 0;
+    const left: number | null = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width, leftPadding);
     this.logger.debug(`${logPrefix}, start, argsX: ${argsX}, left: ${left}`);
 
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
-    if (left !== null && left + this.positionShift < seqSS.length) {
+    if (left !== null && left >= 0 && left + positionShift < seqSS.length) {
       const alphabet = sh.alphabet ?? ALPHABET.UN;
       const seqMonomer = {
         position: left,
         biotype: alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA,
-        symbol: seqSS.getCanonical(left + this.positionShift),
+        symbol: seqSS.getCanonical(left + positionShift),
       } as ISeqMonomer;
       const tooltipElements: HTMLElement[] = [];
       let monomerDiv = this._monomerStructureMap[seqMonomer.symbol];
@@ -494,8 +518,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       execMonomerHoverLinks(gridCell, seqMonomer);
     } else {
-      //
-      ui.tooltip.hide();
+      if (left === -1)
+        ui.tooltip.show(ui.divText(`${Math.min(positionShift, seqSS.length)} hidden monomers`), e.x + 16, e.y + 16);
+      else
+        ui.tooltip.hide();
       execMonomerHoverLinks(gridCell, null);
     }
   }
