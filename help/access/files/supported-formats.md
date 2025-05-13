@@ -54,7 +54,7 @@ In addition to detecting formats by their extension, Datagrok uses content-drive
 | Extension         | Description                                    | Source    |
 |-------------------|------------------------------------------------|--------------------|
 | .ipynb            | Jupyter Notebook                               | [Notebooks]        |
-| .ipv              | Interactive differential equations             | [Diff Studio]      |
+| .ivp              | Interactive differential equations             | [Diff Studio]      |
 
 ### Docs and reports
 
