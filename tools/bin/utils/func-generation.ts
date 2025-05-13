@@ -10,6 +10,15 @@ export enum pseudoParams {
   INPUT_TYPE = 'inputType',
 }
 
+const nonMetaData = [
+  'sidebar',
+  'editor'
+];
+
+const decoratorOptionToAnnotation = new Map<string, string>([
+  ['initialValue', 'default']
+]);
+
 export enum FUNC_TYPES {
   APP = 'app',
   CELL_RENDERER = 'cellRenderer',
@@ -27,7 +36,8 @@ export enum FUNC_TYPES {
   SEM_TYPE_DETECTOR = 'semTypeDetector',
   DASHBOARD = 'dashboard',
   FUNCTION_ANALYSIS = 'functionAnalysis',
-  CONVERTER = 'converter'
+  CONVERTER = 'converter',
+  MODEL = 'model'
 }
 
 export const typesToAnnotation : Record<string, string> = {
@@ -74,6 +84,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join(', ') :
       data.tags.join(', ')}${sep}`;
   }
+  
   for(let input of data.inputs ?? [])
   {
     if(!input)
@@ -103,7 +114,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   if (data.outputs) {
     for (const output of data.outputs)
       if (output.type  !== 'void')
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}` : '') + sep;
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options?` ${buildStringOfOptions(output.options)}`:''}` : '') + sep;
   }
   
   if (data.meta) {
@@ -112,15 +123,30 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   }
 
   for (const parameter in data) {
-    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta')
+    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
       if (isFileViewer)
         continue;
       s += `${comment}meta.ext: ${data[parameter]}${sep}`;
-    } else if (!headerParams.includes(parameter))
-      s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
+    } else if (!headerParams.includes(parameter)){
+      if (nonMetaData.includes(parameter))
+        s += `${comment}${parameter}: ${data[parameter]}${sep}`;
+      else
+        s += `${comment}meta.${parameter}: ${data[parameter]}${sep}`;
+    }
+  }
 
+  if (data.test)
+  {
+    for(let entry of Object.entries(data.test)){
+      if (entry[0] === 'test' || entry[0] === 'wait')
+        s += `${comment}`;
+      else 
+        s+= `, `;
+      s += `${entry[0]}: ${entry[1]} `;
+    }
+    s += `${sep}`;
   }
   return s;
 }
@@ -129,9 +155,12 @@ function buildStringOfOptions(options: any){
   let optionsInString : string[] = [];
   for (const [key, value] of Object.entries(options ?? {})) {
     let val = value;
+    let option = key;
+    option = decoratorOptionToAnnotation.get(option) ?? option;
+
     if(Array.isArray(value))
       val = JSON.stringify(value);
-    optionsInString.push(`${key}: ${val}`);
+    optionsInString.push(`${option}: ${val}`);
   }
   return `{ ${optionsInString.join('; ')} }`;
 }
@@ -281,6 +310,30 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     },
     genFunc: generateFunc,
   },
+  demo: {
+    metadata: {
+      tags: [],
+      inputs: [],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  },
+  treeBrowser: {
+    metadata: {
+      tags: [],
+      inputs: [{ name: 'treeNode', type: 'dynamic' }, { name: 'browseView', type: 'view' }],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  },
+  model: {
+    metadata: {
+      tags: [FUNC_TYPES.MODEL],
+      inputs: [],
+      outputs: [],
+    },
+    genFunc: generateFunc,
+  }
 
 };
 
@@ -290,11 +343,12 @@ export function generateClassFunc(annotation: string, className: string, sep: st
 }
 
 /** Generates a DG function. */
-export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = []): string 
+export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string 
 {
   let funcSigNature = (inputs.map((e)=>`${e.name}: ${e.type}`)).join(', ');
   let funcArguments = (inputs.map((e)=>e.name)).join(', ');
-  return annotation + `export function _${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+  
+  return annotation + `export ${isAsync? 'async ': ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {
@@ -304,3 +358,4 @@ export function generateImport(className: string, path: string, sep: string = '\
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
 }
+

@@ -92,8 +92,9 @@ export namespace decorators {
     max?: string;
     caption?: string;
     description?: string;
-    default?: string;
+    initialValue?: string;
     viewer?: string;
+    units?: string;
   }
 
   interface Input {
@@ -105,11 +106,51 @@ export namespace decorators {
   interface Output {
     name?: string;
     type?: string;
-    options?: string;
+    options?: Record<string, string>;
   }
 
   interface Meta {
-
+    cache?: string;
+    ['cache.invalidateOn']?: string;
+    browsePath?: string;
+    icon?: string;
+    demoPath?: string;
+    demoSkip?: string;
+    demoWait?: string;
+    path?: string;
+    vectorFunc?: string;
+    ext?: string;
+    cellType?: string;
+    columnTags?: string;
+    supportedSemTypes?: string;
+    supportedTypes?: string;
+    supportedDistanceFunctions?: string;
+    supportedUnits?: string;
+    action?: string;
+    fileViewerCheck?: string;
+    fileViewer?: string;
+    keywords?: string;
+    role?: string;
+    mlname?: string;
+    mlrole?: string;
+    inputRegex?: string;
+    runOnOpen?: string;
+    runOnInput?: string;
+    features?: string;
+    toolbox?: string;
+    gridChart?: string;
+    virtual?: string;
+    order?: string;
+    autostartImmediate?: string;
+    ['scriptHandler.language']?: string;
+    ['scriptHandler.extensions']?: string;
+    ['scriptHandler.commentStart']?: string;
+    ['scriptHandler.templateScript']?: string;
+    ['scriptHandler.codeEditorMode']?: string;
+    ['scriptHandler.vectorizationFunction']?: string;
+    url?: string;
+    propertyType?: string;
+    semType?: string;
   }
 
   interface FunctionOptions {
@@ -118,12 +159,24 @@ export namespace decorators {
     description?: string,
     inputs?: Input[],
     meta?: Meta | Record<string, string>,
-    outputs?: Output[]
+    outputs?: Output[],
+    sidebar?: string;
+    editor?: string;
+    cache?: string;
+    ['cache.invalidateOn']?: string;
   }
 
   interface AppOptions extends FunctionOptions{
     browsePath?: string,
-    icon?: string
+    icon?: string, 
+    url?: string
+  }
+
+  interface ModelOptions extends FunctionOptions{
+    icon?: string,
+    features?: string,
+    runOnInput?: string,
+    runOnOpen?: string
   }
 
   interface CellRendererOptions extends FunctionOptions{
@@ -143,6 +196,14 @@ export namespace decorators {
   interface FileHandlerOptions extends FunctionOptions{
     ext: string;
     fileViewerCheck?: string;
+  }
+  
+  interface DemoOptions extends FunctionOptions{
+    path?: string;
+    demoPath?: string;
+    demoSkip?: string;
+    demoWait?: string;
+    test?: { test: string, wait: string, timeout?: string, skip?: string }
   }
 
   export function func(config: FunctionOptions) {
@@ -266,6 +327,30 @@ export namespace decorators {
   }
 
   export function fileHandler(config: FileHandlerOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function demo(config: DemoOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function treeBrowser(config: FunctionOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function model(config: ModelOptions) {
     return function (
       target: any,
       propertyKey: string,
