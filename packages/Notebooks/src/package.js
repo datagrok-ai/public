@@ -542,6 +542,7 @@ export function notebookView(params = null, path = '') {
 //input: bool execute
 //output: blob result
 export async function convertNotebook(notebook, format = 'html', execute = false) {
+  notebook = notebook.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
       {method: 'POST', body: new TextEncoder().encode(notebook)})
   if (response.status > 201)
