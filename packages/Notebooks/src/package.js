@@ -371,7 +371,8 @@ class NotebookView extends DG.ViewBase {
           lines[n] = `#${lines[n]}\n`;
         body.push(...lines);
         body.push('\n');
-      } else if (cell.model.type === 'code') {
+      }
+      else if (cell.model.type === 'code') {
         let lines = text.split('\n').filter(l => !l.startsWith('%'));
         for (let line of lines) {
           let match = inputRegex.exec(line);
@@ -381,8 +382,7 @@ class NotebookView extends DG.ViewBase {
           if (match !== null)
             outputs.push(`#output: dataframe ${match[1]}\n`);
         }
-        lines = lines.filter(l => !l.includes('grok')).join('\n');
-        body.push(lines);
+        body.push(lines.join('\n'));
         body.push('\n\n');
       }
     });
@@ -542,6 +542,7 @@ export function notebookView(params = null, path = '') {
 //input: bool execute
 //output: blob result
 export async function convertNotebook(notebook, format = 'html', execute = false) {
+  notebook = notebook.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
       {method: 'POST', body: new TextEncoder().encode(notebook)})
   if (response.status > 201)

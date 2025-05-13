@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Union, BinaryIO
+from typing import List, Optional, Dict, Any, Set, Union
 import requests
 import pandas as pd
 import json
@@ -558,7 +558,7 @@ class DatagrokClient:
                 raise Exception("Something went wrong during request") 
         return response
     
-    def _list_files_unix_style(self, root_dir: str, excludes: set = None) -> list[str]:
+    def _list_files_unix_style(self, root_dir: str, excludes: Optional[Set] = None) -> List[str]:
         """List files in a directory using Unix-style paths.
         
         Parameters
@@ -570,7 +570,7 @@ class DatagrokClient:
             
         Returns
         -------
-        list[str]
+        List[str]
             List of file paths relative to the root directory
         """
         root = Path(root_dir)
