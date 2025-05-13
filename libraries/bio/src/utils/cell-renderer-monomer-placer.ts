@@ -17,6 +17,7 @@ import {IMonomerLibBase} from '../types/index';
 import {HelmTypes} from '../helm/consts';
 import {ISeqMonomer} from '../helm/types';
 import {execMonomerHoverLinks} from '../monomer-works/monomer-hover';
+import * as operators from 'rxjs/operators';
 
 type MonomerPlacerProps = {
   separatorWidth: number,
@@ -92,6 +93,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           this.tableCol.temp[tempTAGS.currentWord] = null;
           this.invalidateGrid();
         }
+      }));
+
+      this.subs.push(DG.debounce(this.tableCol.dataFrame.onMetadataChanged.pipe(
+        operators.filter((a) => a.args.source === this.tableCol && a.args.key === bioTAGS.positionShift)
+      ), 200).subscribe((_) => {
+        this.reset();
       }));
     }
   }
@@ -186,29 +193,30 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
-    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
+    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeq()`;
     // this.logger.debug(`${logPrefix}, start`);
 
     if (this._monomerLengthList === null)
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
 
+    const visibleSeqStart = this.positionShift;
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
-    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth) + visibleSeqStart;
     const seqSS: ISeqSplitted = sh.getSplitted(rowIdx);
-    const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
+    const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
 
     let res: number[] = this._monomerLengthList[rowIdx];
-    if (res === null || res.length < visibleSeqLength) {
+    if (res === null || res.length != visibleSeqEnd - visibleSeqStart) {
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqSS.length);
 
       let seqWidth: number = 0;
-      for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+      for (let seqMonI = visibleSeqStart; seqMonI < visibleSeqEnd; ++seqMonI) {
         const seqMonLabel = seqSS.getOriginal(seqMonI);
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
         const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
-        res[seqMonI] = seqMonWidth;
+        res[seqMonI - visibleSeqStart] = seqMonWidth;
         seqWidth += seqMonWidth;
         if (seqWidth > this.colWidth) break;
       }
@@ -219,17 +227,18 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private getCellMonomerLengthsForSeqValue(value: string, width: number): number[] {
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
-    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth);
+    const visibleSeqStart = this.positionShift;
+    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth) + visibleSeqStart;
     const seqSS: ISeqSplitted = sh.splitter(value);
-    const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
-    const res = new Array<number>(visibleSeqLength);
+    const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
+    const res = new Array<number>(visibleSeqEnd - visibleSeqStart);
     let seqWidth: number = 0;
-    for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+    for (let seqMonI = visibleSeqStart; seqMonI < visibleSeqEnd; ++seqMonI) {
       const seqMonLabel = seqSS.getOriginal(seqMonI);
       const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
       const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
       const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
-      res[seqMonI] = seqMonWidth;
+      res[seqMonI - visibleSeqStart] = seqMonWidth;
       seqWidth += seqMonWidth;
       if (seqWidth > width) break;
     }
@@ -261,27 +270,29 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     })();
 
     const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
-    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
+    const visibleSequenceStart = this.positionShift;
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth) + visibleSequenceStart;
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._processedRows.get(seqIdx) && maxVisibleSeqLength <= this._processedMaxVisibleSeqLength)
         continue;
       const sh = this.seqHelper.getSeqHandler(this.tableCol);
       const seqSS: ISeqSplitted = sh.getSplitted(seqIdx, maxVisibleSeqLength);
 
-      const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
-      if (visibleSeqLength > res.length)
-        res.push(...new Array<number>(visibleSeqLength - res.length).fill(minMonWidth));
+      const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
+      if (visibleSeqEnd - visibleSequenceStart > res.length)
+        res.push(...new Array<number>(visibleSeqEnd - visibleSequenceStart - res.length).fill(minMonWidth));
 
       let seqWidth: number = 0;
-      for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+      for (let seqMonI = visibleSequenceStart; seqMonI < visibleSeqEnd; ++seqMonI) {
         const seqMonLabel: string = seqSS.getOriginal(seqMonI);
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.fontCharWidth;
-        res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
+        res[seqMonI - visibleSequenceStart] = Math.max(res[seqMonI - visibleSequenceStart] ?? 0, seqMonWidth);
         seqWidth += seqMonWidth;
         if (seqWidth >= this.colWidth) break;
       }
       this._processedMaxVisibleSeqLength = Math.max(this._processedMaxVisibleSeqLength, maxVisibleSeqLength);
+      this._processedRows.set(seqIdx, true);
     }
     return res; // first (and single) row of data
   }
@@ -312,6 +323,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
   private padding: number = 5;
 
+  get positionShift(): number {
+    return Number.parseInt(this.tableCol?.tags[bioTAGS.positionShift] ?? '0') ?? 0;
+  }
+
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
   ) {
@@ -322,6 +337,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const gridCol = this.gridCol;
     const tableCol = this.tableCol;
     const dpr = window.devicePixelRatio;
+    const positionShift = this.positionShift;
 
     const logPrefix = `${this.toLog()}.render()`;
     this.logger.debug(`${logPrefix}, start`);
@@ -377,7 +393,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
       const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
-      const splitLimit = Math.ceil(w / minMonWidth);
+      const splitLimit = Math.ceil(w / minMonWidth) + positionShift;
 
       const tempReferenceSequence: string | null = tableCol.temp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = this.tableCol.temp[tempTAGS.currentWord];
@@ -403,9 +419,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         drawStyle = DrawStyle.MSA;
 
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
-      for (let posIdx: number = 0; posIdx < visibleSeqLength; ++posIdx) {
-        const om: string = subParts.getOriginal(posIdx);
-        const cm: string = subParts.getCanonical(posIdx);
+      for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
+        const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
+        const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
 
         let color = undefinedColor;
         const monomerLib = this.getMonomerLib();
@@ -419,7 +435,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         /*x1 = */
         const opts: Partial<PrintOptions> = {
           color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
-          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx, gridCell: gridCell,
+          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
           referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
           monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
         };
@@ -457,12 +473,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
-    if (left !== null && left < seqSS.length) {
+    if (left !== null && left + this.positionShift < seqSS.length) {
       const alphabet = sh.alphabet ?? ALPHABET.UN;
       const seqMonomer = {
         position: left,
         biotype: alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA,
-        symbol: seqSS.getCanonical(left),
+        symbol: seqSS.getCanonical(left + this.positionShift),
       } as ISeqMonomer;
       const tooltipElements: HTMLElement[] = [];
       let monomerDiv = this._monomerStructureMap[seqMonomer.symbol];

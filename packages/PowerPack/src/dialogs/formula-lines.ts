@@ -425,6 +425,7 @@ class Editor {
   _form: HTMLElement;
   _dataFrame: DG.DataFrame;
   _onItemChangedAction: Function;
+  _onFormulaValidation: Function;
 
   /** The title must be accessible from other inputs, because it may depend on the formula */
   _ibTitle?: DG.InputBase;
@@ -434,11 +435,12 @@ class Editor {
       this._ibTitle!.value = newFormula;
   }
 
-  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function) {
+  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function, onFormulaValidation: Function) {
     this._form = ui.form([]);
     this.items = items;
     this._dataFrame = dataFrame;
     this._onItemChangedAction = onItemChangedAction;
+    this._onFormulaValidation = onFormulaValidation;
   }
 
   /** Creates and fills editor for given Formula Line */
@@ -505,6 +507,14 @@ class Editor {
         item.formula = value;
         const resultOk = this._onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
+        if (!resultOk) {
+          const splitValues = value?.split('=');
+          if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
+            ibFormula.setTooltip('Line formula should contain columns from both sides of the "=" sign');
+        }
+        else
+          ibFormula.setTooltip('');
+        this._onFormulaValidation(resultOk);
         this._setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -942,7 +952,7 @@ export class FormulaLinesDialog {
 
     this.dialog
       .add(layout)
-      .onOK(this._onOKAction.bind(this))
+      .onOK(this._onOKAction.bind(this), {closeOnEnter: false})
       .show({resizable: true, width: 850, height: 660});
   }
 
@@ -968,6 +978,9 @@ export class FormulaLinesDialog {
       (itemIdx: number): boolean => {
         this._currentTable.update(itemIdx);
         return this.preview.update(itemIdx);
+      },
+      (isValid: boolean): void => {
+        isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
       });
   }
 

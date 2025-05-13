@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.43.6 (2025-05-12)
+
+- Sensitivity Analysis update
+
 ## 1.43.5 (2025-05-02)
 
 - `OutliersSelectionViewer` improvements

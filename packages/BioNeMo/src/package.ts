@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { CONSTANTS, DiffDockModel } from './diffdock/diffdock-model';
+import { CONSTANTS, DiffDockModel, PosesJson } from './diffdock/diffdock-model';
 
 export const _package = new DG.Package();
 
@@ -32,7 +32,7 @@ export async function molMIMModel(algorithm: string, num_molecules: number, prop
   particles: number, iterations: number, smi: string
 ) {
   const apiKey = await getApiKey();
-  const results = await grok.functions.call('BioNeMo:MolMIMGenerate', {algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey});
+  const results = await grok.functions.call('BioNeMo:MolMIMGenerate', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey });
 }
 
 //name: EsmFoldModel
@@ -46,7 +46,7 @@ export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
     const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
     for (let i = 0; i < sequences.length; ++i) {
       const colValue = sequences.get(i);
-      const predictedValue = await grok.functions.call('BioNeMo:esmfold', {sequence: colValue, api_key: apiKey});
+      const predictedValue = await grok.functions.call('BioNeMo:esmfold', { sequence: colValue, api_key: apiKey });
       protein.set(i, predictedValue);
     }
     protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
@@ -68,11 +68,11 @@ export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.
     const apiKey = await getApiKey();
     const loader = ui.loader();
     result.root.appendChild(loader);
-    grok.functions.call('BioNeMo:esmfold', {sequence: sequence.value, api_key: apiKey}).then(async (res) => {
+    grok.functions.call('BioNeMo:esmfold', { sequence: sequence.value, api_key: apiKey }).then(async (res) => {
       result.root.removeChild(loader);
-      const molstarViewer = await sequence.cell.dataFrame.plot.fromType('Biostructure', {pdb: res});
+      const molstarViewer = await sequence.cell.dataFrame.plot.fromType('Biostructure', { pdb: res });
       result.root.appendChild(molstarViewer.root);
-    }); 
+    });
   } catch (e: any) {
     result.root.appendChild(ui.divText(e.message));
   }
@@ -145,31 +145,41 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
   resultsContainer.appendChild(loader);
 
   try {
-    const table = smiles.cell.dataFrame;
-    const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find(file => file.extension === 'pdbqt')!;
+    const { value: smilesValue, units: smilesUnits, cell } = smiles;
+    const { dataFrame: table, column, rowIndex } = cell;
+
+    const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file: DG.FileInfo) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);
-    
-    const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, receptorFile.name, poses);
-    const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name, poses);
-    
-    let virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
-    
-    if (!virtualPosesColumn) {
-      const posesJson = await diffDockModel.getPosesJson(smiles.value, smiles.units);
-      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualPosesColumnName, table.rowCount);
-      table.columns.add(virtualPosesColumn);
-      virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
-      diffDockModel.virtualPosesColumn = virtualPosesColumn;
+    const { name: receptorName } = receptorFile;
+
+    const diffDockModel = new DiffDockModel(table, column, receptor, receptorName, poses);
+    const virtualColName = getVirtualPosesColumnName(receptorName, poses);
+
+    let posesColumn = table.columns.byName(virtualColName);
+    let posesJson: PosesJson;
+
+    if (!posesColumn) {
+      posesJson = await diffDockModel.getPosesJson(smilesValue, smilesUnits);
+      posesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualColName, table.rowCount);
+      table.columns.add(posesColumn);
+      posesColumn.set(rowIndex, JSON.stringify(posesJson));
     } else {
-      diffDockModel.virtualPosesColumn = virtualPosesColumn;
+      const existingValue = posesColumn.get(rowIndex);
+      if (!existingValue) {
+        posesJson = await diffDockModel.getPosesJson(smilesValue, smilesUnits);
+        posesColumn.set(rowIndex, JSON.stringify(posesJson));
+      } else {
+        posesJson = JSON.parse(existingValue);
+      }
     }
-    
-    const posesJson = JSON.parse(virtualPosesColumn.get(smiles.cell.rowIndex));
-    const { bestId, bestPose, confidence } = diffDockModel.findBestPose(posesJson);
-    const combinedControl = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);
+
+    diffDockModel.virtualPosesColumn = posesColumn;
+
+    const { bestId, bestPose } = diffDockModel.findBestPose(posesJson);
+    const viewer = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);
 
     resultsContainer.removeChild(loader);
-    resultsContainer.append(combinedControl);
+    resultsContainer.append(viewer);
   } catch (e: any) {
     resultsContainer.removeChild(loader);
     const errorDiv = ui.divText(e.message)

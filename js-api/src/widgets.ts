@@ -732,9 +732,10 @@ export class ToolboxPage {
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
+   * @param {Object} options
    * @returns {Dialog} */
-  onOK(handler: Function): Dialog<Inputs> {
-    api.grok_Dialog_OnOK(this.dart, handler);
+  onOK(handler: Function, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
+    api.grok_Dialog_OnOK(this.dart, handler, options?.closeOnEnter ?? true);
     return this;
   }
 

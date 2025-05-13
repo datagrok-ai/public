@@ -120,8 +120,11 @@ export class DataFrame {
   }
 
   /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
-  static create(rowCount: number = 0): DataFrame {
-    return new DataFrame(api.grok_DataFrame(rowCount));
+  static create(rowCount: number = 0, name?: string): DataFrame {
+    const df = new DataFrame(api.grok_DataFrame(rowCount));
+    if (name)
+      df.name = name;
+    return df;
   }
 
   static fromByteArray(byteArray: Uint8Array): DataFrame {
