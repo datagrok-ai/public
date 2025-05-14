@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from "../plate/plate";
+import {Utils} from "datagrok-api/dg";
 
 
 export type PlateType = {
@@ -18,9 +19,18 @@ export type PlateProperty = {
   value_type: string; //DG.COLUMN_TYPE;
 }
 
-export type PlateQuery = {
-  platePropertyValues: {[propId: number]: string[]};
+export type PlatePropertyCondition = {
+  propertyId: number;
+  matcher: NumericMatcher;
 }
+
+export type PlateQuery = {
+  /** Allowed categorical values for plate level properties */
+  platePropertyValues: {[propId: number]: string[]};
+
+  platePropertyConditions: PlatePropertyCondition[];
+}
+
 
 export let wellProperties: PlateProperty[] = [
   {id: 1000, name: 'Volume', value_type: DG.COLUMN_TYPE.FLOAT},
@@ -80,7 +90,6 @@ function getValueType(x: any): string {
     return DG.TYPE.FLOAT;
   if (typeof x === 'boolean')
     return DG.TYPE.BOOL;
-  console.log(x);
   throw 'Not supported type';
 }
 
@@ -95,52 +104,98 @@ function sqlStr(s?: string | number) {
 }
 
 
+/**
+ * Build SQL that
+ *   1) keeps only plates whose plate-level properties match the user’s filters
+ *   2) returns every plate-level property (name + value) for those plates
+ *      packed into a single JSONB column called "properties".
+ *
+ *   The JSON looks like:
+ *   {
+ *     "Volume":        "100.0",
+ *     "Concentration": "10.5",
+ *     "Sample":        "ABC-123",
+ *     "Well Role":     "DMSO",
+ *     ...
+ *   }
+ */
 function getPlateSearchSql(query: PlateQuery): string {
-  const conditions: string[] = [];
+  // ---------- 1. Build the boolean conditions for the filter ----------
+  const existsClauses: string[] = [];
 
   for (const [propIdStr, values] of Object.entries(query.platePropertyValues)) {
-    const propId = parseInt(propIdStr, 10);
-
     if (values.length === 0) continue;
+    const propId = Number(propIdStr);
 
-    // Escape single quotes and wrap values in single quotes
-    const escapedValues = values.map((v) => `'${v.replace(/'/g, "''")}'`).join(", ");
+    // Safely single-quote the values 
+    const escapedValues = values
+      .map(v => `'${v.replace(/'/g, "''")}'`)
+      .join(", ");
 
-    const condition = `
+    existsClauses.push(`
       EXISTS (
-        SELECT 1 FROM plates.plate_details pd
-        WHERE pd.plate_id = p.id
-          AND pd.property_id = ${propId}
-          AND pd.value_string IN (${escapedValues})
-      )
-    `;
-
-    conditions.push(condition);
+        SELECT 1
+        FROM plates.plate_details pd_f
+        WHERE pd_f.plate_id = p.id
+          AND pd_f.property_id = ${propId}
+          AND (pd_f.value_string IN (${escapedValues}))
+      )`);
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  for (const condition of query.platePropertyConditions) {
+    existsClauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM plates.plate_details pd_f
+        WHERE pd_f.plate_id = p.id
+          AND pd_f.property_id = ${condition.propertyId}
+          AND (${condition.matcher.toSql('pd_f.value_num')})
+      )`);
+  }
 
+  const whereFilter =
+    existsClauses.length > 0 ? `WHERE ${existsClauses.join(" AND ")}` : "";
+
+  // ---------- 2. Final query – filter first, then collect all properties ----------
   return `
-    SELECT p.*
-    FROM plates.plates p
-    ${whereClause};
-  `.trim();
+WITH filtered_plates AS (
+  SELECT p.id, p.barcode, p.description
+  FROM plates.plates p
+  ${whereFilter}
+)
+SELECT
+  fp.id         AS plate_id,
+  fp.barcode,
+  fp.description,
+  jsonb_pretty(
+    jsonb_object_agg(
+      pr.name,
+      CASE
+        WHEN pd.value_string   IS NOT NULL THEN to_jsonb(pd.value_string)
+        WHEN pd.value_num      IS NOT NULL THEN to_jsonb(pd.value_num)
+        WHEN pd.value_bool     IS NOT NULL THEN to_jsonb(pd.value_bool)
+        WHEN pd.value_uuid     IS NOT NULL THEN to_jsonb(pd.value_uuid)
+        WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime)
+        ELSE to_jsonb(NULL::text)               -- should never happen
+      END
+    )
+  ) AS properties
+FROM filtered_plates fp
+JOIN plates.plate_details pd ON pd.plate_id = fp.id
+JOIN plates.properties     pr ON pr.id      = pd.property_id
+GROUP BY fp.id, fp.barcode, fp.description
+ORDER BY fp.id;
+`.trim();
 }
 
 
-export async function queryPlates(query: PlateQuery) {
-
-  return await grok.data.db.query('Admin:Plates', getPlateSearchSql(query));
-
-  // const plateValuesSql = Object.keys(query.platePropertyValues)
-  //   .map(pid => `(pd.property_id = ${pid})`)
-  //   .join('\n AND ');
-  //
-  // const sql =
-  //   `select * from plates.plates p
-  //    join plates.plate_details pd on p.plate_id = pd.plate_id
-  //    where ${plateValuesSql}`;
+export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
+  const df = await grok.data.db.query('Admin:Plates', getPlateSearchSql(query));
+  Utils.jsonToColumns(df.col('properties')!);
+  df.col('properties')!.name = '~properties';
+  return df;
 }
+
 
 /** Saves the plate to the database. */
 export async function savePlate(plate: Plate){
@@ -208,6 +263,7 @@ function getPlateInsertSql(plate: Plate): string {
 
 export async function __createDummyPlateData() {
   await initPlates();
+
   for (let i = 0; i < 50; i++) {
     const plate = Plate.demo();
     plate.details = {
@@ -222,5 +278,20 @@ export async function __createDummyPlateData() {
     }
     await savePlate(plate);
   }
+
+  for (let i = 0; i < 50; i++) {
+    const plate = Plate.demo();
+    plate.details = {
+      'Project': DG.Utils.random([
+        'NaV1.7 Blockers for Pain Relief',
+        'TLR4 Antagonists for Sepsis',]),
+      'Stage': DG.Utils.random(['Stage 1', 'Stage 2', 'Stage 3']),
+      'Chemist': DG.Utils.random(['John Marlowski', 'Andrew Smith']),
+      'Biologist': DG.Utils.random(['Anna Fei', 'Joan Dvorak']),
+      'Cells': Math.ceil(Math.random() * 100)
+    }
+    await savePlate(plate);
+  }
+
   grok.shell.info('100 plates saved');
 }

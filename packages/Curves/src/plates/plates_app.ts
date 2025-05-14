@@ -12,12 +12,14 @@ import {
 import {input} from "datagrok-api/ui";
 import search = input.search;
 import {debounceTime} from "rxjs/operators";
+import {async} from "rxjs";
+import {NumericMatcher} from "./numeric_matcher";
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
   const view = DG.TableView.create(dummy);
 
-  grok.functions.call('Curves:getPlates').then((df: DG.DataFrame) => {
+  queryPlates({platePropertyValues: {}, platePropertyConditions: []}).then((df: DG.DataFrame) => {
     df.col('barcode')!.semType = 'Plate Barcode';
     view.dataFrame = df;
     view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
@@ -56,15 +58,35 @@ async function searchView(): Promise<DG.View> {
       const input: DG.InputBase = ui.input.multiChoice(prop.name, { items: items})
       inputs.push(input);
     }
+    else if (prop.value_type == DG.TYPE.FLOAT) {
+      const input: DG.InputBase = ui.input.string(prop.name);
+      inputs.push(input);
+    }
+  }
+
+  const refresh = () => {
+    const query: PlateQuery = { platePropertyValues: {}, platePropertyConditions: []};
+
+    for (const input of inputs.filter(input => input.inputType == DG.InputType.MultiChoice && input.value.length > 0))
+      query.platePropertyValues[getPlateProperty(input.caption).id] = input.value;
+
+    for (const input of inputs.filter(input => input.inputType == DG.InputType.Text && input.value !== ''))
+      query.platePropertyConditions.push({
+        propertyId: getPlateProperty(input.caption).id,
+        matcher: NumericMatcher.parse(input.value)!
+      });
+
+    queryPlates(query).then((df) => {
+      view.dataFrame = df;
+      view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
+        .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+    });
   }
 
   const form = DG.InputForm.forInputs(inputs);
-  form.onInputChanged.pipe(debounceTime(500)).subscribe((_) => {
-    const query: PlateQuery = { platePropertyValues: {}};
-    for (const input of inputs.filter(input => input.value.length > 0))
-      query.platePropertyValues[getPlateProperty(input.caption).id] = input.value;
-    queryPlates(query).then((df) => view.dataFrame = df);
-  });
+  form.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
+
+  refresh();
 
   //@ts-ignore
   view.dockManager.dock(form.root, DG.DOCK_TYPE.TOP);
