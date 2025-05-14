@@ -1154,6 +1154,7 @@ export interface IDartApi {
   grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_GetInputs(form: any): any;
   grok_InputForm_Get_IsValid(form: any): any;
   grok_InputForm_Get_Source(form: any): any;
   grok_InputForm_Set_Source(form: any, x: any): any;
