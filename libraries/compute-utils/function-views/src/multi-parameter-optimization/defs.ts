@@ -9,7 +9,6 @@ export type InputOptions = {
   maxs: Float32Array,
 };
 
-//n_weights=100, generations=100, neighbors=10, mutation_rate=0.2
 export type MoeadOptions = {
   nWeights: number,
   generations: number,
@@ -18,7 +17,7 @@ export type MoeadOptions = {
 };
 
 export enum MOEAD_DEFAULTS {
-  N_WEIGHTS = 5, //100,
+  N_WEIGHTS = 100,
   GENERATIONS = 100,
   NEIGHBORS = 10,
   MUTATION_RATE = 0.2,
@@ -29,4 +28,9 @@ export const DEFAULT_SETTINGS: MoeadOptions = {
   generations: MOEAD_DEFAULTS.GENERATIONS,
   neighbors: MOEAD_DEFAULTS.NEIGHBORS,
   mutationRate: MOEAD_DEFAULTS.MUTATION_RATE,
+};
+
+export type MoeadOutput = {
+  point: Float32Array,
+  objective: Float32Array,
 };

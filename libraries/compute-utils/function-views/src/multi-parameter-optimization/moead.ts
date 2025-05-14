@@ -1,93 +1,10 @@
 /* eslint-disable valid-jsdoc */
 // The MOEA/D method for multi-objective optimization: https://ieeexplore.ieee.org/document/4358754
 
-/**
- import numpy as np
-import matplotlib.pyplot as plt
-
-# Objective functions (now depend on x1 and x2)
-def f1(x):
-    return x[0]**2 + x[1]**2
-
-def f2(x):
-    return (x[0] - 2)**2 + (x[1] - 1)**2
-
-# Scalarization: weighted sum
-def weighted_sum(x, w):
-    return w[0] * f1(x) + w[1] * f2(x)
-
-# Generate uniform weight vectors
-def generate_weights(n_weights):
-    weights = []
-    for i in range(n_weights + 1):
-        w1 = i / n_weights
-        w2 = 1 - w1
-        weights.append((w1, w2))
-    return np.array(weights)
-
-# Initialize a random 2D solution in [0, 2] × [0, 2]
-def random_solution():
-    return np.random.uniform(0, 2, size=2)
-
-# Crossover: blend
-def crossover(x1, x2):
-    alpha = np.random.rand()
-    return alpha * x1 + (1 - alpha) * x2
-
-# Mutation
-def mutate(x, sigma=0.1):
-    return np.clip(x + np.random.normal(0, sigma, size=x.shape), 0, 2)
-
-# MOEA/D algorithm
-def moead(n_weights=100, generations=100, neighbors=10, mutation_rate=0.2):
-    weights = generate_weights(n_weights)
-    population = np.array([random_solution() for _ in range(n_weights + 1)])
-
-    # Precompute neighborhoods
-    distances = np.linalg.norm(weights[:, None, :] - weights[None, :, :], axis=2)
-    neighborhoods = np.argsort(distances, axis=1)[:, :neighbors]
-
-    for gen in range(generations):
-        for i in range(n_weights + 1):
-            nbr = neighborhoods[i]
-            p1, p2 = np.random.choice(nbr, 2, replace=False)
-            x1, x2 = population[p1], population[p2]
-
-            # Create offspring
-            offspring = crossover(x1, x2)
-            if np.random.rand() < mutation_rate:
-                offspring = mutate(offspring)
-
-            # Update neighborhood
-            for j in nbr:
-                if weighted_sum(offspring, weights[j]) < weighted_sum(population[j], weights[j]):
-                    population[j] = offspring
-
-    return population, weights
-
-# Run MOEA/D
-solutions, weights = moead()
-
-# Evaluate objectives
-f1_vals = np.array([f1(x) for x in solutions])
-f2_vals = np.array([f2(x) for x in solutions])
-
-# Plot Pareto front
-plt.figure(figsize=(7, 5))
-plt.scatter(f1_vals, f2_vals, c='blue', label='MOEA/D Approximation')
-plt.xlabel('f1(x)')
-plt.ylabel('f2(x)')
-plt.title('Pareto Front for 2D Variables')
-plt.grid(True)
-plt.legend()
-plt.show()
-
- */
-
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions} from './defs';
-import {clip, euclideanDistance} from './utils';
+import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions, MoeadOutput} from './defs';
+import {clip, euclideanDistance, pickTwo} from './utils';
 
 export class Moead {
   public objective: Func;
@@ -177,7 +94,7 @@ export class Moead {
   }
 
   /** MOEA/D algorithm */
-  public perform() {
+  public perform(): MoeadOutput[] {
     const nWeights = this.methodOpts.nWeights;
     const weights = this.generateWeights();
     console.log('Weights: ', weights);
@@ -199,22 +116,43 @@ export class Moead {
 
     console.log('Neighborhoods: ', neighborhoods);
 
-    //np.array([random_solution() for _ in range(n_weights + 1)])
+    // Evolution loop
+    for (let gen = 0; gen < this.methodOpts.generations; ++gen) {
+      for (let i = 0; i <= nWeights; i++) {
+        const nbr = neighborhoods[i];
+        const [p1, p2] = pickTwo(nbr);
+        let child = this.crossover(population[p1], population[p2]);
+        if (Math.random() < this.methodOpts.mutationRate)
+          child = this.mutate(child);
+
+        // Update neighborhood
+        for (const j of nbr) {
+          if (this.weightedSum(child, weights[j]) < this.weightedSum(population[j], weights[j]))
+            population[j] = child;
+        }
+      }
+    }
+
+    return population.map((x) => ({
+      point: x,
+      objective: this.objective(x),
+    }));
   }
 }; // Moead
 
 const func = (x: Float32Array): Float32Array => {
   return new Float32Array([
-    x[0]**2 + x[1]**2,
+    x[0]**2 + x[1]**2 + x[2]**2,
     (x[0] - 2)**2 + (x[1] - 1)**2,
+    Math.sqrt((x[0] - 1)**2 + (x[2] - 2)**2),
   ]);
 };
 
-const dim = 2;
+const dim = 3;
 const inputOpts: InputOptions = {
   dim: dim,
-  mins: new Float32Array([0, 0]),
-  maxs: new Float32Array([2, 2]),
+  mins: new Float32Array([0, 0, 0]),
+  maxs: new Float32Array([1, 2, 3]),
 };
 const moead = new Moead(func, inputOpts, dim);
 console.log(moead);
@@ -237,7 +175,10 @@ console.log(moead);
 
 //console.log('Mutation:', moead.mutate(new Float32Array([0.2, 0.3])));
 
-console.log(moead.perform());
+const solution = moead.perform();
+
+for (const sol of solution)
+  console.log(sol.point.toString(), ',', sol.objective.toString());
 
 console.log(euclideanDistance(
   new Float32Array([1, 2, 3]),
