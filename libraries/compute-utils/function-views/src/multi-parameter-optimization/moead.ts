@@ -6,8 +6,9 @@ import * as jStat from 'jstat';
 import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions, MoeadOutput} from './defs';
 import {clip, euclideanDistance, pickTwo} from './utils';
 
+/** The MOEA/D multi-objective optimizer */
 export class Moead {
-  public objective: Func;
+  private objective: Func;
   private inputOpts: InputOptions;
   private outputDim: number;
   private methodOpts: MoeadOptions;
@@ -24,7 +25,7 @@ export class Moead {
   }
 
   /** Scalarization: weighted sum */
-  public weightedSum(x: Float32Array, w: Float32Array): number {
+  private weightedSum(x: Float32Array, w: Float32Array): number {
     let sum = 0;
     const out = this.objective(x);
 
@@ -35,7 +36,7 @@ export class Moead {
   }
 
   /** Generate uniform weight vectors */
-  public generateWeights(): Float32Array[] {
+  private generateWeights(): Float32Array[] {
     const nWeights = this.methodOpts.nWeights;
     const weights = new Array<Float32Array>(nWeights + 1);
 
@@ -58,7 +59,7 @@ export class Moead {
   }
 
   /**  Initialize a random solution */
-  public randomSolution(): Float32Array {
+  private randomSolution(): Float32Array {
     const res = new Float32Array(this.inputOpts.dim);
 
     for (let i = 0; i < this.inputOpts.dim; ++i)
@@ -68,7 +69,7 @@ export class Moead {
   }
 
   /** Crossover: blend */
-  public crossover(x1: Float32Array, x2: Float32Array): Float32Array {
+  private crossover(x1: Float32Array, x2: Float32Array): Float32Array {
     const alpha = Math.random();
     const res = new Float32Array(this.inputOpts.dim);
 
@@ -79,7 +80,7 @@ export class Moead {
   }
 
   /** Mutation */
-  public mutate(x: Float32Array, sigma: number=0.1): Float32Array {
+  private mutate(x: Float32Array, sigma: number=0.1): Float32Array {
     const res = new Float32Array(this.inputOpts.dim);
 
     for (let i = 0; i < this.inputOpts.dim; ++i) {
@@ -97,14 +98,10 @@ export class Moead {
   public perform(): MoeadOutput[] {
     const nWeights = this.methodOpts.nWeights;
     const weights = this.generateWeights();
-    console.log('Weights: ', weights);
-
     const population = new Array<Float32Array>(nWeights + 1);
 
     for (let i = 0; i <= nWeights; ++i)
       population[i] = this.randomSolution();
-
-    console.log('Population: ', population);
 
     const neighborhoods = weights.map((w) =>
       weights
@@ -113,8 +110,6 @@ export class Moead {
         .slice(0, this.methodOpts.neighbors)
         .map((e) => e.idx),
     );
-
-    console.log('Neighborhoods: ', neighborhoods);
 
     // Evolution loop
     for (let gen = 0; gen < this.methodOpts.generations; ++gen) {
@@ -139,48 +134,3 @@ export class Moead {
     }));
   }
 }; // Moead
-
-const func = (x: Float32Array): Float32Array => {
-  return new Float32Array([
-    x[0]**2 + x[1]**2 + x[2]**2,
-    (x[0] - 2)**2 + (x[1] - 1)**2,
-    Math.sqrt((x[0] - 1)**2 + (x[2] - 2)**2),
-  ]);
-};
-
-const dim = 3;
-const inputOpts: InputOptions = {
-  dim: dim,
-  mins: new Float32Array([0, 0, 0]),
-  maxs: new Float32Array([1, 2, 3]),
-};
-const moead = new Moead(func, inputOpts, dim);
-console.log(moead);
-
-// const x = new Float32Array([1, 2]);
-
-// console.log(moead.objective(x));
-
-// const w = moead.generateWeights(2);
-// console.log(w);
-
-// console.log(moead.weightedSum(x, w[1]));
-
-// console.log('Random solution:', moead.randomSolution());
-
-// console.log('Crossover:', moead.crossover(
-//   new Float32Array([0, 10]),
-//   new Float32Array([1, 20]),
-// ));
-
-//console.log('Mutation:', moead.mutate(new Float32Array([0.2, 0.3])));
-
-const solution = moead.perform();
-
-for (const sol of solution)
-  console.log(sol.point.toString(), ',', sol.objective.toString());
-
-console.log(euclideanDistance(
-  new Float32Array([1, 2, 3]),
-  new Float32Array([11, 12, 13]),
-));
