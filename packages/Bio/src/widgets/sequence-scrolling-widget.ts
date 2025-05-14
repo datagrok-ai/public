@@ -12,6 +12,8 @@ import {_package} from '../package';
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
+      if (grid.isDetached)
+        return;
       const df = grid.dataFrame;
       if (!df)
         return;
@@ -27,6 +29,9 @@ export function handleSequenceHeaderRendering() {
         const gCol = grid.col(seqCol.name);
         if (!gCol)
           continue;
+
+        let positionStatsViewerAddedOnce = false;
+
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
@@ -55,13 +60,19 @@ export function handleSequenceHeaderRendering() {
               const cur = getCurrent();
               if (start !== scrollerRange.start)
                 seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-              if (cur !== scrollerCur)
+              if (scrollerCur >= 0 && cur !== scrollerCur) {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
+                if (!positionStatsViewerAddedOnce && grid.tableView) {
+                  positionStatsViewerAddedOnce = true;
+                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                  grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+                }
+              }
             });
           },
         });
         grid.props.colHeaderHeight = 65;
-        setTimeout(() => gCol.width = 400, 300); // needed because renderer sets its width
+        setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)

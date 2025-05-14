@@ -406,7 +406,7 @@ category('bio-substructure-filters', async () => {
     expect(df.filter.toBinaryString(), bothTrues.map((v) => v.toString()).join(''));
 
     await Promise.all([seq1Filter.awaitRendered(), seq2Filter.awaitRendered(), awaitGrid(view.grid)]);
-  }, {skipReason: 'Test is not stable, need to be fixed'});
+  });
 
   // -- reset --
 
