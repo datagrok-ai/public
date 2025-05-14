@@ -1,8 +1,12 @@
+/* eslint-disable valid-jsdoc */
 // utils.ts
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {HELP_LINK} from './constants';
+
+import '../../css/sens-analysis.css';
 
 // Error messeges
 enum ERROR_MSG {
@@ -67,4 +71,12 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
   pi.close();
 
   return calledFuncCalls;
+}
+
+/** Return the open help widget */
+export function getHelpIcon(): HTMLElement {
+  const icon = ui.icons.help(() => window.open(HELP_LINK, '_blank'));
+  icon.classList.add('sensitivity-analysis-help-icon');
+
+  return icon;
 }

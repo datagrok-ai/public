@@ -9,7 +9,7 @@ import {getDefaultValue, getPropViewers} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getOutput} from './variance-based-analysis/sa-outputs-routine';
-import {getCalledFuncCalls} from './variance-based-analysis/utils';
+import {getCalledFuncCalls, getHelpIcon} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
@@ -422,7 +422,7 @@ export class SensitivityAnalysisView {
   private openedViewers = [] as DG.Viewer[];
   private runButton: HTMLButtonElement;
   private runIcon: HTMLElement;
-  private helpIcon: HTMLElement;
+  private helpIcon = getHelpIcon();
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
 
@@ -491,9 +491,7 @@ export class SensitivityAnalysisView {
     this.runIcon.style.color = 'var(--green-2)';
     this.runIcon.classList.add('fas');
 
-    this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis', '_blank');
-    }, 'Open help in a new tab');
+    this.helpIcon = getHelpIcon();
 
     this.buildFormWithBtn(options.inputsLookup).then((form) => {
       this.runButton.disabled = !this.canEvaluationBeRun();
@@ -510,10 +508,7 @@ export class SensitivityAnalysisView {
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-      const rbnPanels = this.comparisonView.getRibbonPanels();
-      rbnPanels.push([this.helpIcon, this.runIcon]);
-      this.comparisonView.setRibbonPanels(rbnPanels);
+      this.comparisonView.setRibbonPanels([[this.helpIcon, this.runIcon]]);
 
       this.comparisonView.helpUrl = '/help/function-analysis.md#sensitivity-analysis';
       this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
