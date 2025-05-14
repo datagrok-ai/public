@@ -1,6 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {debounceTime} from "rxjs/operators";
+import {NumericMatcher} from "./numeric_matcher";
+
 import {
   getPlateProperty,
   getPlateUniquePropertyValues,
@@ -9,11 +12,6 @@ import {
   plateUniquePropertyValues,
   queryPlates
 } from "./plates_crud";
-import {input} from "datagrok-api/ui";
-import search = input.search;
-import {debounceTime} from "rxjs/operators";
-import {async} from "rxjs";
-import {NumericMatcher} from "./numeric_matcher";
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
