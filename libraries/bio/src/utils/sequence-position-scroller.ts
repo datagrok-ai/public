@@ -5,6 +5,10 @@
  * with position markers, slider navigation, and position selection.
  */
 
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+
 // Position range interface
 interface WindowRange {
   start: number;
@@ -29,6 +33,10 @@ interface MSAHeaderOptions {
   onPositionChange?: (position: number, range: WindowRange) => void;
 }
 
+interface Preventable {
+  preventDefault: () => void;
+}
+
 // Internal state interface
 interface MSAHeaderState {
   isDragging: boolean;
@@ -40,6 +48,7 @@ export class MSAScrollingHeader {
   private state: MSAHeaderState;
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
+  private eventElement: HTMLDivElement;
 
   /**
    * Constructor for the MSA Header
@@ -50,8 +59,8 @@ export class MSAScrollingHeader {
     this.config = {
       x: options.x || 0,
       y: options.y || 0,
-      width: options.width || 400,
-      height: options.height || 60,
+      width: options.width || 0,
+      height: options.height || 0,
       windowStartPosition: options.windowStartPosition || 1,
       positionWidth: options.positionWidth || 15,
       totalPositions: options.totalPositions || 5000,
@@ -63,6 +72,9 @@ export class MSAScrollingHeader {
       onPositionChange: options.onPositionChange || ((_, __) => {}),
       ...options // Override defaults with any provided options
     };
+    this.eventElement = ui.div();
+    this.eventElement.style.position = 'absolute';
+    this.config.canvas.parentElement?.appendChild(this.eventElement);
 
     // Internal state
     this.state = {
@@ -92,27 +104,37 @@ export class MSAScrollingHeader {
     this.ctx = context;
 
     // Add event listeners
-    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-    this.canvas.addEventListener('mouseleave', this.handleMouseUp.bind(this));
-    this.canvas.addEventListener('click', this.handleClick.bind(this));
+    this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('click', this.handleClick.bind(this));
+    this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
-  public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number): void {
-    if (!this.ctx || !this.canvas) return;
+  public get isValid() {
+    return !!this.canvas && !!this.ctx && this.config.height >= this.config.headerHeight;
+  }
 
-    if (this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart || this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h) {
-      this.updateConfig({x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart});
+  public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number, preventable: Preventable): void {
+    // soft internal update
+    if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h || this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart)
+      Object.assign(this.config, {x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart});
+
+
+    if (!this.isValid) {
+      this.eventElement.style.display = 'none';
       return;
     }
 
-    this.ctx.save();
+
+    this.ctx!.save();
     // Clear canvas
-    this.ctx.clearRect(x, y, w, h);
-    this.ctx.translate(x, y);
-    this.ctx.rect(0, 0, w, h);
-    this.ctx.clip();
+    this.ctx!.clearRect(x, y, w, h);
+    this.ctx!.translate(x, y);
+    this.ctx!.rect(0, 0, w, h);
+    this.ctx!.clip();
 
     // Calculate dimensions
     const canvasWidth = w;
@@ -122,8 +144,8 @@ export class MSAScrollingHeader {
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
 
     // Draw the full sequence slider bar (very subtle gray bar)
-    this.ctx.fillStyle = this.config.sliderColor;
-    this.ctx.fillRect(0, sliderTop, canvasWidth, this.config.sliderHeight);
+    this.ctx!.fillStyle = this.config.sliderColor;
+    this.ctx!.fillRect(0, sliderTop, canvasWidth, this.config.sliderHeight);
 
     const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
     const windowStart = Math.max(1, this.config.windowStartPosition);
@@ -131,14 +153,29 @@ export class MSAScrollingHeader {
     // Calculate slider position on the bar
     const totalSliderRange = this.config.totalPositions - visiblePositionsN;
     const sliderStartPX = totalSliderRange <= 0 ? 0 :
-      windowStart / (this.config.totalPositions) * canvasWidth;
+      windowStart / (this.config.totalPositions) * (canvasWidth - this.sliderWidth);
 
     const sliderLengthPX = totalSliderRange <= 0 ? canvasWidth :
       this.sliderWidth;
 
     // Draw slider window (darker rectangle)
-    this.ctx.fillStyle = 'rgba(150, 150, 150, 0.5)';
-    this.ctx.fillRect(sliderStartPX, sliderTop, sliderLengthPX, this.config.sliderHeight);
+    this.ctx!.fillStyle = 'rgba(150, 150, 150, 0.5)';
+    this.ctx!.fillRect(sliderStartPX, sliderTop, sliderLengthPX, this.config.sliderHeight);
+
+    if (this.config.currentPosition >= 1 && this.config.currentPosition <= this.config.totalPositions) {
+      // Calculate the position of the current selection as a proportion of total sequence
+      const currentPositionRatio = (this.config.currentPosition - 1) / (this.config.totalPositions - 1);
+      const notchX = Math.round(currentPositionRatio * canvasWidth);
+
+      // Draw a 3px thick vertical green marker at this position
+      this.ctx!.fillStyle = '#3CB173'; // Same green as the cell highlight
+      this.ctx!.fillRect(
+        notchX - 1, // Center the 3px marker on the calculated position
+        sliderTop - 2, // Extend the marker 2px above the scrollbar
+        3, // 3px width as requested
+        this.config.sliderHeight + 4 // Make the marker taller than the scrollbar
+      );
+    }
 
     // Draw position marks and indices
     for (let i = 0; i < visiblePositionsN; i++) {
@@ -152,38 +189,38 @@ export class MSAScrollingHeader {
       // Draw cell background for monospace appearance
       if (this.config.cellBackground) {
         // Very light alternating cell background
-        this.ctx.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
-        this.ctx.fillRect(x, posIndexTop, cellWidth, Math.min(this.config.headerHeight - topPadding, canvasHeight - posIndexTop) - this.config.sliderHeight);
+        this.ctx!.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
+        this.ctx!.fillRect(x, posIndexTop, cellWidth, Math.min(this.config.headerHeight - topPadding, canvasHeight - posIndexTop) - this.config.sliderHeight);
 
         // Cell borders - very light vertical lines
-        this.ctx.strokeStyle = 'rgba(220, 220, 220, 0.7)';
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, posIndexTop);
-        this.ctx.lineTo(x, Math.min(this.config.headerHeight, canvasHeight) - this.config.sliderHeight);
-        this.ctx.stroke();
+        this.ctx!.strokeStyle = 'rgba(220, 220, 220, 0.7)';
+        this.ctx!.beginPath();
+        this.ctx!.moveTo(x, posIndexTop);
+        this.ctx!.lineTo(x, Math.min(this.config.headerHeight, canvasHeight) - this.config.sliderHeight);
+        this.ctx!.stroke();
       }
 
       // Draw position dot for every position - centered in cell
-      this.ctx.fillStyle = '#999999';
-      this.ctx.beginPath();
-      this.ctx.arc(cellCenterX, posIndexTop * 2, 1, 0, Math.PI * 2);
-      this.ctx.fill();
+      this.ctx!.fillStyle = '#999999';
+      this.ctx!.beginPath();
+      this.ctx!.arc(cellCenterX, posIndexTop * 2, 1, 0, Math.PI * 2);
+      this.ctx!.fill();
 
-      // Draw position number for every 10th position
-      if (position % 10 === 0) {
-        this.ctx.fillStyle = '#333333';
-        this.ctx.font = '10px monospace';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(position.toString(), cellCenterX, posIndexTop * 4);
+      // Draw position number for every 10th position, on the current position and also make sure that the number is not obstructed by some other numbers
+      if (position === this.config.currentPosition || ((position === 1 || position % 10 === 0) && Math.abs(position - this.config.currentPosition) > 1)) {
+        this.ctx!.fillStyle = '#333333';
+        this.ctx!.font = '12px monospace';
+        this.ctx!.textAlign = 'center';
+        this.ctx!.textBaseline = 'middle';
+        this.ctx!.fillText(position.toString(), cellCenterX, posIndexTop * 4);
       }
 
       // Highlight current selected position with square marker
       // if current is outside the range, draw it at the end
       if (position === this.config.currentPosition) {
-        // Draw square indicator
-        this.ctx.fillStyle = '#50A9C5';
-        this.ctx.fillRect(
+        // Draw filled background with 50% opacity
+        this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.2)';
+        this.ctx!.fillRect(
           x,
           0,
           cellWidth,
@@ -192,7 +229,14 @@ export class MSAScrollingHeader {
       }
     }
 
-    this.ctx.restore();
+    this.ctx!.restore();
+    // Prevent default behavior if in header area
+    preventable.preventDefault();
+    this.eventElement.style.display = 'block';
+    this.eventElement.style.left = `${this.config.x}px`;
+    this.eventElement.style.top = `${this.config.y}px`;
+    this.eventElement.style.width = `${this.config.width}px`;
+    this.eventElement.style.height = `${this.config.height}px`;
   }
 
   getCoords(e: MouseEvent) {
@@ -207,8 +251,16 @@ export class MSAScrollingHeader {
     return x >= 0 && x <= this.config.width && y >= 0 && y <= this.config.headerHeight;
   }
 
+  get positionWidth(): number {
+    return this.config.positionWidth;
+  }
+
+  public set positionWidth(value: number) {
+    this.config.positionWidth = value;
+  }
+
   isInSliderArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const {y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     return y > sliderTop && y < sliderTop + this.config.sliderHeight;
   }
@@ -216,14 +268,14 @@ export class MSAScrollingHeader {
   get sliderWidth(): number {
     const pseudoPositionWidth = this.config.width / this.config.totalPositions;
     const w = pseudoPositionWidth * (this.config.width / this.config.positionWidth);
-    return Math.max(w, 15);
+    return Math.max(w, 20);
   }
 
   isInSliderDraggableArea(e: MouseEvent): boolean {
     const {x, y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     const startSeqX = this.config.windowStartPosition;
-    const pseudoPositionWidth = this.config.width / this.config.totalPositions;
+    const pseudoPositionWidth = (this.config.width - this.sliderWidth) / this.config.totalPositions;
     const startSliderXPX = (startSeqX - 1) * pseudoPositionWidth;
     const endSliderXPX = startSliderXPX + this.sliderWidth;
     return y > sliderTop && y < sliderTop + this.config.sliderHeight && x >= startSliderXPX && x < endSliderXPX;
@@ -234,7 +286,7 @@ export class MSAScrollingHeader {
    * @param {MouseEvent} e - Mouse event
    */
   private handleMouseDown(e: MouseEvent): void {
-    if (!this.canvas) return;
+    if (!this.isValid) return;
     const {x} = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
@@ -247,15 +299,26 @@ export class MSAScrollingHeader {
   }
 
   private handleMouseWheel(e: WheelEvent): void {
-    if (!this.canvas) return;
+    if (!this.isValid) return;
     if (this.isInHeaderArea(e)) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      const delta = Math.sign(e.deltaY);
-      const newStartPosition = this.config.windowStartPosition + delta;
-      this.config.windowStartPosition = Math.max(1, Math.min(this.config.totalPositions - Math.floor(this.config.width / this.config.positionWidth), newStartPosition));
-      // Call callback if defined
+
+      // Determine scroll direction and amount
+      // Use deltaX if available (for horizontal scrolling devices)
+      // otherwise use deltaY with shift key for horizontal scroll
+      const delta = e.shiftKey ? Math.sign(e.deltaY) : Math.sign(e.deltaX || e.deltaY);
+
+      // Move by 1 position or more for faster scrolling (optional)
+      const scrollSpeed = e.shiftKey ? 3 : 1; // Faster scrolling with shift
+      const newStartPosition = this.config.windowStartPosition + (delta * scrollSpeed);
+
+      // Clamp to valid range
+      const visiblePositions = Math.floor(this.config.width / this.config.positionWidth);
+      const maxStart = this.config.totalPositions - visiblePositions + 1;
+      this.config.windowStartPosition = Math.max(1, Math.min(maxStart, newStartPosition));
+
       if (typeof this.config.onPositionChange === 'function')
         this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
     }
@@ -266,16 +329,52 @@ export class MSAScrollingHeader {
    * @param {MouseEvent} e - Mouse event
    */
   private handleMouseMove(e: MouseEvent): void {
-    if (!this.state.isDragging || !this.canvas)
+    if (!this.state.isDragging || !this.isValid)
       return;
 
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
 
     this.handleSliderDrag(x);
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+  }
+
+  private handleKeyDown(e: KeyboardEvent): void {
+    if (!this.isValid || this.config.currentPosition < 1) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Determine scroll direction
+      const delta = e.key === 'ArrowLeft' ? -1 : 1;
+
+      const newPosition = Math.min(Math.max(this.config.currentPosition + delta, 1), this.config.totalPositions);
+      if (newPosition === this.config.currentPosition)
+        return;
+      this.config.currentPosition = newPosition;
+      // make sure that the cureent position is visible
+      const visiblePositions = Math.floor(this.config.width / this.config.positionWidth);
+      const start = this.config.windowStartPosition;
+      const end = start + visiblePositions - 1;
+      if (newPosition < start || newPosition > end) {
+        if (delta < 0)
+          this.config.windowStartPosition = newPosition;
+        else
+          this.config.windowStartPosition = Math.max(1, newPosition - visiblePositions + 1);
+      }
+    } else if (e.key === 'Escape') {
+      // reset the current position
+      this.config.currentPosition = -2;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    } else return;
+
+    if (typeof this.config.onPositionChange === 'function')
+      this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
   }
 
   /**
@@ -290,58 +389,65 @@ export class MSAScrollingHeader {
    * @param {number} x - X position of mouse
    */
   private handleSliderDrag(x: number): void {
-    if (!this.canvas) return;
+    if (!this.isValid) return;
 
+    const sliderWidth = this.sliderWidth;
     // Calculate the position based on the drag position
-    const canvasWidth = this.config.width;
+    const canvasWidth = this.config.width - sliderWidth;
 
-    const dragAmmount = x - this.state.dragStartX;
-    const pseudoPositionToPixelRatio = canvasWidth / this.config.totalPositions;
-    const fittedPositions = Math.ceil(canvasWidth / this.config.positionWidth);
-    const newStartPosition = Math.round(this.config.windowStartPosition + dragAmmount / pseudoPositionToPixelRatio);
-    this.config.windowStartPosition = Math.max(1, Math.min(this.config.totalPositions - fittedPositions, newStartPosition));
+    const normalizedX = Math.max(0, Math.min(this.config.width, x));
+    // this shows how many positions are in one pixel
+    const pseudoPositionWidth = canvasWidth / this.config.totalPositions;
+    const fittedPositions = Math.floor(this.config.width / this.config.positionWidth);
+    // we add these positions so that it feels like we are grabbing the slider by its center
+    this.config.windowStartPosition = Math.max(1, Math.min(Math.round((normalizedX - sliderWidth / 2) / pseudoPositionWidth), this.config.totalPositions - fittedPositions + 1));
+
     // Call callback if defined
     if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    this.state.dragStartX = x;
+  }
+
+  get headerHeight(): number {
+    return this.config.headerHeight;
+  }
+
+  /** Soft setting of header hight, without redrawing or update event
+   * @param {number} value - New header height
+   */
+  set headerHeight(value: number) {
+    this.config.headerHeight = value;
   }
 
   /**
    * Handle click on positions
    * @param {MouseEvent} e - Mouse event
    */
-  private handleClick(_e: MouseEvent): void {
-    // if (!this.canvas) return;
+  private handleClick(e: MouseEvent): void {
+    if (!this.isValid) return;
 
-    // const rect = this.canvas.getBoundingClientRect();
-    // const x = e.clientX - rect.left;
-    // const y = e.clientY - rect.top;
+    // Get calculated coordinates
+    const {x, y} = this.getCoords(e);
 
-    // const sliderTop = 10;
-    // const posIndexTop = sliderTop + this.config.sliderHeight + 5;
 
-    // // Process clicks in position indicator area (not in slider area)
-    // if (y > posIndexTop) {
-    //   // Calculate column clicked
-    //   const columnIndex = Math.floor(x / this.config.columnWidth);
+    const sliderTop = this.config.headerHeight - this.config.sliderHeight;
+    if (y < sliderTop && y >= 0) {
+      // Calculate which position was clicked
+      const cellWidth = this.config.positionWidth;
+      const clickedCellIndex = Math.round(x / cellWidth - 0.5);
 
-    //   // Calculate the actual position in the sequence
-    //   const halfVisible = Math.floor(this.config.visibleWidth / 2);
-    //   const windowStart = Math.max(1, this.config.currentPosition - halfVisible);
-    //   const windowEnd = Math.min(this.config.totalPositions, windowStart + this.config.visibleWidth - 1);
-    //   const adjustedWindowStart = Math.max(1, windowEnd - this.config.visibleWidth + 1);
+      // Calculate actual position in sequence
+      const windowStart = this.config.windowStartPosition;
+      const clickedPosition = windowStart + clickedCellIndex;
 
-    //   const clickedPosition = adjustedWindowStart + columnIndex;
+      // Update current position if valid
+      if (clickedPosition >= 1 && clickedPosition <= this.config.totalPositions) {
+        this.config.currentPosition = clickedPosition;
 
-    //   // Update current position if valid
-    //   if (clickedPosition >= 1 && clickedPosition <= this.config.totalPositions) {
-    //     this.config.currentPosition = clickedPosition;
-
-    //     // Call callback if defined
-    //     if (typeof this.config.onPositionChange === 'function')
-    //       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    //   }
-    // }
+        // Call callback if defined
+        if (typeof this.config.onPositionChange === 'function')
+          this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+      }
+    }
   }
 
   /**

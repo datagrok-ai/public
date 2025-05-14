@@ -32,6 +32,7 @@ export enum TAGS {
   positionLabels = '.positionLabels',
   regions = '.regions',
   positionShift = '.positionShift',
+  selectedPosition = '.selectedPosition'
 }
 
 export {TAGS as BioTags};

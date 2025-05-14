@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -432,6 +433,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       // if the sequence is rendered in shifted mode, we will also render three dots at start, indicating the shift
       this._leftThreeDotsPadding = positionShift > 0 ? g.measureText(shiftedLeftPaddingText).width : 0;
+      // currently selected position to highlight
+      const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
       for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
         const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
@@ -451,7 +454,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
           referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
-          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
+          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
+          selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
         };
         printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         if (minDistanceRenderer > w) break;
@@ -461,7 +465,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           color: undefinedColor, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: false,
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
           maxLengthOfMonomer: maxLengthOfMonomer,
-          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
+          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
         };
         printLeftOrCentered(g, shiftedLeftPaddingText, x + this.padding, y, w, h, opts);
       }
