@@ -12,6 +12,8 @@ import {_package} from '../package';
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
+      if (grid.isDetached)
+        return;
       const df = grid.dataFrame;
       if (!df)
         return;
@@ -21,21 +23,24 @@ export function handleSequenceHeaderRendering() {
         const sh = _package.seqHelper.getSeqHandler(seqCol);
         if (!sh)
           continue;
-        if (sh.isHelm() || sh.alphabet === ALPHABET.UN || !sh.isMsa())
+        if (sh.isHelm() || sh.alphabet === ALPHABET.UN)
           continue;
 
         const gCol = grid.col(seqCol.name);
         if (!gCol)
           continue;
+
+        let positionStatsViewerAddedOnce = false;
+
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
         // get the maximum length of sequences by randomly taking 10 sequences;
         let maxSeqLen = 0;
-        for (let i = 0; i < Math.min(10, df.rowCount); i++) {
-          const row = Math.floor(Math.random() * df.rowCount - 1);
-          const seq = sh.getSplitted(row);
+        for (let i = 0; i < Math.min(30, seqCol.categories.length); i++) {
+          const row = Math.floor(Math.random() * seqCol.categories.length - 1);
+          const seq = sh.splitter(seqCol.categories[row]);
           if (seq)
             maxSeqLen = Math.max(maxSeqLen, seq.length);
         }
@@ -55,13 +60,19 @@ export function handleSequenceHeaderRendering() {
               const cur = getCurrent();
               if (start !== scrollerRange.start)
                 seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-              if (cur !== scrollerCur)
+              if (scrollerCur >= 0 && cur !== scrollerCur) {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
+                if (!positionStatsViewerAddedOnce && grid.tableView) {
+                  positionStatsViewerAddedOnce = true;
+                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                  grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+                }
+              }
             });
           },
         });
         grid.props.colHeaderHeight = 65;
-        setTimeout(() => gCol.width = 400, 300); // needed because renderer sets its width
+        setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)

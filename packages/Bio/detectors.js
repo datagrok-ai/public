@@ -90,7 +90,9 @@ class BioPackageDetectors extends DG.Package {
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
   likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein', 'pep', 'enumerated'];
 
-  veryLikelyColNamePartList = ['peptide', 'oligo', 'sequence', 'enumerated'];
+  veryLikelyColNamePartList = ['peptide', 'oligo', 'sequence', 'enumerated',
+    'heavy_chain', 'light_chain', 'heay-chain', 'light-chain', 'heavychain', 'lightchain',
+    'heavy chain', 'light chain'];
 
   peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',

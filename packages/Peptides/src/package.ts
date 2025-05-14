@@ -156,6 +156,7 @@ export function logoSummaryTable(): LogoSummaryTable {
 
 //name: Sequence Position Statistics
 //tags: viewer
+//meta.icon: files/icons/sequence-statistics-viewer.svg
 //output: viewer result
 export function sequencePositionStatistics(): DG.Viewer {
   return new SequencePositionStatsViewer();
