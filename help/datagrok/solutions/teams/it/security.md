@@ -20,7 +20,7 @@ server. With Datagrok, a lot could be achieved without having to use the server 
 supports is when the algorithm (in a form of a plugin) goes to the dataset already located in the browser - this is also
 a more secure way to work with data than the other way around.
 
-The [apps](../../../develop/develop.md#packages) built on top of the platform end up a lot more secure than the traditional web applications,
+The [apps](../../../../develop/develop.md#packages) built on top of the platform end up a lot more secure than the traditional web applications,
 since they reuse the existing security system and do not have to roll out their own.
 
 ## Authentication
@@ -31,19 +31,19 @@ Enterprise customers might prefer to use a custom SSO (single sign-on) scheme. W
 developing a customer-specific integration.
 
 More information about Datagrok authentication capabilities can be found on
-the [Authentication](../../../govern/access-control/access-control.md#authentication) page.
+the [Authentication](../../../../govern/access-control/access-control.md#authentication) page.
 
 ## Credentials
 
-[Security credentials](../../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,
+[Security credentials](../../../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,
 database connections typically requires a pair of login and password.
 
 Data connection credentials are managed
-using [Datagrok Credentials Management Service](../../../govern/access-control/access-control.md#credentials-management-system). All credentials
-are [encrypted and stored securely](../../../govern/access-control/access-control.md#credentials-storage).
+using [Datagrok Credentials Management Service](../../../../govern/access-control/access-control.md#credentials-management-system). All credentials
+are [encrypted and stored securely](../../../../govern/access-control/access-control.md#credentials-storage).
 
 In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
-[AWS Secret Manager](../../../govern/access-control/data-connection-credentials.md) instead.
+[AWS Secret Manager](../../../../govern/access-control/data-connection-credentials.md) instead.
 
 Once a connection is set up, access to it (either `use` or `edit`) is subject to [user permissions](#user-permissions).
 
@@ -53,7 +53,7 @@ The platform has a flexible access control mechanism that lets administrators de
 allowed to execute actions against different entities, based on the entity attributes. For instance, it is possible to
 define a group of people who would be able to open dashboards, but would not have access to the underlying connection.
 See
-[Authorization System](../../../govern/access-control/access-control.md#authorization) for details.
+[Authorization System](../../../../govern/access-control/access-control.md#authorization) for details.
 
 ## Vulnerability remediation
 
@@ -61,7 +61,7 @@ Datagrok server core is written in Dart, which is a language developed and suppo
 follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the risk of introducing a
 vulnerability.
 
-Every release is tested according to our [quality-assurance procedures](../../../develop/qa/quality-assurance.md) which includes
+Every release is tested according to our [quality-assurance procedures](../../../../develop/qa/quality-assurance.md) which includes
 vulnerability check by [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/). All critical
 vulnerabilities are remediated in 2 weeks, high vulnerabilities in 1 moth and lower-level vulnerabilities in 3 month.
 
@@ -78,8 +78,8 @@ the server checks its validity before proceeding.
 
 ## Infrastructure
 
-Datagrok consist of Docker containers, [database](../../../develop/under-the-hood/infrastructure.md#1-core-components)
-and [persistent file storage](../../../develop/under-the-hood/infrastructure.md#1-core-components).
+Datagrok consist of Docker containers, [database](../../../../develop/under-the-hood/infrastructure.md#1-core-components)
+and [persistent file storage](../../../../develop/under-the-hood/infrastructure.md#1-core-components).
 
 ### Encryption in-transit
 
@@ -98,13 +98,13 @@ and [server-side encryption of ECS ephemeral storage](https://aws.amazon.com/blo
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
-[authentication](../../../govern/access-control/access-control.md#authentication) methods. In case of on-premise deployment, we rely on the internal
+[authentication](../../../../govern/access-control/access-control.md#authentication) methods. In case of on-premise deployment, we rely on the internal
 company policies.
 
 #### CloudFormation deployment
 
 To simplify deployment with all security policies taken into consideration, we created
-an [ECS CloudFormation deployment template](../../../deploy/aws/deploy-amazon-cloudformation.md).
+an [ECS CloudFormation deployment template](../../../../deploy/aws/deploy-amazon-cloudformation.md).
 
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
 are [available publicly](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml).
@@ -115,7 +115,7 @@ accessed directly, all requests goes through Application Load Balancer.
 
 ## More information
 
-* [Architecture](../../../develop/under-the-hood/architecture.md)
-* [Infrastructure](../../../develop/under-the-hood/infrastructure.md)
-* [CloudFormation deployment](../../../deploy/aws/deploy-amazon-cloudformation.md)
-* [Security](../../../govern/access-control/access-control.md#credentials-management-system)
+* [Architecture](../../../../develop/under-the-hood/architecture.md)
+* [Infrastructure](../../../../develop/under-the-hood/infrastructure.md)
+* [CloudFormation deployment](../../../../deploy/aws/deploy-amazon-cloudformation.md)
+* [Security](../../../../govern/access-control/access-control.md#credentials-management-system)
