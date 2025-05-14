@@ -1,5 +1,10 @@
 # compute-utils changelog
 
+## 1.43.6 (2025-05-22)
+
+- Updated UI/UX in the Sensitivity Analysis view
+- Implemented the MOEA/D method for multi-objective optimization
+
 ## 1.43.5 (2025-05-12)
 
 In-webworkers sensitivity analysis for Diff Studio based models
