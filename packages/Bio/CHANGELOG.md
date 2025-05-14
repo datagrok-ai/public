@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.21.7 (2025-05-14)
+
+* Enable Header scrolling for non-MSA
+
 ## 2.21.6 (2025-05-14)
 
 * Sequence position scrolling header

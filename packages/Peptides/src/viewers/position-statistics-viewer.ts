@@ -99,6 +99,12 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     this._boxPlotViewer.root.style.width = '100%';
     this._boxPlotViewer.root.style.height = '100%';
     this.root.appendChild(this._boxPlotViewer.root);
+    this._boxPlotViewer.sub(this._boxPlotViewer.onPropertyValueChanged.subscribe((_e) => {
+      if (this._boxPlotViewer?.props?.valueColumnName && this._boxPlotViewer?.props?.valueColumnName !== this.valueColumnName) {
+        const value = this._boxPlotViewer.props.valueColumnName;
+        setTimeout(() => this.getProperty('valueColumnName')!.set(this, value), 10);
+      }
+    }));
   }
 
   onPropertyChanged(property: DG.Property | null): void {

@@ -23,7 +23,7 @@ export function handleSequenceHeaderRendering() {
         const sh = _package.seqHelper.getSeqHandler(seqCol);
         if (!sh)
           continue;
-        if (sh.isHelm() || sh.alphabet === ALPHABET.UN || !sh.isMsa())
+        if (sh.isHelm() || sh.alphabet === ALPHABET.UN)
           continue;
 
         const gCol = grid.col(seqCol.name);
@@ -38,9 +38,9 @@ export function handleSequenceHeaderRendering() {
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
         // get the maximum length of sequences by randomly taking 10 sequences;
         let maxSeqLen = 0;
-        for (let i = 0; i < Math.min(10, df.rowCount); i++) {
-          const row = Math.floor(Math.random() * df.rowCount - 1);
-          const seq = sh.getSplitted(row);
+        for (let i = 0; i < Math.min(30, seqCol.categories.length); i++) {
+          const row = Math.floor(Math.random() * seqCol.categories.length - 1);
+          const seq = sh.splitter(seqCol.categories[row]);
           if (seq)
             maxSeqLen = Math.max(maxSeqLen, seq.length);
         }
