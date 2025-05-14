@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /* eslint-disable rxjs/no-nested-subscribe */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
@@ -74,7 +75,7 @@ import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
-import {MSAScrollingHeader} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 export const _package = new BioPackage(/*{debug: true}/**/);
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
@@ -169,56 +170,6 @@ async function initBioInt() {
 
   _package.logger.debug(`${logPrefix}, end`);
   handleSequenceHeaderRendering();
-}
-
-function handleSequenceHeaderRendering() {
-  const handleGrid = (grid: DG.Grid) => {
-    setTimeout(() => {
-      const df = grid.dataFrame;
-      if (!df)
-        return;
-      const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
-      for (const seqCol of seqCols) {
-        // TODO: Extend this to non-canonical monomers and non msa
-        const sh = _package.seqHelper.getSeqHandler(seqCol);
-        if (!sh)
-          continue;
-        if (sh.isHelm() || sh.alphabet === ALPHABET.UN || !sh.isMsa())
-          continue;
-
-        const gCol = grid.col(seqCol.name);
-        if (!gCol)
-          continue;
-        let cur = 2;
-        let start = 0;
-        const scroller = new MSAScrollingHeader({canvas: grid.overlay, onPositionChange: (a, b) => { cur = a; start = b.start; setTimeout(() => seqCol.setTag(bioTAGS.positionShift, (start - 1).toString())); }});
-        grid.sub(grid.onCellRender.subscribe((e) => {
-          const cell = e.cell;
-          if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
-            return;
-          const cellBounds = e.bounds;
-          if (!cellBounds || cellBounds.height <= 50)
-            return;
-          scroller.draw(cellBounds.x, cellBounds.y, cellBounds.width, cellBounds.height, cur, start);
-          e.preventDefault();
-        }));
-      }
-    }, 1000);
-  };
-  // handle all new grids
-  const _ = grok.events.onViewerAdded.subscribe((e) => {
-    if (!e.args || !(e.args.viewer instanceof DG.Grid))
-      return;
-    const grid = e.args.viewer as DG.Grid;
-    handleGrid(grid);
-  });
-
-  const openTables = grok.shell.tableViews;
-  for (const tv of openTables) {
-    const grid = tv?.grid;
-    if (grid)
-      handleGrid(grid);
-  }
 }
 
 //name: sequenceTooltip
