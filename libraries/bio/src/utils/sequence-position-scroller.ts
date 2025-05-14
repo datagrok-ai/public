@@ -36,7 +36,7 @@ interface MSAHeaderState {
 }
 
 export class MSAScrollingHeader {
-  private config: Required<MSAHeaderOptions>;
+  public config: Required<MSAHeaderOptions>;
   private state: MSAHeaderState;
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -51,7 +51,7 @@ export class MSAScrollingHeader {
       x: options.x || 0,
       y: options.y || 0,
       width: options.width || 400,
-      height: options.height || 60,
+      height: options.height || 40,
       windowStartPosition: options.windowStartPosition || 1,
       positionWidth: options.positionWidth || 15,
       totalPositions: options.totalPositions || 5000,
@@ -60,7 +60,7 @@ export class MSAScrollingHeader {
       currentPosition: options.currentPosition || 1,
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
-      onPositionChange: options.onPositionChange || ((_, __) => {}),
+      onPositionChange: options.onPositionChange || ((_, __) => { }),
       ...options // Override defaults with any provided options
     };
 
@@ -97,14 +97,14 @@ export class MSAScrollingHeader {
     this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
     this.canvas.addEventListener('mouseleave', this.handleMouseUp.bind(this));
     this.canvas.addEventListener('click', this.handleClick.bind(this));
+
+    this.canvas.addEventListener('wheel', this.handleMouseWheel.bind(this));
   }
 
   public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number): void {
     if (!this.ctx || !this.canvas) return;
-
     if (this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart || this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h) {
-      this.updateConfig({x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart});
-      return;
+      this.updateConfig({ x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart });
     }
 
     this.ctx.save();
@@ -139,6 +139,21 @@ export class MSAScrollingHeader {
     // Draw slider window (darker rectangle)
     this.ctx.fillStyle = 'rgba(150, 150, 150, 0.5)';
     this.ctx.fillRect(sliderStartPX, sliderTop, sliderLengthPX, this.config.sliderHeight);
+
+    if (this.config.currentPosition >= 1 && this.config.currentPosition <= this.config.totalPositions) {
+      // Calculate the position of the current selection as a proportion of total sequence
+      const currentPositionRatio = (this.config.currentPosition - 1) / (this.config.totalPositions - 1);
+      const notchX = Math.round(currentPositionRatio * canvasWidth);
+
+      // Draw a 3px thick vertical green marker at this position
+      this.ctx.fillStyle = '#3CB173'; // Same green as the cell highlight
+      this.ctx.fillRect(
+        notchX - 1, // Center the 3px marker on the calculated position
+        sliderTop - 2, // Extend the marker 2px above the scrollbar
+        3, // 3px width as requested
+        this.config.sliderHeight + 4 // Make the marker taller than the scrollbar
+      );
+    }
 
     // Draw position marks and indices
     for (let i = 0; i < visiblePositionsN; i++) {
@@ -181,16 +196,29 @@ export class MSAScrollingHeader {
       // Highlight current selected position with square marker
       // if current is outside the range, draw it at the end
       if (position === this.config.currentPosition) {
-        // Draw square indicator
-        this.ctx.fillStyle = '#50A9C5';
+        // Draw filled background with 50% opacity
+        this.ctx.fillStyle = 'rgba(60, 177, 115, 0.3)';
         this.ctx.fillRect(
           x,
           0,
           cellWidth,
           sliderTop
         );
+
+        // Draw border with 90% opacity
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.rect(
+          x,
+          0,
+          cellWidth,
+          sliderTop
+        );
+        this.ctx.stroke();
       }
     }
+
 
     this.ctx.restore();
   }
@@ -199,16 +227,17 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
     const y = e.clientY - rect.top - this.config.y;
-    return {x, y};
+    return { x, y };
   }
 
+
   isInHeaderArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     return x >= 0 && x <= this.config.width && y >= 0 && y <= this.config.headerHeight;
   }
 
   isInSliderArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     return y > sliderTop && y < sliderTop + this.config.sliderHeight;
   }
@@ -220,7 +249,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderDraggableArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     const startSeqX = this.config.windowStartPosition;
     const pseudoPositionWidth = this.config.width / this.config.totalPositions;
@@ -235,11 +264,12 @@ export class MSAScrollingHeader {
    */
   private handleMouseDown(e: MouseEvent): void {
     if (!this.canvas) return;
-    const {x} = this.getCoords(e);
+    const { x } = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
       this.state.dragStartX = x;
       this.handleSliderDrag(x);
+
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -248,16 +278,34 @@ export class MSAScrollingHeader {
 
   private handleMouseWheel(e: WheelEvent): void {
     if (!this.canvas) return;
+
     if (this.isInHeaderArea(e)) {
+      // console.log('Scrolling is inside header area');
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      const delta = Math.sign(e.deltaY);
-      const newStartPosition = this.config.windowStartPosition + delta;
-      this.config.windowStartPosition = Math.max(1, Math.min(this.config.totalPositions - Math.floor(this.config.width / this.config.positionWidth), newStartPosition));
+
+      // Determine scroll direction and amount
+      // Use deltaX if available (for horizontal scrolling devices)
+      // otherwise use deltaY with shift key for horizontal scroll
+      const delta = e.shiftKey ? Math.sign(e.deltaY) : Math.sign(e.deltaX || e.deltaY);
+
+      // Move by 1 position or more for faster scrolling (optional)
+      const scrollSpeed = e.shiftKey ? 3 : 1; // Faster scrolling with shift
+      const newStartPosition = this.config.windowStartPosition + (delta * scrollSpeed);
+
+      // Clamp to valid range
+      const visiblePositions = Math.floor(this.config.width / this.config.positionWidth);
+      const maxStart = this.config.totalPositions - visiblePositions + 1;
+      this.config.windowStartPosition = Math.max(1, Math.min(maxStart, newStartPosition));
+
       // Call callback if defined
       if (typeof this.config.onPositionChange === 'function')
         this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+
+      // Redraw component
+      this.draw(this.config.x, this.config.y, this.config.width, this.config.height,
+        this.config.currentPosition, this.config.windowStartPosition);
     }
   }
 
@@ -306,42 +354,51 @@ export class MSAScrollingHeader {
     this.state.dragStartX = x;
   }
 
-  /**
-   * Handle click on positions
-   * @param {MouseEvent} e - Mouse event
-   */
-  private handleClick(_e: MouseEvent): void {
-    // if (!this.canvas) return;
+  private handleClick(e: MouseEvent): void {
+    if (!this.canvas) return;
 
-    // const rect = this.canvas.getBoundingClientRect();
-    // const x = e.clientX - rect.left;
-    // const y = e.clientY - rect.top;
+    // Get raw mouse coordinates
+    const rawCoords = {
+      clientX: e.clientX,
+      clientY: e.clientY
+    };
 
-    // const sliderTop = 10;
-    // const posIndexTop = sliderTop + this.config.sliderHeight + 5;
+    // Get calculated coordinates
+    const { x, y } = this.getCoords(e);
 
-    // // Process clicks in position indicator area (not in slider area)
-    // if (y > posIndexTop) {
-    //   // Calculate column clicked
-    //   const columnIndex = Math.floor(x / this.config.columnWidth);
+    // Debug coordinate info
+    console.log('Raw click position:', rawCoords);
+    console.log('Calculated position:', { x, y });
+    console.log('Cell width:', this.config.positionWidth);
+    console.log('Expected cell index:', x / this.config.positionWidth);
+    console.log('Current cell index calculation:', Math.floor(x / this.config.positionWidth));
 
-    //   // Calculate the actual position in the sequence
-    //   const halfVisible = Math.floor(this.config.visibleWidth / 2);
-    //   const windowStart = Math.max(1, this.config.currentPosition - halfVisible);
-    //   const windowEnd = Math.min(this.config.totalPositions, windowStart + this.config.visibleWidth - 1);
-    //   const adjustedWindowStart = Math.max(1, windowEnd - this.config.visibleWidth + 1);
 
-    //   const clickedPosition = adjustedWindowStart + columnIndex;
+    const sliderTop = this.config.headerHeight - this.config.sliderHeight;
+    if (y < sliderTop && y >= 0) {
+      // Calculate which position was clicked
+      const posX = x;
+      const cellWidth = this.config.positionWidth;
+      const clickedCellIndex = Math.round(x / cellWidth - 0.5);
 
-    //   // Update current position if valid
-    //   if (clickedPosition >= 1 && clickedPosition <= this.config.totalPositions) {
-    //     this.config.currentPosition = clickedPosition;
 
-    //     // Call callback if defined
-    //     if (typeof this.config.onPositionChange === 'function')
-    //       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    //   }
-    // }
+      // Calculate actual position in sequence
+      const windowStart = this.config.windowStartPosition;
+      const clickedPosition = windowStart + clickedCellIndex;
+
+      // Update current position if valid
+      if (clickedPosition >= 1 && clickedPosition <= this.config.totalPositions) {
+        this.config.currentPosition = clickedPosition;
+
+        // Call callback if defined
+        if (typeof this.config.onPositionChange === 'function')
+          this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+
+        // Redraw with new current position
+        this.draw(this.config.x, this.config.y, this.config.width, this.config.height,
+          this.config.currentPosition, this.config.windowStartPosition);
+      }
+    }
   }
 
   /**
