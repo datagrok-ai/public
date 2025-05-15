@@ -30,12 +30,75 @@ export function handleSequenceHeaderRendering() {
         if (!gCol)
           continue;
 
+        // Create a proper ILogger implementation
+
         let positionStatsViewerAddedOnce = !!grid.tableView && Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
         const isMSA = sh.isMsa();
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+
+        // Provide props for MonomerPlacer
+        const fontSettings = MonomerPlacer.getFontSettings(seqCol);
+        const propsProvider = () => {
+          const { font, fontWidth } = fontSettings;
+          return {
+            separatorWidth: sh.isMsa() ? 8 : 5,
+            monomerToShort: (mon:any, limit:any) => mon.length > limit ? mon.substring(0, limit) : mon,
+            font,
+            fontCharWidth: fontWidth
+          };
+        };
+
+        // Create and initialize MonomerPlacer
+        const monomerPlacer = new MonomerPlacer(gCol, seqCol, _package.logger, 50, propsProvider);
+        monomerPlacer.init();  // Initialize it
+
+        // Override the onClick method with our fixed version
+        monomerPlacer.onClick = function (gridCell: DG.GridCell, e: MouseEvent): void {
+          // First check if seqHelper is initialized
+          if (!_package.seqHelper || gridCell.tableRowIndex == null) return;
+
+          // Calculate position with the standard method
+          const positionShift = this.positionShift;
+          const gridCellBounds = gridCell.bounds;
+          const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
+          const position = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
+
+          if (position !== null && position >= 0) {
+            // Add 1 to fix the off-by-one error
+            const correctedPosition = position + 1;
+
+            // Update the selected position with correction
+            this.tableCol.setTag(bioTAGS.selectedPosition, (correctedPosition + positionShift).toString());
+
+            // Handle stats viewer
+            if (correctedPosition + positionShift >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
+              positionStatsViewerAddedOnce = true;
+              const v = grid.tableView.addViewer('Sequence Position Statistics', { sequenceColumnName: seqCol.name });
+              grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+            }
+
+            // Check if we should center the view
+            const font = getFontSize();
+            const charWidth = font + (isMSA ? 8 : 0);
+            const visiblePositions = Math.floor(gridCellBounds.width / charWidth);
+            const start = getStart();
+
+            if ((correctedPosition + positionShift) >= 1 &&
+              ((correctedPosition + positionShift) < start ||
+                (correctedPosition + positionShift) > start + visiblePositions - 1)) {
+              // Center view on clicked position if possible
+              const newStart = Math.max(1, (correctedPosition + positionShift) - Math.floor(visiblePositions / 2));
+              this.tableCol.setTag(bioTAGS.positionShift, (newStart - 1).toString());
+            }
+          }
+        };
+
+        // Store it for later access
+        seqCol.temp.monomerPlacer = monomerPlacer;
+
         // get the maximum length of seqs by getting the primitive length first and then splitting it with correct splitter;
         let pseudoMaxLenIndex = 0;
         let pseudoMaxLength = 0;
@@ -62,7 +125,6 @@ export function handleSequenceHeaderRendering() {
           totalPositions: maxSeqLen + 1,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
-
               const start = getStart();
               const cur = getCurrent();
 
@@ -79,8 +141,6 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
-
-
 
         grid.props.colHeaderHeight = 65;
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
@@ -186,7 +246,6 @@ export function handleSequenceHeaderRendering() {
             }
           }
         });
-
 
       }
     }, 1000);

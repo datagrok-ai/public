@@ -560,7 +560,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const position = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
 
     if (position !== null && position >= 0) {
-      // Update the selected position
       this.tableCol.setTag(bioTAGS.selectedPosition, (position + positionShift).toString());
     }
   }
