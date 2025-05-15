@@ -395,7 +395,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       if (isRenderedOnGrid)
         w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
       g.beginPath();
-      g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
+      g.rect(x + this.padding, y, w - this.padding - 1, h);
       g.clip();
       g.font = this.props?.font ?? '12px monospace';
       g.textBaseline = 'top';
@@ -432,7 +432,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         drawStyle = DrawStyle.MSA;
 
       // if the sequence is rendered in shifted mode, we will also render three dots at start, indicating the shift
-      this._leftThreeDotsPadding = positionShift > 0 ? g.measureText(shiftedLeftPaddingText).width : 0;
+      this._leftThreeDotsPadding = this.shouldRenderShiftedThreeDots(positionShift) ? g.measureText(shiftedLeftPaddingText).width : 0;
       // currently selected position to highlight
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
@@ -460,7 +460,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         if (minDistanceRenderer > w) break;
       }
-      if (positionShift > 0) {
+      if (this.shouldRenderShiftedThreeDots(positionShift)) {
         const opts: Partial<PrintOptions> = {
           color: undefinedColor, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: false,
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
@@ -479,6 +479,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     }
   }
 
+  private shouldRenderShiftedThreeDots(positionShift: number): boolean {
+    return positionShift > 0 && (!this.gridCol || !this.gridCol.dart || !this.gridCol.grid || !this.gridCol.grid.dart || (this.gridCol.grid.props.colHeaderHeight ?? 0) <= 50);
+  }
+
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const logPrefix = `${this.toLog()}.onMouseMove()`;
     if (!this.seqHelper || gridCell.tableRowIndex == null) return;
@@ -495,7 +499,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     //   maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
     // const maxIndex = maxLengthWords.length;
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
-    const leftPadding = positionShift > 0 && (this._leftThreeDotsPadding ?? 0) > 0 ? this._leftThreeDotsPadding : 0;
+    const leftPadding = this.shouldRenderShiftedThreeDots(positionShift) && (this._leftThreeDotsPadding ?? 0) > 0 ? this._leftThreeDotsPadding : 0;
     const left: number | null = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width, leftPadding);
     this.logger.debug(`${logPrefix}, start, argsX: ${argsX}, left: ${left}`);
 

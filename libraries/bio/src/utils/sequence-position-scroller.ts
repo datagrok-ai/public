@@ -153,7 +153,7 @@ export class MSAScrollingHeader {
     // Calculate slider position on the bar
     const totalSliderRange = this.config.totalPositions - visiblePositionsN;
     const sliderStartPX = totalSliderRange <= 0 ? 0 :
-      windowStart / (this.config.totalPositions) * (canvasWidth - this.sliderWidth);
+      windowStart / (totalSliderRange) * (canvasWidth - this.sliderWidth);
 
     const sliderLengthPX = totalSliderRange <= 0 ? canvasWidth :
       this.sliderWidth;
@@ -274,11 +274,15 @@ export class MSAScrollingHeader {
   isInSliderDraggableArea(e: MouseEvent): boolean {
     const {x, y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
-    const startSeqX = this.config.windowStartPosition;
-    const pseudoPositionWidth = (this.config.width - this.sliderWidth) / this.config.totalPositions;
-    const startSliderXPX = (startSeqX - 1) * pseudoPositionWidth;
-    const endSliderXPX = startSliderXPX + this.sliderWidth;
-    return y > sliderTop && y < sliderTop + this.config.sliderHeight && x >= startSliderXPX && x < endSliderXPX;
+    const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
+    const windowStart = Math.max(1, this.config.windowStartPosition);
+    // Calculate slider position on the bar
+    const totalSliderRange = this.config.totalPositions - visiblePositionsN;
+    const sliderStartPX = totalSliderRange <= 0 ? 0 :
+      windowStart / (totalSliderRange) * (this.config.width - this.sliderWidth);
+
+
+    return y > sliderTop && y < sliderTop + this.config.sliderHeight && x >= sliderStartPX && x < sliderStartPX + this.sliderWidth;
   }
 
   /**
@@ -396,11 +400,19 @@ export class MSAScrollingHeader {
     const canvasWidth = this.config.width - sliderWidth;
 
     const normalizedX = Math.max(0, Math.min(this.config.width, x));
-    // this shows how many positions are in one pixel
-    const pseudoPositionWidth = canvasWidth / this.config.totalPositions;
     const fittedPositions = Math.floor(this.config.width / this.config.positionWidth);
+
+    const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
+    // Calculate slider position on the bar
+    const totalSliderRange = this.config.totalPositions - visiblePositionsN;
+    // const sliderStartPX =
+    //   windowStart / (totalSliderRange) * (this.config.width - this.sliderWidth);
+    // after we normalize the x position of the mouse, this is where the center of the slider should be.
+    const sliderStartPx = Math.max(0, normalizedX - sliderWidth / 2);
+    // then we reverse the formula and calculate the new start position
+    const windowStart = sliderStartPx / (canvasWidth) * (totalSliderRange);
     // we add these positions so that it feels like we are grabbing the slider by its center
-    this.config.windowStartPosition = Math.max(1, Math.min(Math.round((normalizedX - sliderWidth / 2) / pseudoPositionWidth), this.config.totalPositions - fittedPositions + 1));
+    this.config.windowStartPosition = Math.max(1, Math.min(windowStart, this.config.totalPositions - fittedPositions + 1));
 
     // Call callback if defined
     if (typeof this.config.onPositionChange === 'function')
