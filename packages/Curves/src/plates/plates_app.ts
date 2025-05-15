@@ -6,11 +6,11 @@ import {NumericMatcher} from "./numeric_matcher";
 
 import {
   getPlateProperty,
-  getPlateUniquePropertyValues,
+  getPlateUniquePropertyValues, getWellUniquePropertyValues,
   initPlates,
   plateProperties, PlateQuery,
   plateUniquePropertyValues,
-  queryPlates
+  queryPlates, wellProperties
 } from "./plates_crud";
 
 export function platesAppView(): DG.View {
@@ -33,7 +33,8 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
 
   const searchPlatesNode = treeNode.item('Search plates');
   const searchWellsNode = treeNode.item('Search wells');
-  searchPlatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchView()));
+  searchPlatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchPlatesView()));
+  searchWellsNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchWellsView()));
   const queriesNode = treeNode.group('Queries');
   const nameCol = plateUniquePropertyValues.col('name')!;
   const valueCol = plateUniquePropertyValues.col('value_string')!;
@@ -45,10 +46,7 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
 }
 
 
-async function searchView(): Promise<DG.View> {
-  const dummy = DG.DataFrame.create(5, 'Search plates');
-  const view = DG.TableView.create(dummy);
-
+function getPlatesSearchForm(): DG.InputForm {
   const inputs: DG.InputBase[] = [];
   for (const prop of plateProperties) {
     if (prop.value_type == DG.TYPE.STRING) {
@@ -58,22 +56,57 @@ async function searchView(): Promise<DG.View> {
     }
     else if (prop.value_type == DG.TYPE.FLOAT) {
       const input: DG.InputBase = ui.input.string(prop.name);
+      input.addValidator(s => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
       inputs.push(input);
     }
   }
 
+  return DG.InputForm.forInputs(inputs);
+}
+
+
+function getWellsSearchForm(): DG.InputForm {
+  const inputs: DG.InputBase[] = [];
+  for (const prop of wellProperties) {
+    if (prop.value_type == DG.TYPE.STRING) {
+      const items = getWellUniquePropertyValues(prop);
+      const input: DG.InputBase = ui.input.multiChoice(prop.name, { items: items})
+      inputs.push(input);
+    }
+    else if (prop.value_type == DG.TYPE.FLOAT) {
+      const input: DG.InputBase = ui.input.string(prop.name);
+      input.addValidator(s => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
+      inputs.push(input);
+    }
+  }
+
+  return DG.InputForm.forInputs(inputs);
+}
+
+
+function plateSearchFormToQuery(form: DG.InputForm): PlateQuery {
+  const query: PlateQuery = { platePropertyValues: {}, platePropertyConditions: []};
+
+  for (const input of form.inputs.filter(input => input.inputType == DG.InputType.MultiChoice && input.value.length > 0))
+    query.platePropertyValues[getPlateProperty(input.caption).id] = input.value;
+
+  for (const input of form.inputs.filter(input => input.inputType == DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)))
+    query.platePropertyConditions.push({
+      propertyId: getPlateProperty(input.caption).id,
+      matcher: NumericMatcher.parse(input.value)!
+    });
+
+  return query;
+}
+
+
+async function searchPlatesView(): Promise<DG.View> {
+  const dummy = DG.DataFrame.create(5, 'Search plates');
+  const view = DG.TableView.create(dummy);
+  const form = getPlatesSearchForm();
+
   const refresh = () => {
-    const query: PlateQuery = { platePropertyValues: {}, platePropertyConditions: []};
-
-    for (const input of inputs.filter(input => input.inputType == DG.InputType.MultiChoice && input.value.length > 0))
-      query.platePropertyValues[getPlateProperty(input.caption).id] = input.value;
-
-    for (const input of inputs.filter(input => input.inputType == DG.InputType.Text && input.value !== ''))
-      query.platePropertyConditions.push({
-        propertyId: getPlateProperty(input.caption).id,
-        matcher: NumericMatcher.parse(input.value)!
-      });
-
+    const query = plateSearchFormToQuery(form);
     queryPlates(query).then((df) => {
       view.dataFrame = df;
       view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
@@ -81,13 +114,24 @@ async function searchView(): Promise<DG.View> {
     });
   }
 
-  const form = DG.InputForm.forInputs(inputs);
   form.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
-
-  refresh();
 
   //@ts-ignore
   view.dockManager.dock(form.root, DG.DOCK_TYPE.TOP);
+
+  refresh();
+  return view;
+}
+
+
+async function searchWellsView(): Promise<DG.View> {
+  const dummy = DG.DataFrame.create(5, 'Search wells');
+  const view = DG.TableView.create(dummy);
+  const platesForm = getPlatesSearchForm();
+  const wellsForm = getWellsSearchForm();
+
+  //@ts-ignore
+  view.dockManager.dock(ui.divH([platesForm.root, wellsForm.root]), DG.DOCK_TYPE.TOP);
 
   return view;
 }
