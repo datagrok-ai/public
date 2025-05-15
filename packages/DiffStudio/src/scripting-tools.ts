@@ -203,6 +203,7 @@ enum SCRIPT {
   ONE_STAGE_BEGIN = 'let _oneStage = async (',
   ONE_STAGE_END = ') => {',
   ASYNC_OUTPUT = `let ${DF_NAME} = await _oneStage(`,
+  RETURN = `return ${DF_NAME};`,
   RETURN_OUTPUT = `return call.getParamValue('${DF_NAME}');`,
   EMPTY_OUTPUT = `let ${DF_NAME} = DG.DataFrame.create();`,
   APPEND = `${DF_NAME}.append(`,
@@ -983,9 +984,12 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   // 5. The 'call solver' lines
   res.push('');
   res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER_COM);
-  res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
-  res.push(SCRIPT.SPACE2 + SCRIPT.PREPARE);
-  res.push(SCRIPT.SPACE2 + SCRIPT.CALL);
+  res.push(SCRIPT.SPACE2 + SCRIPT.FUNCTION_CALL);
+  res.push(SCRIPT.SPACE2 + SCRIPT.RETURN);
+
+  // res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
+  // res.push(SCRIPT.SPACE2 + SCRIPT.PREPARE);
+  // res.push(SCRIPT.SPACE2 + SCRIPT.CALL);
   res.push(SCRIPT.SPACE2 + SCRIPT.RETURN_OUTPUT);
 
   // 6. Close the function
