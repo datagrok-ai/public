@@ -134,11 +134,6 @@ export function handleSequenceHeaderRendering() {
         }));
 
 
-
-        // grid.onCellClick.subscribe((e) => {
-        //   e.
-        // })
-
         grid.root.addEventListener('click', (e) => {
           // Check if grid is still valid
           if (grid.isDetached) return;
