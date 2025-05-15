@@ -16,7 +16,7 @@ There are several ways to create a new notebook:
 
 1. From the **Top Menu**, select **ML** > **Notebooks** > **New Notebook..**  
 2. Go to **Browse** > **Platform** > **Notebooks** and click **NEW NOTEBOOK** from the notebook toolbar.  
-3. Run `#{x.CmdNewNotebook}` from the 
+3. Run `CmdNewNotebook()` from the 
    [Console](../datagrok/navigation/panels/panels.md#console).  
 4. Select a table and click **Actions** > **Open in Notebooks** in the 
    [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
