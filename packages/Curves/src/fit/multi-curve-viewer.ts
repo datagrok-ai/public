@@ -17,6 +17,7 @@ const ERROR_CLASS = 'd4-viewer-error';
   name: 'MultiCurveViewer',
   description: 'A viewer that superimposes multiple in-cell curves on one chart',
   icon: 'icons/multi-curve-viewer.png',
+  trellisable: true
 })
 export class MultiCurveViewer extends DG.JsViewer {
   [index: string]: any;
@@ -34,6 +35,12 @@ export class MultiCurveViewer extends DG.JsViewer {
   allowXZeroes?: boolean;
   mergeCellSeries?: boolean;
   showColumnLabel?: boolean;
+
+
+  private isInTrellis (): boolean {
+    //KOSTILJ, but works
+    return this.root?.parentElement?.parentElement?.classList?.contains('d4-trellis-plot-cell') ?? false;
+  }
 
   constructor() {
     super();
@@ -95,17 +102,21 @@ export class MultiCurveViewer extends DG.JsViewer {
       return;
     this.rows.length = 0;
     let selectionStart = -1;
-    if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
-      this.rows.push(this.dataFrame.currentRowIdx);
-    if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx !== -1)
-      this.rows.push(this.dataFrame.mouseOverRowIdx);
-    if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1) {
-      selectionStart = this.rows.length;
-      this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+    if (this.isInTrellis())
+      this.rows.push(...this.dataFrame.filter.getSelectedIndexes());
+    else {
+      if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
+        this.rows.push(this.dataFrame.currentRowIdx);
+      if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx !== -1)
+        this.rows.push(this.dataFrame.mouseOverRowIdx);
+      if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1) {
+        selectionStart = this.rows.length;
+        this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+      }
     }
 
     this.data = new FitChartData();
-    const grid = this.tableView?.grid!;
+    const grid = this.isInTrellis() ? grok.shell.tableView(this.dataFrame.name).grid : this.tableView?.grid!;
     const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
     const chartOptions: IFitChartOptions[] = [];
     for (const colName of this.curvesColumnNames!) {
@@ -163,12 +174,13 @@ export class MultiCurveViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
+
     const grid = this.tableView?.grid!;
     const fitCol = this.dataFrame.columns.bySemType(FitConstants.FIT_SEM_TYPE);
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 
-    merge(this.dataFrame.onCurrentCellChanged, grid.onCellMouseEnter, this.dataFrame.onSelectionChanged)
+    merge(...[this.dataFrame.onCurrentCellChanged, ...(grid ? [grid.onCellMouseEnter] : []), this.dataFrame.onSelectionChanged])
       .pipe(debounce(_ => interval(50)))
       .subscribe(_ => {
         if (this.dataFrame) {
@@ -176,6 +188,9 @@ export class MultiCurveViewer extends DG.JsViewer {
           this.render();
         }
       });
+    if (this.isInTrellis()) {
+      this.createChartData();
+    }
   }
 
   _showErrorMessage(msg: string) {
