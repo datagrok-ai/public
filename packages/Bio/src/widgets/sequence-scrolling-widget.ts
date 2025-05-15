@@ -66,9 +66,9 @@ export function handleSequenceHeaderRendering() {
               const cur = getCurrent();
               if (start !== scrollerRange.start)
                 seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-              if (scrollerCur >= 0 && cur !== scrollerCur) {
+              if (cur !== scrollerCur) {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
-                if (!positionStatsViewerAddedOnce && grid.tableView) {
+                if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
                   positionStatsViewerAddedOnce = true;
                   const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
                   grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
@@ -84,8 +84,10 @@ export function handleSequenceHeaderRendering() {
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
             return;
           const cellBounds = e.bounds;
-          if (!cellBounds || cellBounds.height <= 50)
+          if (!cellBounds || cellBounds.height <= 50) {
+            scroller.headerHeight = 0;
             return;
+          }
 
           const headerTitleSpace = 20;
           const availableTitleSpace = cellBounds.height - defaultHeaderHeight;
