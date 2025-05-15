@@ -1,109 +1,190 @@
 # Supported formats
 
-## Tabular formats
+Datagrok supports over 50 file formats, including domain-specific like SDF, FASTA, and others. It also understands how data is structured or represented within those files (e.g., assay plates within an XLSX, SDTM conventions within a CSV, and notations like SMILES and HELM).
 
-| Extension  | Description                                                    | Source                 |
-|------------|----------------------------------------------------------------|------------------------|
-| .txt       | Plain text                                                     | Core                   |
-| .csv       | Comma-separated values                                         | Core                   |
-| .tsv       | Tab-separated values                                           | Core                   |
-| .xml       | Extensible Markup Language                                     | Core                   |
-| .json      | JavaScript Object Notation                                     | Core                   |
-| .HTML      | HyperText Markup Language                                      | Core                   |
-| .xlsx      | Excel                                                          | Core                   |
-| .edf       | European Data Format                                           | Core                   |
-| .sas7bdat  | SAS database file                                              | Core                   |
-| .kxl       | KeyCreator eXtensible Language                                 | Core   <!--check!!!--> |
-| .rds, .rda | R Data Format                                                  | Core                   |
-| .h5        | Hierarchical Data Format                                       | Core                   |
-| .nc        | NetCDF                                                         | Core                   |
-| .mat       | MATLAB MAT                                                     | Core                   |
-| .d42       | Datagrok [project](../../datagrok/concepts/project/project.md) | Core                   |
-| .zip       | ZIP archive (for supported types)                              | Core                   |
-| .gz, .gzip | gzip                                                           | Core                   |
-| .tar       | Tape archive                                                   | Core                   |
-| netCDF     | network Common Data Form                                       | Core  <!--check!!!-->  |
-| .kml, .kmz | Keyhole Markup Language (geographic annotations)               | [GIS]                  |
-| .parquet   | Efficient data storage and retrieval                           | [Arrow]                |
-| .feather   | portable file format for storing Arrow tables                  | [Arrow]                |
-| .sqlite    | SQLite database                                                | [Dendrogram]           |
+## Structured and analytical data
 
-## Molecule structure formats
+### Tabular and semi-structured data
 
-| Extension | Description                                                   | Source |
-|-----------|---------------------------------------------------------------|--------|
-| .smi    | Structure-data file                                           | [Chem] |
-| .sdf      | Structure-data file                                           | [Chem] |
-| .mol      | MDL Molfile                                                   | [Chem] |
-| .mol2     | SYBYL molecule representation                                 | [Chem] |
+| Format            | Type              | Description                                   | Required plugins |
+|------------------|-------------------|-----------------------------------------------|------------------|
+| `.csv`             | File format       | Comma-separated values                         |                  |
+| `.tsv`             | File format       | Tab-separated values                           |                  |
+| `.txt`             | File format       | Plain text                                     |                  |
+| `.xlsx`            | File format       | Microsoft Excel                                |                  |
+| `.d42`             | File format       | Datagrok [project]                             |                  |
+| `.json`            | File format       | JavaScript Object Notation                     |                  |
+| `.xml `            | File format       | Extensible Markup Language                     |                  |
+| `.HTML`            | File format       | HyperText Markup Language                      |                  |
 
-## Molecule3D structure formats
+### Statistical and scientific formats
 
-| Extension | Description                                                   | Source               | Viewer         |
-|-----------|---------------------------------------------------------------|----------------------|----------------|
-| .brix     | (preview) Electron Density Map                                | [BiostructureViewer] |                |
-| .ccp4     | Collaborative Computational Project Number 4 electron density | [BiostructureViewer] | [NGL]          |
-| .cif      | (preview) Crystallographic Information File                   | [BiostructureViewer] |                |
-| .cifCore  | Crystallographic Information Core File                        | [BiostructureViewer] | [Biostructure] |
-| .cns      | Density ?                                                     | [BiostructureViewer] | [NGL]          |
-| .cub      | (preview) Orbital/Density Values on a 3D Grid                 | [BiostructureViewer] |                |
-| .cube     | (preview) Orbital/Density Values on a 3D Grid                 | [BiostructureViewer] |                |
-| .dsn6     | (preview) Ribbons FRODO Map                                   | [BiostructureViewer] |                |
-| .dx       | (preview) Chemical Spectroscopy Format                        | [BiostructureViewer] |                |
-| .dxbin    | (preview) .dxbin                                              | [BiostructureViewer] |                |
-| .ent      | (preview) Brookhaven PDB Molecule                             | [BiostructureViewer] |                |
-| .gro      | GROMACS                                                       | [BiostructureViewer] | [Biostructure] |
-| .mcif     | (preview) Macromolecular Crystallographic Information File    | [BiostructureViewer] |                |
-| .mmCif    | Macromolecular Crystallographic Information File              | [BiostructureViewer] | [Biostructure] |
-| .mmtf     | Macromolecular Transmission Format                            | [BiostructureViewer] | [NGL]          |
-| .mrc      | (preview) Electron Density Map                                | [BiostructureViewer] |                |
-| .obj      | Wavefront .obj file                                           | [BiostructureViewer] | [NGL]          |
-| .parm7    | (preview) AMBER Parameter/Topology File                       | [BiostructureViewer] |                |
-| .pdb      | Protein Data Bank                                             | [BiostructureViewer] | [Biostructure] |
-| .pdbqt    | Protein Data Bank, Partial Charge (Q), & Atom Type (T)        | [BiostructureViewer] | [Biostructure] |
-| .ply      | Polygon file format                                           | [BiostructureViewer] | [NGL]          |
-| .psf      | (preview) Protein Structure File                              | [BiostructureViewer] |                |
-| .sd       | (preview) Structure-Data                                      | [BiostructureViewer] |                |
-| .prmtop   | Parameter / Topology (AMBER)                                  | [BiostructureViewer] | [NGL]          |
-| .top      | Gromacs Topology File                                         | [BiostructureViewer] | [NGL]          |
-| .xplor    | (preview) Electron Density Map                                | [BiostructureViewer] |                |
-| .xyz      | (preview) Cartesian Coordinates Format                        | [BiostructureViewer] |                |
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.rds`, `.rda`       | File format       | R serialized data                              |                  |
+| `.mat`             | File format       | MATLAB data format                             |                  |
+| `.h5`              | File format       | Hierarchical Data Format                       |                  |
+| `.nc`, `.netcdf`     | File format       | Network Common Data Form                       |                  |
+| `.sas7bdat`        | File format       | SAS database file                              |                  |
+| `.kxl`             | File format       | KeyCreator eXtensible Language                 |                  |
 
-## Macromolecule formats
+### Columnar and database formats
 
-| Extension | Description                                    | Source |
-|-----------|------------------------------------------------|--------|
-| .fasta    | FASTA format (fa, fna, ffn, faa, frn, fa, fst) | [Bio]  |
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.parquet`         | File format       | Columnar storage format                        | [Arrow]          |
+| `.feather`         | File format       | Arrow-based binary format                      | [Arrow]          |
+| `.sqlite`          | File format       | SQLite database                                | [SQLite]         |
 
-Note: The platform detector also recognizes semantic types of Macromolecule in files that are in [Tabular format](#tabular-formats).
+### Archives and packaging
 
-## Miscellaneous
-
-| Extension      | Description                        | Source              |
-|----------------|------------------------------------|---------------------|
-| .ipynb         | Jupyter Notebook                   | [Notebooks]         |
-| .ipv           | Interactive differential equations | [Dendrogram]        |
-| .pdf           | Portable document format           | [FileEditors]       |
-| .docx          | MS Word                            | [FileEditors]       |
-| .jdx,dx,nmrium | NMR                                | [NMRium]            |
-| .jdx           | Spectroscopy                       | [ChemSpectraViewer] |
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.zip`             | File format       | ZIP archive (auto-extracted for supported types)|                 |
+| `.tar`             | File format       | Tape archive                                   |                  |
+| `.gz`, `.gzip`       | File format       | Gzip-compressed files                          |                  |
 
 
-See also:
+## Notebooks and documents
 
+### Notebooks and computations
+
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.ipynb`           | File format       | Jupyter Notebook                               | [Notebooks]      |
+| `.ivp`             | File format       | Interactive differential equations             | [Diff Studio]    |
+
+### Docs and reports
+
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.pdf`             | File format       | Portable Document Format                       | [File Editors]   |
+| `.docx`            | File format       | Microsoft Word Document                        | [File Editors]   |
+
+
+## Domain-specific formats
+
+### Cheminformatics
+
+#### Molecular structures
+
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.sdf`, `.sd `       | File format       | Structure-data file                            | [Chem]           |
+| `.mol`             | File format       | MDL Molfile                                    | [Chem]           |
+| `.mol2`            | File format       | SYBYL molecule representation                  | [Chem]           |
+| `.smi`             | File format       | Structure-data file                            | [Chem]           |
+
+### Bioinformatics
+
+#### Macromolecules and sequences
+
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.fasta`           | File format       | FASTA format (fa, fna, ffn, faa, frn, fa, fst) | [Bio]            |
+
+#### Phylogenetic trees
+
+| Format           | Type              | Description                                    | Required plugins     |
+|------------------|-------------------|------------------------------------------------|----------------------|
+| `.nwk`, `.newick`    | File format       | Newick format for phylogenetic trees           | [PhyloTree Viewer]   |
+
+#### 3D structures and density maps
+
+##### Macromolecular structure formats
+
+| Format           | Type              | Description                                    | Required plugins        |
+|------------------|-------------------|------------------------------------------------|--------------------------|
+| `.pdb`             | File format       | Protein Data Bank                              | [Biostructure Viewer]    |
+| `.pdbqt`           | File format       | Protein Data Bank, Partial Charge, Atom Type   | [Biostructure Viewer]    |
+| `.cif`             | File format       | (preview) Crystallographic Information File    | [Biostructure Viewer]    |
+| `.cifCore`         | File format       | Crystallographic Information Core File         | [Biostructure Viewer]    |
+| `.mcif`            | File format       | (preview) Macromolecular Crystallographic File | [Biostructure Viewer]    |
+| `.mmcif`           | File format       | Macromolecular Crystallographic File           | [Biostructure Viewer]    |
+| `.mmtf`            | File format       | Macromolecular Transmission Format             | [Biostructure Viewer]    |
+| `.ent`             | File format       | (preview) Brookhaven PDB Molecule              | [Biostructure Viewer]    |
+
+##### Electron density and volumetric data
+
+| Format           | Type              | Description                                    | Required plugins        |
+|------------------|-------------------|------------------------------------------------|--------------------------|
+| `.ccp4`            | File format       | Collaborative Computational Project Number 4  | [Biostructure Viewer]    |
+| `.brix`            | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
+| `.mrc`             | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
+| `.xplor`           | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
+| `.cub`, `.cube`      | File format       | (preview) Orbital/Density Values on a 3D Grid | [Biostructure Viewer]    |
+| `.dsn6 `           | File format       | (preview) Ribbons FRODO map                    | [Biostructure Viewer]    |
+
+##### Simulation and topology formats
+
+| Format           | Type              | Description                                    | Required plugins        |
+|------------------|-------------------|------------------------------------------------|--------------------------|
+| `.gro`             | File format       | GROMACS structure                              | [Biostructure Viewer]    |
+| `.top `            | File format       | GROMACS topology                               | [Biostructure Viewer]    |
+| `.prmtop`          | File format       | AMBER Parameter/Topology File                  | [Biostructure Viewer]    |
+| `.parm7`           | File format       | (preview) AMBER Parameter/Topology File        | [Biostructure Viewer]    |
+| `.psf `            | File format       | (preview) Protein Structure File               | [Biostructure Viewer]    |
+| `.cns`             | File format       | Crystallography and NMR System                 | [Biostructure Viewer]    |
+
+##### 3D mesh formats
+
+| Format           | Type              | Description                                    | Required plugins        |
+|------------------|-------------------|------------------------------------------------|--------------------------|
+| `.obj `            | File format       | Wavefront 3D object                            | [Biostructure Viewer]    |
+| `.ply`             | File format       | Polygon file format                            | [Biostructure Viewer]    |
+| `.xyz`             | File format       | (preview) Cartesian Coordinate Format          | [Biostructure Viewer]    |
+
+### Spectroscopy and NMR
+
+| Format           | Type              | Description                                    | Required plugins        |
+|------------------|-------------------|------------------------------------------------|--------------------------|
+| `.jdx `            | File format       | Spectroscopy                                   | [Chem Spectra Viewer]    |
+| `.jdx`, `.dx`, `.nmrium`| File format       | NMR                                            | [NMRium]                 |
+
+### Biosignals
+
+| Format           | Type              | Description                                                     | Required plugins     |
+|------------------|-------------------|------------------------------------------------------------------|----------------------|
+| `.edf`             | File format       | European Data Format for biosignals                             |                      |
+
+### Clinical and regulatory data
+
+| Format           | Type              | Description                                                     | Required plugins     |
+|------------------|-------------------|------------------------------------------------------------------|----------------------|
+| `.csv`             | File format       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
+| `.xlsx`            | Data structure       | Assay plate data (auto-detected in file)                        | [Curves]             |
+
+### Geospatial formats
+
+| Format           | Type              | Description                                    | Required plugins |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.kml`, `.kmz`       | File format       | Keyhole Markup Language                        | [GIS]            |
+| `.geojson`         | File format       | GeoJSON (geospatial data)                      | [GIS]            |
+| `.topojson`        | File format       | TopoJSON (topological geospatial data)         | [GIS]            |
+
+## Molecular and macromolecular notations (used in strings or columns)
+
+| Format           | Type      | Description                                    | Required plugins |
+|------------------|-----------|------------------------------------------------|------------------|
+| `SMILES`| Notation  | Linear representation of molecular structure   | [Chem] |
+| `SMARTS` | Notation  | Linear representation of molecular substructure patterns | [Chem]  |
+| `InChI`, `InChIKey`| Notation  | IUPAC-based textual identifiers for chemical compounds | [Chem]  |
+| `HELM` | Notation  | Biopolymer notation for peptides and oligonucleotides | [Bio] |
+| `SMIRKS` | Notation  | Linear representation of chemical reaction transforms   | [Chem] |
+| `BILN` | Notation  | Linear notation for complex biopolymers   | [Bio]  |
+
+[Project]: <../../datagrok/concepts/project/project.md>
 [Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
-[BiostructureViewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>
-[NGL]: ../../visualize/viewers/ngl.md
-[Biostructure]: ../../visualize/viewers/biostructure.md
-
+[Bio]: <https://github.com/datagrok-ai/public/tree/master/packages/Bio#readme>
+[Biostructure Viewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>
 [GIS]: https://github.com/datagrok-ai/public/tree/master/packages/GIS#readme
 [Arrow]: https://github.com/datagrok-ai/public/tree/master/packages/Arrow#readme
-[Dendrogram]: https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme
-[FileEditors]: https://github.com/datagrok-ai/public/tree/master/packages/FileEditors#readme
-[DiffStudio]: https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio#readme
+[PhyloTree Viewer]: https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer#readme
+[File Editors]: https://github.com/datagrok-ai/public/tree/master/packages/FileEditors#readme
+[Diff Studio]: https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio#readme
 [SQLite]: https://github.com/datagrok-ai/public/tree/master/packages/SQLite#readme
-[Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme
 [NMRium]: https://github.com/datagrok-ai/public/tree/master/packages/nmrium#readme
-[ChemSpectraViewer]: https://github.com/datagrok-ai/chem-spectra-viewer
-
-[//]: # ([Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme)
+[Chem Spectra Viewer]: https://github.com/datagrok-ai/chem-spectra-viewer
+[Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme
+[Curves]: https://github.com/datagrok-ai/public/tree/master/packages/Curves#readme
+[Clinical Case]: https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#readme

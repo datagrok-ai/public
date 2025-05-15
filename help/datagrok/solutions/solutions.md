@@ -23,7 +23,7 @@ customize the platform for any domain of knowledge. For example:
 <Tabs>
 <TabItem value="chem" label="Cheminformatics" default>
 
-* Automatic detection of chemical structures upon data import. Support for [multiple formats](../../access/files/supported-formats.md#molecule-structure-formats)
+* Automatic detection of chemical structures upon data import. Support for [multiple formats](../../access/files/supported-formats.md#cheminformatics)
 * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
 * Multiple molecular sketchers
 * Powerful, chemical spreadsheet and other chemically-aware viewers
