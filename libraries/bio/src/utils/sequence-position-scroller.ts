@@ -347,6 +347,8 @@ export class MSAScrollingHeader {
 
   private handleKeyDown(e: KeyboardEvent): void {
     if (!this.isValid || this.config.currentPosition < 1) return;
+    if (!document.activeElement?.contains(this.eventElement) || this.eventElement.style.display !== 'block')
+      return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       e.stopPropagation();
