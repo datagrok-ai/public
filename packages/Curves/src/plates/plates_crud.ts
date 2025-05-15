@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from "../plate/plate";
 import {Utils} from "datagrok-api/dg";
-import {NumericMatcher} from "./numeric_matcher";
+import {NumericMatcher, Matcher} from "./numeric_matcher";
 
 
 export type PlateType = {
@@ -20,16 +20,14 @@ export type PlateProperty = {
   value_type: string; //DG.COLUMN_TYPE;
 }
 
-export type PlatePropertyCondition = {
-  propertyId: number;
-  matcher: NumericMatcher;
+export type PropertyCondition = {
+  property: PlateProperty;
+  matcher: Matcher;
 }
 
 export type PlateQuery = {
-  /** Allowed categorical values for plate level properties */
-  platePropertyValues: {[propId: number]: string[]};
-
-  platePropertyConditions: PlatePropertyCondition[];
+  plateMatchers: PropertyCondition[];
+  wellMatchers: PropertyCondition[];
 }
 
 
@@ -118,7 +116,7 @@ function sqlStr(s?: string | number) {
 
 /**
  * Build SQL that
- *   1) keeps only plates whose plate-level properties match the user’s filters
+ *   1) keeps only plates whose plate-level properties match the user's filters
  *   2) returns every plate-level property (name + value) for those plates
  *      packed into a single JSONB column called "properties".
  *
@@ -135,33 +133,29 @@ function getPlateSearchSql(query: PlateQuery): string {
   // ---------- 1. Build the boolean conditions for the filter ----------
   const existsClauses: string[] = [];
 
-  for (const [propIdStr, values] of Object.entries(query.platePropertyValues)) {
-    if (values.length === 0) continue;
-    const propId = Number(propIdStr);
-
-    // Safely single-quote the values 
-    const escapedValues = values
-      .map(v => `'${v.replace(/'/g, "''")}'`)
-      .join(", ");
-
+  // Handle plate-level property conditions
+  for (const condition of query.plateMatchers) {
+    const dbColumn = plateDbColumn[condition.property.value_type];
     existsClauses.push(`
       EXISTS (
         SELECT 1
         FROM plates.plate_details pd_f
         WHERE pd_f.plate_id = p.id
-          AND pd_f.property_id = ${propId}
-          AND (pd_f.value_string IN (${escapedValues}))
+          AND pd_f.property_id = ${condition.property.id}
+          AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
       )`);
   }
 
-  for (const condition of query.platePropertyConditions) {
+  // Handle well-level property conditions
+  for (const condition of query.wellMatchers) {
+    const dbColumn = plateDbColumn[condition.property.value_type];
     existsClauses.push(`
       EXISTS (
         SELECT 1
-        FROM plates.plate_details pd_f
-        WHERE pd_f.plate_id = p.id
-          AND pd_f.property_id = ${condition.propertyId}
-          AND (${condition.matcher.toSql('pd_f.value_num')})
+        FROM plates.plate_well_values pwv
+        WHERE pwv.plate_id = p.id
+          AND pwv.property_id = ${condition.property.id}
+          AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
       )`);
   }
 

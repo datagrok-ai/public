@@ -1,5 +1,36 @@
 type Nullable<T> = T | null;
 
+
+export abstract class Matcher {
+  abstract match(x: any): boolean;
+  abstract toSql(variable: string): string;
+}
+
+export class StringInListMatcher extends Matcher {
+  values: string[];
+
+  constructor(values: string[]) {
+    super();
+    this.values = values;
+  }
+
+  match(x: string | null): boolean {
+    if (x === null || x === undefined)
+      return false;
+    return this.values.includes(x);
+  }
+
+  toSql(variable: string): string {
+    if (this.values.length === 0)
+      return '(1 = 1)';
+    
+    const escapedValues = this.values
+      .map(v => `'${v.replace(/'/g, "''")}'`)
+      .join(", ");
+    return `(${variable} IN (${escapedValues}))`;
+  }
+}
+
 export class NumericMatcher {
   static readonly NONE = 'none';
   static readonly EQUALS = '=';
