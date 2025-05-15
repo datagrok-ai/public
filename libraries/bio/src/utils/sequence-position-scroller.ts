@@ -50,6 +50,9 @@ export class MSAScrollingHeader {
   private ctx: CanvasRenderingContext2D | null = null;
   private eventElement: HTMLDivElement;
 
+  private titlePadding = 8; // Space between title and dot cells
+  private maxDotCellHeight = 30; //
+
   /**
    * Constructor for the MSA Header
    * @param {MSAHeaderOptions} options - Configuration options
@@ -69,7 +72,7 @@ export class MSAScrollingHeader {
       currentPosition: options.currentPosition || 1,
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
-      onPositionChange: options.onPositionChange || ((_, __) => {}),
+      onPositionChange: options.onPositionChange || ((_, __) => { }),
       ...options // Override defaults with any provided options
     };
     this.eventElement = ui.div();
@@ -81,6 +84,18 @@ export class MSAScrollingHeader {
       isDragging: false,
       dragStartX: 0
     };
+    this.eventElement.addEventListener('mousemove', (e) => {
+      if (!this.isValid) return;
+      if (this.isInSliderDraggableArea(e)) {
+        this.eventElement.style.cursor = 'grab';
+      } else if (this.isInSliderArea(e)) {
+        this.eventElement.style.cursor = 'pointer';
+      } else if (this.isInHeaderArea(e)) {
+        this.eventElement.style.cursor = 'pointer';
+      } else {
+        this.eventElement.style.cursor = 'default';
+      }
+    });
 
     this.init();
   }
@@ -120,7 +135,7 @@ export class MSAScrollingHeader {
   public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number, preventable: Preventable): void {
     // soft internal update
     if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h || this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart)
-      Object.assign(this.config, {x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart});
+      Object.assign(this.config, { x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart });
 
 
     if (!this.isValid) {
@@ -243,11 +258,11 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
     const y = e.clientY - rect.top - this.config.y;
-    return {x, y};
+    return { x, y };
   }
 
   isInHeaderArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     return x >= 0 && x <= this.config.width && y >= 0 && y <= this.config.headerHeight;
   }
 
@@ -260,7 +275,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderArea(e: MouseEvent): boolean {
-    const {y} = this.getCoords(e);
+    const { y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     return y > sliderTop && y < sliderTop + this.config.sliderHeight;
   }
@@ -272,7 +287,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderDraggableArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     const startSeqX = this.config.windowStartPosition;
     const pseudoPositionWidth = (this.config.width - this.sliderWidth) / this.config.totalPositions;
@@ -287,17 +302,20 @@ export class MSAScrollingHeader {
    */
   private handleMouseDown(e: MouseEvent): void {
     if (!this.isValid) return;
-    const {x} = this.getCoords(e);
+    const { x } = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
       this.state.dragStartX = x;
       this.handleSliderDrag(x);
+
+      // Change cursor to grabbing during drag
+      this.eventElement.style.cursor = 'grabbing';
+
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
     }
   }
-
   private handleMouseWheel(e: WheelEvent): void {
     if (!this.isValid) return;
     if (this.isInHeaderArea(e)) {
@@ -382,6 +400,7 @@ export class MSAScrollingHeader {
    */
   private handleMouseUp(): void {
     this.state.isDragging = false;
+    this.eventElement.style.cursor = 'pointer';
   }
 
   /**
@@ -426,7 +445,7 @@ export class MSAScrollingHeader {
     if (!this.isValid) return;
 
     // Get calculated coordinates
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
 
 
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;

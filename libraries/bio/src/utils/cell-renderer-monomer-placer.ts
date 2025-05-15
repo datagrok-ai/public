@@ -6,19 +6,19 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {getSeqHelper, ISeqHelper} from './seq-helper';
-import {ALPHABET, MonomerToShortFunc, NOTATION, SplitterFunc, TAGS as bioTAGS} from './macromolecule';
-import {ISeqSplitted} from './macromolecule/types';
-import {CellRendererBackBase, getGridCellColTemp} from './cell-renderer-back-base';
-import {ILogger} from './logger';
-import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
-import {errInfo} from './err-info';
-import {DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions} from './cell-renderer';
-import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from './cell-renderer-consts';
-import {IMonomerLibBase} from '../types/index';
-import {HelmTypes} from '../helm/consts';
-import {ISeqMonomer} from '../helm/types';
-import {execMonomerHoverLinks} from '../monomer-works/monomer-hover';
+import { getSeqHelper, ISeqHelper } from './seq-helper';
+import { ALPHABET, MonomerToShortFunc, NOTATION, SplitterFunc, TAGS as bioTAGS } from './macromolecule';
+import { ISeqSplitted } from './macromolecule/types';
+import { CellRendererBackBase, getGridCellColTemp } from './cell-renderer-back-base';
+import { ILogger } from './logger';
+import { getMonomerLibHelper } from '../monomer-works/monomer-utils';
+import { errInfo } from './err-info';
+import { DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions } from './cell-renderer';
+import { MmcrTemps, rendererSettingsChangedState, tempTAGS } from './cell-renderer-consts';
+import { IMonomerLibBase } from '../types/index';
+import { HelmTypes } from '../helm/consts';
+import { ISeqMonomer } from '../helm/types';
+import { execMonomerHoverLinks } from '../monomer-works/monomer-hover';
 import * as operators from 'rxjs/operators';
 
 type MonomerPlacerProps = {
@@ -29,7 +29,7 @@ type MonomerPlacerProps = {
 
 export const undefinedColor = 'rgb(100,100,100)';
 
-export const shiftedLeftPaddingText = '...';
+export const shiftedLeftPaddingText = '';
 
 /** Be ware, this can return -1 meaning that hovering/clicking happened on the three dots
  * and not on the monomer itself */
@@ -136,11 +136,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const fontFamily = 'monospace';
     let fontSize = 12;
     if (tableCol && tableCol.temp[MmcrTemps.fontSize] &&
-        typeof tableCol.temp[MmcrTemps.fontSize] === 'number' && !isNaN(tableCol.temp[MmcrTemps.fontSize]))
+      typeof tableCol.temp[MmcrTemps.fontSize] === 'number' && !isNaN(tableCol.temp[MmcrTemps.fontSize]))
       fontSize = Math.max(tableCol.temp[MmcrTemps.fontSize], 1);
     // monospace ratio
     const fontWidth = fontSize * 0.6;
-    return {font: `${fontSize}px ${fontFamily}`, fontWidth};
+    return { font: `${fontSize}px ${fontFamily}`, fontWidth };
   }
 
   override toLog(): string {
@@ -265,7 +265,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     // const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
     // const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
 
-    const {startIdx, endIdx} = (() => {
+    const { startIdx, endIdx } = (() => {
       try {
         const grid: DG.Grid | null = this.gridCol && this.gridCol.dart ? this.gridCol.grid : null;
         if (grid && grid.dart) {
@@ -273,9 +273,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             startIdx: Math.max(Math.floor((grid?.vertScroll.min ?? 0) - 10), 0),
             endIdx: Math.min(Math.ceil((grid?.vertScroll.max ?? 0) + 10), this.tableCol.length)
           };
-        } else return {startIdx: 0, endIdx: Math.min(this.tableCol.length, 10)};
+        } else return { startIdx: 0, endIdx: Math.min(this.tableCol.length, 10) };
       } catch (_e) {
-        return {startIdx: 0, endIdx: Math.min(this.tableCol.length, 10)};
+        return { startIdx: 0, endIdx: Math.min(this.tableCol.length, 10) };
       }
     })();
 
@@ -436,6 +436,19 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       // currently selected position to highlight
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
+      if (!isNaN(selectedPosition) && selectedPosition >= 1) {
+        const selectedIndex = selectedPosition - positionShift - 1;
+        if (selectedIndex >= 0 && selectedIndex < visibleSeqLength - positionShift) {
+          // Calculate the position of the selected cell
+          const cellWidth = this.props.fontCharWidth + this.props.separatorWidth;
+          const cellX = x + this.padding + (selectedIndex * cellWidth);
+
+          // Draw highlight background for the entire cell
+          g.fillStyle = 'rgba(60, 177, 115, 0.2)'; // Same color as used in the header
+          g.fillRect(cellX, y, cellWidth, h);
+        }
+      }
+
       for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
         const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
         const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
@@ -455,7 +468,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
           referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
           monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
-          selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
+          // selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
         };
         printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         if (minDistanceRenderer > w) break;
@@ -499,6 +512,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const left: number | null = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width, leftPadding);
     this.logger.debug(`${logPrefix}, start, argsX: ${argsX}, left: ${left}`);
 
+
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
     if (left !== null && left >= 0 && left + positionShift < seqSS.length) {
@@ -527,6 +541,23 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       else
         ui.tooltip.hide();
       execMonomerHoverLinks(gridCell, null);
+    }
+  }
+
+  override onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    const logPrefix = `${this.toLog()}.onClick()`;
+    if (!this.seqHelper || gridCell.tableRowIndex == null) return;
+
+    const positionShift = this.positionShift;
+    const gridCellBounds: DG.Rect = gridCell.bounds;
+    const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
+
+    // Calculate position in the sequence, similar to getPosition method
+    const position = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
+
+    if (position !== null && position >= 0) {
+      // Update the selected position
+      this.tableCol.setTag(bioTAGS.selectedPosition, (position + positionShift).toString());
     }
   }
 }
