@@ -24,12 +24,12 @@ The recommended metadata engine for enterprises is RDS.
 
 Our application server is Dart-based and uses asynchronous coding techniques similar to Node.js. It serves a lot of
 clients simultaneously
-(see [stress testing](../../datagrok/solutions/enterprise/stress-testing-results.md)). Most scientific computations are off-loaded to the
+(see [stress testing](../../datagrok/solutions/teams/it/stress-testing-results.md)). Most scientific computations are off-loaded to the
 special ["compute" machines](#computations) with autoscaling enabled. Nevertheless, some tasks performed on the app
 server are still computationally-intensive (for example, parsing CSV files), so our app server is also multithreaded in
 addition to running asynchronous code. It takes advantage of the modern multi-core architecture.
 
-As can be seen from the [stress testing](../../datagrok/solutions/enterprise/stress-testing-results.md), app server scaling won't be needed for most of the
+As can be seen from the [stress testing](../../datagrok/solutions/teams/it/stress-testing-results.md), app server scaling won't be needed for most of the
 workloads in the enterprise. However, this still could be done if such a need arises.
 
 ### Data storage

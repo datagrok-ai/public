@@ -1,6 +1,10 @@
 # Peptides changelog
 
-## 1.23.7 (2025-05-12)
+## 1.23.9 (2025-05-14)
+
+* Reveerse events for Position statistics viewer
+
+## 1.23.8 (2025-05-12)
 
 * Performance improvements to Peptide viewers
 * LST white space reduction

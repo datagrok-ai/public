@@ -15,7 +15,7 @@ keywords:
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
 [in-memory data engine](../develop/under-the-hood/performance.md#in-memory-database),
-[interactive visualizations](../datagrok/solutions/domains/use-cases/eda.md),
+[interactive visualizations](../datagrok/solutions/workflows/eda.md),
 [data access](../access/access.md),
 [machine learning](../learn/learn.md), and [enterprise features](../datagrok/datagrok.md#govern)
 to enable developing, publishing, discovering, and using scientific applications:

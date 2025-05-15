@@ -65,7 +65,7 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 <TabItem value="data-science" label="Data science" default>
 
 * Support for all major data science tasks, from data preparation to PCA/PCL
-* [Exploratory data analysis](domains/use-cases/eda.md) with built-in statistics
+* [Exploratory data analysis](workflows/eda.md) with built-in statistics
 * Integration with [Jupyter Notebook](../../compute/jupyter-notebook.md)
 * [Predictive modeling](../../learn/learn.md)
 * [Dimensionality reduction using WebGPU](../../explore/dim-reduction.md)
@@ -108,4 +108,4 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 * Real-time data processing and analytics. [Usage analysis](../../govern/audit/usage-analysis.md)
 * Flexible deployment options: cloud-based, on-premises, hybrid
 
-[**Visit the Enterprise IT page >**](enterprise/enterprise.md)
+[**Visit the Enterprise IT page >**](teams/it/enterprise.md)

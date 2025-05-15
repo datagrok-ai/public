@@ -73,6 +73,16 @@ WHERE p.value_type = 'string';
 -- end
 
 
+-- name: getUniqueWellPropertyValues
+-- connection: Admin:Plates
+-- input: int propertyId propertyName { choices: getPropertyNames() }
+SELECT DISTINCT p.name, pwv.value_string
+FROM plates.plate_well_values pwv
+JOIN plates.properties p ON pwv.property_id = p.id
+WHERE p.value_type = 'string';
+-- end
+
+
 -- name: createProperty
 -- connection: Admin:Plates
 -- input: string propertyName

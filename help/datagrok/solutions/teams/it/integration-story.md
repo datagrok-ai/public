@@ -10,7 +10,7 @@ already; if not, let us know and we'll come up with a solution!
 
 ## Custom scripts
 
-[Scripting](../../../compute/scripting/scripting.mdx) is an integration mechanism with different languages, mostly used for statistical
+[Scripting](../../../../compute/scripting/scripting.mdx) is an integration mechanism with different languages, mostly used for statistical
 computing and machine learning. Scripting combines fast interactive visualizations and other features of the Datagrok
 platform with thousands of statistical packages and visualizations available in
 [R](https://www.r-project.org/about.html), [Python](https://www.python.org)
@@ -22,7 +22,7 @@ Note that other languages, such as Java, C#, or Node.js can be integrated in a s
 ## Custom data connectors
 
 Out of the box, the platform comes with the data connectors
-for [30+ popular databases](../../../access/databases/connectors/connectors.md), and the list is constantly growing. In addition to
+for [30+ popular databases](../../../../access/databases/connectors/connectors.md), and the list is constantly growing. In addition to
 that, it is possible to develop your own data connectors, and seamlessly integrate them into the platform.
 
 In order to do that, a "Grok Connect" REST endpoint that implements a few methods has to be registered with the
@@ -46,21 +46,21 @@ application could be useful for testing and debug purposes.
 
 ## Openapi
 
-Datagrok integrates with [OpenAPI](../../../access/open-api.md) really well, automatically mapping
+Datagrok integrates with [OpenAPI](../../../../access/open-api.md) really well, automatically mapping
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
-Grok's [functions](../../concepts/functions/functions.md). This has many benefits:
+Grok's [functions](../../../concepts/functions/functions.md). This has many benefits:
 
 * Ability to easily call that web method from:
-  * [Console](../../navigation/panels/panels.md#console)
+  * [Console](../../../navigation/panels/panels.md#console)
   * Event handler
-  * [Info pane](../../../datagrok/navigation/panels/info-panels.md)
+  * [Info pane](../../../navigation/panels/info-panels.md)
 * Audit
 * Data lineage
 
 ## JavaScript API
 
 JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Datagrok ecosystem. We
-expose a [JavaScript API](../../../develop/packages/js-api.md) that allows you to control most of the platform, including data
+expose a [JavaScript API](../../../../develop/packages/js-api.md) that allows you to control most of the platform, including data
 manipulation, handling platform events, creating custom viewers, controlling window docking, customizing the platform,
 etc.
 
@@ -80,4 +80,4 @@ unless the organization's IT policy overrides it).
 
 ## Server-side settings
 
-[Server settings](../../../deploy/configuration.md) can only be set at the platform start. Their change requires server restart.
+[Server settings](../../../../deploy/configuration.md) can only be set at the platform start. Their change requires server restart.

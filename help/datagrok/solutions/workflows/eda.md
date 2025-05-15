@@ -9,7 +9,7 @@ keywords:
 
 ---
 
->We help you explore at the speed of thought. [Learn what makes it possible](../../../datagrok.md#what-makes-it-so-fast).
+>We help you explore at the speed of thought. [Learn what makes it possible](../../datagrok.md#what-makes-it-so-fast).
 
 The goal of data analysis is to derive knowledge. To learn from data, we need to understand it. For large, complex datasets, conventional tools like tables and stats aren't enough. To recognize patterns and anomalies, we must leverage our ability to process information visually.
 
@@ -21,33 +21,33 @@ space. Datagrok makes it possible.
 
 What's more, Datagrok understands the nature of your
   data, offering actionable insights. It can
-  [suggest suitable visualizations](../../../../visualize/view-layout.md#layout-suggestions) for your datasets, automatically render  chemical structures, calculate descriptors, or predict properties. It gives you every tool you need to explore data and uncover its meaning.
+  [suggest suitable visualizations](../../../visualize/view-layout.md#layout-suggestions) for your datasets, automatically render  chemical structures, calculate descriptors, or predict properties. It gives you every tool you need to explore data and uncover its meaning.
 
-![img](../../../../visualize/viewers/img/viewers-interaction-main.gif)
+![img](../../../visualize/viewers/img/viewers-interaction-main.gif)
 
-* [Bring data from anywhere](../../../../access/access.md#data-sources). Your data is automatically parsed and rendered in a spreadsheet. The spreadsheet works with _millions of columns_ and _billions of rows_ and has powerful features:
+* [Bring data from anywhere](../../../access/access.md#data-sources). Your data is automatically parsed and rendered in a spreadsheet. The spreadsheet works with _millions of columns_ and _billions of rows_ and has powerful features:
   * Built-in statistics and dataset overview
   * Custom cell renderers, including for domain-specific data (like molecules, sequences, or dose-response curves)
-  * [Summary columns](../../../../deploy/releases/releases.md#grid-summary-columns) and sparklines
-  * Editable rows, and [_more_](../../../../visualize/viewers/grid.md).
-* [Wrangle data](../../../../transform/transform.md) right from your visualization
-  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../explore/missing-values-imputation.md), find
+  * [Summary columns](../../../deploy/releases/releases.md#grid-summary-columns) and sparklines
+  * Editable rows, and [_more_](../../../visualize/viewers/grid.md).
+* [Wrangle data](../../../transform/transform.md) right from your visualization
+  workspace. [Cluster data](../../../explore/cluster-data.md), [impute missing values](../../../explore/missing-values-imputation.md), find
   and treat duplicates and outliers.
-* Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
-* Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
-  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#formula-lines)
-  or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
+* Use statistical [functions](../../concepts/functions/functions.md) to perform calculations.
+* Slice and dice data with [50+ interactive viewers](../../../visualize/viewers/viewers.md). We support all popular
+  visualizations (like [scatterplots with built-in regression lines](../../../visualize/viewers/scatter-plot.md#formula-lines)
+  or [box-plots with built-in statistical tests](../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
   viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
-* Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
-* Seamlessly access information with [widgets](../../../../visualize/widgets.md)
- and context-driven [info panes](../../../navigation/panels/info-panels.md). 
+* Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../develop/under-the-hood/performance.md#viewers).
+* Seamlessly access information with [widgets](../../../visualize/widgets.md)
+ and context-driven [info panes](../../navigation/panels/info-panels.md). 
 * Create dashboards in seconds. Share your analysis in easy and
-[secure](../../../../govern/access-control/access-control.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
+[secure](../../../govern/access-control/access-control.md) way. 
 * Use data annotations and team discussions to collaborate on decision-making. 
 
-Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting/scripting.mdx).
+Need a specific tool or functionality? Easily [add custom viewers](../../../develop/how-to/viewers/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../compute/scripting/scripting.mdx).
 
-[Learn more about capabilities here](../../../datagrok.md).
+[Learn more about capabilities here](../../datagrok.md).
 
 ## Resources
 
@@ -84,6 +84,6 @@ Need a specific tool or functionality? Easily [add custom viewers](../../../../d
 
 ## See also
 
-* [Viewers](../../../../visualize/viewers/viewers.md)
-* [Data science](../data-science.md)
-* [Predictive modeling](../../../../learn/learn.md)
+* [Viewers](../../../visualize/viewers/viewers.md)
+* [Data science](../domains/data-science.md)
+* [Predictive modeling](../../../learn/learn.md)

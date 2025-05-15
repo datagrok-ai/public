@@ -13,8 +13,8 @@ on how to start and grow your data ecosystem. Here is how to get help:
 * [Community forum](https://community.datagrok.ai/) for general questions, suggestions, or discussions
 * [Datagrok YouTube channel](https://www.youtube.com/@Datagrok) for lessons, tips, product demos, 
   and recordings of the user group meetings
-* **Interactive tutorials**: Complete at [public.datagrok.ai](https://public.datagrok.ai) or your corporate instance
-  (requires the Tutorials package). These tutorials cover multiple areas, such as data access, exploratory
+* Learn by doing with **Interactive tutorials**: Complete at [public.datagrok.ai](https://public.datagrok.ai) or your corporate instance
+  (requires the [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials) package). These tutorials cover multiple areas, such as data access, exploratory
   data analysis, cheminformatics, or machine learning. This requires the **Tutorials** plugin to be installed,
   in addition to domain packages (for instance, cheminformatics tutorials is in the **Chem** package)
 * Reach out to us - either to your support engineer, or info@datagrok.ai 

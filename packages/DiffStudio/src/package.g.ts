@@ -50,7 +50,7 @@ export async function ivpFileHandler(content: string) {
 
 //name: previewIvp
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: ivp
 export async function previewIvp(file: any) {
