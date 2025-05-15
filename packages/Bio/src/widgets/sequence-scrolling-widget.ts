@@ -30,20 +30,26 @@ export function handleSequenceHeaderRendering() {
         if (!gCol)
           continue;
 
-        let positionStatsViewerAddedOnce = false;
-
+        let positionStatsViewerAddedOnce = !!grid.tableView && Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
+        const isMSA = sh.isMsa();
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
-        // get the maximum length of sequences by randomly taking 10 sequences;
-        let maxSeqLen = 0;
-        for (let i = 0; i < Math.min(30, seqCol.categories.length); i++) {
-          const row = Math.floor(Math.random() * seqCol.categories.length - 1);
-          const seq = sh.splitter(seqCol.categories[row]);
-          if (seq)
-            maxSeqLen = Math.max(maxSeqLen, seq.length);
+        // get the maximum length of seqs by getting the primitive length first and then splitting it with correct splitter;
+        let pseudoMaxLenIndex = 0;
+        let pseudoMaxLength = 0;
+        const cats = seqCol.categories;
+        for (let i = 0; i < cats.length; i++) {
+          const seq = cats[i];
+          if (seq && seq.length > pseudoMaxLength) {
+            pseudoMaxLength = seq.length;
+            pseudoMaxLenIndex = i;
+          }
         }
+        const seq = cats[pseudoMaxLenIndex];
+        const split = sh.splitter(seq);
+        const maxSeqLen = split ? split.length : 30;
 
         // makes no sense to have scroller if we have shorter than 50 positions
         if (maxSeqLen < 50)
@@ -114,11 +120,10 @@ export function handleSequenceHeaderRendering() {
 
           const titleShift = Math.max(0, availableTitleSpace ?? 0) > headerTitleSpace ? headerTitleSpace : 0;
           const font = getFontSize();
-          scroller.positionWidth = font + 8;
+          scroller.positionWidth = font + (isMSA ? 8 : 0);
           const start = getStart();
-          //const positionXShift = start > 1 ? font + 8 : 0;
-          // pass in the event to the scroller so it can internally preventDefault if all is well
-          scroller.draw(cellBounds.x, cellBounds.y + titleShift, cellBounds.width, cellBounds.height - titleShift, getCurrent(), start, e);
+          const startPadding = isMSA ? 0 : 4;
+          scroller.draw(cellBounds.x + startPadding, cellBounds.y + titleShift, cellBounds.width - startPadding, cellBounds.height - titleShift, getCurrent(), start, e);
         }));
       }
     }, 1000);
