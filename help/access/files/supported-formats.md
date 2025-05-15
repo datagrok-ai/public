@@ -6,7 +6,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Tabular and semi-structured data
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|-----------------------------------------------|------------------|
 | `.csv`             | File format       | Comma-separated values                         | --               |
 | `.tsv`             | File format       | Tab-separated values                           | --               |
@@ -19,7 +19,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Statistical and scientific formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.rds`, `.rda`       | File format       | R serialized data                            | --                 |
 | `.mat`             | File format       | MATLAB array and matrix data                             | --                  |
@@ -30,7 +30,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Columnar and database formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.parquet`         | File format       | Columnar storage format                        | [Arrow]          |
 | `.feather`         | File format       | Arrow-based binary format                      | [Arrow]          |
@@ -38,7 +38,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Archives and packaging
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.zip`             | File format       | ZIP archive (auto-extracted for supported types)| --                |
 | `.tar`             | File format       | Tape archive                                   | --                 |
@@ -49,14 +49,14 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Notebooks and computations
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.ipynb`           | File format       | Jupyter Notebook                               | [Notebooks]      |
 | `.ivp`             | File format       | Interactive differential equations             | [Diff Studio]    |
 
 ### Docs and reports
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.pdf`             | File format       | Portable Document Format                       | [File Editors]   |
 | `.docx`            | File format       | Microsoft Word document                        | [File Editors]   |
@@ -68,7 +68,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 #### Molecular structures
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.sdf`, `.sd `       | File format       | Structure-data file                            | [Chem]           |
 | `.mol`             | File format       | MDL Molfile                                    | [Chem]           |
@@ -83,7 +83,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 #### Macromolecules and sequences
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.fasta`           | File format       | FASTA format (fa, fna, ffn, faa, frn, fa, fst) | [Bio]            |
 | `HELM` | Notation  | Biopolymer notation for peptides and oligonucleotides | [Bio] |
@@ -91,7 +91,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 #### Phylogenetic trees
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|----------------------|
 | `.nwk`, `.newick`    | File format       | Newick format for phylogenetic trees           | [PhyloTree Viewer]   |
 
@@ -99,7 +99,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ##### Macromolecular structure formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
 | `.pdb`             | File format       | Protein structure (coordinates only)           | [Biostructure Viewer]    |
 | `.pdbqt`           | File format       | PDB with charges and atom types                | [Biostructure Viewer]    |
@@ -112,7 +112,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ##### Electron density and volumetric data
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
 | `.ccp4`            | File format       | Electron density map  | [Biostructure Viewer]    |
 | `.brix`            | File format       | Electron density map                | [Biostructure Viewer]    |
@@ -123,7 +123,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ##### Simulation and topology formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
 | `.gro`             | File format       | GROMACS structure file                             | [Biostructure Viewer]    |
 | `.top `            | File format       | GROMACS topology definition                              | [Biostructure Viewer]    |
@@ -134,7 +134,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ##### 3D mesh formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
 | `.obj `            | File format       | 3D mesh geometry                            | [Biostructure Viewer]    |
 | `.ply`             | File format       | Polygon mesh data                            | [Biostructure Viewer]    |
@@ -143,13 +143,13 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Bioassays and experimental data
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
 | `.xlsx`            | Data structure       | Assay plate data (auto-detected in file)                        | [Curves]             |
 
 ### Spectroscopy and NMR
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
 | `.jdx `            | File format       | Spectroscopy data (JCAMP-DX)     | [Chem Spectra Viewer]    |
 | `.dx` | File format       | NMR spectroscopy data (JCAMP-DX variant)      | [NMRium]                 |
@@ -157,19 +157,19 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Biosignals
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
 | `.edf`             | File format       | Multichannel biosignal recordings (e.g., EEG, EMG) | --                     |
 
 ### Clinical and regulatory data
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
 | `.csv`             | Data structure       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
 
 ### Geospatial formats
 
-| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.kml`       | File format       | Geospatial annotation file (Google Earth)               | [GIS]            |
 | `.kmz`       | File format       | Compressed geospatial annotation file              | [GIS]            |
