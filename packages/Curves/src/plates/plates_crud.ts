@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from "../plate/plate";
 import {Utils} from "datagrok-api/dg";
+import {NumericMatcher} from "./numeric_matcher";
 
 
 export type PlateType = {
@@ -49,6 +50,7 @@ export let plateTypes: PlateType[] = [
 ]
 
 export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+export let wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
 
 export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.FLOAT]: 'value_num',
@@ -65,6 +67,7 @@ export async function initPlates() {
   wellProperties = (await grok.functions.call('Curves:getWellLevelProperties') as DG.DataFrame).toJson();
   plateTypes = (await grok.functions.call('Curves:getPlateTypes') as DG.DataFrame).toJson();
   plateUniquePropertyValues = await grok.functions.call('Curves:getUniquePlatePropertyValues');
+  wellUniquePropertyValues = await grok.functions.call('Curves:getUniqueWellPropertyValues');
 
   _initialized = true;
 }
@@ -73,14 +76,23 @@ export function getPlateProperty(name: string): PlateProperty {
   return plateProperties.find(p => p.name === name)!;
 }
 
-export function getPlateUniquePropertyValues(prop: PlateProperty): string[] {
-  const nameCol = plateUniquePropertyValues.col('name')!;
-  const valueCol = plateUniquePropertyValues.col('value_string')!;
+export function getUniquePropertyValues(prop: PlateProperty, df: DG.DataFrame): string[] {
+  const nameCol = df.col('name')!;
+  const valueCol = df.col('value_string')!;
 
-  return plateUniquePropertyValues.rows
+  return df.rows
     .where(i => nameCol.get(i) == prop.name)
     .map(i => valueCol.get(i))
     .toArray();
+}
+
+
+export function getPlateUniquePropertyValues(prop: PlateProperty): string[] {
+  return getUniquePropertyValues(prop, plateUniquePropertyValues);
+}
+
+export function getWellUniquePropertyValues(prop: PlateProperty): string[] {
+  return getUniquePropertyValues(prop, wellUniquePropertyValues);
 }
 
 function getValueType(x: any): string {

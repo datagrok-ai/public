@@ -1403,6 +1403,11 @@ export class InputForm extends DartWrapper {
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
 
+  /** All inputs added to the form */
+  get inputs(): InputBase[] {
+    return api.grok_InputForm_GetInputs(this.dart);
+  }
+
   get source(): any { return toJs(api.grok_InputForm_Get_Source(this.dart)); };
 
   set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
@@ -1413,6 +1418,7 @@ export class InputForm extends DartWrapper {
   /** Occurs after the form is validated, no matter whether it is valid or not. */
   get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
 
+  /** Returns true if all inputs are valid. */
   get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 

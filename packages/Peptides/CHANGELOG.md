@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.23.10 (2025-05-15)
+
+* Improved description for position statistics viewer
+
 ## 1.23.9 (2025-05-14)
 
 * Reveerse events for Position statistics viewer

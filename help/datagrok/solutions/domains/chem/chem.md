@@ -75,7 +75,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](#chemical-scripts).
   * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../enterprise/enterprise-evaluation-faq.md) for efficient data access and management of any data.
+* [Enterprise-grade platform](../../teams/it/enterprise-evaluation-faq.md) for efficient data access and management of any data.
 
 ## Data access
 

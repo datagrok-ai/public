@@ -16,7 +16,7 @@ These concepts are foundational in Datagrok:
 <TabItem value="dataframe" label="Dataframe" default>
 
 A [Dataframe (or table)](table.md) is a fundamental data structure in Datagrok.
-Dataframes are optimized for [exploratory data analysis](../solutions/domains/use-cases/eda.md) and support common data
+Dataframes are optimized for [exploratory data analysis](../solutions/workflows/eda.md) and support common data
 operations like filtering, sorting, or aggregations.
 
 Dataframes can be manipulated directly through the UI,

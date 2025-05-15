@@ -99,11 +99,12 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
 
   /** Draw color part at {@link dx1}, and gray part at {@link dx2}. */
   function draw(dx1: number, dx2: number): void {
+    let drawColor = colorCode ? opts.color : blackColor;
     if (opts.selectedPosition === opts.wordIdx + 1) {
       g.fillStyle = 'rgba(60, 177, 115, 0.2)'; // green for selected position
-      g.fillRect(x + dx1, y, maxColorTextSize, h);
+      g.fillRect(x + dx1 - 4, y - 5, opts.monomerTextSizeMap[colorPart].width + 8, h + 10);
+      drawColor = DG.Color.toHtml(DG.Color.setAlpha(DG.Color.fromHtml(drawColor), 255));
     }
-    const drawColor = colorCode ? opts.color : blackColor;
     g.fillStyle = drawColor;
     g.globalAlpha = opts.transparencyRate;
     if (opts.drawStyle === DrawStyle.classic) {

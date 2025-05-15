@@ -179,5 +179,5 @@ certain tasks.
 
 See also:
 
-* [Exploratory data analysis](../../datagrok/solutions/domains/use-cases/eda.md)
+* [Exploratory data analysis](../../datagrok/solutions/workflows/eda.md)
 * [Viewers](../../visualize/viewers/viewers.md)

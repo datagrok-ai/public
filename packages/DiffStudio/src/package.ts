@@ -24,26 +24,26 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-export class PackageFunctions { 
+export class PackageFunctions {
   @grok.decorators.init({})
   static async init() {}
-  
+
   @grok.decorators.func({})
-  static solve(@grok.decorators.param({ type: 'object' }) problem: ODEs): DG.DataFrame {
+  static solve(@grok.decorators.param({type: 'object'}) problem: ODEs): DG.DataFrame {
     return solveDefault(problem);
   }
 
   @grok.decorators.func({})
   static solveEquations(
-    @grok.decorators.param({ type: 'object' }) problem: ODEs, 
-    @grok.decorators.param({ type: 'object' }) options: Partial<SolverOptions>): DG.DataFrame {
+    @grok.decorators.param({type: 'object'}) problem: ODEs,
+    @grok.decorators.param({type: 'object'}) options: Partial<SolverOptions>): DG.DataFrame {
     return solveIVP(problem, options);
   }
 
   @grok.decorators.app({
-    name: 'Diff Studio', 
+    name: 'Diff Studio',
     description: 'Solver of ordinary differential equations systems',
-    browsePath: 'Compute'
+    browsePath: 'Compute',
   })
   static async runDiffStudio(): Promise<DG.ViewBase> {
     const path = grok.shell.startUri;
@@ -69,16 +69,16 @@ export class PackageFunctions {
   }
 
   @grok.decorators.demo({
-    name: 'Diff Studio Demo', 
+    name: 'Diff Studio Demo',
     description: 'Interactive solver of ordinary differential equations (ODE)',
-    test: { test: 'runDiffStudioDemo()', wait: '100' },
-    demoPath: 'Compute | Diff Studio'
+    test: {test: 'runDiffStudioDemo()', wait: '100'},
+    demoPath: 'Compute | Diff Studio',
   })
   static async runDiffStudioDemo(): Promise<void> {
     const solver = new DiffStudio();
     await solver.runSolverDemoApp();
   }
-  
+
   @grok.decorators.fileHandler({
     ext: 'ipv',
   })
@@ -89,7 +89,7 @@ export class PackageFunctions {
     return [];
   }
 
-  @grok.decorators.fileViewer({ fileViewer: 'ivp'})
+  @grok.decorators.fileViewer({fileViewer: 'ivp'})
   static async previewIvp(file: DG.FileInfo): Promise<DG.View> {
     let path: string;
 
@@ -126,27 +126,27 @@ export class PackageFunctions {
     icon: 'files/icons/ball.png',
     outputs: [
       {
-        name: 'maxDist', 
+        name: 'maxDist',
         type: 'double',
-        options: {caption: 'Max distance'}
+        options: {caption: 'Max distance'},
       },
       {
-        name: 'maxHeight', 
+        name: 'maxHeight',
         type: 'double',
-        options: {caption: 'Max height'}
+        options: {caption: 'Max height'},
       },
       {
-        name: 'df', 
+        name: 'df',
         type: 'dataframe',
-        options: {caption: 'Trajectory', viewer: 'Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)'}
-      }
-    ]
+        options: {caption: 'Trajectory', viewer: 'Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)'},
+      },
+    ],
   })
   static ballFlight(
-    @grok.decorators.param({options:{initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number, 
-    @grok.decorators.param({options:{initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number, 
-    @grok.decorators.param({options:{initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number, 
-    @grok.decorators.param({options:{initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
+    @grok.decorators.param({options: {initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number,
+    @grok.decorators.param({options: {initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number,
+    @grok.decorators.param({options: {initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number,
+    @grok.decorators.param({options: {initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
     const simlulation = getBallFlightSim(v, Math.PI * a / 180, dB, roB);
     return {
       df: simlulation,
@@ -155,23 +155,23 @@ export class PackageFunctions {
     };
   }
 
-  @grok.decorators.func({ 
-    description: 'Return serialized initial value problem for ordinary differential equations', 
-    outputs: [{name: 'serialization', type: 'object'}]
+  @grok.decorators.func({
+    description: 'Return serialized initial value problem for ordinary differential equations',
+    outputs: [{name: 'serialization', type: 'object'}],
   })
   static serializeEquations(problem: string): IVP {
     return getIVP(problem);
   }
 
-  @grok.decorators.func({ 
-    description: 'Perform ODEs serialization to JS-code', 
+  @grok.decorators.func({
+    description: 'Perform ODEs serialization to JS-code',
   })
   static odesToCode(serialization: IVP): string {
     return getScriptLines(serialization).join('\n');
   }
 
-  @grok.decorators.func({ 
-    description: 'Solve initial value problem for ordinary differential equations', 
+  @grok.decorators.func({
+    description: 'Solve initial value problem for ordinary differential equations',
   })
   static async solveODE(problem: string): Promise<DG.DataFrame> {
     const ivp = getIVP(problem);
@@ -186,49 +186,51 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
-  @grok.decorators.model({ 
-    icon: 'files/icons/pkpd.png'
+  @grok.decorators.model({
+    name: 'PK-PD',
+    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
+    icon: 'files/icons/pkpd.png',
   })
   static async pkPdNew(): Promise<void> {
     await PK_PD_DEMO.run();
   }
-  
-  @grok.decorators.demo({ 
+
+  @grok.decorators.demo({
     name: 'PK-PD Simulation Demo',
     description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
     demoPath: 'Compute | PK-PD Modeling',
     test: {
       test: 'demoSimPKPD()',
-      wait: '100'
-    }
+      wait: '100',
+    },
   })
   static async demoSimPKPD(): Promise<any> {
     await PK_PD_DEMO.runDemo();
   }
 
-  @grok.decorators.model({ 
+  @grok.decorators.model({
     description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/bioreactor.png'
+    icon: 'files/icons/bioreactor.png',
   })
   static async Bioreactor(): Promise<void> {
     await BIOREACTOR_DEMO.run();
   }
 
-  @grok.decorators.demo({ 
+  @grok.decorators.demo({
     name: 'Bioreactor Demo',
     description: 'In-browser simulation of controlled fab-arm exchange mechanism',
     demoPath: 'Compute | Bioreactor',
-    test: { test: 'demoBioreactor()', wait: '100' }
+    test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
     await BIOREACTOR_DEMO.runDemo();
   }
-  
-  @grok.decorators.func({ 
-    description: 'Run model with Diff Studio UI'
+
+  @grok.decorators.func({
+    description: 'Run model with Diff Studio UI',
   })
-  static async runModel(model: string,  
-    @grok.decorators.param({type: 'int'}) inputsTabDockRatio: number, 
+  static async runModel(model: string,
+    @grok.decorators.param({type: 'int'}) inputsTabDockRatio: number,
     @grok.decorators.param({type: 'int'}) graphsDockRatio: number): Promise<void> {
     const diffStudioModel = new Model(model, {
       inputsTabDockRatio: inputsTabDockRatio,
