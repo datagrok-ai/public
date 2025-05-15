@@ -91,7 +91,7 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
 
     setTimeout(() => {
       this._boxPlotViewer!.props.title = 'Sequence Position Statistics';
-      this._boxPlotViewer!.props.description = `Position ${this.position + 1}`;
+      this._boxPlotViewer!.props.description = `${this.sequenceColumnName}: Position ${this.position + 1}`;
     }, 200);
 
     this._boxPlotViewer.props.statistics = ['min', 'max', 'avg', 'med', 'count'];

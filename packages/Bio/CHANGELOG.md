@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.21.9 (2025-05-15)
+
+* Correct scrolling header alignment with sequences.
+* Correct detection of max length sequence
+* Better display of current position
+* Fix keyboard navigation for sequence position scroller
+
 ## 2.21.7 (2025-05-14)
 
 * Enable Header scrolling for non-MSA
