@@ -85,7 +85,7 @@ This allows Datagrok to:
     
     By specifying the function's `#input`, `#output`, and `#tags`, 
     you can configure it to run automatically without user input. 
-    For example, a script can execute and display results in an  
+    For example, a script can execute and display results in an 
     [info pane](../../navigation/panels/info-panels.md) 
     when a user clicks a molecule.
 

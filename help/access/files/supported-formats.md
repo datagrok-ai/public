@@ -6,31 +6,31 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Tabular and semi-structured data
 
-| Format            | Type              | Description                                   | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|-----------------------------------------------|------------------|
-| `.csv`             | File format       | Comma-separated values                         |                  |
-| `.tsv`             | File format       | Tab-separated values                           |                  |
-| `.txt`             | File format       | Plain text                                     |                  |
-| `.xlsx`            | File format       | Microsoft Excel                                |                  |
-| `.d42`             | File format       | Datagrok [project]                             |                  |
-| `.json`            | File format       | JavaScript Object Notation                     |                  |
-| `.xml `            | File format       | Extensible Markup Language                     |                  |
-| `.HTML`            | File format       | HyperText Markup Language                      |                  |
+| `.csv`             | File format       | Comma-separated values                         | --               |
+| `.tsv`             | File format       | Tab-separated values                           | --               |
+| `.txt`             | File format       | Plain text                                     | --               |
+| `.xlsx`            | File format       | Microsoft Excel                                | --               |
+| `.d42`             | File format       | Datagrok [project]                             | --               |
+| `.json`            | File format       | JavaScript Object Notation                     | --               |
+| `.xml `            | File format       | Extensible Markup Language                     | --               |
+| `.HTML`            | File format       | HyperText Markup Language                      | --               |
 
 ### Statistical and scientific formats
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
-| `.rds`, `.rda`       | File format       | R serialized data                              |                  |
-| `.mat`             | File format       | MATLAB data format                             |                  |
-| `.h5`              | File format       | Hierarchical Data Format                       |                  |
-| `.nc`, `.netcdf`     | File format       | Network Common Data Form                       |                  |
-| `.sas7bdat`        | File format       | SAS database file                              |                  |
-| `.kxl`             | File format       | KeyCreator eXtensible Language                 |                  |
+| `.rds`, `.rda`       | File format       | R serialized data                            | --                 |
+| `.mat`             | File format       | MATLAB array and matrix data                             | --                  |
+| `.h5`              | File format       | Hierarchical data in HDF5                      | --                 |
+| `.nc`, `.netcdf`     | File format       | NetCDF scientific data file                      | --                 |
+| `.sas7bdat`        | File format       | SAS database file                              | --                 |
+| `.kxl`             | File format       | KeyCreator engineering data format                 | --                 |
 
 ### Columnar and database formats
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.parquet`         | File format       | Columnar storage format                        | [Arrow]          |
 | `.feather`         | File format       | Arrow-based binary format                      | [Arrow]          |
@@ -38,28 +38,28 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ### Archives and packaging
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
-| `.zip`             | File format       | ZIP archive (auto-extracted for supported types)|                 |
-| `.tar`             | File format       | Tape archive                                   |                  |
-| `.gz`, `.gzip`       | File format       | Gzip-compressed files                          |                  |
+| `.zip`             | File format       | ZIP archive (auto-extracted for supported types)| --                |
+| `.tar`             | File format       | Tape archive                                   | --                 |
+| `.gz`, `.gzip`       | File format       | Gzip-compressed files                          | --                 |
 
 
 ## Notebooks and documents
 
 ### Notebooks and computations
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.ipynb`           | File format       | Jupyter Notebook                               | [Notebooks]      |
 | `.ivp`             | File format       | Interactive differential equations             | [Diff Studio]    |
 
 ### Docs and reports
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.pdf`             | File format       | Portable Document Format                       | [File Editors]   |
-| `.docx`            | File format       | Microsoft Word Document                        | [File Editors]   |
+| `.docx`            | File format       | Microsoft Word document                        | [File Editors]   |
 
 
 ## Domain-specific formats
@@ -68,24 +68,30 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 #### Molecular structures
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.sdf`, `.sd `       | File format       | Structure-data file                            | [Chem]           |
 | `.mol`             | File format       | MDL Molfile                                    | [Chem]           |
 | `.mol2`            | File format       | SYBYL molecule representation                  | [Chem]           |
-| `.smi`             | File format       | Structure-data file                            | [Chem]           |
+| `.smi`             | File format       | SMILES file format                           | [Chem]           |
+| `SMILES`| Notation  | Linear representation of molecular structure   | [Chem] |
+| `SMARTS` | Notation  | Substructure search patterns | [Chem]  |
+| `InChI`, `InChIKey`| Notation  | IUPAC identifiers | [Chem]  |
+| `SMIRKS` | Notation  | Reaction transformation notation   | [Chem] |
 
 ### Bioinformatics
 
 #### Macromolecules and sequences
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.fasta`           | File format       | FASTA format (fa, fna, ffn, faa, frn, fa, fst) | [Bio]            |
+| `HELM` | Notation  | Biopolymer notation for peptides and oligonucleotides | [Bio] |
+| `BILN` | Notation  | Linear notation for complex biopolymers   | [Bio]  |
 
 #### Phylogenetic trees
 
-| Format           | Type              | Description                                    | Required plugins     |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|----------------------|
 | `.nwk`, `.newick`    | File format       | Newick format for phylogenetic trees           | [PhyloTree Viewer]   |
 
@@ -93,85 +99,83 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 ##### Macromolecular structure formats
 
-| Format           | Type              | Description                                    | Required plugins        |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
-| `.pdb`             | File format       | Protein Data Bank                              | [Biostructure Viewer]    |
-| `.pdbqt`           | File format       | Protein Data Bank, Partial Charge, Atom Type   | [Biostructure Viewer]    |
-| `.cif`             | File format       | (preview) Crystallographic Information File    | [Biostructure Viewer]    |
-| `.cifCore`         | File format       | Crystallographic Information Core File         | [Biostructure Viewer]    |
-| `.mcif`            | File format       | (preview) Macromolecular Crystallographic File | [Biostructure Viewer]    |
-| `.mmcif`           | File format       | Macromolecular Crystallographic File           | [Biostructure Viewer]    |
-| `.mmtf`            | File format       | Macromolecular Transmission Format             | [Biostructure Viewer]    |
-| `.ent`             | File format       | (preview) Brookhaven PDB Molecule              | [Biostructure Viewer]    |
+| `.pdb`             | File format       | Protein structure (coordinates only)           | [Biostructure Viewer]    |
+| `.pdbqt`           | File format       | PDB with charges and atom types                | [Biostructure Viewer]    |
+| `.cif`             | File format       | Crystallographic data                          | [Biostructure Viewer]    |
+| `.cifCore`         | File format       | Core crystallographic data                     | [Biostructure Viewer]    |
+| `.mcif`            | File format       | Macromolecular crystallographic data | [Biostructure Viewer]    |
+| `.mmcif`           | File format       | Macromolecular crystallographic data          | [Biostructure Viewer]    |
+| `.mmtf`            | File format       | Compressed macromolecular structure format    | [Biostructure Viewer]    |
+| `.ent`             | File format       | Legacy PDB structure file              | [Biostructure Viewer]    |
 
 ##### Electron density and volumetric data
 
-| Format           | Type              | Description                                    | Required plugins        |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
-| `.ccp4`            | File format       | Collaborative Computational Project Number 4  | [Biostructure Viewer]    |
-| `.brix`            | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
-| `.mrc`             | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
-| `.xplor`           | File format       | (preview) Electron Density Map                 | [Biostructure Viewer]    |
-| `.cub`, `.cube`      | File format       | (preview) Orbital/Density Values on a 3D Grid | [Biostructure Viewer]    |
-| `.dsn6 `           | File format       | (preview) Ribbons FRODO map                    | [Biostructure Viewer]    |
+| `.ccp4`            | File format       | Electron density map  | [Biostructure Viewer]    |
+| `.brix`            | File format       | Electron density map                | [Biostructure Viewer]    |
+| `.mrc`             | File format       | Electron density volume                | [Biostructure Viewer]    |
+| `.xplor`           | File format       | Electron density map                | [Biostructure Viewer]    |
+| `.cub`, `.cube`    | File format       | 3D orbital or charge density grid | [Biostructure Viewer]    |
+| `.dsn6 `           | File format       | Ribbons-format electron map                    | [Biostructure Viewer]    |
 
 ##### Simulation and topology formats
 
-| Format           | Type              | Description                                    | Required plugins        |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
-| `.gro`             | File format       | GROMACS structure                              | [Biostructure Viewer]    |
-| `.top `            | File format       | GROMACS topology                               | [Biostructure Viewer]    |
-| `.prmtop`          | File format       | AMBER Parameter/Topology File                  | [Biostructure Viewer]    |
-| `.parm7`           | File format       | (preview) AMBER Parameter/Topology File        | [Biostructure Viewer]    |
-| `.psf `            | File format       | (preview) Protein Structure File               | [Biostructure Viewer]    |
-| `.cns`             | File format       | Crystallography and NMR System                 | [Biostructure Viewer]    |
+| `.gro`             | File format       | GROMACS structure file                             | [Biostructure Viewer]    |
+| `.top `            | File format       | GROMACS topology definition                              | [Biostructure Viewer]    |
+| `.prmtop`          | File format       | AMBER force field topology                  | [Biostructure Viewer]    |
+| `.parm7`           | File format       | AMBER topology file        | [Biostructure Viewer]    |
+| `.psf `            | File format       | CHARMM or NAMD structure topology               | [Biostructure Viewer]    |
+| `.cns`             | File format       | NMR structure description for CNS                | [Biostructure Viewer]    |
 
 ##### 3D mesh formats
 
-| Format           | Type              | Description                                    | Required plugins        |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
-| `.obj `            | File format       | Wavefront 3D object                            | [Biostructure Viewer]    |
-| `.ply`             | File format       | Polygon file format                            | [Biostructure Viewer]    |
-| `.xyz`             | File format       | (preview) Cartesian Coordinate Format          | [Biostructure Viewer]    |
+| `.obj `            | File format       | 3D mesh geometry                            | [Biostructure Viewer]    |
+| `.ply`             | File format       | Polygon mesh data                            | [Biostructure Viewer]    |
+| `.xyz`             | File format       | Atomic coordinates in XYZ format          | [Biostructure Viewer]    |
+
+
+### Bioassays and experimental data
+
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+|------------------|-------------------|------------------------------------------------------------------|----------------------|
+| `.xlsx`            | Data structure       | Assay plate data (auto-detected in file)                        | [Curves]             |
 
 ### Spectroscopy and NMR
 
-| Format           | Type              | Description                                    | Required plugins        |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|--------------------------|
-| `.jdx `            | File format       | Spectroscopy                                   | [Chem Spectra Viewer]    |
-| `.jdx`, `.dx`, `.nmrium`| File format       | NMR                                            | [NMRium]                 |
+| `.jdx `            | File format       | Spectroscopy data (JCAMP-DX)     | [Chem Spectra Viewer]    |
+| `.dx` | File format       | NMR spectroscopy data (JCAMP-DX variant)      | [NMRium]                 |
+| `.nmrium`| File format       | NMR experiment data for NMRIum viewer     | [NMRium]                 |
 
 ### Biosignals
 
-| Format           | Type              | Description                                                     | Required plugins     |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
-| `.edf`             | File format       | European Data Format for biosignals                             |                      |
+| `.edf`             | File format       | Multichannel biosignal recordings (e.g., EEG, EMG) | --                     |
 
 ### Clinical and regulatory data
 
-| Format           | Type              | Description                                                     | Required plugins     |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
-| `.csv`             | File format       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
-| `.xlsx`            | Data structure       | Assay plate data (auto-detected in file)                        | [Curves]             |
+| `.csv`             | Data structure       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
 
 ### Geospatial formats
 
-| Format           | Type              | Description                                    | Required plugins |
+| Format <div style={{ width:75 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
-| `.kml`, `.kmz`       | File format       | Keyhole Markup Language                        | [GIS]            |
-| `.geojson`         | File format       | GeoJSON (geospatial data)                      | [GIS]            |
-| `.topojson`        | File format       | TopoJSON (topological geospatial data)         | [GIS]            |
+| `.kml`       | File format       | Geospatial annotation file (Google Earth)               | [GIS]            |
+| `.kmz`       | File format       | Compressed geospatial annotation file              | [GIS]            |
+| `.geojson`         | File format       | Geospatial data encoded in JSON                      | [GIS]            |
+| `.topojson`        | File format       | Compressed topological geospatial data         | [GIS]            |
 
-## Molecular and macromolecular notations (used in strings or columns)
-
-| Format           | Type      | Description                                    | Required plugins |
-|------------------|-----------|------------------------------------------------|------------------|
-| `SMILES`| Notation  | Linear representation of molecular structure   | [Chem] |
-| `SMARTS` | Notation  | Linear representation of molecular substructure patterns | [Chem]  |
-| `InChI`, `InChIKey`| Notation  | IUPAC-based textual identifiers for chemical compounds | [Chem]  |
-| `HELM` | Notation  | Biopolymer notation for peptides and oligonucleotides | [Bio] |
-| `SMIRKS` | Notation  | Linear representation of chemical reaction transforms   | [Chem] |
-| `BILN` | Notation  | Linear notation for complex biopolymers   | [Bio]  |
 
 [Project]: <../../datagrok/concepts/project/project.md>
 [Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
