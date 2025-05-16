@@ -4,6 +4,7 @@
 
 - Updated UI/UX in the Sensitivity Analysis view
 - Implemented the MOEA/D method for multi-objective optimization
+- Added the optimization view
 
 ## 1.43.5 (2025-05-12)
 
