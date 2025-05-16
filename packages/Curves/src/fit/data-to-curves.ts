@@ -175,7 +175,7 @@ export function dataToCurvesUI() {
       if (df) {
         const tv = grok.shell.addTableView(df);
         const trellis = tv.trellisPlot({yColumnNames: [], xColumnNames: ['Batch ID'], viewerType: 'MultiCurveViewer',
-          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: false, showYSelectors: true, packCategories: false,
+          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: true, showYSelectors: false, packCategories: false,
           onClick: 'Select'
         });
         tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, null, 'Fitted Curves', 0.5);
