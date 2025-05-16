@@ -3,6 +3,13 @@ title: "Datagrok: Swiss Army Knife for Data"
 
 ---
 
+:::tip [Ask DeepWiki](https://deepwiki.com/datagrok-ai/public)
+
+Need quick answers about functionality, troubleshooting, or advanced features? Ask **DeepWiki**.  
+Try questions like: "How do I add a regression line to a scatterplot?" or  "How do I publish a package?"
+
+:::
+
 ## Why Datagrok?
 
 Datagrok helps you understand data and take action.

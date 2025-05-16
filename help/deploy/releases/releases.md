@@ -1,5 +1,5 @@
 ---
-title: "Release highlights"
+title: "What's new"
 format: mdx
 keywords:
   - release history
