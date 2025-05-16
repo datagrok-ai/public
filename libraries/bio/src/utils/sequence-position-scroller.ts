@@ -69,7 +69,7 @@ export class MSAScrollingHeader {
       currentPosition: options.currentPosition || 1,
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
-      onPositionChange: options.onPositionChange || ((_, __) => {}),
+      onPositionChange: options.onPositionChange || ((_, __) => { }),
       ...options // Override defaults with any provided options
     };
     this.eventElement = ui.div();
@@ -120,7 +120,7 @@ export class MSAScrollingHeader {
   public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number, preventable: Preventable): void {
     // soft internal update
     if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h || this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart)
-      Object.assign(this.config, {x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart});
+      Object.assign(this.config, { x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart });
 
 
     if (!this.isValid) {
@@ -139,9 +139,13 @@ export class MSAScrollingHeader {
     // Calculate dimensions
     const canvasWidth = w;
     const canvasHeight = h;
-    const topPadding = 5;
-    const posIndexTop = topPadding;
+
+    // Fixed dimensions for dotted cells
+    const dottedCellHeight = 30; // Fixed height for the dotted cells
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
+    const dottedCellsTop = sliderTop - dottedCellHeight; // Position dotted cells right above the slider
+    const topPadding = 5;
+    const posIndexTop = dottedCellsTop + topPadding; // Starting y position for the dotted cells
 
     // Draw the full sequence slider bar (very subtle gray bar)
     this.ctx!.fillStyle = this.config.sliderColor;
@@ -177,6 +181,9 @@ export class MSAScrollingHeader {
       );
     }
 
+    // Reserve space above the dotted cells for future conservation barplot
+    const reservedSpaceForBarplot = this.config.headerHeight - dottedCellHeight - this.config.sliderHeight;
+
     // Draw position marks and indices
     for (let i = 0; i < visiblePositionsN; i++) {
       const position = windowStart + i;
@@ -190,20 +197,20 @@ export class MSAScrollingHeader {
       if (this.config.cellBackground) {
         // Very light alternating cell background
         this.ctx!.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
-        this.ctx!.fillRect(x, posIndexTop, cellWidth, Math.min(this.config.headerHeight - topPadding, canvasHeight - posIndexTop) - this.config.sliderHeight);
+        this.ctx!.fillRect(x, dottedCellsTop, cellWidth, dottedCellHeight);
 
         // Cell borders - very light vertical lines
         this.ctx!.strokeStyle = 'rgba(220, 220, 220, 0.7)';
         this.ctx!.beginPath();
-        this.ctx!.moveTo(x, posIndexTop);
-        this.ctx!.lineTo(x, Math.min(this.config.headerHeight, canvasHeight) - this.config.sliderHeight);
+        this.ctx!.moveTo(x, dottedCellsTop);
+        this.ctx!.lineTo(x, sliderTop);
         this.ctx!.stroke();
       }
 
       // Draw position dot for every position - centered in cell
       this.ctx!.fillStyle = '#999999';
       this.ctx!.beginPath();
-      this.ctx!.arc(cellCenterX, posIndexTop * 2, 1, 0, Math.PI * 2);
+      this.ctx!.arc(cellCenterX, posIndexTop + 5, 1, 0, Math.PI * 2);
       this.ctx!.fill();
 
       // Draw position number for every 10th position, on the current position and also make sure that the number is not obstructed by some other numbers
@@ -212,7 +219,7 @@ export class MSAScrollingHeader {
         this.ctx!.font = '12px monospace';
         this.ctx!.textAlign = 'center';
         this.ctx!.textBaseline = 'middle';
-        this.ctx!.fillText(position.toString(), cellCenterX, posIndexTop * 4);
+        this.ctx!.fillText(position.toString(), cellCenterX, posIndexTop + 15);
       }
 
       // Highlight current selected position with square marker
@@ -222,9 +229,9 @@ export class MSAScrollingHeader {
         this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.2)';
         this.ctx!.fillRect(
           x,
-          0,
+          dottedCellsTop,
           cellWidth,
-          sliderTop
+          dottedCellHeight
         );
       }
     }
@@ -243,11 +250,11 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
     const y = e.clientY - rect.top - this.config.y;
-    return {x, y};
+    return { x, y };
   }
 
   isInHeaderArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     return x >= 0 && x <= this.config.width && y >= 0 && y <= this.config.headerHeight;
   }
 
@@ -260,7 +267,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderArea(e: MouseEvent): boolean {
-    const {y} = this.getCoords(e);
+    const { y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     return y > sliderTop && y < sliderTop + this.config.sliderHeight;
   }
@@ -272,7 +279,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderDraggableArea(e: MouseEvent): boolean {
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
     const windowStart = Math.max(1, this.config.windowStartPosition);
@@ -291,7 +298,7 @@ export class MSAScrollingHeader {
    */
   private handleMouseDown(e: MouseEvent): void {
     if (!this.isValid) return;
-    const {x} = this.getCoords(e);
+    const { x } = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
       this.state.dragStartX = x;
@@ -440,7 +447,7 @@ export class MSAScrollingHeader {
     if (!this.isValid) return;
 
     // Get calculated coordinates
-    const {x, y} = this.getCoords(e);
+    const { x, y } = this.getCoords(e);
 
 
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
