@@ -110,25 +110,27 @@ export class PackageFunctions {
 <div>
 
 ```ts
-@grok.decorators.func({
-  name: 'Ball flight',
-  description: 'Ball flight simulation',
-  meta: {
-    icon: 'files/icons/ball.png'
-  },
-  outputs: [
-    {
-      name: 'maxDist', 
-      type: 'double',
-      options: {caption: 'Max distance'}
-    }
-  ]
-})
-static ballFlight(
-  @grok.decorators.param({options:{initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number, 
-  @grok.decorators.param({options:{initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number, 
-  @grok.decorators.param({options:{initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number, 
-  @grok.decorators.param({options:{initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
+export class PackageFunctions { 
+  @grok.decorators.func({
+    name: 'Ball flight',
+    description: 'Ball flight simulation',
+    meta: {
+      icon: 'files/icons/ball.png'
+    },
+    outputs: [
+      {
+        name: 'maxDist', 
+        type: 'double',
+        options: {caption: 'Max distance'}
+      }
+    ]
+  })
+  static ballFlight(
+    @grok.decorators.param({options:{initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number, 
+    @grok.decorators.param({options:{initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number, 
+    @grok.decorators.param({options:{initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number, 
+    @grok.decorators.param({options:{initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
+  }
 }
 ```
 
