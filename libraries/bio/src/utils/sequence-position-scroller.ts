@@ -31,6 +31,10 @@ interface MSAHeaderOptions {
   width?: number;
   height?: number;
   onPositionChange?: (position: number, range: WindowRange) => void;
+  conservationData?: number[];
+  conservationHeight?: number;
+  conservationColorScheme?: 'default' | 'rainbow' | 'heatmap';
+
 }
 
 interface Preventable {
@@ -73,6 +77,10 @@ export class MSAScrollingHeader {
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
       onPositionChange: options.onPositionChange || ((_, __) => { }),
+      // Add default values for conservation properties
+      conservationData: options.conservationData || [],
+      conservationHeight: options.conservationHeight || 0,
+      conservationColorScheme: options.conservationColorScheme || 'default',
       ...options // Override defaults with any provided options
     };
     this.eventElement = ui.div();
@@ -131,68 +139,81 @@ export class MSAScrollingHeader {
   public get isValid() {
     return !!this.canvas && !!this.ctx && this.config.height >= this.config.headerHeight;
   }
-
   public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number, preventable: Preventable): void {
-    // soft internal update
-    if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h || this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart)
+    // Update internal state
+    if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h ||
+      this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart) {
       Object.assign(this.config, { x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart });
-
+    }
 
     if (!this.isValid) {
       this.eventElement.style.display = 'none';
       return;
     }
 
-
     this.ctx!.save();
-    // Clear canvas
     this.ctx!.clearRect(x, y, w, h);
     this.ctx!.translate(x, y);
     this.ctx!.rect(0, 0, w, h);
     this.ctx!.clip();
 
-    // Calculate dimensions
+    // Fixed dimensions
+    const positionMarkersHeight = 30; // Fixed height for position markers
+    const sliderHeight = this.config.sliderHeight;
+    const minHeightForBasicHeader = positionMarkersHeight + sliderHeight + 5; // Basic header with markers and slider
+    const minHeightForConservation = minHeightForBasicHeader + 40; // Additional height needed to show conservation
+
+    // Calculate total available height
     const canvasWidth = w;
     const canvasHeight = h;
-    const topPadding = 5;
-    const posIndexTop = topPadding;
-    const sliderTop = this.config.headerHeight - this.config.sliderHeight;
 
-    // Draw the full sequence slider bar (very subtle gray bar)
+    // Calculate positions from bottom up
+    const sliderTop = canvasHeight - sliderHeight;
+    const positionMarkersTop = sliderTop - positionMarkersHeight;
+
+    // Determine if we have enough height for conservation plot
+    const hasSpaceForConservation = canvasHeight >= minHeightForConservation;
+    const conservationHeight = hasSpaceForConservation ?
+      this.config.conservationHeight || 40 : 0;
+
+    // Only render conservation if we have enough space
+    if (hasSpaceForConservation && this.config.conservationData && this.config.conservationData.length > 0) {
+      // Calculate conservation top position - ensure it's directly above position markers
+      const conservationTop = positionMarkersTop - conservationHeight;
+      this.drawConservationPlot(0, conservationTop, canvasWidth, conservationHeight);
+    }
+
+    // Draw slider at the bottom
     this.ctx!.fillStyle = this.config.sliderColor;
-    this.ctx!.fillRect(0, sliderTop, canvasWidth, this.config.sliderHeight);
+    this.ctx!.fillRect(0, sliderTop, canvasWidth, sliderHeight);
 
     const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
     const windowStart = Math.max(1, this.config.windowStartPosition);
-
-    // Calculate slider position on the bar
     const totalSliderRange = this.config.totalPositions - visiblePositionsN;
+
     const sliderStartPX = totalSliderRange <= 0 ? 0 :
       windowStart / (totalSliderRange) * (canvasWidth - this.sliderWidth);
+    const sliderLengthPX = totalSliderRange <= 0 ? canvasWidth : this.sliderWidth;
 
-    const sliderLengthPX = totalSliderRange <= 0 ? canvasWidth :
-      this.sliderWidth;
-
-    // Draw slider window (darker rectangle)
+    // Draw slider handle
     this.ctx!.fillStyle = 'rgba(150, 150, 150, 0.5)';
-    this.ctx!.fillRect(sliderStartPX, sliderTop, sliderLengthPX, this.config.sliderHeight);
+    this.ctx!.fillRect(sliderStartPX, sliderTop, sliderLengthPX, sliderHeight);
 
+    // Draw position indicator on slider
     if (this.config.currentPosition >= 1 && this.config.currentPosition <= this.config.totalPositions) {
-      // Calculate the position of the current selection as a proportion of total sequence
       const currentPositionRatio = (this.config.currentPosition - 1) / (this.config.totalPositions - 1);
       const notchX = Math.round(currentPositionRatio * canvasWidth);
 
-      // Draw a 3px thick vertical green marker at this position
-      this.ctx!.fillStyle = '#3CB173'; // Same green as the cell highlight
+      this.ctx!.fillStyle = '#3CB173';
       this.ctx!.fillRect(
-        notchX - 1, // Center the 3px marker on the calculated position
-        sliderTop - 2, // Extend the marker 2px above the scrollbar
-        3, // 3px width as requested
-        this.config.sliderHeight + 4 // Make the marker taller than the scrollbar
+        notchX - 1,
+        sliderTop - 2,
+        3,
+        sliderHeight + 4
       );
     }
 
-    // Draw position marks and indices
+    // Draw position markers
     for (let i = 0; i < visiblePositionsN; i++) {
       const position = windowStart + i;
       if (position > this.config.totalPositions) break;
@@ -201,57 +222,155 @@ export class MSAScrollingHeader {
       const cellWidth = this.config.positionWidth;
       const cellCenterX = x + cellWidth / 2;
 
-      // Draw cell background for monospace appearance
+      // Draw cell background
       if (this.config.cellBackground) {
-        // Very light alternating cell background
         this.ctx!.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
-        this.ctx!.fillRect(x, posIndexTop, cellWidth, Math.min(this.config.headerHeight - topPadding, canvasHeight - posIndexTop) - this.config.sliderHeight);
+        this.ctx!.fillRect(x, positionMarkersTop, cellWidth, positionMarkersHeight);
 
-        // Cell borders - very light vertical lines
+        // Cell borders
         this.ctx!.strokeStyle = 'rgba(220, 220, 220, 0.7)';
         this.ctx!.beginPath();
-        this.ctx!.moveTo(x, posIndexTop);
-        this.ctx!.lineTo(x, Math.min(this.config.headerHeight, canvasHeight) - this.config.sliderHeight);
+        this.ctx!.moveTo(x, positionMarkersTop);
+        this.ctx!.lineTo(x, sliderTop);
         this.ctx!.stroke();
       }
 
-      // Draw position dot for every position - centered in cell
+      // Position dot
       this.ctx!.fillStyle = '#999999';
       this.ctx!.beginPath();
-      this.ctx!.arc(cellCenterX, posIndexTop * 2, 1, 0, Math.PI * 2);
+      this.ctx!.arc(cellCenterX, positionMarkersTop + 10, 1, 0, Math.PI * 2);
       this.ctx!.fill();
 
-      // Draw position number for every 10th position, on the current position and also make sure that the number is not obstructed by some other numbers
-      if (position === this.config.currentPosition || ((position === 1 || position % 10 === 0) && Math.abs(position - this.config.currentPosition) > 1)) {
+      // Position numbers
+      if (position === this.config.currentPosition || ((position === 1 || position % 10 === 0) &&
+        Math.abs(position - this.config.currentPosition) > 1)) {
         this.ctx!.fillStyle = '#333333';
         this.ctx!.font = '12px monospace';
         this.ctx!.textAlign = 'center';
         this.ctx!.textBaseline = 'middle';
-        this.ctx!.fillText(position.toString(), cellCenterX, posIndexTop * 4);
+        this.ctx!.fillText(position.toString(), cellCenterX, positionMarkersTop + 20);
       }
 
-      // Highlight current selected position with square marker
-      // if current is outside the range, draw it at the end
+      // Highlight current position
       if (position === this.config.currentPosition) {
-        // Draw filled background with 50% opacity
         this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.2)';
         this.ctx!.fillRect(
           x,
-          0,
+          positionMarkersTop,
           cellWidth,
-          sliderTop
+          positionMarkersHeight
         );
       }
     }
 
     this.ctx!.restore();
-    // Prevent default behavior if in header area
+
+    // Update event element
     preventable.preventDefault();
     this.eventElement.style.display = 'block';
     this.eventElement.style.left = `${this.config.x}px`;
     this.eventElement.style.top = `${this.config.y}px`;
     this.eventElement.style.width = `${this.config.width}px`;
     this.eventElement.style.height = `${this.config.height}px`;
+  }
+
+  private getConservationColor(value: number): string {
+    // Default color scheme: gradient from blue (low) to red (high)
+    if (!this.config.conservationColorScheme || this.config.conservationColorScheme === 'default') {
+      // Blue (low) -> green (medium) -> red (high)
+      if (value < 0.33) {
+        return `rgba(0, 0, 255, ${Math.max(0.3, value * 3)})`;
+      } else if (value < 0.67) {
+        return `rgba(0, ${Math.floor(255 * ((value - 0.33) * 3))}, ${Math.floor(255 * (1 - (value - 0.33) * 3))}, 0.8)`;
+      } else {
+        return `rgba(${Math.floor(255 * ((value - 0.67) * 3))}, ${Math.floor(255 * (1 - (value - 0.67) * 3))}, 0, 0.8)`;
+      }
+    }
+    else if (this.config.conservationColorScheme === 'rainbow') {
+      // Rainbow scheme: blue -> cyan -> green -> yellow -> red
+      const hue = (1 - value) * 240; // 240 (blue) to 0 (red)
+      return `hsla(${hue}, 100%, 50%, 0.8)`;
+    }
+    else if (this.config.conservationColorScheme === 'heatmap') {
+      // Heatmap: black (low) -> red -> yellow -> white (high)
+      if (value < 0.33) {
+        const r = Math.floor(value * 3 * 255);
+        return `rgba(${r}, 0, 0, 0.8)`;
+      } else if (value < 0.67) {
+        const g = Math.floor((value - 0.33) * 3 * 255);
+        return `rgba(255, ${g}, 0, 0.8)`;
+      } else {
+        const b = Math.floor((value - 0.67) * 3 * 255);
+        return `rgba(255, 255, ${b}, 0.8)`;
+      }
+    }
+
+    // Fallback to grayscale
+    return `rgba(0, 0, 0, ${value})`;
+  }
+
+
+  private drawConservationPlot(startX: number, startY: number, width: number, height: number): void {
+    if (!this.ctx || !this.config.conservationData) return;
+
+    const ctx = this.ctx;
+    const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
+    const windowStart = Math.max(1, this.config.windowStartPosition);
+
+    // Draw background
+    ctx.fillStyle = 'rgba(245, 245, 245, 0.3)';
+    ctx.fillRect(startX, startY, width, height);
+
+    // Draw title
+    ctx.fillStyle = '#333333';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    // ctx.fillText('Conservation', startX + 5, startY + 2);
+
+    // Draw Y-axis and tick marks
+    ctx.strokeStyle = '#999999';
+    ctx.beginPath();
+    ctx.moveTo(startX, startY + height - 1);
+    ctx.lineTo(startX, startY + 12);
+    ctx.stroke();
+
+    ctx.fillStyle = '#999999';
+    ctx.textAlign = 'right';
+    ctx.font = '8px Arial';
+    ctx.fillText('1.0', startX - 2, startY + 12);
+    ctx.fillText('0.5', startX - 2, startY + height / 2);
+    ctx.fillText('0.0', startX - 2, startY + height - 2);
+
+    // Calculate bar width (slightly narrower than position width)
+    const barWidth = Math.max(1, this.config.positionWidth - 2);
+
+    // Draw the conservation bars
+    for (let i = 0; i < visiblePositionsN; i++) {
+      const position = windowStart + i - 1; // 0-based for array indexing
+      if (position < 0 || position >= this.config.conservationData.length) continue;
+
+      const conservationValue = this.config.conservationData[position];
+      if (conservationValue === undefined || conservationValue === null) continue;
+
+      // Calculate bar position and dimensions
+      const barX = startX + (i * this.config.positionWidth) + 1;
+      const barHeight = Math.max(1, (height - 12) * conservationValue);
+      const barY = startY + height - barHeight;
+
+      // Determine color based on conservation value
+      const color = this.getConservationColor(conservationValue);
+
+      // Draw the bar
+      ctx.fillStyle = color;
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+
+      // Add border for visibility
+      if (barWidth > 3 && barHeight > 3) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.strokeRect(barX, barY, barWidth, barHeight);
+      }
+    }
   }
 
   getCoords(e: MouseEvent) {

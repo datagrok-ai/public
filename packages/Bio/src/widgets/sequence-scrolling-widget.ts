@@ -8,7 +8,57 @@ import { MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-p
 import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import { ALPHABET, TAGS as bioTAGS } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import { _package } from '../package';
+import { ISeqSplitted, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
+
+function calculateConservation(sequences: string[], splitter: SplitterFunc): number[] {
+  if (!sequences || sequences.length <= 1) return [];
+
+  // Split sequences using the specialized splitter function
+  const splitSequences: ISeqSplitted[] = sequences
+    .map((seq) => splitter(seq))
+    .filter(Boolean);
+
+  if (splitSequences.length <= 1) return [];
+
+  // Find the maximum sequence length
+  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
+  const result: number[] = new Array(maxLen).fill(0);
+
+  // For each position in the alignment
+  for (let pos = 0; pos < maxLen; pos++) {
+    const residueCounts: Record<string, number> = {};
+    let totalResidues = 0;
+
+    // Count the residues at this position
+    for (const seq of splitSequences) {
+      if (pos < seq.length) {
+        // Use getCanonical method to get standardized residue representation
+        // (handles modifications, non-standard residues, etc.)
+        const residue = seq.getCanonical(pos);
+
+        // Skip gaps - using the interface's method to check
+        if (residue && !seq.isGap(pos)) {
+          residueCounts[residue] = (residueCounts[residue] || 0) + 1;
+          totalResidues++;
+        }
+      }
+    }
+
+    if (totalResidues === 0) {
+      result[pos] = 0;
+      continue;
+    }
+
+    // Calculate conservation score - frequency of most common residue
+    const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
+    const conservation = mostCommonCount / totalResidues;
+
+    result[pos] = conservation;
+  }
+
+  return result;
+}
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
@@ -119,10 +169,34 @@ export function handleSequenceHeaderRendering() {
           continue;
 
         const defaultHeaderHeight = 40;
+        let conservationData: number[] = [];
+        if (isMSA && cats.length > 1) {
+          // Get all sequences and calculate conservation
+          const sequences = cats.filter(Boolean);
+          conservationData = calculateConservation(sequences, sh.splitter);
+        }
+
+        const positionMarkersHeight = 30;
+        const sliderHeight = 8;
+        const padding = 5;
+        const conservationHeight = 40;
+
+        // Minimum height needed for basic header (positions + slider)
+        const minHeaderHeight = positionMarkersHeight + sliderHeight + padding;
+
+        // Calculate header height based on current grid header height
+        // This ensures we start with just the basic header
+        const headerTitleSpace = 20;
+        const initialHeaderHeight = minHeaderHeight;
+
+
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
-          headerHeight: defaultHeaderHeight,
+          headerHeight: initialHeaderHeight,
           totalPositions: maxSeqLen + 1,
+          conservationData: conservationData as number[],
+          conservationHeight: conservationHeight,
+          sliderHeight: sliderHeight,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -141,8 +215,8 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
+        grid.props.colHeaderHeight = minHeaderHeight + headerTitleSpace;
 
-        grid.props.colHeaderHeight = 65;
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
 
         grid.sub(grid.onCellRender.subscribe((e) => {
@@ -157,11 +231,27 @@ export function handleSequenceHeaderRendering() {
           }
 
           const headerTitleSpace = 20;
-          const availableTitleSpace = cellBounds.height - defaultHeaderHeight;
+          const availableTitleSpace = cellBounds.height - minHeaderHeight;
+
           // Only draw title if we have enough space for it
           if (availableTitleSpace > headerTitleSpace) {
-            // update header height to fit whole header
-            scroller.headerHeight = cellBounds.height - headerTitleSpace;
+            // Available height for header components (excluding title)
+            const availableComponentHeight = cellBounds.height - headerTitleSpace;
+
+            // Now determine how much of this height to use based on thresholds
+            let headerHeight;
+
+            const minHeightForConservation = minHeaderHeight + conservationHeight;
+
+            if (availableComponentHeight >= minHeightForConservation) {
+              // Space for everything including conservation
+              headerHeight = availableComponentHeight;
+            } else {
+              // Only space for basic header (no conservation)
+              headerHeight = minHeaderHeight;
+            }
+
+            scroller.headerHeight = headerHeight;
 
             const ctx = grid.overlay.getContext('2d');
             if (!ctx)
@@ -182,8 +272,10 @@ export function handleSequenceHeaderRendering() {
             ctx.fillText(seqCol.name ?? '', titleX, titleY);
 
             ctx.restore();
-          } else
-            scroller.headerHeight = Math.max(defaultHeaderHeight, cellBounds.height);
+          } else {
+            // Not enough space for title - just use available height
+            scroller.headerHeight = Math.max(minHeaderHeight, cellBounds.height);
+          }
 
           const titleShift = Math.max(0, availableTitleSpace ?? 0) > headerTitleSpace ? headerTitleSpace : 0;
           const font = getFontSize();
@@ -269,3 +361,4 @@ export function handleSequenceHeaderRendering() {
       handleGrid(grid);
   }
 }
+
