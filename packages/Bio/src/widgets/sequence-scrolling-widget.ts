@@ -113,16 +113,27 @@ export function handleSequenceHeaderRendering() {
           conservationData = calculateConservation(sequences, sh.splitter);
         }
 
-        const conservationHeight = 40; // Allocate 40px for conservation
-        const minimumHeaderHeight = 30 + 8 + 5 + conservationHeight; // Position markers + slider + padding + conservation
+        const positionMarkersHeight = 30;
+        const sliderHeight = 8;
+        const padding = 5;
+        const conservationHeight = 40;
+
+        // Minimum height needed for basic header (positions + slider)
+        const minHeaderHeight = positionMarkersHeight + sliderHeight + padding;
+
+        // Calculate header height based on current grid header height
+        // This ensures we start with just the basic header
+        const headerTitleSpace = 20;
+        const initialHeaderHeight = minHeaderHeight;
 
 
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
-          headerHeight: minimumHeaderHeight,
+          headerHeight: initialHeaderHeight,
           totalPositions: maxSeqLen + 1,
           conservationData: conservationData as number[],
           conservationHeight: conservationHeight,
+          sliderHeight: sliderHeight,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -140,8 +151,10 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
-        grid.props.colHeaderHeight = 65;
+        grid.props.colHeaderHeight = minHeaderHeight + headerTitleSpace;
+
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
+
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
@@ -153,11 +166,27 @@ export function handleSequenceHeaderRendering() {
           }
 
           const headerTitleSpace = 20;
-          const availableTitleSpace = cellBounds.height - defaultHeaderHeight;
+          const availableTitleSpace = cellBounds.height - minHeaderHeight;
+
           // Only draw title if we have enough space for it
           if (availableTitleSpace > headerTitleSpace) {
-            // update header height to fit whole header
-            scroller.headerHeight = cellBounds.height - headerTitleSpace;
+            // Available height for header components (excluding title)
+            const availableComponentHeight = cellBounds.height - headerTitleSpace;
+
+            // Now determine how much of this height to use based on thresholds
+            let headerHeight;
+
+            const minHeightForConservation = minHeaderHeight + conservationHeight;
+
+            if (availableComponentHeight >= minHeightForConservation) {
+              // Space for everything including conservation
+              headerHeight = availableComponentHeight;
+            } else {
+              // Only space for basic header (no conservation)
+              headerHeight = minHeaderHeight;
+            }
+
+            scroller.headerHeight = headerHeight;
 
             const ctx = grid.overlay.getContext('2d');
             if (!ctx)
@@ -180,8 +209,10 @@ export function handleSequenceHeaderRendering() {
             ctx.fillText(seqCol.name ?? '', titleX, titleY);
 
             ctx.restore();
-          } else
-            scroller.headerHeight = Math.max(defaultHeaderHeight, cellBounds.height);
+          } else {
+            // Not enough space for title - just use available height
+            scroller.headerHeight = Math.max(minHeaderHeight, cellBounds.height);
+          }
 
           const titleShift = Math.max(0, availableTitleSpace ?? 0) > headerTitleSpace ? headerTitleSpace : 0;
           const font = getFontSize();
@@ -208,3 +239,4 @@ export function handleSequenceHeaderRendering() {
       handleGrid(grid);
   }
 }
+

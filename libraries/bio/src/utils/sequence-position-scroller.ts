@@ -142,21 +142,33 @@ export class MSAScrollingHeader {
     this.ctx!.rect(0, 0, w, h);
     this.ctx!.clip();
 
+    // Fixed dimensions
+    const positionMarkersHeight = 30; // Fixed height for position markers
+    const sliderHeight = this.config.sliderHeight;
+    const minHeightForBasicHeader = positionMarkersHeight + sliderHeight + 5; // Basic header with markers and slider
+    const minHeightForConservation = minHeightForBasicHeader + 40; // Additional height needed to show conservation
+
+    // Calculate total available height
     const canvasWidth = w;
     const canvasHeight = h;
 
-    const positionMarkersHeight = 30; // Fixed height for position markers
-    const sliderHeight = this.config.sliderHeight;
-    const conservationHeight = this.config.conservationHeight || (canvasHeight - positionMarkersHeight - sliderHeight - 5); // 5px padding
-
+    // Calculate positions from bottom up
     const sliderTop = canvasHeight - sliderHeight;
     const positionMarkersTop = sliderTop - positionMarkersHeight;
-    const conservationTop = 0; // Start from the top of the header
 
-    if (this.config.conservationData && this.config.conservationData.length > 0 && conservationHeight > 10) {
+    // Determine if we have enough height for conservation plot
+    const hasSpaceForConservation = canvasHeight >= minHeightForConservation;
+    const conservationHeight = hasSpaceForConservation ?
+      this.config.conservationHeight || 40 : 0;
+
+    // Only render conservation if we have enough space
+    if (hasSpaceForConservation && this.config.conservationData && this.config.conservationData.length > 0) {
+      // Calculate conservation top position - ensure it's directly above position markers
+      const conservationTop = positionMarkersTop - conservationHeight;
       this.drawConservationPlot(0, conservationTop, canvasWidth, conservationHeight);
     }
 
+    // Draw slider at the bottom
     this.ctx!.fillStyle = this.config.sliderColor;
     this.ctx!.fillRect(0, sliderTop, canvasWidth, sliderHeight);
 
@@ -168,9 +180,11 @@ export class MSAScrollingHeader {
       windowStart / (totalSliderRange) * (canvasWidth - this.sliderWidth);
     const sliderLengthPX = totalSliderRange <= 0 ? canvasWidth : this.sliderWidth;
 
+    // Draw slider handle
     this.ctx!.fillStyle = 'rgba(150, 150, 150, 0.5)';
     this.ctx!.fillRect(sliderStartPX, sliderTop, sliderLengthPX, sliderHeight);
 
+    // Draw position indicator on slider
     if (this.config.currentPosition >= 1 && this.config.currentPosition <= this.config.totalPositions) {
       const currentPositionRatio = (this.config.currentPosition - 1) / (this.config.totalPositions - 1);
       const notchX = Math.round(currentPositionRatio * canvasWidth);
@@ -183,6 +197,8 @@ export class MSAScrollingHeader {
         sliderHeight + 4
       );
     }
+
+    // Draw position markers
     for (let i = 0; i < visiblePositionsN; i++) {
       const position = windowStart + i;
       if (position > this.config.totalPositions) break;
@@ -191,12 +207,12 @@ export class MSAScrollingHeader {
       const cellWidth = this.config.positionWidth;
       const cellCenterX = x + cellWidth / 2;
 
+      // Draw cell background
       if (this.config.cellBackground) {
-        // Very light alternating cell background
         this.ctx!.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
         this.ctx!.fillRect(x, positionMarkersTop, cellWidth, positionMarkersHeight);
 
-        // Cell borders - very light vertical lines
+        // Cell borders
         this.ctx!.strokeStyle = 'rgba(220, 220, 220, 0.7)';
         this.ctx!.beginPath();
         this.ctx!.moveTo(x, positionMarkersTop);
@@ -204,13 +220,13 @@ export class MSAScrollingHeader {
         this.ctx!.stroke();
       }
 
-      // Draw position dot - centered in the cell
+      // Position dot
       this.ctx!.fillStyle = '#999999';
       this.ctx!.beginPath();
       this.ctx!.arc(cellCenterX, positionMarkersTop + 10, 1, 0, Math.PI * 2);
       this.ctx!.fill();
 
-      // Draw position number for every 10th position
+      // Position numbers
       if (position === this.config.currentPosition || ((position === 1 || position % 10 === 0) &&
         Math.abs(position - this.config.currentPosition) > 1)) {
         this.ctx!.fillStyle = '#333333';
@@ -220,9 +236,8 @@ export class MSAScrollingHeader {
         this.ctx!.fillText(position.toString(), cellCenterX, positionMarkersTop + 20);
       }
 
-      // Highlight current selected position
+      // Highlight current position
       if (position === this.config.currentPosition) {
-        // Draw filled background with 50% opacity
         this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.2)';
         this.ctx!.fillRect(
           x,
@@ -235,7 +250,7 @@ export class MSAScrollingHeader {
 
     this.ctx!.restore();
 
-    // Handle event element and prevent default
+    // Update event element
     preventable.preventDefault();
     this.eventElement.style.display = 'block';
     this.eventElement.style.left = `${this.config.x}px`;
@@ -296,7 +311,7 @@ export class MSAScrollingHeader {
     ctx.font = '10px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Conservation', startX + 5, startY + 2);
+    // ctx.fillText('Conservation', startX + 5, startY + 2);
 
     // Draw Y-axis and tick marks
     ctx.strokeStyle = '#999999';
