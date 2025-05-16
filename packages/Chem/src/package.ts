@@ -1869,25 +1869,27 @@ export async function getScaffoldTree(data: DG.DataFrame,
   dischargeAndDeradicalize: boolean = false,
 ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const invalid: number[] = new Array<number>(data.columns.length);
-  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = new Array<string>(data.columns.length);
-  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
-    let el: string = molColumn?.get(rowI);
-    if (!smiles) {
-      try {
-        el = convertMolNotation(el, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
-      } catch {
-        invalid[rowI] = rowI;
-      }
-    }
 
-    smilesList[rowI] = el;
+  const categories = molColumn?.categories;
+  if (categories?.length === 1 && !categories[0]?.trim())
+    throw new Error('Molecule column is empty.');
+
+  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
+  const invalid: number[] = [];
+  const smilesList: string[] = [];
+  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
+    const mol = molColumn?.get(rowI);
+    try {
+      smilesList[smilesList.length] = smiles ?
+        mol :
+        convertMolNotation(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+    } catch {
+      invalid[invalid.length] = rowI;
+    }
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-  smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
-  data.columns.add(smilesColumn);
-  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
+  const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }
