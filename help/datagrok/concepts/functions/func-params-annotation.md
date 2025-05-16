@@ -684,10 +684,7 @@ FROM target_dictionary td
 
 ```
 
-Here, the `state` and `city` parameters are defined as strings with default
-values. The `city` parameter's choices query references the `state` parameter
-using `@state`. This ensures that the choices are filtered based on the value of
-`state`.
+Here, the `species` and `organism` parameters are inferred from the search pattern. For example, if you search for "Bioactivity for bacteria targets for Shigella", the `species` parameter will be set to "bacteria" and the `organism` parameter will be set to "shigella".
 
 </details>
 
