@@ -287,7 +287,7 @@ export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: numbe
       const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
       const stats = column.tags['.seriesAggregation'] !== null ?
         getChartDataAggrStats(data, column.tags['.seriesAggregation'], gridCell) :
-        column.tags['.seriesNumber'] === seriesIdx ? calculateSeriesStats(data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell) : null;
+        column.tags['.seriesNumber'] === seriesIdx.toString() ? calculateSeriesStats(data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell) : null;
       if (stats === null)
         continue;
       column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);

@@ -63,7 +63,7 @@ export class PackageFunctions {
     const chartColumn = grid.col(colName)!;
     const column = DG.Column.float(newColName ?? `${colName} ${seriesName} ${propName}`, chartColumn.column?.length);
     column.tags[SOURCE_COLUMN_TAG] = colName;
-    column.tags[SERIES_NUMBER_TAG] = seriesNumber;
+    column.tags[SERIES_NUMBER_TAG] = seriesNumber?.toString();
     column.tags[STATISTICS_TAG] = propName;
 
     column
