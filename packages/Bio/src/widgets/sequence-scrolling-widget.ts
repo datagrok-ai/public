@@ -4,11 +4,61 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {MSAScrollingHeader} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
-import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {_package} from '../package';
+import { MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import { ALPHABET, TAGS as bioTAGS } from '@datagrok-libraries/bio/src/utils/macromolecule';
+import { _package } from '../package';
+import { ISeqSplitted, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
+
+function calculateConservation(sequences: string[], splitter: SplitterFunc): number[] {
+  if (!sequences || sequences.length <= 1) return [];
+
+  // Split sequences using the specialized splitter function
+  const splitSequences: ISeqSplitted[] = sequences
+    .map((seq) => splitter(seq))
+    .filter(Boolean);
+
+  if (splitSequences.length <= 1) return [];
+
+  // Find the maximum sequence length
+  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
+  const result: number[] = new Array(maxLen).fill(0);
+
+  // For each position in the alignment
+  for (let pos = 0; pos < maxLen; pos++) {
+    const residueCounts: Record<string, number> = {};
+    let totalResidues = 0;
+
+    // Count the residues at this position
+    for (const seq of splitSequences) {
+      if (pos < seq.length) {
+        // Use getCanonical method to get standardized residue representation
+        // (handles modifications, non-standard residues, etc.)
+        const residue = seq.getCanonical(pos);
+
+        // Skip gaps - using the interface's method to check
+        if (residue && !seq.isGap(pos)) {
+          residueCounts[residue] = (residueCounts[residue] || 0) + 1;
+          totalResidues++;
+        }
+      }
+    }
+
+    if (totalResidues === 0) {
+      result[pos] = 0;
+      continue;
+    }
+
+    // Calculate conservation score - frequency of most common residue
+    const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
+    const conservation = mostCommonCount / totalResidues;
+
+    result[pos] = conservation;
+  }
+
+  return result;
+}
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
@@ -56,10 +106,23 @@ export function handleSequenceHeaderRendering() {
           continue;
 
         const defaultHeaderHeight = 40;
+        let conservationData: number[] = [];
+        if (isMSA && cats.length > 1) {
+          // Get all sequences and calculate conservation
+          const sequences = cats.filter(Boolean);
+          conservationData = calculateConservation(sequences, sh.splitter);
+        }
+
+        const conservationHeight = 40; // Allocate 40px for conservation
+        const minimumHeaderHeight = 30 + 8 + 5 + conservationHeight; // Position markers + slider + padding + conservation
+
+
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
-          headerHeight: defaultHeaderHeight,
+          headerHeight: minimumHeaderHeight,
           totalPositions: maxSeqLen + 1,
+          conservationData: conservationData as number[],
+          conservationHeight: conservationHeight,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -70,7 +133,7 @@ export function handleSequenceHeaderRendering() {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
                 if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
                   positionStatsViewerAddedOnce = true;
-                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                  const v = grid.tableView.addViewer('Sequence Position Statistics', { sequenceColumnName: seqCol.name });
                   grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
                 }
               }
