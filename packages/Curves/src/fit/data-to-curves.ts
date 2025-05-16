@@ -174,7 +174,7 @@ export function dataToCurvesUI() {
       const df = await onOK();
       if (df) {
         const tv = grok.shell.addTableView(df);
-        const trellis = tv.trellisPlot({xColumnNames: [], yColumnNames: ['Batch ID'], viewerType: 'MultiCurveViewer',
+        const trellis = tv.trellisPlot({yColumnNames: [], xColumnNames: ['Batch ID'], viewerType: 'MultiCurveViewer',
           showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: false, showYSelectors: true, packCategories: false,
           onClick: 'Select'
         });
@@ -190,7 +190,7 @@ export function dataToCurvesUI() {
         const pivot = tv.addViewer(DG.VIEWER.PIVOT_TABLE, {
           rowSource: 'Selected', pivotColumnNames: [],
           groupByColumnNames: ['Assay'], aggregateColumnNames: ['IC50', 'AUC', 'Hill', 'Min', 'Max'],
-          ggregateAggTypes: ['geomean', 'avg', 'geomean', 'avg', 'avg'], showHeader: false
+          aggregateAggTypes: ['geomean', 'avg', 'geomean', 'avg', 'avg'], showHeader: false
         });
         pivot.props.title = 'Seleted Statistics';
         tv.dockManager.dock(pivot, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(trellis.root), 'Selected Statistics', 0.1);
