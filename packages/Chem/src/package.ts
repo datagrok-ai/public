@@ -175,9 +175,9 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const initialHeight = 90;
   const tooltipMaxWidth = 500;
   const version = col.version;
-
-  for (let i = 0; i < col.length; ++i) {
-    if (!col.isNone(i) && _isSmarts(col.get(i)))
+  const colCategories = col.categories;
+  for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
+    if (!!colCategories[i] && _isSmarts(colCategories[i]))
       return;
   }
 
@@ -185,11 +185,10 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
   const divStructures = ui.div([ui.loader()]);
   divStructures.classList.add('chem-tooltip-structure-div');
-
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -199,7 +198,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     ui.empty(divStructures);
     const molIdsCached = col.temp['molIds'];
     for (let i = 0; i < molIdsCached.length; ++i)
-      divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
+      divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
   };
 
   divMain.append(divStructures);
