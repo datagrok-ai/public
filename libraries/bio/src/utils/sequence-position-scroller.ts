@@ -31,6 +31,9 @@ interface MSAHeaderOptions {
   width?: number;
   height?: number;
   onPositionChange?: (position: number, range: WindowRange) => void;
+  conservationData?: number[];
+  conservationHeight?: number;
+  conservationColorScheme?: 'default' | 'rainbow' | 'heatmap';
 }
 
 interface Preventable {
@@ -50,6 +53,8 @@ export class MSAScrollingHeader {
   private ctx: CanvasRenderingContext2D | null = null;
   private eventElement: HTMLDivElement;
 
+  private titlePadding = 8; // Space between title and dot cells
+  private maxDotCellHeight = 30; //
   /**
    * Constructor for the MSA Header
    * @param {MSAHeaderOptions} options - Configuration options
@@ -70,6 +75,10 @@ export class MSAScrollingHeader {
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
       onPositionChange: options.onPositionChange || ((_, __) => { }),
+      // Add default values for conservation properties
+      conservationData: options.conservationData || [],
+      conservationHeight: options.conservationHeight || 40,
+      conservationColorScheme: options.conservationColorScheme || 'default',
       ...options // Override defaults with any provided options
     };
     this.eventElement = ui.div();
@@ -81,7 +90,18 @@ export class MSAScrollingHeader {
       isDragging: false,
       dragStartX: 0
     };
-
+    this.eventElement.addEventListener('mousemove', (e) => {
+      if (!this.isValid) return;
+      if (this.isInSliderDraggableArea(e)) {
+        this.eventElement.style.cursor = 'grab';
+      } else if (this.isInSliderArea(e)) {
+        this.eventElement.style.cursor = 'pointer';
+      } else if (this.isInHeaderArea(e)) {
+        this.eventElement.style.cursor = 'pointer';
+      } else {
+        this.eventElement.style.cursor = 'default';
+      }
+    });
     this.init();
   }
 
@@ -122,12 +142,10 @@ export class MSAScrollingHeader {
     if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h || this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart)
       Object.assign(this.config, { x, y, width: w, height: h, currentPosition: currentPos, windowStartPosition: scrollerStart });
 
-
     if (!this.isValid) {
       this.eventElement.style.display = 'none';
       return;
     }
-
 
     this.ctx!.save();
     // Clear canvas
@@ -141,11 +159,26 @@ export class MSAScrollingHeader {
     const canvasHeight = h;
 
     // Fixed dimensions for dotted cells
-    const dottedCellHeight = 30; // Fixed height for the dotted cells
+    const dottedCellHeight = this.maxDotCellHeight; // Fixed height for the dotted cells
     const sliderTop = this.config.headerHeight - this.config.sliderHeight;
     const dottedCellsTop = sliderTop - dottedCellHeight; // Position dotted cells right above the slider
     const topPadding = 5;
     const posIndexTop = dottedCellsTop + topPadding; // Starting y position for the dotted cells
+
+    // Conservation barplot dimensions - only setup if we have data
+    const hasConservation = this.config.conservationData.length > 0 && this.config.conservationHeight > 0;
+    const barplotHeight = hasConservation ? this.config.conservationHeight : 0;
+    const barplotTop = hasConservation ? dottedCellsTop - barplotHeight - 5 : 0; // Position barplots above dotted cells with small gap
+    const barplotPadding = 2; // Padding between bars
+
+    // Title for the conservation section
+    if (hasConservation && barplotTop > 20) {
+      this.ctx!.fillStyle = '#333333';
+      this.ctx!.font = 'bold 11px Roboto, Roboto Local';
+      this.ctx!.textAlign = 'center';
+      this.ctx!.textBaseline = 'middle';
+      // this.ctx!.fillText('Conservation', canvasWidth / 2, barplotTop - 10);
+    }
 
     // Draw the full sequence slider bar (very subtle gray bar)
     this.ctx!.fillStyle = this.config.sliderColor;
@@ -181,9 +214,6 @@ export class MSAScrollingHeader {
       );
     }
 
-    // Reserve space above the dotted cells for future conservation barplot
-    const reservedSpaceForBarplot = this.config.headerHeight - dottedCellHeight - this.config.sliderHeight;
-
     // Draw position marks and indices
     for (let i = 0; i < visiblePositionsN; i++) {
       const position = windowStart + i;
@@ -192,6 +222,82 @@ export class MSAScrollingHeader {
       const x = i * this.config.positionWidth;
       const cellWidth = this.config.positionWidth;
       const cellCenterX = x + cellWidth / 2;
+
+      // Draw conservation barplot if we have conservation data
+      if (hasConservation && position - 1 < this.config.conservationData.length) {
+        const conservation = this.config.conservationData[position - 1];
+
+        // Draw bar background
+        this.ctx!.fillStyle = 'rgba(240, 240, 240, 0.5)';
+        this.ctx!.fillRect(
+          x + barplotPadding,
+          barplotTop,
+          cellWidth - barplotPadding * 2,
+          barplotHeight
+        );
+
+        // Draw conservation bar with color based on color scheme
+        let barColor = '#3CB173'; // Default green for high conservation
+
+        if (this.config.conservationColorScheme === 'default') {
+          // Default scheme: green (high), yellow (medium), red (low)
+          if (conservation < 0.5) {
+            barColor = '#E74C3C'; // Red for low conservation (<50%)
+          } else if (conservation < 0.75) {
+            barColor = '#F39C12'; // Yellow for medium conservation (50-75%)
+          }
+        } else if (this.config.conservationColorScheme === 'rainbow') {
+          // Rainbow scheme
+          if (conservation < 0.2) {
+            barColor = '#E74C3C'; // Red
+          } else if (conservation < 0.4) {
+            barColor = '#FF7F00'; // Orange
+          } else if (conservation < 0.6) {
+            barColor = '#FFFF00'; // Yellow
+          } else if (conservation < 0.8) {
+            barColor = '#00FF00'; // Green
+          } else {
+            barColor = '#0000FF'; // Blue
+          }
+        } else if (this.config.conservationColorScheme === 'heatmap') {
+          // Heatmap scheme - shades of red to white
+          const intensity = Math.round(conservation * 255);
+          barColor = `rgb(255, ${intensity}, ${intensity})`;
+        }
+
+        const barHeight = conservation * barplotHeight;
+        this.ctx!.fillStyle = barColor;
+        this.ctx!.fillRect(
+          x + barplotPadding,
+          barplotTop + barplotHeight - barHeight,
+          cellWidth - barplotPadding * 2,
+          barHeight
+        );
+
+        // Add outline to the bar
+        this.ctx!.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+        this.ctx!.lineWidth = 1;
+        this.ctx!.strokeRect(
+          x + barplotPadding,
+          barplotTop,
+          cellWidth - barplotPadding * 2,
+          barplotHeight
+        );
+
+        // Add conservation value text if cell is wide enough
+        if (cellWidth > 20) {
+          this.ctx!.fillStyle = '#333333';
+          this.ctx!.font = '9px monospace';
+          this.ctx!.textAlign = 'center';
+          this.ctx!.textBaseline = 'middle';
+          const percentText = Math.round(conservation * 100) + '%';
+          this.ctx!.fillText(
+            percentText,
+            cellCenterX,
+            barplotTop + barplotHeight / 2
+          );
+        }
+      }
 
       // Draw cell background for monospace appearance
       if (this.config.cellBackground) {
@@ -223,7 +329,6 @@ export class MSAScrollingHeader {
       }
 
       // Highlight current selected position with square marker
-      // if current is outside the range, draw it at the end
       if (position === this.config.currentPosition) {
         // Draw filled background with 50% opacity
         this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.2)';
@@ -233,6 +338,25 @@ export class MSAScrollingHeader {
           cellWidth,
           dottedCellHeight
         );
+
+        // Also highlight the conservation bar for the current position
+        if (hasConservation && position - 1 < this.config.conservationData.length) {
+          this.ctx!.fillStyle = 'rgba(60, 177, 115, 0.1)';
+          this.ctx!.fillRect(
+            x,
+            barplotTop,
+            cellWidth,
+            barplotHeight
+          );
+
+          // Add a vertical line connecting the highlighted areas
+          this.ctx!.strokeStyle = 'rgba(60, 177, 115, 0.4)';
+          this.ctx!.lineWidth = 1;
+          this.ctx!.beginPath();
+          this.ctx!.moveTo(x + cellWidth / 2, barplotTop + barplotHeight);
+          this.ctx!.lineTo(x + cellWidth / 2, dottedCellsTop);
+          this.ctx!.stroke();
+        }
       }
     }
 

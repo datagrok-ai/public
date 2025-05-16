@@ -4,10 +4,67 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {MSAScrollingHeader} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
-import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {_package} from '../package';
+import { MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import { ALPHABET, TAGS as bioTAGS, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule';
+import { _package } from '../package';
+import { ISeqSplitted } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+
+/**
+ * Calculate conservation scores for each position in a multiple sequence alignment
+ * @param {string[]} sequences - Array of sequence strings
+ * @param {SplitterFunc} splitter - Function to split sequences into monomers
+ * @return {number[]} Array of conservation scores (0-1) for each position
+ */
+function calculateConservation(sequences: string[], splitter: SplitterFunc): number[] {
+  if (!sequences || sequences.length <= 1) return [];
+
+  // Split sequences using the specialized splitter function
+  const splitSequences: ISeqSplitted[] = sequences
+    .map((seq) => splitter(seq))
+    .filter(Boolean);
+
+  if (splitSequences.length <= 1) return [];
+
+  // Find the maximum sequence length
+  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
+  const result: number[] = new Array(maxLen).fill(0);
+
+  // For each position in the alignment
+  for (let pos = 0; pos < maxLen; pos++) {
+    const residueCounts: Record<string, number> = {};
+    let totalResidues = 0;
+
+    // Count the residues at this position
+    for (const seq of splitSequences) {
+      if (pos < seq.length) {
+        // Use getCanonical method to get standardized residue representation
+        const residue = seq.getCanonical(pos);
+
+        // Skip gaps - using the interface's method to check
+        if (residue && !seq.isGap(pos)) {
+          residueCounts[residue] = (residueCounts[residue] || 0) + 1;
+          totalResidues++;
+        }
+      }
+    }
+
+    if (totalResidues === 0) {
+      result[pos] = 0;
+      continue;
+    }
+
+    // Calculate conservation score - frequency of most common residue
+    const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
+    const conservation = mostCommonCount / totalResidues;
+
+    result[pos] = conservation;
+  }
+
+  return result;
+}
+
 
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
@@ -18,6 +75,7 @@ export function handleSequenceHeaderRendering() {
       if (!df)
         return;
       const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+
       for (const seqCol of seqCols) {
         // TODO: Extend this to non-canonical monomers and non msa
         const sh = _package.seqHelper.getSeqHandler(seqCol);
@@ -54,12 +112,16 @@ export function handleSequenceHeaderRendering() {
         // makes no sense to have scroller if we have shorter than 50 positions
         if (maxSeqLen < 50)
           continue;
+        let conservationData: number[] = [];
+        if (cats.length > 1) conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
 
         const defaultHeaderHeight = 40;
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
           headerHeight: defaultHeaderHeight,
           totalPositions: maxSeqLen + 1,
+          conservationData: conservationData, // Pass conservation data directly
+          conservationHeight: 40, // Set height for conservation barplot
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -70,13 +132,14 @@ export function handleSequenceHeaderRendering() {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
                 if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
                   positionStatsViewerAddedOnce = true;
-                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                  const v = grid.tableView.addViewer('Sequence Position Statistics', { sequenceColumnName: seqCol.name });
                   grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
                 }
               }
             });
           },
         });
+
         grid.props.colHeaderHeight = 65;
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
         grid.sub(grid.onCellRender.subscribe((e) => {
