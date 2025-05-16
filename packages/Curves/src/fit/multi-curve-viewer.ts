@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -37,9 +38,17 @@ export class MultiCurveViewer extends DG.JsViewer {
   showColumnLabel?: boolean;
 
 
-  private isInTrellis (): boolean {
-    //KOSTILJ, but works
-    return this.root?.parentElement?.parentElement?.classList?.contains('d4-trellis-plot-cell') ?? false;
+  private isInTrellis(): boolean {
+    let curRoot = this.root;
+    let i = 0;
+    const maxDepth = 7;
+    while (curRoot && i < maxDepth) {
+      if (curRoot.classList.contains('d4-trellis-plot-cell'))
+        return true;
+      curRoot = curRoot.parentElement!;
+      i++;
+    }
+    return false;
   }
 
   constructor() {
@@ -55,7 +64,7 @@ export class MultiCurveViewer extends DG.JsViewer {
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
 
-    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
+    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, {description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
@@ -65,7 +74,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
-    let viewer = new MultiCurveViewer();
+    const viewer = new MultiCurveViewer();
     viewer.data = chartData;
     viewer.render();
     return viewer;
@@ -102,14 +111,12 @@ export class MultiCurveViewer extends DG.JsViewer {
       return;
     this.rows.length = 0;
     let selectionStart = -1;
-    if (this.isInTrellis())
-      this.rows.push(...this.dataFrame.filter.getSelectedIndexes());
-    else {
+    if (this.isInTrellis()) { this.rows.push(...this.dataFrame.filter.getSelectedIndexes()); } else {
       if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
         this.rows.push(this.dataFrame.currentRowIdx);
       if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx !== -1)
         this.rows.push(this.dataFrame.mouseOverRowIdx);
-      if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1) {
+      if (this.showSelectedRowsCurves) {
         selectionStart = this.rows.length;
         this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
       }
@@ -174,23 +181,21 @@ export class MultiCurveViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
-
     const grid = this.tableView?.grid!;
     const fitCol = this.dataFrame.columns.bySemType(FitConstants.FIT_SEM_TYPE);
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 
     merge(...[this.dataFrame.onCurrentCellChanged, ...(grid ? [grid.onCellMouseEnter] : []), this.dataFrame.onSelectionChanged])
-      .pipe(debounce(_ => interval(50)))
-      .subscribe(_ => {
+      .pipe(debounce((_) => interval(50)))
+      .subscribe((_) => {
         if (this.dataFrame) {
           this.createChartData();
           this.render();
         }
       });
-    if (this.isInTrellis()) {
+    if (this.isInTrellis())
       this.createChartData();
-    }
   }
 
   _showErrorMessage(msg: string) {
@@ -204,7 +209,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   }
 
   render(): void {
-    const g = this.canvas.getContext('2d')!
+    const g = this.canvas.getContext('2d')!;
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this._removeErrorMessage();
 

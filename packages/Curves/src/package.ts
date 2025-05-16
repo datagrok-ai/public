@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {_PlateGridCellRenderer} from './package.g';
 import {_MultiCurveViewer} from './package.g';
 import {_FitChartCellRenderer} from './package.g';
@@ -14,15 +15,13 @@ import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
-import {PlateCellHandler} from "./plate/plate-cell-renderer";
-import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
 import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
-//@ts-ignore
-import * as jStat from 'jstat';
-import {PlateReader} from "./plate/plate-reader";
-import {initPlatesAppTree, platesAppView} from "./plates/plates_app";
-import {__createDummyPlateData, initPlates, savePlate} from "./plates/plates_crud";
+import {PlateReader} from './plate/plate-reader';
+import {initPlatesAppTree, platesAppView} from './plates/plates_app';
+import {__createDummyPlateData, initPlates} from './plates/plates_crud';
+import {dataToCurvesUI} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -31,14 +30,12 @@ const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 
 
-
 export class PackageFunctions {
-
   @grok.decorators.demo({
     name: 'Curve fitting',
     description: 'Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points',
-    meta: { demoPath: 'Curves | Curve Fitting' },
-    test: { test: 'curveFitDemo()', wait: '2000' }
+    meta: {demoPath: 'Curves | Curve Fitting'},
+    test: {test: 'curveFitDemo()', wait: '2000'}
   })
   static async curveFitDemo(): Promise<void> {
     await curveDemo();
@@ -47,7 +44,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Assay Plates',
     description: 'Assasy plates with concentration, layout and readout data',
-    meta: { demoPath: 'Curves | Assay Plates' },
+    meta: {demoPath: 'Curves | Assay Plates'},
   })
   static async assayPlatesDemo(): Promise<void> {
     const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
@@ -60,7 +57,7 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new PlateCellHandler());
   }
 
-  @grok.decorators.func({ tags: ['Transform'] })
+  @grok.decorators.func({tags: ['Transform']})
   static addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName?: string): void {
     const grid = DG.Viewer.grid(df);
     const chartColumn = grid.col(colName)!;
@@ -81,14 +78,14 @@ export class PackageFunctions {
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
           chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
           substituteZeroes(chartData);
-        const chartLogOptions: LogOptions = { logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY };
+        const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
         const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, gridCell);
         return fitResult[propName as keyof FitStatistics];
       });
     df.columns.insert(column, chartColumn.idx);
   }
 
-  @grok.decorators.func({ tags: ['Transform'] })
+  @grok.decorators.func({tags: ['Transform']})
   static addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string): void {
     const grid = DG.Viewer.grid(df);
     const chartColumn = grid.col(colName)!;
@@ -114,7 +111,7 @@ export class PackageFunctions {
       });
     df.columns.insert(column, chartColumn.idx);
   }
-  
+
   @grok.decorators.folderViewer({})
   static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
     const nameLowerCase = folder.name?.toLowerCase();
@@ -123,32 +120,31 @@ export class PackageFunctions {
     return getPlatesFolderPreview(files);
   }
 
-  @grok.decorators.fileViewer({  fileViewer: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate' })
+  @grok.decorators.fileViewer({fileViewer: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate'})
   static previewPlate(file: DG.FileInfo): DG.View {
     const view = DG.View.create();
     view.name = file.name;
     file.readAsString().then((content) => {
       const plate = PlateReader.read(content);
-      if (plate !== null) {
+      if (plate !== null)
         view.root.appendChild(PlateWidget.fromPlate(plate).root);
-      }
     });
     return view;
   }
-  
-  @grok.decorators.fileHandler({ ext: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate' })
+
+  @grok.decorators.fileHandler({ext: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate'})
   static async importPlate(fileContent: string): Promise<DG.DataFrame[]> {
     const plate = PlateReader.read(fileContent);
     const view = DG.View.create();
-    if (plate !== null) {
+    if (plate !== null)
       view.root.appendChild(PlateWidget.fromPlate(plate).root);
-    }
+
     view.name = 'Plate';
     grok.shell.addView(view);
     return [];
   }
-  
-  @grok.decorators.fileHandler({ outputs:[], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate' })
+
+  @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
   static async importPlateXlsx(fileContent: Uint8Array) : Promise<any[]> {
     const view = DG.View.create();
     const plate = await PackageFunctions.parseExcelPlate(fileContent);
@@ -157,8 +153,8 @@ export class PackageFunctions {
     grok.shell.addView(view);
     return [];
   }
-  
-  @grok.decorators.fileViewer({ name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate' })
+
+  @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
   static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
     const view = DG.View.create();
     view.name = file.friendlyName;
@@ -166,7 +162,7 @@ export class PackageFunctions {
     view.root.appendChild(PlateWidget.analysisView(plate).root);
     return view;
   }
-  
+
   @grok.decorators.func({ })
   static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
@@ -181,14 +177,13 @@ export class PackageFunctions {
 
   static async parseExcelPlate(content: string | Uint8Array, name?: string) {
     if (typeof content === 'string') {
-      const blob = new Blob([content], { type: 'application/octet-binary' });
+      const blob = new Blob([content], {type: 'application/octet-binary'});
       const buf = await blob.arrayBuffer();
       const plate = await Plate.fromExcel(new Uint8Array(buf), name);
       return plate;
-    } else
-      return await Plate.fromExcel(content, name);
+    } else { return await Plate.fromExcel(content, name); }
   }
-  
+
   @grok.decorators.func({ })
   static checkFileIsPlate(content: string): boolean {
     if (content.length > 1_000_000)
@@ -196,20 +191,20 @@ export class PackageFunctions {
     return PlateReader.getReader(content) != null;
   }
 
-  @grok.decorators.app({ name: 'Browse', browsePath: 'Plates'})
+  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp() : any {
     return platesAppView();
   }
-  
+
   @grok.decorators.treeBrowser({ })
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }
-  
+
   @grok.decorators.func({ })
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
-    const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesByBarcode', { barcode: barcode });
+    const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesByBarcode', {barcode: barcode});
     return Plate.fromDbDataFrame(df);
   }
 
@@ -246,7 +241,14 @@ export async function createDummyPlateData() {
   await PackageFunctions.createDummyPlateData();
 }
 
+//top-menu: Data | Curves | Data to Curves
+//name: dataToCurves
+//description: Convert data to curves
+export function dataToCurves() {
+  dataToCurvesUI();
+}
 
-export * from './package.g';export {_FitChartCellRenderer};
+
+export * from './package.g'; export {_FitChartCellRenderer};
 export {_MultiCurveViewer};
 export {_PlateGridCellRenderer};
