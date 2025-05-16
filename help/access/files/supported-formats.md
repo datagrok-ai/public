@@ -176,6 +176,16 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 | `.geojson`         | File format       | Geospatial data encoded in JSON                      | [GIS]            |
 | `.topojson`        | File format       | Compressed topological geospatial data         | [GIS]            |
 
+## Images
+
+| Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
+|------------------|-------------------|------------------------------------------------|------------------|
+| `.jpg`, `.jpeg`| File format       | Photo, scan                  |             |
+| `.png`         | File format       | Screenshot, icon, UI graphic|             |
+| `.svg`         | File format       | Logo, diagram, UI asset     |             |
+| `.bmp`         | File format       | Raw pixel data                 |             |
+
+
 
 [Project]: <../../datagrok/concepts/project/project.md>
 [Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
