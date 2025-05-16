@@ -429,7 +429,16 @@ export class SensitivityAnalysisView {
   private openedViewers = [] as DG.Viewer[];
   private readyToRun = false;
   private isRunning = false;
-  private runIcon = ui.iconFA('play', async () => await this.runAnalysis());
+  private runIcon = ui.iconFA('play', async () => {
+    if (!this.isRunning) {
+      this.isRunning = true;
+      this.updateApplicabilityState();
+      this.updateRunIconDisabledTooltip('In progress...');
+      await this.runAnalysis();
+      this.isRunning = false;
+      this.updateApplicabilityState();
+    }
+  });
   private helpIcon = getHelpIcon();
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;

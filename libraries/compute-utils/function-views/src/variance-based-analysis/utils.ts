@@ -75,8 +75,7 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
 
 /** Return the open help widget */
 export function getHelpIcon(): HTMLElement {
-  const icon = ui.icons.help(() => window.open(HELP_LINK, '_blank'));
+  const icon = ui.icons.help(() => window.open(HELP_LINK, '_blank'), 'Open help in a new tab');
   icon.classList.add('sensitivity-analysis-help-icon');
-
   return icon;
 }
