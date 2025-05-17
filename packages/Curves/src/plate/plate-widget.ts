@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {TYPE} from "datagrok-api/dg";
 import {div} from "datagrok-api/ui";
-import {safeLog, mapFromRow } from './utils';
+import {safeLog, mapFromRow, toExcelPosition } from './utils';
 import {IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME, randomizeTableId} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
@@ -11,7 +11,7 @@ import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPo
 import { FitConstants } from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
-import {savePlate} from "../plates/plates_crud";
+import {savePlate} from "../plates/plates-crud";
 
 
 export type AnalysisOptions = {
@@ -335,15 +335,30 @@ export class PlateWidget extends DG.Widget {
     return pw;
   }
 
+  get plate(): Plate {
+    const plate = new Plate(this.rows, this.cols);
+    for (const column of this.plateData.columns) 
+      if (column.name != 'row' && column.name != 'col') {
+        plate.data.columns.addNew(column.name, column.type).init(i => {
+          const [row, col] = plate.rowIndexToExcel(i);
+          const dataIdx = this._posToRow.get(`${row}:${col}`);
+          return dataIdx != null ? column.get(dataIdx) : null;
+        });
+      }
+    return plate;
+  }
+  set plate(p: Plate) {
+    this.plateData = p.data;
+  }
+
   get plateData() { return this._plateData; }
   set plateData(t: DG.DataFrame) {
     this._plateData = t;
     this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
-
       ?? t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT)
       ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
       ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
-      ?? t.columns.byIndex(0);
+      ?? (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
 
     let rowCol: DG.Column<number> = this._plateData.col('row')!;
     let colCol: DG.Column<number> = this._plateData.col('col')!;
@@ -357,7 +372,7 @@ export class PlateWidget extends DG.Widget {
       if (rowCol && colCol)
         this._posToRow.set(`${rowCol.get(i)}:${colCol.get(i)}`, i);
       else
-        this._posToRow.set(`${Math.floor(i / this.cols)}:${i % this.cols + 1}`, i);
+        this._posToRow.set(`${Math.floor(i / this.cols)}:${i % this.cols}`, i);
 
     // row header + all columns
     this.grid.dataFrame = DG.DataFrame.create(this.rows);
@@ -371,7 +386,7 @@ export class PlateWidget extends DG.Widget {
   dataRow(gc: DG.GridCell): number | undefined {
     // we do not increment gridColumn index by 1 because there is a row number column with index 0 which we do not count
     // so data columns start with 1 anyway
-    return this._posToRow.get(`${gc.gridRow}:${gc.gridColumn.idx}`);
+    return this._posToRow.get(`${gc.gridRow}:${gc.gridColumn.idx - 1}`);
   }
 
   renderCell(args:DG.GridCellRenderArgs) {

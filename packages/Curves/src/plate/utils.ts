@@ -69,6 +69,11 @@ export function parseExcelPosition(cell: string): [number, number] {
   return [ row, col ];
 }
 
+/** Converts 0-based {row, col} to Excel position notation. */
+export function toExcelPosition(row: number, col: number): string {
+  return `${numToExcel(row)}${col + 1}`;
+}
+
 export function getMaxPosition(positions: Iterable<[number, number]>): [number, number] {
   return wu(positions).reduce((max, [row, col]) => [Math.max(max[0], row), Math.max(max[1], col)], [0, 0]);
 }

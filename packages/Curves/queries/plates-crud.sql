@@ -34,6 +34,12 @@ SELECT * FROM plates.plate_types;
 -- end
 
 
+-- name: getPlateTemplates
+-- connection: Admin:Plates
+SELECT * FROM plates.templates;
+-- end
+
+
 -- name: getWellRoles
 -- connection: Admin:Plates
 SELECT pav.id, pav.value_string AS name
@@ -90,5 +96,16 @@ WHERE p.value_type = 'string';
 -- output: int propertyId
 INSERT INTO plates.properties(name, value_type)
 VALUES(@propertyName, @valueType)
+RETURNING id;
+-- end
+
+
+-- name: createTemplate
+-- connection: Admin:Plates
+-- input: string name
+-- input: string description
+-- output: int templateId
+INSERT INTO plates.templates(name, description)
+VALUES(@name, @description)
 RETURNING id;
 -- end

@@ -16,7 +16,7 @@ import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {AnalysisOptions, PlateWidget} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
-import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates_crud";
+import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates-crud";
 
 
 /** Represents a well in the experimental plate */
@@ -106,6 +106,13 @@ export class Plate {
     return row * this.cols + col;
   }
 
+  /** Converts a row index in the internal dataframe to 0-based row/col position. */
+  rowIndexToExcel(dataFrameRow: number): [row: number, col: number] {
+    const row = Math.floor(dataFrameRow / this.cols);
+    const col = dataFrameRow % this.cols;
+    return [row, col];
+  }
+
   //well(row: number, col: number): PlateWell { return new PlateWell(); }
 
   _markOutlier(row: number, flag: boolean = true) {
@@ -164,7 +171,7 @@ export class Plate {
 
   /** Constructs a plate from a dataframe where each row corresponds to a well.
    * Automatically detects position column (has to be in Excel notation). */
-  static fromTableByRow(table: DG.DataFrame, field?: string): Plate {
+  static fromTableByRow(table: DG.DataFrame): Plate {
     const posCol = wu(table.columns)
       .find((c) => c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
     if (!posCol)
@@ -206,6 +213,12 @@ export class Plate {
 
     return plate;
   }
+
+  // /**  Constructs a plate from the format used by the PlateWidget */
+  // static fromPlateData(df: DG.DataFrame): Plate {
+  //   const plate = new Plate(df.col('row')!.stats.max + 1, df.col('col')!.stats.max + 1);
+  // }
+
 
   static async fromCsvTableFile(csvPath: string, field: string, options?: DG.CsvImportOptions): Promise<Plate> {
     return this.fromGridTable(await grok.dapi.files.readCsv(csvPath, options), field);

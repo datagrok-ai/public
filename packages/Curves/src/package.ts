@@ -19,8 +19,9 @@ import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
 import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
 import {PlateReader} from './plate/plate-reader';
-import {initPlatesAppTree, platesAppView} from './plates/plates_app';
-import {__createDummyPlateData, initPlates} from './plates/plates_crud';
+import {initPlatesAppTree, platesAppView} from './plates/plates-app';
+import {initPlates} from './plates/plates-crud';
+import {__createDummyPlateData} from './plates/plates-demo';
 import {dataToCurvesUI} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
