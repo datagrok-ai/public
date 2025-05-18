@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {MoeadOptions, DEFAULT_SETTINGS, Validation} from './defs';
 import {OptimizeManager} from './optimize-manager';
+import {OptimizationView} from '../optimization-view';
 
 enum LIMITS {
   MIN_WEIGHTS = 1,
@@ -18,8 +19,8 @@ enum LIMITS {
 export class MoeadManager extends OptimizeManager {
   private methodOpts: MoeadOptions;
 
-  constructor() {
-    super();
+  constructor(parent: OptimizationView) {
+    super(parent);
     this.methodOpts = DEFAULT_SETTINGS;
   }
 
@@ -28,7 +29,7 @@ export class MoeadManager extends OptimizeManager {
       if ((value === null) || (value === undefined)) {
         return {
           res: false,
-          msg: `Invalid value for "${key}" of the MEOA/D method settings`,
+          msg: `Invalid value of "${key}" of the MEOA/D method settings`,
         };
       }
     }
@@ -36,28 +37,28 @@ export class MoeadManager extends OptimizeManager {
     if (this.methodOpts.nWeights < LIMITS.MIN_WEIGHTS) {
       return {
         res: false,
-        msg: `Invalid value for "weights" of the MEOA/D method settings`,
+        msg: `Invalid value of "samples" of the MEOA/D method settings`,
       };
     }
 
     if (this.methodOpts.generations < LIMITS.MIN_GENS) {
       return {
         res: false,
-        msg: `Invalid value for "generations" of the MEOA/D method settings`,
+        msg: `Invalid value of "generations" of the MEOA/D method settings`,
       };
     }
 
     if (this.methodOpts.neighbors < LIMITS.MIN_NEIG) {
       return {
         res: false,
-        msg: `Invalid value for "neighbors" of the MEOA/D method settings`,
+        msg: `Invalid value of "neighbors" of the MEOA/D method settings`,
       };
     }
 
     if ((this.methodOpts.mutationRate < LIMITS.MIN_MUT) || (this.methodOpts.mutationRate > LIMITS.MAX_MUT)) {
       return {
         res: false,
-        msg: `Invalid value for "mutation rate" of the MEOA/D method settings`,
+        msg: `Invalid value of "mutation rate" of the MEOA/D method settings`,
       };
     }
 
@@ -66,26 +67,35 @@ export class MoeadManager extends OptimizeManager {
 
   public getInputs(): DG.InputBase[] {
     return [
-      ui.input.int('weights', {
+      ui.input.int('samples', {
         value: this.methodOpts.nWeights,
-        tooltipText: 'The number of weight vectors',
+        tooltipText: 'The number of points to be computed',
         nullable: false,
-        min: LIMITS.MIN_WEIGHTS,
-        onValueChanged: (val) => this.methodOpts.nWeights = val,
+        min: LIMITS.MIN_WEIGHTS + 1,
+        onValueChanged: (val) => {
+          this.methodOpts.nWeights = val - 1;
+          this.parent.updateApplicabilityState();
+        },
       }),
       ui.input.int('generations', {
         value: this.methodOpts.generations,
         tooltipText: 'The total number of iterations',
         nullable: false,
         min: LIMITS.MIN_GENS,
-        onValueChanged: (val) => this.methodOpts.generations = val,
+        onValueChanged: (val) => {
+          this.methodOpts.generations = val;
+          this.parent.updateApplicabilityState();
+        },
       }),
       ui.input.int('neighbors', {
         value: this.methodOpts.neighbors,
         tooltipText: 'The number of neighboring weight vectors considered for mating and replacement',
         nullable: false,
         min: LIMITS.MIN_NEIG,
-        onValueChanged: (val) => this.methodOpts.neighbors = val,
+        onValueChanged: (val) => {
+          this.methodOpts.neighbors = val;
+          this.parent.updateApplicabilityState();
+        },
       }),
       ui.input.float('mutation rate', {
         value: this.methodOpts.mutationRate,
@@ -93,7 +103,10 @@ export class MoeadManager extends OptimizeManager {
         nullable: false,
         min: LIMITS.MIN_MUT,
         max: LIMITS.MAX_MUT,
-        onValueChanged: (val) => this.methodOpts.mutationRate = val,
+        onValueChanged: (val) => {
+          this.methodOpts.mutationRate = val;
+          this.parent.updateApplicabilityState();
+        },
       }),
     ];
   }

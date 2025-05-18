@@ -32,7 +32,7 @@ export function getOptTypeInput(): DG.ChoiceInput<OPT_TYPE | null> {
 }
 
 export enum TITLE {
-  SUBJ = 'Subject to',
+  CONSTR = 'Inputs constraints',
   METHOD = 'Method',
   USING = 'Using',
   SET = 'with settings',

@@ -19,7 +19,7 @@ import {OptimizationResult} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {DiffGrok} from './fitting-view';
-import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT} from './multi-objective-optimization/ui-tools';
+import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT, OPT_TYPE} from './multi-objective-optimization/ui-tools';
 import {MoeadManager} from './multi-objective-optimization/moead-manager';
 import {OptimizeManager} from './multi-objective-optimization/optimize-manager';
 
@@ -101,8 +101,8 @@ export class OptimizationView {
       ui.tooltip.bind(input.root, () => {
         if (isInput) {
           return (input.value) ?
-            `Switch OFF fitting the input` :
-            `Switch ON fitting the input`;
+            `Set the input as constant` :
+            `Set the input as variable`;
         } else {
           return !input.value ?
             `Mark the output as an objective` :
@@ -307,9 +307,9 @@ export class OptimizationView {
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
     let chosenItem = -1;
-    const input = ui.input.choice('Select fitting', {items: choiceItems, onValueChanged: (x) => chosenItem = x});
+    const input = ui.input.choice('Select optimization', {items: choiceItems, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
-      ui.dialog({title: 'Accept fitting'})
+      ui.dialog({title: 'Accept optimization'})
         .add(ui.div([input]))
         .onOK(() => resolve(true))
         .onCancel(() => resolve(false))
@@ -356,14 +356,22 @@ export class OptimizationView {
       this.method = val;
       this.methodInput.setTooltip(METHOD_HINT.get(val) ?? '');
       this.updateMetSetInputs();
+      this.updateApplicabilityState();
     },
   });
 
   private optManagers = new Map<METHOD, OptimizeManager>([
-    [METHOD.MOEAD, new MoeadManager()],
+    [METHOD.MOEAD, new MoeadManager(this)],
   ]);
 
   private optSetInps = new Map<METHOD, HTMLElement[]>();
+
+  private settingsHeader = ui.h1(TITLE.SET);
+  private areSettingsInputsShown = false;
+  private fittingSettingsIcon = ui.iconFA('cog', () => {
+    this.areSettingsInputsShown = !this.areSettingsInputsShown;
+    this.updateMetSetInputs();
+  });
 
   static async fromEmpty(
     func: DG.Func,
@@ -438,7 +446,7 @@ export class OptimizationView {
         form,
         DG.DOCK_TYPE.LEFT,
         null,
-        `${this.func.name} - Fitting`,
+        `${this.func.name} - Optimization`,
         0.25,
       );
 
@@ -449,7 +457,7 @@ export class OptimizationView {
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
 
-      this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
+      this.comparisonView.name = this.comparisonView.name.replace('comparison', 'optimization');
       this.comparisonView.helpUrl = HELP_URL;
       const helpMD = ui.markdown(STARTING_HELP);
       helpMD.style.padding = '10px';
@@ -462,7 +470,6 @@ export class OptimizationView {
       );
 
       this.updateRunIconStyle();
-      this.updateRunIconDisabledTooltip('Select inputs for fitting');
       this.runIcon.classList.add('fas');
 
       this.updateApplicabilityState();
@@ -514,7 +521,7 @@ export class OptimizationView {
       }, form);
 
     // 2. Inputs of the function
-    const fitHeader = ui.h1(TITLE.SUBJ);
+    const fitHeader = ui.h1(TITLE.CONSTR);
     ui.tooltip.bind(fitHeader, 'Set inputs constraints');
 
     // inputs grouped by categories
@@ -590,11 +597,12 @@ export class OptimizationView {
 
     // 4. Method
     form.append(ui.h1(TITLE.USING));
-    this.methodInput.root.insertBefore(getSwitchMock(), this.methodInput.captionLabel);
+    this.fittingSettingsIcon.style.minWidth = '50px';
+    this.methodInput.root.insertBefore(this.fittingSettingsIcon, this.methodInput.captionLabel);
     form.append(this.methodInput.root);
 
     // 5. Method settings
-    form.append(ui.h1(TITLE.SET));
+    form.append(this.settingsHeader);
 
     this.optManagers.forEach((manager, name) => {
       const inputs = manager.getInputs();
@@ -626,9 +634,22 @@ export class OptimizationView {
 
   /** Update inputs for methods settings */
   private updateMetSetInputs(): void {
+    this.updateSettingsIconsHint();
+    this.settingsHeader.hidden = !this.areSettingsInputsShown;
+
     this.optSetInps.forEach((inputs, method) => {
-      inputs.forEach((root) => root.hidden = (method !== this.method));
+      inputs.forEach((root) => root.hidden = !((method === this.method) && this.areSettingsInputsShown));
     });
+  }
+
+  /** Update settings icons tooltip */
+  private updateSettingsIconsHint(): void {
+    ui.tooltip.bind(
+      this.fittingSettingsIcon,
+      this.areSettingsInputsShown ?
+        'Hide settings' :
+        'Modify settings of the method',
+    );
   }
 
   /** Update run icon tooltip: disabled case */
@@ -641,7 +662,7 @@ export class OptimizationView {
   } // updateRunIconDisabledTooltip
 
   /** Check applicability of fitting */
-  private updateApplicabilityState(): void {
+  public updateApplicabilityState(): void {
     this.readyToRun = this.canOptimizationBeRun() && (!this.isOptimizationRunning);
     this.updateRunIconStyle();
   } // updateApplicabilityState
@@ -649,7 +670,7 @@ export class OptimizationView {
   private updateRunIconStyle(): void {
     if (this.readyToRun) {
       this.runIcon.style.color = 'var(--green-2)';
-      ui.tooltip.bind(this.runIcon, 'Run fitting');
+      ui.tooltip.bind(this.runIcon, 'Run optimization');
     } else
       this.runIcon.style.color = 'var(--grey-3)';
   } // updateRunIconStyle
@@ -699,7 +720,7 @@ export class OptimizationView {
     }
 
     if (!isAnySelected)
-      this.updateRunIconDisabledTooltip(`No inputs selected`);
+      this.updateRunIconDisabledTooltip(`No inputs selected as variable`);
 
     return isAnySelected && areSelectedFilled;
   } // areInputsReady
@@ -724,7 +745,7 @@ export class OptimizationView {
 
     if (optManager === undefined) {
       this.updateRunIconDisabledTooltip('Invalid method');
-      return false;
+      return true;
     }
 
     const validRes = optManager.areSettingsValid();
