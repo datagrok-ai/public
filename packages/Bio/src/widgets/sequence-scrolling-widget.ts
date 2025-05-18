@@ -89,11 +89,13 @@ export function handleSequenceHeaderRendering() {
           continue;
 
         let positionStatsViewerAddedOnce = !!grid.tableView && Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
+
         const isMSA = sh.isMsa();
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+
         // get the maximum length of seqs by getting the primitive length first and then splitting it with correct splitter;
         let pseudoMaxLenIndex = 0;
         let pseudoMaxLength = 0;
@@ -115,13 +117,14 @@ export function handleSequenceHeaderRendering() {
         let conservationData: number[] = [];
         if (cats.length > 1) conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
 
-        const defaultHeaderHeight = 40;
+
+        const defaultHeaderHeight = 20; // Just enough for title
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
           headerHeight: defaultHeaderHeight,
           totalPositions: maxSeqLen + 1,
-          conservationData: conservationData, // Pass conservation data directly
-          conservationHeight: 40, // Set height for conservation barplot
+          conservationData: conservationData,
+          conservationHeight: 40,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -140,60 +143,28 @@ export function handleSequenceHeaderRendering() {
           },
         });
 
-        grid.props.colHeaderHeight = 65;
+        grid.props.colHeaderHeight = conservationData.length > 0 ? 100 : 65;
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
             return;
           const cellBounds = e.bounds;
-          if (!cellBounds || cellBounds.height <= 50) {
-            scroller.headerHeight = 0;
+          if (!cellBounds || cellBounds.height <= 20) {
+            // If very small height, just show title
+            scroller.headerHeight = 20;
             return;
           }
-
-          const headerTitleSpace = 20;
-          const availableTitleSpace = cellBounds.height - defaultHeaderHeight;
-          // Only draw title if we have enough space for it
-          if (availableTitleSpace > headerTitleSpace) {
-            // update header height to fit whole header
-            scroller.headerHeight = cellBounds.height - headerTitleSpace;
-
-            const ctx = grid.overlay.getContext('2d');
-            if (!ctx)
-              return;
-            // Save context state
-            ctx.save();
-            ctx.rect(cellBounds.x, cellBounds.y, cellBounds.width, headerTitleSpace);
-            ctx.clip();
-            // Draw title text
-            ctx.font = grid.props.colHeaderFont ?? 'bold 13px Roboto, Roboto Local';
-            ctx.fillStyle = '#4a4a49';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Position the title in the middle of the available space above the header
-            const titleX = cellBounds.x + cellBounds.width / 2;
-            const titleY = cellBounds.y + headerTitleSpace / 2;
-
-            // Draw the text
-            ctx.fillText(seqCol.name ?? '', titleX, titleY);
-
-            ctx.restore();
-          } else
-            scroller.headerHeight = Math.max(defaultHeaderHeight, cellBounds.height);
-
-          const titleShift = Math.max(0, availableTitleSpace ?? 0) > headerTitleSpace ? headerTitleSpace : 0;
+          scroller.headerHeight = cellBounds.height;
           const font = getFontSize();
           scroller.positionWidth = font + (isMSA ? 8 : 0);
           const start = getStart();
           const startPadding = isMSA ? 0 : 4;
-          scroller.draw(cellBounds.x + startPadding, cellBounds.y + titleShift, cellBounds.width - startPadding, cellBounds.height - titleShift, getCurrent(), start, e);
+          scroller.draw(cellBounds.x + startPadding, cellBounds.y, cellBounds.width - startPadding, cellBounds.height, getCurrent(), start, e);
         }));
       }
     }, 1000);
   };
-  // handle all new grids
   const _ = grok.events.onViewerAdded.subscribe((e) => {
     if (!e.args || !(e.args.viewer instanceof DG.Grid))
       return;
