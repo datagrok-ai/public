@@ -31,9 +31,9 @@ interface MSAHeaderOptions {
   width?: number;
   height?: number;
   onPositionChange?: (position: number, range: WindowRange) => void;
-  conservationData?: number[];
-  conservationHeight?: number;
-  conservationColorScheme?: 'default' | 'rainbow' | 'heatmap';
+  // conservationData?: number[];
+  // conservationHeight?: number;
+  // conservationColorScheme?: 'default' | 'rainbow' | 'heatmap';
 }
 
 interface Preventable {
@@ -49,7 +49,7 @@ interface MSAHeaderState {
 /**
  * Base class for all MSA header tracks
  */
-abstract class MSAHeaderTrack {
+export abstract class MSAHeaderTrack {
   protected ctx: CanvasRenderingContext2D | null = null;
   protected visible: boolean = true;
   protected height: number;
@@ -128,7 +128,7 @@ abstract class MSAHeaderTrack {
 /**
  * Track for displaying conservation bars
  */
-class ConservationTrack extends MSAHeaderTrack {
+export class ConservationTrack extends MSAHeaderTrack {
   private data: number[];
   private colorScheme: 'default' | 'rainbow' | 'heatmap';
   private padding: number = 2;
@@ -303,7 +303,7 @@ export class MSAScrollingHeader {
   // Fixed layout properties
   private dottedCellHeight = 30; // Fixed height for dotted cells at the bottom
   private sliderHeight = 8; // Height of the slider
-  private trackGap = 5; // Gap between tracks
+  private trackGap = 4; // Gap between tracks
 
   // Tracks
   private tracks: Map<string, MSAHeaderTrack> = new Map();
@@ -313,7 +313,7 @@ export class MSAScrollingHeader {
    * @param {MSAHeaderOptions} options - Configuration options
    */
   constructor(options: MSAHeaderOptions) {
-    // Default configuration with required fields
+    // Default configuration with required fields - No track-specific properties
     this.config = {
       x: options.x || 0,
       y: options.y || 0,
@@ -328,9 +328,6 @@ export class MSAScrollingHeader {
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || 'rgba(220, 220, 220, 0.4)',
       onPositionChange: options.onPositionChange || ((_, __) => { }),
-      conservationData: options.conservationData || [],
-      conservationHeight: options.conservationHeight || 40,
-      conservationColorScheme: options.conservationColorScheme || 'default',
       ...options // Override defaults with any provided options
     };
 
@@ -346,16 +343,6 @@ export class MSAScrollingHeader {
       isDragging: false,
       dragStartX: 0
     };
-
-    // Initialize tracks
-    if (this.config.conservationData && this.config.conservationData.length > 0) {
-      const conservationTrack = new ConservationTrack(
-        this.config.conservationData,
-        this.config.conservationHeight,
-        this.config.conservationColorScheme
-      );
-      this.tracks.set('conservation', conservationTrack);
-    }
 
     // Set up event listeners
     this.setupEventListeners();
@@ -430,29 +417,18 @@ export class MSAScrollingHeader {
   /**
    * Get a track by ID
    */
-  public getTrack(id: string): MSAHeaderTrack | undefined {
-    return this.tracks.get(id);
+  public getTrack<T extends MSAHeaderTrack>(id: string): T | undefined {
+    return this.tracks.get(id) as T | undefined;
   }
 
   /**
-   * Update conservation data
+   * Update a track's data
+   * @param id The track ID
+   * @param updater A function that receives the track and updates it
    */
-  public updateConservationData(data: number[]): void {
-    let conservationTrack = this.tracks.get('conservation') as ConservationTrack;
-
-    if (conservationTrack) {
-      conservationTrack.updateData(data);
-    } else if (data && data.length > 0) {
-      conservationTrack = new ConservationTrack(
-        data,
-        this.config.conservationHeight,
-        this.config.conservationColorScheme
-      );
-      if (this.ctx) {
-        conservationTrack.init(this.ctx);
-      }
-      this.tracks.set('conservation', conservationTrack);
-    }
+  public updateTrack<T extends MSAHeaderTrack>(id: string, updater: (track: T) => void): void {
+    const track = this.getTrack<T>(id);
+    if (track) updater(track);
   }
 
   public get isValid() {
@@ -498,6 +474,7 @@ export class MSAScrollingHeader {
     let requiredHeight = 0;
     let trackCount = 0;
 
+    // First pass: calculate total height needed
     this.tracks.forEach(track => {
       if (trackCount > 0) requiredHeight += this.trackGap; // Add gap for each track after the first
       requiredHeight += track.getMinHeight();
@@ -508,21 +485,27 @@ export class MSAScrollingHeader {
       // We have enough space for all tracks
       this.tracks.forEach(track => track.setVisible(true));
     } else {
-      // We don't have enough space, prioritize tracks
-      // For now, just show the conservation track if there's enough space
-      const conservationTrack = this.tracks.get('conservation');
-      if (conservationTrack && availableHeight >= conservationTrack.getMinHeight()) {
-        conservationTrack.setVisible(true);
+      // We don't have enough space, need to prioritize
+      // For now, use a simple strategy: display tracks in order until we run out of space
 
-        // Hide other tracks
-        this.tracks.forEach((track, id) => {
-          if (id !== 'conservation') {
-            track.setVisible(false);
-          }
-        });
-      } else {
-        // Hide all tracks
-        this.tracks.forEach(track => track.setVisible(false));
+      // First pass: hide all tracks
+      this.tracks.forEach(track => track.setVisible(false));
+
+      // Second pass: show tracks until we run out of space
+      let remainingHeight = availableHeight;
+      let isFirstTrack = true;
+
+      for (const track of this.tracks.values()) {
+        const trackHeight = track.getMinHeight();
+        const spaceNeeded = isFirstTrack ? trackHeight : trackHeight + this.trackGap;
+
+        if (remainingHeight >= spaceNeeded) {
+          track.setVisible(true);
+          remainingHeight -= spaceNeeded;
+          isFirstTrack = false;
+        } else {
+          break;
+        }
       }
     }
   }
@@ -994,11 +977,6 @@ export class MSAScrollingHeader {
   public updateConfig(newConfig: Partial<MSAHeaderOptions>): void {
     // Update config with new values
     Object.assign(this.config, newConfig);
-
-    // Update conservation data if provided
-    if (newConfig.conservationData) {
-      this.updateConservationData(newConfig.conservationData);
-    }
 
     // Ensure current position is still valid
     this.config.currentPosition = Math.min(this.config.currentPosition, this.config.totalPositions);

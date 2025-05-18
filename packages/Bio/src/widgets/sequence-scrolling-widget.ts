@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import { MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import { ConservationTrack, MSAHeaderTrack, MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import { ALPHABET, TAGS as bioTAGS, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import { _package } from '../package';
@@ -123,13 +123,27 @@ export function handleSequenceHeaderRendering() {
         const hasConservation = conservationData.length > 0;
         const initialHeaderHeight = hasConservation ? 100 : 38; // Just enough for dotted cells + slider
 
+
+
+        // Initialize tracks outside the header
+        const tracks: {id:string, track:MSAHeaderTrack}[] = [];
+
+        if (conservationData.length > 0) {
+          const conservationTrack = new ConservationTrack(
+            conservationData,
+            40, // height
+            'default' // color scheme
+          );
+          tracks.push({id: 'conservation', track: conservationTrack});
+        }
+
         // Create MSAScrollingHeader with initial height
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
           headerHeight: initialHeaderHeight,
           totalPositions: maxSeqLen + 1,
-          conservationData: conservationData,
-          conservationHeight: 40,
+          // conservationData: conservationData,
+          // conservationHeight: 40,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -147,6 +161,10 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
+        tracks.forEach(({ id, track }) => {
+          scroller.addTrack(id, track);
+        });
+
 
         // Set initial header height in grid
         grid.props.colHeaderHeight = initialHeaderHeight;
