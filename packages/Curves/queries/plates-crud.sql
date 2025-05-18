@@ -5,20 +5,36 @@ SELECT * FROM plates.plates;
 
 
 -- name: getWellLevelProperties
+-- description: Get all well level properties (either used in a well or specified in a template)
 -- connection: Admin:Plates
 SELECT DISTINCT p.id, p.name, p.value_type, p.unit
 FROM plates.properties p
 JOIN plates.plate_well_values pd ON p.id = pd.property_id
-ORDER BY p.name;
+
+UNION
+
+SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+FROM plates.properties p
+JOIN plates.template_well_properties twp ON p.id = twp.property_id
+
+ORDER BY name;
 -- end
 
 
 -- name: getPlateLevelProperties
+-- description: Get all plate level properties (either used in a plate or specified in a template)
 -- connection: Admin:Plates
 SELECT DISTINCT p.id, p.name, p.value_type, p.unit
 FROM plates.properties p
 JOIN plates.plate_details pd ON p.id = pd.property_id
-ORDER BY p.name;
+
+UNION
+
+SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+FROM plates.properties p
+JOIN plates.template_plate_properties twp ON p.id = twp.property_id
+
+ORDER BY name;
 -- end
 
 
@@ -108,4 +124,17 @@ RETURNING id;
 INSERT INTO plates.templates(name, description)
 VALUES(@name, @description)
 RETURNING id;
+-- end
+
+-- name: getTemplateWellProperties
+-- connection: Admin:Plates
+SELECT template_id, property_id
+FROM plates.template_well_properties
+-- end
+
+
+-- name: getTemplatePlateProperties
+-- connection: Admin:Plates
+SELECT template_id, property_id
+FROM plates.template_plate_properties
 -- end

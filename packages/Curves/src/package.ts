@@ -17,12 +17,14 @@ import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
 import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
-import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
+import {PlateWidget} from './plate/plate-widget';
 import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
 import {dataToCurvesUI} from './fit/data-to-curves';
+import { getPlatesFolderPreview } from './plate/plates-folder-preview';
+import { PlateDrcAnalysis } from './plate/plate-drc-analysis';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -149,7 +151,7 @@ export class PackageFunctions {
   static async importPlateXlsx(fileContent: Uint8Array) : Promise<any[]> {
     const view = DG.View.create();
     const plate = await PackageFunctions.parseExcelPlate(fileContent);
-    view.root.appendChild(PlateWidget.analysisView(plate).root);
+    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
     view.name = 'Plate';
     grok.shell.addView(view);
     return [];
@@ -160,7 +162,7 @@ export class PackageFunctions {
     const view = DG.View.create();
     view.name = file.friendlyName;
     const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
-    view.root.appendChild(PlateWidget.analysisView(plate).root);
+    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
     return view;
   }
 
