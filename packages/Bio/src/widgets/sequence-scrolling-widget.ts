@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import { MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import { ConservationTrack, MSAHeaderTrack, MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import { ALPHABET, TAGS as bioTAGS, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import { _package } from '../package';
@@ -96,7 +96,7 @@ export function handleSequenceHeaderRendering() {
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-        // get the maximum length of seqs by getting the primitive length first and then splitting it with correct splitter;
+        // Get maximum sequence length
         let pseudoMaxLenIndex = 0;
         let pseudoMaxLength = 0;
         const cats = seqCol.categories;
@@ -111,20 +111,39 @@ export function handleSequenceHeaderRendering() {
         const split = sh.splitter(seq);
         const maxSeqLen = split ? split.length : 30;
 
-        // makes no sense to have scroller if we have shorter than 50 positions
+        // Skip if sequence is too short
         if (maxSeqLen < 50)
           continue;
+
+        // Calculate conservation data if we have multiple sequences
         let conservationData: number[] = [];
         if (cats.length > 1) conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
 
+        // Determine initial header height based on available data
+        const hasConservation = conservationData.length > 0;
+        const initialHeaderHeight = hasConservation ? 100 : 38; // Just enough for dotted cells + slider
 
-        const defaultHeaderHeight = 20; // Just enough for title
+
+
+        // Initialize tracks outside the header
+        const tracks: {id:string, track:MSAHeaderTrack}[] = [];
+
+        if (conservationData.length > 0) {
+          const conservationTrack = new ConservationTrack(
+            conservationData,
+            40, // height
+            'default' // color scheme
+          );
+          tracks.push({id: 'conservation', track: conservationTrack});
+        }
+
+        // Create MSAScrollingHeader with initial height
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
-          headerHeight: defaultHeaderHeight,
+          headerHeight: initialHeaderHeight,
           totalPositions: maxSeqLen + 1,
-          conservationData: conservationData,
-          conservationHeight: 40,
+          // conservationData: conservationData,
+          // conservationHeight: 40,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -142,29 +161,56 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
+        tracks.forEach(({ id, track }) => {
+          scroller.addTrack(id, track);
+        });
 
-        grid.props.colHeaderHeight = conservationData.length > 0 ? 100 : 65;
-        setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
+
+        // Set initial header height in grid
+        grid.props.colHeaderHeight = initialHeaderHeight;
+
+        // Set column width
+        setTimeout(() => {
+          if (grid.isDetached) return;
+          gCol.width = 400;
+        }, 300);
+
+        // Handle cell rendering
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;
           if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
             return;
+
           const cellBounds = e.bounds;
-          if (!cellBounds || cellBounds.height <= 20) {
-            // If very small height, just show title
-            scroller.headerHeight = 20;
-            return;
-          }
+          if (!cellBounds) return;
+
+          // Always set header height based on available space
           scroller.headerHeight = cellBounds.height;
+
+          // Set position width based on font size
           const font = getFontSize();
           scroller.positionWidth = font + (isMSA ? 8 : 0);
+
+          // Get current state
           const start = getStart();
           const startPadding = isMSA ? 0 : 4;
-          scroller.draw(cellBounds.x + startPadding, cellBounds.y, cellBounds.width - startPadding, cellBounds.height, getCurrent(), start, e);
+
+          // Draw the header
+          scroller.draw(
+            cellBounds.x + startPadding,
+            cellBounds.y,
+            cellBounds.width - startPadding,
+            cellBounds.height,
+            getCurrent(),
+            start,
+            e
+          );
         }));
       }
     }, 1000);
   };
+
+  // Handle new grid additions
   const _ = grok.events.onViewerAdded.subscribe((e) => {
     if (!e.args || !(e.args.viewer instanceof DG.Grid))
       return;
@@ -172,6 +218,7 @@ export function handleSequenceHeaderRendering() {
     handleGrid(grid);
   });
 
+  // Handle existing grids
   const openTables = grok.shell.tableViews;
   for (const tv of openTables) {
     const grid = tv?.grid;
