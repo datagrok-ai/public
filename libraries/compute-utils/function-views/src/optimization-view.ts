@@ -20,6 +20,8 @@ import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {DiffGrok} from './fitting-view';
 import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT} from './multi-objective-optimization/ui-tools';
+import {MoeadManager} from './multi-objective-optimization/moead-manager';
+import {OptimizeManager} from './multi-objective-optimization/optimize-manager';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -285,19 +287,19 @@ export class OptimizationView {
   };
 
   private readyToRun = false;
-  private isFittingRunning = false;
+  private isOptimizationRunning = false;
 
   private optTypeInput = getOptTypeInput();
 
   private runIcon = ui.iconFA('play', async () => {
     if (this.readyToRun) {
-      this.isFittingRunning = true;
+      this.isOptimizationRunning = true;
       this.updateApplicabilityState();
       this.updateRunIconDisabledTooltip('In progress...');
 
       await this.runOptimization();
 
-      this.isFittingRunning = false;
+      this.isOptimizationRunning = false;
       this.updateApplicabilityState();
     }
   });
@@ -353,8 +355,15 @@ export class OptimizationView {
     onValueChanged: (val) => {
       this.method = val;
       this.methodInput.setTooltip(METHOD_HINT.get(val) ?? '');
+      this.updateMetSetInputs();
     },
   });
+
+  private optManagers = new Map<METHOD, OptimizeManager>([
+    [METHOD.MOEAD, new MoeadManager()],
+  ]);
+
+  private optSetInps = new Map<METHOD, HTMLElement[]>();
 
   static async fromEmpty(
     func: DG.Func,
@@ -579,10 +588,26 @@ export class OptimizationView {
       firstOutput.isInterest.next(true);
     }
 
-    // 4. Method items
+    // 4. Method
     form.append(ui.h1(TITLE.USING));
     this.methodInput.root.insertBefore(getSwitchMock(), this.methodInput.captionLabel);
     form.append(this.methodInput.root);
+
+    // 5. Method settings
+    form.append(ui.h1(TITLE.SET));
+
+    this.optManagers.forEach((manager, name) => {
+      const inputs = manager.getInputs();
+
+      inputs.forEach((inp) => {
+        inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
+        form.append(inp.root);
+      });
+
+      this.optSetInps.set(name, inputs.map((inp) => inp.root));
+    });
+
+    this.updateMetSetInputs();
 
     $(form).addClass('ui-form');
 
@@ -599,6 +624,13 @@ export class OptimizationView {
     return form;
   } // buildForm
 
+  /** Update inputs for methods settings */
+  private updateMetSetInputs(): void {
+    this.optSetInps.forEach((inputs, method) => {
+      inputs.forEach((root) => root.hidden = (method !== this.method));
+    });
+  }
+
   /** Update run icon tooltip: disabled case */
   private updateRunIconDisabledTooltip(msg: string): void {
     ui.tooltip.bind(this.runIcon, () => {
@@ -610,7 +642,7 @@ export class OptimizationView {
 
   /** Check applicability of fitting */
   private updateApplicabilityState(): void {
-    this.readyToRun = this.canOptimizationBeRun() && (!this.isFittingRunning);
+    this.readyToRun = this.canOptimizationBeRun() && (!this.isOptimizationRunning);
     this.updateRunIconStyle();
   } // updateApplicabilityState
 
@@ -686,9 +718,28 @@ export class OptimizationView {
     return false;
   } // areOutputsReady
 
+  /** Check method's settings */
+  private areSettingsOfMethodValid(): boolean {
+    const optManager = this.optManagers.get(this.method);
+
+    if (optManager === undefined) {
+      this.updateRunIconDisabledTooltip('Invalid method');
+      return false;
+    }
+
+    const validRes = optManager.areSettingsValid();
+
+    if (validRes.res)
+      return true;
+
+    this.updateRunIconDisabledTooltip(validRes.msg);
+    return false;
+  }
+
   /** Check inputs/outputs/settings */
   private canOptimizationBeRun(): boolean {
-    return this.areInputsReady() && this.areOutputsSelected() && this.areMethodSettingsCorrect();
+    return this.areSettingsOfMethodValid() && this.areInputsReady() &&
+      this.areOutputsSelected() && this.areMethodSettingsCorrect();
   }
 
   /** Return names of the fixed inputs */
