@@ -19,7 +19,7 @@ import {OptimizationResult} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {DiffGrok} from './fitting-view';
-import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD} from './multi-objective-optimization/ui-tools';
+import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT} from './multi-objective-optimization/ui-tools';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -337,13 +337,24 @@ export class OptimizationView {
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
 
-  private fittingSettingsDiv = ui.divV([]);
 
   private diffGrok: DiffGrok | undefined = undefined;
 
   private currentFuncCalls: DG.FuncCall[] = [];
   private isFittingAccepted = false;
   public acceptedFitting$ = new Subject<DG.FuncCall | null>();
+
+  private method: METHOD = METHOD.MOEAD;
+  private methodInput = ui.input.choice<METHOD>(TITLE.METHOD, {
+    value: METHOD.MOEAD,
+    nullable: false,
+    items: [METHOD.MOEAD, METHOD.NELDER_MEAD],
+    tooltipText: METHOD_HINT.get(METHOD.MOEAD),
+    onValueChanged: (val) => {
+      this.method = val;
+      this.methodInput.setTooltip(METHOD_HINT.get(val) ?? '');
+    },
+  });
 
   static async fromEmpty(
     func: DG.Func,
@@ -428,7 +439,6 @@ export class OptimizationView {
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
-      this.fittingSettingsDiv.hidden = true;
 
       this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
       this.comparisonView.helpUrl = HELP_URL;
@@ -568,6 +578,11 @@ export class OptimizationView {
       const firstOutput = this.store.outputs[Object.keys(this.store.outputs)[0]];
       firstOutput.isInterest.next(true);
     }
+
+    // 4. Method items
+    form.append(ui.h1(TITLE.USING));
+    this.methodInput.root.insertBefore(getSwitchMock(), this.methodInput.captionLabel);
+    form.append(this.methodInput.root);
 
     $(form).addClass('ui-form');
 

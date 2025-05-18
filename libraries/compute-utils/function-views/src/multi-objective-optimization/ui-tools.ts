@@ -34,12 +34,19 @@ export function getOptTypeInput(): DG.ChoiceInput<OPT_TYPE | null> {
 export enum TITLE {
   SUBJ = 'Subject to',
   METHOD = 'Method',
+  USING = 'Using',
+  SET = 'with settings',
 };
 
 export enum METHOD {
   NELDER_MEAD = 'Nelder-Mead',
   MOEAD = 'MOEA/D',
-}
+};
+
+export const METHOD_HINT = new Map([
+  [METHOD.MOEAD, 'Multi-objective evolutionary algorithm based on decomposition'],
+  [METHOD.NELDER_MEAD, 'The Nelder-Mead method'],
+]);
 
 /** Return the open help widget */
 export function getHelpIcon(): HTMLElement {

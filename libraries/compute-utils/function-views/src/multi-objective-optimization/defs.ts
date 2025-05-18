@@ -34,3 +34,8 @@ export type MoeadOutput = {
   point: Float32Array,
   objective: Float32Array,
 };
+
+export type Validation = {
+  res: boolean,
+  msg: string,
+};
