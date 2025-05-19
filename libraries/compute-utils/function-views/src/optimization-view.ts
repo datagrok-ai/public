@@ -20,6 +20,7 @@ import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT, OP
   getHelpIcon} from './multi-objective-optimization/ui-tools';
 import {MoeadManager} from './multi-objective-optimization/moead-manager';
 import {OptimizeManager} from './multi-objective-optimization/optimize-manager';
+import {getFloatArrays} from './multi-objective-optimization/utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -794,6 +795,7 @@ export class OptimizationView {
       const minVals = new Float32Array(inputDim);
       const maxVals = new Float32Array(inputDim);
       const variedInputsCaptions = new Array<string>(inputDim);
+      const variedInputsTypes = new Array<string>(inputDim);
 
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
@@ -802,6 +804,7 @@ export class OptimizationView {
         maxVals[idx] = propConfig.max.value ?? 0;
         variedInputNames.push(name);
         variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
+        variedInputsTypes[idx] = propConfig.prop.propertyType;
       });
 
       // get selected output
@@ -820,6 +823,8 @@ export class OptimizationView {
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
 
+      //console.log(await grok.functions.call(this.func.nqName, inputs));
+
       outputsOfInterest.forEach((output) => {
         if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
           outputNames.push(output.prop.name);
@@ -833,15 +838,24 @@ export class OptimizationView {
               continue;
 
             for (let i = 0; i < rowCount; ++i) {
-              outputNames.push(`${output.prop.name} (${col.name}, ${i})`);
+              outputNames.push(`${output.prop.name}["${col.name}", ${i + 1}]`);
               ++outputDim;
             }
           }
         }
       });
 
+      const sign = (this.optTypeInput.value === OPT_TYPE.MIN) ? 1 : -1;
+
       /** The optimization objective */
       const objective = async (x: Float32Array): Promise<Float32Array> => {
+        // return new Float32Array([
+        //   -(x[0]**2 + x[1]**2) * sign,
+        //   -((x[0] - 2)**2 + (x[1] - 1)**2) * sign,
+        //   -((x[0] - 1)**2 + (x[1] - 2)**2) * sign,
+        //   -((x[0] - 0.3)**2 + (x[1] - 0.7)**2) * sign,
+        // ]);
+
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
@@ -851,7 +865,7 @@ export class OptimizationView {
 
         outputsOfInterest.forEach((output) => {
           if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
-            result[curOutIdx] = calledFuncCall.getParamValue(output.prop.name) as number;
+            result[curOutIdx] = sign * (calledFuncCall.getParamValue(output.prop.name) as number);
             ++curOutIdx;
           } else {
             const df = calledFuncCall.getParamValue(output.prop.name) as DG.DataFrame;
@@ -864,7 +878,7 @@ export class OptimizationView {
               const raw = col.getRawData();
 
               for (let i = 0; i < rowCount; ++i) {
-                result[curOutIdx] = raw[i];
+                result[curOutIdx] = sign * raw[i];
                 ++curOutIdx;
               }
             }
@@ -877,17 +891,12 @@ export class OptimizationView {
         return new Float32Array(result);
       };
 
-      // const arrs = [[1, -1], [0, 0], [-1, 1]];
-      // for (const arr of arrs) {
-      //   const out = await objective(new Float32Array(arr));
-      //   console.log('Inputs: ', arr, 'Outputs: ', out);
-      // }
-
+      // Perform optimization
       const optManager = this.optManagers.get(this.method);
       if (optManager === undefined)
         throw new Error('Non-supported method');
 
-      await optManager.perform(
+      const solution = await optManager.perform(
         objective,
         {
           dim: inputDim,
@@ -897,6 +906,35 @@ export class OptimizationView {
         outputDim,
         this.progressIndicator,
       );
+
+      // Prepare resulting dataframe
+      const solutionsCount = solution.length;
+      const inpRaw = getFloatArrays(inputDim, solutionsCount);
+      const outRaw = getFloatArrays(outputDim, solutionsCount);
+
+      for (let rowIdx = 0; rowIdx < solutionsCount; ++rowIdx) {
+        const input = solution[rowIdx];
+
+        for (let colIdx = 0; colIdx < inputDim; ++colIdx)
+          inpRaw[colIdx][rowIdx] = input[colIdx];
+
+        const output = await objective(input);
+
+        for (let colIdx = 0; colIdx < outputDim; ++colIdx)
+          outRaw[colIdx][rowIdx] = output[colIdx] * sign;
+      }
+
+      const resulDataframe = DG.DataFrame.fromColumns(
+        inpRaw.map((raw, idx) => DG.Column.fromFloat32Array(`inp ${idx}`, raw, solutionsCount))
+          .concat(outRaw.map((raw, idx) => DG.Column.fromFloat32Array(`out ${idx}`, raw, solutionsCount))),
+      );
+
+      // Set columns' names
+      const resCols = resulDataframe.columns;
+      variedInputNames.forEach((name, idx) => resCols.byName(`inp ${idx}`).name = resCols.getUnusedName(name));
+      outputNames.forEach((name, idx) => resCols.byName(`out ${idx}`).name = resCols.getUnusedName(name));
+
+      this.comparisonView.dataFrame = resulDataframe;
 
       this.clearPrev();
     } catch (error) {

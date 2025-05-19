@@ -19,9 +19,9 @@ export type MoeadOptions = {
 export type OptResult = Promise<Float32Array[]>;
 
 export enum MOEAD_DEFAULTS {
-  N_WEIGHTS = 9,
-  GENERATIONS = 100,
-  NEIGHBORS = 5,
+  N_WEIGHTS = 99,
+  GENERATIONS = 10,
+  NEIGHBORS = 10,
   MUTATION_RATE = 0.2,
 };
 

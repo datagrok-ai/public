@@ -25,3 +25,10 @@ export function pickTwo(arr: any[]) {
   while (j === i);
   return [arr[i], arr[j]];
 }
+
+export function getFloatArrays(count: number, length: number): Float32Array[] {
+  const arrs = new Array<Float32Array>(count);
+  for (let i = 0; i < count; ++i)
+    arrs[i] = new Float32Array(length);
+  return arrs;
+}
