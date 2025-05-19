@@ -160,13 +160,13 @@ Returns the result of dividing `x` by `y`.
 Div(7.5, 2)    // 3.75
 ```
 
-## Eq(`x`, `y`) {#eq}
+## eq(`x`, `y`) {#eq}
 
 Returns true if `x` equal to `y` and false otherwise.
 
 ```javascript
-Eq(5, 5)           // true
-Eq(true, false)    // false
+eq(5, 5)           // true
+eq(true, false)    // false
 ```
 
 ## Exp(`x`) {#exp}
@@ -213,15 +213,15 @@ Greater(5, 5)    // false
 Greater(5, 4)    // true
 ```
 
-## If(`condition`, `ifTrue`, `ifFalse`) {#if}
+## if(`condition`, `ifTrue`, `ifFalse`) {#if}
 
 Returns `ifTrue`, if `condition` is true, or `ifFalse` otherwise.
 
 ```javascript
-If(true, "a", "b")                 // "a"
-If(false, "a", "b")                // "b"
-If(true, If(true, "a", "b"), "c")  // "a"
-If(Eq(10, 50), 1, 0)               // 0
+if(true, "a", "b")                 // "a"
+if(false, "a", "b")                // "b"
+if(true, if(true, "a", "b"), "c")  // "a"
+if(Eq(10, 50), 1, 0)               // 0
 ```
 
 ## Ln(`x`) {#ln}
