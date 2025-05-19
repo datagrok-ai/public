@@ -51,7 +51,7 @@ export const METHOD_HINT = new Map([
 /** Return the open help widget */
 export function getHelpIcon(): HTMLElement {
   const icon = ui.icons.help(() => window.open(HELP_FULL_URL, '_blank'), 'Open help in a new tab');
-  icon.classList.add('fit-view-help-icon');
+  icon.classList.add('optimization-view-help-icon');
 
   return icon;
 }

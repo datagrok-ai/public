@@ -11,15 +11,13 @@ import {take, filter} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue} from './shared/utils';
-import {performNelderMeadOptimization} from './fitting/optimizer';
 
-import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getCategoryWidget, lightenRGB, getHelpIcon} from './fitting/fitting-utils';
-import {OptimizationResult} from './fitting/optimizer-misc';
+import {getCategoryWidget} from './fitting/fitting-utils';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {DiffGrok} from './fitting-view';
-import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT, OPT_TYPE} from './multi-objective-optimization/ui-tools';
+import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT, OPT_TYPE,
+  getHelpIcon} from './multi-objective-optimization/ui-tools';
 import {MoeadManager} from './multi-objective-optimization/moead-manager';
 import {OptimizeManager} from './multi-objective-optimization/optimize-manager';
 
@@ -332,9 +330,6 @@ export class OptimizationView {
   // Auxiliary dock nodes with results
   private helpDN: DG.DockNode | undefined = undefined;
 
-  // The Nelder-Mead method settings
-  private nelderMeadSettings = new Map<string, number>();
-
 
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
@@ -350,7 +345,7 @@ export class OptimizationView {
   private methodInput = ui.input.choice<METHOD>(TITLE.METHOD, {
     value: METHOD.MOEAD,
     nullable: false,
-    items: [METHOD.MOEAD, METHOD.NELDER_MEAD],
+    items: [METHOD.MOEAD],
     tooltipText: METHOD_HINT.get(METHOD.MOEAD),
     onValueChanged: (val) => {
       this.method = val;
@@ -451,8 +446,6 @@ export class OptimizationView {
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
