@@ -4,9 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MoeadOptions, DEFAULT_SETTINGS, Validation} from './defs';
+import {MoeadOptions, DEFAULT_SETTINGS, Validation, OptResult, InputOptions, Func} from './defs';
 import {OptimizeManager} from './optimize-manager';
 import {OptimizationView} from '../optimization-view';
+
+import {Moead} from './moead';
 
 enum LIMITS {
   MIN_WEIGHTS = 1,
@@ -110,4 +112,8 @@ export class MoeadManager extends OptimizeManager {
       }),
     ];
   }
+
+  public async perform(func: Func, inputOpts: InputOptions): OptResult {
+    return [new Float32Array(10)];
+  };
 };

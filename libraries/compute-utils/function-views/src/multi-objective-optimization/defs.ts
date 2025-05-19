@@ -1,7 +1,7 @@
 // The MOEA/D method for multi-objective optimization: https://ieeexplore.ieee.org/document/4358754
 // The method specific definitions
 
-export type Func = (x: Float32Array) => Float32Array;
+export type Func = (x: Float32Array) => Promise<Float32Array>;
 
 export type InputOptions = {
   dim: number,
@@ -16,6 +16,8 @@ export type MoeadOptions = {
   mutationRate: number,
 };
 
+export type OptResult = Promise<Float32Array[]>;
+
 export enum MOEAD_DEFAULTS {
   N_WEIGHTS = 100,
   GENERATIONS = 100,
@@ -28,11 +30,6 @@ export const DEFAULT_SETTINGS: MoeadOptions = {
   generations: MOEAD_DEFAULTS.GENERATIONS,
   neighbors: MOEAD_DEFAULTS.NEIGHBORS,
   mutationRate: MOEAD_DEFAULTS.MUTATION_RATE,
-};
-
-export type MoeadOutput = {
-  point: Float32Array,
-  objective: Float32Array,
 };
 
 export type Validation = {

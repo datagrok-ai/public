@@ -1,4 +1,4 @@
-import {Moead} from './moead';
+/*import {Moead} from './moead';
 
 // Objectives
 const func = (x: Float32Array): Float32Array => {
@@ -23,4 +23,4 @@ const solution = new Moead(func, inputOpts, dim).perform();
 
 // Print results
 for (const sol of solution)
-  console.log(sol.point.toString(), ',', sol.objective.toString());
+  console.log(sol.point.toString(), ',', sol.objective.toString());*/

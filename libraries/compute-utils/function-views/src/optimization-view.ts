@@ -761,8 +761,8 @@ export class OptimizationView {
     return Object.keys(this.store.inputs).filter((propName) => !this.store.inputs[propName].isChanging.value);
   }
 
-  /** Return names of the fitted inputs */
-  private getFittedInputs() {
+  /** Return names of the varied inputs */
+  private getVariadInputs() {
     return Object.keys(this.store.inputs)
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
   }
@@ -770,6 +770,119 @@ export class OptimizationView {
   /** Perform optimization */
   private async runOptimization(): Promise<void> {
     try {
+      // check applicability
+      if (!this.canOptimizationBeRun())
+        return;
+
+      // inputs of the source function
+      const inputs: any = {};
+
+      // add fixed inputs
+      const fixedInputs = this.getFixedInputs();
+      fixedInputs.forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+
+      // get varied inputs, optimization is performed with respect to them
+      const variedInputs = this.getVariadInputs();
+      const inputDim = variedInputs.length;
+
+      // varied inputs specification
+      const variedInputNames: string[] = [];
+      const minVals = new Float32Array(inputDim);
+      const maxVals = new Float32Array(inputDim);
+      const variedInputsCaptions = new Array<string>(inputDim);
+
+      // set varied inputs specification
+      variedInputs.forEach((name, idx) => {
+        const propConfig = this.store.inputs[name] as FittingNumericStore;
+        minVals[idx] = propConfig.min.value ?? 0;
+        maxVals[idx] = propConfig.max.value ?? 0;
+        variedInputNames.push(name);
+        variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
+      });
+
+      // get selected output
+      const outputsOfInterest = this.getOutputsOfInterest();
+      const outputsCount = outputsOfInterest.length;
+      if (outputsCount < 1) {
+        grok.shell.error('No output is selected for optimization.');
+        return;
+      }
+
+      let outputDim = 0;
+      const outputNames: string[] = [];
+
+      // Single call for output specification
+      minVals.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+      const funcCall = this.func.prepare(inputs);
+      const calledFuncCall = await funcCall.call();
+
+      outputsOfInterest.forEach((output) => {
+        if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
+          outputNames.push(output.prop.name);
+          ++outputDim;
+        } else {
+          const df = calledFuncCall.getParamValue(output.prop.name) as DG.DataFrame;
+          const rowCount = df.rowCount;
+
+          for (const col of df.columns) {
+            if (!col.isNumerical)
+              continue;
+
+            for (let i = 0; i < rowCount; ++i) {
+              outputNames.push(`${output.prop.name} (${col.name}, ${i})`);
+              ++outputDim;
+            }
+          }
+        }
+      });
+
+      console.log(outputDim);
+      console.log(outputNames);
+
+      /** The optimization objective */
+      const objective = async (x: Float32Array): Promise<Float32Array> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
+
+        const result = new Float32Array(outputDim);
+        let curOutIdx = 0;
+
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
+            result[curOutIdx] = calledFuncCall.getParamValue(output.prop.name) as number;
+            ++curOutIdx;
+          } else {
+            const df = calledFuncCall.getParamValue(output.prop.name) as DG.DataFrame;
+            const rowCount = df.rowCount;
+
+            for (const col of df.columns) {
+              if (!col.isNumerical)
+                continue;
+
+              const raw = col.getRawData();
+
+              for (let i = 0; i < rowCount; ++i) {
+                result[curOutIdx] = raw[i];
+                ++curOutIdx;
+              }
+            }
+          }
+        });
+
+        if (outputDim !== curOutIdx)
+          throw new Error('Inconsistent outputs: dataframes must be of the same size');
+
+        return new Float32Array(result);
+      };
+
+      const arrs = [[1, -1], [0, 0], [-1, 1]];
+      for (const arr of arrs) {
+        const out = await objective(new Float32Array(arr));
+        console.log('Inputs: ', arr, 'Outputs: ', out);
+      }
+
+
       this.clearPrev();
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');

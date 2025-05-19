@@ -3,7 +3,7 @@
 
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions, MoeadOutput} from './defs';
+import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions} from './defs';
 import {clip, euclideanDistance, pickTwo} from './utils';
 
 /** The MOEA/D multi-objective optimizer */
@@ -25,9 +25,9 @@ export class Moead {
   }
 
   /** Scalarization: weighted sum */
-  private weightedSum(x: Float32Array, w: Float32Array): number {
+  private async weightedSum(x: Float32Array, w: Float32Array): Promise<number> {
     let sum = 0;
-    const out = this.objective(x);
+    const out = await this.objective(x);
 
     for (let i = 0; i < this.outputDim; ++i)
       sum += w[i] * out[i];
@@ -95,7 +95,7 @@ export class Moead {
   }
 
   /** MOEA/D algorithm */
-  public perform(): MoeadOutput[] {
+  public async perform(): Promise<Float32Array[]> {
     const nWeights = this.methodOpts.nWeights;
     const weights = this.generateWeights();
     const population = new Array<Float32Array>(nWeights + 1);
@@ -122,15 +122,12 @@ export class Moead {
 
         // Update neighborhood
         for (const j of nbr) {
-          if (this.weightedSum(child, weights[j]) < this.weightedSum(population[j], weights[j]))
+          if (await this.weightedSum(child, weights[j]) < await this.weightedSum(population[j], weights[j]))
             population[j] = child;
         }
       }
     }
 
-    return population.map((x) => ({
-      point: x,
-      objective: this.objective(x),
-    }));
+    return population;
   }
 }; // Moead
