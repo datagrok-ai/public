@@ -4,11 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import { ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
-import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import { ALPHABET, TAGS as bioTAGS, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import { _package } from '../package';
-import { ISeqSplitted } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import {ALPHABET, TAGS as bioTAGS, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {_package} from '../package';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 
 /**
@@ -59,9 +59,9 @@ function calculateWebLogoData(sequences: string[], splitter: SplitterFunc): Map<
 
     // Convert counts to frequencies
     const residueFreqs: Map<string, number> = new Map();
-    for (const [residue, count] of residueCounts.entries()) {
+    for (const [residue, count] of residueCounts.entries())
       residueFreqs.set(residue, count / totalResidues);
-    }
+
 
     webLogoData.set(pos, residueFreqs);
   }
@@ -121,7 +121,6 @@ function calculateConservation(sequences: string[], splitter: SplitterFunc): num
 
   return result;
 }
-
 
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
@@ -186,44 +185,41 @@ export function handleSequenceHeaderRendering() {
         const hasConservation = conservationData.length > 0;
         const hasWebLogo = webLogoData.size > 0;
 
-        // Define track heights and layout parameters
+        // Define explicit track heights, layout parameters, and thresholds
+        // IMPORTANT: Define these as constants to make them clear and configurable
         const dottedCellsHeight = 38; // Fixed height for dotted cells + slider
         const trackGap = 4; // Gap between tracks
-        const conservationHeight = 40; // Standard height for conservation track
-        const webLogoHeight = 40; // Match conservation height for WebLogo track
 
-        // Calculate total required height with all tracks
-        const initialHeaderHeight = dottedCellsHeight +
-          (hasConservation ? conservationHeight + trackGap : 0) +
-          (hasWebLogo ? webLogoHeight + trackGap : 0);
+        const DEFAULT_WEBLOGO_HEIGHT = 45; // Increased from 40 to accommodate title
+        const DEFAULT_CONSERVATION_HEIGHT = 45; // Increased from 40 to accommodate title
 
-        // Initialize tracks
+
         const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
-
-        // Set track priorities - higher number = higher priority to keep visible
-        // This ensures WebLogo is hidden before conservation when space is limited
-        if (hasWebLogo) {
-          const webLogoTrack = new WebLogoTrack(
-            webLogoData,
-            webLogoHeight,
-            'default' // color scheme
-          );
-          tracks.push({ id: 'weblogo', track: webLogoTrack, priority: 2 }); // Higher
-        }
 
         if (hasConservation) {
           const conservationTrack = new ConservationTrack(
             conservationData,
-            conservationHeight,
-            'default' // color scheme
+            DEFAULT_CONSERVATION_HEIGHT,
+            'default', // color scheme
+            'Conservation' // Track title
           );
-          tracks.push({ id: 'conservation', track: conservationTrack, priority: 1 }); // lower
+          tracks.push({id: 'conservation', track: conservationTrack, priority: 1}); // Lower visibility priority (1)
+        }
+        if (hasWebLogo) {
+          const webLogoTrack = new WebLogoTrack(
+            webLogoData,
+            DEFAULT_WEBLOGO_HEIGHT,
+            'default', // color scheme
+            'WebLogo' // Track title
+          );
+          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
         }
 
-        // Sort tracks by priority (highest first) to ensure proper display threshold behavior
-        tracks.sort((a, b) => b.priority - a.priority);
+        const initialHeaderHeight = dottedCellsHeight +
+  (hasWebLogo ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
+  (hasConservation ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
 
-        // Create MSAScrollingHeader with initial height
+
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
           headerHeight: initialHeaderHeight,
@@ -238,7 +234,7 @@ export function handleSequenceHeaderRendering() {
                 seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
                 if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
                   positionStatsViewerAddedOnce = true;
-                  const v = grid.tableView.addViewer('Sequence Position Statistics', { sequenceColumnName: seqCol.name });
+                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
                   grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
                 }
               }
@@ -246,8 +242,8 @@ export function handleSequenceHeaderRendering() {
           },
         });
 
-        // Add tracks to scroller based on priority order
-        tracks.forEach(({ id, track }) => {
+        // Add tracks to scroller based on priority order (already sorted)
+        tracks.forEach(({id, track}) => {
           scroller.addTrack(id, track);
         });
 

@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 /**
  * MSAHeader.ts - Interactive MSA Header Component
@@ -54,10 +55,15 @@ export abstract class MSAHeaderTrack {
   protected visible: boolean = true;
   protected height: number;
   protected minHeight: number;
+  protected defaultHeight: number; // Store the default height for proper resets
+  protected title: string = '';
+  protected titleHeight: number = 12; // Space for the title
 
-  constructor(height: number = 40, minHeight: number = 30) {
+  constructor(height: number = 40, minHeight: number = 30, title: string = '') {
     this.height = height;
-    this.minHeight = minHeight;
+    this.defaultHeight = height; // Store the original height as default
+    this.minHeight = minHeight + (title ? this.titleHeight : 0); // Ensure min height accounts for title
+    this.title = title;
   }
 
   /**
@@ -82,6 +88,13 @@ export abstract class MSAHeaderTrack {
   }
 
   /**
+   * Get default height (initial configured height)
+   */
+  getDefaultHeight(): number {
+    return this.defaultHeight;
+  }
+
+  /**
    * Get minimum required height for this track
    */
   getMinHeight(): number {
@@ -92,7 +105,14 @@ export abstract class MSAHeaderTrack {
    * Set track height
    */
   setHeight(height: number): void {
-    this.height = height;
+    this.height = Math.max(this.minHeight, height);
+  }
+
+  /**
+   * Reset track to default height
+   */
+  resetHeight(): void {
+    this.height = this.defaultHeight;
   }
 
   /**
@@ -100,6 +120,34 @@ export abstract class MSAHeaderTrack {
    */
   isVisible(): boolean {
     return this.visible;
+  }
+
+  /**
+   * Set track title
+   */
+  setTitle(title: string): void {
+    this.title = title;
+  }
+
+  /**
+   * Get track title
+   */
+  getTitle(): string {
+    return this.title;
+  }
+
+  /**
+   * Draw track title
+   */
+  protected drawTitle(x: number, y: number, width: number): void {
+    if (!this.ctx || !this.title) return;
+
+    // Draw title
+    this.ctx.fillStyle = '#333333';
+    this.ctx.font = 'bold 10px sans-serif';
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'top';
+    this.ctx.fillText(this.title, x + 5, y + 2); // Small padding
   }
 
   /**
@@ -158,10 +206,11 @@ export class WebLogoTrack extends MSAHeaderTrack {
 
   constructor(
     data: Map<number, Map<string, number>> = new Map(),
-    height: number = 40, // Match conservation barplot height by default
-    colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default'
+    height: number = 45, // Increased default height to accommodate title
+    colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default',
+    title: string = 'WebLogo'
   ) {
-    super(height, 40); // Min height also set to 40px to match conservation track
+    super(height, 45, title); // Min height also set to 45px to include space for title
     this.data = data;
     this.colorScheme = colorScheme;
     this.visible = data.size > 0;
@@ -197,17 +246,13 @@ export class WebLogoTrack extends MSAHeaderTrack {
   ): void {
     if (!this.ctx || !this.visible || this.data.size === 0) return;
 
+    // Draw title first
+    this.drawTitle(x, y, width);
+
     const visiblePositionsN = Math.floor(width / positionWidth);
     const logoHeight = height - this.padding * 2;
-    const titleHeight = 12;
-    const effectiveLogoHeight = logoHeight - titleHeight - 2;
-
-    // Draw title
-    this.ctx.fillStyle = '#333333';
-    this.ctx.font = 'bold 10px sans-serif';
-    this.ctx.textAlign = 'left';
-    this.ctx.textBaseline = 'top';
-    // this.ctx.fillText('WebLogo', x + 5, y + this.padding);
+    const effectiveLogoHeight = logoHeight - this.titleHeight - 2;
+    const columnY = y + this.titleHeight + this.padding;
 
     // Draw WebLogo columns
     for (let i = 0; i < visiblePositionsN; i++) {
@@ -219,7 +264,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
 
       const posX = x + (i * positionWidth);
       const cellWidth = positionWidth - this.padding;
-      const columnY = y + titleHeight + this.padding;
 
       // Highlight current selected position
       if (windowStart + i === currentPosition) {
@@ -336,8 +380,13 @@ export class ConservationTrack extends MSAHeaderTrack {
   private colorScheme: 'default' | 'rainbow' | 'heatmap';
   private padding: number = 2;
 
-  constructor(data: number[], height: number = 40, colorScheme: 'default' | 'rainbow' | 'heatmap' = 'default') {
-    super(height, 30);
+  constructor(
+    data: number[],
+    height: number = 45, // Increased default height to accommodate title
+    colorScheme: 'default' | 'rainbow' | 'heatmap' = 'default',
+    title: string = 'Conservation'
+  ) {
+    super(height, 35, title); // Min height with space for title
     this.data = data;
     this.colorScheme = colorScheme;
     this.visible = data.length > 0;
@@ -366,8 +415,11 @@ export class ConservationTrack extends MSAHeaderTrack {
   ): void {
     if (!this.ctx || !this.visible || this.data.length === 0) return;
 
-    const barplotTop = y;
-    const barplotHeight = height;
+    // Draw title first
+    this.drawTitle(x, y, width);
+
+    const barplotTop = y + this.titleHeight; // Adjust for title
+    const barplotHeight = height - this.titleHeight; // Remaining height after title
     const visiblePositionsN = Math.floor(width / positionWidth);
 
     // Draw position conservation bars
@@ -434,24 +486,22 @@ export class ConservationTrack extends MSAHeaderTrack {
 
     if (this.colorScheme === 'default') {
       // Default scheme: green (high), yellow (medium), red (low)
-      if (conservation < 0.5) {
+      if (conservation < 0.5)
         barColor = '#E74C3C'; // Red for low conservation (<50%)
-      } else if (conservation < 0.75) {
+      else if (conservation < 0.75)
         barColor = '#F39C12'; // Yellow for medium conservation (50-75%)
-      }
     } else if (this.colorScheme === 'rainbow') {
       // Rainbow scheme
-      if (conservation < 0.2) {
+      if (conservation < 0.2)
         barColor = '#E74C3C'; // Red
-      } else if (conservation < 0.4) {
+      else if (conservation < 0.4)
         barColor = '#FF7F00'; // Orange
-      } else if (conservation < 0.6) {
+      else if (conservation < 0.6)
         barColor = '#FFFF00'; // Yellow
-      } else if (conservation < 0.8) {
+      else if (conservation < 0.8)
         barColor = '#00FF00'; // Green
-      } else {
+      else
         barColor = '#0000FF'; // Blue
-      }
     } else if (this.colorScheme === 'heatmap') {
       // Heatmap scheme - shades of red to white
       const intensity = Math.round(conservation * 255);
@@ -558,15 +608,14 @@ export class MSAScrollingHeader {
   private setupEventListeners(): void {
     this.eventElement.addEventListener('mousemove', (e) => {
       if (!this.isValid) return;
-      if (this.isInSliderDraggableArea(e)) {
+      if (this.isInSliderDraggableArea(e))
         this.eventElement.style.cursor = 'grab';
-      } else if (this.isInSliderArea(e)) {
+      else if (this.isInSliderArea(e))
         this.eventElement.style.cursor = 'pointer';
-      } else if (this.isInHeaderArea(e)) {
+      else if (this.isInHeaderArea(e))
         this.eventElement.style.cursor = 'pointer';
-      } else {
+      else
         this.eventElement.style.cursor = 'default';
-      }
     });
 
     this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -577,7 +626,6 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
-
   /**
    * Initialize the component
    */
@@ -597,16 +645,16 @@ export class MSAScrollingHeader {
     this.ctx = context;
 
     // Initialize all tracks
-    this.tracks.forEach(track => track.init(context));
+    this.tracks.forEach((track) => track.init(context));
   }
 
   /**
    * Add a new track to the header
    */
   public addTrack(id: string, track: MSAHeaderTrack): void {
-    if (this.ctx) {
+    if (this.ctx)
       track.init(this.ctx);
-    }
+
     this.tracks.set(id, track);
   }
 
@@ -646,13 +694,13 @@ export class MSAScrollingHeader {
     let firstTrack = true;
 
     // Calculate height for all visible tracks
-    this.tracks.forEach(track => {
+    this.tracks.forEach((track) => {
       if (track.isVisible()) {
-        if (!firstTrack) {
+        if (!firstTrack)
           totalHeight += this.trackGap;
-        } else {
+        else
           firstTrack = false;
-        }
+
         totalHeight += track.getHeight();
       }
     });
@@ -661,68 +709,95 @@ export class MSAScrollingHeader {
   }
 
   /**
-   * Determine visible tracks based on available height
-   */
+ * Determine visible tracks based on available height and distribute extra space
+ * with priority to WebLogo track while maintaining correct vertical ordering
+ */
   private determineVisibleTracks(): void {
-    // Get available height for tracks (excluding dotted cells and slider and a gap)
+  // Get available height for tracks (excluding dotted cells and slider and a gap)
     const availableHeight = this.config.headerHeight - (this.dottedCellHeight + this.sliderHeight + this.trackGap);
 
     if (availableHeight <= 0) {
-      // Hide all tracks if there's not enough space
-      this.tracks.forEach(track => track.setVisible(false));
+    // Hide all tracks if there's not enough space
+      this.tracks.forEach((track) => track.setVisible(false));
       return;
     }
 
-    // Calculate how much space we need for all tracks including gaps
-    let requiredHeight = 0;
-    let trackCount = 0;
+    // Define default heights for each track type
+    const DEFAULT_HEIGHTS = {
+      'weblogo': 45,
+      'conservation': 45
+    };
 
-    // First pass: calculate total height needed
-    this.tracks.forEach(track => {
-      if (trackCount > 0) requiredHeight += this.trackGap; // Add gap for each track after the first
-      requiredHeight += track.getMinHeight();
-      trackCount++;
+    this.tracks.forEach((track, id) => {
+      const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || track.getDefaultHeight();
+      track.setHeight(defaultHeight);
     });
 
-    if (requiredHeight <= availableHeight) {
-      // We have enough space for all tracks
-      this.tracks.forEach(track => track.setVisible(true));
+    const prioritizedTracks = Array.from(this.tracks.entries())
+      .map(([id, track]) => ({id, track}))
+      .sort((a, b) => {
+      // WebLogo has priority 2, Conservation has priority 1
+        const priorityA = a.id === 'weblogo' ? 2 : (a.id === 'conservation' ? 1 : 0);
+        const priorityB = b.id === 'weblogo' ? 2 : (b.id === 'conservation' ? 1 : 0);
+        return priorityB - priorityA;
+      });
+
+    let minRequiredHeight = 0;
+    let trackCount = 0;
+
+    for (const {track} of prioritizedTracks) {
+      if (trackCount > 0) minRequiredHeight += this.trackGap;
+      minRequiredHeight += track.getMinHeight();
+      trackCount++;
+    }
+
+    if (minRequiredHeight <= availableHeight) {
+      prioritizedTracks.forEach(({id, track}) => {
+        track.setVisible(true);
+      });
+
+      // Now distribute extra space to WebLogo track if present
+      const extraSpace = availableHeight - minRequiredHeight;
+      const webLogoTrack = this.getTrack('weblogo');
+
+      if (webLogoTrack && extraSpace > 0) {
+        const currentHeight = webLogoTrack.getHeight();
+        webLogoTrack.setHeight(currentHeight + extraSpace);
+      }
     } else {
-      // We don't have enough space, need to prioritize
-      // Use the order of tracks in the map for priority
-      // (Last added tracks get higher priority)
+    // Not enough space for all tracks, prioritize based on priority order
+    // First, hide all tracks
+      this.tracks.forEach((track) => track.setVisible(false));
 
-      // First pass: hide all tracks
-      this.tracks.forEach(track => track.setVisible(false));
-
-      // Second pass: show tracks in reverse order until we run out of space
-      // This ensures that tracks added later (higher priority in our implementation)
-      // remain visible longer when space is constrained
+      // Then show tracks starting with highest priority until we run out of space
       let remainingHeight = availableHeight;
       let isFirstTrack = true;
 
-      // Convert to array, reverse it (to start with highest priority), and then iterate
-      const tracksArray = Array.from(this.tracks.entries()).reverse();
-
-      for (const [id, track] of tracksArray) {
-        const trackHeight = track.getMinHeight();
-        const spaceNeeded = isFirstTrack ? trackHeight : trackHeight + this.trackGap;
+      for (const {id, track} of prioritizedTracks) {
+        const minTrackHeight = track.getMinHeight();
+        const spaceNeeded = isFirstTrack ? minTrackHeight : minTrackHeight + this.trackGap;
 
         if (remainingHeight >= spaceNeeded) {
           track.setVisible(true);
+          // Set to default height or min height, whichever is larger
+          const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || minTrackHeight;
+          track.setHeight(defaultHeight);
+
           remainingHeight -= spaceNeeded;
           isFirstTrack = false;
-        } else {
-          break;
-        }
+        } else
+          track.setVisible(false);
       }
     }
   }
 
   public draw(x: number, y: number, w: number, h: number, currentPos: number, scrollerStart: number, preventable: Preventable): void {
+  // Check if header height has changed
+    const heightChanged = this.config.height !== h;
+
     // Update internal state
     if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h ||
-      this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart) {
+    this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart) {
       Object.assign(this.config, {
         x, y, width: w, height: h,
         currentPosition: currentPos,
@@ -735,91 +810,113 @@ export class MSAScrollingHeader {
       return;
     }
 
-    this.ctx!.save();
-    // Clear canvas
-    this.ctx!.clearRect(x, y, w, h);
-    this.ctx!.translate(x, y);
-    this.ctx!.rect(0, 0, w, h);
-    this.ctx!.clip();
-
-    // Determine which tracks should be visible based on available height
-    this.determineVisibleTracks();
-
-    // Calculate positions for tracks and dotted cells
-    const sliderTop = h - this.sliderHeight;
-    const dottedCellsTop = sliderTop - this.dottedCellHeight;
-
-    // Calculate total height needed for tracks
-    const totalTracksHeight = this.calculateTotalTracksHeight();
-
-    // Position for first track
-    let trackY = Math.max(0, dottedCellsTop - totalTracksHeight - this.trackGap); // Add gap between tracks and dotted cells
-
-    // Collect visible tracks to draw connections
-    const visibleTrackPositions: { y: number, height: number }[] = [];
-
-    // Draw all visible tracks
-    this.tracks.forEach(track => {
-      if (track.isVisible()) {
-        const trackHeight = track.getHeight();
-
-        track.draw(
-          0,
-          trackY,
-          w,
-          trackHeight,
-          this.config.windowStartPosition,
-          this.config.positionWidth,
-          this.config.totalPositions,
-          this.config.currentPosition
-        );
-
-        // Store track position and height for drawing connections later
-        visibleTrackPositions.push({ y: trackY, height: trackHeight });
-
-        trackY += trackHeight + this.trackGap;
-      }
-    });
-
-    // Draw dotted cells (always at the bottom)
-    this.drawDottedCells(0, dottedCellsTop, w, this.dottedCellHeight, sliderTop);
-
-    // Add dotted cells to track positions for connections
-    visibleTrackPositions.push({ y: dottedCellsTop, height: this.dottedCellHeight });
-
-    // Draw connection lines between tracks for selected position
-    if (this.config.currentPosition >= 1 &&
-      this.config.currentPosition <= this.config.totalPositions) {
-
-      const cellWidth = this.config.positionWidth;
-      const position = this.config.currentPosition;
-      const windowStart = this.config.windowStartPosition;
-
-      // Calculate position to draw connector
-      const visibleIndex = position - windowStart;
-      if (visibleIndex >= 0 && visibleIndex < Math.floor(w / cellWidth)) {
-        const posX = visibleIndex * cellWidth;
-        const cellCenterX = posX + cellWidth / 2;
-
-        // Draw connecting lines between all visible tracks
-        for (let i = 0; i < visibleTrackPositions.length - 1; i++) {
-          const upperTrack = visibleTrackPositions[i];
-          const lowerTrack = visibleTrackPositions[i + 1];
-
-          // Draw connecting line
-          this.ctx!.strokeStyle = 'rgba(60, 177, 115, 0.4)'; // Dim green, same as selection
-          this.ctx!.lineWidth = 1;
-          this.ctx!.beginPath();
-          this.ctx!.moveTo(cellCenterX, upperTrack.y + upperTrack.height);
-          this.ctx!.lineTo(cellCenterX, lowerTrack.y);
-          this.ctx!.stroke();
-        }
-      }
+    // If height changed significantly, reset track heights to prevent compounding growth
+    if (heightChanged) {
+      this.tracks.forEach((track) => {
+        track.resetHeight(); // Use the new resetHeight method to go back to default
+      });
     }
 
-    this.ctx!.restore();
-    preventable.preventDefault();
-    this.setupEventElement();
+  this.ctx!.save();
+  // Clear canvas
+  this.ctx!.clearRect(x, y, w, h);
+  this.ctx!.translate(x, y);
+  this.ctx!.rect(0, 0, w, h);
+  this.ctx!.clip();
+
+  // Determine which tracks should be visible based on available height
+  this.determineVisibleTracks();
+
+  // Calculate positions for tracks and dotted cells
+  const sliderTop = h - this.sliderHeight;
+  const dottedCellsTop = sliderTop - this.dottedCellHeight;
+
+  // Calculate total height needed for tracks
+  const totalTracksHeight = this.calculateTotalTracksHeight();
+
+  // Position for first track
+  let trackY = Math.max(0, dottedCellsTop - totalTracksHeight - this.trackGap); // Add gap between tracks and dotted cells
+
+  // Collect visible tracks to draw connections
+  const visibleTrackPositions: { y: number, height: number }[] = [];
+
+
+  // Get visible tracks
+  const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
+
+  // Check if conservation track is visible
+  const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
+  if (conservationTrack && conservationTrack.isVisible())
+    visibleTracks.push({id: 'conservation', track: conservationTrack});
+
+
+  // Check if weblogo track is visible
+  const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
+  if (webLogoTrack && webLogoTrack.isVisible())
+    visibleTracks.push({id: 'weblogo', track: webLogoTrack});
+
+
+  // Draw tracks in the correct vertical order (top to bottom)
+  for (const {track} of visibleTracks) {
+    if (track.isVisible()) {
+      const trackHeight = track.getHeight();
+
+      track.draw(
+        0,
+        trackY,
+        w,
+        trackHeight,
+        this.config.windowStartPosition,
+        this.config.positionWidth,
+        this.config.totalPositions,
+        this.config.currentPosition
+      );
+
+      // Store track position and height for drawing connections later
+      visibleTrackPositions.push({y: trackY, height: trackHeight});
+
+      trackY += trackHeight + this.trackGap;
+    }
+  }
+
+  // Draw dotted cells (always at the bottom)
+  this.drawDottedCells(0, dottedCellsTop, w, this.dottedCellHeight, sliderTop);
+
+  // Add dotted cells to track positions for connections
+  visibleTrackPositions.push({y: dottedCellsTop, height: this.dottedCellHeight});
+
+  // Draw connection lines between tracks for selected position
+  if (this.config.currentPosition >= 1 &&
+    this.config.currentPosition <= this.config.totalPositions) {
+    const cellWidth = this.config.positionWidth;
+    const position = this.config.currentPosition;
+    const windowStart = this.config.windowStartPosition;
+
+    // Calculate position to draw connector
+    const visibleIndex = position - windowStart;
+    if (visibleIndex >= 0 && visibleIndex < Math.floor(w / cellWidth)) {
+      const posX = visibleIndex * cellWidth;
+      const cellCenterX = posX + cellWidth / 2;
+
+      // Draw connecting lines between all visible tracks
+      for (let i = 0; i < visibleTrackPositions.length - 1; i++) {
+        const upperTrack = visibleTrackPositions[i];
+        const lowerTrack = visibleTrackPositions[i + 1];
+
+        // Draw connecting line
+        this.ctx!.strokeStyle = 'rgba(60, 177, 115, 0.4)'; // Dim green, same as selection
+        this.ctx!.lineWidth = 1;
+        this.ctx!.beginPath();
+        this.ctx!.moveTo(cellCenterX, upperTrack.y + upperTrack.height);
+        this.ctx!.lineTo(cellCenterX, lowerTrack.y);
+        this.ctx!.stroke();
+      }
+    }
+  }
+
+  this.ctx!.restore();
+  preventable.preventDefault();
+  this.setupEventElement();
   }
 
   /**
@@ -950,11 +1047,11 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
     const y = e.clientY - rect.top - this.config.y;
-    return { x, y };
+    return {x, y};
   }
 
   isInHeaderArea(e: MouseEvent): boolean {
-    const { x, y } = this.getCoords(e);
+    const {x, y} = this.getCoords(e);
     return x >= 0 && x <= this.config.width && y >= 0 && y <= this.config.headerHeight;
   }
 
@@ -967,7 +1064,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderArea(e: MouseEvent): boolean {
-    const { y } = this.getCoords(e);
+    const {y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.sliderHeight;
     return y > sliderTop && y < sliderTop + this.sliderHeight;
   }
@@ -979,7 +1076,7 @@ export class MSAScrollingHeader {
   }
 
   isInSliderDraggableArea(e: MouseEvent): boolean {
-    const { x, y } = this.getCoords(e);
+    const {x, y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.sliderHeight;
     const visiblePositionsN = Math.floor(this.config.width / this.config.positionWidth);
     const windowStart = this.config.windowStartPosition;
@@ -998,7 +1095,7 @@ export class MSAScrollingHeader {
    */
   private handleMouseDown(e: MouseEvent): void {
     if (!this.isValid) return;
-    const { x } = this.getCoords(e);
+    const {x} = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
       this.state.dragStartX = x;
@@ -1029,9 +1126,8 @@ export class MSAScrollingHeader {
       const maxStart = this.config.totalPositions - visiblePositions + 1;
       this.config.windowStartPosition = Math.max(1, Math.min(maxStart, newStartPosition));
 
-      if (typeof this.config.onPositionChange === 'function') {
+      if (typeof this.config.onPositionChange === 'function')
         this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-      }
     }
   }
 
@@ -1076,11 +1172,10 @@ export class MSAScrollingHeader {
       const end = start + visiblePositions - 1;
 
       if (newPosition < start || newPosition > end) {
-        if (delta < 0) {
+        if (delta < 0)
           this.config.windowStartPosition = newPosition;
-        } else {
+        else
           this.config.windowStartPosition = Math.max(1, newPosition - visiblePositions + 1);
-        }
       }
     } else if (e.key === 'Escape') {
       // Reset the current position
@@ -1088,13 +1183,12 @@ export class MSAScrollingHeader {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-    } else {
+    } else
       return;
-    }
 
-    if (typeof this.config.onPositionChange === 'function') {
+
+    if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    }
   }
 
   /**
@@ -1123,9 +1217,8 @@ export class MSAScrollingHeader {
     this.config.windowStartPosition = Math.max(1, Math.min(windowStart, this.config.totalPositions - fittedPositions + 1));
 
     // Call callback if defined
-    if (typeof this.config.onPositionChange === 'function') {
+    if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    }
   }
 
   get headerHeight(): number {
@@ -1145,7 +1238,7 @@ export class MSAScrollingHeader {
   private handleClick(e: MouseEvent): void {
     if (!this.isValid) return;
 
-    const { x, y } = this.getCoords(e);
+    const {x, y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - this.sliderHeight;
 
     if (y < sliderTop && y >= 0) {
@@ -1160,9 +1253,8 @@ export class MSAScrollingHeader {
         this.config.currentPosition = clickedPosition;
 
         // Call callback if defined
-        if (typeof this.config.onPositionChange === 'function') {
+        if (typeof this.config.onPositionChange === 'function')
           this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-        }
       }
     }
   }
@@ -1191,9 +1283,8 @@ export class MSAScrollingHeader {
     this.config.currentPosition = Math.min(this.config.currentPosition, this.config.totalPositions);
 
     // Call callback if defined
-    if (typeof this.config.onPositionChange === 'function') {
+    if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    }
   }
 
   /**
@@ -1211,8 +1302,7 @@ export class MSAScrollingHeader {
     this.config.currentPosition = Math.max(1, Math.min(this.config.totalPositions, position));
 
     // Call callback if defined
-    if (typeof this.config.onPositionChange === 'function') {
+    if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
-    }
   }
 }
