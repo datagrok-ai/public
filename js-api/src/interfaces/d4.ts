@@ -2381,6 +2381,9 @@ export interface IPointsViewerSettings {
   /// List of columns to show
   columnNames: Array<string>;
 
+  /// Additional columns to display in the tooltip
+  tooltipColumnNames: Array<string>;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
