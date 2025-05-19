@@ -17,7 +17,8 @@ export class Moead {
     objective: Func,
     inputOpts: InputOptions,
     outputDim: number,
-    methodOpts: MoeadOptions = DEFAULT_SETTINGS) {
+    methodOpts: MoeadOptions = DEFAULT_SETTINGS,
+  ) {
     this.objective = objective;
     this.inputOpts = inputOpts;
     this.outputDim = outputDim;

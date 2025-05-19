@@ -836,9 +836,6 @@ export class OptimizationView {
         }
       });
 
-      console.log(outputDim);
-      console.log(outputNames);
-
       /** The optimization objective */
       const objective = async (x: Float32Array): Promise<Float32Array> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
@@ -876,12 +873,25 @@ export class OptimizationView {
         return new Float32Array(result);
       };
 
-      const arrs = [[1, -1], [0, 0], [-1, 1]];
-      for (const arr of arrs) {
-        const out = await objective(new Float32Array(arr));
-        console.log('Inputs: ', arr, 'Outputs: ', out);
-      }
+      // const arrs = [[1, -1], [0, 0], [-1, 1]];
+      // for (const arr of arrs) {
+      //   const out = await objective(new Float32Array(arr));
+      //   console.log('Inputs: ', arr, 'Outputs: ', out);
+      // }
 
+      const optManager = this.optManagers.get(this.method);
+      if (optManager === undefined)
+        throw new Error('Non-supported method');
+
+      await optManager.perform(
+        objective,
+        {
+          dim: inputDim,
+          mins: minVals,
+          maxs: maxVals,
+        },
+        outputDim,
+      );
 
       this.clearPrev();
     } catch (error) {

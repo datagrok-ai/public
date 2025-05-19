@@ -11,5 +11,5 @@ export abstract class OptimizeManager {
 
   public abstract areSettingsValid(): Validation;
   public abstract getInputs(): DG.InputBase[];
-  public abstract perform(func: Func, inputOpts: InputOptions): OptResult;
+  public abstract perform(func: Func, inputOpts: InputOptions, outputDim: number): OptResult;
 }

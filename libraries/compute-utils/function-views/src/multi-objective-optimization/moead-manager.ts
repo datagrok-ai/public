@@ -70,7 +70,7 @@ export class MoeadManager extends OptimizeManager {
   public getInputs(): DG.InputBase[] {
     return [
       ui.input.int('samples', {
-        value: this.methodOpts.nWeights,
+        value: this.methodOpts.nWeights + 1,
         tooltipText: 'The number of points to be computed',
         nullable: false,
         min: LIMITS.MIN_WEIGHTS + 1,
@@ -113,7 +113,16 @@ export class MoeadManager extends OptimizeManager {
     ];
   }
 
-  public async perform(func: Func, inputOpts: InputOptions): OptResult {
-    return [new Float32Array(10)];
+  public async perform(func: Func, inputOpts: InputOptions, outputDim: number): OptResult {
+    const moead = new Moead(
+      func,
+      inputOpts,
+      outputDim,
+      this.methodOpts,
+    );
+
+    const results = await moead.perform();
+
+    return results;
   };
 };
