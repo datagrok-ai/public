@@ -1064,6 +1064,8 @@ export class AddNewColumnDialog {
 
     const type = this.getSelectedType()[0];
     // Making the Preview Grid:
+    // Looking for non-empty rows in columns used in formula
+    this.findNonEmptyRowsForPreview(columnIds);
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
     ui.setUpdateIndicator(this.gridPreview!.root, true);
@@ -1095,6 +1097,24 @@ export class AddNewColumnDialog {
       this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
+  }
+
+  findNonEmptyRowsForPreview(columnIds: string[]) {
+    let nonEmptyIdx = 0;
+    if (columnIds.length) {
+      const rowCount = this.sourceDf!.rowCount;
+      for (let i = 0; i < rowCount; i++) {
+        if (columnIds.every((colName) => !this.sourceDf!.col(colName)!.isNone(i))) {
+          nonEmptyIdx = i;
+          break;
+        }
+      }
+      const minRowIdx = nonEmptyIdx + this.previwDf!.rowCount <= rowCount ?
+        nonEmptyIdx : rowCount - this.previwDf!.rowCount;
+      const maxRowIdx = minRowIdx + this.previwDf!.rowCount;
+      this.previwDf = this.sourceDf!.clone(DG.BitSet.create(maxRowIdx,
+        (idx) => idx >= minRowIdx && idx < maxRowIdx));
+    }
   }
 
   /** Finds all unique column names used in the Expression input field. */
