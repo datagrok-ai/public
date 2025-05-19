@@ -55,7 +55,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     vaultNode.onSelected.subscribe(() => {
       const view = DG.View.create();
       view.name = vault.name;
-      const tabs = createLinks(['Molecules', 'Search', 'Saved searches'], treeNode, view);
+      const tabs = createLinks(['Protocols', 'Saved searches', 'Collections', 'Molecules', 'Search'], treeNode, view);
       view.append(tabs);
       grok.shell.addPreview(view);
       setBreadcrumbsInViewName([vault.name], treeNode, view);
