@@ -289,14 +289,18 @@ export class OptimizationView {
 
   private optTypeInput = getOptTypeInput();
 
+  private progressIndicator: DG.TaskBarProgressIndicator | undefined = undefined;
+
   private runIcon = ui.iconFA('play', async () => {
     if (this.readyToRun) {
       this.isOptimizationRunning = true;
       this.updateApplicabilityState();
       this.updateRunIconDisabledTooltip('In progress...');
+      this.progressIndicator = DG.TaskBarProgressIndicator.create('Optimization...', {cancelable: true});
 
       await this.runOptimization();
 
+      this.progressIndicator.close();
       this.isOptimizationRunning = false;
       this.updateApplicabilityState();
     }
@@ -891,6 +895,7 @@ export class OptimizationView {
           maxs: maxVals,
         },
         outputDim,
+        this.progressIndicator,
       );
 
       this.clearPrev();

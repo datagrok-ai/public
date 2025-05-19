@@ -3,8 +3,12 @@
 
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions} from './defs';
+import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions, SLEEP_TIME} from './defs';
 import {clip, euclideanDistance, pickTwo} from './utils';
+
+function sleep(ms: number) {
+  return new Promise((resolve, reject) => setTimeout(resolve, ms));
+};
 
 /** The MOEA/D multi-objective optimizer */
 export class Moead {
@@ -12,17 +16,20 @@ export class Moead {
   private inputOpts: InputOptions;
   private outputDim: number;
   private methodOpts: MoeadOptions;
+  private progrIndicator: any = undefined;
 
   constructor(
     objective: Func,
     inputOpts: InputOptions,
     outputDim: number,
     methodOpts: MoeadOptions = DEFAULT_SETTINGS,
+    progrIndicator?: any,
   ) {
     this.objective = objective;
     this.inputOpts = inputOpts;
     this.outputDim = outputDim;
     this.methodOpts = methodOpts;
+    this.progrIndicator = progrIndicator;
   }
 
   /** Scalarization: weighted sum */
@@ -112,8 +119,11 @@ export class Moead {
         .map((e) => e.idx),
     );
 
+    const iter = this.methodOpts.generations;
+    let percentage = 0;
+
     // Evolution loop
-    for (let gen = 0; gen < this.methodOpts.generations; ++gen) {
+    for (let gen = 0; gen < iter; ++gen) {
       for (let i = 0; i <= nWeights; i++) {
         const nbr = neighborhoods[i];
         const [p1, p2] = pickTwo(nbr);
@@ -126,6 +136,15 @@ export class Moead {
           if (await this.weightedSum(child, weights[j]) < await this.weightedSum(population[j], weights[j]))
             population[j] = child;
         }
+      }
+
+      if (this.progrIndicator !== undefined) {
+        if (this.progrIndicator.canceled)
+          throw new Error('Optimization interrupted by the user');
+
+        percentage = Math.floor(100 * gen / iter);
+        this.progrIndicator.update(percentage, `Optimization... (${percentage}%)`);
+        await sleep(SLEEP_TIME);
       }
     }
 

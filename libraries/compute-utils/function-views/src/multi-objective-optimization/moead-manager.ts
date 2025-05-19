@@ -113,12 +113,13 @@ export class MoeadManager extends OptimizeManager {
     ];
   }
 
-  public async perform(func: Func, inputOpts: InputOptions, outputDim: number): OptResult {
+  public async perform(func: Func, inputOpts: InputOptions, outputDim: number, pi: DG.ProgressIndicator): OptResult {
     const moead = new Moead(
       func,
       inputOpts,
       outputDim,
       this.methodOpts,
+      pi,
     );
 
     const results = await moead.perform();

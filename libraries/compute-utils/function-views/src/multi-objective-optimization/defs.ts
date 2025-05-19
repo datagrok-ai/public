@@ -36,3 +36,5 @@ export type Validation = {
   res: boolean,
   msg: string,
 };
+
+export const SLEEP_TIME = 5;
