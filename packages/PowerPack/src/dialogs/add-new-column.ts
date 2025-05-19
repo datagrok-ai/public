@@ -61,6 +61,14 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   ['num_list']: [DG.TYPE.OBJECT],
 };
 
+const TYPED_LISTS: {[key: string]: string[]} = {
+  [DG.TYPE.COLUMN_LIST]: [DG.TYPE.COLUMN],
+  [DG.TYPE.DATA_FRAME_LIST]: [DG.TYPE.DATA_FRAME],
+  [DG.TYPE.STRING_LIST]: [DG.TYPE.STRING],
+  ['num_list']: [DG.TYPE.QNUM, DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.NUM, DG.TYPE.BIG_INT, 'number', 'float'],
+};
+
+
 const FLOATING_POINT_TYPES = ['float', 'double'];
 const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
 const PACKAGES_TO_EXCLUDE = ['ApiTests', 'CvmTests'];
@@ -801,6 +809,10 @@ export class AddNewColumnDialog {
       if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
         if (property.propertySubType && property.propertySubType !== actualInputType && (property.propertyType === DG.TYPE.LIST && funcCall.inputs[property.name]?.length !== 0))
           return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`;
+      //check for typed lists
+      } else if (TYPED_LISTS[property.propertyType]) {
+        if (!TYPED_LISTS[property.propertyType].includes(actualInputType))
+          return `Function ${funcCall.func.name} '${property.name}' param type should be ${TYPED_LISTS[property.propertyType].join(' or ')} instead of ${actualInputType}`;
       } else {
         //check for type match
         if (property.propertyType !== actualInputType) {
