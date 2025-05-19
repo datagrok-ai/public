@@ -268,3 +268,29 @@ the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters).
    the parameter `Ec2PublicKey`.
 
 -->
+
+## Update Datagrok components
+
+You can update your Datagrok deployment without re-creating infrastructure. Before updating, we recommend backing
+up the database and persistent storage. Refer to your internal backup procedures.
+
+### How to update
+
+Use the same [deployment script](#deploy-datagrok-components) and an updated version of the
+deployment profile:
+
+1. Click **Update** > **Replace current template**, and provide the new template URL corresponding to your deployment
+  configuration.
+1. Specify new versions of image tags (see the [latest version](../releases/release-history.md)).
+1. Click **Next**, skip optional settings, and proceed to **Review**.
+1. If the stack enters a failed state (e.g., `UPDATE_ROLLBACK_IN_PROGRESS`), [check events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide) for details.
+
+:::notes
+
+- CloudFormation will not replace database or file storage during update.
+- Your platform URL, admin credentials, and uploaded files will remain unchanged.
+- If you previously customized your deployment with environment variables, they will persist unless explicitly
+  modified in parameters.
+  
+:::
+
