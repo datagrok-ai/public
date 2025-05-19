@@ -57,6 +57,7 @@ class WebSocketRedirect(BaseRedirect):
     def __init__(self, ws: websocket.WebSocket):
         super().__init__()
         self.ws = ws
+        self.notified_overflow = False
 
     def write(self, message: str):
         if self.message_count > self.max_message_count:
@@ -97,13 +98,13 @@ class AmqpRedirect(BaseRedirect):
                     self.amqp_publisher.publish({"level": "warning", 
                                                  "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                                                  "message": "Stdout overflow. Possible printing in the loop?",
-                                                 "params": {self.service_log_key: True}}, self.call_id, DatagrokFanoutType.LOG.value)
+                                                 "params": {self.service_log_key: True}}, self.call_id, DatagrokFanoutType.LOG)
                     self.notified_overflow = True
                 except Exception:
                     pass
             return 
         try:   
             self.message_count += 1
-            self.amqp_publisher.publish(self.formatMessage(message), self.call_id, DatagrokFanoutType.LOG.value)
+            self.amqp_publisher.publish(self.formatMessage(message), self.call_id, DatagrokFanoutType.LOG)
         except Exception:
-            pass                    
+            pass                  
