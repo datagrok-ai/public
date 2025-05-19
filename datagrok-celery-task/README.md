@@ -1,46 +1,54 @@
-# Datagrok python client library
+# Datagrok Python Celery Task Library
 
-This library can be used for integration with datagrok. It is a Celery task wrapper to wrap python funcitons
+This package provides a Celery task wrapper for integrating Python functions into the [Datagrok](https://datagrok.ai) platform. It enables logging, progress tracking, and seamless communication between Celery workers and Datagrok’s infrastructure.
 
-Refer to [Help](http://datagrok.ai/help) for more information.
+Refer to the [Datagrok Help](https://datagrok.ai/help/datagrok) for more information about the platform.
+
+---
 
 ## Installation
 
-To install package, use [pip](https://pypi.org/project/pip/).
+Install the package using [pip](https://pypi.org/project/pip/):
 
-```shell
+```bash
 pip install datagrok-celery-task
 ```
 
 ## Usage
 
-To use API client, import DatagrokClient to your project:
+To define tasks compatible with Datagrok, use the DatagrokTask base class and configure your Celery app with the provided Settings class.
 
 ```python
 from celery import Celery
 from datagrok_celery_task import DatagrokTask, Settings
 import logging
 
-# Init it with correct properties if celery is started not by the Datagrok infrastructure.
-# If Datagrok starts it then Settings properties will be populated from env variables.
+# Always create a Settings object. Provide properties manually only if not launched by Datagrok.
 settings = Settings(log_level=logging.DEBUG)
+
+# Create a Celery app
 app = Celery(settings.celery_name, broker=settings.broker_url)
 
-# Use DatagrokTask as base for your tasks
+# Define a simple Datagrok task
 @app.task(base=DatagrokTask)
-def test(c, **kwargs):
-    # All print statements will be sent to Datagrok platform as log messages
-    print("Got kwargs: " + kwargs.get("USER_API_KEY", "empty"))
-    print("Got data:" + str(c))
+def echo(c, **kwargs):
+    print("Received USER_API_KEY:", kwargs.get("USER_API_KEY", "empty"))
+    print("Received data:", c)
 
-# Add bind flag for your function to be able to control progress indication
+# Define a task that reports progress
 @app.task(bind=True, base=DatagrokTask)
-def debug_task(self: DatagrokTask, a):
-    # All print statements will be sent to Datagrok platform as log messages
-    self.update_state(meta={"percent": 10, "description": "Running something"})
+def progress_task(self: DatagrokTask, a):
+    self.update_state(meta={"percent": 10, "description": "Starting"})
     print(a)
-    return "Hello World"
+    return "Task completed"
 ```
+
+### Notes
+
+* When Datagrok manages the Celery worker, environment variables will auto-populate Settings.
+* Prins will appear in Datagrok log messages of the FuncCall. Please note, that it will work only when Celery `prefork worker pool` is used.
+* Bind task `bind=True` and use `self.update_state` to manually update platform's progress bar.
+* Tasks can return results or raise Exception.
 
 ## License
 
