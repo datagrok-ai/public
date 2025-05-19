@@ -125,6 +125,209 @@ export abstract class MSAHeaderTrack {
   ): void;
 }
 
+export class WebLogoTrack extends MSAHeaderTrack {
+  private data: Map<number, Map<string, number>> = new Map();
+  private colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default';
+  private padding: number = 2;
+  private minLetterHeight: number = 4; // Minimum letter height to be drawn
+
+  // Color maps for different amino acid properties
+  private readonly aminoAcidColors: Record<string, Record<string, string>> = {
+    // Default color scheme based on Clustal
+    'default': {
+      'A': '#80a0f0', 'R': '#f01505', 'N': '#00ff00', 'D': '#c048c0', 'C': '#f08080',
+      'Q': '#00ff00', 'E': '#c048c0', 'G': '#f09048', 'H': '#15a4a4', 'I': '#80a0f0',
+      'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
+      'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
+    },
+    // Chemistry-based color scheme
+    'chemistry': {
+      'A': '#ccff00', 'R': '#0000ff', 'N': '#00ff00', 'D': '#ff0000', 'C': '#ffff00',
+      'Q': '#00ff00', 'E': '#ff0000', 'G': '#ccff00', 'H': '#0000ff', 'I': '#ccff00',
+      'L': '#ccff00', 'K': '#0000ff', 'M': '#ccff00', 'F': '#ccff00', 'P': '#ffff00',
+      'S': '#00ff00', 'T': '#00ff00', 'W': '#ccff00', 'Y': '#00ff00', 'V': '#ccff00'
+    },
+    // Hydrophobicity scale
+    'hydrophobicity': {
+      'A': '#ad0052', 'R': '#0000ff', 'N': '#0c00f3', 'D': '#0c00f3', 'C': '#c2003d',
+      'Q': '#0c00f3', 'E': '#0c00f3', 'G': '#6a0095', 'H': '#1500ea', 'I': '#ff0000',
+      'L': '#ea0015', 'K': '#0000ff', 'M': '#b0004f', 'F': '#cb0034', 'P': '#4600b9',
+      'S': '#5e00a1', 'T': '#61009e', 'W': '#5e0093', 'Y': '#4f00b0', 'V': '#f60009'
+    }
+  };
+
+  constructor(
+    data: Map<number, Map<string, number>> = new Map(),
+    height: number = 40, // Match conservation barplot height by default
+    colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default'
+  ) {
+    super(height, 40); // Min height also set to 40px to match conservation track
+    this.data = data;
+    this.colorScheme = colorScheme;
+    this.visible = data.size > 0;
+  }
+
+  /**
+   * Update the WebLogo data
+   */
+  updateData(data: Map<number, Map<string, number>>): void {
+    this.data = data;
+    this.visible = data.size > 0;
+  }
+
+  /**
+   * Set color scheme
+   */
+  setColorScheme(scheme: 'hydrophobicity' | 'chemistry' | 'default'): void {
+    this.colorScheme = scheme;
+  }
+
+  /**
+   * Draw the WebLogo track
+   */
+  draw(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    windowStart: number,
+    positionWidth: number,
+    totalPositions: number,
+    currentPosition: number
+  ): void {
+    if (!this.ctx || !this.visible || this.data.size === 0) return;
+
+    const visiblePositionsN = Math.floor(width / positionWidth);
+    const logoHeight = height - this.padding * 2;
+    const titleHeight = 12;
+    const effectiveLogoHeight = logoHeight - titleHeight - 2;
+
+    // Draw title
+    this.ctx.fillStyle = '#333333';
+    this.ctx.font = 'bold 10px sans-serif';
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'top';
+    // this.ctx.fillText('WebLogo', x + 5, y + this.padding);
+
+    // Draw WebLogo columns
+    for (let i = 0; i < visiblePositionsN; i++) {
+      const position = windowStart + i - 1; // Subtract 1 to convert to 0-based index
+      if (position < 0 || position >= totalPositions) continue;
+
+      const residueFreqs = this.data.get(position);
+      if (!residueFreqs || residueFreqs.size === 0) continue;
+
+      const posX = x + (i * positionWidth);
+      const cellWidth = positionWidth - this.padding;
+      const columnY = y + titleHeight + this.padding;
+
+      // Highlight current selected position
+      if (windowStart + i === currentPosition) {
+        this.ctx.fillStyle = 'rgba(60, 177, 115, 0.1)';
+        this.ctx.fillRect(posX, y, positionWidth, height);
+      }
+
+      // Draw background for the column
+      this.ctx.fillStyle = 'rgba(240, 240, 240, 0.5)';
+      this.ctx.fillRect(
+        posX + this.padding / 2,
+        columnY,
+        cellWidth,
+        effectiveLogoHeight
+      );
+
+      // Sort residues by frequency (highest to lowest)
+      const sortedResidues = Array.from(residueFreqs.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+      // Draw each residue letter proportional to its frequency
+      // But ensure all columns have the same total height
+      let currentY = columnY;
+
+      for (const [residue, freq] of sortedResidues) {
+        // Calculate letter height proportional to frequency
+        const letterHeight = Math.max(this.minLetterHeight, Math.floor(freq * effectiveLogoHeight));
+
+        // Skip very small letters
+        if (letterHeight < this.minLetterHeight) continue;
+
+        // Draw the letter
+        this.drawLetter(
+          residue,
+          posX + this.padding / 2,
+          currentY,
+          cellWidth,
+          letterHeight
+        );
+
+        // Move current Y position down for next letter
+        currentY += letterHeight;
+
+        // Stop if we've reached the bottom of the column
+        if (currentY >= columnY + effectiveLogoHeight) break;
+      }
+
+      // Draw column border
+      this.ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(
+        posX + this.padding / 2,
+        columnY,
+        cellWidth,
+        effectiveLogoHeight
+      );
+    }
+  }
+
+  /**
+   * Draw a letter in the WebLogo
+   */
+  private drawLetter(
+    letter: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): void {
+    if (!this.ctx) return;
+
+    // Get color for this amino acid
+    const colorMap = this.aminoAcidColors[this.colorScheme] || this.aminoAcidColors.default;
+    const color = colorMap[letter] || '#888888'; // Default gray for unknown residues
+
+    // Fill background with amino acid color
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(x, y, width, height);
+
+    // Draw letter
+    this.ctx.fillStyle = this.getContrastColor(color);
+
+    // Adjust font size based on letter box size
+    const fontSize = Math.min(height * 0.8, width * 0.8);
+    if (fontSize >= 7) { // Only draw text if it will be readable
+      this.ctx.font = `bold ${fontSize}px sans-serif`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(letter, x + width / 2, y + height / 2);
+    }
+  }
+
+  /**
+   * Calculate a contrasting text color (black or white) based on background color
+   */
+  private getContrastColor(hexColor: string): string {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+
+    // Calculate perceived brightness (YIQ formula)
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+    // Return black or white based on brightness
+    return (yiq >= 128) ? 'black' : 'white';
+  }
+}
 /**
  * Track for displaying conservation bars
  */
@@ -486,16 +689,22 @@ export class MSAScrollingHeader {
       this.tracks.forEach(track => track.setVisible(true));
     } else {
       // We don't have enough space, need to prioritize
-      // For now, use a simple strategy: display tracks in order until we run out of space
+      // Use the order of tracks in the map for priority
+      // (Last added tracks get higher priority)
 
       // First pass: hide all tracks
       this.tracks.forEach(track => track.setVisible(false));
 
-      // Second pass: show tracks until we run out of space
+      // Second pass: show tracks in reverse order until we run out of space
+      // This ensures that tracks added later (higher priority in our implementation)
+      // remain visible longer when space is constrained
       let remainingHeight = availableHeight;
       let isFirstTrack = true;
 
-      for (const track of this.tracks.values()) {
+      // Convert to array, reverse it (to start with highest priority), and then iterate
+      const tracksArray = Array.from(this.tracks.entries()).reverse();
+
+      for (const [id, track] of tracksArray) {
         const trackHeight = track.getMinHeight();
         const spaceNeeded = isFirstTrack ? trackHeight : trackHeight + this.trackGap;
 

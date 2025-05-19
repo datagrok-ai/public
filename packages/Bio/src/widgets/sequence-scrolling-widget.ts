@@ -4,13 +4,70 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import { ConservationTrack, MSAHeaderTrack, MSAScrollingHeader } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
+import { ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack } from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import { MonomerPlacer } from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import { ALPHABET, TAGS as bioTAGS, SplitterFunc } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import { _package } from '../package';
 import { ISeqSplitted } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 
+/**
+ * Calculate WebLogo data for each position in a multiple sequence alignment
+ * @param {string[]} sequences - Array of sequence strings
+ * @param {SplitterFunc} splitter - Function to split sequences into monomers
+ * @return {Map<number, Map<string, number>>} Map of position to monomer frequencies
+ */
+function calculateWebLogoData(sequences: string[], splitter: SplitterFunc): Map<number, Map<string, number>> {
+  if (!sequences || sequences.length <= 1) return new Map();
+
+  // Split sequences using the specialized splitter function
+  const splitSequences: ISeqSplitted[] = sequences
+    .map((seq) => splitter(seq))
+    .filter(Boolean);
+
+  if (splitSequences.length <= 1) return new Map();
+
+  // Find the maximum sequence length
+  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
+
+  // Create a map to store residue frequencies at each position
+  const webLogoData: Map<number, Map<string, number>> = new Map();
+
+  // For each position in the alignment
+  for (let pos = 0; pos < maxLen; pos++) {
+    const residueCounts: Map<string, number> = new Map();
+    let totalResidues = 0;
+
+    // Count the residues at this position
+    for (const seq of splitSequences) {
+      if (pos < seq.length) {
+        // Use getCanonical method to get standardized residue representation
+        const residue = seq.getCanonical(pos);
+
+        // Skip gaps - using the interface's method to check
+        if (residue && !seq.isGap(pos)) {
+          residueCounts.set(residue, (residueCounts.get(residue) || 0) + 1);
+          totalResidues++;
+        }
+      }
+    }
+
+    if (totalResidues === 0) {
+      webLogoData.set(pos, new Map()); // Empty map for positions with no data
+      continue;
+    }
+
+    // Convert counts to frequencies
+    const residueFreqs: Map<string, number> = new Map();
+    for (const [residue, count] of residueCounts.entries()) {
+      residueFreqs.set(residue, count / totalResidues);
+    }
+
+    webLogoData.set(pos, residueFreqs);
+  }
+
+  return webLogoData;
+}
 /**
  * Calculate conservation scores for each position in a multiple sequence alignment
  * @param {string[]} sequences - Array of sequence strings
@@ -117,33 +174,60 @@ export function handleSequenceHeaderRendering() {
 
         // Calculate conservation data if we have multiple sequences
         let conservationData: number[] = [];
-        if (cats.length > 1) conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
+        let webLogoData: Map<number, Map<string, number>> = new Map();
+
+        if (cats.length > 1) {
+          // Calculate both conservation and WebLogo data
+          conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
+          webLogoData = calculateWebLogoData(cats.filter(Boolean), sh.splitter);
+        }
 
         // Determine initial header height based on available data
         const hasConservation = conservationData.length > 0;
-        const initialHeaderHeight = hasConservation ? 100 : 38; // Just enough for dotted cells + slider
+        const hasWebLogo = webLogoData.size > 0;
 
+        // Define track heights and layout parameters
+        const dottedCellsHeight = 38; // Fixed height for dotted cells + slider
+        const trackGap = 4; // Gap between tracks
+        const conservationHeight = 40; // Standard height for conservation track
+        const webLogoHeight = 40; // Match conservation height for WebLogo track
 
+        // Calculate total required height with all tracks
+        const initialHeaderHeight = dottedCellsHeight +
+          (hasConservation ? conservationHeight + trackGap : 0) +
+          (hasWebLogo ? webLogoHeight + trackGap : 0);
 
-        // Initialize tracks outside the header
-        const tracks: {id:string, track:MSAHeaderTrack}[] = [];
+        // Initialize tracks
+        const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
-        if (conservationData.length > 0) {
-          const conservationTrack = new ConservationTrack(
-            conservationData,
-            40, // height
+        // Set track priorities - higher number = higher priority to keep visible
+        // This ensures WebLogo is hidden before conservation when space is limited
+        if (hasWebLogo) {
+          const webLogoTrack = new WebLogoTrack(
+            webLogoData,
+            webLogoHeight,
             'default' // color scheme
           );
-          tracks.push({id: 'conservation', track: conservationTrack});
+          tracks.push({ id: 'weblogo', track: webLogoTrack, priority: 2 }); // Higher
         }
+
+        if (hasConservation) {
+          const conservationTrack = new ConservationTrack(
+            conservationData,
+            conservationHeight,
+            'default' // color scheme
+          );
+          tracks.push({ id: 'conservation', track: conservationTrack, priority: 1 }); // lower
+        }
+
+        // Sort tracks by priority (highest first) to ensure proper display threshold behavior
+        tracks.sort((a, b) => b.priority - a.priority);
 
         // Create MSAScrollingHeader with initial height
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
           headerHeight: initialHeaderHeight,
           totalPositions: maxSeqLen + 1,
-          // conservationData: conservationData,
-          // conservationHeight: 40,
           onPositionChange: (scrollerCur, scrollerRange) => {
             setTimeout(() => {
               const start = getStart();
@@ -161,10 +245,11 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
+
+        // Add tracks to scroller based on priority order
         tracks.forEach(({ id, track }) => {
           scroller.addTrack(id, track);
         });
-
 
         // Set initial header height in grid
         grid.props.colHeaderHeight = initialHeaderHeight;
