@@ -123,17 +123,17 @@ export class MultiCurveViewer extends DG.JsViewer {
     }
 
     this.data = new FitChartData();
-    const grid = this.isInTrellis() ? grok.shell.tableView(this.dataFrame.name).grid : this.tableView?.grid!;
+    //const _grid = this.isInTrellis() ? grok.shell.tableView(this.dataFrame.name).grid : this.tableView?.grid!;
     const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
     const chartOptions: IFitChartOptions[] = [];
     for (const colName of this.curvesColumnNames!) {
       const series = [];
       for (const i of new Set(this.rows)) {
-        const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
-        if (gridCell.cell.value === '')
+        const tableCell = this.dataFrame.cell(i, colName);
+        if (!tableCell || !tableCell.value)
           continue;
-        const cellCurves = getOrCreateParsedChartData(gridCell);
-        cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+        const cellCurves = getOrCreateParsedChartData(tableCell);
+        cellCurves.series?.forEach((series) => series.columnName = tableCell.column.name);
         const currentChartOptions = cellCurves.chartOptions;
         if (currentChartOptions !== undefined && currentChartOptions !== null)
           chartOptions[chartOptions.length] = currentChartOptions;

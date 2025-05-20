@@ -153,8 +153,8 @@ export function dataToCurvesUI() {
     };
 
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
-      const params = {df: resDF, colName: seriesColumn.name, propName: statName, seriesName: 'series 0', seriesNumber: 0, newColName: alias};
-      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
+      const params = {table: resDF, colName: seriesColumn.name, propName: statName, seriesNumber: 0};
+      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false}).getOutputParamValue().name = alias;
     });
     if (actualStatNames['interceptX'])
       resDF.col(actualStatNames['interceptX']) && (resDF.col(actualStatNames['interceptX'])!.meta.format = 'scientific');

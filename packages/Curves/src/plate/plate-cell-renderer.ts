@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {PlateWidget} from "./plate-widget";
-import {GridColumn, x} from "datagrok-api/dg";
+import {PlateWidget} from './plate-widget';
+import {GridColumn, x} from 'datagrok-api/dg';
 
 export class PlateCellHandler extends DG.ObjectHandler {
   get type(): string { return 'Plate'; }
@@ -24,9 +24,10 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'Plate'; }
   get cellType(): string { return 'Plate'; }
 
-  getDefaultSize(gridColumn: GridColumn) { return { width: 120, height: 80 }  }
+  getDefaultSize(_gridColumn: GridColumn) { return {width: 240, height: 160}; }
 
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+  // eslint-disable-next-line max-len
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle) {
     if (gridCell.value == null) {
       g.fillStyle = 'white';
       g.fillRect(x, y, w, h);
@@ -40,7 +41,7 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
     this.plate.grid.render(g, new DG.Rect(x, y, w, h).cutTop(Math.min(h / 20, 5)).cutRight(Math.min(w / 20, 5)));
   }
 
-  onClick(gridCell: DG.GridCell, e: MouseEvent) {
+  onClick(gridCell: DG.GridCell, _e: MouseEvent) {
     grok.shell.o = PlateWidget.detailedView(gridCell.value).root;
   }
 }

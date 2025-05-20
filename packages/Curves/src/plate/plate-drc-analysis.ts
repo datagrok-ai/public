@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { AnalysisOptions } from "./plate-widget";
 
 import * as DG from 'datagrok-api/dg';
@@ -139,8 +140,9 @@ export class PlateDrcAnalysis {
 
     // add statistics columns
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
-      const params = {df: df, colName: curveCol.name, propName: statName, seriesName: 'series 0', seriesNumber: 0, newColName: alias};
-      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
+      const params = {table: df, colName: curveCol.name, propName: statName, seriesNumber: 0};
+      const col: DG.Column = ( DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false})).getOutputParamValue();
+      col.name = alias;
     });
     if (actualStatNames['interceptX'])
       df.col(actualStatNames['interceptX']) && (df.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
