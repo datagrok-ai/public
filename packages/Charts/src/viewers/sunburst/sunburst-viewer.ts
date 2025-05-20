@@ -154,8 +154,8 @@ export class SunburstViewer extends EChartViewer {
       }
 
       const image = await TreeUtils.getMoleculeImage(name, 150, 100);
-      if (image) {
-        tooltipDiv.appendChild(ui.divText(`${value}\n`));
+      tooltipDiv.appendChild(ui.divText(`${value}\n`));
+      if (name) {
         tooltipDiv.appendChild(image);
         return;
       }
