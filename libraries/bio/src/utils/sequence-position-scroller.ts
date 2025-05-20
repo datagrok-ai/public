@@ -77,6 +77,10 @@ export abstract class MSAHeaderTrack {
   init(ctx: CanvasRenderingContext2D): void {
     this.ctx = ctx;
   }
+
+  public getMonomerAt(x: number, y: number, position: number): string | null {
+    return null; // Base implementation returns null, override in subclasses
+  }
   public enableTooltip(enabled: boolean): void {
     this.tooltipEnabled = enabled;
   }
@@ -320,6 +324,49 @@ export class WebLogoTrack extends MSAHeaderTrack {
    */
   setBiotype(biotype: string): void {
     this.biotype = biotype;
+  }
+  public getMonomerAt(x: number, y: number, position: number): string | null {
+    if (!this.ctx || !this.visible || this.data.size === 0) return null;
+
+    // Get residue frequencies for this position
+    const residueFreqs = this.data.get(position);
+    if (!residueFreqs || residueFreqs.size === 0) return null;
+
+    // Calculate column dimensions
+    const titleHeight = this.titleHeight + 2; // Account for title space
+
+    // Only handle clicks in the WebLogo area (below title)
+    if (y < titleHeight) return null;
+
+    // Sort residues by frequency (highest to lowest) - same order as they're drawn
+    const sortedResidues = Array.from(residueFreqs.entries())
+      .sort((a, b) => b[1] - a[1]);
+
+    // Convert y position to relative position within the WebLogo column
+    const relativeY = y - titleHeight;
+
+    // Calculate total frequency
+    const totalFreq = sortedResidues.reduce((sum, [_, freq]) => sum + freq, 0);
+
+    // Track current y position
+    let currentY = 0;
+    const columnHeight = this.height - titleHeight;
+
+    // Find which letter was clicked
+    for (const [residue, freq] of sortedResidues) {
+      // Calculate letter height proportional to frequency
+      const letterHeight = freq * columnHeight / totalFreq;
+
+      // Check if click is within this letter's bounds
+      if (relativeY >= currentY && relativeY < currentY + letterHeight)
+        return residue;
+
+
+      // Move current Y position down for next letter
+      currentY += letterHeight;
+    }
+
+    return null; // No match found
   }
 
   /**
@@ -748,7 +795,23 @@ export class MSAScrollingHeader {
   private currentHoverPosition: number = -1;
   private currentHoverTrack: string | null = null;
 
+  private dataFrame: DG.DataFrame | null = null;
+  private seqHandler: any = null; // Replace with proper type
+  private seqColumn: DG.Column<string> | null = null;
+  private onSelectionCallback: ((position: number, monomer: string) => void) | null = null;
 
+
+  public setSelectionData(
+    dataFrame: DG.DataFrame,
+    seqColumn: DG.Column<string>,
+    seqHandler: any, // Replace with proper type
+    callback?: (position: number, monomer: string) => void
+  ): void {
+    this.dataFrame = dataFrame;
+    this.seqColumn = seqColumn;
+    this.seqHandler = seqHandler;
+    this.onSelectionCallback = callback || null;
+  }
   public setupTooltipHandling(): void {
     this.eventElement.addEventListener('mousemove', this.handleTooltipMouseMove.bind(this));
     this.eventElement.addEventListener('mouseleave', this.handleTooltipMouseLeave.bind(this));
@@ -869,6 +932,84 @@ export class MSAScrollingHeader {
     this.init();
   }
 
+
+  private handleSelectionClick(e: MouseEvent): void {
+    if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
+
+    const {x, y} = this.getCoords(e);
+
+    // Identify the clicked position
+    const cellWidth = this.config.positionWidth;
+    const clickedCellIndex = Math.floor(x / cellWidth);
+    const windowStart = this.config.windowStartPosition;
+    const clickedPosition = windowStart + clickedCellIndex - 1; // Convert to 0-based
+
+    if (clickedPosition < 0 || clickedPosition >= this.config.totalPositions) return;
+
+    // Determine which track was clicked
+    const sliderTop = this.config.headerHeight - this.sliderHeight;
+    const dottedCellsTop = sliderTop - this.dottedCellHeight;
+
+    // Skip if in dotted cells area or slider
+    if (y >= dottedCellsTop) return;
+
+    // Find which track was clicked and determine Y position within that track
+    let trackY = 0;
+    let clickedTrackId: string | null = null;
+    let trackRelativeY = 0;
+
+    for (const [id, track] of this.tracks.entries()) {
+      if (!track.isVisible()) continue;
+
+      const trackHeight = track.getHeight();
+      if (y >= trackY && y < trackY + trackHeight) {
+        clickedTrackId = id;
+        trackRelativeY = y - trackY;
+        break;
+      }
+
+      trackY += trackHeight + this.trackGap;
+    }
+
+    // If we found a track, check if a monomer was clicked
+    if (clickedTrackId) {
+      const track = this.tracks.get(clickedTrackId);
+      if (track) {
+        const monomer = track.getMonomerAt(x, trackRelativeY, clickedPosition);
+
+        if (monomer) {
+          // If custom callback is provided, use it
+          if (this.onSelectionCallback) {
+            this.onSelectionCallback(clickedPosition, monomer);
+            return;
+          }
+
+          // Otherwise perform default selection
+          this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
+        }
+      }
+    }
+  }
+  private selectRowsWithMonomerAtPosition(position: number, monomer: string): void {
+    if (!this.dataFrame || !this.seqHandler) return;
+
+    try {
+      // Create a BitSet for rows that have the monomer at the position
+      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
+        const seqSplitted = this.seqHandler.getSplitted(rowI);
+        if (!seqSplitted || position >= seqSplitted.length) return false;
+
+        const residue = seqSplitted.getCanonical(position);
+        return residue === monomer;
+      });
+
+      // Apply selection to dataframe
+      this.dataFrame.selection.init((i) => selBS.get(i));
+    } catch (error) {
+      console.error('Error selecting rows:', error);
+    }
+  }
+
   /**
    * Set up event listeners
    */
@@ -891,6 +1032,8 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
     this.eventElement.addEventListener('click', this.handleClick.bind(this));
     this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
+    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
+
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
   /**

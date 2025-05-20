@@ -265,6 +265,8 @@ export function handleSequenceHeaderRendering() {
             scroller.addTrack(id, track);
           });
 
+          scroller.setSelectionData(df, seqCol, sh);
+
           // Set initial header height in grid
           grid.props.colHeaderHeight = initialHeaderHeight;
 
