@@ -1817,7 +1817,7 @@ export function addScaffoldTree(): void {
 
 //name: Matched Molecular Pairs Analysis
 //tags: viewer
-//meta.disableInViewerGallery: true
+//meta.showInGallery: false
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
