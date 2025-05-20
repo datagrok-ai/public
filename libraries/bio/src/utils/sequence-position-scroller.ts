@@ -59,6 +59,10 @@ export abstract class MSAHeaderTrack {
   protected title: string = '';
   protected titleHeight: number = 12; // Space for the title
 
+  protected tooltipEnabled: boolean = false;
+  protected tooltipContent: ((position: number, data: any) => HTMLElement) | null = null;
+
+
   constructor(height: number = 40, minHeight: number = 30, title: string = '') {
     this.height = height;
     this.defaultHeight = height; // Store the original height as default
@@ -66,12 +70,38 @@ export abstract class MSAHeaderTrack {
     this.title = title;
   }
 
+
   /**
    * Initialize the track with a canvas context
    */
   init(ctx: CanvasRenderingContext2D): void {
     this.ctx = ctx;
   }
+  public enableTooltip(enabled: boolean): void {
+    this.tooltipEnabled = enabled;
+  }
+  public setTooltipContentGenerator(
+    contentGenerator: (position: number, data: any) => HTMLElement
+  ): void {
+    this.tooltipContent = contentGenerator;
+  }
+  public getTooltipContent(position: number): HTMLElement | null {
+    if (!this.tooltipEnabled || !this.tooltipContent) return null;
+
+    // Get data specific to this position for the track
+    const positionData = this.getPositionData(position);
+
+    // Generate tooltip content
+    return this.tooltipContent(position, positionData);
+  }
+  /**
+   * Get data for a specific position (to be implemented by subclasses)
+   * Default implementation returns null
+   */
+  protected getPositionData(position: number): any {
+    return null;
+  }
+
 
   /**
    * Set track visibility
@@ -198,6 +228,84 @@ export class WebLogoTrack extends MSAHeaderTrack {
     super(height, 45, title);
     this.data = data;
     this.visible = data.size > 0;
+  }
+  protected getPositionData(position: number): Map<string, number> | null {
+    return this.data.get(position) || null;
+  }
+  public setupDefaultTooltip(): void {
+    this.enableTooltip(true);
+    this.setTooltipContentGenerator((position: number, data: Map<string, number>) => {
+      // Create container with Datagrok yellow style
+      const container = ui.div([], {
+        style: {
+          color: '#4A4A49',
+          background: '#fdffe5e0',
+          border: '1px solid #E4E6CE',
+          borderRadius: '2px',
+          padding: '10px',
+          boxShadow: '0 0 5px #E4E6CE',
+          fontSize: '0.9rem',
+          backdropFilter: 'blur(5px)'
+        }
+      });
+
+      // Add position information
+      container.appendChild(ui.divText(`Position: ${position + 1}`));
+
+      if (data && data.size > 0) {
+        // Add frequency information
+        const freqDiv = ui.div([]);
+        freqDiv.appendChild(ui.divText('Residue Frequencies:', {style: {fontWeight: 'bold', marginTop: '5px'}}));
+
+        // Sort by frequency (highest first)
+        const sortedResidues = Array.from(data.entries())
+          .sort((a, b) => b[1] - a[1]);
+
+        // Create a table for frequencies
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.marginTop = '5px';
+
+        for (const [residue, freq] of sortedResidues) {
+          const row = table.insertRow();
+
+          // Residue cell
+          const residueCell = row.insertCell();
+          residueCell.textContent = residue;
+          residueCell.style.padding = '2px 5px';
+          residueCell.style.fontWeight = 'bold';
+
+          // Background color matching the WebLogo
+          const backgroundColor = this.getMonomerTextColorForBackground(residue);
+          residueCell.style.backgroundColor = backgroundColor;
+          residueCell.style.color = this.getContrastColor(backgroundColor);
+
+          // Frequency cell
+          const freqCell = row.insertCell();
+          freqCell.textContent = `${(freq * 100).toFixed(1)}%`;
+          freqCell.style.padding = '2px 5px';
+
+          // Bar visualization
+          const barCell = row.insertCell();
+          barCell.style.padding = '2px 5px';
+
+          const bar = document.createElement('div');
+          bar.style.width = `${freq * 100}%`;
+          bar.style.height = '10px';
+          bar.style.backgroundColor = backgroundColor;
+          barCell.appendChild(bar);
+        }
+
+        freqDiv.appendChild(table);
+        container.appendChild(freqDiv);
+      } else {
+        container.appendChild(ui.divText('No data available for this position', {
+          style: {fontStyle: 'italic', marginTop: '5px'}
+        }));
+      }
+
+      return container;
+    });
   }
 
   /**
@@ -636,6 +744,89 @@ export class MSAScrollingHeader {
 
   // Tracks
   private tracks: Map<string, MSAHeaderTrack> = new Map();
+
+  private currentHoverPosition: number = -1;
+  private currentHoverTrack: string | null = null;
+
+
+  public setupTooltipHandling(): void {
+    this.eventElement.addEventListener('mousemove', this.handleTooltipMouseMove.bind(this));
+    this.eventElement.addEventListener('mouseleave', this.handleTooltipMouseLeave.bind(this));
+  }
+  private handleTooltipMouseMove(e: MouseEvent): void {
+    if (!this.isValid) return;
+
+    const {x, y} = this.getCoords(e);
+
+    // Calculate the position being hovered
+    const cellWidth = this.config.positionWidth;
+    const hoveredCellIndex = Math.floor(x / cellWidth);
+    const windowStart = this.config.windowStartPosition;
+    const hoveredPosition = windowStart + hoveredCellIndex - 1; // Convert to 0-based
+
+    if (hoveredPosition < 0 || hoveredPosition >= this.config.totalPositions) {
+      this.hideTooltip();
+      return;
+    }
+
+    // Determine which track is being hovered
+    const sliderTop = this.config.headerHeight - this.sliderHeight;
+    const dottedCellsTop = sliderTop - this.dottedCellHeight;
+
+    // Skip if in dotted cells area or slider
+    if (y >= dottedCellsTop) {
+      this.hideTooltip();
+      return;
+    }
+
+    // Find which track is being hovered
+    let trackY = 0;
+    let hoveredTrackId: string | null = null;
+
+    for (const [id, track] of this.tracks.entries()) {
+      if (!track.isVisible()) continue;
+
+      const trackHeight = track.getHeight();
+      if (y >= trackY && y < trackY + trackHeight) {
+        hoveredTrackId = id;
+        break;
+      }
+
+      trackY += trackHeight + this.trackGap;
+    }
+
+    // If position or track changed, update tooltip
+    if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack) {
+      this.currentHoverPosition = hoveredPosition;
+      this.currentHoverTrack = hoveredTrackId;
+
+      if (hoveredTrackId) {
+        const track = this.tracks.get(hoveredTrackId);
+        if (track) {
+          const tooltipContent = track.getTooltipContent(hoveredPosition);
+
+          if (tooltipContent) {
+            // Show tooltip at mouse position
+            ui.tooltip.show(tooltipContent, e.clientX + 16, e.clientY + 16);
+            return;
+          }
+        }
+      }
+
+      // If we got here, hide any existing tooltip
+      this.hideTooltip();
+    }
+  }
+  private handleTooltipMouseLeave(): void {
+    this.hideTooltip();
+  }
+
+  private hideTooltip(): void {
+    this.currentHoverPosition = -1;
+    this.currentHoverTrack = null;
+    ui.tooltip.hide();
+  }
+
 
   /**
    * Constructor for the MSA Header

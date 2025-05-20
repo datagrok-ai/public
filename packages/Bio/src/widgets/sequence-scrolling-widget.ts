@@ -232,6 +232,7 @@ export function handleSequenceHeaderRendering() {
               console.log('WebLogo track: no monomerLib available, using fallback colors');
 
 
+            webLogoTrack.setupDefaultTooltip(); // Enable tooltips
             tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
           }
 
@@ -258,6 +259,7 @@ export function handleSequenceHeaderRendering() {
             },
           });
 
+          scroller.setupTooltipHandling();
           // Add tracks to scroller in the defined vertical order (top to bottom)
           tracks.forEach(({id, track}) => {
             scroller.addTrack(id, track);
