@@ -9,6 +9,7 @@ import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-mon
 import {ALPHABET, TAGS as bioTAGS, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 
 /**
@@ -133,7 +134,6 @@ export function handleSequenceHeaderRendering() {
       const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
 
       for (const seqCol of seqCols) {
-        // TODO: Extend this to non-canonical monomers and non msa
         const sh = _package.seqHelper.getSeqHandler(seqCol);
         if (!sh)
           continue;
@@ -185,108 +185,136 @@ export function handleSequenceHeaderRendering() {
         const hasConservation = conservationData.length > 0;
         const hasWebLogo = webLogoData.size > 0;
 
-        // Define explicit track heights, layout parameters, and thresholds
-        // IMPORTANT: Define these as constants to make them clear and configurable
+        // Define track heights, layout parameters, and thresholds
         const dottedCellsHeight = 38; // Fixed height for dotted cells + slider
         const trackGap = 4; // Gap between tracks
 
+        // Default track heights with title space included
         const DEFAULT_WEBLOGO_HEIGHT = 45; // Increased from 40 to accommodate title
         const DEFAULT_CONSERVATION_HEIGHT = 45; // Increased from 40 to accommodate title
 
+        // Calculate total required height with all tracks
+        const initialHeaderHeight = dottedCellsHeight +
+          (hasWebLogo ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
+          (hasConservation ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
 
+        // Create tracks in the correct vertical order (Conservation on top, WebLogo in middle)
         const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
-        if (hasConservation) {
-          const conservationTrack = new ConservationTrack(
-            conservationData,
-            DEFAULT_CONSERVATION_HEIGHT,
-            'default', // color scheme
-            'Conservation' // Track title
-          );
-          tracks.push({id: 'conservation', track: conservationTrack, priority: 1}); // Lower visibility priority (1)
-        }
-        if (hasWebLogo) {
-          const webLogoTrack = new WebLogoTrack(
-            webLogoData,
-            DEFAULT_WEBLOGO_HEIGHT,
-            'default', // color scheme
-            'WebLogo' // Track title
-          );
-          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
-        }
+        // Function to initialize headers with monomerLib
+        const initializeHeaders = (monomerLib: any = null) => {
+          // 1. Conservation track first (top position)
+          if (hasConservation) {
+            const conservationTrack = new ConservationTrack(
+              conservationData,
+              DEFAULT_CONSERVATION_HEIGHT,
+              'default', // color scheme
+              'Conservation' // Track title
+            );
+            tracks.push({id: 'conservation', track: conservationTrack, priority: 1}); // Lower visibility priority (1)
+          }
 
-        const initialHeaderHeight = dottedCellsHeight +
-  (hasWebLogo ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
-  (hasConservation ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
+          // 2. WebLogo track second (middle position)
+          if (hasWebLogo) {
+            const webLogoTrack = new WebLogoTrack(
+              webLogoData,
+              DEFAULT_WEBLOGO_HEIGHT,
+              'default', // This parameter is ignored in our simplified implementation
+              'WebLogo' // Track title
+            );
+
+            // Set monomerLib for color lookup if available
+            if (monomerLib) {
+              webLogoTrack.setMonomerLib(monomerLib);
+              webLogoTrack.setBiotype(sh.defaultBiotype || 'PEPTIDE');
+              console.log(`WebLogo track: using monomerLib with biotype ${sh.defaultBiotype || 'PEPTIDE'}`);
+            } else
+              console.log('WebLogo track: no monomerLib available, using fallback colors');
 
 
-        const scroller = new MSAScrollingHeader({
-          canvas: grid.overlay,
-          headerHeight: initialHeaderHeight,
-          totalPositions: maxSeqLen + 1,
-          onPositionChange: (scrollerCur, scrollerRange) => {
-            setTimeout(() => {
-              const start = getStart();
-              const cur = getCurrent();
-              if (start !== scrollerRange.start)
-                seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-              if (cur !== scrollerCur) {
-                seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
-                if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
-                  positionStatsViewerAddedOnce = true;
-                  const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
-                  grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
+          }
+
+          // Create MSAScrollingHeader with initial height
+          const scroller = new MSAScrollingHeader({
+            canvas: grid.overlay,
+            headerHeight: initialHeaderHeight,
+            totalPositions: maxSeqLen + 1,
+            onPositionChange: (scrollerCur, scrollerRange) => {
+              setTimeout(() => {
+                const start = getStart();
+                const cur = getCurrent();
+                if (start !== scrollerRange.start)
+                  seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
+                if (cur !== scrollerCur) {
+                  seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
+                  if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
+                    positionStatsViewerAddedOnce = true;
+                    const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                    grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+                  }
                 }
-              }
-            });
-          },
-        });
+              });
+            },
+          });
 
-        // Add tracks to scroller based on priority order (already sorted)
-        tracks.forEach(({id, track}) => {
-          scroller.addTrack(id, track);
-        });
+          // Add tracks to scroller in the defined vertical order (top to bottom)
+          tracks.forEach(({id, track}) => {
+            scroller.addTrack(id, track);
+          });
 
-        // Set initial header height in grid
-        grid.props.colHeaderHeight = initialHeaderHeight;
+          // Set initial header height in grid
+          grid.props.colHeaderHeight = initialHeaderHeight;
 
-        // Set column width
-        setTimeout(() => {
-          if (grid.isDetached) return;
-          gCol.width = 400;
-        }, 300);
+          // Set column width
+          setTimeout(() => {
+            if (grid.isDetached) return;
+            gCol.width = 400;
+          }, 300);
 
-        // Handle cell rendering
-        grid.sub(grid.onCellRender.subscribe((e) => {
-          const cell = e.cell;
-          if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
-            return;
+          // Handle cell rendering
+          grid.sub(grid.onCellRender.subscribe((e) => {
+            const cell = e.cell;
+            if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
+              return;
 
-          const cellBounds = e.bounds;
-          if (!cellBounds) return;
+            const cellBounds = e.bounds;
+            if (!cellBounds) return;
 
-          // Always set header height based on available space
-          scroller.headerHeight = cellBounds.height;
+            // Always set header height based on available space
+            scroller.headerHeight = cellBounds.height;
 
-          // Set position width based on font size
-          const font = getFontSize();
-          scroller.positionWidth = font + (isMSA ? 8 : 0);
+            // Set position width based on font size
+            const font = getFontSize();
+            scroller.positionWidth = font + (isMSA ? 8 : 0);
 
-          // Get current state
-          const start = getStart();
-          const startPadding = isMSA ? 0 : 4;
+            // Get current state
+            const start = getStart();
+            const startPadding = isMSA ? 0 : 4;
 
-          // Draw the header
-          scroller.draw(
-            cellBounds.x + startPadding,
-            cellBounds.y,
-            cellBounds.width - startPadding,
-            cellBounds.height,
-            getCurrent(),
-            start,
-            e
-          );
-        }));
+            // Draw the header
+            scroller.draw(
+              cellBounds.x + startPadding,
+              cellBounds.y,
+              cellBounds.width - startPadding,
+              cellBounds.height,
+              getCurrent(),
+              start,
+              e
+            );
+          }));
+        };
+
+        // Get monomerLib helper to access the monomer library
+        getMonomerLibHelper()
+          .then((libHelper) => {
+            const monomerLib = libHelper.getMonomerLib();
+            initializeHeaders(monomerLib);
+          })
+          .catch((error) => {
+            console.error('Error loading monomerLib:', error);
+            initializeHeaders(); // Initialize with fallback colors
+          });
       }
     }, 1000);
   };

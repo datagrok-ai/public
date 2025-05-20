@@ -175,45 +175,43 @@ export abstract class MSAHeaderTrack {
 
 export class WebLogoTrack extends MSAHeaderTrack {
   private data: Map<number, Map<string, number>> = new Map();
-  private colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default';
   private padding: number = 2;
   private minLetterHeight: number = 4; // Minimum letter height to be drawn
+  private monomerLib: any = null;
+  private biotype: string = 'PEPTIDE';
+  private separatorWidth: number = 1; // Width of separators between letters
 
-  // Color maps for different amino acid properties
-  private readonly aminoAcidColors: Record<string, Record<string, string>> = {
-    // Default color scheme based on Clustal
-    'default': {
-      'A': '#80a0f0', 'R': '#f01505', 'N': '#00ff00', 'D': '#c048c0', 'C': '#f08080',
-      'Q': '#00ff00', 'E': '#c048c0', 'G': '#f09048', 'H': '#15a4a4', 'I': '#80a0f0',
-      'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
-      'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
-    },
-    // Chemistry-based color scheme
-    'chemistry': {
-      'A': '#ccff00', 'R': '#0000ff', 'N': '#00ff00', 'D': '#ff0000', 'C': '#ffff00',
-      'Q': '#00ff00', 'E': '#ff0000', 'G': '#ccff00', 'H': '#0000ff', 'I': '#ccff00',
-      'L': '#ccff00', 'K': '#0000ff', 'M': '#ccff00', 'F': '#ccff00', 'P': '#ffff00',
-      'S': '#00ff00', 'T': '#00ff00', 'W': '#ccff00', 'Y': '#00ff00', 'V': '#ccff00'
-    },
-    // Hydrophobicity scale
-    'hydrophobicity': {
-      'A': '#ad0052', 'R': '#0000ff', 'N': '#0c00f3', 'D': '#0c00f3', 'C': '#c2003d',
-      'Q': '#0c00f3', 'E': '#0c00f3', 'G': '#6a0095', 'H': '#1500ea', 'I': '#ff0000',
-      'L': '#ea0015', 'K': '#0000ff', 'M': '#b0004f', 'F': '#cb0034', 'P': '#4600b9',
-      'S': '#5e00a1', 'T': '#61009e', 'W': '#5e0093', 'Y': '#4f00b0', 'V': '#f60009'
-    }
+  // Fallback color scheme if monomerLib doesn't work
+  private readonly aminoAcidColors: Record<string, string> = {
+    'A': '#80a0f0', 'R': '#f01505', 'N': '#00ff00', 'D': '#c048c0', 'C': '#f08080',
+    'Q': '#00ff00', 'E': '#c048c0', 'G': '#f09048', 'H': '#15a4a4', 'I': '#80a0f0',
+    'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
+    'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
   };
 
   constructor(
     data: Map<number, Map<string, number>> = new Map(),
-    height: number = 45, // Increased default height to accommodate title
-    colorScheme: 'hydrophobicity' | 'chemistry' | 'default' = 'default',
+    height: number = 45,
+    _colorScheme: string = '', // Ignored parameter, kept for compatibility
     title: string = 'WebLogo'
   ) {
-    super(height, 45, title); // Min height also set to 45px to include space for title
+    super(height, 45, title);
     this.data = data;
-    this.colorScheme = colorScheme;
     this.visible = data.size > 0;
+  }
+
+  /**
+   * Set the monomer library to use for colors
+   */
+  setMonomerLib(monomerLib: any): void {
+    this.monomerLib = monomerLib;
+  }
+
+  /**
+   * Set the biotype to use for color lookups
+   */
+  setBiotype(biotype: string): void {
+    this.biotype = biotype;
   }
 
   /**
@@ -222,13 +220,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
   updateData(data: Map<number, Map<string, number>>): void {
     this.data = data;
     this.visible = data.size > 0;
-  }
-
-  /**
-   * Set color scheme
-   */
-  setColorScheme(scheme: 'hydrophobicity' | 'chemistry' | 'default'): void {
-    this.colorScheme = scheme;
   }
 
   /**
@@ -284,31 +275,52 @@ export class WebLogoTrack extends MSAHeaderTrack {
       const sortedResidues = Array.from(residueFreqs.entries())
         .sort((a, b) => b[1] - a[1]);
 
+      // Calculate total frequency sum for proper scaling
+      const totalFreq = sortedResidues.reduce((sum, [_, freq]) => sum + freq, 0);
+
+      // Scale factor to ensure all letters fit within the column height
+      const scaleFactor = Math.min(1, effectiveLogoHeight / (totalFreq * effectiveLogoHeight));
+
       // Draw each residue letter proportional to its frequency
-      // But ensure all columns have the same total height
       let currentY = columnY;
+      const columnBottom = columnY + effectiveLogoHeight;
 
       for (const [residue, freq] of sortedResidues) {
-        // Calculate letter height proportional to frequency
-        const letterHeight = Math.max(this.minLetterHeight, Math.floor(freq * effectiveLogoHeight));
+        // Calculate letter height proportional to frequency, scaled to fit
+        const rawLetterHeight = freq * effectiveLogoHeight * scaleFactor;
+        const letterHeight = Math.max(this.minLetterHeight, Math.floor(rawLetterHeight));
 
         // Skip very small letters
         if (letterHeight < this.minLetterHeight) continue;
 
-        // Draw the letter
-        this.drawLetter(
-          residue,
-          posX + this.padding / 2,
-          currentY,
-          cellWidth,
-          letterHeight
-        );
+        // Ensure we don't exceed the column height
+        if (currentY + letterHeight > columnBottom) {
+          // If this letter would exceed the column height, adjust it to fit
+          const remainingHeight = columnBottom - currentY;
+          if (remainingHeight < this.minLetterHeight) break; // Skip if not enough space
+
+          // Draw the letter with adjusted height
+          this.drawLetter(
+            residue,
+            posX + this.padding / 2,
+            currentY,
+            cellWidth,
+            remainingHeight
+          );
+          break; // No more space for additional letters
+        } else {
+          // Draw the letter with normal height
+          this.drawLetter(
+            residue,
+            posX + this.padding / 2,
+            currentY,
+            cellWidth,
+            letterHeight
+          );
+        }
 
         // Move current Y position down for next letter
         currentY += letterHeight;
-
-        // Stop if we've reached the bottom of the column
-        if (currentY >= columnY + effectiveLogoHeight) break;
       }
 
       // Draw column border
@@ -324,7 +336,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
   /**
-   * Draw a letter in the WebLogo
+   * Draw a letter in the WebLogo using monomerLib for colors
    */
   private drawLetter(
     letter: string,
@@ -335,16 +347,30 @@ export class WebLogoTrack extends MSAHeaderTrack {
   ): void {
     if (!this.ctx) return;
 
-    // Get color for this amino acid
-    const colorMap = this.aminoAcidColors[this.colorScheme] || this.aminoAcidColors.default;
-    const color = colorMap[letter] || '#888888'; // Default gray for unknown residues
+    // Get text color from monomerLib for use as background
+    const backgroundColor = this.getMonomerTextColorForBackground(letter);
+
+    // Get text color that contrasts well with the background
+    const textColor = this.getContrastColor(backgroundColor);
 
     // Fill background with amino acid color
-    this.ctx.fillStyle = color;
+    this.ctx.fillStyle = backgroundColor;
     this.ctx.fillRect(x, y, width, height);
 
+    // Draw thin separator lines between letter blocks
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Light separator color
+    this.ctx.lineWidth = this.separatorWidth;
+
+    // Draw horizontal separator at bottom if not the last letter
+    if (y + height < y + this.ctx.canvas.height) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y + height);
+      this.ctx.lineTo(x + width, y + height);
+      this.ctx.stroke();
+    }
+
     // Draw letter
-    this.ctx.fillStyle = this.getContrastColor(color);
+    this.ctx.fillStyle = textColor;
 
     // Adjust font size based on letter box size
     const fontSize = Math.min(height * 0.8, width * 0.8);
@@ -357,19 +383,69 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
   /**
+   * Get monomer text color from monomerLib for use as background color
+   */
+  private getMonomerTextColorForBackground(letter: string): string {
+    // Try to get text color from monomerLib first
+    if (this.monomerLib && typeof this.monomerLib.getMonomerTextColor === 'function') {
+      try {
+        const textColor = this.monomerLib.getMonomerTextColor(this.biotype, letter);
+        if (textColor) return textColor;
+      } catch (e) {
+        console.warn('Error getting text color from monomerLib:', e);
+      }
+    }
+
+    // If we can't get a text color from monomerLib, try to get the regular color
+    if (this.monomerLib && typeof this.monomerLib.getMonomerColor === 'function') {
+      try {
+        const color = this.monomerLib.getMonomerColor(this.biotype, letter);
+        if (color) return color;
+      } catch (e) {
+        console.warn('Error getting color from monomerLib:', e);
+      }
+    }
+
+    // Fallback to our built-in color scheme
+    return this.aminoAcidColors[letter] || '#CCCCCC';
+  }
+
+  /**
    * Calculate a contrasting text color (black or white) based on background color
    */
-  private getContrastColor(hexColor: string): string {
-    // Convert hex to RGB
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
+  private getContrastColor(color: string): string {
+    try {
+      // Handle RGB or RGBA format
+      let r; let g; let b;
+      if (color.startsWith('rgb')) {
+        const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+        if (rgbMatch) {
+          r = parseInt(rgbMatch[1], 10);
+          g = parseInt(rgbMatch[2], 10);
+          b = parseInt(rgbMatch[3], 10);
+        } else
+          return '#000000';
+      }
+      // Handle hex format
+      else if (color.startsWith('#')) {
+        const hex = color.slice(1);
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+      }
+      // Default to black if format is unknown
+      else
+        return '#000000';
 
-    // Calculate perceived brightness (YIQ formula)
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
 
-    // Return black or white based on brightness
-    return (yiq >= 128) ? 'black' : 'white';
+      // Calculate perceived brightness (YIQ formula)
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+      // Return black or white based on brightness
+      return (yiq >= 128) ? '#000000' : '#FFFFFF';
+    } catch (e) {
+      return '#000000'; // Default to black in case of errors
+    }
   }
 }
 /**
