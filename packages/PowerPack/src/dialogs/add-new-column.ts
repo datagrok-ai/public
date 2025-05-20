@@ -766,6 +766,9 @@ export class AddNewColumnDialog {
 
     //validate types for current function
     for (const property of funcCall.func.inputs) {
+      //skip validation of dataframe parameter for vector functions
+      if (funcCall.func.options['vectorFunc'] === 'true' && property.propertyType === DG.TYPE.DATA_FRAME)
+        continue;
       let actualInputType = actualInputParamTypes[property.name];
       let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
