@@ -1,3 +1,4 @@
+/*
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
 
@@ -27,3 +28,4 @@ export async function startDatagrok(): Promise<any> {
 export type {DG as _DG, grok as _grok} from './node-api';
 
 
+*/
