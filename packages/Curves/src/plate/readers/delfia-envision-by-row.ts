@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {Plate} from "../plate";
-import {IPlateReader} from "../plate-reader";
+import {Plate} from '../plate';
+import {IPlateReader} from '../plate-reader';
 
 export class DelfiaEnvisionByRowPlateReader implements IPlateReader {
   isApplicable(s: string): boolean {

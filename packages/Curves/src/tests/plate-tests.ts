@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
@@ -20,7 +21,7 @@ function getPlate(): Plate {
 
 category('plates', () => {
   test('fromCsvPlate', async () => {
-    const plate = Plate.fromCsv(concentrationCsv, { field: 'concentration' });
+    const plate = Plate.fromCsv(concentrationCsv, {field: 'concentration'});
     plate.print();
     expect(plate.rows, 16);
     expect(plate.cols, 24);
@@ -55,7 +56,7 @@ category('plates', () => {
 
     const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'High Control'}}));
     const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
-    plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
+    plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
   });
 
   test('use case', async () => {
@@ -63,7 +64,7 @@ category('plates', () => {
 
     const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'High Control'}}));
     const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
-    plate.normalize('readout', value => (hcMean - value) / (hcMean - lcMean));
+    plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
 
     const drc = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'}); // if we get
     Plate.inspectSeries(drc['Compound 1'], '4pl-regression');
@@ -93,8 +94,6 @@ category('plates', () => {
     expect(excelToNum('BA'), 52);
   });
 });
-
-
 
 
 const concentrationCsv = `col 1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24

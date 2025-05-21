@@ -1179,11 +1179,11 @@ export class MostPotentResidues extends SARViewer {
           filteredMonomerStats.push([monomer, monomerStats as StatsItem]);
       }
 
-      if (filteredMonomerStats.length === 0)
-        continue;
-
-
       let maxEntry: [string, StatsItem] | null = null;
+      if (filteredMonomerStats.length === 0)
+        maxEntry = Object.entries(positionStats).find(([monomer, _]) => monomer != 'general') as [string, StatsItem] | null;
+
+
       // depending on the chosen target for activity, we might want to prioritize higher or lower activity.
       for (const [monomer, monomerStats] of filteredMonomerStats) {
         if (maxEntry === null ||

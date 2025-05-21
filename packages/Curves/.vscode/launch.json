@@ -1,13 +1,14 @@
 {
     "version": "0.2.0",
     "configurations": [
-      {
-        "preLaunchTask": "rebuild",
-        "type": "chrome",
-        "request": "launch",
-        "name": "Launch Chrome against Dev",
-        "url": "https://dev.datagrok.ai/",
-        "webRoot": "${workspaceFolder}"
-      }
+        {
+            "name": "Launch Curves",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8888",
+            "preLaunchTask": "debug-curves",
+            "webRoot": "${workspaceFolder}",
+            "restart": true
+        }
     ]
-  }
+}

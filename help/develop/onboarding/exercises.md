@@ -134,7 +134,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead iterate
-   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/dg/classes/Column).
+   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/api/js/dg/classes/Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev` command. When everything is done correctly, the
    `detectors.js` file will get loaded by the platform automatically, and the `detectNucleotides` function will be
@@ -365,7 +365,7 @@ functions.
    case, a namespace corresponds to a package name); the next argument is an object with parameters (make sure that they
    correspond to the input names in the script annotation, e.g., `{ sequence: 'fasta: gttctctacc', subsequence: 'acc' }`). You
    can also control the progress indicator during the call (see the API reference for
-   [call](https://datagrok.ai/js-api/dg/classes/Functions#call)).
+   [call](https://datagrok.ai/api/js/dg/classes/Functions#call)).
 
    :::tip
    You can generate such wrapper functions for your scripts and queries by calling the `grok api` command in your
@@ -515,10 +515,10 @@ from our server.
    ```
 
    There are several methods you can use to open a table. For demo files, the simplest way is
-   [grok.data.getDemoTable](https://datagrok.ai/js-api/dg/classes/Data#getdemotable). For files outside of the
+   [grok.data.getDemoTable](https://datagrok.ai/api/js/api/dg/classes/Data#getdemotable). For files outside of the
    `Demo:Files` [file share](../../access/files/files.md), you can use
-   [grok.data.files.openTable](https://datagrok.ai/js-api/dg/classes/Files#opentable), or execute a command
-   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/dg/classes/Functions#eval) (to see how it
+   [grok.data.files.openTable](https://datagrok.ai/api/js/api/dg/classes/Files#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/api/js/api/dg/classes/Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
    `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
    
@@ -910,7 +910,7 @@ contained in a currently selected grid cell.
    [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/components/accordion.js)
    control to display a sequence in a scrollable fashion. Add a caption to that text area to display an ENA's name for
    this sequence, which also comes in the fasta file. Use a
-   [`splitV`](https://datagrok.ai/js-api/ui/functions/splitV)
+   [`splitV`](https://datagrok.ai/api/js/api/ui/functions/splitV)
    control to nicely locate the caption at the top and the text area at the bottom.
 
 `fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a

@@ -111,6 +111,7 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
   let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
   let sourceDfLen = activityCol.length;
+  options.columns ??= positionColumns.map((col) => col.name);
   if (options.isFiltered) {
     sourceDfLen = filter.trueCount;
     const tempActivityData = new Float64Array(sourceDfLen);
@@ -120,13 +121,12 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
 
 
     activityColData = tempActivityData;
-    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter).columns.toList();
+    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter, options.columns).columns.toList();
     if (options.target)
       options.target.col = options.target.col.clone(filter);
     if (options.aggValue)
       options.aggValue.col = options.aggValue.col.clone(filter);
   }
-  options.columns ??= positionColumns.map((col) => col.name);
   const targetColIndexes = options.target?.col?.getRawData();
   const targetColCat = options.target?.col.categories;
   const targetIndex = options.target?.cat ? targetColCat?.indexOf(options.target.cat) : -1;

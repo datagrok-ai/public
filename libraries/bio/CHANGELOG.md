@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.52.0 (2025-05-12)
+
+Sequence rendering with shift configuration. MSA improvements
+
 ## 5.51.1 (2025-04-22)
 
 Update weblogo defaults 

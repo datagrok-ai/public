@@ -48,7 +48,7 @@
 #### 5. Color coding from grid
 
 1. Open SPGI
-2. Add a scatterplot and a box plot
+2. Add a scatterplot, box plot, and PC plot
 3. Set **Color** to `Chemical Space X`
 4. In the grid, enable linear color coding for `Chemical Space X` — check legends on both viewers
 5. Change color schema, invert, apply to text — check legends

@@ -1118,9 +1118,6 @@ export class LogEvent extends Entity {
   /** Friendly name of the event */
   get name(): string { return api.grok_LogEvent_Get_Name(this.dart); }
 
-  /** Source of the event */
-  get source(): string { return api.grok_LogEvent_Get_Source(this.dart); }
-
   /** Session id of the event */
   get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.dart)); }
 
@@ -1143,15 +1140,6 @@ export class LogEventParameter extends Entity {
 
   /** Type of the parameter */
   get type(): string { return api.grok_LogEventParameter_Get_Type(this.dart); }
-
-  /** Description of the parameter */
-  get description(): string { return api.grok_LogEventParameter_Get_Description(this.dart); }
-
-  /** Is the parameter input */
-  get isInput(): boolean { return api.grok_LogEventParameter_Get_IsInput(this.dart); }
-
-  /** Is the parameter optional */
-  get isOptional(): boolean { return api.grok_LogEventParameter_Get_IsOptional(this.dart); }
 }
 
 export class LogEventParameterValue extends Entity {

@@ -18,4 +18,4 @@ export const VERTICAL_SPACING = 20;
 export const HORIZONTAL_SPACING = 30;
 
 export const BASE_PATH = 'System:AppData';
-export const CONFIGS_PATH = 'Retrosynthesis/configs';
+export const CONFIGS_PATH = 'configs';

@@ -61,6 +61,14 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   ['num_list']: [DG.TYPE.OBJECT],
 };
 
+const TYPED_LISTS: {[key: string]: string[]} = {
+  [DG.TYPE.COLUMN_LIST]: [DG.TYPE.COLUMN],
+  [DG.TYPE.DATA_FRAME_LIST]: [DG.TYPE.DATA_FRAME],
+  [DG.TYPE.STRING_LIST]: [DG.TYPE.STRING],
+  ['num_list']: [DG.TYPE.QNUM, DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.NUM, DG.TYPE.BIG_INT, 'number', 'float'],
+};
+
+
 const FLOATING_POINT_TYPES = ['float', 'double'];
 const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
 const PACKAGES_TO_EXCLUDE = ['ApiTests', 'CvmTests'];
@@ -758,6 +766,9 @@ export class AddNewColumnDialog {
 
     //validate types for current function
     for (const property of funcCall.func.inputs) {
+      //skip validation of dataframe parameter for vector functions
+      if (funcCall.func.options['vectorFunc'] === 'true' && property.propertyType === DG.TYPE.DATA_FRAME)
+        continue;
       let actualInputType = actualInputParamTypes[property.name];
       let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
@@ -801,6 +812,10 @@ export class AddNewColumnDialog {
       if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
         if (property.propertySubType && property.propertySubType !== actualInputType && (property.propertyType === DG.TYPE.LIST && funcCall.inputs[property.name]?.length !== 0))
           return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`;
+      //check for typed lists
+      } else if (TYPED_LISTS[property.propertyType]) {
+        if (!TYPED_LISTS[property.propertyType].includes(actualInputType))
+          return `Function ${funcCall.func.name} '${property.name}' param type should be ${TYPED_LISTS[property.propertyType].join(' or ')} instead of ${actualInputType}`;
       } else {
         //check for type match
         if (property.propertyType !== actualInputType) {
@@ -1052,6 +1067,8 @@ export class AddNewColumnDialog {
 
     const type = this.getSelectedType()[0];
     // Making the Preview Grid:
+    // Looking for non-empty rows in columns used in formula
+    this.findNonEmptyRowsForPreview(columnIds);
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
     ui.setUpdateIndicator(this.gridPreview!.root, true);
@@ -1083,6 +1100,24 @@ export class AddNewColumnDialog {
       this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
+  }
+
+  findNonEmptyRowsForPreview(columnIds: string[]) {
+    let nonEmptyIdx = 0;
+    if (columnIds.length) {
+      const rowCount = this.sourceDf!.rowCount;
+      for (let i = 0; i < rowCount; i++) {
+        if (columnIds.every((colName) => !this.sourceDf!.col(colName)!.isNone(i))) {
+          nonEmptyIdx = i;
+          break;
+        }
+      }
+      const minRowIdx = nonEmptyIdx + this.previwDf!.rowCount <= rowCount ?
+        nonEmptyIdx : rowCount - this.previwDf!.rowCount;
+      const maxRowIdx = minRowIdx + this.previwDf!.rowCount;
+      this.previwDf = this.sourceDf!.clone(DG.BitSet.create(maxRowIdx,
+        (idx) => idx >= minRowIdx && idx < maxRowIdx));
+    }
   }
 
   /** Finds all unique column names used in the Expression input field. */

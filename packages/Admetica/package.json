@@ -13,16 +13,21 @@
     "directory": "packages/Admetica"
   },
   "dependencies": {
+    "@datagrok-libraries/statistics": "../../libraries/statistics",
     "@datagrok-libraries/tutorials": "^1.6.2",
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
-    "dayjs": "=1.11.10"
+    "dayjs": "=1.11.10",
+    "eslint": "^8.57.1"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",
-    "@datagrok/power-grid": "^1.5.0",
+    "@datagrok/power-grid": "../../packages/PowerGrid",
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.32.0",
     "css-loader": "^7.1.2",
+    "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
@@ -30,7 +35,7 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
     "debug-admetica": "webpack && grok publish ",
     "release-admetica": "webpack && grok publish --release",
     "build-admetica": "webpack",
@@ -41,7 +46,8 @@
     "debug-admetica-local": "grok publish local --rebuild",
     "release-admetica-local": "grok publish local --rebuild --release",
     "debug-admetica-local2": "grok publish local2 --rebuild",
-    "release-admetica-local2": "grok publish local2 --rebuild --release"
+    "release-admetica-local2": "grok publish local2 --rebuild --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Administrators"

@@ -1,5 +1,6 @@
-import {Plate} from "../plate";
-import {IPlateReader} from "../plate-reader";
+/* eslint-disable max-len */
+import {Plate} from '../plate';
+import {IPlateReader} from '../plate-reader';
 
 export class DelfiaEnvision96MaxRluPlateReader implements IPlateReader {
   isApplicable(s: string): boolean {

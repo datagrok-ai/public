@@ -10,6 +10,7 @@
 3. Expand each DB table to the column level
 4. Select each DB column for each DB table as the current object (click them)
 5. Make sure there are no errors  on the **Context Panel**
+
 ---
 {
   "order": 8

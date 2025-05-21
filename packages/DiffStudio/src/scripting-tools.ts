@@ -188,6 +188,7 @@ enum SCRIPT {
   SOLVER = `const solver = await grok.functions.eval('${PACKAGE_NAME}:${SOLVER_FUNC}');`,
   PREPARE = 'let call = solver.prepare({problem: odes, options: opts});',
   CALL = 'await call.call();',
+  FUNCTION_CALL = `let ${DF_NAME} = await grok.functions.call('${PACKAGE_NAME}:${SOLVER_FUNC}', {problem: odes, options: opts});`,
   OUTPUT = `let ${DF_NAME} = call.getParamValue('${DF_NAME}');`,
   SPACE2 = '  ',
   SPACE4 = '    ',
@@ -202,6 +203,7 @@ enum SCRIPT {
   ONE_STAGE_BEGIN = 'let _oneStage = async (',
   ONE_STAGE_END = ') => {',
   ASYNC_OUTPUT = `let ${DF_NAME} = await _oneStage(`,
+  RETURN = `return ${DF_NAME};`,
   RETURN_OUTPUT = `return call.getParamValue('${DF_NAME}');`,
   EMPTY_OUTPUT = `let ${DF_NAME} = DG.DataFrame.create();`,
   APPEND = `${DF_NAME}.append(`,
@@ -897,10 +899,11 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
   // 5. The 'call solver' lines
   res.push('');
   res.push(SCRIPT.SOLVER_COM);
-  res.push(SCRIPT.SOLVER);
-  res.push(SCRIPT.PREPARE);
-  res.push(SCRIPT.CALL);
-  res.push(SCRIPT.OUTPUT);
+  res.push(SCRIPT.FUNCTION_CALL);
+  // res.push(SCRIPT.SOLVER);
+  // res.push(SCRIPT.PREPARE);
+  // res.push(SCRIPT.CALL);
+  // res.push(SCRIPT.OUTPUT);
 
   return res;
 } // getScriptMainBodyBasic
@@ -981,9 +984,12 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   // 5. The 'call solver' lines
   res.push('');
   res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER_COM);
-  res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
-  res.push(SCRIPT.SPACE2 + SCRIPT.PREPARE);
-  res.push(SCRIPT.SPACE2 + SCRIPT.CALL);
+  res.push(SCRIPT.SPACE2 + SCRIPT.FUNCTION_CALL);
+  res.push(SCRIPT.SPACE2 + SCRIPT.RETURN);
+
+  // res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
+  // res.push(SCRIPT.SPACE2 + SCRIPT.PREPARE);
+  // res.push(SCRIPT.SPACE2 + SCRIPT.CALL);
   res.push(SCRIPT.SPACE2 + SCRIPT.RETURN_OUTPUT);
 
   // 6. Close the function

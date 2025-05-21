@@ -327,7 +327,7 @@ export interface IDartApi {
   grok_Dialog_Show(d: any, modal: Bool, resizable: Bool, fullScreen: Bool, center: Bool, centerAt: any, x: Num, y: Num, width: Num, height: Num, backgroundColor: String, showNextTo: any): any;
   grok_Dialog_OnInputChanged(d: any, handler: any): any;
   grok_Dialog_OnCancel(d: any, handler: any): any;
-  grok_Dialog_OnOK(d: any, handler: any): any;
+  grok_Dialog_OnOK(d: any, handler: any, closeOnEnter: Bool): any;
   grok_Dialog_Close(d: any): any;
   grok_Dialog_OnClose(d: any, handler: any): any;
   grok_Dialog_Clear(d: any): any;
@@ -1154,6 +1154,7 @@ export interface IDartApi {
   grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
+  grok_InputForm_GetInputs(form: any): any;
   grok_InputForm_Get_IsValid(form: any): any;
   grok_InputForm_Get_Source(form: any): any;
   grok_InputForm_Set_Source(form: any, x: any): any;
@@ -1464,15 +1465,11 @@ export interface IDartApi {
   grok_LogEventType_Set_IsError(logEventType: any, isError: Bool): any;
   grok_LogEvent_Get_Description(logEvent: any): any;
   grok_LogEvent_Get_Name(logEvent: any): any;
-  grok_LogEvent_Get_Source(logEvent: any): any;
   grok_LogEvent_Get_Session(logEvent: any): any;
   grok_LogEvent_Get_Parameters(logEvent: any): any;
   grok_LogEvent_Get_Type(logEvent: any): any;
   grok_LogEventParameter_Get_Name(p: any): any;
   grok_LogEventParameter_Get_Type(p: any): any;
-  grok_LogEventParameter_Get_Description(p: any): any;
-  grok_LogEventParameter_Get_IsInput(p: any): any;
-  grok_LogEventParameter_Get_IsOptional(p: any): any;
   grok_LogEventParameterValue_Get_Event(v: any): any;
   grok_LogEventParameterValue_Get_Parameter(v: any): any;
   grok_LogEventParameterValue_Get_Value(v: any): any;
@@ -1647,13 +1644,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
+  // Generated from ../d4\lib\src\common\common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
-  grok_InputType_Create(): any;
-
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4\lib\src\grid\grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1703,7 +1697,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1718,4 +1712,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
+
+  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
+  grok_InputType_Create(): any;
 }

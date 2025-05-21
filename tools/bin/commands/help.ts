@@ -201,6 +201,8 @@ Link \`datagrok-api\` and libraries for local development
 
 Options:
 --dev               Links also dev dependencies
+--path              Instead of npm linking sets dependecies in package.json to local
+--unlink            Unlinks packages and sets last versions instead of local path in package.json dependecies 
 --verbose           Prints detailed information about linked packages  
 `;
 

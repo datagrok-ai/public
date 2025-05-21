@@ -1,5 +1,9 @@
 # CDD Vault Link changelog
 
+## 1.0.2 (2025-04-01)
+
+* Added 'Protocols' and 'Collections' links to initial page
+
 ## 1.0.1 (2025-04-01)
 
 * Fixed error when receiving empty result

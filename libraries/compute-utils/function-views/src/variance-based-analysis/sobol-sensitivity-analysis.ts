@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 // sobol-sensitivity-analysis.ts
 
 /* Tools that perform variance-based sensitivity analysis (VSA).
@@ -27,9 +28,13 @@ import {checkSize, getCalledFuncCalls} from './utils';
 import {getOutput, OutputDataFromUI,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
+import {DiffGrok} from '../fitting-view';
+import {ModelEvaluator} from './diff-studio/model-evaluator';
+import {DIFF_GROK_OUT_IDX} from './constants';
+
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
-type SobolIndeces = {
+type SobolIndices = {
   firstOrder: DG.Column,
   totalOrder: DG.Column
 };
@@ -41,6 +46,7 @@ export type ResultOfSobolAnalysis = {
   totalOrderSobolIndices: DG.DataFrame
 } & SensitivityAnalysisResult;
 
+/** Sobol sensitivity analysis */
 export class SobolAnalysis {
   private samplesCount: number;
   private dimension: number;
@@ -49,7 +55,9 @@ export class SobolAnalysis {
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
-  private funcCalls: DG.FuncCall[];
+  private funcCalls: DG.FuncCall[] | null = null;
+  private funcInputs: any[];
+  private diffGrok: DiffGrok | undefined;
 
   private outputsOfInterest: OutputDataFromUI[];
 
@@ -59,6 +67,7 @@ export class SobolAnalysis {
     variedInputs: VariedNumericalInputInfo[],
     outputsOfInterest: OutputDataFromUI[],
     samplesCount: number,
+    diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -88,7 +97,8 @@ export class SobolAnalysis {
     // number of the function runs (this formula is given in [1])
     this.runsCount = samplesCount * (this.dimension + 2);
 
-    this.funcCalls = [];
+    this.funcCalls = (diffGrok === undefined) ? [] : null;
+    this.funcInputs = [];
 
     // create an array of funccalls
     for (let i = 0; i < this.runsCount; ++i) {
@@ -100,14 +110,18 @@ export class SobolAnalysis {
       for (const input of this.variedInputs)
         inputs[input.prop.name] = input.column.get(i);
 
-      this.funcCalls.push(func.prepare(inputs));
+      if (this.funcCalls !== null)
+        this.funcCalls.push(func.prepare(inputs));
+      this.funcInputs.push(inputs);
     }
 
-    this.outputsOfInterest = outputsOfInterest;
-  }
+    this.diffGrok = diffGrok;
 
-  // Returns 1-st and totoal order Sobol' indices.
-  private getSobolIndeces(outputColumn: DG.Column): SobolIndeces {
+    this.outputsOfInterest = outputsOfInterest;
+  } // constructor
+
+  /** Returns 1-st and total order Sobol' indices. */
+  private getSobolIndeces(outputColumn: DG.Column): SobolIndices {
     /* 1-st order and total order Sobol' indices are defined by
        the formulas (2) and (4) respectively [1]. Computations requires:
          - the variance V(Y);
@@ -170,21 +184,34 @@ export class SobolAnalysis {
 
   // Performs variance-based sensitivity analysis
   async perform(): Promise<ResultOfSobolAnalysis> {
-    //await this.run();
-    this.funcCalls = await getCalledFuncCalls(this.funcCalls);
-
     // columns with the varied inputs values
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
-    // extract the required outputs
-    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    // columns with outputs
+    let outputCols: DG.Column[];
+
+    if (this.diffGrok !== undefined) {
+      const evaluator = new ModelEvaluator(
+        this.diffGrok,
+        this.funcInputs,
+        this.outputsOfInterest[DIFF_GROK_OUT_IDX],
+      );
+
+      outputCols = await evaluator.getResults();
+    } else {
+      if (this.funcCalls ===null)
+        throw new Error('Failed Sobol analysis: empty list of funccalls');
+
+      this.funcCalls = await getCalledFuncCalls(this.funcCalls);
+      outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    }
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
     // compute 1-st & total order Sobol' indices
-    const sobolIndeces: SobolIndeces[] = outputCols.map((col) => this.getSobolIndeces(col));
+    const sobolIndeces: SobolIndices[] = outputCols.map((col) => this.getSobolIndeces(col));
 
     // create dataframes with 1-st & total order Sobol' indices
 
@@ -206,7 +233,7 @@ export class SobolAnalysis {
 
     return {
       funcEvalResults: funcEvalResults,
-      funcCalls: this.funcCalls,
+      funcInputs: this.funcInputs,
       firstOrderSobolIndices: firstOrderSobolIndicesDF,
       totalOrderSobolIndices: totalOrderSobolIndicesDF,
     };

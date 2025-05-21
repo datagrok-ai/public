@@ -5,6 +5,20 @@
         "type": "shell",
         "command": "(cmd.exe /c \"npm run build) -and (grok publish dev\")",
         "label": "rebuild"
+      },
+      {
+        "label": "debug-curves",
+        "type": "shell",
+        "command": "npm run debug-curves",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        },
+        "problemMatcher": []
       }
     ]
   }

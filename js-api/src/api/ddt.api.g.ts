@@ -92,7 +92,9 @@ export class Tags {
 
   static Formula = 'formula';
 
-  static FormulaColumnType = '.%formula-column-type';
+  static FormulaColumnIsVectorFunc = '.%formula-column-is-vector-func';
+
+  static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
 
   /// JSON-encoded list of strings to be used in a cell editor.
   /// Applicable for string columns only.

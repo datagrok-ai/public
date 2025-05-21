@@ -3,6 +3,13 @@ title: "Datagrok: Swiss Army Knife for Data"
 
 ---
 
+:::tip [Ask DeepWiki](https://deepwiki.com/datagrok-ai/public)
+
+Need quick answers about functionality, troubleshooting, or advanced features? Ask **DeepWiki**.  
+Try questions like: "How do I add a regression line to a scatterplot?" or  "How do I publish a package?"
+
+:::
+
 ## Why Datagrok?
 
 Datagrok helps you understand data and take action.
@@ -132,7 +139,7 @@ for areas like [cheminformatics](solutions/domains/chem/chem.md),
 **Skillset**: Datagrok is for anyone who works with data: 
 
 * Chemists analyzing SAR tables? [Perfect fit](solutions/domains/chem/chem.md#chemically-aware-spreadsheet).
-* Data analysts? Drag and drop your local files to start analyzing. 
+* [Data analysts](solutions/teams/analysts.md)? Drag and drop your local files to start analyzing. 
 * Data scientists mapping new store locations? [Excellent for strategic planning](https://www.youtube.com/watch?v=tVwpRB8fikQ).
 * Research scientists running complex simulations? [Absolutely](../compute/compute.md).
 * Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results), no coding needed. 
@@ -140,7 +147,7 @@ for areas like [cheminformatics](solutions/domains/chem/chem.md),
 
 **Team size**: Datagrok is for individuals and teams of all sizes - from
 startups<!--insert link to customer stories--> to large enterprises<!--insert link to customer stories-->. The
-platform is [enterprise-ready](solutions/enterprise/enterprise.md),
+platform is [enterprise-ready](solutions/teams/it/enterprise.md),
 [scalable](../develop/under-the-hood/scaling.md), and ideal for sharing and collaboration.
 
 ## What makes it so flexible?
@@ -245,13 +252,13 @@ and [performance optimization](../develop/under-the-hood/performance.md).
 
 ## Solutions
 
-* [Self-service analytics](solutions/domains/use-cases/eda.md)
+* [Self-service analytics](solutions/workflows/eda.md)
 * [Data science](solutions/domains/data-science.md)
 * Life sciences
   * [Chem](solutions/domains/chem/chem.md)
   * [Bio](solutions/domains/bio/bio.md)
 * [NLP](solutions/domains/nlp/nlp.md)
-* [Enterprise IT](solutions/enterprise/enterprise.md)
+* [Enterprise IT](solutions/teams/it/enterprise.md)
 * [Plugins](plugins.md)
 
 <!--

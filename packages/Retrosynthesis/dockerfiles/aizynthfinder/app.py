@@ -102,12 +102,12 @@ def aizynthfind():
     data = request.json
     user_id = data.get("user_id")
     smiles = data.get("smiles")
-    config_name = data.get("config_name")
+    config_dir = data.get("config_dir")
 
     if not smiles or not user_id:
       return jsonify({"success": False, "error": "Missing 'smiles' in the request"}), 400
     
-    config_path = os.path.join(output_dir, "aizynthcli_data", f"{config_name}", "config.yml") if (config_name and config_name != '') else os.path.join(output_dir, "aizynthcli_data", "config.yml")
+    config_path = os.path.join(output_dir, "aizynthcli_data", f"{config_dir}", "config.yml") if (config_dir and config_dir != '') else os.path.join(output_dir, "aizynthcli_data", "config.yml")
     if not os.path.exists(config_path):
       return jsonify({"success": False, "error": f"File {config_path} not found"}), 404
 
@@ -248,8 +248,8 @@ def get_user_configs():
     return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route('/add_user_config', methods=['POST'])
-def add_user_config():
+@app.route('/add_user_custom_config', methods=['POST'])
+def add_user_custom_config():
   try:  
     config_content = request.json.get('config')
     config_name = request.json.get('config_name')
@@ -274,6 +274,33 @@ def add_user_config():
     
     logging.info(f"Config {config_name} saved successfully for user {user_id}")
     return jsonify({"success": True, "message": f"Config {config_name} uploaded successfully"}), 200
+      
+  except Exception as e:
+      logging.error(f"Error uploading config: {str(e)}")
+      return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/sync_dir', methods=['POST'])
+def add_user_config():
+  try:  
+    to_dir_name = request.json.get('to_dir_name')
+    from_dir_name = request.json.get('from_dir_name')
+    token = request.json.get('token')
+
+    if not token:
+      return jsonify({ "success": False, "error": "No token provided"}), 400
+    
+    if not from_dir_name:
+      return jsonify({"success": False, "error": "Directory to sync was not provided"}), 400
+        
+    output_dir = os.getcwd()
+    config_path = os.path.join(output_dir, "aizynthcli_data", to_dir_name)
+
+    api = DatagrokClient(token, 'http://host.docker.internal:8082')
+    api.sync_dir('System:AppData', from_dir_name, config_path, False)
+    
+    logging.info(f"Directory {from_dir_name} synchronized successfully with {config_path}")
+    return jsonify({"success": True, "message": f"Directory {from_dir_name} synchronized successfully with {config_path}"}), 200
       
   except Exception as e:
       logging.error(f"Error uploading config: {str(e)}")

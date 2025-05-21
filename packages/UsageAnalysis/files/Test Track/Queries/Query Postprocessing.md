@@ -12,7 +12,7 @@
 8. Go to  **Databases > Postgres > NorthwindTest** 
 9. Preview and run the **Test_Postprocessing** query - verify that:
      * Layout preview shows both viewers
-     * The green balloon with '77' should appear
+     * The green balloon with '77' appears
 10. Right-click the **Test_Postprocessing** query and select *Edit..**
 1. Run the query 
    * From the **Post-Process** tab — verify that a green balloon with **77** appears

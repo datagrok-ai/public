@@ -16,6 +16,7 @@ import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-rend
 import {PeptideUtils} from '../peptideUtils';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
+export type JSTempDataFrame = DG.DataFrame & { jsOnlyTemp?: Record<string, any> };
 /**
  * Renders cell selection border.
  * @param canvasContext - Canvas context.
@@ -327,6 +328,8 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
   const df = grid.dataFrame;
   grid.setOptions({'colHeaderHeight': 130});
   const headerRenderer = (gcArgs: DG.GridCellRenderArgs): void => {
+    if (!gcArgs.cell?.isColHeader)
+      return;
     const ctx = gcArgs.g;
     const bounds = gcArgs.bounds;
     const col = gcArgs.cell.tableColumn;
@@ -338,16 +341,16 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
       ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
       ctx.clip();
 
-      //TODO: optimize
-      if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
+      if (col?.semType === C.SEM_TYPES.MONOMER) {
         const isDfFiltered = df.filter.anyFalse;
         let stats: PositionStats | undefined;
         if (isDfFiltered) {
-          const cache: MonomerPositionStatsCache = df.temp[C.TAGS.M_P_STATS_CACHE] ?? {};
+          // NOTE: WORKAROUND FOR FASTER JS-ONLY TEMP
+          (df as JSTempDataFrame).jsOnlyTemp ??= {};
+          const cache: MonomerPositionStatsCache = (df as JSTempDataFrame).jsOnlyTemp![C.TAGS.M_P_STATS_CACHE] ?? {};
           const colCache = cache?.[col.name];
-          const dfFilterBuffer = df.filter.getBuffer();
-          if (cache && colCache && colCache.filter.length === dfFilterBuffer.length &&
-            colCache.filter.every((v, i) => v === dfFilterBuffer[i]))
+          if (cache && colCache && colCache.filterLength === df.filter.length &&
+            colCache.filterVersion === df.filter.version)
             stats = colCache.stats[col.name];
           else {
             const fullStats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
@@ -355,9 +358,9 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
               columns: [col.name],
             });
             stats = fullStats[col.name];
-            cache[col.name] = {filter: df.filter.getBuffer(), stats: fullStats, selection: df.selection.getBuffer()};
+            cache[col.name] = {filterVersion: df.filter.version, stats: fullStats, filterLength: df.selection.length};
           }
-          df.temp[C.TAGS.M_P_STATS_CACHE] = cache;
+          (df as JSTempDataFrame).jsOnlyTemp![C.TAGS.M_P_STATS_CACHE] = cache;
         } else if (options.isSelectionTable) {
           stats = calculateMonomerPositionStatistics(activityCol, df.filter, positionColumns, {
             isFiltered: true,

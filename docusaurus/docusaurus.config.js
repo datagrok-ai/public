@@ -39,7 +39,7 @@ const config = {
                 readme: '../help/develop/packages/js-api.md',
                 mergeReadme: true,
                 entryFileName: "index",
-                out: './js-api',
+                out: './api/js',
                 indexFormat: "table",
                 parametersFormat: "table",
                 propertiesFormat: "table",
@@ -74,17 +74,17 @@ const config = {
                         {
                             "pattern": "\\(\\.\\.\\/\\.\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/$1.$2"
+                            "replace": "(../../../help/$1.$2"
                         },
                         {
                             "pattern": "\\(\\.\\.(?!/\\.\\.)/(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/$1.$2"
+                            "replace": "(../../../help/develop/$1.$2"
                         },
                         {
                             "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/packages/$1.$2"
+                            "replace": "(../../../help/develop/packages/$1.$2"
                         }
                     ]
                 }
@@ -95,8 +95,8 @@ const config = {
             {
                 sidebarPath: require.resolve('./typedoc-sidebar.js'),
                 id: 'api',
-                path: './js-api',
-                routeBasePath: '/js-api',
+                path: './api',
+                routeBasePath: '/api',
             }
         ],
     ],
@@ -142,7 +142,7 @@ const config = {
                     label: 'Help',
                 },
                 {
-                    to: 'js-api',
+                    to: 'api',
                     label: 'API',
                     position: 'left',
                 },
@@ -163,7 +163,7 @@ const config = {
                 },
                 {
                     label: 'API Docs',
-                    to: '/js-api',
+                    to: 'api',
                 },
                 {
                     label: 'Community',

@@ -52,7 +52,7 @@ export default function mainMenu (page){
                             href="https://datagrok.ai/#">Help</a>
                         <div className="dropdown-menu" aria-labelledby="navbarHelp">
                             <a className="dropdown-item" href="https://datagrok.ai/help">Wiki</a>
-                            <a className="dropdown-item" href="https://datagrok.ai/js-api">JS API</a>
+                            <a className="dropdown-item" href="https://datagrok.ai/api/js">JS API</a>
                             <a className="dropdown-item" href="https://community.datagrok.ai/" target="_blank">Community</a>
                             <a className="dropdown-item" href="https://us02web.zoom.us/meeting/register/up0vfuCrpjgpHNzi371YEJIQ4GkMpTm4disW#/registration" target="_blank">User group meetings</a>
                             <a className="dropdown-item d4-link-external"

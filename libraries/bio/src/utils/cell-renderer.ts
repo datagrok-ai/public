@@ -38,6 +38,7 @@ export const PrintOptionsDefaults = new class {
   /** Max length of a monomer */ maxLengthOfMonomer: number | null = null;
   /** Map of monomers' text sizes */ monomerTextSizeMap: { [key: string]: TextMetrics } = {};
   /** */ logger?: ILogger = undefined;
+  selectedPosition?: number = undefined;
 }();
 
 export type PrintOptions = typeof PrintOptionsDefaults;
@@ -98,7 +99,12 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
 
   /** Draw color part at {@link dx1}, and gray part at {@link dx2}. */
   function draw(dx1: number, dx2: number): void {
-    const drawColor = colorCode ? opts.color : blackColor;
+    let drawColor = colorCode ? opts.color : blackColor;
+    if (opts.selectedPosition === opts.wordIdx + 1) {
+      g.fillStyle = 'rgba(60, 177, 115, 0.2)'; // green for selected position
+      g.fillRect(x + dx1 - 4, y - 5, opts.monomerTextSizeMap[colorPart].width + 8, h + 10);
+      drawColor = DG.Color.toHtml(DG.Color.setAlpha(DG.Color.fromHtml(drawColor), 255));
+    }
     g.fillStyle = drawColor;
     g.globalAlpha = opts.transparencyRate;
     if (opts.drawStyle === DrawStyle.classic) {

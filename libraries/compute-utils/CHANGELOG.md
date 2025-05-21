@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.43.5 (2025-05-12)
+
+In-webworkers sensitivity analysis for Diff Studio based models
+
 ## 1.43.4 (2025-05-02)
 
 Update Compute2 API

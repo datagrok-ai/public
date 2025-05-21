@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 // input-tools.ts
 
 // Tools for operating inputs for variance-based sensitivity analysis (VSA).
@@ -8,20 +9,21 @@ import * as DG from 'datagrok-api/dg';
 
 import {getGeneratedColumnsData} from './inputs-generation';
 
-// Varied numerical input specification
+/** Varied numerical input specification */
 export type VariedNumericalInputInfo = {
   prop: DG.Property,
   min: number,
-  max: number
+  max: number,
+  samples?: number,
 };
 
-// Fixed input specification
+/** Fixed input specification */
 export type FixedInputItem = {
   name: string,
   value: any
 };
 
-// Returns column of inputs that are used in VSA
+/** Returns column of inputs that are used in VSA */
 function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
   randomData: Float32Array): DG.Column {
   const length = randomData.length;
@@ -43,7 +45,7 @@ function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
   return column;
 }
 
-// Returns columns of varied numerical inputs that are used in VSA
+/** Returns columns of varied numerical inputs that are used in VSA */
 export function getVariedNumericalInputColumnsForSobolAnalysis(samplesCount: number,
   inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
   const dimension = inputsInfo.length;
@@ -55,7 +57,7 @@ export function getVariedNumericalInputColumnsForSobolAnalysis(samplesCount: num
   return [...Array(dimension).keys()].map((i) => getNumericalInputCol(inputsInfo[i], randData[i]));
 }
 
-// Returns columns of varied numerical inputs that are used in RSA
+/** Returns columns of varied numerical inputs that are used in RSA */
 export function getVariedNumericalInputColumnsForRandomAnalysis(samplesCount: number,
   inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
   const columns = [] as DG.Column[];

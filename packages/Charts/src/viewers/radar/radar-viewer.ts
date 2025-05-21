@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import * as echarts from 'echarts';
 import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
@@ -43,7 +42,6 @@ export class RadarViewer extends EChartViewer {
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
   title: string;
-  resizeScheduled: boolean = false;
 
   constructor() {
     super();
@@ -67,19 +65,6 @@ export class RadarViewer extends EChartViewer {
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
-
-    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
-    this.root.appendChild(chartDiv);
-    this.chart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => {
-      if (!this.resizeScheduled) {
-        this.resizeScheduled = true;
-        requestAnimationFrame(() => {
-          this.chart.resize();
-          this.resizeScheduled = false;
-        });
-      }
-    }));
   }
 
   init() {
@@ -192,6 +177,9 @@ export class RadarViewer extends EChartViewer {
         const indexes = this.dataFrame.rows.where(func);
         this.render(Array.from(indexes));
       }
+    }));
+    this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
+      requestAnimationFrame(() => this.chart?.resize());
     }));
     this.render();
   }
@@ -414,7 +402,7 @@ export class RadarViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, WARNING_CLASS);
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
     this.getSeriesData(indexes!);
-    this.chart.setOption(option);
+    this.chart.setOption(option, false, true);
   }
 
   detach() {

@@ -1,6 +1,6 @@
-import {Plate} from "../plate";
-import {IPlateReader} from "../plate-reader";
-import { parseExcelPosition } from "../utils";
+import {Plate} from '../plate';
+import {IPlateReader} from '../plate-reader';
+import {parseExcelPosition} from '../utils';
 
 export class BmgPherastar96PlateReader implements IPlateReader {
   isApplicable(s: string): boolean {
@@ -14,9 +14,9 @@ export class BmgPherastar96PlateReader implements IPlateReader {
 
     // Split into lines and process each line
     const lines = s.substring(dataStart).split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => line.split(';').map(s => s.trim()));
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => line.split(';').map((s) => s.trim()));
 
     const plate = Plate.autoSize(lines.map((line) => parseExcelPosition(line[0])));
 

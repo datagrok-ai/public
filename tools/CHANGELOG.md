@@ -1,5 +1,18 @@
 # Datagrok-tools changelog
 
+## 4.14.2 (2025-05-16)
+
+### Features
+
+* Grok Link added path mode
+* Grok Link added unlink mode
+
+## 4.14.0 (2025-05-12)
+
+### Features
+
+* Added annotation creation by decorators
+
 ## 4.13.70 (2025-04-14)
 
 ### Features

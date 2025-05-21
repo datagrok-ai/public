@@ -1,6 +1,6 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {COLUMN_TYPE, MARKER_TYPE, ViewerType} from './const';
+import {COLUMN_TYPE, ColumnType, MARKER_TYPE, ViewerType} from './const';
 import {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
@@ -249,6 +249,35 @@ export class Utils {
         new StreamSubscription(dart).cancel();
       }
     );
+  }
+
+  static getJsonValueType(x: any): ColumnType | null {
+    if (!x)
+      return null;
+
+    if (typeof x === 'string')
+      return DG.TYPE.STRING;
+    if (typeof x === 'number')
+      return DG.TYPE.FLOAT;
+    if (typeof x === 'boolean')
+      return DG.TYPE.BOOL;
+    throw 'Not supported type';
+  }
+
+  /** Expands a column of JSON strings into multiple columns, one per unique key */
+  static jsonToColumns(column: Column<string>) {
+    const rows = column.dataFrame.rowCount;
+    const jsons = range(rows).map(i => column.isNone(i) ? null : JSON.parse(column.get(i)!)).toArray();
+
+    for (let i = 0; i < rows; i++) {
+      for (const [key, value] of Object.entries(jsons[i])) {
+        if (value !== null && !column.dataFrame.columns.contains(key))
+          column.dataFrame.columns
+            //@ts-ignore
+            .addNew(key, Utils.getJsonValueType(value)!)
+            .init(j => jsons[j] === null ? null : jsons[j][key]);
+      }
+    }
   }
 
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {

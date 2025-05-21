@@ -1,8 +1,8 @@
 # ml changelog
 
-## 6.9.0 (WIP)
+## 6.10.1 (2025-05-07)
 
-Activity cliffs: Fixed bug with browse view
+Activity cliffs: Fixed bug with re-applying cliffs filter on re-drawing scatter plot
 
 ## 6.8.3 (2025-03-07)
 

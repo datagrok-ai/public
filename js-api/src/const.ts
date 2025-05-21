@@ -218,12 +218,19 @@ export const SEMTYPE = {
   STREET_ADDRESS: 'Street Address',
   TEXT: 'Text',
   DURATION: 'Duration',
+
   LATITUDE: 'Latitude',
   LONGITUDE: 'Longitude',
+
   IP_ADDRESS: 'IP Address',
+
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
   MOLECULE3D: 'Molecule3D',
+
+  CONCENTRATION: 'Concentration',
+  VOLUME: 'Volume',
+
   PDB_ID: 'PDB_ID',
   NEWICK: 'Newick',
   HELM: 'HELM',
@@ -231,7 +238,11 @@ export const SEMTYPE = {
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
-  CHEMICAL_REACTION: 'ChemicalReaction'
+  CHEMICAL_REACTION: 'ChemicalReaction',
+
+  IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
+  EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
+  Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
 }
 
 export const UNITS = {

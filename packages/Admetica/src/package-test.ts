@@ -4,7 +4,7 @@ import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagr
 import './tests/admetica-tests';
 
 export const _package = new DG.Package();
-export {tests}
+export {tests};
 
 //name: test
 //input: string category {optional: true}

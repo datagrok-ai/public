@@ -6,6 +6,7 @@
    * **Menu Ribbon > Play button** — result appears at the bottom of the current view
    * **Toolbox > Actions > Run query…** — result opens in a new view
 8. Save the query
+
 ---
 {
   "order": 1

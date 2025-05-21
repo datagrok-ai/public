@@ -32,19 +32,21 @@ export function checkSize(size: any): void {
 
 export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.FuncCall[]> {
   const calledFuncCalls = [] as DG.FuncCall[];
-  const pi = DG.TaskBarProgressIndicator.create(`Running sensitivity analysis...`);
+  const pi = DG.TaskBarProgressIndicator.create(`Analyzing...`);
 
   // the feature cancelable should be added
   (pi as any).cancelable = true;
 
   let idx = 0;
   const funcCallsCount = funccalls.length;
+  let percentage = 0;
 
   for (let i = 0; i < funcCallsCount; ++i) {
     calledFuncCalls.push(await funccalls[i].call());
 
     if (i === 1) {
-      pi.update(100 * i / funcCallsCount, `Running sensitivity analysis...`);
+      percentage = Math.floor(100 * i / funcCallsCount);
+      pi.update(percentage, `Analyzing... (${percentage}%)`);
       await sleep(FUNCCALL_CONSTS.MS_TO_SLEEP * 10);
     }
 
@@ -55,7 +57,8 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
       break;
 
     if (idx >= FUNCCALL_CONSTS.BATCH_SIZE) {
-      pi.update(100 * i / funcCallsCount, `Running sensitivity analysis...`);
+      percentage = Math.floor(100 * i / funcCallsCount);
+      pi.update(percentage, `Analyzing... (${percentage}%)`);
       await sleep(FUNCCALL_CONSTS.MS_TO_SLEEP);
       idx = 0;
     }

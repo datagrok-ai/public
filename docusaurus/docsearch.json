@@ -2,7 +2,7 @@
   "index_name": "Datagrok",
   "start_urls": [
     "https://datagrok.ai/help",
-    "https://datagrok.ai/js-api"
+    "https://datagrok.ai/api"
   ],
   "sitemap_urls": [
     "https://datagrok.ai/sitemap.xml"

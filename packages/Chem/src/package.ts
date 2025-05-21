@@ -81,10 +81,10 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
-import { oclMol } from './utils/chem-common-ocl';
-import { DesirabilityProfile, mpo, _mpoDialog } from './analysis/mpo/mpo';
-import {MpoProfileEditor} from "./analysis/mpo/mpo-profile-editor";
-import { OCLService } from './open-chem/ocl-service';
+import {oclMol} from './utils/chem-common-ocl';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {OCLService} from './open-chem/ocl-service';
+import {_mpoDialog} from './analysis/mpo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -175,9 +175,9 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const initialHeight = 90;
   const tooltipMaxWidth = 500;
   const version = col.version;
-
-  for (let i = 0; i < col.length; ++i) {
-    if (!col.isNone(i) && _isSmarts(col.get(i)))
+  const colCategories = col.categories;
+  for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
+    if (!!colCategories[i] && _isSmarts(colCategories[i]))
       return;
   }
 
@@ -185,11 +185,10 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
   const divStructures = ui.div([ui.loader()]);
   divStructures.classList.add('chem-tooltip-structure-div');
-
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -199,7 +198,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     ui.empty(divStructures);
     const molIdsCached = col.temp['molIds'];
     for (let i = 0; i < molIdsCached.length; ++i)
-      divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
+      divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
   };
 
   divMain.append(divStructures);
@@ -1580,10 +1579,11 @@ export function copyAsAction(value: DG.SemanticValue) {
 
   formats.forEach((format) => {
     const func = DG.Func.find({package: 'Chem', name: `copyAs${format}`})[0];
-    if (func)
+    if (func) {
       menu.item(format, () => {
         func.apply({value: value});
       });
+    }
   });
   menu.show();
 }
@@ -1817,6 +1817,7 @@ export function addScaffoldTree(): void {
 
 //name: Matched Molecular Pairs Analysis
 //tags: viewer
+//meta.showInGallery: false
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
@@ -1838,9 +1839,9 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
     return;
   }
 
-  if (demo) {
+  if (demo)
     view = grok.shell.getTableView(table.name) as DG.TableView;
-  } else
+  else
     view = grok.shell.getTableView(table.name) as DG.TableView;
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
@@ -1867,25 +1868,27 @@ export async function getScaffoldTree(data: DG.DataFrame,
   dischargeAndDeradicalize: boolean = false,
 ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const invalid: number[] = new Array<number>(data.columns.length);
-  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = new Array<string>(data.columns.length);
-  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
-    let el: string = molColumn?.get(rowI);
-    if (!smiles) {
-      try {
-        el = convertMolNotation(el, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
-      } catch {
-        invalid[rowI] = rowI;
-      }
-    }
 
-    smilesList[rowI] = el;
+  const categories = molColumn?.categories;
+  if (categories?.length === 1 && !categories[0]?.trim())
+    throw new Error('Molecule column is empty.');
+
+  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
+  const invalid: number[] = [];
+  const smilesList: string[] = [];
+  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
+    const mol = molColumn?.get(rowI);
+    try {
+      smilesList[smilesList.length] = smiles ?
+        mol :
+        convertMolNotation(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+    } catch {
+      invalid[invalid.length] = rowI;
+    }
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-  smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
-  data.columns.add(smilesColumn);
-  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
+  const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }
@@ -1954,7 +1957,6 @@ export async function demoMoleculeActivityCliffs(): Promise<void> {
 export async function demoChemicalSpace(): Promise<void> {
   await _demoChemicalSpace();
 }
-
 
 
 //name: Demo Scaffold Tree
@@ -2208,7 +2210,8 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   const module = getRdKitModule();
   const cut = cutFragments(module, molecules.toList(), fragment);
   const res = cut.map((c) => c[0]);
-  const col = DG.Column.fromStrings('deprotected', res);
+  const columnName = table.columns.getUnusedName('deprotected');
+  const col = DG.Column.fromStrings(columnName, res);
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
 }

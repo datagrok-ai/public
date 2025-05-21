@@ -38,7 +38,8 @@ const footerLinks = [
         title: "Resources",
         links: [
             { name: "Wiki", href: "/help" },
-            { name: "JS-API", href: "/js-api" },
+            { name: "JS-API", href: "/api/js" },
+            { name: "Python-API", href: "/api/py" },
             { name: "Community", href: "https://community.datagrok.ai" },
             { name: "YouTube", href: "https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg" },
             { name: "User Meetings", href: "https://us02web.zoom.us/meeting/register/up0vfuCrpjgpHNzi371YEJIQ4GkMpTm4disW#/registration" },

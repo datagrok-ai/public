@@ -59,7 +59,7 @@ All subsequent administration tasks can be performed via the web interface.
 
 Enterprises typically prefer on-premise deployment for several reasons, including enhanced security, 
 easier access to internal data, and integration with enterprise [authentication](../../govern/access-control/access-control.md#authentication) methods. Datagrok supports this approach with minimal effort. 
-For more information, refer to the [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md).
+For more information, refer to the [Enterprise Evaluation FAQ](../../datagrok/solutions/teams/it/enterprise-evaluation-faq.md).
 
 Datagrok runs as a set of [Docker containers](https://hub.docker.com/u/datagrok), which can be installed on any platform, including (but not limited to) a bare-metal machine,
 an on-premise virtual machine, or a virtual machine in a cloud provider (e.g., [AWS EC2](https://aws.amazon.com/ec2/)). It can also be deployed on an on-premise Kubernetes 

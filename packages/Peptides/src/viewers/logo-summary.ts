@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -335,6 +336,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     }, 'Show Logo Summary Table in full screen');
     $(expand).addClass('pep-help-icon');
     this.viewerGrid.root.style.width = 'auto';
+    this.viewerGrid.root.style.height = 'auto';
+    this.viewerGrid.root.style.overflow = 'hidden';
     this.root.appendChild(ui.divV([
       ui.divH([this._titleHost, expand], {
         style: {
@@ -431,13 +434,23 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   }
 
   /**
+   * Clones this.df with columns that are needed for LogoSummaryTable.
+   */
+  getNeededDfClone(): DG.DataFrame {
+    // gather all needed columns. for string columns we need to remove 'dist(' and ')' from the name
+    const neededCols = [this.clustersColumnName, this.sequenceColumnName, this.activityColumnName, ...(this.getTotalViewerAggColumns() ?? []).map(([cn, _]) => cn), ...(this.getStringAggregatedColumns() ?? []).map((cn) => cn.substring(5, cn.length - 1))];
+    const colsSet = Array.from(new Set(neededCols)).filter((colName) => this.dataFrame.columns.contains(colName));
+    return this.dataFrame.clone(this.dataFrame.filter, colsSet);
+  }
+
+  /**
    * Creates LogoSummaryTable dataframe to be used in LogoSummaryTable grid.
    * @return - LogoSummaryTable dataframe.
    */
   createLogoSummaryTable(): DG.DataFrame {
     const clustersColName = this.clustersColumnName;
     const isDfFiltered = this.dataFrame.filter.anyFalse;
-    const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
+    const filteredDf = isDfFiltered ? this.getNeededDfClone() : this.dataFrame;
     const filteredDfCols = filteredDf.columns;
     const filteredDfRowCount = filteredDf.rowCount;
     const activityColData = this.getScaledActivityColumn(isDfFiltered).getRawData();
@@ -585,7 +598,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   createLogoSummaryTableGrid(): DG.Grid {
     const isDfFiltered = this.dataFrame.filter.anyFalse;
-    const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
+    const filteredDf = isDfFiltered ? this.getNeededDfClone() : this.dataFrame;
     const aggColsEntries = this.getTotalViewerAggColumns();
     const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
 
@@ -970,7 +983,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   showTooltip(cluster: SelectionItem, x: number, y: number): HTMLDivElement | null {
     const bs = this.dataFrame.filter;
-    const filteredDf = bs.anyFalse ? this.dataFrame.clone(bs) : this.dataFrame;
+    const filteredDf = bs.anyFalse ? this.getNeededDfClone() : this.dataFrame;
     const rowCount = filteredDf.rowCount;
     const bitArray = new BitArray(rowCount, false);
     const activityCol = this.getScaledActivityColumn(bs.anyFalse);
