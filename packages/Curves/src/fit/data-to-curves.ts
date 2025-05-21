@@ -192,7 +192,7 @@ export function dataToCurvesUI() {
           groupByColumnNames: ['Assay'], aggregateColumnNames: ['IC50', 'AUC', 'Hill', 'Min', 'Max'],
           aggregateAggTypes: ['geomean', 'avg', 'geomean', 'avg', 'avg'], showHeader: false
         });
-        pivot.props.title = 'Seleted Statistics';
+        pivot.props.title = 'Selected Statistics';
         tv.dockManager.dock(pivot, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(trellis.root), 'Selected Statistics', 0.1);
       }
     })
