@@ -1,4 +1,4 @@
-/*
+
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
 
@@ -15,7 +15,7 @@ const WebSocket = require('ws');
 };
 
 export async function startDatagrok(): Promise<any> {
-    await import ('../../ddt/build/web/ddt.dart.js');
+    await import ('./datagrok/web/grok_shared.dart.js');
 
     await new Promise(resolve => setTimeout(resolve, 100));
     (globalThis as any).document = {createElement: () => {return {bind: {}}}};
@@ -27,5 +27,3 @@ export async function startDatagrok(): Promise<any> {
 
 export type {DG as _DG, grok as _grok} from './node-api';
 
-
-*/
