@@ -231,7 +231,8 @@ class DatagrokTask(celery.Task):
         size = len(data)
         if param.property_type == Type.DATA_FRAME:
             param_type = "parquet" if self._call.use_parquet_transfer else "csv"
-            param_id = uuid.uuid1()
+            param_id = str(uuid.uuid1())
+        param.value = {"id": param_id} if param.property_type == Type.DATA_FRAME else param_id
         tags_json = json.dumps({".id": param_id, ".type": param_type})
 
         start = time_lib.monotonic()
@@ -242,7 +243,7 @@ class DatagrokTask(celery.Task):
         for i in range(0, size, batch_size):
             chunk = data[i:i+batch_size]
             self._logger.debug("Sending binary batch %s of param %s", i, param.name, extra={"task_id": self._call.id})
-            self._pipe_send(chunk)
+            self._pipe_send(chunk, opcode=websocket.ABNF.OPCODE_BINARY)
             
             try:
                 response = self._pipe.recv()
@@ -251,11 +252,10 @@ class DatagrokTask(celery.Task):
                 raise
             if response == "ERROR":
                 raise Exception(f"Error sending parameter {param.name}")
-            elif response != "PART_OK":
+            elif response != "PART OK":
                 raise ValueError("Unexpected message received from grok_pipe.")
             
         self._logger.info("Finished sending param %s (%d bytes in %d chunks), elapsed: %d ms", param.name, size, (size + batch_size - 1) // batch_size, (time_lib.monotonic() - start) * 1000, extra={"task_id": self._call.id})
-        param.value = {"id": param_id} if param.property_type == Type.DATA_FRAME else param_id    
 
     def _process_input_params(self):
         for param in self._call.input_params:
@@ -298,6 +298,7 @@ class DatagrokTask(celery.Task):
                 elif message.startswith("SENDING"):
                     self._logger.debug("Server is sending parameter data: %s", message, extra={"task_id": self._call.id})
                     expected_size = self._get_expected_size(message)
+                    self._logger.debug("Expected parameter size: %s bytes", expected_size)
                 else:
                     self._logger.debug(f"Unexpected message: %s", message[:30])
             else:
@@ -310,11 +311,12 @@ class DatagrokTask(celery.Task):
                 chunks.append(message)
                 total_bytes_received += chunk_size
                 self._logger.debug("Total bytes received: %s/%s", total_bytes_received, expected_size, extra={"task_id": self._call.id})
-                self._pipe_send("PART_OK")
+                self._pipe_send("PART OK")
                 if total_bytes_received > expected_size:
                     self._logger.error("Received size of binary data is larger than expected for param %s", param.name, extra={"task_id": self._call.id})
                     raise ValueError("Received size of binary data is larger than expected.")      
                 if total_bytes_received == expected_size:
+                    self._pipe.recv() # receive fin message
                     self._logger.info("Received all bytes for param %s, elapsed: %d ms", param.name, (time_lib.monotonic() - start) * 1000, extra={"task_id": self._call.id})
                     break
         
@@ -329,8 +331,7 @@ class DatagrokTask(celery.Task):
         try:
             parts = message.split()
             if len(parts) >= 3:
-                expected_size = int(parts[2])
-                self._logger.debug("Expected parameter size: %s bytes", expected_size)
+                return int(parts[2])
         except (ValueError, IndexError) as e:
             self._logger.error("Could not parse size from SENDING: %s", str(e), exc_info=True, extra={"task_id": self._call.id})
             raise
@@ -343,16 +344,17 @@ class DatagrokTask(celery.Task):
             try:
                 self._pipe = websocket.create_connection(f"{self._settings.pipe_url}/{self._call.id}", header=[f"x-member-name: celery-{self._settings.celery_name}", f"authorization: {self._settings.pipe_key}"] or [], timeout=timeout)
                 self._pipe.settimeout(self._settings.ws_message_timeout_seconds)
+                return
             except Exception as e:
                 self._logger.warning("WS connection failed (attempt %s/%s): %s", attempt + 1, max_retries, str(e), exc_info=True, extra={"task_id": self._call.id})
                 attempt += 1
                 time_lib.sleep(retry_interval)
         raise ConnectionError(f"Failed to connect to grok_pipe at {self._settings.pipe_url} after {max_retries} retries") 
 
-    def _pipe_send(self, message):
+    def _pipe_send(self, message, opcode=websocket.ABNF.OPCODE_TEXT):
         self._ensure_pipe_conn()
         try:
-            self._pipe.send(message)
+            self._pipe.send(message, opcode=opcode)
         except websocket.WebSocketConnectionClosedException:
             self._logger.warning("Grok_Pipe is disconnected, trying to reconnect...", self._call.id, extra={"task_id": self._call.id})
             self._ensure_pipe_conn()

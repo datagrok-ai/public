@@ -63,10 +63,13 @@ class WebSocketRedirect(BaseRedirect):
         if self.message_count > self.max_message_count:
             if not self.notified_overflow:
                 try:
-                    self.ws.send(f"LOG {json.dumps({"level": "warning", 
-                                                 "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                                                 "message": "Stdout overflow. Possible printing in the loop?",
-                                                 "params": {self.service_log_key: True}})}")
+                    log_entry = {
+                        "level": "warning",
+                        "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        "message": "Stdout overflow. Possible printing in the loop?",
+                        "params": {self.service_log_key: True}
+                    }
+                    self.ws.send(f"LOG {json.dumps(log_entry)}")
                     self.notified_overflow = True
                 except Exception:
                     pass
