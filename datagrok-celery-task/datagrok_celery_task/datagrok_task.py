@@ -100,7 +100,8 @@ class DatagrokTask(celery.Task):
             except Exception as e:
                 self._logger.error("Couldn't close WS connection: %s", str(e), extra={"task_id": self._call.id}, exc_info=True)
             finally:
-                self._pipe = None        
+                self._pipe = None
+        self._call = None
 
     # Overrides celery.Task.update_state
     def update_state(self, task_id=None, state=None, meta=None):
