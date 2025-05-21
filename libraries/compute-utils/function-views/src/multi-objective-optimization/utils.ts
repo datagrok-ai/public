@@ -1,5 +1,7 @@
 /* eslint-disable valid-jsdoc */
 
+const MIN_DIM = 1;
+
 /** Return clipped value */
 export function clip(val: number, min: number, max: number): number {
   return (val < min) ? min : (val > max) ? max : val;
@@ -31,4 +33,11 @@ export function getFloatArrays(count: number, length: number): Float32Array[] {
   for (let i = 0; i < count; ++i)
     arrs[i] = new Float32Array(length);
   return arrs;
+}
+
+export function isDimValid(dim: number): boolean {
+  if (!Number.isInteger(dim))
+    return false;
+
+  return dim >= MIN_DIM;
 }

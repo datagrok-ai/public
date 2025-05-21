@@ -4,11 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MoeadOptions, DEFAULT_SETTINGS, Validation, OptResult, InputOptions, Func} from './defs';
+import {MoeadOptions, DEFAULT_SETTINGS, Validation, OptResult, InputOptions, Func, OPT_TYPE} from './defs';
 import {OptimizeManager} from './optimize-manager';
 import {OptimizationView} from '../optimization-view';
 
 import {Moead} from './moead';
+import {Visualizer} from './visualizer';
 
 enum LIMITS {
   MIN_WEIGHTS = 1,
@@ -126,4 +127,9 @@ export class MoeadManager extends OptimizeManager {
 
     return results;
   };
+
+  public visualize(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE): void {
+    const viz = new Visualizer(view, inputDim, outputDim, type);
+    viz.visualize();
+  }
 };

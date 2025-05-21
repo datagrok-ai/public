@@ -38,3 +38,13 @@ export type Validation = {
 };
 
 export const SLEEP_TIME = 5;
+
+export enum OPT_TYPE {
+  MIN = 'Minimize',
+  MAX = 'Maximize',
+};
+
+export type TooltipInfo = {
+  msg: string,
+  isInput: boolean,
+};

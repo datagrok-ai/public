@@ -16,11 +16,13 @@ import {getCategoryWidget} from './fitting/fitting-utils';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {DiffGrok} from './fitting-view';
-import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT, OPT_TYPE,
-  getHelpIcon} from './multi-objective-optimization/ui-tools';
+import {getOptTypeInput, HELP_URL, STARTING_HELP, TITLE, METHOD, METHOD_HINT,
+  getHelpIcon,
+  getColorScaleDiv} from './multi-objective-optimization/ui-tools';
 import {MoeadManager} from './multi-objective-optimization/moead-manager';
 import {OptimizeManager} from './multi-objective-optimization/optimize-manager';
 import {getFloatArrays} from './multi-objective-optimization/utils';
+import {OPT_TYPE, TooltipInfo} from './multi-objective-optimization/defs';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -852,16 +854,17 @@ export class OptimizationView {
         }
       });
 
-      const sign = (this.optTypeInput.value === OPT_TYPE.MIN) ? 1 : -1;
+      const optType: OPT_TYPE = this.optTypeInput.value!;
+      const sign = (optType === OPT_TYPE.MIN) ? 1 : -1;
 
       /** The optimization objective */
       const objective = async (x: Float32Array): Promise<Float32Array> => {
-        return new Float32Array([
-          -(x[0]**2 + x[1]**2) * sign,
-          -((x[0] - 2)**2 + (x[1] - 1)**2) * sign,
-          -((x[0] - 1)**2 + (x[1] - 2)**2) * sign,
-          -((x[0] - 0.3)**2 + (x[1] - 0.7)**2) * sign,
-        ]);
+        // return new Float32Array([
+        //   -(x[0]**2 + x[1]**2) * sign,
+        //   -((x[0] - 2)**2 + (x[1] - 1)**2) * sign,
+        //   -((x[0] - 1)**2 + (x[1] - 2)**2) * sign,
+        //   -((x[0] - 0.3)**2 + (x[1] - 0.7)**2) * sign,
+        // ]);
 
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
@@ -937,20 +940,26 @@ export class OptimizationView {
       );
 
       // Set columns' names & tooltips
-      const colTooltips = new Map<string, string>();
+      const colTooltips = new Map<string, TooltipInfo>();
 
       const resCols = resulDataframe.columns;
       variedInputsCaptions.forEach((name, idx) => {
         const unusedName = resCols.getUnusedName(name);
         resCols.byName(`inp ${idx}`).name = unusedName;
-        colTooltips.set(unusedName, `Values of the input scalar **"${name}"**`);
+        colTooltips.set(unusedName, {
+          msg: `Values of the input scalar **"${name}"**`,
+          isInput: true,
+        });
       });
 
       outputInfo.forEach((info, idx) => {
         const col = resCols.byName(`out ${idx}`);
         const unusedName = resCols.getUnusedName(info.caption);
         col.name = unusedName;
-        colTooltips.set(unusedName, info.hint);
+        colTooltips.set(unusedName, {
+          msg: info.hint,
+          isInput: false,
+        });
       });
 
       this.comparisonView.dataFrame = resulDataframe;
@@ -961,11 +970,20 @@ export class OptimizationView {
         if (cell.isColHeader) {
           const cellCol = cell.tableColumn;
           if (cellCol) {
-            ui.tooltip.show(ui.markdown(colTooltips.get(cell.tableColumn.name) ?? ''), x, y);
+            const info = colTooltips.get(cell.tableColumn.name) ?? {msg: '', isInput: true};
+            const elems = [ui.markdown(info.msg)];
+
+            if (!info.isInput)
+              elems.push(getColorScaleDiv(optType));
+
+            ui.tooltip.show(ui.divV(elems), x, y);
             return true;
           }
         }
       });
+
+      // Visualize results
+      optManager.visualize(this.comparisonView, inputDim, outputDim, this.optTypeInput.value!);
 
       this.clearPrev();
     } catch (error) {
@@ -1009,9 +1027,4 @@ export class OptimizationView {
       this.gridCellChangeSubscription = null;
     }
   } // clearPrev
-
-  /** */
-  // private getViewer(): DG.Viewer {
-
-  // }
 }
