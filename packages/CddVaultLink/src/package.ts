@@ -38,6 +38,7 @@ export async function cddVaultApp(): Promise<DG.ViewBase> {
 //input: dynamic treeNode
 //input: view browseView
 export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  const openedViews: {[key: string]: DG.View} = {};
   const vaults = await getVaults();
   if (vaults.error) {
     grok.shell.error(vaults.error);
@@ -53,20 +54,21 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     //vault node
     const vaultNode = treeNode.group(vault.name);
     vaultNode.onSelected.subscribe(() => {
-      const view = DG.View.create();
-      view.name = vault.name;
-      const tabs = createLinks(['Protocols', 'Saved searches', 'Collections', 'Molecules', 'Search'], treeNode, view);
-      view.append(tabs);
-      grok.shell.addPreview(view);
-      setBreadcrumbsInViewName([vault.name], treeNode, view);
+      openedViews[vault.id]?.close();
+      openedViews[vault.id] = DG.View.create();
+      openedViews[vault.id].name = vault.name;
+      const tabs = createLinks(['Protocols', 'Saved searches', 'Collections', 'Molecules', 'Search'], treeNode, openedViews[vault.id]);
+      openedViews[vault.id].append(tabs);
+      grok.shell.addPreview(openedViews[vault.id]);
+      setBreadcrumbsInViewName([vault.name], treeNode, openedViews[vault.id]);
     });
 
     //protocols node
 
     let protocols: Protocol[] | null = null;
-    createNestedCDDNode(protocols, 'Protocols', vaultNode, 'CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
+    createNestedCDDNode(vault.id, openedViews, protocols, 'Protocols', vaultNode, 'CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
       async (item: any) => {
-        createCDDTableView(['Protocols', item.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
+        createCDDTableView(vault.id, openedViews, ['Protocols', item.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
           {
             vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
             structure_similarity_threshold: 0, protocol: item.id, run: undefined
@@ -76,27 +78,29 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       }
     );
 
-    //saved searches node
+    //saved searches node - only asyn method is available (so createCDDTableViewWithPreview function is not applicable)
     let savedSearches: SavedSearch[] | null = null; 
-    createNestedCDDNode(savedSearches, 'Saved searches', vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
+    createNestedCDDNode(vault.id, openedViews, savedSearches, 'Saved searches', vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
       async (item: any) => {
-        createCDDTableView(['Saved searches', item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
+        createCDDTableView(vault.id, openedViews, ['Saved searches', item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
           { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5}, vault.name, treeNode);
       }
     );
 
     //collections
     let collections: Collection[] | null = null;
-    createNestedCDDNode(collections, 'Collections', vaultNode, 'CDDVaultLink:getCollectionsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
+    createNestedCDDNode(vault.id, openedViews, collections, 'Collections', vaultNode, 'CDDVaultLink:getCollectionsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
       async (item: any) => {
         //in case collection doesn't contain molecules - add empty tableView
         if (!item.molecules || !item.molecules.length) {
+          const itemFullName = `Collections|${item.name}`;
+          openedViews[itemFullName]?.close();
           const df = DG.DataFrame.create();
           df.name = item.name;
-          grok.shell.addTablePreview(DG.DataFrame.create());
+          openedViews[itemFullName] = grok.shell.addTablePreview(DG.DataFrame.create());
           grok.shell.warning(`No molecules found for ${item.name} collection`);
         }
-        createCDDTableViewWithPreview(['Collections', item.name], `Waiting for ${item.name} results`,
+        createCDDTableViewWithPreview(vault.id, openedViews, ['Collections', item.name], `Waiting for ${item.name} results`,
           'CDDVaultLink:getMolecules',
           {
             vaultId: vault.id,
@@ -114,14 +118,15 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     //molecules node
     const moleculesNode = vaultNode.item('Molecules');
     moleculesNode.onSelected.subscribe(async (_) => {
-      createCDDTableViewWithPreview(['Molecules'], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
+      createCDDTableViewWithPreview(vault.id, openedViews, ['Molecules'], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
         {vaultId: vault.id, moleculesIds: ''}, 'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5}, vault.name, treeNode);
     });
 
     //search node
     const searchNode = vaultNode.item('Search');
     searchNode.onSelected.subscribe(() => {
-      const view = DG.View.create();
+      openedViews[`${vault.id}|Search`]?.close();
+      openedViews[`${vault.id}|Search`] = DG.View.create();
       const funcEditor = new SeachEditor(vault.id);
       const acc = funcEditor.getEditor();
       let df: DG.DataFrame | null = null;
@@ -152,15 +157,15 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
         if (df)
           grok.shell.addTablePreview(df);
       }, 'Add results to workspace');
-      view.setRibbonPanels([[addToWorkspaceButton]]);
-      view.name = 'Search CDD Vault'
-      view.root.append(ui.divV([
+      openedViews[`${vault.id}|Search`].setRibbonPanels([[addToWorkspaceButton]]);
+      openedViews[`${vault.id}|Search`].name = 'Search CDD Vault'
+      openedViews[`${vault.id}|Search`].root.append(ui.divV([
         acc,
         runButton,
         gridDiv
       ], {style: {height: '100%'}}));
-      grok.shell.addPreview(view);
-      setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, view);
+      grok.shell.addPreview(openedViews[`${vault.id}|Search`]);
+      setBreadcrumbsInViewName([vault.name, 'Search'], treeNode, openedViews[`${vault.id}|Search`]);
     });
    //TODO! unlock other tabs
    // vaultNode.group('Plates');
@@ -168,7 +173,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   }
 }
 
-function createNestedCDDNode(items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
+function createNestedCDDNode(vaultId: number, openedViews: {[key: string]: DG.View}, items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
   getItemsFunsName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
   onItemSelected: (item: any) => Promise<void>) {
   const nestedNode = vaultNode.group(nodeName, null, false);
@@ -179,13 +184,14 @@ function createNestedCDDNode(items: any[] | null, nodeName: string, vaultNode: D
     }
   }
   nestedNode.onSelected.subscribe(async () => {
+    openedViews[`${vaultId}|${nodeName}`]?.close();
     nestedNode.expanded = true;
     await loadData();
-    const view = DG.View.create();
-    view.name = nodeName;
-    const tabs = createLinks(items!.map((it) => it.name), treeNode, view);
-    view.append(tabs);
-    grok.shell.addPreview(view);
+    openedViews[`${vaultId}|${nodeName}`] = DG.View.create();
+    openedViews[`${vaultId}|${nodeName}`].name = nodeName;
+    const tabs = createLinks(items!.map((it) => it.name), treeNode, openedViews[`${vaultId}|${nodeName}`]);
+    openedViews[`${vaultId}|${nodeName}`].append(tabs);
+    grok.shell.addPreview(openedViews[`${vaultId}|${nodeName}`]);
     setBreadcrumbsInViewName([vault.name, nodeName], treeNode);
   });
 
@@ -201,53 +207,53 @@ function createNestedCDDNode(items: any[] | null, nodeName: string, vaultNode: D
   });
 }
 
-async function createCDDTableView(viewName: string[], progressMessage: string, funcName: string,
+async function createCDDTableView(vaultId: number, views: {[key: string]: DG.View}, viewName: string[], progressMessage: string, funcName: string,
   funcParams: {[key: string]: any}, vaultName: string, treeNode: DG.TreeViewGroup) {
-  const view = DG.View.create();
-  view.name = viewName[viewName.length - 1];
-  grok.shell.addPreview(view);
-  ui.setUpdateIndicator(view.root, true, progressMessage);
+  const viewFullName = `${vaultId}|${viewName.join('|')}`;
+  views[viewFullName]?.close();
+  views[viewFullName] = DG.View.create();
+  views[viewFullName].name = viewName[viewName.length - 1];
+  grok.shell.addPreview(views[viewFullName]);
+  ui.setUpdateIndicator(views[viewFullName].root, true, progressMessage);
   const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
-  view.close();
+  views[viewFullName].close();
   df.name = viewName[viewName.length - 1];
-  const tv = grok.shell.addTablePreview(df);
-  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, tv);
+  views[viewFullName] = grok.shell.addTablePreview(df);
+  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
 }
 
-async function createCDDTableViewWithPreview(viewName: string[], progressMessage: string, syncfuncName: string,
+async function createCDDTableViewWithPreview(vaultId: number, views: {[key: string]: DG.View}, viewName: string[], progressMessage: string, syncfuncName: string,
   syncfuncParams: {[key: string]: any}, asyncfuncName: string, asyncfuncParams: {[key: string]: any},
   vaultName: string, treeNode: DG.TreeViewGroup) {
-  const view = DG.View.create();
-  view.name = viewName[viewName.length - 1];
-  grok.shell.addPreview(view);
-  ui.setUpdateIndicator(view.root, true, progressMessage);
-  let tv: DG.TableView | null = null;
+  const viewFullName = `${vaultId}|${viewName.join('|')}`;
+  views[viewFullName]?.close();
+  delete views[viewFullName];
+  views[viewFullName] = DG.View.create();
+  views[viewFullName].name = viewName[viewName.length - 1];
+  grok.shell.addPreview(views[viewFullName]);
+  ui.setUpdateIndicator(views[viewFullName].root, true, progressMessage);
   let updateDataWithAsyncResults = true;
   //run sync function with offset and create a preview
   grok.functions.call(syncfuncName, syncfuncParams).then((res: DG.DataFrame) => {
-    if (!tv) {
+    if (views[viewFullName]) {
       if (res.rowCount < PREVIEW_ROW_NUM) {
         updateDataWithAsyncResults = false;
         progressBar.close();
       }
       res.name = viewName[viewName.length - 1];
-      tv = grok.shell.addTablePreview(res);
-      view.close();
-      setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, tv);
+      views[viewFullName].close();
+      views[viewFullName] = grok.shell.addTablePreview(res);
+      setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
     }
   });
   //reset tableView with asynchronously received results
   grok.functions.call(asyncfuncName, asyncfuncParams).then((res: DG.DataFrame) => {
     if (!updateDataWithAsyncResults)
       return;
-    if (tv)
-      tv.close();
-    else {
-      view.close();
-    }
+    views[viewFullName].close();
     res.name = viewName[viewName.length - 1];
-    tv = grok.shell.addTablePreview(res);
-    setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, tv);
+    views[viewFullName] = grok.shell.addTablePreview(res);
+    setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
     progressBar.close();
   });
   const progressBar = DG.TaskBarProgressIndicator.create(`Loading ${viewName[viewName.length - 1]}...`);
