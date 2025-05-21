@@ -41,7 +41,10 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
   [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
 * Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
+* Optional. [SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl): Integration with [SureChEMBL](https://www.surechembl.org) database (information on patented molecules)
 * Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
+* Optional. [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink): Integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system
+* Optional. [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis): Integration with [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder) for retrosynthetic planning.
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
@@ -120,6 +123,37 @@ To run a query, sketch the substructure and click **OK**. Datagrok retrieves the
 </details>
 
 To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+
+### Integration with CDD Vault
+
+Datagrok integrates with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
+You can browse the vault content and analyze your assay data from within the platform.
+
+<details>
+<summary> How to use </summary>
+
+To use the app, you need to be registered in the CDD Vault system and have at least one vault set up.
+The CDD Vault api key should be set in package credentials manager under `apiKey` key.
+
+To access assay data, in the **Browse** panel, go to **Apps** > **Chem** > **CDD Vault**.
+The app lists all connected vaults. Each vault contains 3 sections:
+
+1. **Molecules**: 
+   * Shows all molecules available in the selected vault
+   * The **Id** column contains contains direct links to corresponding molecules in your vault
+   ![Molecules tab](img/cdd_molecules.png)
+
+1. **Search**: Provides basic vault search functionality with similarity and diversity searches
+   ![Search tab](img/cdd_search.png)
+
+1. **Saved searches**: Lists all saved searches in your vault. Click any search in the list to view its results.
+   ![Saved search](img/cdd_saved_search.png)
+
+The app also provides a CDD Vault [info pane](info-panels/info-panels.md), which lets you explore the CDD Vault data for molecules directly in the **Context Panel** (**Databases** > **CDD Vault**).
+
+![Context panel](img/cdd_context_panel.png)
+
+</details>
 
 ## Exploring chemical data
 
@@ -375,6 +409,40 @@ Please note, that webGPU is still considered as experimental feature, and for no
 
 </details>
 
+### Integration with SureChEMBL
+
+Quickly identify patented molecules similar to your compounds. The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) provides local access to the [SureChEMBL](https://www.surechembl.org) database. 
+
+You can: 
+* Search either by similarity or substructure
+* Set result limits and similarity thresholds
+* View associated patent information
+
+![surechembl search parameters](img/surechembl_search_params.gif)
+
+<details>
+<summary> How to use </summary>
+
+1. **Finding related molecules**:
+   1. In the dataset, click a cell containing your target molecule structure.
+   1. In the **Context Panel**, expand **Databases** > **SureChEMBL**. 
+   1. Expand the corresponding info panes:
+      * **Substructure Search**: For molecules containing your structure  
+      * **Similarity Search**: For structurally similar molecules (results display similarity scores above each molecule)
+2. **Adjusting search parameters**:
+   * **Molecules limit**: Change the number of results shown (default is 10)
+   * **Similarity cutoff**: Set the minimum similarity threshold for matches (for **Similarity Search** only)
+3. **Viewing patent information**:
+   * **Quick view**: Expand the patents pane beneath any molecule to see associated patents. A marker indicates the total number of patents found.
+   * **Detailed view** (opens a separate **Table View**): 
+     * To view all patents across all search molecules, click the plus (**+**) icon beneath the search settings.
+     * To view patents for a specific molecule, click the plus (**+**) icon next to a specific molecule's patent count
+   * **Direct access**: The patent information contains patent ID links. Click the link to see the original patent on the SureChEMBL website.
+
+![surechembl search results](img/surechembl_search_results.gif)
+
+</details>
+
 ## Structure analysis
 
 ### R-groups analysis
@@ -506,6 +574,15 @@ To color scaffold nodes, do the following:
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </details>
+
+### Retrosynthesis
+
+You can explore the most efficient synthetic pathways and commercially available
+starting materials for your target molecules. To view the results for your
+target, click or sketch a molecule, and expand the **Retrosynthesis** pane in
+the **Context Panel**.
+
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
 
 ### Elemental analysis
 
@@ -771,63 +848,6 @@ To view the chemical scripts you've created or those shared with you, open the [
 For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
-
-## Retrosynthesis
-
-Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
-commercially available starting materials and the synthetic reactions needed to reach the target.
-
-To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
-![Retrosynthesis panel](img/retrosynthesis-panel.png)
-
-## Integration with SureChEMBL
-
-SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
-
-<details>
-<summary> How to use </summary>
-
-* select cell with molecule structure in the grid
-* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
-* change the number in the *Molecules limit* field to search for more or fewer molecules
-* change the similarity cutoff using the *Similarity cutoff* slider
-* click the *plus* icon to add all patents found for molecules in the results as a table view
-
-![surechembl search parameters](img/surechembl_search_params.gif)
-
-Search results are shown under the *Substructure Search*/*Similarity Search* tab. Similarity search results are sorted by similarity score and the score is indicated above the molecule.
-Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
-
-![surechembl search results](img/surechembl_search_results.gif)
-
-</details>
-
-## Integration with CDD Vault
-
-CDDVaultLInk plugin provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
-
-<details>
-<summary> How to use </summary>
-
-To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
-CDD Vault api key should be set in package credentials manager under 'apiKey' key.
-
-To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
-List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
-
-* *Molecules* - the list of all available molecules in the vault. *Id* column contains links to the corresponding molecules in your vault.
-![Molecules tab](img/cdd_molecules.png)
-
-* *Search* - basic search through you vault containing similarity and diversity searches.
-![Search tab](img/cdd_search.png)
-
-* *Saved searches* - open tab to see the list of all saved searches in your vault. Click any search in the list to open the search results.
-![Saved search](img/cdd_saved_search.png)
-
-There is also a tab in the context panel. To use, click or sketch a molecule, and expand the *Databases* -> *CDD Vault* context panel on the right:
-![Context panel](img/cdd_context_panel.png)
-
-</details>
 
 ## Utilities
 
