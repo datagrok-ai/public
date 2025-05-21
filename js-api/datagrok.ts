@@ -15,6 +15,7 @@ const WebSocket = require('ws');
 };
 
 export async function startDatagrok(): Promise<any> {
+    //@ts-ignore
     await import ('./src/datagrok/web/grok_shared.dart.js');
 
     await new Promise(resolve => setTimeout(resolve, 100));
