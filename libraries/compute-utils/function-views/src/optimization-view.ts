@@ -285,6 +285,7 @@ export class OptimizationView {
     return {inputs, outputs};
   };
 
+  private openedViewers: DG.Viewer[] = [];
   private readyToRun = false;
   private isOptimizationRunning = false;
 
@@ -816,18 +817,21 @@ export class OptimizationView {
       }
 
       let outputDim = 0;
-      const outputNames: string[] = [];
+      const outputInfo: {caption: string, hint: string}[] = [];
 
       // Single call for output specification
       minVals.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
 
-      //console.log(await grok.functions.call(this.func.nqName, inputs));
-
       outputsOfInterest.forEach((output) => {
+        const caption = output.prop.caption ?? output.prop.name;
+
         if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
-          outputNames.push(output.prop.name);
+          outputInfo.push({
+            caption: caption,
+            hint: `Values of the output scalar **"${caption}"**`,
+          });
           ++outputDim;
         } else {
           const df = calledFuncCall.getParamValue(output.prop.name) as DG.DataFrame;
@@ -838,7 +842,10 @@ export class OptimizationView {
               continue;
 
             for (let i = 0; i < rowCount; ++i) {
-              outputNames.push(`${output.prop.name}["${col.name}", ${i + 1}]`);
+              outputInfo.push({
+                caption: `${caption}["${col.name}", ${i + 1}]`,
+                hint: `Values of the output dataframe **"${caption}"**:\n\n - column: "${col.name}"\n\n - row: ${i + 1}`,
+              });
               ++outputDim;
             }
           }
@@ -849,12 +856,12 @@ export class OptimizationView {
 
       /** The optimization objective */
       const objective = async (x: Float32Array): Promise<Float32Array> => {
-        // return new Float32Array([
-        //   -(x[0]**2 + x[1]**2) * sign,
-        //   -((x[0] - 2)**2 + (x[1] - 1)**2) * sign,
-        //   -((x[0] - 1)**2 + (x[1] - 2)**2) * sign,
-        //   -((x[0] - 0.3)**2 + (x[1] - 0.7)**2) * sign,
-        // ]);
+        return new Float32Array([
+          -(x[0]**2 + x[1]**2) * sign,
+          -((x[0] - 2)**2 + (x[1] - 1)**2) * sign,
+          -((x[0] - 1)**2 + (x[1] - 2)**2) * sign,
+          -((x[0] - 0.3)**2 + (x[1] - 0.7)**2) * sign,
+        ]);
 
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
@@ -929,12 +936,36 @@ export class OptimizationView {
           .concat(outRaw.map((raw, idx) => DG.Column.fromFloat32Array(`out ${idx}`, raw, solutionsCount))),
       );
 
-      // Set columns' names
+      // Set columns' names & tooltips
+      const colTooltips = new Map<string, string>();
+
       const resCols = resulDataframe.columns;
-      variedInputNames.forEach((name, idx) => resCols.byName(`inp ${idx}`).name = resCols.getUnusedName(name));
-      outputNames.forEach((name, idx) => resCols.byName(`out ${idx}`).name = resCols.getUnusedName(name));
+      variedInputsCaptions.forEach((name, idx) => {
+        const unusedName = resCols.getUnusedName(name);
+        resCols.byName(`inp ${idx}`).name = unusedName;
+        colTooltips.set(unusedName, `Values of the input scalar **"${name}"**`);
+      });
+
+      outputInfo.forEach((info, idx) => {
+        const col = resCols.byName(`out ${idx}`);
+        const unusedName = resCols.getUnusedName(info.caption);
+        col.name = unusedName;
+        colTooltips.set(unusedName, info.hint);
+      });
 
       this.comparisonView.dataFrame = resulDataframe;
+      const grid = this.comparisonView.grid;
+
+      // Add tooltips
+      grid.onCellTooltip(function(cell, x, y) {
+        if (cell.isColHeader) {
+          const cellCol = cell.tableColumn;
+          if (cellCol) {
+            ui.tooltip.show(ui.markdown(colTooltips.get(cell.tableColumn.name) ?? ''), x, y);
+            return true;
+          }
+        }
+      });
 
       this.clearPrev();
     } catch (error) {
@@ -958,6 +989,11 @@ export class OptimizationView {
 
   /** Clear previous results: close dock nodes and unsubscribe from events */
   private clearPrev(): void {
+    for (const v of this.openedViewers)
+      v.close();
+
+    this.openedViewers.splice(0);
+
     if (this.helpDN !== undefined) {
       this.comparisonView.dockManager.close(this.helpDN);
       this.helpDN = undefined;
@@ -973,4 +1009,9 @@ export class OptimizationView {
       this.gridCellChangeSubscription = null;
     }
   } // clearPrev
+
+  /** */
+  // private getViewer(): DG.Viewer {
+
+  // }
 }
