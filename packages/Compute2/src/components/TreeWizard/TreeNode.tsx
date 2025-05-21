@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, ValidationIcon, ValidationIconInput} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
