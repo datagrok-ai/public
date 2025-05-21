@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = [
-  {
+/*  {
     target: 'node',
     mode: 'development',
     entry: {'DG': './datagrok.ts'},
@@ -59,7 +59,7 @@ module.exports = [
       libraryTarget: 'commonjs',
       path: path.resolve(__dirname, ''),
     },
-  },{
+  },*/{
     mode: 'development',
     entry: {'DG': './dg.ts'},
     devtool: 'source-map',
