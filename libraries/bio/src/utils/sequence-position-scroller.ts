@@ -214,6 +214,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private monomerLib: any = null;
   private biotype: string = 'PEPTIDE';
   private separatorWidth: number = 1; // Width of separators between letters
+  private hoveredPosition: number = -1;
+  private hoveredMonomer: string | null = null;
 
   // Fallback color scheme if monomerLib doesn't work
   private readonly aminoAcidColors: Record<string, string> = {
@@ -222,6 +224,13 @@ export class WebLogoTrack extends MSAHeaderTrack {
     'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
     'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
   };
+
+  public setHovered(position: number, monomer: string | null): void {
+    if (this.hoveredPosition !== position || this.hoveredMonomer !== monomer) {
+      this.hoveredPosition = position;
+      this.hoveredMonomer = monomer;
+    }
+  }
 
   constructor(
     data: Map<number, Map<string, number>> = new Map(),
@@ -239,72 +248,76 @@ export class WebLogoTrack extends MSAHeaderTrack {
   public setupDefaultTooltip(): void {
     this.enableTooltip(true);
     this.setTooltipContentGenerator((position: number, data: Map<string, number>) => {
-      // Create container with Datagrok yellow style
+    // Create container with clean Datagrok yellow style
       const container = ui.div([], {
         style: {
           color: '#4A4A49',
-          background: '#fdffe5e0',
-          border: '1px solid #E4E6CE',
-          borderRadius: '2px',
-          padding: '10px',
-          boxShadow: '0 0 5px #E4E6CE',
-          fontSize: '0.9rem',
-          backdropFilter: 'blur(5px)'
+          background: '#FFFBCC', // Clean yellow background
+          borderRadius: '3px',
+          padding: '8px',
+          fontSize: '12px',
+          fontFamily: 'sans-serif',
+          minWidth: '120px'
         }
       });
 
       // Add position information
-      container.appendChild(ui.divText(`Position: ${position + 1}`));
+      const positionDiv = ui.div([ui.divText(`Position: ${position + 1}`)], {
+        style: {
+          fontWeight: 'bold',
+          marginBottom: '6px',
+          fontSize: '13px'
+        }
+      });
+      container.appendChild(positionDiv);
 
       if (data && data.size > 0) {
-        // Add frequency information
-        const freqDiv = ui.div([]);
-        freqDiv.appendChild(ui.divText('Residue Frequencies:', {style: {fontWeight: 'bold', marginTop: '5px'}}));
-
-        // Sort by frequency (highest first)
+      // Sort by frequency (highest first)
         const sortedResidues = Array.from(data.entries())
           .sort((a, b) => b[1] - a[1]);
 
-        // Create a table for frequencies
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.marginTop = '5px';
+        // Create a compact grid layout
+        const gridContainer = ui.div([], {
+          style: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(45px, 1fr))',
+            gap: '3px',
+            marginTop: '4px'
+          }
+        });
 
         for (const [residue, freq] of sortedResidues) {
-          const row = table.insertRow();
+        // Create a cell for each residue
+          const cellDiv = ui.div([], {
+            style: {
+              backgroundColor: this.getMonomerTextColorForBackground(residue),
+              color: this.getContrastColor(this.getMonomerTextColorForBackground(residue)),
+              textAlign: 'center',
+              padding: '4px 2px',
+              borderRadius: '2px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              border: '1px solid rgba(0,0,0,0.1)'
+            }
+          });
 
-          // Residue cell
-          const residueCell = row.insertCell();
-          residueCell.textContent = residue;
-          residueCell.style.padding = '2px 5px';
-          residueCell.style.fontWeight = 'bold';
+          // Add residue letter and percentage
+          const residueText = ui.div([ui.divText(residue)], {
+            style: {fontSize: '12px', fontWeight: 'bold', lineHeight: '1'}
+          });
+          const freqText = ui.div([ui.divText(`${(freq * 100).toFixed(0)}%`)], {
+            style: {fontSize: '10px', lineHeight: '1', marginTop: '1px'}
+          });
 
-          // Background color matching the WebLogo
-          const backgroundColor = this.getMonomerTextColorForBackground(residue);
-          residueCell.style.backgroundColor = backgroundColor;
-          residueCell.style.color = this.getContrastColor(backgroundColor);
-
-          // Frequency cell
-          const freqCell = row.insertCell();
-          freqCell.textContent = `${(freq * 100).toFixed(1)}%`;
-          freqCell.style.padding = '2px 5px';
-
-          // Bar visualization
-          const barCell = row.insertCell();
-          barCell.style.padding = '2px 5px';
-
-          const bar = document.createElement('div');
-          bar.style.width = `${freq * 100}%`;
-          bar.style.height = '10px';
-          bar.style.backgroundColor = backgroundColor;
-          barCell.appendChild(bar);
+          cellDiv.appendChild(residueText);
+          cellDiv.appendChild(freqText);
+          gridContainer.appendChild(cellDiv);
         }
 
-        freqDiv.appendChild(table);
-        container.appendChild(freqDiv);
+        container.appendChild(gridContainer);
       } else {
-        container.appendChild(ui.divText('No data available for this position', {
-          style: {fontStyle: 'italic', marginTop: '5px'}
+        container.appendChild(ui.divText('No data available', {
+          style: {fontStyle: 'italic', color: '#666'}
         }));
       }
 
@@ -441,16 +454,19 @@ export class WebLogoTrack extends MSAHeaderTrack {
       const columnBottom = columnY + effectiveLogoHeight;
 
       for (const [residue, freq] of sortedResidues) {
-        // Calculate letter height proportional to frequency, scaled to fit
+      // Calculate letter height proportional to frequency, scaled to fit
         const rawLetterHeight = freq * effectiveLogoHeight * scaleFactor;
         const letterHeight = Math.max(this.minLetterHeight, Math.floor(rawLetterHeight));
 
         // Skip very small letters
         if (letterHeight < this.minLetterHeight) continue;
 
+        // Check if this monomer is being hovered
+        const isHovered = position === this.hoveredPosition && residue === this.hoveredMonomer;
+
         // Ensure we don't exceed the column height
         if (currentY + letterHeight > columnBottom) {
-          // If this letter would exceed the column height, adjust it to fit
+        // If this letter would exceed the column height, adjust it to fit
           const remainingHeight = columnBottom - currentY;
           if (remainingHeight < this.minLetterHeight) break; // Skip if not enough space
 
@@ -460,17 +476,19 @@ export class WebLogoTrack extends MSAHeaderTrack {
             posX + this.padding / 2,
             currentY,
             cellWidth,
-            remainingHeight
+            remainingHeight,
+            isHovered
           );
           break; // No more space for additional letters
         } else {
-          // Draw the letter with normal height
+        // Draw the letter with normal height
           this.drawLetter(
             residue,
             posX + this.padding / 2,
             currentY,
             cellWidth,
-            letterHeight
+            letterHeight,
+            isHovered
           );
         }
 
@@ -498,7 +516,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
     x: number,
     y: number,
     width: number,
-    height: number
+    height: number,
+    isHovered: boolean = false
   ): void {
     if (!this.ctx) return;
 
@@ -511,6 +530,17 @@ export class WebLogoTrack extends MSAHeaderTrack {
     // Fill background with amino acid color
     this.ctx.fillStyle = backgroundColor;
     this.ctx.fillRect(x, y, width, height);
+
+    // Apply hover effect
+    if (isHovered) {
+      // Add glow effect around the letter
+      this.ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+      this.ctx.shadowBlur = 8;
+      this.ctx.strokeStyle = 'white';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(x, y, width, height);
+      this.ctx.shadowBlur = 0; // Reset shadow
+    }
 
     // Draw thin separator lines between letter blocks
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Light separator color
@@ -800,7 +830,39 @@ export class MSAScrollingHeader {
   private seqColumn: DG.Column<string> | null = null;
   private onSelectionCallback: ((position: number, monomer: string) => void) | null = null;
 
+  private previousHoverPosition: number = -1;
+  private previousHoverTrack: string | null = null;
+  private previousHoverMonomer: string | null = null;
 
+
+  private clearHoverStates(): void {
+    // Only clear if there's actually something to clear
+    const hasHoverState = this.previousHoverPosition !== -1 ||
+                         this.previousHoverTrack !== null ||
+                         this.previousHoverMonomer !== null;
+
+    if (hasHoverState) {
+      this.previousHoverPosition = -1;
+      this.previousHoverTrack = null;
+      this.previousHoverMonomer = null;
+
+      this.tracks.forEach((track) => {
+        if (track instanceof WebLogoTrack)
+          track.setHovered(-1, null);
+      });
+
+      // Request redraw to remove hover effects
+      window.requestAnimationFrame(() => this.draw(
+        this.config.x,
+        this.config.y,
+        this.config.width,
+        this.config.height,
+        this.config.currentPosition,
+        this.config.windowStartPosition,
+        {preventDefault: () => {}}
+      ));
+    }
+  }
   public setSelectionData(
     dataFrame: DG.DataFrame,
     seqColumn: DG.Column<string>,
@@ -829,6 +891,7 @@ export class MSAScrollingHeader {
 
     if (hoveredPosition < 0 || hoveredPosition >= this.config.totalPositions) {
       this.hideTooltip();
+      this.clearHoverStates();
       return;
     }
 
@@ -839,12 +902,14 @@ export class MSAScrollingHeader {
     // Skip if in dotted cells area or slider
     if (y >= dottedCellsTop) {
       this.hideTooltip();
+      this.clearHoverStates();
       return;
     }
 
     // Find which track is being hovered
     let trackY = 0;
     let hoveredTrackId: string | null = null;
+    let trackRelativeY = 0;
 
     for (const [id, track] of this.tracks.entries()) {
       if (!track.isVisible()) continue;
@@ -852,13 +917,55 @@ export class MSAScrollingHeader {
       const trackHeight = track.getHeight();
       if (y >= trackY && y < trackY + trackHeight) {
         hoveredTrackId = id;
+        trackRelativeY = y - trackY;
         break;
       }
 
       trackY += trackHeight + this.trackGap;
     }
 
-    // If position or track changed, update tooltip
+    // If we found a track, check for hovered monomer
+    let currentHoverMonomer: string | null = null;
+    if (hoveredTrackId) {
+      const track = this.tracks.get(hoveredTrackId);
+      if (track)
+        currentHoverMonomer = track.getMonomerAt(x, trackRelativeY, hoveredPosition);
+    }
+
+    // Only update and redraw if the hover state has actually changed
+    const hoverStateChanged = (
+      this.previousHoverPosition !== hoveredPosition ||
+      this.previousHoverTrack !== hoveredTrackId ||
+      this.previousHoverMonomer !== currentHoverMonomer
+    );
+
+    if (hoverStateChanged) {
+      // Update previous state
+      this.previousHoverPosition = hoveredPosition;
+      this.previousHoverTrack = hoveredTrackId;
+      this.previousHoverMonomer = currentHoverMonomer;
+
+      // If this is a WebLogoTrack, update hover state
+      if (hoveredTrackId) {
+        const track = this.tracks.get(hoveredTrackId);
+        if (track instanceof WebLogoTrack) {
+          track.setHovered(hoveredPosition, currentHoverMonomer);
+
+          // Request a redraw to show hover effect - only when state changed
+          window.requestAnimationFrame(() => this.draw(
+            this.config.x,
+            this.config.y,
+            this.config.width,
+            this.config.height,
+            this.config.currentPosition,
+            this.config.windowStartPosition,
+            {preventDefault: () => {}}
+          ));
+        }
+      }
+    }
+
+    // Handle tooltip (this can update more frequently than hover state)
     if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack) {
       this.currentHoverPosition = hoveredPosition;
       this.currentHoverTrack = hoveredTrackId;
@@ -867,7 +974,6 @@ export class MSAScrollingHeader {
         const track = this.tracks.get(hoveredTrackId);
         if (track) {
           const tooltipContent = track.getTooltipContent(hoveredPosition);
-
           if (tooltipContent) {
             // Show tooltip at mouse position
             ui.tooltip.show(tooltipContent, e.clientX + 16, e.clientY + 16);
@@ -875,13 +981,17 @@ export class MSAScrollingHeader {
           }
         }
       }
+    }
 
-      // If we got here, hide any existing tooltip
+    // If we got here and no valid hover state, hide tooltip and clear hover states
+    if (!hoveredTrackId || !currentHoverMonomer) {
       this.hideTooltip();
+      this.clearHoverStates();
     }
   }
   private handleTooltipMouseLeave(): void {
     this.hideTooltip();
+    this.clearHoverStates();
   }
 
   private hideTooltip(): void {

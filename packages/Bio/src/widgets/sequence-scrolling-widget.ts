@@ -232,11 +232,10 @@ export function handleSequenceHeaderRendering() {
               console.log('WebLogo track: no monomerLib available, using fallback colors');
 
 
-            webLogoTrack.setupDefaultTooltip(); // Enable tooltips
+            webLogoTrack.setupDefaultTooltip();
             tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
           }
 
-          // Create MSAScrollingHeader with initial height
           const scroller = new MSAScrollingHeader({
             canvas: grid.overlay,
             headerHeight: initialHeaderHeight,
