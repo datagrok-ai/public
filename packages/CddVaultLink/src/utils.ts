@@ -8,7 +8,16 @@ import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';
 export const PREVIEW_ROW_NUM = 100;
-const CDD_VAULT_APP_PATH: string = 'browse/apps/Cddvaultlink';
+const CDD_VAULT_APP_PATH: string = 'apps/Cddvaultlink';
+
+export type CDDVaultStats = {
+  name: string,
+  projects?: string,
+  molecules?: number,
+  protocols?: number,
+  batches?: number,
+  collections?: number,
+}
 
 export async function getAsyncResultsAsDf(vaultId: number, exportId: number, timeoutMinutes: number, sdf: boolean): Promise<DG.DataFrame> {
   try {
@@ -261,16 +270,20 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
   return container;
 }
 
-export async function handleInitialURL(treeNode: DG.TreeViewGroup) {
+export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: URL) {
 
-  const url = new URL(window.location.href);
   const currentTabs = url.pathname.includes(`${CDD_VAULT_APP_PATH}`) ?
     url.pathname.replace(`${CDD_VAULT_APP_PATH}`, ``).replace(/^\/+/, '').split('/').map((it) => decodeURIComponent(it)) : [];
-  const currentVault = currentTabs.length > 0 ? currentTabs[0] : null;
-  const currentView = currentTabs.length > 1 ? currentTabs[1] : null;
-  const currentSubView = currentTabs.length > 2 ? currentTabs[2] : null;
+  const currentVault = currentTabs.length > 0 ? currentTabs[0] : undefined;
+  const currentView = currentTabs.length > 1 ? currentTabs[1] : undefined;
+  const currentSubView = currentTabs.length > 2 ? currentTabs[2] : undefined;
+  openCddNode(treeNode, currentVault, currentView, currentSubView);
+}
 
+export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: string, currentView?: string, currentSubView?: string) {
   if (currentVault) {
+    //need to wait for tree to become available
+    await awaitCheck(() => treeNode.items.find((node) => node.text === currentVault) !== undefined, `CDD tabs haven't been loaded in 10 seconds`, 10000);
     const vault = treeNode.items.find((node) => node.text === currentVault) as DG.TreeViewGroup;
     //look for current vault from URL and open it
     if (vault) {
@@ -338,7 +351,7 @@ export function createNestedCDDNode(openedViews: {[key: string]: DG.View}, items
     openedViews[fullNodeName].name = nodeName;
     setBreadcrumbsInViewName([vault.name, nodeName], treeNode);
     await loadData();
-    const links = items!.length ? createLinks(items!.map((it) => it.name), treeNode, openedViews[fullNodeName]) :
+    const links = items!.length ? createLinks(nodeName, items!.map((it) => it.name), treeNode, openedViews[fullNodeName]) :
       ui.divText(`No ${nodeName} found in the vault`);
     ui.empty(openedViews[fullNodeName].root);
     openedViews[fullNodeName].append(links);
@@ -442,17 +455,13 @@ export async function createCDDTableViewWithPreview(vaultId: number, views: {[ke
   const progressBar = DG.TaskBarProgressIndicator.create(`Loading ${viewName[viewName.length - 1]}...`);
 }
 
-export function createLinks(nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
-  const div = ui.divV([]);
-  for (const name of nodeNames) {
-    const button = ui.link(name, () => {
-      view.close();
-      tree.currentItem = tree.items.find((item) => item.text === name)!
-    }, 'Click to open');
-    button.classList.add('cdd-menu-point');
-    div.append(button);
-  }
-  return div;
+export function createLinks(header: string, nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
+  const table = ui.table(nodeNames, (item) =>
+  ([ui.link(item, () => {
+    view.close();
+    tree.currentItem = tree.items.find((it) => it.text === item)!
+  }, 'Click to open')]), [header]);
+  return table;
 }
 
 export function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGroup, view?: DG.ViewBase): void {
@@ -526,4 +535,44 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
   resDiv.append(accordions);
 
   return resDiv;
+}
+
+
+export function createInitialSatistics(statsDiv: HTMLDivElement) {
+  
+  grok.functions.call('CDDVaultLink:getVaults').then(async (res: string) => {
+    const stats: CDDVaultStats[] = [];
+    if (!res)
+      return;
+    const vaults = JSON.parse(res) as Vault[];
+    for (const vault of vaults) {
+      try {
+        const resStr = await grok.functions.call('CDDVaultLink:getVaultStats', {vaultId: vault.id, vaultName: vault.name});
+        stats.push(JSON.parse(resStr));
+
+      } catch (e: any) {
+        grok.shell.error(`Cannot get statistics for vault ${vault.name}: ${e?.message ?? e}`);
+        continue;
+      }
+    }
+
+    const table = ui.table(stats, (info) =>
+      ([ui.link(info.name, () => {
+        const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('CDD Vault');
+        cddNode.expanded = true;
+        openCddNode(cddNode, info.name);
+      }),
+        info.projects ?? '',
+        info.molecules ?? '',
+        info.protocols ?? '',
+        info.batches ?? '',
+        info.collections ?? '',
+      ]),
+    ['Vault', 'Projects', 'Molecules', 'Protocols', 'Batches', 'Collections']);
+    statsDiv.append(table);
+    ui.setUpdateIndicator(statsDiv, false);
+
+  }).catch((e: any) => {
+    grok.shell.error(e?.message ?? e);
+  })
 }
