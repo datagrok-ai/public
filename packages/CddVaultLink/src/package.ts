@@ -3,19 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, Molecule, Batch, querySavedSearches, SavedSearch, querySavedSearchById, queryExportStatus, queryExportResult,
-  queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, ProtocolQueryResult, Protocol, queryProtocolsAsync, Vault, Collection,
+import {MoleculeFieldSearch, getVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, querySavedSearches, SavedSearch, querySavedSearchById,
+  queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, Protocol, queryProtocolsAsync, Collection,
   queryCollectionsAsync} from "./cdd-vault-api";
-import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import { CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDD_HOST, createLinksFromIds, createObjectViewer, getAsyncResults, getAsyncResultsAsDf, prepareDataForDf, reorderColummns } from './utils';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { createCDDContextPanel, createCDDTableView, createCDDTableViewWithPreview, createLinks, createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, getAsyncResults, getAsyncResultsAsDf, getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
 
 export const _package = new DG.Package();
 
-export const PREVIEW_ROW_NUM = 100;
-const CDD_VAULT_APP_PATH: string = 'browse/apps/Cddvaultlink';
 const openedViews: {[key: string]: DG.View} = {};
 
 //tags: app
@@ -179,202 +176,6 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   handleInitialURL(treeNode);
 }
 
-async function handleInitialURL(treeNode: DG.TreeViewGroup) {
-
-  const url = new URL(window.location.href);
-  const currentTabs = url.pathname.includes(`${CDD_VAULT_APP_PATH}`) ?
-    url.pathname.replace(`${CDD_VAULT_APP_PATH}`, ``).replace(/^\/+/, '').split('/').map((it) => decodeURIComponent(it)) : [];
-  const currentVault = currentTabs.length > 0 ? currentTabs[0] : null;
-  const currentView = currentTabs.length > 1 ? currentTabs[1] : null;
-  const currentSubView = currentTabs.length > 2 ? currentTabs[2] : null;
-
-  if (currentVault) {
-    const vault = treeNode.items.find((node) => node.text === currentVault) as DG.TreeViewGroup;
-    //look for current vault from URL and open it
-    if (vault) {
-      currentView ? vault.expanded = true : vault.root.click();
-      //look for current vault from URL and open it
-      if (currentView) {
-        if (!ALL_TABS.includes(currentView)) {
-          vault.root.click();
-          grok.shell.warning(`${currentView} section doesn't exist`);
-          return;
-        }
-        try {
-          await awaitCheck(() => treeNode.items.find((node) => node.text === currentView) !== undefined, `CDD tabs haven't been loaded in 5 seconds`, 5000);
-          if (EXPANDABLE_TABS.includes(currentView)) {
-            const tab = treeNode.items.find((node) => node.text === currentView) as DG.TreeViewGroup;
-            currentSubView ? tab.expanded = true : tab.root.click();
-            //look for inner category from URL and open it
-            if (currentSubView) {
-              await awaitCheck(() => tab.items.length > 0, `CDD tabs haven't been loaded in 10 seconds`, 10000);
-              const innerView = treeNode.items.find((node) => node.text === currentSubView);
-              if (!innerView) {
-                tab.root.click();
-                grok.shell.warning(`${currentSubView} id doesn't exist in ${currentView}`);
-                return;
-              }
-              innerView!.root.click();
-            }
-
-          } else
-            treeNode.items.find((node) => node.text === currentView)!.root.click();
-        } catch(e) {
-          console.log(e);
-        }
-      }
-    }
-    else
-      grok.shell.warning(`Vault ${currentVault} doesn't exist`);
-  }
-}
-
-function createNestedCDDNode(openedViews: {[key: string]: DG.View}, items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
-  getItemsFunsName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
-  onItemSelected: (item: any) => Promise<void>) {
-  const nestedNode = vaultNode.group(nodeName, null, false);
-  const loadData = async () => {
-    if (!items) {
-      const itemsStr = await grok.functions.call(getItemsFunsName, getItemsFuncParams);
-      items = itemsStr !== '' ? JSON.parse(itemsStr) as any[] : [];
-    }
-  }
-  nestedNode.onSelected.subscribe(async () => {
-    const fullNodeName = `${vault.id}|${nodeName}`;
-    openedViews[fullNodeName]?.close();
-    openedViews[fullNodeName] = DG.View.create();
-    openedViews[fullNodeName].path = createPath(vault.name, [nodeName]);
-    grok.shell.addPreview(openedViews[fullNodeName]);
-    ui.setUpdateIndicator(openedViews[fullNodeName].root, true, `Loading ${nodeName}...`);
-    await loadData();
-    openedViews[fullNodeName].name = nodeName;
-    const tabs = createLinks(items!.map((it) => it.name), treeNode, openedViews[fullNodeName]);
-    ui.empty(openedViews[fullNodeName].root);
-    openedViews[fullNodeName].append(tabs);
-    ui.setUpdateIndicator(openedViews[fullNodeName].root, false);
-    setBreadcrumbsInViewName([vault.name, nodeName], treeNode);
-    if (!nestedNode.expanded)
-      nestedNode.expanded = true;
-  });
-
-  nestedNode.onNodeExpanding.subscribe(async () => {
-    await loadData();
-    for (const item of items!) {
-      const itemNode = nestedNode.item(item.name);
-      itemNode.onSelected.subscribe(async () => {
-        await onItemSelected(item);
-        setBreadcrumbsInViewName([nodeName, item.name], treeNode);
-      });
-    }
-  });
-}
-
-function createPath(vaultName: string, viewName?: string[]) {
-  let path = `${CDD_VAULT_APP_PATH}/`;
-  path += encodeURIComponent(vaultName);
-  if (viewName)
-    path += `/${viewName.map((it) => encodeURIComponent(it)).join('/')}`;
-  return path;
-}
-
-async function createCDDTableView(vaultId: number, views: {[key: string]: DG.View}, viewName: string[], progressMessage: string, funcName: string,
-  funcParams: {[key: string]: any}, vaultName: string, treeNode: DG.TreeViewGroup) {
-  const viewFullName = `${vaultId}|${viewName.join('|')}`;
-  views[viewFullName]?.close();
-  views[viewFullName] = DG.View.create();
-  views[viewFullName].path = createPath(vaultName, viewName);
-  views[viewFullName].name = viewName[viewName.length - 1];
-  grok.shell.addPreview(views[viewFullName]);
-  ui.setUpdateIndicator(views[viewFullName].root, true, progressMessage);
-  const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
-  views[viewFullName].close();
-  df.name = viewName[viewName.length - 1];
-  views[viewFullName] = grok.shell.addTablePreview(df);
-  views[viewFullName].path = createPath(vaultName, viewName);
-  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
-}
-
-async function createCDDTableViewWithPreview(vaultId: number, views: {[key: string]: DG.View}, viewName: string[], progressMessage: string, syncfuncName: string,
-  syncfuncParams: {[key: string]: any}, asyncfuncName: string, asyncfuncParams: {[key: string]: any},
-  vaultName: string, treeNode: DG.TreeViewGroup) {
-  const viewFullName = `${vaultId}|${viewName.join('|')}`;
-  views[viewFullName]?.close();
-  delete views[viewFullName];
-  views[viewFullName] = DG.View.create();
-  views[viewFullName].path = createPath(vaultName, viewName);
-  views[viewFullName].name = viewName[viewName.length - 1];
-  grok.shell.addPreview(views[viewFullName]);
-  ui.setUpdateIndicator(views[viewFullName].root, true, progressMessage);
-  let updateDataWithAsyncResults = true;
-  //run sync function with offset and create a preview
-  grok.functions.call(syncfuncName, syncfuncParams).then((res: DG.DataFrame) => {
-    if (views[viewFullName]) {
-      if (res.rowCount < PREVIEW_ROW_NUM) {
-        updateDataWithAsyncResults = false;
-        progressBar.close();
-      }
-      res.name = viewName[viewName.length - 1];
-      views[viewFullName].close();
-      views[viewFullName] = grok.shell.addTablePreview(res);
-      setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
-      views[viewFullName].path = createPath(vaultName, viewName);
-    }
-  });
-  //reset tableView with asynchronously received results
-  grok.functions.call(asyncfuncName, asyncfuncParams).then((res: DG.DataFrame) => {
-    if (!updateDataWithAsyncResults)
-      return;
-    views[viewFullName].close();
-    res.name = viewName[viewName.length - 1];
-    views[viewFullName] = grok.shell.addTablePreview(res);
-    setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
-    views[viewFullName].path = createPath(vaultName, viewName);
-    progressBar.close();
-  });
-  const progressBar = DG.TaskBarProgressIndicator.create(`Loading ${viewName[viewName.length - 1]}...`);
-}
-
-function createLinks(nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
-  const div = ui.divV([]);
-  for (const name of nodeNames) {
-    const button = ui.link(name, () => {
-      view.close();
-      tree.currentItem = tree.items.find((item) => item.text === name)!
-    }, 'Click to open');
-    button.classList.add('cdd-menu-point');
-    div.append(button);
-  }
-  return div;
-}
-
-function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGroup, view?: DG.View): void {
-  const usedView = view ?? grok.shell.v;
-  const path = ['Home', 'CDD Vault', ...viewPath.filter((v) => v !== 'Home' && v !== 'Demo')];
-  const breadcrumbs = ui.breadcrumbs(path);
-
-  breadcrumbs.onPathClick.subscribe(async (value) => {
-    const actualItem = value[value.length - 1];
-    if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
-      return;
-    tree.currentItem = actualItem === 'CDD Vault' ? tree : tree.items.find((item) => item.text === actualItem)!;
-  });
-
-  if (usedView) {
-    if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
-      const homeIcon = ui.iconFA('home', () => {
-        grok.shell.v.close();
-        grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-      });
-      breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
-    }
-    const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-    if (viewNameRoot) {
-      viewNameRoot.textContent = '';
-      viewNameRoot.appendChild(breadcrumbs.root);
-    }
-  }
-}
-
 
 //name: Databases | CDD Vault
 //input: string mol {semType: Molecule}
@@ -394,51 +195,6 @@ export function molColumnPropertyPanel(molecule: string): DG.Widget {
 
     return createCDDContextPanel(cddMols.data.objects[0], vaultId);
   }));
-}
-
-function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): HTMLElement {
-  const keys = Object.keys(obj);
-  const resDiv = ui.divV([], 'cdd-context-panel');
-  const accordions = ui.divV([]);
-  const dictForTableView: {[key: string]: any} = {};
-  for(const key of keys) {
-    if (key === 'batches') {
-      const batchesAcc = ui.accordion(key);
-      const batches = (obj as Molecule)[key] as Batch[];
-      batchesAcc.addPane(key, () => {
-        const innerbatchesAcc = ui.accordion();
-        for (const batch of batches) {
-          innerbatchesAcc.addPane(batch.id.toString(), () => createCDDContextPanel(batch));
-        }
-        return innerbatchesAcc.root;
-      });
-      accordions.append(batchesAcc.root);
-    } else if (key === 'collections' || key === 'projects' || key === 'source_files' || key === 'batch_fields') {
-      const acc = ui.accordion(key);
-      acc.addPane(key, () => {
-        const div = ui.divV([]);
-        ((obj as any)[key] as any[]).forEach((it) => div.append(ui.tableFromMap(it, true)));
-        return div;
-      });
-      accordions.append(acc.root);
-    } else if (key === 'molecule_fields' || key === 'udfs' || key === 'stoichiometry') {
-      const acc = ui.accordion(key);
-      acc.addPane(key, () => ui.tableFromMap((obj as any)[key] as any, true));
-      accordions.append(acc.root);
-    } else {
-      const initialValue = (obj as any)[key];
-      let value: any | null = null;
-      if (key === 'id' && vaultId)
-        value = ui.link(initialValue, () => window.open(`${CDD_HOST}vaults/${vaultId}/molecules/${initialValue}/`));
-      else
-        value = initialValue instanceof Array ? initialValue.join(', ') : initialValue;
-      dictForTableView[key] = value;
-    }
-  }
-  resDiv.append(ui.tableFromMap(dictForTableView, true));
-  resDiv.append(accordions);
-
-  return resDiv;
 }
 
 //name: CDDVaultSearchEditor
@@ -461,59 +217,105 @@ export async function CDDVaultSearchEditor(call: DG.FuncCall): Promise<void> {
   dialog.show();
 }
 
-//name: CDD Vault search 2
+// //name: Get Vault Stats
+// //meta.cache: all
+// //meta.cache.invalidateOn: 0 0 * * *
+// //input: int vaultId
+// //output: dataframe df
+// export async function getVaultStats(vaultId: number): Promise<DG.DataFrame> {
+//   const projects = 
+// }
+
+//name: Get Molecules
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 //input: int vaultId {nullable: true}
-//input: string structure {category: Structure; nullable: true; semType: Molecule} [SMILES; cxsmiles or mol string]
-//input: string structure_search_type {category: Structure; nullable: true; choices: ["exact", "similarity", "substructure"]} [SMILES, cxsmiles or mol string]
-//input: double structure_similarity_threshold {category: Structure; nullable: true} [A number between 0 and 1]
-//input: int protocol {category: Protocol; nullable: true} [Protocol id]
-//input: int run {category: Protocol; nullable: true} [Specific run id]
+//input: string moleculesIds
 //output: dataframe df
-//editor: Cddvaultlink:CDDVaultSearchEditor
-export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: CDDVaultSearchType,
-  structure_similarity_threshold?: number, protocol?: number, run?: number): Promise<DG.DataFrame> {
-  //collecting molecule ids according to protocol query params
-  const molIds: number[] = [];
-  if (protocol) {
-    //TODO! Make async request and remove page size
-    const readoutRowsRes = await queryReadoutRows(vaultId, {protocols: protocol.toString(), runs: run?.toString(), page_size: 1000});
-    if (readoutRowsRes.error) {
-      grok.shell.error(readoutRowsRes.error);
-      return DG.DataFrame.create();
-    }
-    const readoutRows= readoutRowsRes.data?.objects;
-    if (readoutRows) {
-      for (const readoutRow of readoutRows)
-        if (!molIds.includes(readoutRow.molecule))
-          molIds.push(readoutRow.molecule)
-    }      
+export async function getMolecules(vaultId: number, moleculesIds: string): Promise<DG.DataFrame> {
+  const params: {[key: string]: any} = {page_size: PREVIEW_ROW_NUM};
+  if (moleculesIds)
+    params.molecules = moleculesIds;
+  const molecules = await queryMolecules(vaultId, params);
+  if (molecules.error) {
+    throw molecules.error;
   }
-  const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
-    {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
-
-  //TODO! Make async request and remove page size
-  molQueryParams.page_size = 1000;
-  const cddMols = await queryMolecules(vaultId, molQueryParams);
-  if (cddMols.error) {
-    grok.shell.error(cddMols.error);
-    return DG.DataFrame.create();
-  }
-  if (cddMols.data?.objects && cddMols.data?.objects.length) {
-    //in case we had both protocol and structure conditions - combine results together
-    const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
-    prepareDataForDf(cddMols.data?.objects);
-    const df = DG.DataFrame.fromObjects(molsRes)!;
-    if (!df)
-      return DG.DataFrame.create();
-    createLinksFromIds(vaultId, df);
-    reorderColummns(df);
-    await grok.data.detectSemanticTypes(df);
-    return df;
-  }
-  return DG.DataFrame.create();
+  const df = await createMoleculesDfFromObjects(vaultId, molecules.data?.objects as any[]);
+  return df;
 }
+
+//name: Get Molecules Async
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//input: string moleculesIds
+//input: int timeoutMinutes
+//output: dataframe df
+export async function getMoleculesAsync(vaultId: number, moleculesIds: string, timeoutMinutes: number): Promise<DG.DataFrame> {
+  const params: {[key: string]: any} = {};
+  if (moleculesIds)
+    params.molecules = moleculesIds;
+  const exportResponse = await queryMoleculesAsync(vaultId, params);
+  const exportId = getExportId(exportResponse);
+  const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
+  createLinksFromIds(vaultId, df);
+  reorderColummns(df);
+  return df;
+}
+
+//name: Get Protocols Async
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//input: int timeoutMinutes
+//output: string protocols
+export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number): Promise<string> {
+  const exportResponse = await queryProtocolsAsync(vaultId);
+  const exportId = getExportId(exportResponse);
+  const protocols = await getAsyncResults(vaultId, exportId, timeoutMinutes, false);
+  return protocols?.data?.objects ? JSON.stringify(protocols.data.objects) : '';
+}
+
+//name: Get Collections Async
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//input: int timeoutMinutes
+//output: string protocols
+export async function getCollectionsAsync(vaultId: number, timeoutMinutes: number): Promise<string> {
+  const exportResponse = await queryCollectionsAsync(vaultId, {include_molecule_ids: true});
+  const exportId = getExportId(exportResponse);
+  const collections = await getAsyncResults(vaultId, exportId, timeoutMinutes, false);
+  return collections?.data?.objects ? JSON.stringify(collections.data.objects) : '';
+}
+
+//name: Get Saved Searches
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//output: string result
+export async function getSavedSearches(vaultId: number): Promise<string> {
+  const savedSearches = await querySavedSearches(vaultId);
+  if (savedSearches.error)
+    throw savedSearches.error;
+  return savedSearches.data ? JSON.stringify(savedSearches.data) : '';
+}
+
+//name: Get Saved Search Results
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId
+//input: int searchId
+//input: int timeoutMinutes
+//output: dataframe df
+export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
+  const exportResponse = await querySavedSearchById(vaultId, searchId);
+  const exportId = getExportId(exportResponse);
+  const res = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, true);
+  reorderColummns(res);
+  return res;
+}
+
 
 //name: CDD Vault Search Async 
 //meta.cache: all
@@ -532,7 +334,8 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
   let molIds: number[] = [];
   if (protocol) {
     const exportResponse = await queryReadoutRowsAsync(vaultId, {protocols: protocol.toString(), runs: run?.toString()});
-    const readoutRowsRes = await getAsyncResults(vaultId, exportResponse, 5, false);
+    const exportId = getExportId(exportResponse);
+    const readoutRowsRes = await getAsyncResults(vaultId, exportId, 5, false);
     if (!readoutRowsRes)
       return DG.DataFrame.create();
     const readoutRows = readoutRowsRes.data?.objects;
@@ -547,7 +350,8 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
     {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
 
   const moleculesExportResponse = await queryMoleculesAsync(vaultId, molQueryParams);
-  const cddMols = await getAsyncResults(vaultId, moleculesExportResponse, 5, false) as ApiResponse<MoleculesQueryResult>;
+  const moleculesExportId = getExportId(moleculesExportResponse);
+  const cddMols = await getAsyncResults(vaultId, moleculesExportId, 5, false) as ApiResponse<MoleculesQueryResult>;
   if (!cddMols)
     return DG.DataFrame.create();
 
@@ -565,107 +369,6 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
   }
   return DG.DataFrame.create();
 }
-
-//name: Get Molecules
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId {nullable: true}
-//input: string moleculesIds
-//output: dataframe df
-export async function getMolecules(vaultId: number, moleculesIds: string): Promise<DG.DataFrame> {
-  const params: {[key: string]: any} = {page_size: PREVIEW_ROW_NUM};
-  if (moleculesIds)
-    params.molecules = moleculesIds;
-  const molecules = await queryMolecules(vaultId, params); //TODO! Make async request and remove page size
-  if (molecules.error) {
-    grok.shell.error(molecules.error);
-    return DG.DataFrame.create();
-  }
-  let df: DG.DataFrame | null = null;
-  if (molecules.data?.objects) {
-    prepareDataForDf(molecules.data?.objects as any[]);
-    df = DG.DataFrame.fromObjects(molecules.data.objects)!;
-  }
-  if (!df)
-    return DG.DataFrame.create();
-  createLinksFromIds(vaultId, df);
-  reorderColummns(df);
-  await grok.data.detectSemanticTypes(df);
-  return df;
-}
-
-
-//name: Get Molecules Async
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId {nullable: true}
-//input: string moleculesIds
-//input: int timeoutMinutes
-//output: dataframe df
-export async function getMoleculesAsync(vaultId: number, moleculesIds: string, timeoutMinutes: number): Promise<DG.DataFrame> {
-  const params: {[key: string]: any} = {};
-  if (moleculesIds)
-    params.molecules = moleculesIds;
-  const exportResponse = await queryMoleculesAsync(vaultId, params);
-  const df = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, false);
-  createLinksFromIds(vaultId, df);
-  reorderColummns(df);
-  return df;
-}
-
-//name: Get Protocols Async
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId {nullable: true}
-//input: int timeoutMinutes
-//output: string protocols
-export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number): Promise<string> {
-  const exportResponse = await queryProtocolsAsync(vaultId);
-  const protocols = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, false);
-  return protocols?.data?.objects ? JSON.stringify(protocols.data.objects) : '';
-}
-
-//name: Get Collections Async
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId {nullable: true}
-//input: int timeoutMinutes
-//output: string protocols
-export async function getCollectionsAsync(vaultId: number, timeoutMinutes: number): Promise<string> {
-  const exportResponse = await queryCollectionsAsync(vaultId, {include_molecule_ids: true});
-  const collections = await getAsyncResults(vaultId, exportResponse, timeoutMinutes, false);
-  return collections?.data?.objects ? JSON.stringify(collections.data.objects) : '';
-}
-
-//name: Get Saved Searches
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId {nullable: true}
-//output: string result
-export async function getSavedSearches(vaultId: number): Promise<string> {
-  const savedSearches = await querySavedSearches(vaultId);
-  if (savedSearches.error) {
-    grok.shell.error(savedSearches.error);
-    return '';
-  }
-  return savedSearches.data ? JSON.stringify(savedSearches.data) : '';
-}
-
-//name: Get Saved Search Results
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//input: int vaultId
-//input: int searchId
-//input: int timeoutMinutes
-//output: dataframe df
-export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number): Promise<DG.DataFrame> {
-  const exportResponse = await querySavedSearchById(vaultId, searchId);
-  const res = await getAsyncResultsAsDf(vaultId, exportResponse, timeoutMinutes, true);
-  reorderColummns(res);
-  return res;
-}
-
-
 
 
 //name: CDD Vault search
@@ -777,4 +480,59 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
   }
   await grok.data.detectSemanticTypes(df);
   return df;
+}
+
+
+//name: CDD Vault search 2
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: int vaultId {nullable: true}
+//input: string structure {category: Structure; nullable: true; semType: Molecule} [SMILES; cxsmiles or mol string]
+//input: string structure_search_type {category: Structure; nullable: true; choices: ["exact", "similarity", "substructure"]} [SMILES, cxsmiles or mol string]
+//input: double structure_similarity_threshold {category: Structure; nullable: true} [A number between 0 and 1]
+//input: int protocol {category: Protocol; nullable: true} [Protocol id]
+//input: int run {category: Protocol; nullable: true} [Specific run id]
+//output: dataframe df
+//editor: Cddvaultlink:CDDVaultSearchEditor
+export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: CDDVaultSearchType,
+  structure_similarity_threshold?: number, protocol?: number, run?: number): Promise<DG.DataFrame> {
+  //collecting molecule ids according to protocol query params
+  const molIds: number[] = [];
+  if (protocol) {
+    //TODO! Make async request and remove page size
+    const readoutRowsRes = await queryReadoutRows(vaultId, {protocols: protocol.toString(), runs: run?.toString(), page_size: 1000});
+    if (readoutRowsRes.error) {
+      grok.shell.error(readoutRowsRes.error);
+      return DG.DataFrame.create();
+    }
+    const readoutRows= readoutRowsRes.data?.objects;
+    if (readoutRows) {
+      for (const readoutRow of readoutRows)
+        if (!molIds.includes(readoutRow.molecule))
+          molIds.push(readoutRow.molecule)
+    }      
+  }
+  const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
+    {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
+
+  //TODO! Make async request and remove page size
+  molQueryParams.page_size = 1000;
+  const cddMols = await queryMolecules(vaultId, molQueryParams);
+  if (cddMols.error) {
+    grok.shell.error(cddMols.error);
+    return DG.DataFrame.create();
+  }
+  if (cddMols.data?.objects && cddMols.data?.objects.length) {
+    //in case we had both protocol and structure conditions - combine results together
+    const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
+    prepareDataForDf(cddMols.data?.objects);
+    const df = DG.DataFrame.fromObjects(molsRes)!;
+    if (!df)
+      return DG.DataFrame.create();
+    createLinksFromIds(vaultId, df);
+    reorderColummns(df);
+    await grok.data.detectSemanticTypes(df);
+    return df;
+  }
+  return DG.DataFrame.create();
 }
