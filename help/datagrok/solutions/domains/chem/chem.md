@@ -373,7 +373,7 @@ Datagrok lets you analyze chemical space using distance-based dimensionality red
 ![chem-space](../../../../compute/chem-space.gif)
 
 <details>
-<summary> How to use: </summary>
+<summary> How to use </summary>
 
 Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
 
@@ -409,19 +409,34 @@ Please note, that webGPU is still considered as experimental feature, and for no
 
 </details>
 
-### Integration with SureChEMBL
+### External data sources
 
-Quickly identify patented molecules similar to your compounds. The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) provides local access to the [SureChEMBL](https://www.surechembl.org) database. 
+Datagrok integrates with multiple data sources to enable structure-based
+search, including:
+* ChEMBL
+* DrugBank
+* PubChem (supports identity search)
+* SureChEMBL (search patented molecules similar to your compounds)
+* Chemspace (includes filters by shipping country and compound category)
+
+To see the full list, see [Plugins](../../../plugins.md#chem).
+
+To run a substructure or similarity search, either [sketch](#sketching) or click a molecule in your
+dataset and expand the **Databases** section of the **Context Panel** to view
+matches for your target molecule. You can also open the results in a separate [Table View](../../../navigation/views/table-view.md) by clicking the plus (**+**) icon within the relevant info pane.
+
+![surechembl search](img/surechembl_search_params.gif)
+
+<details>
+<summary>Example: Searching patents with SureChEMBL</summary>
+
+The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) 
+provides local access to the [SureChEMBL](https://www.surechembl.org) database. 
 
 You can: 
 * Search either by similarity or substructure
 * Set result limits and similarity thresholds
 * View associated patent information
-
-![surechembl search parameters](img/surechembl_search_params.gif)
-
-<details>
-<summary> How to use </summary>
 
 1. **Finding related molecules**:
    1. In the dataset, click a cell containing your target molecule structure.
@@ -442,6 +457,22 @@ You can:
 ![surechembl search results](img/surechembl_search_results.gif)
 
 </details>
+
+:::note Developers
+
+To dynamically enrich compound IDs with linked data, 
+[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+(e.g., `CHEMBL\d+`). Once registered, the matching values:
+
+* are automatically detected and highlighted across the platform
+* show linked content on click, hover, and in search results
+
+This is especially useful when working with diverse identifiers from sources
+like GDB exports, internal registries, or assay results. 
+
+![Registered identifier patterns](../../workflows/img/custom-identifier-patterns.gif)
+
+:::
 
 ## Structure analysis
 
