@@ -116,7 +116,7 @@ export function dataToCurvesUI() {
           const markerType = getMarkerType(runID);
           const s: IFitSeries = {
             fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
-            points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 8})).sort((a, b) => a.x - b.x),
+            points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 6})).sort((a, b) => a.x - b.x),
           };
           const fitData: Omit<FitChartData, 'seriesOptions'> = {
             chartOptions: {
