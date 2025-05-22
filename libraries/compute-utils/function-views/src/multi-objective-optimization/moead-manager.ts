@@ -128,8 +128,8 @@ export class MoeadManager extends OptimizeManager {
     return results;
   };
 
-  public visualize(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE): void {
+  public visualize(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE): DG.Viewer[] {
     const viz = new Visualizer(view, inputDim, outputDim, type);
-    viz.visualize();
+    return viz.visualize();
   }
 };

@@ -13,5 +13,5 @@ export abstract class OptimizeManager {
   public abstract areSettingsValid(): Validation;
   public abstract getInputs(): DG.InputBase[];
   public abstract perform(func: Func, inputOpts: InputOptions, outputDim: number, pi?: DG.ProgressIndicator): OptResult;
-  public abstract visualize(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE): void
+  public abstract visualize(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE): DG.Viewer[];
 }

@@ -985,7 +985,7 @@ export class OptimizationView {
       });
 
       // Visualize results
-      optManager.visualize(this.comparisonView, inputDim, outputDim, this.optTypeInput.value!);
+      this.openedViewers = optManager.visualize(this.comparisonView, inputDim, outputDim, optType);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }

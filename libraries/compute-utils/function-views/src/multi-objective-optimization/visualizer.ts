@@ -7,45 +7,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {isDimValid} from './utils';
 import {OPT_TYPE} from './defs';
-import {getOutputPalette, INPUT_COLOR_PALETTE} from './ui-tools';
-
-function singleInputSingleOutputViewer(table: DG.DataFrame): DG.Viewer[] {
-  const colsCount = table.columns.length;
-
-  if (colsCount !== 2)
-    throw new Error(`Failed to create "single-input-single-output" viewer. Incorrect columns count: ${colsCount}, expected: 2`);
-
-  return [DG.Viewer.lineChart(table)];
-}
-
-function singleInputDoubleOutputViewer(table: DG.DataFrame): DG.Viewer[] {
-  const colsCount = table.columns.length;
-
-  if (colsCount <= 3)
-    throw new Error(`Failed to create "single-input-dounle-output" viewer. Incorrect columns count: ${colsCount}, expected: 2`);
-
-  return [DG.Viewer.lineChart(table)];
-}
-
-export function visualize(view: DG.TableView, inputDim: number, outputDim: number): void {
-  if (!isDimValid(inputDim))
-    throw new Error(`Invalid inputs dimension: ${inputDim}. The optimizer issue`);
-
-  if (!isDimValid(outputDim))
-    throw new Error(`Invalid outputs dimension: ${outputDim}. The optimizer issue`);
-
-  const table = view.dataFrame;
-
-  //if ((inputDim === 1) && (outputDim === 1))
-  //return singleInputSingleOutputViewer(table);
-}
+import {DOCK_RATIO, getOutputPalette, INPUT_COLOR_PALETTE, TITLE} from './ui-tools';
 
 export class Visualizer {
   private view: DG.TableView;
   private table: DG.DataFrame;
+  private colNames: string[];
   private inputDim: number;
   private outputDim: number;
   private type: OPT_TYPE;
+  private gridNode: DG.DockNode;
 
   constructor(view: DG.TableView, inputDim: number, outputDim: number, type: OPT_TYPE) {
     if (!isDimValid(inputDim))
@@ -64,11 +35,20 @@ export class Visualizer {
     this.inputDim = inputDim;
     this.outputDim = outputDim;
     this.type = type;
+    this.colNames = table.columns.names();
+
+    const node = this.view.dockManager.findNode(this.view.grid.root);
+    if (node === undefined)
+      throw new Error('The view is corrupted: not found the grid');
+
+    this.gridNode = node;
   }
 
-  public visualize(): void {
+  public visualize(): DG.Viewer[] {
     this.setColorCoding();
     this.sortResults();
+
+    return this.addViewers();
   }
 
   private setColorCoding(): void {
@@ -97,5 +77,101 @@ export class Visualizer {
 
     const outColName = this.table.columns.byIndex(this.inputDim).name;
     this.view.grid.sort([outColName], [this.type === OPT_TYPE.MIN]);
+  }
+
+  private addViewers(): DG.Viewer[] {
+    // Multiple objectives case
+    if (this.outputDim > 2)
+      return this.addMultipleInputsMultipleOutputViewers();
+
+    // Double objectives case
+    if (this.outputDim === 2)
+      return this.addMultipleInputsMultipleOutputViewers();
+
+    // Single objective case
+    if (this.inputDim === 1)
+      return this.addSingleInputSingleOutputViewer();
+
+    return this.addMultipleInputsSingeOutputViewers();
+  }
+
+  private getScatter(): DG.Viewer {
+    return DG.Viewer.scatterPlot(this.table, {
+      xColumnName: this.colNames[0],
+      yColumnName: this.colNames[1],
+      colorColumnName: this.colNames[this.inputDim],
+    });
+  }
+
+  private getParetoScatter(): DG.Viewer {
+    return DG.Viewer.scatterPlot(this.table, {
+      title: TITLE.PARETO_FRONT,
+      xColumnName: this.colNames[this.inputDim],
+      yColumnName: this.colNames[this.inputDim + 1],
+      colorColumnName: (this.inputDim === 1) ? this.colNames[0] : (this.outputDim >= 3 ? this.colNames[this.inputDim + 2] : undefined),
+      labelColumnNames: (this.inputDim === 2) ? [this.colNames[0], this.colNames[1]] : undefined,
+    });
+  }
+
+  private getPc(): DG.Viewer {
+    return DG.Viewer.pcPlot(this.table, {showColorSelector: false});
+  }
+
+  private addSingleInputSingleOutputViewer(): DG.Viewer[] {
+    const chart = this.getScatter();
+
+    this.view.dockManager.dock(
+      chart,
+      DG.DOCK_TYPE.LEFT,
+      this.gridNode,
+      undefined,
+      DOCK_RATIO.SINGLE_SINGLE_SCATTER,
+    );
+
+    return [chart];
+  }
+
+  private addMultipleInputsSingeOutputViewers(): DG.Viewer[] {
+    const scatter = this.getScatter();
+    const scatterNode = this.view.dockManager.dock(
+      scatter,
+      DG.DOCK_TYPE.LEFT,
+      this.gridNode,
+      undefined,
+      DOCK_RATIO.SINGLE_SINGLE_SCATTER,
+    );
+
+    const pcPlot = this.getPc();
+    this.view.dockManager.dock(
+      pcPlot,
+      DG.DOCK_TYPE.DOWN,
+      scatterNode,
+      undefined,
+      DOCK_RATIO.MULT_SINGLE_PC,
+    );
+
+    return [scatter, pcPlot];
+  }
+
+  private addMultipleInputsMultipleOutputViewers(): DG.Viewer[] {
+    const scatter = this.getParetoScatter();
+    const scatterNode = this.view.dockManager.dock(
+      scatter,
+      DG.DOCK_TYPE.LEFT,
+      this.gridNode,
+      undefined,
+      DOCK_RATIO.SINGLE_SINGLE_SCATTER,
+    );
+
+    const pcPlot = this.getPc();
+    this.view.dockManager.dock(
+      pcPlot,
+      DG.DOCK_TYPE.DOWN,
+      scatterNode,
+      undefined,
+      DOCK_RATIO.MULT_SINGLE_PC,
+    );
+
+    return [scatter, pcPlot];
   }
 }

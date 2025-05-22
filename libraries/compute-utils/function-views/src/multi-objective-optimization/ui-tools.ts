@@ -32,6 +32,7 @@ export enum TITLE {
   METHOD = 'Method',
   USING = 'Using',
   SET = 'with settings',
+  PARETO_FRONT = 'Pareto front',
 };
 
 export enum METHOD {
@@ -83,3 +84,8 @@ export function getColorScaleDiv(type: OPT_TYPE): HTMLElement {
 
   return ui.divH(elems);
 }
+
+export enum DOCK_RATIO {
+  SINGLE_SINGLE_SCATTER = 0.3,
+  MULT_SINGLE_PC = 0.5,
+};
