@@ -917,6 +917,8 @@ export class OptimizationView {
         this.progressIndicator,
       );
 
+      this.clearPrev();
+
       // Prepare resulting dataframe
       const solutionsCount = solution.length;
       const inpRaw = getFloatArrays(inputDim, solutionsCount);
@@ -984,8 +986,6 @@ export class OptimizationView {
 
       // Visualize results
       optManager.visualize(this.comparisonView, inputDim, outputDim, this.optTypeInput.value!);
-
-      this.clearPrev();
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -1026,5 +1026,7 @@ export class OptimizationView {
       this.gridCellChangeSubscription.unsubscribe();
       this.gridCellChangeSubscription = null;
     }
+
+    this.comparisonView.grid.sort([], []);
   } // clearPrev
 }

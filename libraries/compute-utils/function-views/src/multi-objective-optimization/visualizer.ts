@@ -68,6 +68,7 @@ export class Visualizer {
 
   public visualize(): void {
     this.setColorCoding();
+    this.sortResults();
   }
 
   private setColorCoding(): void {
@@ -88,5 +89,13 @@ export class Visualizer {
         {min: col.stats.min, max: col.stats.max},
       );
     }
+  }
+
+  private sortResults(): void {
+    if (this.outputDim !== 1)
+      return;
+
+    const outColName = this.table.columns.byIndex(this.inputDim).name;
+    this.view.grid.sort([outColName], [this.type === OPT_TYPE.MIN]);
   }
 }

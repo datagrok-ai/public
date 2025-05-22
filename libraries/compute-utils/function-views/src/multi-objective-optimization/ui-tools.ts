@@ -44,8 +44,6 @@ export const METHOD_HINT = new Map([
   [METHOD.NELDER_MEAD, 'The Nelder-Mead method'],
 ]);
 
-const BLACK = DG.Color.toRgb(DG.Color.black);
-const WHITE = DG.Color.toRgb(DG.Color.white);
 export const INPUT_COLOR_PALETTE = [DG.Color.lightLightGray, DG.Color.lightGray, DG.Color.gray];
 
 export function getOutputPalette(type: OPT_TYPE): number[] {
