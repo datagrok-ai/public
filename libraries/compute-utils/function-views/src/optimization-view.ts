@@ -832,7 +832,7 @@ export class OptimizationView {
         if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
           outputInfo.push({
             caption: caption,
-            hint: `Values of the output scalar **"${caption}"**`,
+            hint: `**Objective**\n\nValues of the output scalar **"${caption}"**`,
           });
           ++outputDim;
         } else {
@@ -846,7 +846,7 @@ export class OptimizationView {
             for (let i = 0; i < rowCount; ++i) {
               outputInfo.push({
                 caption: `${caption}["${col.name}", ${i + 1}]`,
-                hint: `Values of the output dataframe **"${caption}"**:\n\n - column: "${col.name}"\n\n - row: ${i + 1}`,
+                hint: `**Objective**\n\nValues of the output dataframe **"${caption}"**:\n\n - column: "${col.name}"\n\n - row: ${i + 1}`,
               });
               ++outputDim;
             }
@@ -947,7 +947,7 @@ export class OptimizationView {
         const unusedName = resCols.getUnusedName(name);
         resCols.byName(`inp ${idx}`).name = unusedName;
         colTooltips.set(unusedName, {
-          msg: `Values of the input scalar **"${name}"**`,
+          msg: `**Decision variable**\n\nValues of the input scalar **"${name}"**`,
           isInput: true,
         });
       });
