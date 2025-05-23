@@ -7,3 +7,5 @@ src/**/*.d.ts.map
 help/
 !/docs/.gitkeep
 test-console-output.log
+src/datagrok/web/**
+!grok_shared.dart.js

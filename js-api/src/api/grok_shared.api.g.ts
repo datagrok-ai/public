@@ -1,6 +1,6 @@
 /// this file was generated automatically from grok_shared classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export class DataSourceType {
   static Access = 'Access';

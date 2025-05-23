@@ -28,6 +28,7 @@ class FuncCallParam:
         self.name = kwargs.get("name")
         self.property_type = Type(kwargs.get("property_type"))
         self.value = kwargs.get("value")
+        self.original_value = kwargs.get("value")
         self.is_input = kwargs.get("is_input")
 
     @property
@@ -81,7 +82,7 @@ class FuncCall:
     def to_json(self):
         return {
             "id": self.id,
-            "parameterValues": {p.name: p.value for p in self.params},
+            "parameterValues": {p.name: p.original_value if p.is_input else p.value for p in self.params},
             "func": self.func,
             "options": self.options,
             "aux": self.aux,

@@ -3,7 +3,7 @@ title: "SAP HANA"
 ---
 
 Provides access to the
-[SAP HANA](https://www.sap.com/products/technology-platform/hana/what-is-sap-hana.html)
+[SAP HANA](https://www.sap.com/products/data-cloud/hana/what-is-sap-hana.html)
 database using SQL queries via JDBC driver.
 
 ## Connection parameters
@@ -19,4 +19,4 @@ database using SQL queries via JDBC driver.
 See also:
 
 * [Data connection](../../access.md#data-connection)
-* [SAP HANA](https://www.sap.com/products/technology-platform/hana/what-is-sap-hana.html)
+* [SAP HANA](https://www.sap.com/products/data-cloud/hana/what-is-sap-hana.html)

@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.21.10 (2025-05-22)
+
+* Fix all monomers script
+* Optional Sequence scrolling header for short sequences
+
 ## 2.21.9 (2025-05-15)
 
 * Correct scrolling header alignment with sequences.

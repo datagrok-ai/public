@@ -1,4 +1,4 @@
-const api = <any>window;
+const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export function tryParseJson(s: string): any {
   try {

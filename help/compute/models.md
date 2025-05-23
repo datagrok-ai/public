@@ -52,7 +52,7 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 
 ### Acid production
 
-[Acid production](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the [update](diff-studio.md#multistage-processes) feature for multistage simulation
+[Acid production](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) models gluconic acid [production](https://www.chempap.org/file_access.php?file=581a23.pdf) by Aspergillus niger. This example shows the usage of the [update](diff-studio.md#multistage-processes) feature for multistage simulation
 
 ![add-to-workspace](pics/diff-studio-acid-production.gif)
 

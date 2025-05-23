@@ -3,7 +3,7 @@ import {Schema, EntityType, EntityProperty} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Column, DataFrame } from "./dataframe";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * API for {@link https://datagrok.ai/help/govern/catalog/sticky-meta | Sticky meta}. Allows attaching arbitrary metadata on custom entities.

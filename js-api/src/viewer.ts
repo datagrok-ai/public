@@ -3,7 +3,8 @@ import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const
 import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
-import {_toJson, MapProxy} from "./utils";
+import {_toJson} from "./utils_convert";
+import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
 import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
@@ -18,7 +19,7 @@ import {ViewerEvent} from './api/d4.api.g';
 
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.

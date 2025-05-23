@@ -313,11 +313,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             continue;
           }
 
-          const matches = mol.get_substruct_match(smarts);
-          if (matches !== '{}') {
-            resultValues[rule]!.setTrue(molIdx);
-            break;
-          }
+          try {
+            const matches = mol.get_substruct_match(smarts);
+            if (matches !== '{}') {
+              resultValues[rule]!.setTrue(molIdx);
+              break;
+            }
+          } catch (e) {}
         }
       }
       mol.delete();

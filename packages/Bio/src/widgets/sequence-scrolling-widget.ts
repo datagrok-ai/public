@@ -51,10 +51,6 @@ export function handleSequenceHeaderRendering() {
         const split = sh.splitter(seq);
         const maxSeqLen = split ? split.length : 30;
 
-        // makes no sense to have scroller if we have shorter than 50 positions
-        if (maxSeqLen < 50)
-          continue;
-
         const defaultHeaderHeight = 40;
         const scroller = new MSAScrollingHeader({
           canvas: grid.overlay,
@@ -77,7 +73,10 @@ export function handleSequenceHeaderRendering() {
             });
           },
         });
-        grid.props.colHeaderHeight = 65;
+        // adjust header hight automatically only if the sequences are long enough
+        if (maxSeqLen > 40)
+          grid.props.colHeaderHeight = 65;
+
         setTimeout(() => { if (grid.isDetached) return; gCol.width = 400; }, 300); // needed because renderer sets its width
         grid.sub(grid.onCellRender.subscribe((e) => {
           const cell = e.cell;

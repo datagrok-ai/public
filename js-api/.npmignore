@@ -3,3 +3,5 @@
 test-record.mp4
 test-report.csv
 test-console-output.log
+!node-api.*
+!grok_shared.dart.js

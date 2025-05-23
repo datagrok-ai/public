@@ -41,6 +41,7 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
     } catch (e) {}
   }
   if (!mol) {
+    kekulize = true; //previous step failed, so retrun kekulize parameter to true
     isQMol = true;
     try {
       mol = rdKitModule.get_qmol(molString);

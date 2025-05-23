@@ -422,7 +422,7 @@ export const RichFunctionView = Vue.defineComponent({
               class={'flex justify-between'}
             >
               <div> <IconFA name='sign-out'
-                style={menuIconStyle}/> Show output tabs </div>
+                style={menuIconStyle}/> Show all outputs </div>
               { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
             </span>
             { hasContextHelp.value && <span

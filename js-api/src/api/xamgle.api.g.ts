@@ -1,6 +1,6 @@
 /// this file was generated automatically from xamgle classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export interface SettingsInterface {
   /// Automatically save workspace locally

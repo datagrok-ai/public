@@ -11,7 +11,7 @@ query databases. You can extend Grok Connect by developing your own data connect
 The example on this page uses Java. To follow the instructions, you need the following:
 
 * [Git](https://git-scm.com/) to fetch repository with code
-* [Java 8](https://www.java.com/download/ie_manual.jsp) to run and compile code
+* [Java 8](https://www.java.com/en/download/) to run and compile code
 * [Maven](https://maven.apache.org/download.cgi) to build a project. For languages other than Java, add the appropriate [Maven](https://maven.apache.org/) plugin to 
 pom.xml and configure it according to the documentation.
 * Code editor of your choice.

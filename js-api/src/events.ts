@@ -5,13 +5,14 @@ import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
-import {View, ViewInfo, ViewLayout} from './views/view';
+import {View} from './views/view';
+import {ViewInfo} from './entities';
 import {Viewer} from "./viewer";
 import {Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {

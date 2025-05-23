@@ -1,8 +1,9 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func, Property, User} from "./entities";
-import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
-import {MapProxy, _toIterable} from "./utils";
+import type { InputBase, ProgressIndicator,} from "./widgets";
+import {_toIterable} from "./utils_convert";
+import {MapProxy} from "./proxies";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
@@ -12,7 +13,7 @@ import {ViewBase} from "./views/view";
 import {Logger} from "./logger";
 declare let grok: any;
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 

@@ -5,7 +5,10 @@ import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate,
 import {DataConnection, TableQueryBuilder} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+
+declare let grok: any;
+declare let DG: any;
 
 /** Provides convenient file shares access **/
 export class Files {

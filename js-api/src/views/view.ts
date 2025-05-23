@@ -1,14 +1,15 @@
 import {VIEW_TYPE, VIEWER, ViewerType, ViewType} from '../const';
 import {DataFrame} from '../dataframe.js';
-import * as ui from '../../ui';
+import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {DartWidget, Menu, ToolboxPage, TreeViewGroup} from '../widgets';
-import {ColumnInfo, Entity, Script, TableInfo} from '../entities';
+import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo} from '../entities';
 import {toDart, toJs} from '../wrappers';
-import {_options, _toIterable, MapProxy} from '../utils';
-import $ from "cash-dom";
+import {_options} from '../utils';
+import {_toIterable} from '../utils_convert';
+import {MapProxy} from '../proxies';
 import {Subscription} from "rxjs";
 import {FuncCall} from "../functions";
 import {IDartApi} from "../api/grok_api.g";
@@ -34,7 +35,10 @@ import {
   IStatsViewerSettings, ITileViewerSettings, ITreeMapSettings, ITrellisPlotSettings
 } from "../interfaces/d4";
 
-const api: IDartApi = <any>window;
+type UiType = typeof uiType;
+
+declare let ui: UiType;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
@@ -75,13 +79,15 @@ export class ViewBase {
   }
 
   get box(): boolean {
-    return $(this.root).hasClass('ui-box');
+    return this.root.classList.contains('ui-box');
   }
 
   set box(b: boolean) {
-    let r = $(this.root);
-    r.removeClass('ui-panel').removeClass('ui-box').removeClass('ui-div');
-    r.addClass(b ? 'ui-box' : 'ui-panel');
+    let r = this.root as HTMLDivElement;
+    r.classList.remove('ui-panel');
+    r.classList.remove('ui-box');
+    r.classList.remove('ui-div');
+    r.classList.add(b ? 'ui-box' : 'ui-panel');
   }
 
   /** View type
@@ -675,93 +681,6 @@ export class BrowsePanel extends DartWidget {
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
 
-}
-
-
-export class ViewLayout extends Entity {
-
-  /** @constructs ViewLayout */
-  constructor(dart: any) {
-    super(dart);
-  }
-
-  static fromJson(json: string): ViewLayout {
-    return toJs(api.grok_ViewLayout_FromJson(json));
-  }
-
-  static fromViewState(state: string): ViewLayout {
-    return toJs(api.grok_ViewLayout_FromViewState(state));
-  }
-
-  get viewState(): string {
-    return api.grok_ViewLayout_Get_ViewState(this.dart);
-  }
-
-  set viewState(state: string) {
-    api.grok_ViewLayout_Set_ViewState(this.dart, state);
-  }
-
-  getUserDataValue(key: string): string {
-    return api.grok_ViewLayout_Get_UserDataValue(this.dart, key);
-  }
-
-  setUserDataValue(key: string, value: string) {
-    return api.grok_ViewLayout_Set_UserDataValue(this.dart, key, value);
-  }
-
-  toJson(): string {
-    return api.grok_ViewLayout_ToJson(this.dart);
-  }
-
-  get columns(): ColumnInfo[] {
-    return toJs(api.grok_ViewLayout_Get_Columns(this.dart));
-  }
-
-}
-
-export class ViewInfo extends Entity {
-
-  /** @constructs ViewInfo */
-  constructor(dart: any) {
-    super(dart);
-  }
-
-  static fromJson(json: string): ViewInfo {
-    return new ViewInfo(api.grok_ViewInfo_FromJson(json));
-  }
-
-  static fromViewState(state: string): ViewInfo {
-    return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
-  }
-
-  get table() : TableInfo {
-    return toJs(api.grok_ViewInfo_Get_Table(this.dart));
-  }
-
-  /** Only defined within the context of the OnViewLayoutXXX events */
-  get view(): View {
-    return toJs(api.grok_ViewInfo_Get_View(this.dart));
-  }
-
-  get viewState(): string {
-    return api.grok_ViewInfo_Get_ViewState(this.dart);
-  }
-
-  set viewState(state: string) {
-    api.grok_ViewInfo_Set_ViewState(this.dart, state);
-  }
-
-  getUserDataValue(key: string): string {
-    return api.grok_ViewInfo_Get_UserDataValue(this.dart, key);
-  }
-
-  setUserDataValue(key: string, value: string) {
-    return api.grok_ViewInfo_Set_UserDataValue(this.dart, key, value);
-  }
-
-  toJson(): string {
-    return api.grok_ViewInfo_ToJson(this.dart);
-  }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

@@ -2,7 +2,7 @@
 title: "Snowflake"
 ---
 
-Provides access to [Snowflake](https://www.snowflake.com/) database using SQL
+Provides access to [Snowflake](https://www.snowflake.com/en/) database using SQL
 queries via a JDBC driver.
 
 ## Connection parameters
@@ -78,4 +78,4 @@ queries via a JDBC driver.
 See also:
 
 * [Data connection](../../access.md#data-connection)
-* [Snowflake](https://www.snowflake.com/)
+* [Snowflake](https://www.snowflake.com/en/)

@@ -194,6 +194,10 @@ export class MonomerManager implements IMonomerManager {
         args.menu.item('Edit Monomer', async () => {
           await this.editMonomer(this.tv!.dataFrame.rows.get(rowIdx));
         });
+
+        args.menu.item('Fix all monomers', () => {
+          this.fixAllMonomers();
+        });
         if (this.tv!.dataFrame.selection.trueCount > 0) {
           args.menu.item('Remove Selected Monomers', async () => {
             const monomers = await Promise.all(Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
@@ -271,6 +275,8 @@ export class MonomerManager implements IMonomerManager {
       this._newMonomerForm.setEmptyMonomer();
     }, 'Add New Monomer');
 
+    const fixAllMonomersIcon = ui.iconFA('wand-magic', () => { this.fixAllMonomers(); }, 'Fix all monomers');
+
     const editButton = ui.icons.edit(async () => {
       if ((this.tv?.dataFrame?.currentRowIdx ?? -1) < 0) return;
       await this.editMonomer(this.tv!.dataFrame.rows.get(this.tv!.dataFrame.currentRowIdx));
@@ -309,7 +315,7 @@ export class MonomerManager implements IMonomerManager {
       DG.Utils.download(libName!, lib!, 'text/plain');
     }, 'Download Monomer Library');
 
-    ribbons.push([newMonomerButton, editButton, deleteButton, downloadButton]);
+    ribbons.push([newMonomerButton, editButton, fixAllMonomersIcon, deleteButton, downloadButton]);
     this.tv.setRibbonPanels(ribbons);
 
 
@@ -441,6 +447,36 @@ export class MonomerManager implements IMonomerManager {
     } finally {
       this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, false);
     }
+  }
+
+  async fixAllMonomers() {
+    ui.dialog('Fix All Monomers')
+      .add(ui.divText('This action will fix all monomers in the library, standardize their smiles, molblocks and r-groups, assign correct natural analogs and save the library.'))
+      .add(ui.divText('Do you wish to continue?'))
+      .onOK(async () => {
+        const monomerDf = this.tv?.dataFrame;
+        let libName = this.libInput.value;
+        if (!monomerDf || !libName) {
+          grok.shell.error('No monomer library loaded');
+          return;
+        }
+        this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, true);
+        try {
+          const monomers = await Promise.all(new Array(monomerDf.rowCount).fill(0).map((_, i) => monomerFromDfRow(monomerDf.rows.get(i))));
+          const monomersString = JSON.stringify(monomers.map((m) => ({...m, lib: undefined, wem: undefined})), null, 2);
+          if (!libName.endsWith('.json'))
+            libName += '.json';
+          await grok.dapi.files.writeAsText(LIB_PATH + libName, monomersString);
+          await this.monomerLibManamger.loadLibraries(true);
+          //await this.monomerLibManamger.loadLibraries(true);
+          grok.shell.v = await this.getViewRoot(libName);
+        } catch (e) {
+          grok.shell.error('Error saving library');
+          console.error(e);
+        } finally {
+          this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, false);
+        }
+      }).show();
   }
 
   public resetCurrentRowFollowing() {
@@ -1056,9 +1092,14 @@ function getCorrectedMolBlock(molBlock: string) {
     lines[isoLineIdx] = lines[isoLineIdx].substring(0, isoIndex) + 'RGP' + lines[isoLineIdx].substring(isoIndex + 3);
   }
 
-  const molStartIdx = lines.findIndex((line) => line.includes('V2000') || line.includes('V3000'));
+  const molStartIdx = lines.findIndex((line) => line.includes('V2000'));
 
-  const atomCount = Number.parseInt(lines[molStartIdx].trim().split(' ')[0]);
+  if (molStartIdx === -1) {
+    console.error('Mol start line not found');
+    return molBlock;
+  }
+  // only 3 positions are used for atom count, so we can safely parse it
+  const atomCount = Number.parseInt(lines[molStartIdx].trim().split(' ')[0].slice(0, 3).trim());
   const rgroupLineNumbers: { [atomLine: number]: number } = {};
   for (let atomI = molStartIdx + 1; atomI < molStartIdx + 1 + atomCount; atomI++) {
     const rIdx = lines[atomI].indexOf('R ');

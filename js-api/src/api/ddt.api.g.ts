@@ -1,6 +1,6 @@
 /// this file was generated automatically from ddt classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?: number, logScale?: boolean}): Int32List
   { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
