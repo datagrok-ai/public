@@ -95,6 +95,41 @@
   * The layout should automatically adjust to fit the current screen size.
   * All viewers should remain accessible and properly positioned on the screen.
 
+#### 9. Multi Curve inner viewer
+
+1. Close All
+2. Open dataset from: **Files > Demo > curves.csv**
+3. Add Trellis plot viewer. Select  **Multi Curve viewer** as inner viewer
+4. Set X and Y axes on the viewer. 
+5. Interact with the viewer: 
+  - change number of categories on the axes (-+)
+  - move/resize zoom slider for X and Y axes
+  - adjust full screen mode
+6. Click on the **Gear** icon. Check properties. 
+
+#### 10. Points inner viewer
+
+1. Close All
+2. Open dataset from: **Files > Demo > curves.csv**
+3. Open **curves_with_mols.csv**
+4. Add Trellis plot viewer. Select  **Multi Curve viewer** as inner viewer
+5. Set and change X and Y axes on the viewer (also try splits). 
+6. Interact with the viewer: 
+  - change number of categories on the axes (-+)
+  - move/resize zoom slider for X and Y axes
+  - adjust full screen mode
+7. Click on the **Gear** icon. Check Trellis properties. Main: 
+  - Change Data > Table
+  - Row source
+  - Add/remove X and Y columns in Data
+8. Click on the **Gear** icon. Check Points inner viewer properties. Main:
+ - Change Data > Table
+ - Add/remove Columns and Tooltip Columns
+ - Check that all Tooltip Columns are shown in cell tooltip
+9. Click **Toggle filters** icon. 
+  - Row source - filtered.
+  - Setup some filtering. Changes should be reflected on the viewer.
+
 ---
 {
   "order": 13,
