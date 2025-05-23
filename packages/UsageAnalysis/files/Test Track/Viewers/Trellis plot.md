@@ -126,7 +126,7 @@
  - Change Data > Table
  - Add/remove Columns and Tooltip Columns
  - Check that all Tooltip Columns are shown in cell tooltip
-9. Click **Toggle filters** icon. 
+9. Click on **Toggle filters** icon. 
   - Row source - filtered.
   - Setup some filtering. Changes should be reflected on the viewer.
 
