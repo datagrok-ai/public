@@ -61,9 +61,10 @@ design.
 * **Data augmentation and utilities**
   * Calculated columns using [500+ functions](../../../concepts/functions/functions.md) (or create your own)
   * [Chemical scripts](#chemical-scripts) and [custom plugins](#customizing-and-extending-the-platform)
-  * [Calculators](#calculators), [identifier conversion](#molecule-identifier-conversions), [curation](#curation), [mutation](#mutation), [virtual synthesis](#virtual-synthesis)
+  * [Calculators](#calculators), [curation](#curation), [mutation](#mutation), [virtual synthesis](#virtual-synthesis)
 
-To get started, install the required [packages](../../../plugins.md#chem) (see [instructions](../../../../deploy/complete-setup/install-packages.md)).
+To get started, install the required [packages](../../../plugins.md#chem) 
+(see [instructions](../../../../deploy/complete-setup/install-packages.md)).
 
 ## Data access
 
