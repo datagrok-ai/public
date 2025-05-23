@@ -354,7 +354,7 @@ const primitives = new Set([
 /** Generates a DG function. */
 export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string 
 {
-  let funcSigNature = (inputs.map((e)=>`${e.name}: ${primitives.has(e.type ?? '') ? e.type : 'any' }`)).join(', ');
+  let funcSigNature = (inputs.map((e)=>`${e.name}: ${primitives.has(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] ?  e.type : 'any' )}`)).join(', ');
   let funcArguments = (inputs.map((e)=>e.name)).join(', ');
   
   return annotation + `export ${isAsync? 'async ': ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;

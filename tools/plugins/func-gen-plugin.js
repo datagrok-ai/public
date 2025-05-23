@@ -12,7 +12,7 @@ const {
   typesToAnnotation
 } = require("../bin/utils/func-generation");
 
-const baseImport = '\n';
+const baseImport = 'import * as DG from \'datagrok-api/dg\';\n';
 
 class FuncGeneratorPlugin {
   constructor(options = { outputPath: "./src/package.g.ts" }) {
@@ -187,6 +187,7 @@ class FuncGeneratorPlugin {
         let params = baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
         if(type !== 'any' && params && params.length > 0)
           type += `<${params.map((e)=>e.typeName.name).join(',')}>`;
+
         return { name: name, type: type, options: options };
       }
       // Commented code belove sets more strong types for ObjectPatterns and ArrayPatterns
@@ -272,24 +273,32 @@ class FuncGeneratorPlugin {
     if (annotation) {
       if (annotation?.typeName?.name === 'Promise')
       {
+        console.log(annotation)
         const argumnets = annotation.typeArguments?.params;
+        console.log(argumnets[0])
+        
         if (argumnets && argumnets.length===1)
         {
           if (argumnets[0].typeName)
             resultType = argumnets[0].typeName?.right?.name ?? argumnets[0].typeName?.name;
-          else if (argumnets[0].type !== 'TSArrayType')
+          else if (argumnets[0].type !== 'TSArrayType'){
             resultType = this._getTypeNameFromNode(argumnets[0]);
+            console.log(339);
+          }
           else if (argumnets[0].elementType.type !== 'TSTypeReference'){
             isArray = true;
             resultType = this._getTypeNameFromNode(argumnets[0]?.elementType);
           }
           else{
             isArray = true;
-            resultType = argumnets[0].elementType?.typeName?.name || argumnets[0].elementType?.typeName?.right?.name;
+            resultType = argumnets[0].elementType?.typeName?.name || argumnets[0].elementType?.typeName?.left?.name + '.' + argumnets[0].elementType?.typeName?.right?.name;
           }
+          if (argumnets[0].type === 'TSArrayType')
+            resultType = resultType + '[]';
         }
       }    
       else{      
+        console.log(12)
         if (annotation.type === 'TSTypeReference')
           resultType = annotation.typeName?.right?.name ?? annotation.typeName?.name;
         else if (annotation.type !== 'TSArrayType')
@@ -302,6 +311,8 @@ class FuncGeneratorPlugin {
           isArray = true;
           resultType = (annotation?.elementType?.typeName?.name || annotation?.elementType?.typeName?.right?.name);
         }
+        if (annotation.type === 'TSArrayType')
+          resultType = resultType + '[]';
       }
     }    
     resultType = typesToAnnotation[resultType];
