@@ -1,13 +1,14 @@
 import time as time_lib
-from typing import Any
+from typing import Any, Dict, Optional
 import uuid
 import json
 import inspect
 import traceback
+import threading
 
 import celery
 import websocket
-from celery.signals import worker_shutdown
+from celery.signals import worker_shutdown, task_revoked
 from celery import current_app
 
 from .utils import InputValueProcessor, ReturnValueProcessor, camel_to_snake, DatagrokFanoutType
@@ -16,6 +17,57 @@ from .settings import Settings
 from .logger import get_logger
 from .redirect import WebSocketRedirect, AmqpRedirect
 from .amqp_publisher import AmqpFanoutPublisher
+
+
+class FuncCallRegistry:
+    """Registry of currently tracked FuncCall objects keyed by their unique task ID. 
+    Thread safe to support other than prefork pools.
+    In a prefork worker pool, typically only one FuncCall is tracked at a time (or none if idle).
+    """
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._registry: Dict[str, FuncCall] = {}
+
+    def add(self, task_id: str, func_call: FuncCall) -> None:
+        with self._lock:
+            self._registry[task_id] = func_call
+
+    def get(self, task_id: str) -> Optional[FuncCall]:
+        with self._lock:
+            return self._registry.get(task_id)
+
+    def remove(self, task_id: str) -> None:
+        with self._lock:
+            self._registry.pop(task_id, None)
+
+    def contains(self, task_id: str) -> bool:
+        with self._lock:
+            return task_id in self._registry
+        
+        
+_task_registry = FuncCallRegistry()        
+
+
+@task_revoked.connect
+def on_task_cancel(request, terminated, signum, expired, **kwargs):
+    task_id = getattr(request, 'id', None)
+    if task_id is None:
+        return
+
+    if not _task_registry.contains(task_id):
+        return
+
+    call = _task_registry.get(task_id)
+    if call.status in (FuncCallStatus.COMPLETED, FuncCallStatus.ERROR):
+        return
+    
+    try:
+        call.status = FuncCallStatus.CANCELED
+        amqp_publisher = AmqpFanoutPublisher.get_instance()
+        amqp_publisher.publish(call.to_json(), task_id, DatagrokFanoutType.CALL)
+        _task_registry.remove(task_id)
+    except Exception:
+        pass    
 
 
 @worker_shutdown.connect
@@ -39,12 +91,6 @@ class DatagrokTask(celery.Task):
         self._settings = Settings.get_instance()
         self._logger = get_logger()
         self._redirect_stdout = get_worker_pool_type() == "prefork"
-
-        if AmqpFanoutPublisher._initialized:
-            self._amqp_publisher = AmqpFanoutPublisher.get_instance()
-        else:
-            self._amqp_publisher = AmqpFanoutPublisher(self._settings.broker_url, self._settings.calls_fanout)
-    
         self._pipe = None
 
     # Overrides celery.Task.before_start
@@ -52,13 +98,19 @@ class DatagrokTask(celery.Task):
         """This function can't throw. It is special hook called before the tasks lifecycle starts, so exceptions here won't be catched 
         and task will never start.
         """
-        
+        if AmqpFanoutPublisher._initialized:
+            self._amqp_publisher = AmqpFanoutPublisher.get_instance()
+        else:
+            self._amqp_publisher = AmqpFanoutPublisher(self._settings.broker_url, self._settings.calls_fanout)
+
         self._call: FuncCall = FuncCall(args[0])
         self._accepted_send = False 
+        _task_registry.add(self._call.id, self._call)
         # Try to establish AMQP connection to notify that call was accepted
         try:
             self._amqp_publisher.publish({}, self._call.id, DatagrokFanoutType.ACCEPTED)
             self._accepted_send = True
+            self._logger.debug("Send eccepted", extra={"task_id": self._call.id})
         except Exception as e:
             self._logger.warning("Initial Accepted message send failed: %s", str(e), extra={"task_id": self._call.id}, exc_info=True)   
 
@@ -72,6 +124,8 @@ class DatagrokTask(celery.Task):
 
     # Overrides celery.Task.after_return
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        _task_registry.remove(self._call.id)
+
         self._call.status = FuncCallStatus.COMPLETED if status == 'SUCCESS' else FuncCallStatus.ERROR
 
         if einfo is not None:
@@ -163,7 +217,7 @@ class DatagrokTask(celery.Task):
         sig = inspect.signature(fn)
         parameters = [x for x in sig.parameters.values()]
         prepend_self = (
-            parameters and
+            len(parameters) > 0 and
             parameters[0].name == 'self' and
             not inspect.ismethod(fn)  # method means it's already bound
         )
