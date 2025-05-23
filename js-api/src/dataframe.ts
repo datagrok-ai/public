@@ -16,10 +16,12 @@ import {
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
+import {DartList, MapProxy} from "./proxies";
+import {_toJson, _getIterator, _toIterable } from "./utils_convert";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
-import {Color, Widget} from './widgets';
+import type {Widget} from './widgets';
+import {Color} from './color';
 import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
@@ -31,7 +33,7 @@ import wu, {WuIterable} from "wu";
 
 declare let grok: any;
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
@@ -120,8 +122,11 @@ export class DataFrame {
   }
 
   /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
-  static create(rowCount: number = 0): DataFrame {
-    return new DataFrame(api.grok_DataFrame(rowCount));
+  static create(rowCount: number = 0, name?: string): DataFrame {
+    const df = new DataFrame(api.grok_DataFrame(rowCount));
+    if (name)
+      df.name = name;
+    return df;
   }
 
   static fromByteArray(byteArray: Uint8Array): DataFrame {

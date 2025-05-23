@@ -66,14 +66,14 @@ export async function convertLD50(response: string, df: DG.DataFrame): Promise<s
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
-  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
+  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', { molecules: smilesCol, property: "MW" });
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
     const mgPerKg = molPerKg * molWeights.get(i) * 1000;
     return mgPerKg;
   });
-  
+
   return df.toCsv();
 }
 
@@ -158,11 +158,7 @@ function createConditionalColoringRules(coloring: ModelColoring): { [index: stri
 export async function getQueryParams(): Promise<string> {
   await setProperties();
   return properties.subgroup.flatMap((subg: Subgroup) => subg.models)
-      .map((model: Model) => model.name).join(',');
-}
-
-function generateNumber(): number {
-  return Math.random() * (1 - Number.MIN_VALUE) + Number.MIN_VALUE;
+    .map((model: Model) => model.name).join(',');
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
@@ -175,37 +171,30 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
       sectorColor: subgroupColor,
       subsectors: []
     };
-    
+
     for (const model of subgroup.models) {
       const modelName = columnNames.find((name: string) => name.includes(model.name));
       if (modelName) {
-        let { min, max } = model;
-        if (model.properties) {
-          const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
-          if (directionProperty && directionProperty.object.direction === 'Lower is better')
-            [min, max] = [max, min];
-        }
-
         const column = table.col(modelName);
-        let weight = Number(generateNumber().toFixed(2));
+        const { line, weight, min, max } = model;
 
         if (column) {
-          min = column.getTag(TAGS.LOW) ? Number(column.getTag(TAGS.LOW)) : min;
-          max = column.getTag(TAGS.HIGH) ? Number(column.getTag(TAGS.HIGH)) : max;
-          weight = column.getTag(TAGS.WEIGHT) ? Number(column.getTag(TAGS.WEIGHT)) : weight;
-          
-          column.setTag(TAGS.GROUP_NAME, subgroup.name);
-          column.setTag(TAGS.HIGH, max);
-          column.setTag(TAGS.LOW, min);
-          column.setTag(TAGS.WEIGHT, weight.toString());
-          column.setTag(TAGS.SECTOR_COLOR, subgroupColor);
+          const updatedMeta = {
+            groupName: subgroup.name,
+            weight: weight,
+            line: line,
+            sectorColor: subgroupColor,
+            min: min,
+            max: max
+          };
+
+          column.setTag('.vlaaivis-metadata', JSON.stringify(updatedMeta));
         }
-          
+
         sector.subsectors.push({
           name: modelName,
-          low: min,
-          high: max,
           weight: weight,
+          line: line,
         });
       }
     }
@@ -213,7 +202,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
     if (sector.subsectors.length > 0)
       sectors.push(sector);
   }
-    
+
   return {
     sectors: {
       lowerBound: DEFAULT_LOWER_VALUE,
@@ -226,7 +215,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
   const tv = grok.shell.getTableView(table.name);;
-  const {grid} = tv;
+  const { grid } = tv;
   if (!tv) return;
 
   let pieChartIdx: number;
@@ -373,7 +362,7 @@ export function addResultColumns(
   }
 
   const tableView = grok.shell.getTableView(viewTable.name);
-  const {grid} = tableView;
+  const { grid } = tableView;
   models.forEach((model: Model) => {
     const columnName = updatedModelNames.find((name) => name.includes(model.name));
     if (!columnName) return;
@@ -402,10 +391,10 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
   const templates = await getTemplates();
   let props: string;
-  
+
   const handleTemplateChange = async (value: string) => {
     props = JSON.parse(await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${value}.json`));
-    
+
     for (const subgroup of properties.subgroup) {
       const pane = acc.getPane(subgroup.name);
       const container = pane.root.children.item(1) as HTMLDivElement;
@@ -413,7 +402,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       update(container, subgroup.name);
     }
   };
-  
+
   const templatesInput = ui.input.choice('Template', {
     value: templates[0],
     items: templates,
@@ -423,7 +412,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
-      ['models'].map((model: any) => model.name);
+    ['models'].map((model: any) => model.name);
 
     if (smiles === 'MALFORMED_INPUT_VALUE')
       return result.appendChild(ui.divText(ERROR_MESSAGES.MALFORMED));
@@ -433,7 +422,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const csvString = await grok.functions.call('Admetica:runAdmetica', {csvString: `smiles\n${smiles}`, queryParams: queryParams.join(','), raiseException: false});
+      const csvString = await grok.functions.call('Admetica:runAdmetica', { csvString: `smiles\n${smiles}`, queryParams: queryParams.join(','), raiseException: false });
       ui.empty(result);
 
       const table = DG.DataFrame.fromCsv(csvString!);
@@ -445,11 +434,11 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
         const column = table.getCol(param);
         const firstValue = column.get(0);
         const color = column.meta.colors.getColor(0);
-        
+
         const model: Model | undefined = properties.subgroup
           .flatMap((subg: Subgroup) => subg.models)
           .find((model: Model) => param.includes(model.name));
-        
+
         if (model) {
           const units = model.units && model.units !== '-' ? model.units : '';
           const value = typeof firstValue === "string" ? firstValue : `${firstValue.toFixed(3)} ${units}`;
@@ -496,8 +485,13 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  const { cell, units } = semValue;
-  const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
+  let { cell, units } = semValue;
+  cell ??= grok.shell.o.cell;
+
+  if (!cell)
+    return ui.divText('Failed to identify the current object');
+
+  const { dataFrame, column, rowIndex, value } = cell;
 
   const view = grok.shell.getTableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
@@ -506,18 +500,18 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
   const query = `smiles\n${parsedValue}`;
-  const result = await grok.functions.call('Admetica:runAdmetica', {csvString: query, queryParams: params, raiseException: false});
+  const result = await grok.functions.call('Admetica:runAdmetica', { csvString: query, queryParams: params, raiseException: false });
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
-  
+
   const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
 export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {
-  const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
+  const form = DG.FormViewer.createDefault(viewTable, { columns: updatedModelNames });
   const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();

@@ -1,101 +1,74 @@
-const fs = require('fs');
-const path = require('path');
-const {parse} = require('@babel/parser');
-const traverse = require('@babel/traverse').default;
-const {reservedDecorators, getFuncAnnotation, generateImport, generateExport} = require('../bin/utils/func-generation');
+const fs = require("fs");
+const path = require("path");
 
+const tsParser = require("@typescript-eslint/typescript-estree");
+const generate = require('@babel/generator').default;
+
+const {
+  reservedDecorators,
+  getFuncAnnotation,
+  generateImport,
+  generateExport,
+  typesToAnnotation
+} = require("../bin/utils/func-generation");
+
+const baseImport = '\n';
 
 class FuncGeneratorPlugin {
-  constructor(options = {outputPath: './src/package.g.ts'}) {
+  constructor(options = { outputPath: "./src/package.g.ts" }) {
     this.options = options;
   }
 
   apply(compiler) {
-    const srcDirPath = path.join(compiler.context, 'src');
-    let packageFilePath = path.join(srcDirPath, 'package.ts');
-    if(!fs.existsSync(packageFilePath))
-      packageFilePath = path.join(srcDirPath, 'package.js');
+    const srcDirPath = path.join(compiler.context, "src");
+    let packageFilePath = path.join(srcDirPath, "package.ts");
+    if (!fs.existsSync(packageFilePath))
+      packageFilePath = path.join(srcDirPath, "package.js");
     const tsFiles = this._getTsFiles(srcDirPath);
     const genImports = [];
     const genExports = [];
 
-    compiler.hooks.compilation.tap('FuncGeneratorPlugin', (_compilation) => {
+    compiler.hooks.compilation.tap("FuncGeneratorPlugin", (_compilation) => {
       this._clearGeneratedFile();
 
       for (const file of tsFiles) {
-        const content = fs.readFileSync(file, 'utf-8');
-        if (!content)
+        const content = fs.readFileSync(file, "utf-8");
+        if(!content.includes('@grok.decorators.'))
           continue;
-        const ast = parse(content, {
-          sourceType: 'module',
-          plugins: ['typescript', [
-            'decorators',
-            {decoratorsBeforeExport: true},
-          ]],
+        
+        if (!content) continue;
+        const ast = tsParser.parse(content, {
+          sourceType: "module",
+          plugins: [
+            ["decorators", { decoratorsBeforeExport: true }],
+            "classProperties",
+            "typescript",
+          ],
         });
         const functions = [];
-        const imports = [];
-  
-        traverse(ast, {
-          ClassDeclaration: (nodePath) => this._addNodeData(nodePath.node, file,
-            srcDirPath, functions, imports, genImports, genExports),
-        });
-  
-        if (fs.existsSync(this.options.outputPath)) { 
-          const content = fs.readFileSync(this.options.outputPath, 'utf-8');
-          const output = content ? this._insertImports(content, imports) : imports.join('\n');
-          fs.writeFileSync(this.options.outputPath, output, 'utf-8');
-        } else 
-          fs.writeFileSync(this.options.outputPath, imports.join('\n'), 'utf-8');
-        
-  
-        fs.appendFileSync(this.options.outputPath, functions.join('\n'), 'utf-8');
-      }
+        let imports = new Set();
+        this._walk(ast, (node, parentClass) => {
+          const decorators = node.decorators;
+          if (!decorators || decorators.length === 0) return;
 
-      this._writeToPackageFile(packageFilePath, genImports, genExports);
+          if (node?.type === "ClassDeclaration") 
+            this._addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports);
+
+          if (node?.type === "MethodDefinition")
+            this._addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports, parentClass);
+        });
+        this._insertImports([...imports]);
+        fs.appendFileSync(this.options.outputPath, functions.join(""), "utf-8");
+      }
+      this._checkPackageFileForDecoratorsExport(packageFilePath);
+      // Uncommment to add obvious import/export 
+      // this._writeToPackageFile(packageFilePath, genImports, genExports);
+
     });
   }
 
-  _getTsFiles(root) {
-    const tsFiles = [];
-    const extPattern = /\.tsx?$/;
-    const excludedFiles = ['package.ts', 'package-test.ts', 'package.g.ts'];
-
-    function findFiles(dir) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const fullPath = path.join(dir, file);
-        if (fs.statSync(fullPath).isDirectory()) 
-          findFiles(fullPath);
-        else if (extPattern.test(file) && !excludedFiles.includes(file)) 
-          tsFiles.push(fullPath);
-        
-      }
-    }
-
-    findFiles(root);
-    return tsFiles;
-  }
-
-  _clearGeneratedFile() {
-    fs.writeFileSync(this.options.outputPath, '');
-  }
-
-  _writeToPackageFile(filePath, imports, exports) {
-    if (imports.length !== exports.length)
-      return;
-    let content = fs.readFileSync(filePath, 'utf-8');
-    for (let i = 0; i < imports.length; i++) {
-      const importStatement = imports[i];
-      const exportStatement = exports[i];
-      if (!content.includes(importStatement.trim()))
-        content = importStatement + content + exportStatement;
-    }
-    fs.writeFileSync(filePath, content, 'utf-8');
-  }
-
-  _addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports) {
-    if (!node.decorators || !node.decorators.length)
+  _addNodeData(node, file, srcDirPath, functions, imports, genImports, genExports, parent = undefined) {
+    if (!node.decorators || !node.decorators.length || node.decorators?.length === 0)
       return;
 
     function modifyImportPath(dirPath, filePath) {
@@ -103,43 +76,289 @@ class FuncGeneratorPlugin {
       return `./${relativePath.slice(0, relativePath.length - 3).replace(/\\/g, '/')}`;
     }
 
-    for (const decorator of node.decorators) {
-      const exp = decorator.expression;
-      const name = exp.callee.property.name;
-      const options = {};
-      if (name in reservedDecorators) {
-        if (exp.arguments && exp.arguments.length === 1) {
-          const props = exp.arguments[0].properties;
-          for (const prop of props)
-            options[prop.key.name] = prop.value.value;
-        }
+    const decorator =  node.decorators[0];
+    const exp  = decorator.expression;
+    const name = exp.callee?.property?.name || exp.callee?.name;
+    const identifierName = node.id?.name || node.key?.name;
+    const className = parent?.id?.name || parent?.key?.name;
 
-        const className = node.id.name;
-        imports.push(generateImport(className, modifyImportPath(path.dirname(this.options.outputPath), file)));
-        const funcName = `_${className}`;
-        functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation({
-          ...reservedDecorators[name]['metadata'],
-          ...options,
-        }), className));
+    if (!name) return;
 
-        genImports.push(generateImport(funcName, modifyImportPath(srcDirPath, this.options.outputPath)));
-        genExports.push(generateExport(funcName));
+    const decoratorOptions = this._readDecoratorOptions(exp.arguments[0].properties);
+    decoratorOptions.set('tags', [...(reservedDecorators[name]['metadata']['tags'] ?? [] ), ...(decoratorOptions.get('tags') ?? [])])
+    const functionParams = node?.type === 'MethodDefinition' ? this._readMethodParamas(node) : [];
+    const annotationByReturnType = node?.type === 'MethodDefinition' ? this._readFunctionReturnTypeInfo(node) : '';
+    const annotationByReturnTypeObj = { name: 'result', type: annotationByReturnType };
+    const isMethodAsync = this._isMethodAsync(node);
+    let importString = generateImport(node?.type === 'MethodDefinition' ? className : identifierName, modifyImportPath(path.dirname(this.options.outputPath), file));
+    imports.add(importString);
+    const funcName = `${node?.type === 'MethodDefinition' ? '' : '_'}${identifierName}`;
+    const funcAnnotaionOptions = {
+      ...reservedDecorators[name]['metadata'],
+      ...(annotationByReturnType ? {outputs: [annotationByReturnTypeObj ?? {}]} : {}),
+      ...Object.fromEntries(decoratorOptions),
+      ...{inputs: functionParams},
+      ...{isAsync: isMethodAsync}
+    };    
+    if (!funcAnnotaionOptions.name)
+      funcAnnotaionOptions.name = identifierName;
+    functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation(funcAnnotaionOptions), identifierName,'\n', (className ?? ''), functionParams, funcAnnotaionOptions.isAsync ?? false));
+    genImports.push(generateImport(funcName, modifyImportPath(srcDirPath, this.options.outputPath)));
+    genExports.push(generateExport(funcName));
+  }
+
+  _isMethodAsync(node){
+    let result = false;
+    if (node.type === 'MethodDefinition')
+      result = node.value.async;
+    return result;
+  }
+
+  _readImports (content) {
+    const importRegex = /(import(?:[\s\w{},*]+from\s*)?['"]([^'"]+)['"];)/g;
+    const results = [];
+  
+    let match;
+    while ((match = importRegex.exec(content)) !== null) {
+      results.push(`${match[1]}\n`);
+    }
+    return results;
+  }
+
+  _readDecoratorOptions(properties){
+    const resultMap = new Map();
+
+    for(let prop of properties)
+      resultMap.set(prop.key.name, this._evalLiteral(prop.value));
+
+    return resultMap;
+  }
+
+  _evalLiteral(node) {
+    if (!node) return null;
+
+    switch (node.type) {
+      case 'Literal':
+        return node.value;
+
+      case 'ArrayExpression':
+        return node.elements.map(el => this._evalLiteral(el));
+
+      case 'ObjectExpression':
+        return Object.fromEntries(
+          node.properties.map(p => {
+            return [p.key.name || p.key.value, this._evalLiteral(p.value)];
+          })
+        );
+
+      default:
+        return '';
+    }
+  }
+
+  _readMethodParamas(node) {
+    const params = node?.value?.params?.map(param => {
+      let baseParam = param.type === 'TSNonNullExpression' ? param.expression : param;
+      const options   = param.decorators?.length > 0?  Object.fromEntries(this._readDecoratorOptions(param.decorators[0]?.expression?.arguments[0].properties)) : undefined;
+      
+      // Commented code finds value by default of function's variable  
+      // let defaultValue = undefined; 
+      if(baseParam.type === 'AssignmentPattern')
+      {
+        // if (baseParam?.right?.type  === 'Literal')
+        //   defaultValue = baseParam?.right?.raw;
+        baseParam = baseParam?.left;
+      } 
+
+      if (baseParam.type === 'RestElement' || baseParam.type === 'Identifier') {
+        let name =
+          baseParam.type === 'RestElement'
+            ? `...${baseParam.argument.name}`
+            : baseParam.name;
+        if (baseParam?.argument?.typeAnnotation)
+          name += ': ' + generate(baseParam.argument.typeAnnotation.typeAnnotation).code;
+    
+        let type = '';
+        if (baseParam?.typeAnnotation?.typeAnnotation)
+          type = generate(baseParam.typeAnnotation.typeAnnotation).code;
+        else 
+          type = 'any';
+        
+        let params = baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
+        if(type !== 'any' && params && params.length > 0)
+          type += `<${params.map((e)=>e.typeName.name).join(',')}>`;
+        return { name: name, type: type, options: options };
+      }
+      // Commented code belove sets more strong types for ObjectPatterns and ArrayPatterns
+      // else if (baseParam.type === 'ObjectPattern' || baseParam.type === 'ArrayPattern') {
+      //   let name = '';
+      //   if (baseParam.type === 'ObjectPattern') {
+      //     const properties = baseParam.properties.map(prop => {
+      //       if (prop.type === 'Property' && prop.key.type === 'Identifier')
+      //         return prop.key.name;
+      //       else if (prop.type === 'RestElement' && prop.argument.type === 'Identifier')
+      //         return `...${prop.argument.name}`;
+      //       else
+      //         return generate(prop).code;
+      //     });
+      //     name = `{ ${properties.join(', ')} }`;
+      //   } else {
+      //     const elements = baseParam.elements.map(elem => {
+      //       if (elem) {
+      //         if (elem.type === 'Identifier')
+      //           return elem.name;
+      //         else
+      //           return generate(elem).code;
+      //       } else return '';
+      //     });
+      //     name = `[${elements.join(', ')}]`;
+      //   }
+    
+      //   let type = '';
+      //   if (baseParam.typeAnnotation)
+      //     type = generate(baseParam.typeAnnotation.typeAnnotation).code;
+      //   else
+      //     type = 'any';
+
+      //   return { name: name, type: type, options: options };
+      // }
+      return { name: 'value', type: 'any', options: undefined };
+    });
+    return params;
+  }
+
+  _getTsFiles(root) {
+    const tsFiles = [];
+    const extPattern = /\.tsx?$/;
+    const excludedFiles = ["package-test.ts", "package.g.ts"];
+
+    function findFiles(dir) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        const fullPath = path.join(dir, file);
+        if (fs.statSync(fullPath).isDirectory()) findFiles(fullPath);
+        else if (extPattern.test(file) && !excludedFiles.includes(file))
+          tsFiles.push(fullPath);
+      }
+    }
+
+    findFiles(root);
+    return tsFiles;
+  }
+
+  _walk(node, visitor, parent = null) {
+    if (!node || typeof node !== "object") return;
+  
+    visitor(node, parent);
+  
+    for (const key in node) {
+      const value = node[key];
+      if (Array.isArray(value)) {
+        value.forEach((child) => {
+          if (child && typeof child.type === "string") {
+            this._walk(child, visitor, node.type === 'ClassDeclaration'? node : parent );
+          }
+        });
+      } else if (value && typeof value.type === "string") {
+        this._walk(value, visitor, node.type === 'ClassDeclaration'? node : parent );
       }
     }
   }
 
-  _insertImports(content, imports) {
-    const ast = parse(content, {sourceType: 'module', plugins: ['typescript', 'decorators']});
-    let lastImportLoc = null;
-    traverse(ast, {
-      ImportDeclaration(nodePath) {
-        lastImportLoc = nodePath.node.end + 1;
-      },
-    });
-    return lastImportLoc === null ? imports.join('\n') + content :
-      content.slice(0, lastImportLoc) + imports.join('\n') +
-      (content[lastImportLoc] === '\n' ? '' : '\n') +
-      content.slice(lastImportLoc, content.length);
+  _readFunctionReturnTypeInfo(node) { 
+    let resultType = 'any';
+    let isArray = false;
+    const annotation = node.value?.returnType?.typeAnnotation;
+    if (annotation) {
+      if (annotation?.typeName?.name === 'Promise')
+      {
+        const argumnets = annotation.typeArguments?.params;
+        if (argumnets && argumnets.length===1)
+        {
+          if (argumnets[0].typeName)
+            resultType = argumnets[0].typeName?.right?.name ?? argumnets[0].typeName?.name;
+          else if (argumnets[0].type !== 'TSArrayType')
+            resultType = this._getTypeNameFromNode(argumnets[0]);
+          else if (argumnets[0].elementType.type !== 'TSTypeReference'){
+            isArray = true;
+            resultType = this._getTypeNameFromNode(argumnets[0]?.elementType);
+          }
+          else{
+            isArray = true;
+            resultType = argumnets[0].elementType?.typeName?.name || argumnets[0].elementType?.typeName?.right?.name;
+          }
+        }
+      }    
+      else{      
+        if (annotation.type === 'TSTypeReference')
+          resultType = annotation.typeName?.right?.name ?? annotation.typeName?.name;
+        else if (annotation.type !== 'TSArrayType')
+          resultType = this._getTypeNameFromNode(annotation);
+        else if  (annotation.elementType.type !== 'TSTypeReference'){
+          isArray = true;
+          resultType = this._getTypeNameFromNode(annotation?.elementType);
+        }
+        else{
+          isArray = true;
+          resultType = (annotation?.elementType?.typeName?.name || annotation?.elementType?.typeName?.right?.name);
+        }
+      }
+    }    
+    resultType = typesToAnnotation[resultType];
+    if (isArray && resultType)
+      resultType = `list<${resultType}>`
+    return resultType;
+  }
+
+  _getTypeNameFromNode(typeNode) {
+    if (typeNode.type === 'TSTypeReference') {
+      return typeNode.typeName.name;
+    } else if (typeNode.type === 'TSVoidKeyword') {
+      return 'void';
+    } else if (typeNode.type === 'TSNumberKeyword') {
+      return 'number';
+    } else if (typeNode.type === 'TSStringKeyword') {
+      return 'string';
+    } else if (typeNode.type === 'TSBooleanKeyword') {
+      return 'boolean';
+    } else {
+      return typeNode.type;
+    }
+  }
+
+  _clearGeneratedFile() {
+    fs.writeFileSync(this.options.outputPath, baseImport);
+  }
+
+  _checkPackageFileForDecoratorsExport(packagePath){    
+    const content = fs.readFileSync(packagePath, "utf-8");
+    const decoratorsExportRegex = /export\s*\*\s*from\s*'\.\/package\.g';/;
+    if (!decoratorsExportRegex.test(content))
+      console.warn(`\nWARNING: Your package doesn't export package.g.ts file to package.ts \n please add "export * from './package.g';" to the package.ts file.\n`);
+  }
+
+  _writeToPackageFile(filePath, imports, exp) {
+    if (imports.length !== exp.length) return;
+    let content = fs.readFileSync(filePath, "utf-8");
+    for (let i = 0; i < imports.length; i++) {
+      const importStatement = imports[i];
+      const exportStatement = exp[i];
+      if (!content.includes(importStatement.trim()))
+        content = importStatement + content + exportStatement;
+    }
+    fs.writeFileSync(filePath, content, "utf-8");
+  }
+
+  _insertImports(importArray) {
+    if (fs.existsSync(this.options.outputPath)) {
+      const content = fs.readFileSync(this.options.outputPath, "utf-8");
+      if (content)
+        importArray.push(content);
+      const output = importArray.join("");
+      fs.writeFileSync(this.options.outputPath, `${output}`, "utf-8");
+    } 
+    else
+      fs.writeFileSync(this.options.outputPath, `${baseImport}\n${importArray.join("")}`, "utf-8");
   }
 }
 

@@ -77,6 +77,29 @@ CREATE TABLE plates.plate_details (
     PRIMARY KEY (plate_id, property_id)
 );
 
+-- A template specifies a set of properties applicable on plate and well levels.
+-- See also template_plate_properties and template_well_properties.
+CREATE TABLE plates.templates (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID references users(id)
+);
+
+CREATE TABLE plates.template_plate_properties (
+    template_id INTEGER NOT NULL references plates.templates(id),
+    property_id INTEGER NOT NULL references plates.properties(id),
+    PRIMARY KEY (template_id, property_id)
+);
+
+CREATE TABLE plates.template_well_properties (
+    template_id INTEGER NOT NULL references plates.templates(id),
+    property_id INTEGER NOT NULL references plates.properties(id),
+    PRIMARY KEY (template_id, property_id)
+);
+
+
 CREATE TABLE plates.plate_layout_wells (
     layout_id INTEGER NOT NULL references plates.plates(id),
     row SMALLINT,

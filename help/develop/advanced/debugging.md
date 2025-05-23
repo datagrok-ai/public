@@ -256,7 +256,7 @@ to debug JavaScript from JetBrains IDEs. In February 2021 JetBrains has removed 
 ## Logger
 
 You can use a package logger to report debug records to the server. Datagrok JS API has a class called
-[DG.PackageLogger](https://datagrok.ai/js-api/dg/classes/PackageLogger). Here is an example of accessing a logger object
+[DG.PackageLogger](https://datagrok.ai/api/js/dg/classes/PackageLogger). Here is an example of accessing a logger object
 in your package code:
 
 ```ts

@@ -913,11 +913,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     try {
       jsonStr = await getScaffoldTree(dataFrame, this.ringCutoff, this.dischargeAndDeradicalize);
     } catch (e: any) {
-      _package.logger.error(e.toString());
       ui.setUpdateIndicator(this.root, false);
       this.progressBar?.update(50, 'Build failed');
       this.progressBar?.close();
-      this.message = 'Tree build failed...Please ensure that python package ScaffoldGraph is installed';
+      this.message = `Tree build failed...${e.toString()}`;
       return;
     }
 
@@ -1551,7 +1550,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.fragmentsColumn.name = columnName;
     }
 
-    this.fragmentsColumn.semType = DG.SEMTYPE.MOLECULE;
+    this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
 
     const gridColorColumn = grok.shell.getTableView(this.dataFrame.name).grid.columns.byName(columnName);
     if (isNewColumn && gridColorColumn)

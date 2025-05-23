@@ -65,10 +65,10 @@ const navItems = [
                 iconFA: "book"
             }, 
             {
-                name: "JS-API",
-                href: "/js-api",
+                name: "API",
+                href: "/api",
                 iconFA: "cog"
-            }, 
+            },
             {
                 name: "Community",
                 href: "https://community.datagrok.ai",

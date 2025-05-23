@@ -51,7 +51,7 @@ export enum SubstructureSearchType {
   NOT_CONTAINS = 'Not contains',
   NOT_INCLUDED_IN = 'Not included in'
 }
-export const FILTER_TYPE_TAG = '.filter-type'
+export const FILTER_TYPE_TAG = '.filter-type';
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';

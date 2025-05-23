@@ -31,3 +31,6 @@ test-report.html
 test-console-output.log
 
 package.g.ts
+
+src/**/*.d.ts
+src/**/*.d.ts.map

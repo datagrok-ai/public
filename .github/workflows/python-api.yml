@@ -46,6 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install tomli
+        run: pip install 'tomli>=1.2.0'
       - name: Check version change
         id: check_version
         run: |

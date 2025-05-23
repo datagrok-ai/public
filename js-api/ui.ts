@@ -43,7 +43,7 @@ import {IDartApi} from "./src/api/grok_api.g";
 // import {Dictionary, typeaheadConfig} from "typeahead-standalone/dist/types";
 // import typeahead from "typeahead-standalone";
 
-let api: IDartApi = <any>window;
+let api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 declare let grok: any;
 
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -1104,7 +1104,7 @@ export class tools {
     });
   }
 
-  private static formResizeObserver = _isDartium() ? null : new ResizeObserver((records, observer) => {
+  private static formResizeObserver = _isDartium() || (typeof ResizeObserver == 'undefined') ? null : new ResizeObserver((records, observer) => {
     for (let r of records) {
       setTimeout(() => {
         let shouldHandle = tools.handleFormResize(r.target as HTMLElement);

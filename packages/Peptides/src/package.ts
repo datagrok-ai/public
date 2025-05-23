@@ -17,6 +17,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
 import {LSTPieChartRenderer} from './utils/cell-renderer';
 import {PeptideUtils} from './peptideUtils';
+import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -151,6 +152,14 @@ export function mostPotentResidues(): MostPotentResidues {
 //output: viewer result
 export function logoSummaryTable(): LogoSummaryTable {
   return new LogoSummaryTable();
+}
+
+//name: Sequence Position Statistics
+//tags: viewer
+//meta.icon: files/icons/sequence-statistics-viewer.svg
+//output: viewer result
+export function sequencePositionStatistics(): DG.Viewer {
+  return new SequencePositionStatsViewer();
 }
 
 //name: Active peptide selection

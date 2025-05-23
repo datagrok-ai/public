@@ -85,6 +85,27 @@
 1. Use range sliders on the axes to filter data one more time
 1. On the **Filter Panel** click **Reset filter** - this should reset all applied filters and restore the range sliders on the PC plot to their default positions
 
+#### 9. Visualization modes
+1. Close All
+2. Open demog
+3. Add a PC plot
+4. Click on the **Gear icon** to open viewer`s **properties**.
+5. Check Box plot setting, in particular:
+- Circles
+- Box plot (and all it`s customizable setting)
+- Violin plot (and all it`s customizable setting)
+
+#### 10. Selection
+1. Close All
+2. Open demog
+3. Add a PC plot
+4. Click on the **Gear icon** to open viewer`s **properties**.
+5. Check **Selection** setting, in particular:
+- Show current line
+- Show mouse over line
+- Show mouse over row group 
+- Show All lines
+
 ---
 {
   "order": 8,

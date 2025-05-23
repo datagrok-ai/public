@@ -16,7 +16,8 @@ import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {AnalysisOptions, PlateWidget} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
-import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates_crud";
+import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates-crud";
+import { PlateDrcAnalysis } from './plate-drc-analysis';
 
 
 /** Represents a well in the experimental plate */
@@ -106,6 +107,13 @@ export class Plate {
     return row * this.cols + col;
   }
 
+  /** Converts a row index in the internal dataframe to 0-based row/col position. */
+  rowIndexToExcel(dataFrameRow: number): [row: number, col: number] {
+    const row = Math.floor(dataFrameRow / this.cols);
+    const col = dataFrameRow % this.cols;
+    return [row, col];
+  }
+
   //well(row: number, col: number): PlateWell { return new PlateWell(); }
 
   _markOutlier(row: number, flag: boolean = true) {
@@ -133,8 +141,9 @@ export class Plate {
   }
 
   /** Constructs a plate from a table of size 8x12, 16x24 or 32x48
-   * This plate will have one layer */
-  static fromGridTable(table: DG.DataFrame, field?: string): Plate {
+   * This plate will have one layer.
+   * The opposite of {@link toGridDataFrame}. */
+  static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
     // remove row letters
     function containsRowLetters(c: DG.Column): boolean {
@@ -161,10 +170,23 @@ export class Plate {
     return plate;
   }
 
+  /** Returns a dataframe representing the specified layer with the same layout as the plate.
+   * The opposite of {@link fromGridDataFrame}. */
+  toGridDataFrame(layer: string): DG.DataFrame {
+    const df = DG.DataFrame.create(this.rows);
+    const col = this.data.columns.byName(layer);
+
+    for (let i = 0; i < this.cols; i++) {
+      df.columns.addNew(`${i + 1}`, col.type).init(r => col.get(this._idx(r, i)));
+    }
+
+    return df;
+  }
+
 
   /** Constructs a plate from a dataframe where each row corresponds to a well.
    * Automatically detects position column (has to be in Excel notation). */
-  static fromTableByRow(table: DG.DataFrame, field?: string): Plate {
+  static fromTableByRow(table: DG.DataFrame): Plate {
     const posCol = wu(table.columns)
       .find((c) => c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
     if (!posCol)
@@ -207,8 +229,14 @@ export class Plate {
     return plate;
   }
 
+  // /**  Constructs a plate from the format used by the PlateWidget */
+  // static fromPlateData(df: DG.DataFrame): Plate {
+  //   const plate = new Plate(df.col('row')!.stats.max + 1, df.col('col')!.stats.max + 1);
+  // }
+
+
   static async fromCsvTableFile(csvPath: string, field: string, options?: DG.CsvImportOptions): Promise<Plate> {
-    return this.fromGridTable(await grok.dapi.files.readCsv(csvPath, options), field);
+    return this.fromGridDataFrame(await grok.dapi.files.readCsv(csvPath, options), field);
   }
 
   // getClosestRoleName(fileName: string): string {
@@ -220,7 +248,7 @@ export class Plate {
   // }
 
   static fromCsvTable(csv: string, field: string, options?: DG.CsvImportOptions): Plate {
-    return this.fromGridTable(DG.DataFrame.fromCsv(csv, options), field);
+    return this.fromGridDataFrame(DG.DataFrame.fromCsv(csv, options), field);
   }
 
   static fromCsv(csv: string, options?: IPlateCsvImportOptions): Plate {
@@ -238,7 +266,7 @@ export class Plate {
     // if (df.columns.contains('pos'))
     //   return new Plate(0, 0);
 
-    return this.fromGridTable(df, options?.field ?? 'value');
+    return this.fromGridDataFrame(df, options?.field ?? 'value');
   }
 
   /** Merges the attributes from {@link plates} into one plate. */
@@ -442,12 +470,12 @@ export class Plate {
 
   getAnalysisDialog(options: AnalysisOptions) {
     ui.dialog('Plate Analysis')
-    .add(PlateWidget.analysisView(this, options))
+    .add(PlateDrcAnalysis.analysisView(this, options))
     .showModal(true);
   }
 
   getAnalysisView(options: AnalysisOptions) {
-    const view = DG.View.fromRoot(PlateWidget.analysisView(this, options).root);
+    const view = DG.View.fromRoot(PlateDrcAnalysis.analysisView(this, options).root);
     view.name = 'Plate Analysis';
     return grok.shell.addView(view);
   }

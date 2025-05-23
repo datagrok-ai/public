@@ -14,15 +14,22 @@ import {checkSize, getCalledFuncCalls} from './utils';
 import {OutputDataFromUI, getOutput,
   SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
+import {DiffGrok} from '../fitting-view';
+import {ModelEvaluator} from './diff-studio/model-evaluator';
+import {DIFF_GROK_OUT_IDX} from './constants';
+
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
+/** Monte-Carlo analyzer */
 export class RandomAnalysis {
   private dimension: number;
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
-  private funcCalls: DG.FuncCall[];
+  private funcCalls: DG.FuncCall[] | null = null;
   private outputsOfInterest: OutputDataFromUI[];
+  private funcInputs: any[];
+  private diffGrok: DiffGrok | undefined;
 
   constructor(
     func: DG.Func,
@@ -30,6 +37,7 @@ export class RandomAnalysis {
     variedInputs: VariedNumericalInputInfo[],
     outputsOfInterest: OutputDataFromUI[],
     samplesCount: number,
+    diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -44,7 +52,9 @@ export class RandomAnalysis {
         column: numericalColumns[i]}),
     );
 
-    this.funcCalls = [];
+    this.funcInputs = [];
+    this.diffGrok = diffGrok;
+    this.funcCalls = (diffGrok === undefined) ? [] : null;
 
     // create an array of funccalls
     for (let i = 0; i < samplesCount; ++i) {
@@ -56,29 +66,44 @@ export class RandomAnalysis {
       for (const input of this.variedInputs)
         inputs[input.prop.name] = input.column.get(i);
 
-      this.funcCalls.push(func.prepare(inputs));
+      if (this.funcCalls !== null)
+        this.funcCalls.push(func.prepare(inputs));
+
+      this.funcInputs.push(inputs);
     }
 
     this.outputsOfInterest = outputsOfInterest;
-  }
+  } // constructor
 
-  // Performs variance-based sensitivity analysis
+  /** Performs variance-based sensitivity analysis */
   async perform(): Promise<SensitivityAnalysisResult> {
-    //await this.run();
-
-    this.funcCalls = await getCalledFuncCalls(this.funcCalls);
-
     // columns with the varied inputs values
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
     // columns with outputs
-    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    let outputCols: DG.Column[];
+
+    if (this.diffGrok !== undefined) {
+      const evaluator = new ModelEvaluator(
+        this.diffGrok,
+        this.funcInputs,
+        this.outputsOfInterest[DIFF_GROK_OUT_IDX],
+      );
+
+      outputCols = await evaluator.getResults();
+    } else {
+      if (this.funcCalls === null)
+        throw new Error('Failed Monte-Carlo analysis: empty list of funccalls');
+
+      this.funcCalls = await getCalledFuncCalls(this.funcCalls);
+      outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
+    }
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);
 
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
-    return {funcEvalResults: funcEvalResults, funcCalls: this.funcCalls};
+    return {funcEvalResults: funcEvalResults, funcInputs: this.funcInputs};
   }
 };

@@ -108,5 +108,5 @@ export function getPlateFromSheet(p: ExcelPlatePosition): Plate {
     const strings = DG.range(p.rows).map(i => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
     df.columns.add(DG.Column.fromStrings(`${col - p.startCol + 1}`, strings));
   }
-  return Plate.fromGridTable(df, p.sheet.name);
+  return Plate.fromGridDataFrame(df, p.sheet.name);
 }

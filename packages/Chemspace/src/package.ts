@@ -8,6 +8,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
 export const _package = new DG.Package();
+const API_KEY_PARAM_NAME = 'apiKey';
 
 const WIDTH = 150;
 const HEIGHT = 75;
@@ -301,9 +302,11 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
 
 //description: Gets access token
 async function getApiToken(): Promise<void> {
-  if (token === null) {
-    const t = await grok.data.query('Chemspace:AuthToken', null, true);
-    token = t.get('access_token', 0) as string;
+  if (!token) {
+    const credentials = await _package.getCredentials();
+    if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
+      throw new Error('API key is not set in package credentials');
+    token = await requestAuthToken(credentials.parameters[API_KEY_PARAM_NAME]);
   }
 }
 
@@ -337,15 +340,25 @@ export async function queryMultipart(path: string, formParamsStr: string, params
     let totalAttempts = 10;
     let attemptsCount = 0;
     const delayMs = 1000;
+    const rerunRequest = async (): Promise<void> => {
+      response = await grok.dapi.fetchProxy(url, queryParams);
+      if (!response.ok && response.status !== 429)
+        throw new Error(`${response.status}, ${response.statusText}`);
+    };
     if (!response.ok) {
+      //attempt to update token
+      if (response.status === 401) {
+        token = null;
+        await getApiToken();
+        await rerunRequest();
+      }
+
       if (response.status === 429) {
         while (response.status === 429 && totalAttempts > 0) {
           totalAttempts--;
           attemptsCount++;
           await delay(delayMs * attemptsCount);
-          response = await grok.dapi.fetchProxy(url, queryParams);
-          if (!response.ok && response.status !== 429)
-            throw new Error(`${response.status}, ${response.statusText}`);
+          await rerunRequest();
         }
       } else
         throw new Error(`${response.status}, ${response.statusText}`);
@@ -354,6 +367,27 @@ export async function queryMultipart(path: string, formParamsStr: string, params
     return JSON.stringify(list && list.length > 0 ? list : []);
   } catch (e) {
     throw e;
+  }
+}
+
+async function requestAuthToken(apiKey: string): Promise<string> {
+  try {
+    const response = await grok.dapi.fetchProxy(`${host}/auth/token`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json; version=2.6',
+      },
+    });
+    if (!response.ok)
+      throw new Error(`${response.status}, ${response.statusText}`);
+    const token = await response.json();
+
+    if (!token['access_token'])
+      throw new Error(`auth/token endpoint didn't return access token`);
+    return token['access_token'] as string;
+  } catch (error: any) {
+    throw error;
   }
 }
 

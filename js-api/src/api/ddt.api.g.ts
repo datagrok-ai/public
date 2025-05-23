@@ -1,6 +1,6 @@
 /// this file was generated automatically from ddt classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?: number, logScale?: boolean}): Int32List
   { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
@@ -92,7 +92,9 @@ export class Tags {
 
   static Formula = 'formula';
 
-  static FormulaColumnType = '.%formula-column-type';
+  static FormulaColumnIsVectorFunc = '.%formula-column-is-vector-func';
+
+  static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
 
   /// JSON-encoded list of strings to be used in a cell editor.
   /// Applicable for string columns only.

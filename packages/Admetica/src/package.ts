@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -58,10 +59,10 @@ export async function getModels(property: string): Promise<string[]> {
 //input: list<string> metabolism {choices: Admetica:getModels('Metabolism'); nullable: true}
 //input: list<string> excretion {choices: Admetica:getModels('Excretion'); nullable: true}
 export async function admeticaHT(
-  table: DG.DataFrame, molecules: DG.Column, absorption: string[], distribution: string[], metabolism: string[], excretion: string[], addProbabilities: boolean
-  ): Promise<void> {
-    const resultString: string = [...absorption, ...distribution, ...metabolism, ...excretion].join(',');
-    await performChemicalPropertyPredictions(molecules, table, resultString);
+  table: DG.DataFrame, molecules: DG.Column, absorption: string[], distribution: string[], metabolism: string[], excretion: string[], addProbabilities: boolean,
+): Promise<void> {
+  const resultString: string = [...absorption, ...distribution, ...metabolism, ...excretion].join(',');
+  await performChemicalPropertyPredictions(molecules, table, resultString);
 }
 
 //name: AdmeticaEditor
@@ -79,7 +80,7 @@ export function admeticaEditor(call: DG.FuncCall): void {
         template: params.templateContent,
         models: params.models,
         addPiechart: params.addPiechart,
-        addForm: params.addForm
+        addForm: params.addForm,
       }).call(true);
     }).show();
 }
@@ -95,7 +96,7 @@ export function admeticaEditor(call: DG.FuncCall): void {
 //editor: Admetica: AdmeticaEditor
 export async function admeticaMenu(
   table: DG.DataFrame, molecules: DG.Column, template: string, models: string[],
-  addPiechart: boolean, addForm: boolean, properties: string
+  addPiechart: boolean, addForm: boolean, properties: string,
 ): Promise<void> {
   await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
 }

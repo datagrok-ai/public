@@ -18,7 +18,7 @@ grok.shell.addTableView(df3);
    - `Df3 = SPGI-linked2`
 2. In **SPGI**, select several rows (from the beginning of the table)
 3. Switch to **SPGI-linked2**, open the **Filter Panel**, and apply some filters
-4. Switch to **SPGI-linked1** and apply an additional filter using its **Filter Panel**
+4. Switch to **SPGI-linked1** and apply filters using its **Filter Panel**
 
 **Expected Result**: **SPGI-linked1** should display only the rows that meet all of the following conditions:
 - selected in **SPGI**,

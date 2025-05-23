@@ -1,6 +1,10 @@
 # Chemspace changelog
 
-## 1.2.1 (2025-04-22)
+## 1.2.3 (2025-05-06)
+
+Fixed token request
+
+## 1.2.2 (2025-04-22)
 
 Removed swagger file
 

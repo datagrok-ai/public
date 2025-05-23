@@ -9,7 +9,7 @@ import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {PipelineInstanceConfig, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
@@ -27,7 +27,7 @@ export function useReactiveTreeDriver(
 
   const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
   const isGlobalLocked = useObservable(driver.globalROLocked$);
-  const treeState = useObservable(driver.currentState$.pipe(map((x) => x ? Vue.markRaw(x) : undefined)));
+  const treeState = useObservable(driver.currentState$.pipe(map((x) => markFuncCallsRaw(x))));
 
   const currentMetaCallData = useObservable(driver.currentMetaCallData$);
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
@@ -178,4 +178,18 @@ export function useReactiveTreeDriver(
     moveStep,
     changeFuncCall,
   };
+}
+
+
+function markFuncCallsRaw(state?: PipelineState) {
+  if (!state)
+    return;
+  if (state.type === 'funccall') {
+    if (state.funcCall)
+      Vue.markRaw(state.funcCall);
+    return state;
+  }
+  for (const step of state.steps)
+    markFuncCallsRaw(step);
+  return state;
 }

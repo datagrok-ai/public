@@ -319,7 +319,7 @@ Your package might contain the following additional folders, depending on your n
 
 [header parameters]: ../../datagrok/functions/func-params-annotation.md#header-parameters
 
-[javaScript API]: https://datagrok.ai/js-api
+[javaScript API]: https://datagrok.ai/api/js/api
 
 [LTS version of Node.js]: https://nodejs.org/en/download/
 
@@ -333,7 +333,7 @@ Your package might contain the following additional folders, depending on your n
 
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
 
-[package section]: https://datagrok.ai/js-api/dg/classes/Package
+[package section]: https://datagrok.ai/api/js/api/dg/classes/Package
 
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 

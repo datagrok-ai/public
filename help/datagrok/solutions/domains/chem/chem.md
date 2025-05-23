@@ -24,6 +24,7 @@ keywords:
   - retrosynthesis
   - patents search
   - cdd vault integration
+  - compound registration system
 ---
 
 ```mdx-code-block
@@ -31,51 +32,39 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-<details>
-<summary>Requirements</summary>
+Datagrok provides an intuitive, [enterprise-ready](../../teams/it/enterprise-evaluation-faq.md) 
+high-performance environment for working with chemical data, covering full-range of tasks - from data access to _de novo_
+design.
 
-To access the cheminformatics functionality, install these
-packages using the [Package Manager](https://public.datagrok.ai/packages) (on the **Sidebar**, click **Manage** > **Packages**):
+* **Data access**
+  * Built-in connectors to [30+ data sources](../../../../access/databases/connectors/connectors.md)
+  * Automatic structure detection on [import](../../../../access/access.md)
+  * Support for SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, [and more](../../../../access/files/supported-formats.md#cheminformatics)
+  * [Integration with compound registration systems](#compound-registration-systems)
+* **Interactive exploration and analysis**
+  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
+  * Powerful chemically-aware [spreadsheet](#chemically-aware-spreadsheet) and [viewers](#chemically-aware-viewers)
+  * [Chemical space](#chemical-space) and interactive [structure search](#structure-search)
+  * Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
+    clustering, dimensionality reduction, imputation, PCA/PLS, and more. Built-in statistics
+  * [Dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results)
+* **Sketching and structure analysis**
+  * Multiple molecular [sketchers](#sketching)
+  * Tools for [R-groups](#r-groups-analysis), [scaffold trees](#scaffold-tree-analysis), [retrosynthesis](#retrosynthesis), and [elemental analysis](#elemental-analysis)
+* **SAR analysis**  
+  * [Activity cliffs](#structure-relationship-analysis)
+  * [Matched molecular pairs](#matched-molecular-pairs)
+* **Predictive and generative modeling**
+  * [QSAR/QSPR modeling](#qsar-and-qspr-modeling) and [ADMET predictions](#admet-predictions)
+  * [Docking](#docking) using AutoDock Vina
+  * [Generative chemistry](#generative-chemistry) via REINVENT4
+* **Data augmentation and utilities**
+  * Calculated columns using [500+ functions](../../../concepts/functions/functions.md) (or create your own)
+  * [Chemical scripts](#chemical-scripts) and [custom plugins](#customizing-and-extending-the-platform)
+  * [Calculators](#calculators), [curation](#curation), [mutation](#mutation), [virtual synthesis](#virtual-synthesis)
 
-* Required. [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem).
-* Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
-  [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
-* Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
-* Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
-* Optional. Integration with external webservices (**these packages transmit your data to external services**):
-  * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
-  * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
-  * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
-
-</details>
-
-Datagrok provides an intuitive interface and a wide range of tools for working
-with chemical data:
-
-* Data visualization and exploration
-  * Automatic detection of chemical structures upon [data import](../../../../access/access.md).
-  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules.<!--Add links?-->
-  * Multiple molecular [sketchers](#sketching).
-  * Support for multiple formats, such as SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, and others.
-  * Flexible and fast [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
-  * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
-  * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
-  * [Substructure search](#substructure-search--filtering).
-  * [Chemical space analysis](#chemical-space).
-  * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
-  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
-  <!--* [ADME/Tox calculators](#admetox).-->
-  * Property and descriptor [calculators](#calculators).
-  * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
-clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
-* [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
-* Common utilities: [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), [dataset mutation](#mutation), and [virtual synthesis](#virtual-synthesis).
-* [Extensible environment](#customizing-and-extending-the-platform)
-  * Ability to add or customize any functionality using [scripts](#chemical-scripts).
-  * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../enterprise/enterprise-evaluation-faq.md) for efficient data access and management of any data.
+To get started, install the required [packages](../../../plugins.md#chem) 
+(see [instructions](../../../../deploy/complete-setup/install-packages.md)).
 
 ## Data access
 
@@ -120,6 +109,55 @@ To run a query, sketch the substructure and click **OK**. Datagrok retrieves the
 </details>
 
 To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+
+### Compound registration systems
+
+Datagrok integrates with compound registration systems. You can browse and analyze your assay data directly in the platform.
+
+#### CDD Vault
+
+Datagrok integrates with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform).
+You can:
+* browse molecules available in the selected vault
+* search vaults by similarity and substructure
+* save searches and explore them in Datagrok
+* view linked assay data for a target compound in the **Context Panel**  
+
+<details>
+<summary> How to use </summary>
+
+To use the app, you need to be registered in the CDD Vault system and have at least one vault set up.
+The CDD Vault api key should be set in package credentials manager under `apiKey` key.
+
+To access assay data, in the **Browse** panel, go to **Apps** > **Chem** > **CDD Vault**.
+The app lists all connected vaults. Each vault contains 3 sections. 
+You can also explore the vault data directly in the **Context Panel** (**Databases** > **CDD Vault**). 
+[Watch a video tutorial](https://www.youtube.com/watch?v=BUQnzbjCqIs) (~2 mins).
+
+<Tabs>
+<TabItem value="molecules" label="Molecules" default>
+* Shows all molecules available in the selected vault
+* The **Id** column contains contains direct links to corresponding molecules in your vault
+<br/>
+![Molecules tab](img/cdd_molecules.png)
+</TabItem>
+<TabItem value="search" label="Search">
+Provides basic vault search functionality with similarity and diversity searches
+<br/>
+![Search tab](img/cdd_search.png)
+</TabItem>
+<TabItem value="saved-searches" label="Saved searches">
+Lists all saved searches in your vault. Click any search in the list to view its results
+<br/>
+![Saved search](img/cdd_saved_search.png)
+</TabItem>
+<TabItem value="context-panel" label="Context Panel">
+Shows vault data for the current molecule
+<br/> 
+![Context panel](img/cdd_context_panel.png)
+</TabItem>
+</Tabs>
+</details>
 
 ## Exploring chemical data
 
@@ -199,6 +237,49 @@ To learn how to use viewers to explore chemical data, complete [this tutorial](h
 You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md).
 
 :::
+
+### Chemical space
+
+Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
+
+![chem-space](../../../../compute/chem-space.gif)
+
+<details>
+<summary> How to use </summary>
+
+Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+
+The dialog has the following inputs:
+
+* **Table**: The table containing the column of sequences.
+* **Column**: The column containing the sequences.
+* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+* **Method**: The dimensionality reduction method that will be used. The options are:
+    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
+
+    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
+* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
+
+* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
+* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
+    * **None**: No postprocessing will be applied.
+    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+
+**WebGPU (experimental)**
+
+WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+
+Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your operating system gives browser access to correct(faster) GPU, you can check the following:
+* Go to settings and find display settings
+* Go to Graphics settings.
+* In the list of apps, make sure that your browser is set to use high performance GPU.
+
+</details>
 
 ## Sketching
 
@@ -332,48 +413,70 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 </details>
 
-### Chemical space
+### External data sources
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
+Datagrok integrates with multiple data sources to enable structure-based
+search, including:
+* ChEMBL
+* DrugBank
+* PubChem (supports identity search)
+* SureChEMBL (search patented molecules similar to your compounds)
+* Chemspace (includes filters by shipping country and compound category)
 
-![chem-space](../../../../compute/chem-space.gif)
+To see the full list, see [Plugins](../../../plugins.md#chem).
+
+To run a substructure or similarity search, either [sketch](#sketching) or click a molecule in your
+dataset and expand the **Databases** section of the **Context Panel** to view
+matches for your target molecule. You can also open the results in a separate [Table View](../../../navigation/views/table-view.md) by clicking the plus (**+**) icon within the relevant info pane.
+
+![surechembl search](img/surechembl_search_params.gif)
 
 <details>
-<summary> How to use: </summary>
+<summary>Example: Searching patents with SureChEMBL</summary>
 
-Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) 
+provides local access to the [SureChEMBL](https://www.surechembl.org) database. 
 
-The dialog has the following inputs:
+You can: 
+* Search either by similarity or substructure
+* Set result limits and similarity thresholds
+* View associated patent information
 
-* **Table**: The table containing the column of sequences.
-* **Column**: The column containing the sequences.
-* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
-* **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
-    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
+1. **Finding related molecules**:
+   1. In the dataset, click a cell containing your target molecule structure.
+   1. In the **Context Panel**, expand **Databases** > **SureChEMBL**. 
+   1. Expand the corresponding info panes:
+      * **Substructure Search**: For molecules containing your structure  
+      * **Similarity Search**: For structurally similar molecules (results display similarity scores above each molecule)
+2. **Adjusting search parameters**:
+   * **Molecules limit**: Change the number of results shown (default is 10)
+   * **Similarity cutoff**: Set the minimum similarity threshold for matches (for **Similarity Search** only)
+3. **Viewing patent information**:
+   * **Quick view**: Expand the patents pane beneath any molecule to see associated patents. A marker indicates the total number of patents found.
+   * **Detailed view** (opens a separate **Table View**): 
+     * To view all patents across all search molecules, click the plus (**+**) icon beneath the search settings.
+     * To view patents for a specific molecule, click the plus (**+**) icon next to a specific molecule's patent count
+   * **Direct access**: The patent information contains patent ID links. Click the link to see the original patent on the SureChEMBL website.
 
-    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
-* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
-
-* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
-* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
-        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
-        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
-
-**WebGPU (experimental)**
-
-WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
-
-Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
-* Go to settings and find display settings
-* Go to Graphics settings.
-* In the list of apps, make sure that your browser is set to use high performance GPU.
+![surechembl search results](img/surechembl_search_results.gif)
 
 </details>
+
+:::note Developers
+
+To dynamically enrich compound IDs with linked data, 
+[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+(e.g., `CHEMBL\d+`). Once registered, the matching values:
+
+* are automatically detected and highlighted across the platform
+* show linked content on click, hover, and in search results
+
+This is especially useful when working with diverse identifiers from sources
+like GDB exports, internal registries, or assay results. 
+
+![Registered identifier patterns](../../workflows/img/custom-identifier-patterns.gif)
+
+:::
 
 ## Structure analysis
 
@@ -506,6 +609,15 @@ To color scaffold nodes, do the following:
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </details>
+
+### Retrosynthesis
+
+You can explore the most efficient synthetic pathways and commercially available
+starting materials for your target molecules. To view the results for your
+target, click or sketch a molecule, and expand the **Retrosynthesis** pane in
+the **Context Panel**.
+
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
 
 ### Elemental analysis
 
@@ -667,167 +779,120 @@ The **Context Panel** shows a scatterplot comparing observed vs. predicted value
 </Tabs>
 </details>
 
-<!--### ADME/Tox-->
+## Docking
 
-<!--The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemented as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
+Use molecular docking to analyze how small molecules bind to protein targets (powered by [AutoDock Vina](https://autodock.scripps.edu/)).
+Datagrok visualizes predicted poses and calculates binding scores. Requires the [Docking](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md) package.
 
-[gif placeholder]
-
-[INSERT DETAILS ADMONITION]
-How to use
-
-For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane.
-
-To predict properties for the entire column:
-
-1. In the **Menu Ribbon**, select **Chem** > **ADME/Tox**. An **ADME/Tox** dialog opens.
-1. In the dialog, select the desired options for predicting ADMET, lipophilicity, and solubility.
-1. Click **OK** to execute. The corresponding numerical columns for each prediction are added to the dataframe, along with the [form viewer](../../../../visualize/viewers/form.md) for visual exploration.
-
-You can visualize or filter these predictions using the built-in tools provided by Datagrok.
-
-[CLOSE DETAILS ADMONITION]-->
-
-## QSAR and QSPR modeling
-
-Datagrok lets you easily train, apply, and manage structure-based [predictive models](../../../solutions/domains/data-science.md#predictive-modeling)
-using these modeling methods:
-
-1. Classical models (such as XGBoost) that work on the calculated descriptors.
-1. Cheminformatics-specific models, such as [chemprop](https://chemprop.readthedocs.io/en/latest/#).
+![Docking](  https://github.com/datagrok-ai/public/raw/master/packages/Docking/help/additional-properties.gif)
 
 <details>
-<summary>Train</summary>
+<summary>How to use</summary>
+
+**Step 1. Prepare targets**
+
+Prepare receptor structures using AutoDock tools and upload them to Datagrok. 
+
+To learn how, see the [video tutorial](https://www.youtube.com/watch?v=IIcJfTJ0Hn8) 
+or [plugin docs](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md).
+
+**Step 2. Run docking**
+
+1. Go to **Top Menu** > **Chem** > **Docking...**
+1. In the dialog, select the ligand column, choose a target, and set the number of conformations
+1. Click **OK** to start docking 
+
+> Note: Docking may take time during the first run. Subsequent runs use cached results and are faster.
+
+**Step 3. Analyze the results**
+
+Explore predicted poses and binding scores in your dataset and the **Context Panel** (under **Docking**).
+
+</details>
+
+## Predictive modeling
+
+### QSAR and QSPR modeling
+
+Use Datagrok to train, apply, and integrate structure-based [predictive models](../../../solutions/domains/data-science.md#predictive-modeling) for molecular property prediction and virtual screening. Supported approaches include:
+
+1. Classical machine learning (e.g., XGBoost) using calculated descriptors
+1. Deep learning models designed for chemistry, such as [Chemprop](https://chemprop.readthedocs.io/en/latest/#).
+
+<Tabs>
+<TabItem value="train" label="Train" default>
 
 Train a model based on a measured response using calculated descriptors as
-features. Use an integrated [model building mechanism](../../../../learn/learn.md) that supports different backends and
-dozens of models with hundreds of hyperparameters available. You may try it as a
-[tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
-and walk through an illustrative example of virtual screening exercise.
+features. Use built-in [modeling engine](../../../../learn/learn.md), 
+which supports different backends, dozens of model types, and extensive hyperparameter tuning. 
+
+Try it in the
+[Virtual screening tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
+for a guided example.
 
 ![Training](../../../../uploads/gifs/chem-train-model.gif "Training")
 
-</details>
+</TabItem>
+<TabItem value="apply" label="Apply">
 
-<details>
-<summary>Apply</summary>
-
-[Model building mechanism](../../../../learn/learn.md#apply-model)
+Apply existing models to new compounds using [the same engine](../../../../learn/learn.md#apply-model). 
+Predictions are written directly to the data table and can be explored with all Datagrok tools.
 
 ![Applying](../../../../uploads/gifs/chem-apply-model.gif "Applying")
 
-</details>
+</TabItem>
+<TabItem value="augment" label="Augment">
 
-<details>
-<summary>Augment</summary>
-
-A simple yet efficient way to deploy models is through the use of [info panes](../../../../datagrok/navigation/panels/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
+Deploy models for real-time prediction using [info panes](../../../../datagrok/navigation/panels/info-panels.md). 
+Predictions appear dynamically as users click, sketch, or modify structures.
 
 ![Augmenting](../../../../uploads/gifs/chem-model-augment.gif "Augmenting")
 
-</details>
-
-## Chemical scripts
-
-Chem package comes with several scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated into larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
-
-```mdx-code-block
-<Tabs>
-<TabItem value="script" label="Script" default>
-```
-
-![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="script-output" label="Script output">
-```
-
-![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="script-output-in-info-pane" label="Script output in info pane">
-```
-
-![Script-based info pane](img/script-output-info-pane-0.png)
-
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
-In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
-calculates and visualizes Gasteiger partial charges. When you run the script
-explicitly, Datagrok shows a dialog for sketching a query molecule and
-visualizes the results. In this case, however, the script is also tagged as a
-`panel`. This instructs Datagrok to show the results as an interactive UI
-element that updates dynamically for the current molecule.
+### ADMET predictions
 
-To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+Quickly evaluate the drug-likeness and safety of compounds. 
+The [Admetica package](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) 
+provides in-browser access to [23 models](https://github.com/datagrok-ai/admetica?tab=readme-ov-file#available-predictive-models) that predict pharmacokinetic and toxicity
+properties. Models include both classification and regression outputs for endpoints such as:
+* Caco-2 permeability
+* Plasma protein binding
+* CYP450 inhibition
+* hERG inhibition
+* Clearance
+* LD50 toxicity
 
-:::note
+These models are trained on public datasets and can be extended with proprietary
+data ([see details](https://github.com/datagrok-ai/admetica?tab=readme-ov-file#usage)). 
+Datagrok visualizes the results directly in the grid and **Context
+Panel**, making it easy to assess compounds during screening and optimization.
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
-
-:::
-
-## Retrosynthesis
-
-Retrosynthesis plugin works backward from a target molecule (the desired final product) to identify simpler,
-commercially available starting materials and the synthetic reactions needed to reach the target.
-
-To use, click or sketch a molecule, and expand the "Retrosynthesis" context panel on the right:
-![Retrosynthesis panel](img/retrosynthesis-panel.png)
-
-## Integration with SureChEMBL
-
-SureChEMBL plugin allows you to perform searches through a locally deployed [SureChEMBL] (https://www.surechembl.org) database. The SureChembl database is deployed automatically within a docker container when the package is installed. You can search either by similarity or substructure.
+![Admetica](img/admetica-column.gif)
 
 <details>
-<summary> How to use </summary>
+<summary>How to use</summary>
 
-* select cell with molecule structure in the grid
-* on the context panel go to *Databases* -> *SureChEMBL* -> *Substructure Search*/*Similarity Search*. Molecules containing the initial molecule as a substructure (or similar molecules, in case you open a similarity search) appear under the tab.
-* change the number in the *Molecules limit* field to search for more or fewer molecules
-* change the similarity cutoff using the *Similarity cutoff* slider
-* click the *plus* icon to add all patents found for molecules in the results as a table view
+**For a single molecule:** 
+ * Click on a molecule in your dataset. The **Context
+Panel** automatically updates, showing ADMET predictions in the **Admetica** info
+pane.
 
-![surechembl search parameters](img/surechembl_search_params.gif)
+**For a column with molecules**:
 
-Search results are shown under the *Substructure Search*/*Similarity Search* tab. Similarity search results are sorted by similarity score and the score is indicated above the molecule.
-Under each molecule, there is a tab with a number indicating in how many patents this molecule has been mentioned. Open the tab to investigate patents more closely. Or hover over the tab and click *plus* icon to add patents to workspace as a table view. The patents grid contains several fields including *id*. *Id* filed is a link. Click on the link to go to a page with corresponding patent on a SureChEMBL resource.
+1. Go to **Top Menu** > **Chem** > **Admetica** > **Calculate...**
+1. In the dialog, choose which properties to predict and configure how results are interpreted and displayed
+1. Click **OK**. Datagrok adds a new column for each predicted property along with the visualization of results.
 
-![surechembl search results](img/surechembl_search_results.gif)
+Use built-in tools to explore and analyze the prediction results.
 
 </details>
 
-## Integration with CDD Vault
+## Generative chemistry
 
-CDDVaultLInk plugin provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system.
-
-<details>
-<summary> How to use </summary>
-
-To use the plugin you need to be registered in the CDD Vault system and have at least one vault set up.
-CDD Vault api key should be set in package credentials manager under 'apiKey' key.
-
-To use the application, go to *Browse panel* -> *Apps* -> *Chem* -> *CDD Vault*.
-List of all available vaults are opened under *CDD Vault* tab. Each vault contains 3 tabs:
-
-* *Molecules* - the list of all available molecules in the vault. *Id* column contains links to the corresponding molecules in your vault.
-![Molecules tab](img/cdd_molecules.png)
-
-* *Search* - basic search through you vault containing similarity and diversity searches.
-![Search tab](img/cdd_search.png)
-
-* *Saved searches* - open tab to see the list of all saved searches in your vault. Click any search in the list to open the search results.
-![Saved search](img/cdd_saved_search.png)
-
-There is also a tab in the context panel. To use, click or sketch a molecule, and expand the *Databases* -> *CDD Vault* context panel on the right:
-![Context panel](img/cdd_context_panel.png)
-
-</details>
+Generate novel compounds optimized for specific properties using [Reinvent4](https://github.com/MolecularAI/REINVENT4). 
+For details, see the [Reinvent4 package docs](https://github.com/datagrok-ai/public/tree/master/packages/Reinvent4). 
 
 ## Utilities
 
@@ -932,6 +997,51 @@ For instance, you can add new data formats, apply custom models, and perform oth
 
 [Learn more about extending and customizing Datagrok](../../../../develop/develop.md), including this
 [cheminformatics-specific section](../../../../develop/domains/chem/cheminformatics.md).
+
+### Chemical scripts
+
+Chem package comes with several scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated into larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="script" label="Script" default>
+```
+
+![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="script-output" label="Script output">
+```
+
+![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="script-output-in-info-pane" label="Script output in info pane">
+```
+
+![Script-based info pane](img/script-output-info-pane-0.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
+calculates and visualizes Gasteiger partial charges. When you run the script
+explicitly, Datagrok shows a dialog for sketching a query molecule and
+visualizes the results. In this case, however, the script is also tagged as a
+`panel`. This instructs Datagrok to show the results as an interactive UI
+element that updates dynamically for the current molecule.
+
+To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+
+:::note
+
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
+
+:::
 
 ## Resources
 
