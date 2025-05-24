@@ -1546,7 +1546,15 @@ export interface IDartApi {
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
+  grok_Dapi_Set_Root(root: String): any;
+  grok_Dapi_Set_Token(token: String): any;
+  grok_Dapi_Get_Token(): any;
   grok_Dapi_WS_Root(): any;
+  grok_Clear_LastError(): any;
+  grok_CloseAll(): any;
+  grok_Get_LastError(): Promise<any>;
+  grok_Clear_LastError(): any;
+  grok_Set_LastError(_: any): any;
   grok_Dapi_UserFiles_Exists(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Delete(fi: any): Promise<any>;
   grok_Dapi_UserFiles_Move(filesOrDirs: any, fi: any): Promise<any>;
