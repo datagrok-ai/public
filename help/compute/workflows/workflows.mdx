@@ -2,25 +2,41 @@
 title: "Low-code workflows"
 ---
 
-There might be many [scripts](../scripting) deployed to the platform
-and often users will have certain use patterns. Datagrok provides a
-low-code solution to structure and organize multiple scripts into easy
-to use workflows.
+Every Datagrok [script](../scripting) is a function that consumes some input data
+and returns output data.
+However, Datagrok scripts are not interactive.
 
-Each individual script can be viewed as a building block of a user
-workflow. For each script the platform already has a generated UI
-provided to workflows via
-[RichFunctionView](../scripting/advanced-scripting/rich-function-view).
+For multi-step interactive data processing, Datagrok offers the workflow capability.
+A workflow is a series of steps with connected inputs and outputs.
+The user can execute the workflow step-by-step,
+review intermediate results and tune the behavior of subsequent steps.
 
+## Datagrok low-code workflow capabilities
 
-For example, passing an output of one script to another script input
-is a workflow.
-
-__TODO: Some gif, link to public and example walkthrough__
+* Organize a series of steps into a workflow.
+* Change inputs and review outputs for each step
+* Ensure workflow consistency – identify and rerun all steps which input data have changed.
+* Dynamically modify workflow scheme: change step order, add/remove steps, apply the same step several times (check that we can do it)
+* Put restrictions on steps order and connections
+* Use nested workflows - use a workflow as a step of another workflow.
 
 In simple terms, workflows provide an end-user alterable sequence of
 steps, where some inputs are autofilled based on previous scripts
 outputs.
+Each individual script can be a building block of a workflow.
+For each script the platform generates UI via
+[RichFunctionView](../scripting/advanced-scripting/rich-function-view).
+
+## Where to go from here
+
+* For general overview of the workflow capabilities,
+  visit the [overview](./overview.mdx) section.
+
+
+
+__TODO: Some gif, link to public and example walkthrough__
+
+
 
 More examples and step by step walkthroughs are available
 [here](examples).

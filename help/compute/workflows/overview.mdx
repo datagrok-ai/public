@@ -3,53 +3,79 @@ title: "Overview"
 sidebar_position: 0
 ---
 
-In this section a brief overview of primary concepts of workflows
-sre provided.
+This section provides a brief overview of primary workflow
+terms and concepts.
+
+## Main terms
+
+Before starting to work with workflows, we need to define several terms:
+* **Node** - any Datagrok script.
+  * Node input: data that the step consumes
+  * Node output: data that the step produces
+* **Link** - connects steps. Links can pass data directly from input of one step to output of another step, or apply some transformations.
+  * Link source: where to take data from
+  * Link target: where to put data
+  * Link handler: a TypeScript function performing data transformation. Using handlers, the user can apply small non-interactive transformation to data between steps.
+* **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links
+* **Workflow provider**: A javaScript function, that returns Workflow configuration object
+  TBD: Cover in the description:
+* **Controller**:
+* **Action**:
+* **FuncCall**:
 
 ### Scripts nodes
 
-As described in [scripting](../scripting) section, scripts are just
-functions with a set of inputs and outputs (usually abbreviated to io
-in workflows documentation). Changes of inputs and outputs are tracked
-in a real time and are used to trigger links. Also a user is able to
-save the current workflow state and load it later. Basically scripts
-with generated UI are reused in workflows as is.
+As described in the [scripting](../scripting) section, scripts are just
+functions with a set of inputs and outputs (usually abbreviated to IO
+in workflows documentation).
+Changes of inputs and outputs are tracked
+in a real time and are used to trigger links.
+Also, a user can save the current workflow state and load it later.
 
 ### Links
 
-Links are connections that are either pass data directly from a source
-script io to target or do some transformations via Typescript. There
-are multiple types of links, some of them use source scripts
-inputs/outputs to pass data to a virtual target, which is not stored
-in a script io. This way it is possible to have a derived state, for
-example a validation state.
+**Links** are connections that are either pass data directly from a source
+script IO to target or do some transformations via a TypeScript function
+called link handler.
+There are multiple types of links,
+some of them use source scripts inputs/outputs to pass data to a virtual target,
+which is not stored in a script io.
+This way it is possible to have a derived state, for example a validation state.
 
-Link handlers are used to make data transformations. They are just
-Typescript functions that receive a `controller` object argument, each
-link type has its own controller type with slightly different methods
-to get and set inputs/outputs. Availability only in Typescript and
-using a controller object to get/set inputs/outputs are the main
-differences between a script and a link handler.
+Link handlers make data transformations.
+A Link Handler is a TypeScript function
+that receives a `controller` object argument.
+Each link type has its own controller type with slightly different methods
+to get and set inputs/outputs.
 
-Note that inputs/outputs of links are different from inputs/outputs of
-scripts. For example, a script output will probably be a link input,
-and a link output will be a script input. More details about different
-link types are available [here](link-types).
+Link Handlers is a good way to apply some fast none-interactive
+transformation to the data, when makind a separate script step is and overkill.
+
+Note that inputs/outputs of links are different from inputs/outputs of scripts.
+A script output is usually connected to a link input,
+and a link output connects to the next script input.
+More details about different link types are available [here](link-types).
 
 ### Configuration
 
-To describe a workflow a special typescript object is used. Since
-workflows are targeted to be deployed via Datagrok
-[packages](../../develop#packages), you can access typescript
-configuration typing by installing `@datagrok-libraries/compute-api`
-package. `PipelineConfiguration` type describes an n-ary tree
-structure where leafs are scripts. Each nested level might have links
-definitions which target own or nested scripts io. The main
-restriction for links is to have information propagated only forward
-(depth first graph ordering). More information about configuration is
-available [here](configuration). The configuration is used to make a
-navigation tree.
+**Configuration** is a special TypeScript object
+used to describe a workflow.
+You can access TypeScript configuration typing by installing
+`@datagrok-libraries/compute-api` package.
+
+`PipelineConfiguration` type describes an n-ary tree
+structure where leafs are scripts.
+Each nested level might have links
+definitions which target own or nested scripts IO.
+The main restriction for links is to have information propagated only forward
+(depth-first graph ordering).
+More information about configuration is
+available [here](configuration).
+The configuration is used to make a UI navigation tree.
+
+__TODO: describe other types of objects.__
 
 __TODO: simple diagram and code illustrating the above__
 
 __TODO: simple nav tree gif__
+
