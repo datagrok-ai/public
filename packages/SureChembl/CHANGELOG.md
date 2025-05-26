@@ -1,5 +1,9 @@
 # SureChEMBL changelog
 
+## 1.1.2 (2025-05-26)
+
+* Some cache fixes
+
 ## 1.1.1 (2025-04-07)
 
 * Adjusted container resources
