@@ -35,7 +35,7 @@ export async function calculateRetroSynthesisPaths(molecule: string, configDir?:
     const userId = currentUser.id;
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
       method: 'POST',
-      body: JSON.stringify({smiles: molecule, user_id: userId, config_dir: `${CONFIGS_PATH}/${configDir}`}),
+      body: JSON.stringify({smiles: molecule, user_id: userId, config_dir: configDir !== '' ? `${CONFIGS_PATH}/${configDir}` : ''}),
       headers: {'Content-Type': 'application/json'},
     });
     console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
