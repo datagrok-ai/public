@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
-import {ActionInfo, CustomExport, ViewersHook} from './PipelineConfiguration';
+import {ActionInfo, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -138,8 +138,7 @@ export type StepSequentialDescription = {
   configId: string;
   nqName?: string;
   friendlyName?: string;
-  disableUIAdding?: boolean;
-};
+} & NestedItemContext;
 
 export type StepSequentialState<S, T> = PipelineStateRec<S, T> & StepSequentialDescription;
 
@@ -155,8 +154,7 @@ export type StepParallelDescription = {
   configId: string;
   nqName?: string;
   friendlyName?: string;
-  disableUIAdding?: boolean;
-};
+} & NestedItemContext;
 
 export type StepParallelState<S, T> = PipelineStateRec<S, T> & StepParallelDescription;
 

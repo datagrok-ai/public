@@ -157,6 +157,12 @@ export type PipelineConfigurationBase<P> = {
   approversGroup?: string; // not used rn
 };
 
+export type NestedItemContext = {
+  disableUIAdding?: boolean;
+  disableUIRemoving?: boolean;
+  disableUIDragging?: boolean;
+};
+
 // fixed pipeline
 
 export type PipelineStaticItem<P, S, R> =
@@ -169,13 +175,7 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 
 // parallel pipeline
 
-export type ParallelItemContext = {
-  disableUIAdding?: boolean;
-  disableUIRemoving?: boolean;
-  disableUIDragging?: boolean;
-};
-
-export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext);
+export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
 
 export type AbstractPipelineParallelConfiguration<P, S, R> = {
   initialSteps?: StepParallelInitialConfig[];
@@ -185,13 +185,8 @@ export type AbstractPipelineParallelConfiguration<P, S, R> = {
 
 // sequential pipeline
 
-export type SequentialItemContext = {
-  disableUIAdding?: boolean;
-  disableUIRemoving?: boolean;
-  disableUIDragging?: boolean;
-};
 
-export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext);
+export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
 
 export type AbstractPipelineSequentialConfiguration<P, S, R> = {
   initialSteps?: StepSequentialInitialConfig[];

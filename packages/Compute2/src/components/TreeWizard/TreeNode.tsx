@@ -238,12 +238,15 @@ export const TreeNode = Vue.defineComponent({
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
+                  .filter((stepType) => !stepType.disableUIAdding)
                   .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
+                  const visibleSteps = data.stepTypes
+                    .filter((stepType) => !stepType.disableUIAdding)
                   emit('addNode', {
-                    itemId: data.stepTypes[itemIdx].configId,
+                    itemId: visibleSteps[itemIdx].configId,
                     position: data.steps.length,
                   });
                   isHovered.value = false;
