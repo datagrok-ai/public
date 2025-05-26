@@ -71,7 +71,7 @@ export class PlateWidget extends DG.Widget {
       this.grid.root.querySelectorAll('.d4-range-selector').forEach((el) => (el as HTMLElement).style.display = 'none');
     }));
 
-    this.grid.onCellRender.subscribe((args) => this.renderCell(args));
+    this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
   }
 
   static fromPlate(plate: Plate) {
@@ -100,6 +100,11 @@ export class PlateWidget extends DG.Widget {
     pw.root.prepend(pw.colorSelector.root);
     pw.root.append(pw.detailsDiv);
     return pw;
+  }
+
+  initPlateGrid(grid: DG.Grid, isSummary: boolean) {
+    grid.root.querySelectorAll('.d4-range-selector').forEach((el) => (el as HTMLElement).style.display = 'none');
+    grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
 
   get plate(): Plate {
@@ -146,6 +151,7 @@ export class PlateWidget extends DG.Widget {
     for (const layer of this.plate.getLayerNames()) {
       this.tabs.addPane(layer, () => {
         const grid = DG.Viewer.heatMap(this.plate.toGridDataFrame(layer));
+        this.initPlateGrid(grid, false);
         this.grids.set(layer, grid);
         return grid.root;
       });
@@ -168,7 +174,7 @@ export class PlateWidget extends DG.Widget {
     return this._posToRow.get(`${gc.gridRow}:${gc.gridColumn.idx - 1}`);
   }
 
-  renderCell(args:DG.GridCellRenderArgs) {
+  renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
     args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
     args.g.strokeStyle = 'grey';
@@ -189,7 +195,7 @@ export class PlateWidget extends DG.Widget {
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
     }
-    else if (h > 0 && dataRow != null) {
+    else if (summary && h > 0 && dataRow != null) {
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
