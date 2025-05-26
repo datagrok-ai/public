@@ -66,7 +66,7 @@ class AmqpFanoutPublisher:
                     except KombuError:
                         self._amqp_conn = None
 
-                self._amqp_conn = Connection(self._broker_url, heartbeat=60)
+                self._amqp_conn = Connection(self._broker_url)
                 self._amqp_conn.connect()
 
                 self._exchange = Exchange(
@@ -113,7 +113,7 @@ class AmqpFanoutPublisher:
                 serializer=serializer,
                 timeout=self._publish_timeout
             )
-        except (ConnectionError, ChannelError):
+        except (ConnectionError, ChannelError, OSError):
             self._amqp_conn = None
             self._producer = None
             self._exchange = None
