@@ -6,6 +6,7 @@ import inspect
 import traceback
 import threading
 import signal
+import sys
 
 import celery
 import websocket
@@ -76,7 +77,7 @@ def get_worker_pool_type() -> str:
 
 
 def send_canceled_call(call: FuncCall):   
-    if call.status in (FuncCallStatus.COMPLETED, FuncCallStatus.ERROR):
+    if call.status in (FuncCallStatus.COMPLETED, FuncCallStatus.ERROR, FuncCallStatus.CANCELED):
         return    
     try:
         call.status = FuncCallStatus.CANCELED
@@ -95,9 +96,7 @@ class DatagrokTask(celery.Task):
         self._settings = Settings.get_instance()
         self._logger = get_logger()
         self._pipe = None
-        pool_type = get_worker_pool_type()
-        self._redirect_stdout = pool_type == "prefork"
-        self._terminate_registered = pool_type != 'prefork'
+        self._is_prefork = get_worker_pool_type() == 'prefork'
 
     # Overrides celery.Task.before_start
     def before_start(self, task_id, args, kwargs):
@@ -109,12 +108,13 @@ class DatagrokTask(celery.Task):
         else:
             self._amqp_publisher = AmqpFanoutPublisher(self._settings.broker_url, self._settings.calls_fanout)
 
-        if not self._terminate_registered:
+        # Register revoke signal for prefork worker
+        if self._is_prefork:
             def _on_cancel(signum, frame):
                 if self._call is not None:
                     send_canceled_call(self._call)
+                sys.exit(0)
             signal.signal(signal.SIGTERM, _on_cancel)
-            self._terminate_registered = True
 
         self._call: FuncCall = FuncCall(args[0])
         self._accepted_send = False 
@@ -137,6 +137,9 @@ class DatagrokTask(celery.Task):
     # Overrides celery.Task.after_return
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         _task_registry.remove(self._call.id)
+        # Unregister revoke signal for prefork worker
+        if self._is_prefork:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
         self._call.status = FuncCallStatus.COMPLETED if status == 'SUCCESS' else FuncCallStatus.ERROR
 
@@ -203,7 +206,7 @@ class DatagrokTask(celery.Task):
 
         self._process_input_params()
 
-        if not self._redirect_stdout:
+        if not self._is_prefork:
             return self._run_and_process()
 
         if self._call.requires_pipe:
