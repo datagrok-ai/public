@@ -45,14 +45,14 @@ export let wellProperties: PlateProperty[] = [
   {id: 1003, name: 'Well Role', value_type: DG.COLUMN_TYPE.STRING}
 ]
 
-export let plateProperties: PlateProperty[] = []
-export let plateTemplates: PlateTemplate[] = []
+export let plateProperties: PlateProperty[] = [];
+export let plateTemplates: PlateTemplate[] = [];
 
 export let plateTypes: PlateType[] = [
   {id: 1, name: 'Generic 96 wells', rows: 8, cols: 12},
   {id: 2, name: 'Generic 384 wells', rows: 16, cols: 24},
   {id: 3, name: 'Generic 1536 wells', rows: 32, cols: 48},
-]
+];
 
 export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
 export let wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
@@ -62,7 +62,7 @@ export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.INT]: 'value_num',
   [DG.COLUMN_TYPE.BOOL]: 'value_bool',
   [DG.COLUMN_TYPE.STRING]: 'value_string',
-}
+};
 
 let _initialized = false;
 export async function initPlates() {

@@ -49,7 +49,15 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create();
+  _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
+  grids: Map<string, DG.Grid> = new Map();
+
+  get editable() { return this._editable; }
+  set editable(x: boolean) {
+    this._editable = x;
+    this.syncGrids();
+  }
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -96,7 +104,7 @@ export class PlateWidget extends DG.Widget {
 
   get plate(): Plate {
     const plate = new Plate(this.rows, this.cols);
-    for (const column of this.plateData.columns) 
+    for (const column of this.plateData.columns)
       if (column.name != 'row' && column.name != 'col') {
         plate.data.columns.addNew(column.name, column.type).init(i => {
           const [row, col] = plate.rowIndexToExcel(i);
@@ -121,8 +129,8 @@ export class PlateWidget extends DG.Widget {
 
     let rowCol: DG.Column<number> = this._plateData.col('row')!;
     let colCol: DG.Column<number> = this._plateData.col('col')!;
-    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows;
-    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
+    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows!;
+    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols!;
 
     if (this.rows == null || this.cols == null)
       throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1536)';
@@ -138,9 +146,11 @@ export class PlateWidget extends DG.Widget {
     for (const layer of this.plate.getLayerNames()) {
       this.tabs.addPane(layer, () => {
         const grid = DG.Viewer.heatMap(this.plate.toGridDataFrame(layer));
+        this.grids.set(layer, grid);
         return grid.root;
       });
     }
+    this.syncGrids();
     this.tabs.currentPane = this.tabs.getPane('Summary');
 
     // row header + all columns
@@ -214,5 +224,11 @@ export class PlateWidget extends DG.Widget {
     const min = (isLog ? safeLog(Math.max(this._colorColumn!.min, 1)) : this._colorColumn!.min);
     const max = isLog ? safeLog((this._colorColumn!.max - this._colorColumn!.min) * 1e9) : this._colorColumn!.max;
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
+  }
+
+  /** Applies plate widget options to all grids */
+  syncGrids() {
+    for (const grid of this.grids.values())
+      grid.props.allowEdit = this.editable;
   }
 }

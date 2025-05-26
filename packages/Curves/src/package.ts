@@ -1,6 +1,6 @@
 
 //@ts-ignore
-export * from './package.g'; 
+export * from './package.g';
 
 
 /* Do not change these import lines to match external modules in webpack configuration */
@@ -219,11 +219,6 @@ export class PackageFunctions {
     return platesAppView();
   }
 
-  @grok.decorators.treeBrowser({ })
-  static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
-    await initPlatesAppTree(treeNode);
-  }
-
   @grok.decorators.func({ })
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
@@ -235,4 +230,11 @@ export class PackageFunctions {
   static async createDummyPlateData() : Promise<void> {
     await __createDummyPlateData();
   }
+}
+
+//name: platesAppTreeBrowser
+//input: dynamic treeNode
+//input: dynamic panel
+export async function platesAppTreeBrowser(treeNode: any, _: any) {
+  await initPlatesAppTree(treeNode);
 }
