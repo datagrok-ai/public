@@ -18,12 +18,15 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 // ============================================================================
 
 /**
- * Simple viewport-aware MSA data manager
- * Keeps the same data format as original but only calculates visible ranges
+ * Lazy viewport-aware MSA data manager
+ * Only calculates data for positions that are actually rendered
  */
 class MSAViewportManager {
-  private static conservationCache: DG.LruCache<string, number[]> = new DG.LruCache<string, number[]>(200);
-  private static webLogoCache: DG.LruCache<string, Map<number, Map<string, number>>> = new DG.LruCache<string, Map<number, Map<string, number>>>(200);
+  private static conservationCache: DG.LruCache<string, number[]> = new DG.LruCache<string, number[]>(100);
+  private static webLogoCache: DG.LruCache<string, Map<number, Map<string, number>>> = new DG.LruCache<string, Map<number, Map<string, number>>>(100);
+
+  // Cache chunks of 200 positions at a time
+  private static readonly CHUNK_SIZE = 200;
 
   private static simpleHash(str: string): string {
     let hash = 0;
@@ -35,23 +38,22 @@ class MSAViewportManager {
     return Math.abs(hash).toString(36);
   }
 
-  private static getCacheKey(column: DG.Column, start: number, end: number, type: string): string {
+  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number, type: string): string {
     const sequences = column.categories.filter(Boolean);
     const dataHash = MSAViewportManager.simpleHash(sequences.join('|'));
-    return `${column.dataFrame.id}_${column.name}_v${column.version}_${dataHash}_${type}_${start}_${end}`;
+    return `${column.dataFrame.id}_${column.name}_v${column.version}_${dataHash}_${type}_chunk_${chunkStart}_${chunkEnd}`;
   }
 
   /**
-   * Get conservation scores for full sequence (0-based array where index 0 = position 1)
-   * Uses caching and smart range calculation
+   * Get conservation scores for a specific range (lazy calculated and cached)
    */
-  static getConservationScores(column: DG.Column, splitter: SplitterFunc, maxLength: number): number[] {
-    const fullCacheKey = MSAViewportManager.getCacheKey(column, 0, maxLength, 'conservation_full');
+  private static getConservationChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): number[] {
+    const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'conservation');
 
-    return MSAViewportManager.conservationCache.getOrCreate(fullCacheKey, () => {
+    return MSAViewportManager.conservationCache.getOrCreate(cacheKey, () => {
       const sequences = column.categories.filter(Boolean);
       if (sequences.length <= 1)
-        return new Array(maxLength).fill(0);
+        return new Array(end - start).fill(0);
 
 
       const splitSequences: ISeqSplitted[] = sequences
@@ -60,8 +62,8 @@ class MSAViewportManager {
 
       const scores: number[] = [];
 
-      // Calculate for each position (0-based in sequence = 1-based in MSA)
-      for (let pos = 0; pos < maxLength; pos++) {
+      // Only calculate for the requested range
+      for (let pos = start; pos < end; pos++) {
         const residueCounts: Record<string, number> = {};
         let totalResidues = 0;
 
@@ -90,13 +92,12 @@ class MSAViewportManager {
   }
 
   /**
-   * Get WebLogo data for full sequence (0-based map where key 0 = position 1)
-   * Uses caching and smart range calculation
+   * Get WebLogo data for a specific range (lazy calculated and cached)
    */
-  static getWebLogoData(column: DG.Column, splitter: SplitterFunc, maxLength: number): Map<number, Map<string, number>> {
-    const fullCacheKey = MSAViewportManager.getCacheKey(column, 0, maxLength, 'weblogo_full');
+  private static getWebLogoChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): Map<number, Map<string, number>> {
+    const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'weblogo');
 
-    return MSAViewportManager.webLogoCache.getOrCreate(fullCacheKey, () => {
+    return MSAViewportManager.webLogoCache.getOrCreate(cacheKey, () => {
       const sequences = column.categories.filter(Boolean);
       const webLogoData: Map<number, Map<string, number>> = new Map();
 
@@ -108,8 +109,8 @@ class MSAViewportManager {
         .map((seq) => splitter(seq))
         .filter(Boolean);
 
-      // Calculate for each position (0-based in sequence = 1-based in MSA)
-      for (let pos = 0; pos < maxLength; pos++) {
+      // Only calculate for the requested range
+      for (let pos = start; pos < end; pos++) {
         const residueCounts: Map<string, number> = new Map();
         let totalResidues = 0;
 
@@ -131,18 +132,78 @@ class MSAViewportManager {
         const residueFreqs: Map<string, number> = new Map();
         for (const [residue, count] of residueCounts.entries())
           residueFreqs.set(residue, count / totalResidues);
+
+
         webLogoData.set(pos, residueFreqs);
       }
 
       return webLogoData;
     });
   }
+
+  /**
+   * Get conservation scores for viewport (returns properly aligned sparse array)
+   */
+  static getConservationForViewport(column: DG.Column, splitter: SplitterFunc, viewportStart: number, viewportEnd: number, maxLength: number): number[] {
+    // Create a full-sized array filled with zeros
+    const result: number[] = new Array(maxLength).fill(0);
+
+    // Calculate which chunks we need
+    const startChunk = Math.floor(viewportStart / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+    const endChunk = Math.ceil(viewportEnd / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+
+    // Get all needed chunks and place them in the correct positions
+    for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
+      const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
+      const chunkData = MSAViewportManager.getConservationChunk(column, splitter, chunkStart, chunkEnd);
+
+      // Copy chunk data to the correct positions in the result array
+      for (let i = 0; i < chunkData.length && (chunkStart + i) < maxLength; i++)
+        result[chunkStart + i] = chunkData[i];
+    }
+
+    return result;
+  }
+
+  /**
+   * Get WebLogo data for viewport (returns properly aligned sparse map)
+   */
+  static getWebLogoForViewport(column: DG.Column, splitter: SplitterFunc, viewportStart: number, viewportEnd: number, maxLength: number): Map<number, Map<string, number>> {
+    const result: Map<number, Map<string, number>> = new Map();
+
+    // Calculate which chunks we need
+    const startChunk = Math.floor(viewportStart / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+    const endChunk = Math.ceil(viewportEnd / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+
+    // Get all needed chunks and place them in the correct positions
+    for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
+      const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
+      const chunkData = MSAViewportManager.getWebLogoChunk(column, splitter, chunkStart, chunkEnd);
+
+      // Copy chunk data to the result map (positions are already correct)
+      for (const [pos, data] of chunkData.entries()) {
+        if (pos < maxLength)
+          result.set(pos, data);
+      }
+    }
+
+    return result;
+  }
 }
 
-class CachedWebLogoTrack extends WebLogoTrack {
+// ============================================================================
+// SMART TRACKS THAT USE FULL DATA BUT CACHE IT
+// ============================================================================
+
+/**
+ * WebLogoTrack that loads data on-demand based on what's actually being rendered
+ */
+class LazyWebLogoTrack extends WebLogoTrack {
   private column: DG.Column;
   private splitter: SplitterFunc;
-  private dataInitialized: boolean = false;
+  private maxLength: number;
+  private lastViewportStart: number = -1;
+  private lastViewportEnd: number = -1;
 
   constructor(
     column: DG.Column,
@@ -154,19 +215,65 @@ class CachedWebLogoTrack extends WebLogoTrack {
     super(new Map(), height, '', title);
     this.column = column;
     this.splitter = splitter;
+    this.maxLength = maxLength;
 
-    // Initialize with full cached data
-    const webLogoData = MSAViewportManager.getWebLogoData(column, splitter, maxLength);
+    // Check if we have data to show (but don't calculate it yet!)
+    const sequences = column.categories.filter(Boolean);
+    this.visible = sequences.length > 1;
+  }
+
+  /**
+   * Update data only for the positions that are actually being rendered
+   */
+  private updateForViewport(viewportStart: number, viewportEnd: number): void {
+    // Only update if viewport changed significantly (avoid excessive recalculation)
+    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
+        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+      return;
+
+
+    this.lastViewportStart = viewportStart;
+    this.lastViewportEnd = viewportEnd;
+
+    // Add buffer to reduce cache misses on small scrolls
+    const bufferedStart = Math.max(0, viewportStart - 50);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+
+    // Get properly aligned data for the tracks
+    const webLogoData = MSAViewportManager.getWebLogoForViewport(
+      this.column,
+      this.splitter,
+      bufferedStart,
+      bufferedEnd,
+      this.maxLength
+    );
+
     this.updateData(webLogoData);
-    this.visible = webLogoData.size > 0;
-    this.dataInitialized = true;
+  }
+
+  draw(x: number, y: number, width: number, height: number, windowStart: number,
+    positionWidth: number, totalPositions: number, currentPosition: number): void {
+    // Calculate what positions are actually visible
+    const visiblePositions = Math.ceil(width / positionWidth) + 2;
+    const viewportEnd = Math.min(windowStart + visiblePositions, totalPositions);
+
+    // Update data for just the visible range
+    this.updateForViewport(windowStart - 1, viewportEnd - 1); // Convert to 0-based
+
+    // Call parent draw method
+    super.draw(x, y, width, height, windowStart, positionWidth, totalPositions, currentPosition);
   }
 }
 
-class CachedConservationTrack extends ConservationTrack {
+/**
+ * ConservationTrack that loads data on-demand based on what's actually being rendered
+ */
+class LazyConservationTrack extends ConservationTrack {
   private column: DG.Column;
   private splitter: SplitterFunc;
-  private dataInitialized: boolean = false;
+  private maxLength: number;
+  private lastViewportStart: number = -1;
+  private lastViewportEnd: number = -1;
 
   constructor(
     column: DG.Column,
@@ -179,13 +286,59 @@ class CachedConservationTrack extends ConservationTrack {
     super([], height, colorScheme, title);
     this.column = column;
     this.splitter = splitter;
+    this.maxLength = maxLength;
 
-    const conservationData = MSAViewportManager.getConservationScores(column, splitter, maxLength);
-    this.updateData(conservationData);
-    this.visible = conservationData.length > 0;
-    this.dataInitialized = true;
+    // Check if we have data to show (but don't calculate it yet!)
+    const sequences = column.categories.filter(Boolean);
+    this.visible = sequences.length > 1;
+  }
+
+  /**
+   * Update data only for the positions that are actually being rendered
+   */
+  private updateForViewport(viewportStart: number, viewportEnd: number): void {
+    // Only update if viewport changed significantly (avoid excessive recalculation)
+    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
+        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+      return;
+
+
+    this.lastViewportStart = viewportStart;
+    this.lastViewportEnd = viewportEnd;
+
+    // Add buffer to reduce cache misses on small scrolls
+    const bufferedStart = Math.max(0, viewportStart - 50);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+
+    // Get properly aligned data for the tracks
+    const conservationScores = MSAViewportManager.getConservationForViewport(
+      this.column,
+      this.splitter,
+      bufferedStart,
+      bufferedEnd,
+      this.maxLength
+    );
+
+    this.updateData(conservationScores);
+  }
+
+  draw(x: number, y: number, width: number, height: number, windowStart: number,
+    positionWidth: number, totalPositions: number, currentPosition: number): void {
+    // Calculate what positions are actually visible
+    const visiblePositions = Math.ceil(width / positionWidth) + 2;
+    const viewportEnd = Math.min(windowStart + visiblePositions, totalPositions);
+
+    // Update data for just the visible range
+    this.updateForViewport(windowStart - 1, viewportEnd - 1); // Convert to 0-based
+
+    // Call parent draw method
+    super.draw(x, y, width, height, windowStart, positionWidth, totalPositions, currentPosition);
   }
 }
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
 
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
@@ -217,7 +370,6 @@ export function handleSequenceHeaderRendering() {
         // Get maximum sequence length the simple way
         let maxSeqLen = 0;
         const cats = seqCol.categories;
-
         for (let i = 0; i < cats.length; i++) {
           const seq = cats[i];
           if (seq && seq.length > 0) {
@@ -248,10 +400,10 @@ export function handleSequenceHeaderRendering() {
         const initializeHeaders = (monomerLib: any = null) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
-          // Create cached tracks only if we have multiple sequences
+          // Create lazy tracks only if we have multiple sequences
           if (hasMultipleSequences) {
             // Conservation track
-            const conservationTrack = new CachedConservationTrack(
+            const conservationTrack = new LazyConservationTrack(
               seqCol,
               sh.splitter,
               maxSeqLen,
@@ -262,7 +414,7 @@ export function handleSequenceHeaderRendering() {
             tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
 
             // WebLogo track
-            const webLogoTrack = new CachedWebLogoTrack(
+            const webLogoTrack = new LazyWebLogoTrack(
               seqCol,
               sh.splitter,
               maxSeqLen,
