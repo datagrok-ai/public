@@ -191,11 +191,6 @@ export const RichFunctionView = Vue.defineComponent({
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
     'formReplaced': (_a: DG.InputForm | undefined) => true,
-    'layoutReset': () => true,
-  },
-  methods: {
-    savePersonalState: () => {},
-    loadPersonalLayout: () => {},
   },
   setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
@@ -383,31 +378,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
-    return () => {
-      let lastCardLabel = null as string | null;
-      let scalarCardCount = 0;
-
-      const getElementToDock = () => {
-        return lastCardLabel &&
-        visibleTabLabels.value.includes(lastCardLabel) &&
-        scalarCardCount < 3 ? lastCardLabel: null;
-      };
-
-      const getDockRatio = () => {
-        return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
-      };
-
-      const getDockStrategy = (categoryProps: ScalarState[]) => {
-        if (viewerTabsCount.value === 0) return null;
-
-        if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill';
-
-        if (!lastCardLabel) return 'down';
-
-        return scalarCardCount < 3 ? 'right': 'down';
-      };
-
-      return (
+    return () => (
         Vue.withDirectives(<div class='w-full h-full flex'>
           <RibbonMenu groupName='Panels' view={currentView.value}>
             <span
@@ -587,33 +558,28 @@ export const RichFunctionView = Vue.defineComponent({
                       scalarsData={scalarsData}
                       dock-spawn-panel-icon='sign-out-alt'
                       dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={getElementToDock()}
-                      dock-spawn-dock-type={getDockStrategy(scalarsData)}
-                      dock-spawn-dock-ratio={getDockRatio()}
                       key={tabLabel}
                     />;
-
-                    if (scalarsData.length < 3) {
-                      scalarCardCount += scalarsData.length;
-                      lastCardLabel = tabLabel;
-                    }
 
                     return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
                   }
                 })
             }
             { !helpHidden.value && helpText.value ?
-              <MarkDown
-                markdown={helpText.value}
+              <div
                 dock-spawn-title='Help'
                 dock-spawn-dock-type='right'
-                dock-spawn-dock-ratio={0.15}
+                dock-spawn-dock-ratio={0.2}
+                style={{ overflow: 'scroll', height: '100%', padding: '5px' }}
                 ref={helpRef}
-              /> : null
+              >
+                <MarkDown
+                  markdown={helpText.value}
+                />
+              </div>: null
             }
           </DockManager>
         </div>, [[ifOverlapping, isLocked.value]])
       );
-    };
   },
 });
