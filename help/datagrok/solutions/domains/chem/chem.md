@@ -168,22 +168,9 @@ When you open a dataset, Datagrok automatically detects molecules and makes avai
 * Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
-* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness**.
+* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness** ([see the full list](info-panels/info-panels.md)).
 
 ![Chem dataset exploration](img/chem-exploration.png)
-
-The following info panes are shown by default for the current molecule:
-
-* Gasteiger Partial Charges (shows a 2D representation with partial charges highlighted).
-* Descriptors (shows [descriptors](descriptors.md)).
-* Properties (shows molecule properties).
-* [Drug Likeness](info-panels/drug-likeness.md).
-* [Structural Alerts](info-panels/structural-alerts.md).
-* [Toxicity](info-panels/toxicity-risks.md) (predictions using [openchemlib calculations](https://github.com/Actelion/openchemlib)).
-* Identifiers (shows [all known identifiers](#molecule-identifier-conversions) for the selected structure).
-* 3D Structure
-* 2D Structure
-* Databases (performs substructure and similarity searches for the selected structure against all connected data sources).
 
 The following info panes are shown by default for the current molecular column:
 
@@ -518,96 +505,125 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 ### Scaffold tree analysis
 
-Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
+The scaffold tree viewer viewer organizes molecules into a hierarchical tree
+based on their scaffolds, making it easy to explore structure-activity
+relationships, filter datasets, and navigate chemical space.
 
-A hierarchy can be either generated automatically, sketched manually, or modified at any point. To access, in the **Top Menu** select **Chem** > **Analyze** > **Scaffold Tree**. For automatic tree generation, a derivative of the open-source
-[ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
-developed by Oliver Scott is used.
+You can:
+* Automatically generate scaffold trees using a customized [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) algorithm
+* Manually sketch the tree or edit nodes
+* Highlight matching molecules, filter datasets, and color-code scaffolds for easy profiling 
 
-:::note
+The scaffold tree is synchronized with other viewers and can be saved as part of a
+[layout](../../../../visualize/view-layout.md) or dashboard.
 
-Scaffold tree generation is computationally intensive and may take time for large datasets.
+![Scaffold tree](img/scaffold-tree-annotated.gif)
 
-:::
+<details>
+<summary>How to use</summary>
 
-![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
+<Tabs>
+<TabItem value="anatomy" label="Anatomy" default>
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds.
+Each node represents a scaffold. Nodes form a hierarchy where:
+* The root scaffold is the smallest common substructure
+* Child scaffolds contain their parent as a substructure
+* Each scaffold builds on the structure above it in the tree
+* Orphan nodes contains the parent scaffold but don't have any sibling scaffolds
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
-<details>
-<summary>Sketch or modify a scaffold tree</summary>
-To manually sketch or modify the scaffold tree, use these controls:
+</TabItem>
+<TabItem value="add-scaffold-tree" label="Add">
 
-* To clear the tree, in the **Toolbar**, click the **Drop all trees** (trash) icon.
-* To add a new root node,  in the **Toolbar**, click the **Add new root structure** (**+**) icon. This opens a molecular sketcher.
-* To add a new scaffold under an existing one, click the **Add new scaffold** (**+**) icon next to the scaffold.
-  Alternatively, right-click the molecule and select **Add New...**.
-* To delete a scaffold along with its children, click the **Remove scaffold** (trash) icon next to the scaffold.
-  Alternatively, right-click the molecule and select **Remove**.
-* To edit a scaffold, click the **Edit...** icon next to the scaffold.
-  Alternatively, right-click the molecule, and select **Edit...**. This opens a molecular sketcher.
+**Generate automatically**:
+ 1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the scaffold tree viewer to your dataset. 
+ 1. On the viewer, click **Generate** to build the tree. Generation may take several minutes for large datasets.
 
-In addition, you can download a file with the scaffold tree to your local drive. To do so, hover over any scaffold tile and click the **Download** icon in the **Toolbar**. To load a previously saved tree, hover over any scaffold tile and click the **Open** (+) icon in the **Toolbar**, then select the saved file.
+**Load from your computer**:
+   * **To download**, click the **Download** icon at the top of the viewer.
+   * **To upload**, click the **Open** icon at the top of the viewer and select your file.
 
-![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
+**Sketch manually**:
+ 1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the viewer to your dataset.
+ 1. To create the root scaffold, at the top of the viewer, click the **Add new root structure** (**+**) icon and sketch your structure.
+ 1. To add scaffolds below, click the **Add new scaffold** (**+**) icon on a scaffold and sketch. 
 
-</details>
+>Tip: The viewer's toolbar icons appear when the viewer is active or when you hover over it. 
 
-Scaffold tree is a viewer, which means it's synchronized with other viewers, can be shared or saved as part of a [layout](../../../../visualize/view-layout.md) or a dashboard, or used to filter a dataset.
+![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
 
-<details>
-<summary>Filtering and selection</summary>
+</TabItem>
+<TabItem value="edit-tree" label="Edit">
 
-To highlight rows matching a particular scaffold, hover the mouse over the
-scaffold tile. To select rows matching a particular scaffold, click the **Select
-rows** icon next to the scaffold. To deselect rows matching a particular
-scaffold, click the **Deselect rows** icon next to the scaffold. The state is
-picked up by other viewers.
+**Viewer controls (top of viewer)**:
+* **Clear all scaffolds**: Click the **Drop all trees** (trash) icon
+* **Add root scaffold**: Click the **Add new root structure** (**+**) icon
 
-![scaffold-tree-filter-select](scaffold-tree-filter-select.gif)
-
-To filter a dataset using a scaffold tree, do the following:
-
-* To filter by a particular scaffold exclusively, select the checkbox
-  to the left of the molecule. This action automatically clears any other checkboxes and helps to navigate quickly within the dataset.
-* To add another scaffold to the filtered subset, select the corresponding
-  checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired
-  logical operation. If needed, you can invert the function of an individual
-  checkbox to exclude the scaffold from the subset instead of adding it. To
-  invert the checkbox mode, click the **Doesn't equal** icon located in the top
-  left corner of the scaffold tile. The change in the state of an individual
-  checkbox doesn't affect the state of other checkboxes.
-* To clear all filters, click the **Filter** icon in the **Toolbar**.
+**Scaffold controls (on each scaffold card)**:
+* **Add scaffold below**: Click the **Add new scaffold** (**+**) icon
+* **Edit scaffold**: Click the **Edit** icon to sketch
+* **Delete scaffold**: Click the **Remove scaffold** (trash) icon to delete the scaffold and all scaffolds below it
+>Tip: You can also right-click any scaffold for these options: **Add New...**, **Edit...**, or **Remove**.
 
 ![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
 
-You can add the scaffold tree as a filter to the **Filter Panel**:
+</TabItem>
+<TabItem value="filter" label="Selection and filtering">
 
-1. In the **Menu Ribbon**, click the **Filter** icon to toggle the **Filter panel**.
-1. In the top left corner, click the **Hamburger** (☰) icon > **Add Filter** > **Scaffold Tree Filter**. A dialog opens.
-1. In the dialog, select the molecular column and click **OK**. A scaffold tree tile is added to the **Filter Panel**.
-1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold using a sketcher.
+**Selection**:
+* **Highlight rows**: Hover over any scaffold
+* **Select rows**: Click the **Select rows** icon on the scaffold
+* **Deselect rows**: Click the **Deselect rows** icon on the scaffold
+* **Exclude from selection**: Click the **≠** icon on the scaffold (inverts the selection state)
 
-![Scaffold tree filter panel](scaffold-tree-filter.gif)
+**Filtering**:
+* **Filter by scaffold**: Click it
+* **Exclude from filtered subset**: Click the **≠** icon on the scaffold (inverts the filtered state)
+* **Clear filters**: At the top of the viewer, click the **Filter** icon.
 
-You can use a scaffold tree with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
-</details>
+To select or filter by multiple scaffolds, select the checkbox to the left of each desired scaffold. 
+Use the **AND/OR** control at the top of the viewer to define the logic:
+  * **OR** (default): includes rows matching _any_ selected scaffold
+  * **AND**: includes only rows matching _all_ selected scaffolds
 
-To make scaffold structures easier to interpret, you can apply colors to nodes in the scaffold tree. The colors appear both in the column and the viewer.
+Selections and filters sync across all viewers in your dataset. 
+You can use the scaffold tree in combination with other [filters](../../../../visualize/viewers/filters.md). 
+<!---- You can also add the tree as a filter to the **Filter panel** (see details below)--->.
+
+<!---
 
 <details>
-<summary>Coloring</summary>
+<summary>Add scaffold tree to the **Filter Panel**</summary>
 
-To color scaffold nodes, do the following:
+1. In the **Top Menu**, click the **Filter** icon. This toggles the **Filter panel**.
+1. In the panel's top left corner, click the **Hamburger** (☰) icon > **Add Filter** >
+   **Scaffold Tree Filter**. A dialog opens.
+1. In the dialog, select the column and click **OK**. A scaffold tree
+   filter is added to the **Filter panel**.
+1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold
+   using a sketcher.
+</details>
 
-* Click the **Circle** icon to toggle coloring on or off. If turned off, the node inherits the color from its nearest colored parent.
-* Click the **Palette** icon to pick a color. The color applies to the node and all its children unless they already have their own color.
-* To override an inherited color, assign a new color to the node. The new color takes priority.
+----->
+
+</TabItem>
+<TabItem value="color-code" label="Color-code">
+
+Color scaffolds to highlight relationships. The colors appear both in the
+dataset column and the scaffold tree.
+
+* To toggle coloring, on the scaffold, click the **Circle** icon. When off, the
+  node inherits color from its nearest colored parent.
+* To assign new color, click the **Palette** icon. The color applies to the scaffold
+  and all its child scaffolds unless they already have custom colors.
+* To override an inherited color, assign the new color. Custom node colors
+  takes precedence.
 
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
+</TabItem>
+</Tabs>
 </details>
 
 ### Retrosynthesis
