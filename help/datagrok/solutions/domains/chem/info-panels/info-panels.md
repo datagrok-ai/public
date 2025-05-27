@@ -18,6 +18,9 @@ automatically in the **Context Panel** when you select a molecule in a dataset.
 |Identifiers | Calculates identifiers like SMILES, InChi, ChEMBL ID, etc.|
 |3D Structure| Shows an interactive 3D view of the molecule|
 |2D Structure| Shows a 2D view of the molecule|
+| Retrosynthesis|Shows the most efficient synthetic pathways and commercially available starting materials for your target molecules (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder))|
+|CDD Vault|Shows vault data for the current molecule|
+|SureChEMBL|Shows patent information for target molecule based on similarity or substructure search|
 
 <br/>
 

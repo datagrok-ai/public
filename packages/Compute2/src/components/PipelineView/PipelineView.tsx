@@ -7,7 +7,6 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
 import {isFuncCallState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {computedAsync} from '@vueuse/core';
 
 
 export const PipelineView = Vue.defineComponent({
@@ -62,14 +61,16 @@ export const PipelineView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const isRoot = Vue.computed(() => props.isRoot);
+    const helpText = Vue.ref<string | null | undefined>(null);
 
-    const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
-
-    const helpText = computedAsync(async () => {
-      if (!hoveredFunc.value) return null;
-
-      return Utils.getContextHelp(hoveredFunc.value);
-    }, null);
+    const showHelp = async (func: DG.Func) => {
+      if (!func)
+        helpText.value = null;
+      else {
+        helpText.value = await Utils.getContextHelp(func);
+        helpHidden.value = false;
+      }
+    };
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -84,6 +85,7 @@ export const PipelineView = Vue.defineComponent({
       hasInnerStep.value = !isFuncCallState(state) && state.steps.length > 0;
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
       version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
+      helpText.value = null;
     }, { immediate: true });
 
     const description = Vue.computed(() => {
@@ -119,6 +121,7 @@ export const PipelineView = Vue.defineComponent({
             ref={functionsRef}
           >
             { state.value.stepTypes
+              .filter(item => !item.disableUIAdding)
               .map((stepType, idx) => {
                 const func = stepType.nqName ? Vue.markRaw(DG.Func.byName(stepType.nqName)): null;
                 const language = func instanceof DG.Script ? func.language: 'javascript';
@@ -127,8 +130,6 @@ export const PipelineView = Vue.defineComponent({
                 return <div
                   class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
                   style={{width: '208px'}}
-                  onMouseover={() => hoveredFunc.value = func ? Vue.markRaw(func) : null}
-                  onMouseleave={() => hoveredFunc.value = null}
                 >
                   <div class='flex flex-col'>
                     <div class='flex flex-row justify-between'>
@@ -145,8 +146,8 @@ export const PipelineView = Vue.defineComponent({
                         { func?.options.help && <IconFA
                           class='d4-ribbon-item'
                           name='question-circle'
-                          tooltip={helpText.value}
                           style={{'padding-left': '5px'}}
+                          onClick={() => showHelp(func)}
                         />
                         }
                         <IconFA
@@ -231,6 +232,20 @@ export const PipelineView = Vue.defineComponent({
               </div>
             </div>
           </div>
+          { !helpHidden.value && helpText.value ?
+            <div
+              dock-spawn-title='Help'
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-to='Steps to add'
+              dock-spawn-dock-ratio={0.2}
+              style={{ overflow: 'scroll', height: '100%', padding: '5px' }}
+              ref={helpRef}
+            >
+              <MarkDown
+                markdown={helpText.value}
+              />
+            </div>: null
+          }
         </DockManager>
       </div>
     );

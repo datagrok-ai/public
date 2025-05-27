@@ -1,6 +1,6 @@
 /// this file was generated automatically from xamgle classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export interface SettingsInterface {
   /// Automatically save workspace locally
@@ -44,6 +44,9 @@ export interface SettingsInterface {
 
   /// Determines when to show range sliders
   showRangeSlidersOnViewers: string;
+
+  /// Use WebGPU for rendering and hit testing.
+  scatterPlotWebGPUAcceleration: boolean;
 
   /// Auto-apply existing layout after selected rows are extracted
   applyLayoutWhenExtractingRows: boolean;
@@ -104,9 +107,6 @@ export interface SettingsInterface {
   /// Displays Index Files check box in connection edit dialog. If it is disabled then check
   /// box will not be shown to the user and indexing of files will not be configurable.
   enableConnectionIndexFiles: boolean;
-
-  // When true, use WebGPU for rendering and advanced computations if possible.
-  enableScatterPlotWebGPUAcceleration: boolean;
 
   dateFormat: string;
 

@@ -2,16 +2,19 @@ import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
-import {_identityInt32, _isDartium, _toIterable, MapProxy} from './utils';
+import {_identityInt32, _isDartium}  from './utils';
+import {_toIterable} from './utils_convert';
+import { MapProxy} from "./proxies";
 import {Observable} from 'rxjs';
-import {Color, RangeSlider, Widget} from './widgets';
+import {RangeSlider, Widget} from './widgets';
+import {Color} from './color';
 import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
 
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 let _bytes = new Float64Array(4);
 
 export type ColorType = number | string;

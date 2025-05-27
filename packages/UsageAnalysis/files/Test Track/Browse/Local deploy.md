@@ -24,5 +24,5 @@ The platform should deploy locally without errors and be accessible via http://l
 
 ---
 {
-  "order": 4
+  "order": 6
 }

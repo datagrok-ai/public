@@ -96,7 +96,7 @@ spawning many virtual machines that have Selenium installed on them and
 executing selected UI tests on them. This helps us identify steps responsible
 for the performance degradation.  For more details on different environments,
 tests, and interpretation of results, see
-[stress testing results](../../datagrok/solutions/enterprise/stress-testing-results.md).
+[stress testing results](../../datagrok/solutions/teams/it/stress-testing-results.md).
 
 ## Manual testing
 
@@ -146,7 +146,7 @@ promptly access, execute, and report the completion status of stories.
 Additionally, it lets us quickly navigate to the corresponding JIRA issues as we
 have integrated JIRA with Datagrok's OpenAPI capabilities.
 
-![Test Tracking System](../../datagrok/solutions/enterprise/test-tracking-system.png)
+![Test Tracking System](../../datagrok/solutions/teams/it/test-tracking-system.png)
 
 ### Test Manager
 

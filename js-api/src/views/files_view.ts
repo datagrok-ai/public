@@ -2,7 +2,7 @@ import { CardView } from './card_view';
 import { toJs } from '../wrappers';
 import {IDartApi} from '../api/grok_api.g';
 import {TreeViewGroup} from '../widgets';
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 /** File browser view. Contains the file tree, search panel and preview components. */

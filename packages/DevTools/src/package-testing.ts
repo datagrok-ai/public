@@ -501,14 +501,14 @@ export class TestManager extends DG.ViewBase {
         this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.addPackageInfo(this.testsResultsDf, t.packageName);
       } else {
-        // if (res.col('package') == null || this.verboseCheckBox.value)
-        this.addPackageInfo(res, t.packageName);
+        if (res.col('package') == null || this.verboseCheckBox.value)
+          this.addPackageInfo(res, t.packageName);
         // if (!this.verboseCheckBox.value)
         // this.removeTestRow(t.packageName, t.test.category, t.test.name);
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
         res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
-        res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
+        // res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.testsResultsDf = this.testsResultsDf.append(res);
       }
     }

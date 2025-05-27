@@ -65,7 +65,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](../../../../compute/scripting/scripting.mdx) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../../solutions/enterprise/enterprise-evaluation-faq.md) for efficient data access and management.
+* [Enterprise-grade platform](../../teams/it/enterprise-evaluation-faq.md) for efficient data access and management.
 
 ## Data access
 

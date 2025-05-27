@@ -1,3 +1,5 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable rxjs/no-nested-subscribe */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
 /* eslint max-lines: "off" */
@@ -10,7 +12,7 @@ import {DimReductionBaseEditor, PreprocessFunctionReturnType} from '@datagrok-li
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -73,7 +75,7 @@ import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
-
+import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 export const _package = new BioPackage(/*{debug: true}/**/);
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
@@ -167,6 +169,7 @@ async function initBioInt() {
   // hydrophobPalette = new SeqPaletteCustom(palette);
 
   _package.logger.debug(`${logPrefix}, end`);
+  handleSequenceHeaderRendering();
 }
 
 //name: sequenceTooltip

@@ -9,6 +9,7 @@ import * as testUtils from '../utils/test-utils';
 import { error } from 'console';
 
 const warns = ['Latest package version', 'Datagrok API version should contain'];
+const forbidenNames = ['function', 'class', 'export'];
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
@@ -296,8 +297,10 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         if (!vr.value) {
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
         }
-
       }
+      let wrongInputNames = f.inputs.filter((e) => forbidenNames.includes(e?.name ?? ''))
+      if (wrongInputNames.length > 0)
+        warnings.push(`File ${file}, function ${f.name}: Wrong input names: (${wrongInputNames.map((e) => e.name).join(', ')})`);
       if (f.isInvalidateOnWithoutCache)
         warnings.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
 
@@ -307,7 +310,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       if (f.invalidateOn)
         if (!utils.isValidCron(f.invalidateOn))
           warnings.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
-    }
+    } 
   }
 
   return warnings;

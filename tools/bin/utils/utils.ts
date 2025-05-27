@@ -173,11 +173,12 @@ export const dgToTsTypeMap: Indexable = {
   column: 'DG.Column',
   column_list: 'string[]',
   file: 'DG.FileInfo',
+  view: 'DG.View',
 };
 
 export const propertyTypes = [
   'bool', 'int', 'double', 'string', 'datetime', 'object',
-  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
+  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map'
 ];
 
 export const headerTags = [

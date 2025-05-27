@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, ValidationIcon, ValidationIconInput} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -238,12 +238,15 @@ export const TreeNode = Vue.defineComponent({
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
+                  .filter((stepType) => !stepType.disableUIAdding)
                   .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
+                  const visibleSteps = data.stepTypes
+                    .filter((stepType) => !stepType.disableUIAdding)
                   emit('addNode', {
-                    itemId: data.stepTypes[itemIdx].configId,
+                    itemId: visibleSteps[itemIdx].configId,
                     position: data.steps.length,
                   });
                   isHovered.value = false;

@@ -355,9 +355,9 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const isEachDraggable = (stat: AugmentedStat) => {
-      return (stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-      ) ?? false;
+      return stat.parent && !stat.parent.data.isReadonly &&
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
+        !stat.parent.data.stepTypes.find(item => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
@@ -380,7 +380,8 @@ export const TreeWizard = Vue.defineComponent({
 
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data));
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
+        !stat.parent.data.stepTypes.find(item => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////

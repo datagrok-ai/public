@@ -1,5 +1,24 @@
 # Peptides changelog
 
+## 1.23.11 (2025-05-26)
+
+* Fix model loading with empty cluster selection
+
+## 1.23.10 (2025-05-15)
+
+* Improved description for position statistics viewer
+
+## 1.23.9 (2025-05-14)
+
+* Reveerse events for Position statistics viewer
+
+## 1.23.8 (2025-05-12)
+
+* Performance improvements to Peptide viewers
+* LST white space reduction
+* Bug fixes
+* Position statistics viewer
+
 ## 1.23.6 (2025-04-30)
 
 * Fix Peptides analysis not starting on data with existing position columns

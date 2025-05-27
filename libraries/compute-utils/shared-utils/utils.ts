@@ -688,7 +688,7 @@ export const getContextHelp = async (func: DG.Func) => {
 
   if (helpCache.get(func.id)) return helpCache.get(func.id);
 
-  const packagePath = `System:AppData/${helpPath}`;
+  const packagePath = `System:AppData/${func.package.name}/${helpPath}`;
   if (await grok.dapi.files.exists(packagePath)) {
     const readme = await grok.dapi.files.readAsText(packagePath);
     helpCache.set(func.id, readme);
