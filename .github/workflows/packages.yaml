@@ -3,15 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       packages:
-        description: "Packages separated by spaces"
+        description: 'Packages separated by spaces'
         required: true
         type: string
   push:
     paths:
-      - "packages/**"
+      - 'packages/**'
   pull_request:
     paths:
-      - "packages/**"
+      - 'packages/**'
 
 jobs:
   common-check:
@@ -48,7 +48,7 @@ jobs:
         uses: tj-actions/changed-files@v42
         id: changed-files
         with:
-          files: "packages/**"
+          files: 'packages/**'
           separator: "\n"
           dir_names: true
           safe_output: false
@@ -131,7 +131,7 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      if [[ '${{ github.ref }}' == 'refs/heads/oserhiienko/bump-charts-1.5.2' ]]; then
+                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]]; then
                         publish="publish"
                         MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                         job_name+=' and publish to NPM'
@@ -156,7 +156,7 @@ jobs:
                   echo "It is an actions for PR. Publish will be skipped."
                   echo "::notice title=${PACKAGE}::It is an actions for PR. Publish will be skipped."
               fi
-
+          
               if [[ -d "${DIR}/dockerfiles" ]]; then
                 build_docker=false
                 if [[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]; then
@@ -193,6 +193,7 @@ jobs:
           echo "publish=${CONTINUE_PUBLISH_JOB}" >> $GITHUB_OUTPUT
           echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
 
+
       - name: Output
         run: |
           echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
@@ -225,10 +226,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
-          registry-url: "https://registry.npmjs.org"
-          scope: "@datagrok"
-          cache: "npm"
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+          cache: 'npm'
           cache-dependency-path: |
             packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
@@ -660,7 +661,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: ./.github/actions/slack-post-action
         with:
-          channel: "#build"
+          channel: '#build'
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           message: ${{ env.SLACK_MESSAGE_HEADER }}
 
@@ -731,3 +732,4 @@ jobs:
         run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
         env:
           GH_TOKEN: ${{ github.token }}
+
