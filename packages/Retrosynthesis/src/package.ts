@@ -51,6 +51,7 @@ export async function calculateRetroSynthesisPaths(molecule: string, configDir?:
 
 //name: Chemistry | Retrosynthesis
 //tags: panel, chem, widgets
+//meta.allowAddAsColumn: false
 //condition: true
 //input: string smiles { semType: Molecule }
 //output: widget result
