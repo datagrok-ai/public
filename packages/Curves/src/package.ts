@@ -234,7 +234,7 @@ export class PackageFunctions {
 
 //name: platesAppTreeBrowser
 //input: dynamic treeNode
-//input: dynamic panel
-export async function platesAppTreeBrowser(treeNode: any, _: any) {
+//input: view browseView
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
   await initPlatesAppTree(treeNode);
 }
