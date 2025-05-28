@@ -1,6 +1,6 @@
 # Jira Connect changelog
 
-## 1.1.2 (2025-05-28)
+## 1.1.3 (2025-05-28)
 
 Added api
 

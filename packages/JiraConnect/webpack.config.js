@@ -10,7 +10,6 @@ module.exports = {
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
-    ["package-api"]: './src/package-api.ts',
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
@@ -57,12 +56,7 @@ module.exports = {
     'html2canvas': 'html2canvas',
   },
   output: {
-    filename: (pathData) => {
-      if (pathData.chunk.name === 'package-api') {
-        return '../src/[name].js';
-      }
-      return '[name].js';
-    },
+    filename: '[name].js',
     library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),

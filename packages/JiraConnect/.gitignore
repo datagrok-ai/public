@@ -30,6 +30,3 @@ dist/
 
 # Emitted *.js files
 src/**/*.js
-
-**/package-api.js.map
-**/*.d.ts
