@@ -1,5 +1,9 @@
 # Jira Connect changelog
 
+## 1.1.2 (2025-05-28)
+
+Added api
+
 ## 1.0.1 (2025-03-26)
 
 Added credential checks 

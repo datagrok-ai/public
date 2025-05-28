@@ -24,3 +24,11 @@ node_modules/
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/codeStyles/
+
+
+**/*.d.ts
+**/*.js.map
+
+src/package-api.ts
+!src/package-api.d.ts
+!src/package-api.js
