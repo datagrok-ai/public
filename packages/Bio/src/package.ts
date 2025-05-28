@@ -462,6 +462,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
   similarity: number, methodName: DimReductionMethods,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
   options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
+    return;
+  }
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(table);
@@ -588,6 +593,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
   clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
+    return;
+  }
   const tableView =
     grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
