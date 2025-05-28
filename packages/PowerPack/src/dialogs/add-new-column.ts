@@ -1390,7 +1390,7 @@ export class AddNewColumnDialog {
       if (isNullParam(second))
         return first;
       else {
-        if (second == first)
+        if (second.toLowerCase() == first.toLowerCase())
           return second;
         else {
           if (first == DG.TYPE.DYNAMIC || second == DG.TYPE.DYNAMIC)
