@@ -415,8 +415,6 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 
     if (!hasRCDependency) {
       for (let dependency of Object.keys(json.dependencies ?? {})) {
-        console.log(dependency);
-        console.log((json.dependencies ?? {})[dependency]);
         if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
           hasRCDependency = true;
           break;

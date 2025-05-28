@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path from 'path';
+import path, { sep } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -22,6 +22,12 @@ export function isPackageDir(dir: string): boolean {
 export function kebabToCamelCase(s: string, firstUpper: boolean = true): string {
   s = s.replace(/-./g, (x) => x.toUpperCase()[1]);
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
+}
+
+export function descriptionToComment(s: string) {
+  if (s.length === 0)
+    return '';
+  return '//' + s + '\n';
 }
 
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {
@@ -83,6 +89,7 @@ export const replacers: Indexable = {
   NAME_PREFIX: (s: string, name: string) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
   PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, kebabToCamelCase(removeScope(name))),
+  FUNC_DESCRIPTION: (s: string, desc: string) => s.replace(/#{FUNC_DESCRIPTION}/g, descriptionToComment(desc)),
   FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, friendlyNameToName(name)),
   FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
@@ -91,6 +98,8 @@ export const replacers: Indexable = {
   TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g,
     params.map((p) => `${p.name}: ${p.type}`).join(', ')),
 };
+
+
 
 export class TemplateBuilder {
   static sep = '\n';
@@ -135,6 +144,7 @@ export const commentMap: Indexable = {
 };
 
 export const queryExtension = '.sql';
+export const jsExtention = '.js';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
   if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/')) &&
@@ -219,13 +229,20 @@ export function getScriptInputs(script: string, comment: string = '#'): object[]
   return inputs;
 };
 
+export function getScriptDescription(script: string, comment: string = '#'): string {
+  const regex = new RegExp(`${comment}\\s*description:\\s([^\n]*)`);
+  const rexegRes = script.match(regex) || [];
+  const desc = rexegRes[1] || '';
+  return desc;
+};
+
 export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n\n`;
 
-export const scriptWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const scriptWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.functions.call('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
-export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const queryWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
