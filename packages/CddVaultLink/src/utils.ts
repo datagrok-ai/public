@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
 import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { SeachEditor } from './search-function-editor';
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';
@@ -388,6 +388,8 @@ export function createPath(vaultName: string, viewName?: string[]) {
 function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeViewGroup, progressMessage: string, res?: DG.DataFrame) {
   openedView?.close();
   openedView = res ? grok.shell.addTablePreview(res) : grok.shell.addPreview(DG.View.create());
+  if (res)
+    adjustIdColumnWidth(openedView as DG.TableView);
   openedView.name = viewName[viewName.length - 1];
   openedView.path = createPath(vaultName, viewName);
   setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, openedView);
@@ -432,6 +434,8 @@ export async function createCDDTableViewWithPreview(viewName: string[], progress
     if (df.rowCount < PREVIEW_ROW_NUM) {
       asyncRequestCompleted = true; //we will not need async request results
       progressBar.close();
+    } else {
+      grok.shell.info(`Loaded first ${PREVIEW_ROW_NUM} rows. Loading the rest...`)
     }
     updateView(viewName, vaultName, treeNode, progressMessage, df);
   }).catch((e) => {
@@ -619,8 +623,10 @@ export function createSearchNode(vault: Vault, treeNode: DG.TreeViewGroup) {
   runButton.classList.add('cdd-vault-run-search-button');
 
   const addToWorkspaceButton = ui.icons.add(() => {
-    if (df)
-      grok.shell.addTablePreview(df);
+    if (df) {
+      const tv = grok.shell.addTablePreview(df);
+      adjustIdColumnWidth(tv);
+    }
   }, 'Add results to workspace');
   openedView.setRibbonPanels([[addToWorkspaceButton]]);
   openedView.name = 'Search CDD Vault'
@@ -641,5 +647,12 @@ export function addNodeWithEmptyResults(name: string, warningMessage?: string) {
   openedView = grok.shell.addTablePreview(DG.DataFrame.create());
   if (warningMessage)
     grok.shell.warning(warningMessage);
+}
+
+async function adjustIdColumnWidth(tv: DG.TableView) {
+   await delay(100);
+   const idCol = tv.grid.col('id');
+   if (idCol)
+    idCol.width = 100;
 }
 
