@@ -839,7 +839,7 @@ export class GridColumnList {
 
   /** Adds a new column to the grid (but not to the underlying dataframe). */
   add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
-    return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
+    return api.grok_GridColumnList_Add(this.dart, options.cellType, options?.gridColumnName, options?.index);
   }
 
   /** Removes a grid column at the specified position. */

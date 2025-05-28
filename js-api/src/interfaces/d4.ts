@@ -949,6 +949,9 @@ export interface IGridSettings {
   /// Reorder rows by dragging them
   allowRowReordering: boolean;
 
+  /// Whether to sort when user double-clicks on the column header
+  allowSorting: boolean;
+
   /// Mouse drag on the rows headers selects rows
   /// Ctrl+click to invert selection
   /// Shift+mouse drag to select multiple rows
@@ -1010,6 +1013,7 @@ export interface IGridSettings {
   showReadOnlyNotifications: boolean;
 
   /// Whether to show scrollbars in the heatmap mode
+  /// Note that scrollbars will still be visible if they are not "expanded"
   showHeatmapScrollbars: boolean;
 
   frozenColumns: number;
@@ -1067,6 +1071,10 @@ export interface IGridSettings {
   /// false: colors are scaled based on the column min/max.
   /// Applicable only to heatmap.
   globalColorScaling: boolean;
+
+  /// Whether the heatmap should be color-coded (you might want to do it programmatically)
+  /// See also [globalColorScaling]
+  heatmapColors: boolean;
 
   /// Controls grid tooltip visibility
   showTooltip: string;

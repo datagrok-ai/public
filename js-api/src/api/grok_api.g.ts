@@ -460,7 +460,7 @@ export interface IDartApi {
   grok_GridColumnList_SetOrder(columns: any, columnNames: any): any;
   grok_GridColumnList_SetVisible(columns: any, columnNames: any): any;
   grok_GridColumnList_Get_Length(columns: any): any;
-  grok_GridColumnList_Add(columns: any, cellType: String, gridColumnName: String): any;
+  grok_GridColumnList_Add(columns: any, cellType: String, gridColumnName: String, index: Num): any;
   grok_GridColumnList_RemoveAt(columns: any, index: Num): any;
   grok_GridColumnList_Clear(columns: any): any;
   grok_Grid_Create(table: any): any;
