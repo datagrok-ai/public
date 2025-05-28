@@ -682,7 +682,7 @@ export const showHelpWithDelay = async (helpContent: string) => {
 const helpCache = new DG.LruCache<string, string>();
 
 export const getContextHelp = async (func: DG.Func) => {
-  const helpPath = func.options['help'];
+  const helpPath = func.options['help'] ?? func.options['readme'];
 
   if (!helpPath) return null;
 

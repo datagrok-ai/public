@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.43.7 (2025-05-28)
+
+Compute help related fixes
+
 ## 1.43.6 (2025-05-28)
 
 Compute2 related typings tweak
