@@ -357,7 +357,7 @@ export const TreeWizard = Vue.defineComponent({
     const isEachDraggable = (stat: AugmentedStat) => {
       return stat.parent && !stat.parent.data.isReadonly &&
         (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find(item => item.configId === stat.data.configId && item.disableUIDragging);
+        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIDragging);
     };
 
     const isEachDroppable = (stat: AugmentedStat) => {
@@ -381,7 +381,7 @@ export const TreeWizard = Vue.defineComponent({
     const isDeletable = (stat: AugmentedStat) => {
       return !!stat.parent && !stat.parent.data.isReadonly &&
         (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find(item => item.configId === stat.data.configId && item.disableUIRemoving);
+        !stat.parent.data.stepTypes.find((item) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
     ////
@@ -441,9 +441,9 @@ export const TreeWizard = Vue.defineComponent({
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
               exports.value.map(({id, friendlyName, handler}) =>
-                <span onClick={() => (treeState.value)
-                  ? handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel})
-                  : null}>
+                <span onClick={() => (treeState.value) ?
+                  handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel}) :
+                  null}>
                   <div> {friendlyName ?? id} </div>
                 </span>,
               )
@@ -557,7 +557,7 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value &&  !isFuncCallState(chosenStepState.value) &&
+            !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
             <PipelineView
               funcCall={chosenStepState.value.nqName ?
                 DG.Func.byName(chosenStepState.value.nqName!).prepare() :

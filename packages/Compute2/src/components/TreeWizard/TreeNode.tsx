@@ -43,7 +43,7 @@ const statusToColor: Record<Status, string> = {
 const statusToTooltip: Record<Status, string> = {
   [`next`]: `This step is avaliable to run`,
   [`next warn`]: `This step is avaliable to run, but has warnings`,
-  [`next error`]: `This step has validation errors`,
+  [`next error`]: `This step needs user input`,
   ['pending']: 'This step has pending dependencies',
   ['pending executed']: 'This step has changed dependencies',
   ['running']: 'This step is running',
@@ -174,7 +174,7 @@ export const TreeNode = Vue.defineComponent({
     };
 
     const checkIcon = () => {
-      if (pipelineValidation.value)
+      if (pipelineValidation.value) {
         return (
           <ValidationIcon
             validationStatus={pipelineValidation.value}
@@ -185,7 +185,8 @@ export const TreeNode = Vue.defineComponent({
               position: 'absolute',
             }}
           />);
-    }
+      }
+    };
 
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
@@ -200,9 +201,8 @@ export const TreeNode = Vue.defineComponent({
     });
 
     const pipelineValidation = Vue.computed(() => {
-      if (!isFuncCallState(props.stat.data)) {
+      if (!isFuncCallState(props.stat.data))
         return Vue.markRaw({validation: props.stat.data.structureCheckResults});
-      }
     });
 
     return () => (
@@ -244,7 +244,7 @@ export const TreeNode = Vue.defineComponent({
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
                   const visibleSteps = data.stepTypes
-                    .filter((stepType) => !stepType.disableUIAdding)
+                    .filter((stepType) => !stepType.disableUIAdding);
                   emit('addNode', {
                     itemId: visibleSteps[itemIdx].configId,
                     position: data.steps.length,
