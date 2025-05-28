@@ -684,7 +684,7 @@ export class Column<T = any, TInit = T> {
   /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
   static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
     return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
-      (<any>window).grok_BigIntJs_To_BigInt(v.toString())));
+      api.grok_BigIntJs_To_BigInt(v.toString())));
   }
 
   /**
