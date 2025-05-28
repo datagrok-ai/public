@@ -3,12 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
-import { ALL_TABS, EXPANDABLE_TABS } from './constants';
+import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { SeachEditor } from './search-function-editor';
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';
 export const PREVIEW_ROW_NUM = 100;
 const CDD_VAULT_APP_PATH: string = 'apps/Cddvaultlink';
+
+let openedView: DG.ViewBase | null = null;
 
 export type CDDVaultStats = {
   name: string,
@@ -324,7 +327,7 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
   }
 }
 
-export function createNestedCDDNode(openedViews: {[key: string]: DG.View}, items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
+export function createNestedCDDNode(items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
   getItemsFunsName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
   onItemSelected: (item: any) => Promise<void>) {
   const nestedNode = vaultNode.group(nodeName, null, false);
@@ -336,26 +339,28 @@ export function createNestedCDDNode(openedViews: {[key: string]: DG.View}, items
         items = itemsStr !== '' ? JSON.parse(itemsStr) as any[] : [];
       } catch (e: any) {
         grok.shell.error(e?.message ?? e);
-        ui.setUpdateIndicator(openedViews[fullNodeName].root, false);
-        ui.empty(openedViews[fullNodeName].root);
-        openedViews[fullNodeName].root.append(ui.divText(`Error`));
+        if (openedView) {
+          ui.setUpdateIndicator(openedView.root, false);
+          ui.empty(openedView.root);
+          openedView.root.append(ui.divText(`Error`));
+        }
       }
     }
   }
   nestedNode.onSelected.subscribe(async () => {
-    openedViews[fullNodeName]?.close();
-    openedViews[fullNodeName] = DG.View.create();
-    openedViews[fullNodeName].path = createPath(vault.name, [nodeName]);
-    grok.shell.addPreview(openedViews[fullNodeName]);
-    ui.setUpdateIndicator(openedViews[fullNodeName].root, true, `Loading ${nodeName}...`);
-    openedViews[fullNodeName].name = nodeName;
+    openedView?.close();
+    openedView = DG.View.create();
+    openedView.path = createPath(vault.name, [nodeName]);
+    grok.shell.addPreview(openedView);
+    ui.setUpdateIndicator(openedView.root, true, `Loading ${nodeName}...`);
+    openedView.name = nodeName;
     setBreadcrumbsInViewName([vault.name, nodeName], treeNode);
     await loadData();
-    const links = items!.length ? createLinks(nodeName, items!.map((it) => it.name), treeNode, openedViews[fullNodeName]) :
+    const links = items!.length ? createLinks(nodeName, items!.map((it) => it.name), treeNode, openedView) :
       ui.divText(`No ${nodeName} found in the vault`);
-    ui.empty(openedViews[fullNodeName].root);
-    openedViews[fullNodeName].append(links);
-    ui.setUpdateIndicator(openedViews[fullNodeName].root, false);
+    ui.empty(openedView.root);
+    openedView.append(links);
+    ui.setUpdateIndicator(openedView.root, false);
     if (!nestedNode.expanded)
       nestedNode.expanded = true;
   });
@@ -380,31 +385,29 @@ export function createPath(vaultName: string, viewName?: string[]) {
   return path;
 }
 
-function updateView(views: {[key: string]: DG.ViewBase}, viewName: string[], viewFullName: string,
-  vaultName: string, treeNode: DG.TreeViewGroup, progressMessage: string, res?: DG.DataFrame) {
-  views[viewFullName]?.close();
-  views[viewFullName] = res ? grok.shell.addTablePreview(res) : grok.shell.addPreview(DG.View.create());
-  views[viewFullName].name = viewName[viewName.length - 1];
-  views[viewFullName].path = createPath(vaultName, viewName);
-  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, views[viewFullName]);
+function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeViewGroup, progressMessage: string, res?: DG.DataFrame) {
+  openedView?.close();
+  openedView = res ? grok.shell.addTablePreview(res) : grok.shell.addPreview(DG.View.create());
+  openedView.name = viewName[viewName.length - 1];
+  openedView.path = createPath(vaultName, viewName);
+  setBreadcrumbsInViewName([vaultName].concat(viewName), treeNode, openedView);
   if (!res)
-    ui.setUpdateIndicator(views[viewFullName].root, true, progressMessage);
+    ui.setUpdateIndicator(openedView.root, true, progressMessage);
 }
 
-export async function createCDDTableView(vaultId: number, views: {[key: string]: DG.View}, viewName: string[], progressMessage: string, funcName: string,
+export async function createCDDTableView(viewName: string[], progressMessage: string, funcName: string,
   funcParams: {[key: string]: any}, vaultName: string, treeNode: DG.TreeViewGroup) {
-  const viewFullName = `${vaultId}|${viewName.join('|')}`;
   try {
-    updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage);
+    updateView(viewName, vaultName, treeNode, progressMessage);
     const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
-    updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage, df);
+    updateView(viewName, vaultName, treeNode, progressMessage, df);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
-    updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
+    updateView(viewName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
   }
 }
 
-export async function createCDDTableViewWithPreview(vaultId: number, views: {[key: string]: DG.ViewBase}, viewName: string[], progressMessage: string, syncfuncName: string,
+export async function createCDDTableViewWithPreview(viewName: string[], progressMessage: string, syncfuncName: string,
   syncfuncParams: {[key: string]: any}, asyncfuncName: string, asyncfuncParams: {[key: string]: any},
   vaultName: string, treeNode: DG.TreeViewGroup) {
 
@@ -414,14 +417,12 @@ export async function createCDDTableViewWithPreview(vaultId: number, views: {[ke
     if (errors === 2) {
       progressBar.close();
       //if both sync and async requests are failed - showing empty dataframe
-      updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
+      updateView(viewName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
     }
   }
-
-  const viewFullName = `${vaultId}|${viewName.join('|')}`;
   let asyncRequestCompleted = false;
   let errors = 0;
-  updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage);
+  updateView(viewName, vaultName, treeNode, progressMessage);
 
   //run sync function with offset and create a preview
   grok.functions.call(syncfuncName, syncfuncParams).then(async (df: DG.DataFrame) => {
@@ -432,7 +433,7 @@ export async function createCDDTableViewWithPreview(vaultId: number, views: {[ke
       asyncRequestCompleted = true; //we will not need async request results
       progressBar.close();
     }
-    updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage, df);
+    updateView(viewName, vaultName, treeNode, progressMessage, df);
   }).catch((e) => {
     handleError(e);
     if (!asyncRequestCompleted)
@@ -443,7 +444,7 @@ export async function createCDDTableViewWithPreview(vaultId: number, views: {[ke
   grok.functions.call(asyncfuncName, asyncfuncParams).then(async (df: DG.DataFrame) => {
     if (asyncRequestCompleted)
       return;
-    updateView(views, viewName, viewFullName, vaultName, treeNode, progressMessage, df);
+    updateView(viewName, vaultName, treeNode, progressMessage, df);
     progressBar.close();
   }).catch((e) => {
     handleError(e);
@@ -576,3 +577,69 @@ export function createInitialSatistics(statsDiv: HTMLDivElement) {
     grok.shell.error(e?.message ?? e);
   })
 }
+
+export function createVaultNode(vault: Vault, treeNode: DG.TreeViewGroup) {
+  openedView?.close();
+  openedView = DG.View.create();
+  openedView.name = vault.name;
+  const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, SEARCH_TAB], treeNode, openedView);
+  openedView.append(tabs);
+  grok.shell.addPreview(openedView);
+  setBreadcrumbsInViewName([vault.name], treeNode, openedView);
+  openedView.path = createPath(vault.name);
+}
+
+export function createSearchNode(vault: Vault, treeNode: DG.TreeViewGroup) {
+  openedView?.close();
+  openedView = DG.View.create();
+  const funcEditor = new SeachEditor(vault.id);
+  const acc = funcEditor.getEditor();
+  let df: DG.DataFrame | null = null;
+  const runButton = ui.bigButton('SEARCH', async () => {
+    ui.setUpdateIndicator(gridDiv, true);
+    const params = funcEditor.getParams();
+    df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
+      {
+        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
+      });
+    ui.empty(gridDiv);
+    if (df) {
+      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
+      const run = params.run ? `, run: ${params.run}` : '';
+      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
+        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
+
+      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
+      gridDiv.append(df.plot.grid().root);
+    }
+    ui.setUpdateIndicator(gridDiv, false);
+  });
+  const gridDiv = ui.div('', 'cdd-vault-search-res-div');
+  runButton.classList.add('cdd-vault-run-search-button');
+
+  const addToWorkspaceButton = ui.icons.add(() => {
+    if (df)
+      grok.shell.addTablePreview(df);
+  }, 'Add results to workspace');
+  openedView.setRibbonPanels([[addToWorkspaceButton]]);
+  openedView.name = 'Search CDD Vault'
+  openedView.root.append(ui.divV([
+    acc,
+    runButton,
+    gridDiv
+  ], { style: { height: '100%' } }));
+  grok.shell.addPreview(openedView);
+  setBreadcrumbsInViewName([vault.name, SEARCH_TAB], treeNode, openedView);
+  openedView.path = createPath(vault.name, [SEARCH_TAB]);
+}
+
+export function addNodeWithEmptyResults(name: string, warningMessage?: string) {
+  openedView?.close();
+  const df = DG.DataFrame.create();
+  df.name = name;
+  openedView = grok.shell.addTablePreview(DG.DataFrame.create());
+  if (warningMessage)
+    grok.shell.warning(warningMessage);
+}
+
