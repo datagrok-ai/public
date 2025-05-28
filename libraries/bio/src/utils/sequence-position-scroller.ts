@@ -12,7 +12,7 @@ import * as grok from 'datagrok-api/grok';
 
 // Layout Constants
 const LAYOUT_CONSTANTS = {
-  TITLE_HEIGHT: 12,
+  TITLE_HEIGHT: 16,
   TRACK_GAP: 4,
   DOTTED_CELL_HEIGHT: 30,
   SLIDER_HEIGHT: 8,
@@ -34,6 +34,7 @@ const WEBLOGO_CONSTANTS = {
 // Typography Constants
 const FONTS = {
   TITLE: 'bold 10px sans-serif',
+  COLUMN_TITLE: 'bold 13px sans-serif',
   POSITION_LABELS: '12px monospace',
   CONSERVATION_TEXT: '9px monospace',
   TOOLTIP_MAIN: '13px',
@@ -130,7 +131,7 @@ export abstract class MSAHeaderTrack {
     title: string = '') {
     this.height = height;
     this.defaultHeight = height;
-    this.minHeight = minHeight + (title ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0);
+    this.minHeight = minHeight;
     this.title = title;
   }
 
@@ -200,19 +201,6 @@ export abstract class MSAHeaderTrack {
 
   getTitle(): string {
     return this.title;
-  }
-
-  /**
-   * Draw track title
-   */
-  protected drawTitle(x: number, y: number, width: number): void {
-    if (!this.ctx || !this.title) return;
-
-    this.ctx.fillStyle = COLORS.TITLE_TEXT;
-    this.ctx.font = FONTS.TITLE;
-    this.ctx.textAlign = 'left';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillText(this.title, x + 5, y + 2);
   }
 
   /**
@@ -343,20 +331,16 @@ export class WebLogoTrack extends MSAHeaderTrack {
     const residueFreqs = this.data.get(position);
     if (!residueFreqs || residueFreqs.size === 0) return null;
 
-    const titleHeight = LAYOUT_CONSTANTS.TITLE_HEIGHT + 2;
-    if (y < titleHeight) return null;
-
+    // No title offset needed since we don't draw titles in tracks anymore
+    const relativeY = y;
     const sortedResidues = Array.from(residueFreqs.entries()).sort((a, b) => b[1] - a[1]);
-    const relativeY = y - titleHeight;
     const totalFreq = sortedResidues.reduce((sum, [_, freq]) => sum + freq, 0);
-    const columnHeight = this.height - titleHeight;
-
+    const columnHeight = this.height;
     let currentY = 0;
     for (const [residue, freq] of sortedResidues) {
       const letterHeight = freq * columnHeight / totalFreq;
       if (relativeY >= currentY && relativeY < currentY + letterHeight)
         return residue;
-
       currentY += letterHeight;
     }
 
@@ -375,12 +359,9 @@ export class WebLogoTrack extends MSAHeaderTrack {
     positionWidth: number, totalPositions: number, currentPosition: number): void {
     if (!this.ctx || !this.visible || this.data.size === 0) return;
 
-    this.drawTitle(x, y, width);
-
     const visiblePositionsN = Math.floor(width / positionWidth);
-    const logoHeight = height - WEBLOGO_CONSTANTS.PADDING * 2;
-    const effectiveLogoHeight = logoHeight - LAYOUT_CONSTANTS.TITLE_HEIGHT - 2;
-    const columnY = y + LAYOUT_CONSTANTS.TITLE_HEIGHT + WEBLOGO_CONSTANTS.PADDING;
+    const effectiveLogoHeight = height - WEBLOGO_CONSTANTS.PADDING * 2;
+    const columnY = y + WEBLOGO_CONSTANTS.PADDING;
 
     for (let i = 0; i < visiblePositionsN; i++) {
       this.drawWebLogoColumn(i, x, y, width, height, windowStart, positionWidth,
@@ -496,7 +477,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private getMonomerBackgroundColor(letter: string): string {
     if (this.monomerLib) {
       try {
-        // First try to get the colors from monomer library
         const colors = this.monomerLib.getMonomerColors(this.biotype, letter);
         if (colors && colors.backgroundcolor)
           return colors.backgroundcolor;
@@ -504,8 +484,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
         console.warn('Error getting background color from monomerLib:', e);
       }
     }
-
-    // Fallback to default gray if no monomer library or color not found
     return '#CCCCCC';
   }
 
@@ -513,13 +491,12 @@ export class WebLogoTrack extends MSAHeaderTrack {
     const backgroundColor = this.getMonomerBackgroundColor(letter);
 
     try {
-      // Use DG.Color for automatic contrast calculation
       const backgroundColorInt = DG.Color.fromHtml(backgroundColor);
       const contrastColorInt = DG.Color.getContrastColor(backgroundColorInt);
       return DG.Color.toHtml(contrastColorInt);
     } catch (e) {
       console.warn('Error calculating contrast color:', e);
-      return '#000000'; // Safe fallback to black
+      return '#000000';
     }
   }
 }
@@ -553,10 +530,6 @@ export class ConservationTrack extends MSAHeaderTrack {
     positionWidth: number, totalPositions: number, currentPosition: number): void {
     if (!this.ctx || !this.visible || this.data.length === 0) return;
 
-    this.drawTitle(x, y, width);
-
-    const barplotTop = y + LAYOUT_CONSTANTS.TITLE_HEIGHT;
-    const barplotHeight = height - LAYOUT_CONSTANTS.TITLE_HEIGHT;
     const visiblePositionsN = Math.floor(width / positionWidth);
 
     for (let i = 0; i < visiblePositionsN; i++) {
@@ -568,11 +541,11 @@ export class ConservationTrack extends MSAHeaderTrack {
       const cellCenterX = posX + cellWidth / 2;
 
       if (position - 1 < this.data.length) {
-        this.drawConservationBar(position - 1, posX, cellWidth, cellCenterX, barplotTop, barplotHeight);
+        this.drawConservationBar(position - 1, posX, cellWidth, cellCenterX, y, height);
 
         if (position === currentPosition) {
           this.ctx.fillStyle = COLORS.SELECTION_HIGHLIGHT;
-          this.ctx.fillRect(posX, barplotTop, cellWidth, barplotHeight);
+          this.ctx.fillRect(posX, y, cellWidth, height);
         }
       }
     }
@@ -701,22 +674,46 @@ export class MSAScrollingHeader {
    * Check if the track selector should be shown
    */
   private shouldShowTrackSelector(): boolean {
-    // Don't show if no tracks or all tracks are visible
     const visibleTracks = Array.from(this.tracks.values()).filter((track) => track.isVisible());
     const allTracksVisible = visibleTracks.length === this.tracks.size;
-
     return this.tracks.size > 0 && (!allTracksVisible || this.userSelectedTracks !== null);
   }
 
   /**
-   * Check if a point is within the track selector bounds
+   * Check if a point is within the track selector bounds (with generous buffer)
    */
   private isInTrackSelector(x: number, y: number): boolean {
     const bounds = this.getTrackSelectorBounds();
     if (!bounds) return false;
 
-    return x >= bounds.x && x <= bounds.x + bounds.width &&
-           y >= bounds.y && y <= bounds.y + bounds.height;
+    // Very generous buffer area
+    const buffer = 30;
+    return x >= bounds.x - buffer && x <= bounds.x + bounds.width + buffer &&
+           y >= bounds.y - buffer && y <= bounds.y + bounds.height + buffer;
+  }
+
+  /**
+   * Draw the column title (shown when above threshold 1)
+   */
+  private drawColumnTitle(x: number, y: number, width: number, columnName: string): void {
+    if (!this.ctx || !columnName) return;
+
+    // Calculate threshold 1: when we start showing centered title
+    const fixedHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const threshold1 = fixedHeight + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+
+    if (this.config.headerHeight >= threshold1) {
+      // Clear title area
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      this.ctx.fillRect(x, y, width, LAYOUT_CONSTANTS.TITLE_HEIGHT);
+
+      // Draw centered title
+      this.ctx.fillStyle = COLORS.TITLE_TEXT;
+      this.ctx.font = FONTS.COLUMN_TITLE;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(columnName, x + width / 2, y + LAYOUT_CONSTANTS.TITLE_HEIGHT / 2);
+    }
   }
 
   /**
@@ -728,7 +725,6 @@ export class MSAScrollingHeader {
     const bounds = this.getTrackSelectorBounds();
     if (!bounds) return;
 
-    // Adjust bounds to be relative to the canvas translation
     const x = bounds.x - this.config.x;
     const y = bounds.y - this.config.y;
 
@@ -754,6 +750,7 @@ export class MSAScrollingHeader {
       this.ctx.stroke();
     }
   }
+
   private closeTrackSelector(): void {
     if (this.trackSelectorPopup) {
       this.trackSelectorPopup.remove();
@@ -766,13 +763,11 @@ export class MSAScrollingHeader {
    * Show track selector menu
    */
   private showTrackSelectorMenu(x: number, y: number): void {
-    // Close if already open
     if (this.isTrackSelectorOpen) {
       this.closeTrackSelector();
       return;
     }
 
-    // Create popup container
     this.trackSelectorPopup = ui.div([], {
       style: {
         position: 'fixed',
@@ -835,7 +830,7 @@ export class MSAScrollingHeader {
       this.trackSelectorPopup!.appendChild(label);
     });
 
-    // Add separator
+    // Add separator and reset option
     const separator = ui.div([], {
       style: {
         height: '1px',
@@ -845,7 +840,6 @@ export class MSAScrollingHeader {
     });
     this.trackSelectorPopup.appendChild(separator);
 
-    // Add reset option
     const resetBtn = ui.div([ui.divText('Reset to Auto')], {
       style: {
         padding: '4px 12px',
@@ -864,7 +858,6 @@ export class MSAScrollingHeader {
     });
     this.trackSelectorPopup.appendChild(resetBtn);
 
-    // Add to document
     document.body.appendChild(this.trackSelectorPopup);
     this.isTrackSelectorOpen = true;
 
@@ -885,7 +878,6 @@ export class MSAScrollingHeader {
    */
   private toggleTrackVisibility(trackId: string): void {
     if (!this.userSelectedTracks) {
-      // Initialize user selections from current state
       this.userSelectedTracks = {};
       this.tracks.forEach((track, id) => {
         this.userSelectedTracks![id] = track.isVisible();
@@ -901,47 +893,41 @@ export class MSAScrollingHeader {
    */
   private resetTrackVisibility(): void {
     this.userSelectedTracks = null;
-    // Trigger a redraw which will use automatic visibility
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-    ));
+    window.requestAnimationFrame(() => this.redraw());
   }
 
   /**
-   * Apply user-selected track visibility and adjust header height
+   * Apply user-selected track visibility
    */
   private applyUserTrackVisibility(): void {
     if (!this.userSelectedTracks) return;
 
     // Calculate required height
     let requiredHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
-    let firstVisibleTrack = true;
+    const hasVisibleTracks = Object.values(this.userSelectedTracks).some((visible) => visible);
 
-    this.tracks.forEach((track, id) => {
-      if (this.userSelectedTracks![id]) {
-        if (!firstVisibleTrack)
-          requiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
+    if (hasVisibleTracks) {
+      requiredHeight += LAYOUT_CONSTANTS.TITLE_HEIGHT; // Add space for column title
+      let firstVisibleTrack = true;
 
-        requiredHeight += track.getDefaultHeight();
-        firstVisibleTrack = false;
-      }
-    });
+      this.tracks.forEach((track, id) => {
+        if (this.userSelectedTracks![id]) {
+          if (!firstVisibleTrack) requiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
+          requiredHeight += track.getDefaultHeight();
+          firstVisibleTrack = false;
+        }
+      });
+    }
 
-    // Update header height
     if (this.config.onHeaderHeightChange)
       this.config.onHeaderHeightChange(requiredHeight);
 
 
-    // Trigger a redraw
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-    ));
+    window.requestAnimationFrame(() => this.redraw());
   }
 
   /**
-   * Clear hover states for all tracks. Only triggers redraw if there was an active hover state.
+   * Clear hover states for all tracks
    */
   private clearHoverStates(): void {
     const hasHoverState = this.previousHoverPosition !== -1 ||
@@ -958,11 +944,16 @@ export class MSAScrollingHeader {
           track.setHovered(-1, null);
       });
 
-      window.requestAnimationFrame(() => this.draw(
-        this.config.x, this.config.y, this.config.width, this.config.height,
-        this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-      ));
+      window.requestAnimationFrame(() => this.redraw());
     }
+  }
+
+  private redraw(): void {
+    this.draw(
+      this.config.x, this.config.y, this.config.width, this.config.height,
+      this.config.currentPosition, this.config.windowStartPosition,
+      {preventDefault: () => {}}, this.seqColumn?.name
+    );
   }
 
   public setSelectionData(dataFrame: DG.DataFrame, seqColumn: DG.Column<string>, seqHandler: any,
@@ -979,27 +970,21 @@ export class MSAScrollingHeader {
   }
 
   /**
-   * Handle mouse movement for tooltips and hover effects.
-   * Only triggers redraws when hover state actually changes to prevent flickering.
+   * Simplified mouse move handler
    */
   private handleTooltipMouseMove(e: MouseEvent): void {
     if (!this.isValid) return;
 
-    const {x, y} = this.getCoords(e);
-
-    // Check if hovering over track selector
-    const bounds = this.getTrackSelectorBounds();
     const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
     const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
+
+    // Check track selector hover
     const wasHoveringSelector = this.isHoveringTrackSelector;
     this.isHoveringTrackSelector = this.isInTrackSelector(absoluteX, absoluteY);
 
-    if (wasHoveringSelector !== this.isHoveringTrackSelector) {
-      window.requestAnimationFrame(() => this.draw(
-        this.config.x, this.config.y, this.config.width, this.config.height,
-        this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-      ));
-    }
+    if (wasHoveringSelector !== this.isHoveringTrackSelector)
+      window.requestAnimationFrame(() => this.redraw());
+
 
     if (this.isHoveringTrackSelector) {
       this.hideTooltip();
@@ -1007,6 +992,8 @@ export class MSAScrollingHeader {
       return;
     }
 
+    // Handle track hovering
+    const {x, y} = this.getCoords(e);
     const cellWidth = this.config.positionWidth;
     const hoveredCellIndex = Math.floor(x / cellWidth);
     const windowStart = this.config.windowStartPosition;
@@ -1018,17 +1005,21 @@ export class MSAScrollingHeader {
       return;
     }
 
+    // Calculate track areas using same threshold logic
+    const fixedHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const threshold1 = fixedHeight + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+    const titleHeight = this.config.headerHeight >= threshold1 ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
     const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
 
-    if (y >= dottedCellsTop) {
+    if (y >= dottedCellsTop || y < titleHeight) {
       this.hideTooltip();
       this.clearHoverStates();
       return;
     }
 
-    // Find which track is being hovered
-    let trackY = 0;
+    // Find hovered track
+    let trackY = titleHeight;
     let hoveredTrackId: string | null = null;
     let trackRelativeY = 0;
 
@@ -1053,7 +1044,7 @@ export class MSAScrollingHeader {
         currentHoverMonomer = track.getMonomerAt(x, trackRelativeY, hoveredPosition);
     }
 
-    // Only update and redraw if the hover state has actually changed
+    // Update hover state if changed
     const hoverStateChanged = (
       this.previousHoverPosition !== hoveredPosition ||
       this.previousHoverTrack !== hoveredTrackId ||
@@ -1069,16 +1060,12 @@ export class MSAScrollingHeader {
         const track = this.tracks.get(hoveredTrackId);
         if (track instanceof WebLogoTrack) {
           track.setHovered(hoveredPosition, currentHoverMonomer);
-
-          window.requestAnimationFrame(() => this.draw(
-            this.config.x, this.config.y, this.config.width, this.config.height,
-            this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-          ));
+          window.requestAnimationFrame(() => this.redraw());
         }
       }
     }
 
-    // Handle tooltip updates
+    // Handle tooltips
     if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack) {
       this.currentHoverPosition = hoveredPosition;
       this.currentHoverTrack = hoveredTrackId;
@@ -1104,11 +1091,11 @@ export class MSAScrollingHeader {
   private handleTooltipMouseLeave(): void {
     this.hideTooltip();
     this.clearHoverStates();
-    this.isHoveringTrackSelector = false;
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-    ));
+
+    if (!this.isTrackSelectorOpen) {
+      this.isHoveringTrackSelector = false;
+      window.requestAnimationFrame(() => this.redraw());
+    }
   }
 
   private hideTooltip(): void {
@@ -1118,258 +1105,95 @@ export class MSAScrollingHeader {
   }
 
   /**
-   * Handle clicks for monomer selection
-   */
-  private handleSelectionClick(e: MouseEvent): void {
-    if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
-
-    const {x, y} = this.getCoords(e);
-    const cellWidth = this.config.positionWidth;
-    const clickedCellIndex = Math.floor(x / cellWidth);
-    const windowStart = this.config.windowStartPosition;
-    const clickedPosition = windowStart + clickedCellIndex - 1;
-
-    if (clickedPosition < 0 || clickedPosition >= this.config.totalPositions) return;
-
-    const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
-    const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
-
-    if (y >= dottedCellsTop) return;
-
-    // Find which track was clicked
-    let trackY = 0;
-    let clickedTrackId: string | null = null;
-    let trackRelativeY = 0;
-
-    for (const [id, track] of this.tracks.entries()) {
-      if (!track.isVisible()) continue;
-
-      const trackHeight = track.getHeight();
-      if (y >= trackY && y < trackY + trackHeight) {
-        clickedTrackId = id;
-        trackRelativeY = y - trackY;
-        break;
-      }
-
-      trackY += trackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
-    }
-
-    if (clickedTrackId) {
-      const track = this.tracks.get(clickedTrackId);
-      if (track) {
-        const monomer = track.getMonomerAt(x, trackRelativeY, clickedPosition);
-
-        if (monomer) {
-          if (this.onSelectionCallback) {
-            this.onSelectionCallback(clickedPosition, monomer);
-            return;
-          }
-
-          this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
-        }
-      }
-    }
-  }
-
-  private selectRowsWithMonomerAtPosition(position: number, monomer: string): void {
-    if (!this.dataFrame || !this.seqHandler) return;
-
-    try {
-      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
-        const seqSplitted = this.seqHandler.getSplitted(rowI);
-        if (!seqSplitted || position >= seqSplitted.length) return false;
-
-        const residue = seqSplitted.getCanonical(position);
-        return residue === monomer;
-      });
-
-      this.dataFrame.selection.init((i) => selBS.get(i));
-    } catch (error) {
-      console.error('Error selecting rows:', error);
-    }
-  }
-
-  private setupEventListeners(): void {
-    this.eventElement.addEventListener('mousemove', (e) => {
-      if (!this.isValid) return;
-
-      const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
-      const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
-
-      if (this.isInTrackSelector(absoluteX, absoluteY)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
-      else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else this.eventElement.style.cursor = 'default';
-    });
-
-    this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
-    this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
-    this.eventElement.addEventListener('click', this.handleClick.bind(this));
-    this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
-    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
-
-    window.addEventListener('keydown', this.handleKeyDown.bind(this));
-  }
-
-  private init(): void {
-    this.canvas = this.config.canvas;
-    if (!this.canvas) {
-      console.error('Canvas not found');
-      return;
-    }
-
-    const context = this.canvas.getContext('2d');
-    if (!context) {
-      console.error('Failed to get 2D context from canvas');
-      return;
-    }
-    this.ctx = context;
-
-    this.tracks.forEach((track) => track.init(context));
-  }
-
-  public addTrack(id: string, track: MSAHeaderTrack): void {
-    if (this.ctx) track.init(this.ctx);
-    this.tracks.set(id, track);
-  }
-
-  public removeTrack(id: string): void {
-    this.tracks.delete(id);
-  }
-
-  public getTrack<T extends MSAHeaderTrack>(id: string): T | undefined {
-    return this.tracks.get(id) as T | undefined;
-  }
-
-  public updateTrack<T extends MSAHeaderTrack>(id: string, updater: (track: T) => void): void {
-    const track = this.getTrack<T>(id);
-    if (track) updater(track);
-  }
-
-  public get isValid() {
-    return !!this.canvas && !!this.ctx &&
-           this.config.height >= LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
-  }
-
-  private calculateTotalTracksHeight(): number {
-    let totalHeight = 0;
-    let firstTrack = true;
-
-    this.tracks.forEach((track) => {
-      if (track.isVisible()) {
-        if (!firstTrack) totalHeight += LAYOUT_CONSTANTS.TRACK_GAP;
-        else firstTrack = false;
-        totalHeight += track.getHeight();
-      }
-    });
-
-    return totalHeight;
-  }
-
-  /**
-   * Determine visible tracks based on available height and distribute extra space
+   * Determine visible tracks based on stepped height thresholds
    */
   private determineVisibleTracks(): void {
-    // If user has manually selected tracks, use those preferences
     if (this.userSelectedTracks) {
+      // Use user-selected track visibility
       this.tracks.forEach((track, id) => {
         track.setVisible(this.userSelectedTracks![id] || false);
-        track.resetHeight(); // Use default heights
+        track.resetHeight();
       });
       return;
     }
 
-    // Otherwise, use automatic visibility determination
-    const availableHeight = this.config.headerHeight -
-                           (LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP);
+    // Calculate height thresholds
+    const fixedHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 
-    if (availableHeight <= 0) {
-      this.tracks.forEach((track) => track.setVisible(false));
-      return;
-    }
+    // Threshold 1: Just dotted cells + centered title
+    const threshold1 = fixedHeight + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
 
-    const DEFAULT_HEIGHTS = {'weblogo': 45, 'conservation': 45};
+    // Threshold 2: Add WebLogo track
+    const threshold2 = threshold1 + 45 + LAYOUT_CONSTANTS.TRACK_GAP;
 
-    this.tracks.forEach((track, id) => {
-      const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || track.getDefaultHeight();
-      track.setHeight(defaultHeight);
+    // Threshold 3: Add Conservation track
+    const threshold3 = threshold2 + 45 + LAYOUT_CONSTANTS.TRACK_GAP;
+
+    // Reset all tracks to invisible first
+    this.tracks.forEach((track) => {
+      track.setVisible(false);
+      track.resetHeight();
     });
 
-    const prioritizedTracks = Array.from(this.tracks.entries())
-      .map(([id, track]) => ({id, track}))
-      .sort((a, b) => {
-        const priorityA = a.id === 'weblogo' ? 2 : (a.id === 'conservation' ? 1 : 0);
-        const priorityB = b.id === 'weblogo' ? 2 : (b.id === 'conservation' ? 1 : 0);
-        return priorityB - priorityA;
-      });
+    const currentHeight = this.config.headerHeight;
 
-    let minRequiredHeight = 0;
-    let trackCount = 0;
-
-    for (const {track} of prioritizedTracks) {
-      if (trackCount > 0) minRequiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
-      minRequiredHeight += track.getMinHeight();
-      trackCount++;
+    if (currentHeight < threshold1) {
+      // Below threshold 1: no tracks, no centered title
+      return;
     }
 
-    if (minRequiredHeight <= availableHeight) {
-      prioritizedTracks.forEach(({track}) => track.setVisible(true));
+    if (currentHeight >= threshold1 && currentHeight < threshold2) {
+      // Threshold 1: dotted cells + centered title only
+      return;
+    }
+
+    if (currentHeight >= threshold2 && currentHeight < threshold3) {
+      // Threshold 2: add WebLogo track (fixed height)
+      const webLogoTrack = this.getTrack('weblogo');
+      if (webLogoTrack) {
+        webLogoTrack.setVisible(true);
+        webLogoTrack.setHeight(45);
+      }
+      return;
+    }
+
+    if (currentHeight >= threshold3) {
+      // Threshold 3+: add both tracks
+      const webLogoTrack = this.getTrack('weblogo');
+      const conservationTrack = this.getTrack('conservation');
+
+      if (webLogoTrack) {
+        webLogoTrack.setVisible(true);
+        webLogoTrack.setHeight(45);
+      }
+
+      if (conservationTrack) {
+        conservationTrack.setVisible(true);
+        conservationTrack.setHeight(45);
+      }
 
       // Distribute extra space to WebLogo track
-      const extraSpace = availableHeight - minRequiredHeight;
-      const webLogoTrack = this.getTrack('weblogo');
+      const usedHeight = threshold3;
+      const extraSpace = currentHeight - usedHeight;
 
-      if (webLogoTrack && extraSpace > 0) {
-        const currentHeight = webLogoTrack.getHeight();
-        webLogoTrack.setHeight(currentHeight + extraSpace);
-      }
-    } else {
-      this.tracks.forEach((track) => track.setVisible(false));
-
-      let remainingHeight = availableHeight;
-      let isFirstTrack = true;
-
-      for (const {id, track} of prioritizedTracks) {
-        const minTrackHeight = track.getMinHeight();
-        const spaceNeeded = isFirstTrack ? minTrackHeight : minTrackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
-
-        if (remainingHeight >= spaceNeeded) {
-          track.setVisible(true);
-          const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || minTrackHeight;
-          track.setHeight(defaultHeight);
-
-          remainingHeight -= spaceNeeded;
-          isFirstTrack = false;
-        } else
-          track.setVisible(false);
-      }
+      if (webLogoTrack && extraSpace > 0)
+        webLogoTrack.setHeight(45 + extraSpace);
     }
   }
 
   public draw(x: number, y: number, w: number, h: number, currentPos: number,
-    scrollerStart: number, preventable: Preventable): void {
-    const heightChanged = this.config.height !== h;
-
-    if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h ||
-        this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart) {
-      Object.assign(this.config, {
-        x, y, width: w, height: h,
-        currentPosition: currentPos,
-        windowStartPosition: scrollerStart
-      });
-    }
+    scrollerStart: number, preventable: Preventable, columnName?: string): void {
+    // Update config
+    Object.assign(this.config, {
+      x, y, width: w, height: h,
+      currentPosition: currentPos,
+      windowStartPosition: scrollerStart
+    });
 
     if (!this.isValid) {
       this.eventElement.style.display = 'none';
       return;
     }
-
-    if (heightChanged)
-      this.tracks.forEach((track) => track.resetHeight());
-
 
     this.ctx!.save();
     this.ctx!.clearRect(x, y, w, h);
@@ -1379,30 +1203,37 @@ export class MSAScrollingHeader {
 
     this.determineVisibleTracks();
 
+    // Calculate whether to show title based on threshold
+    const fixedHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const threshold1 = fixedHeight + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+    const showTitle = this.config.headerHeight >= threshold1;
+    const titleHeight = showTitle ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+
+    if (columnName && showTitle)
+      this.drawColumnTitle(0, 0, w, columnName);
+
+
+    // Calculate layout
     const sliderTop = h - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
     const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
-    const totalTracksHeight = this.calculateTotalTracksHeight();
 
-    let trackY = Math.max(0, dottedCellsTop - totalTracksHeight - LAYOUT_CONSTANTS.TRACK_GAP);
+    // Draw tracks
+    let trackY = titleHeight;
     const visibleTrackPositions: { y: number, height: number }[] = [];
 
-    // Get visible tracks in correct order
+    // Get visible tracks in order
     const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
     const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
     if (conservationTrack && conservationTrack.isVisible())
       visibleTracks.push({id: 'conservation', track: conservationTrack});
 
-
     const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
     if (webLogoTrack && webLogoTrack.isVisible())
       visibleTracks.push({id: 'weblogo', track: webLogoTrack});
 
-
-    // Draw tracks
     for (const {track} of visibleTracks) {
       if (track.isVisible()) {
         const trackHeight = track.getHeight();
-
         track.draw(0, trackY, w, trackHeight, this.config.windowStartPosition,
           this.config.positionWidth, this.config.totalPositions, this.config.currentPosition);
 
@@ -1411,6 +1242,7 @@ export class MSAScrollingHeader {
       }
     }
 
+    // Draw dotted cells
     this.drawDottedCells(0, dottedCellsTop, w, LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT, sliderTop);
     visibleTrackPositions.push({y: dottedCellsTop, height: LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT});
 
@@ -1439,7 +1271,7 @@ export class MSAScrollingHeader {
       }
     }
 
-    // Draw track selector icon
+    // Draw track selector
     this.drawTrackSelector();
 
     this.ctx!.restore();
@@ -1487,7 +1319,7 @@ export class MSAScrollingHeader {
       this.ctx.arc(cellCenterX, posIndexTop + 5, 1, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Draw position number for every 10th position or current position
+      // Draw position number
       if (position === currentPosition || ((position === 1 || position % 10 === 0) &&
           Math.abs(position - currentPosition) > 1)) {
         this.ctx.fillStyle = COLORS.TITLE_TEXT;
@@ -1587,6 +1419,143 @@ export class MSAScrollingHeader {
 
     return y > sliderTop && y < sliderTop + LAYOUT_CONSTANTS.SLIDER_HEIGHT &&
            x >= sliderStartPX && x < sliderStartPX + this.sliderWidth;
+  }
+
+  private setupEventListeners(): void {
+    this.eventElement.addEventListener('mousemove', (e) => {
+      if (!this.isValid) return;
+
+      const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
+      const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
+
+      if (this.isInTrackSelector(absoluteX, absoluteY)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
+      else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else this.eventElement.style.cursor = 'default';
+    });
+
+    this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('click', this.handleClick.bind(this));
+    this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
+    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
+
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
+  private handleSelectionClick(e: MouseEvent): void {
+    if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
+
+    const {x, y} = this.getCoords(e);
+    const cellWidth = this.config.positionWidth;
+    const clickedCellIndex = Math.floor(x / cellWidth);
+    const windowStart = this.config.windowStartPosition;
+    const clickedPosition = windowStart + clickedCellIndex - 1;
+
+    if (clickedPosition < 0 || clickedPosition >= this.config.totalPositions) return;
+
+    const fixedHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const threshold1 = fixedHeight + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+    const titleHeight = this.config.headerHeight >= threshold1 ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+    const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
+
+    if (y >= dottedCellsTop || y < titleHeight) return;
+
+    // Find clicked track
+    let trackY = titleHeight;
+    let clickedTrackId: string | null = null;
+    let trackRelativeY = 0;
+
+    for (const [id, track] of this.tracks.entries()) {
+      if (!track.isVisible()) continue;
+
+      const trackHeight = track.getHeight();
+      if (y >= trackY && y < trackY + trackHeight) {
+        clickedTrackId = id;
+        trackRelativeY = y - trackY;
+        break;
+      }
+
+      trackY += trackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
+    }
+
+    if (clickedTrackId) {
+      const track = this.tracks.get(clickedTrackId);
+      if (track) {
+        const monomer = track.getMonomerAt(x, trackRelativeY, clickedPosition);
+
+        if (monomer) {
+          if (this.onSelectionCallback) {
+            this.onSelectionCallback(clickedPosition, monomer);
+            return;
+          }
+
+          this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
+        }
+      }
+    }
+  }
+
+  private selectRowsWithMonomerAtPosition(position: number, monomer: string): void {
+    if (!this.dataFrame || !this.seqHandler) return;
+
+    try {
+      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
+        const seqSplitted = this.seqHandler.getSplitted(rowI);
+        if (!seqSplitted || position >= seqSplitted.length) return false;
+
+        const residue = seqSplitted.getCanonical(position);
+        return residue === monomer;
+      });
+
+      this.dataFrame.selection.init((i) => selBS.get(i));
+    } catch (error) {
+      console.error('Error selecting rows:', error);
+    }
+  }
+
+  private init(): void {
+    this.canvas = this.config.canvas;
+    if (!this.canvas) {
+      console.error('Canvas not found');
+      return;
+    }
+
+    const context = this.canvas.getContext('2d');
+    if (!context) {
+      console.error('Failed to get 2D context from canvas');
+      return;
+    }
+    this.ctx = context;
+
+    this.tracks.forEach((track) => track.init(context));
+  }
+
+  public addTrack(id: string, track: MSAHeaderTrack): void {
+    if (this.ctx) track.init(this.ctx);
+    this.tracks.set(id, track);
+  }
+
+  public removeTrack(id: string): void {
+    this.tracks.delete(id);
+  }
+
+  public getTrack<T extends MSAHeaderTrack>(id: string): T | undefined {
+    return this.tracks.get(id) as T | undefined;
+  }
+
+  public updateTrack<T extends MSAHeaderTrack>(id: string, updater: (track: T) => void): void {
+    const track = this.getTrack<T>(id);
+    if (track) updater(track);
+  }
+
+  public get isValid() {
+    return !!this.canvas && !!this.ctx &&
+           this.config.height >= LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
   }
 
   private handleMouseDown(e: MouseEvent): void {

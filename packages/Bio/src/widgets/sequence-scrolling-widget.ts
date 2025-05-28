@@ -493,7 +493,6 @@ export function handleSequenceHeaderRendering() {
             const start = getStart();
             const startPadding = isMSA ? 0 : 4;
 
-            // Draw the header
             scroller.draw(
               cellBounds.x + startPadding,
               cellBounds.y,
@@ -501,7 +500,8 @@ export function handleSequenceHeaderRendering() {
               cellBounds.height,
               getCurrent(),
               start,
-              e
+              e,
+              seqCol.name // Add the column name parameter
             );
           }));
         };
