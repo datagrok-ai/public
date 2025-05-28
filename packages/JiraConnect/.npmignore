@@ -27,4 +27,6 @@ node_modules/
 
 
 **/*.d.ts
-**/*.js.map
+**/*.js
+
+!src/package-api.d.ts
