@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.43.6 (2025-05-28)
+
+Compute2 related typings tweak
+
 ## 1.43.5 (2025-05-12)
 
 In-webworkers sensitivity analysis for Diff Studio based models
