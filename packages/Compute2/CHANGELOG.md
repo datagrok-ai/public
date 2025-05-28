@@ -1,5 +1,10 @@
 # Compute2 changelog
 
+## 1.3.4 (2025-05-28)
+
+- Vue and vueuse versions Bump
+- Help tweaks
+
 ## 1.3.3 (2025-05-21)
 
 - Fix step reordering ui sync
