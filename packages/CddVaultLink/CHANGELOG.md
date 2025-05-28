@@ -1,5 +1,10 @@
 # CDD Vault Link changelog
 
+## 1.0.4 (2025-05-28)
+
+* Some UI fixes
+* Having only one view opened in a preview at once
+
 ## 1.0.3 (2025-05-22)
 
 * Cache fixes
