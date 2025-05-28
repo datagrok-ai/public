@@ -231,14 +231,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private hoveredPosition: number = -1;
   private hoveredMonomer: string | null = null;
 
-  // Fallback color scheme if monomerLib doesn't work
-  private readonly aminoAcidColors: Record<string, string> = {
-    'A': '#80a0f0', 'R': '#f01505', 'N': '#00ff00', 'D': '#c048c0', 'C': '#f08080',
-    'Q': '#00ff00', 'E': '#c048c0', 'G': '#f09048', 'H': '#15a4a4', 'I': '#80a0f0',
-    'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
-    'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
-  };
-
   constructor(data: Map<number, Map<string, number>> = new Map(),
     height: number = LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT,
     _colorScheme: string = '',
@@ -306,10 +298,13 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
   private createFrequencyCell(residue: string, freq: number): HTMLElement {
+    const backgroundColor = this.getMonomerBackgroundColor(residue);
+    const textColor = this.getMonomerTextColor(residue);
+
     const cellDiv = ui.div([], {
       style: {
-        backgroundColor: this.getMonomerTextColorForBackground(residue),
-        color: this.getContrastColor(this.getMonomerTextColorForBackground(residue)),
+        backgroundColor: backgroundColor,
+        color: textColor,
         textAlign: 'center',
         padding: '4px 2px',
         borderRadius: '2px',
@@ -454,8 +449,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private drawLetter(letter: string, x: number, y: number, width: number, height: number, isHovered: boolean = false): void {
     if (!this.ctx) return;
 
-    const backgroundColor = this.getMonomerTextColorForBackground(letter);
-    const textColor = this.getContrastColor(backgroundColor);
+    const backgroundColor = this.getMonomerBackgroundColor(letter);
+    const textColor = this.getMonomerTextColor(letter);
 
     // Fill background
     this.ctx.fillStyle = backgroundColor;
@@ -498,49 +493,33 @@ export class WebLogoTrack extends MSAHeaderTrack {
     }
   }
 
-  private getMonomerTextColorForBackground(letter: string): string {
-    if (this.monomerLib && typeof this.monomerLib.getMonomerTextColor === 'function') {
+  private getMonomerBackgroundColor(letter: string): string {
+    if (this.monomerLib) {
       try {
-        const textColor = this.monomerLib.getMonomerTextColor(this.biotype, letter);
-        if (textColor) return textColor;
+        // First try to get the colors from monomer library
+        const colors = this.monomerLib.getMonomerColors(this.biotype, letter);
+        if (colors && colors.backgroundcolor)
+          return colors.backgroundcolor;
       } catch (e) {
-        console.warn('Error getting text color from monomerLib:', e);
+        console.warn('Error getting background color from monomerLib:', e);
       }
     }
 
-    if (this.monomerLib && typeof this.monomerLib.getMonomerColor === 'function') {
-      try {
-        const color = this.monomerLib.getMonomerColor(this.biotype, letter);
-        if (color) return color;
-      } catch (e) {
-        console.warn('Error getting color from monomerLib:', e);
-      }
-    }
-
-    return this.aminoAcidColors[letter] || '#CCCCCC';
+    // Fallback to default gray if no monomer library or color not found
+    return '#CCCCCC';
   }
 
-  private getContrastColor(color: string): string {
-    try {
-      let r; let g; let b;
-      if (color.startsWith('rgb')) {
-        const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-        if (rgbMatch) {
-          r = parseInt(rgbMatch[1], 10);
-          g = parseInt(rgbMatch[2], 10);
-          b = parseInt(rgbMatch[3], 10);
-        } else return '#000000';
-      } else if (color.startsWith('#')) {
-        const hex = color.slice(1);
-        r = parseInt(hex.slice(0, 2), 16);
-        g = parseInt(hex.slice(2, 4), 16);
-        b = parseInt(hex.slice(4, 6), 16);
-      } else return '#000000';
+  private getMonomerTextColor(letter: string): string {
+    const backgroundColor = this.getMonomerBackgroundColor(letter);
 
-      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-      return (yiq >= 128) ? '#000000' : '#FFFFFF';
+    try {
+      // Use DG.Color for automatic contrast calculation
+      const backgroundColorInt = DG.Color.fromHtml(backgroundColor);
+      const contrastColorInt = DG.Color.getContrastColor(backgroundColorInt);
+      return DG.Color.toHtml(contrastColorInt);
     } catch (e) {
-      return '#000000';
+      console.warn('Error calculating contrast color:', e);
+      return '#000000'; // Safe fallback to black
     }
   }
 }
