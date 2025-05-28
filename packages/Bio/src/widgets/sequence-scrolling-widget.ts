@@ -1,3 +1,5 @@
+/* eslint-disable rxjs/no-ignored-subscription */
+/* eslint-disable max-lines */
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
@@ -11,140 +13,353 @@ import {_package} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
+// ============================================================================
+// SIMPLE VIEWPORT-AWARE CACHING
+// ============================================================================
 
 /**
- * Calculate WebLogo data for each position in a multiple sequence alignment
- * @param {string[]} sequences - Array of sequence strings
- * @param {SplitterFunc} splitter - Function to split sequences into monomers
- * @return {Map<number, Map<string, number>>} Map of position to monomer frequencies
+ * Lazy viewport-aware MSA data manager
+ * Only calculates data for positions that are actually rendered
  */
-function calculateWebLogoData(sequences: string[], splitter: SplitterFunc): Map<number, Map<string, number>> {
-  if (!sequences || sequences.length <= 1) return new Map();
+class MSAViewportManager {
+  private static conservationCache: DG.LruCache<string, number[]> = new DG.LruCache<string, number[]>(100);
+  private static webLogoCache: DG.LruCache<string, Map<number, Map<string, number>>> = new DG.LruCache<string, Map<number, Map<string, number>>>(100);
 
-  // Split sequences using the specialized splitter function
-  const splitSequences: ISeqSplitted[] = sequences
-    .map((seq) => splitter(seq))
-    .filter(Boolean);
+  // Cache chunks of 200 positions at a time
+  private static readonly CHUNK_SIZE = 200;
 
-  if (splitSequences.length <= 1) return new Map();
+  private static simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+  }
 
-  // Find the maximum sequence length
-  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
+  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number, type: string): string {
+    const sequences = column.categories.filter(Boolean);
+    const dataHash = MSAViewportManager.simpleHash(sequences.join('|'));
+    return `${column.dataFrame.id}_${column.name}_v${column.version}_${dataHash}_${type}_chunk_${chunkStart}_${chunkEnd}`;
+  }
 
-  // Create a map to store residue frequencies at each position
-  const webLogoData: Map<number, Map<string, number>> = new Map();
+  /**
+   * Get conservation scores for a specific range (lazy calculated and cached)
+   */
+  private static getConservationChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): number[] {
+    const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'conservation');
 
-  // For each position in the alignment
-  for (let pos = 0; pos < maxLen; pos++) {
-    const residueCounts: Map<string, number> = new Map();
-    let totalResidues = 0;
+    return MSAViewportManager.conservationCache.getOrCreate(cacheKey, () => {
+      const sequences = column.categories.filter(Boolean);
+      if (sequences.length <= 1)
+        return new Array(end - start).fill(0);
 
-    // Count the residues at this position
-    for (const seq of splitSequences) {
-      if (pos < seq.length) {
-        // Use getCanonical method to get standardized residue representation
-        const residue = seq.getCanonical(pos);
 
-        // Skip gaps - using the interface's method to check
-        if (residue && !seq.isGap(pos)) {
-          residueCounts.set(residue, (residueCounts.get(residue) || 0) + 1);
-          totalResidues++;
+      const splitSequences: ISeqSplitted[] = sequences
+        .map((seq) => splitter(seq))
+        .filter(Boolean);
+
+      const scores: number[] = [];
+
+      // Only calculate for the requested range
+      for (let pos = start; pos < end; pos++) {
+        const residueCounts: Record<string, number> = {};
+        let totalResidues = 0;
+
+        for (const seq of splitSequences) {
+          if (pos < seq.length) {
+            const residue = seq.getCanonical(pos);
+            if (residue && !seq.isGap(pos)) {
+              residueCounts[residue] = (residueCounts[residue] || 0) + 1;
+              totalResidues++;
+            }
+          }
         }
+
+        if (totalResidues === 0) {
+          scores.push(0);
+          continue;
+        }
+
+        const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
+        const conservation = mostCommonCount / totalResidues;
+        scores.push(conservation);
+      }
+
+      return scores;
+    });
+  }
+
+  /**
+   * Get WebLogo data for a specific range (lazy calculated and cached)
+   */
+  private static getWebLogoChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): Map<number, Map<string, number>> {
+    const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'weblogo');
+
+    return MSAViewportManager.webLogoCache.getOrCreate(cacheKey, () => {
+      const sequences = column.categories.filter(Boolean);
+      const webLogoData: Map<number, Map<string, number>> = new Map();
+
+      if (sequences.length <= 1)
+        return webLogoData;
+
+
+      const splitSequences: ISeqSplitted[] = sequences
+        .map((seq) => splitter(seq))
+        .filter(Boolean);
+
+      // Only calculate for the requested range
+      for (let pos = start; pos < end; pos++) {
+        const residueCounts: Map<string, number> = new Map();
+        let totalResidues = 0;
+
+        for (const seq of splitSequences) {
+          if (pos < seq.length) {
+            const residue = seq.getCanonical(pos);
+            if (residue && !seq.isGap(pos)) {
+              residueCounts.set(residue, (residueCounts.get(residue) || 0) + 1);
+              totalResidues++;
+            }
+          }
+        }
+
+        if (totalResidues === 0) {
+          webLogoData.set(pos, new Map());
+          continue;
+        }
+
+        const residueFreqs: Map<string, number> = new Map();
+        for (const [residue, count] of residueCounts.entries())
+          residueFreqs.set(residue, count / totalResidues);
+
+
+        webLogoData.set(pos, residueFreqs);
+      }
+
+      return webLogoData;
+    });
+  }
+
+  /**
+   * Get conservation scores for viewport (returns properly aligned sparse array)
+   */
+  static getConservationForViewport(column: DG.Column, splitter: SplitterFunc, viewportStart: number, viewportEnd: number, maxLength: number): number[] {
+    // Create a full-sized array filled with zeros
+    const result: number[] = new Array(maxLength).fill(0);
+
+    // Calculate which chunks we need
+    const startChunk = Math.floor(viewportStart / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+    const endChunk = Math.ceil(viewportEnd / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+
+    // Get all needed chunks and place them in the correct positions
+    for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
+      const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
+      const chunkData = MSAViewportManager.getConservationChunk(column, splitter, chunkStart, chunkEnd);
+
+      // Copy chunk data to the correct positions in the result array
+      for (let i = 0; i < chunkData.length && (chunkStart + i) < maxLength; i++)
+        result[chunkStart + i] = chunkData[i];
+    }
+
+    return result;
+  }
+
+  /**
+   * Get WebLogo data for viewport (returns properly aligned sparse map)
+   */
+  static getWebLogoForViewport(column: DG.Column, splitter: SplitterFunc, viewportStart: number, viewportEnd: number, maxLength: number): Map<number, Map<string, number>> {
+    const result: Map<number, Map<string, number>> = new Map();
+
+    // Calculate which chunks we need
+    const startChunk = Math.floor(viewportStart / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+    const endChunk = Math.ceil(viewportEnd / MSAViewportManager.CHUNK_SIZE) * MSAViewportManager.CHUNK_SIZE;
+
+    // Get all needed chunks and place them in the correct positions
+    for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
+      const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
+      const chunkData = MSAViewportManager.getWebLogoChunk(column, splitter, chunkStart, chunkEnd);
+
+      // Copy chunk data to the result map (positions are already correct)
+      for (const [pos, data] of chunkData.entries()) {
+        if (pos < maxLength)
+          result.set(pos, data);
       }
     }
 
-    if (totalResidues === 0) {
-      webLogoData.set(pos, new Map()); // Empty map for positions with no data
-      continue;
-    }
-
-    // Convert counts to frequencies
-    const residueFreqs: Map<string, number> = new Map();
-    for (const [residue, count] of residueCounts.entries())
-      residueFreqs.set(residue, count / totalResidues);
-
-
-    webLogoData.set(pos, residueFreqs);
+    return result;
   }
-
-  return webLogoData;
 }
+
+// ============================================================================
+// SMART TRACKS THAT USE FULL DATA BUT CACHE IT
+// ============================================================================
+
 /**
- * Calculate conservation scores for each position in a multiple sequence alignment
- * @param {string[]} sequences - Array of sequence strings
- * @param {SplitterFunc} splitter - Function to split sequences into monomers
- * @return {number[]} Array of conservation scores (0-1) for each position
+ * WebLogoTrack that loads data on-demand based on what's actually being rendered
  */
-function calculateConservation(sequences: string[], splitter: SplitterFunc): number[] {
-  if (!sequences || sequences.length <= 1) return [];
+class LazyWebLogoTrack extends WebLogoTrack {
+  private column: DG.Column;
+  private splitter: SplitterFunc;
+  private maxLength: number;
+  private lastViewportStart: number = -1;
+  private lastViewportEnd: number = -1;
 
-  // Split sequences using the specialized splitter function
-  const splitSequences: ISeqSplitted[] = sequences
-    .map((seq) => splitter(seq))
-    .filter(Boolean);
+  constructor(
+    column: DG.Column,
+    splitter: SplitterFunc,
+    maxLength: number,
+    height: number = 45,
+    title: string = 'WebLogo'
+  ) {
+    super(new Map(), height, '', title);
+    this.column = column;
+    this.splitter = splitter;
+    this.maxLength = maxLength;
 
-  if (splitSequences.length <= 1) return [];
-
-  // Find the maximum sequence length
-  const maxLen = Math.max(...splitSequences.map((seq) => seq.length));
-  const result: number[] = new Array(maxLen).fill(0);
-
-  // For each position in the alignment
-  for (let pos = 0; pos < maxLen; pos++) {
-    const residueCounts: Record<string, number> = {};
-    let totalResidues = 0;
-
-    // Count the residues at this position
-    for (const seq of splitSequences) {
-      if (pos < seq.length) {
-        // Use getCanonical method to get standardized residue representation
-        const residue = seq.getCanonical(pos);
-
-        // Skip gaps - using the interface's method to check
-        if (residue && !seq.isGap(pos)) {
-          residueCounts[residue] = (residueCounts[residue] || 0) + 1;
-          totalResidues++;
-        }
-      }
-    }
-
-    if (totalResidues === 0) {
-      result[pos] = 0;
-      continue;
-    }
-
-    // Calculate conservation score - frequency of most common residue
-    const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
-    const conservation = mostCommonCount / totalResidues;
-
-    result[pos] = conservation;
+    // Check if we have data to show (but don't calculate it yet!)
+    const sequences = column.categories.filter(Boolean);
+    this.visible = sequences.length > 1;
   }
 
-  return result;
+  /**
+   * Update data only for the positions that are actually being rendered
+   */
+  private updateForViewport(viewportStart: number, viewportEnd: number): void {
+    // Only update if viewport changed significantly (avoid excessive recalculation)
+    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
+        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+      return;
+
+
+    this.lastViewportStart = viewportStart;
+    this.lastViewportEnd = viewportEnd;
+
+    // Add buffer to reduce cache misses on small scrolls
+    const bufferedStart = Math.max(0, viewportStart - 50);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+
+    // Get properly aligned data for the tracks
+    const webLogoData = MSAViewportManager.getWebLogoForViewport(
+      this.column,
+      this.splitter,
+      bufferedStart,
+      bufferedEnd,
+      this.maxLength
+    );
+
+    this.updateData(webLogoData);
+  }
+
+  draw(x: number, y: number, width: number, height: number, windowStart: number,
+    positionWidth: number, totalPositions: number, currentPosition: number): void {
+    // Calculate what positions are actually visible
+    const visiblePositions = Math.ceil(width / positionWidth) + 2;
+    const viewportEnd = Math.min(windowStart + visiblePositions, totalPositions);
+
+    // Update data for just the visible range
+    this.updateForViewport(windowStart - 1, viewportEnd - 1); // Convert to 0-based
+
+    // Call parent draw method
+    super.draw(x, y, width, height, windowStart, positionWidth, totalPositions, currentPosition);
+  }
 }
+
+/**
+ * ConservationTrack that loads data on-demand based on what's actually being rendered
+ */
+class LazyConservationTrack extends ConservationTrack {
+  private column: DG.Column;
+  private splitter: SplitterFunc;
+  private maxLength: number;
+  private lastViewportStart: number = -1;
+  private lastViewportEnd: number = -1;
+
+  constructor(
+    column: DG.Column,
+    splitter: SplitterFunc,
+    maxLength: number,
+    height: number = 45,
+    colorScheme: 'default' | 'rainbow' | 'heatmap' = 'default',
+    title: string = 'Conservation'
+  ) {
+    super([], height, colorScheme, title);
+    this.column = column;
+    this.splitter = splitter;
+    this.maxLength = maxLength;
+
+    // Check if we have data to show (but don't calculate it yet!)
+    const sequences = column.categories.filter(Boolean);
+    this.visible = sequences.length > 1;
+  }
+
+  /**
+   * Update data only for the positions that are actually being rendered
+   */
+  private updateForViewport(viewportStart: number, viewportEnd: number): void {
+    // Only update if viewport changed significantly (avoid excessive recalculation)
+    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
+        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+      return;
+
+
+    this.lastViewportStart = viewportStart;
+    this.lastViewportEnd = viewportEnd;
+
+    // Add buffer to reduce cache misses on small scrolls
+    const bufferedStart = Math.max(0, viewportStart - 50);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+
+    // Get properly aligned data for the tracks
+    const conservationScores = MSAViewportManager.getConservationForViewport(
+      this.column,
+      this.splitter,
+      bufferedStart,
+      bufferedEnd,
+      this.maxLength
+    );
+
+    this.updateData(conservationScores);
+  }
+
+  draw(x: number, y: number, width: number, height: number, windowStart: number,
+    positionWidth: number, totalPositions: number, currentPosition: number): void {
+    // Calculate what positions are actually visible
+    const visiblePositions = Math.ceil(width / positionWidth) + 2;
+    const viewportEnd = Math.min(windowStart + visiblePositions, totalPositions);
+
+    // Update data for just the visible range
+    this.updateForViewport(windowStart - 1, viewportEnd - 1); // Convert to 0-based
+
+    // Call parent draw method
+    super.draw(x, y, width, height, windowStart, positionWidth, totalPositions, currentPosition);
+  }
+}
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
 
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
-      if (grid.isDetached)
-        return;
+      if (grid.isDetached) return;
+
       const df = grid.dataFrame;
-      if (!df)
-        return;
+      if (!df) return;
+
       const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
 
       for (const seqCol of seqCols) {
         const sh = _package.seqHelper.getSeqHandler(seqCol);
-        if (!sh)
-          continue;
-        if (sh.isHelm() || sh.alphabet === ALPHABET.UN)
-          continue;
+        if (!sh) continue;
+        if (sh.isHelm() || sh.alphabet === ALPHABET.UN) continue;
 
         const gCol = grid.col(seqCol.name);
-        if (!gCol)
-          continue;
+        if (!gCol) continue;
 
-        let positionStatsViewerAddedOnce = !!grid.tableView && Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
+        let positionStatsViewerAddedOnce = !!grid.tableView &&
+          Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
 
         const isMSA = sh.isMsa();
         const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
@@ -152,90 +367,71 @@ export function handleSequenceHeaderRendering() {
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-        // Get maximum sequence length
-        let pseudoMaxLenIndex = 0;
-        let pseudoMaxLength = 0;
+        // Get maximum sequence length the simple way
+        let maxSeqLen = 0;
         const cats = seqCol.categories;
         for (let i = 0; i < cats.length; i++) {
           const seq = cats[i];
-          if (seq && seq.length > pseudoMaxLength) {
-            pseudoMaxLength = seq.length;
-            pseudoMaxLenIndex = i;
+          if (seq && seq.length > 0) {
+            const split = sh.splitter(seq);
+            if (split && split.length > maxSeqLen)
+              maxSeqLen = split.length;
           }
         }
-        const seq = cats[pseudoMaxLenIndex];
-        const split = sh.splitter(seq);
-        const maxSeqLen = split ? split.length : 30;
 
         // Skip if sequence is too short
-        if (maxSeqLen < 50)
-          continue;
+        if (maxSeqLen < 50) continue;
 
-        // Calculate conservation data if we have multiple sequences
-        let conservationData: number[] = [];
-        let webLogoData: Map<number, Map<string, number>> = new Map();
+        // Check if we have multiple sequences for MSA features
+        const hasMultipleSequences = cats.filter(Boolean).length > 1;
 
-        if (cats.length > 1) {
-          // Calculate both conservation and WebLogo data
-          conservationData = calculateConservation(cats.filter(Boolean), sh.splitter);
-          webLogoData = calculateWebLogoData(cats.filter(Boolean), sh.splitter);
-        }
+        // Layout constants
+        const dottedCellsHeight = 38;
+        const trackGap = 4;
+        const DEFAULT_WEBLOGO_HEIGHT = 45;
+        const DEFAULT_CONSERVATION_HEIGHT = 45;
 
-        // Determine initial header height based on available data
-        const hasConservation = conservationData.length > 0;
-        const hasWebLogo = webLogoData.size > 0;
-
-        // Define track heights, layout parameters, and thresholds
-        const dottedCellsHeight = 38; // Fixed height for dotted cells + slider
-        const trackGap = 4; // Gap between tracks
-
-        // Default track heights with title space included
-        const DEFAULT_WEBLOGO_HEIGHT = 45; // Increased from 40 to accommodate title
-        const DEFAULT_CONSERVATION_HEIGHT = 45; // Increased from 40 to accommodate title
-
-        // Calculate total required height with all tracks
+        // Calculate initial header height
         const initialHeaderHeight = dottedCellsHeight +
-          (hasWebLogo ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
-          (hasConservation ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
+          (hasMultipleSequences ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
+          (hasMultipleSequences ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
 
-        // Create tracks in the correct vertical order (Conservation on top, WebLogo in middle)
-        const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
-
-        // Function to initialize headers with monomerLib
+        // Initialize tracks with cached data
         const initializeHeaders = (monomerLib: any = null) => {
-          // 1. Conservation track first (top position)
-          if (hasConservation) {
-            const conservationTrack = new ConservationTrack(
-              conservationData,
+          const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
+
+          // Create lazy tracks only if we have multiple sequences
+          if (hasMultipleSequences) {
+            // Conservation track
+            const conservationTrack = new LazyConservationTrack(
+              seqCol,
+              sh.splitter,
+              maxSeqLen,
               DEFAULT_CONSERVATION_HEIGHT,
-              'default', // color scheme
-              'Conservation' // Track title
+              'default',
+              'Conservation'
             );
-            tracks.push({id: 'conservation', track: conservationTrack, priority: 1}); // Lower visibility priority (1)
-          }
+            tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
 
-          // 2. WebLogo track second (middle position)
-          if (hasWebLogo) {
-            const webLogoTrack = new WebLogoTrack(
-              webLogoData,
+            // WebLogo track
+            const webLogoTrack = new LazyWebLogoTrack(
+              seqCol,
+              sh.splitter,
+              maxSeqLen,
               DEFAULT_WEBLOGO_HEIGHT,
-              'default', // This parameter is ignored in our simplified implementation
-              'WebLogo' // Track title
+              'WebLogo'
             );
 
-            // Set monomerLib for color lookup if available
             if (monomerLib) {
               webLogoTrack.setMonomerLib(monomerLib);
               webLogoTrack.setBiotype(sh.defaultBiotype || 'PEPTIDE');
-              console.log(`WebLogo track: using monomerLib with biotype ${sh.defaultBiotype || 'PEPTIDE'}`);
-            } else
-              console.log('WebLogo track: no monomerLib available, using fallback colors');
-
+            }
 
             webLogoTrack.setupDefaultTooltip();
-            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2}); // Higher visibility priority (2)
+            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
           }
 
+          // Create the scrolling header
           const scroller = new MSAScrollingHeader({
             canvas: grid.overlay,
             headerHeight: initialHeaderHeight,
@@ -256,17 +452,22 @@ export function handleSequenceHeaderRendering() {
                 }
               });
             },
+            onHeaderHeightChange: (newHeight) => {
+              if (grid && !grid.isDetached)
+                grid.props.colHeaderHeight = newHeight;
+            },
           });
 
           scroller.setupTooltipHandling();
-          // Add tracks to scroller in the defined vertical order (top to bottom)
+
+          // Add tracks to scroller
           tracks.forEach(({id, track}) => {
             scroller.addTrack(id, track);
           });
 
           scroller.setSelectionData(df, seqCol, sh);
 
-          // Set initial header height in grid
+          // Set initial header height
           grid.props.colHeaderHeight = initialHeaderHeight;
 
           // Set column width
@@ -284,14 +485,11 @@ export function handleSequenceHeaderRendering() {
             const cellBounds = e.bounds;
             if (!cellBounds) return;
 
-            // Always set header height based on available space
+            // Set dynamic properties
             scroller.headerHeight = cellBounds.height;
-
-            // Set position width based on font size
             const font = getFontSize();
             scroller.positionWidth = font + (isMSA ? 8 : 0);
 
-            // Get current state
             const start = getStart();
             const startPadding = isMSA ? 0 : 4;
 
@@ -308,7 +506,7 @@ export function handleSequenceHeaderRendering() {
           }));
         };
 
-        // Get monomerLib helper to access the monomer library
+        // Initialize with monomer library
         getMonomerLibHelper()
           .then((libHelper) => {
             const monomerLib = libHelper.getMonomerLib();
@@ -316,7 +514,7 @@ export function handleSequenceHeaderRendering() {
           })
           .catch((error) => {
             console.error('Error loading monomerLib:', error);
-            initializeHeaders(); // Initialize with fallback colors
+            initializeHeaders();
           });
       }
     }, 1000);
@@ -324,8 +522,7 @@ export function handleSequenceHeaderRendering() {
 
   // Handle new grid additions
   const _ = grok.events.onViewerAdded.subscribe((e) => {
-    if (!e.args || !(e.args.viewer instanceof DG.Grid))
-      return;
+    if (!e.args || !(e.args.viewer instanceof DG.Grid)) return;
     const grid = e.args.viewer as DG.Grid;
     handleGrid(grid);
   });
@@ -334,7 +531,6 @@ export function handleSequenceHeaderRendering() {
   const openTables = grok.shell.tableViews;
   for (const tv of openTables) {
     const grid = tv?.grid;
-    if (grid)
-      handleGrid(grid);
+    if (grid) handleGrid(grid);
   }
 }

@@ -18,7 +18,9 @@ const LAYOUT_CONSTANTS = {
   SLIDER_HEIGHT: 8,
   TOP_PADDING: 5,
   DEFAULT_TRACK_HEIGHT: 45,
-  MIN_TRACK_HEIGHT: 35
+  MIN_TRACK_HEIGHT: 35,
+  TRACK_SELECTOR_SIZE: 20,
+  TRACK_SELECTOR_MARGIN: 5
 } as const;
 
 // WebLogo Constants
@@ -36,7 +38,8 @@ const FONTS = {
   CONSERVATION_TEXT: '9px monospace',
   TOOLTIP_MAIN: '13px',
   TOOLTIP_SECONDARY: '12px',
-  TOOLTIP_SMALL: '11px'
+  TOOLTIP_SMALL: '11px',
+  TRACK_SELECTOR: 'bold 16px sans-serif'
 } as const;
 
 // Color Constants
@@ -52,7 +55,10 @@ const COLORS = {
   SLIDER_DEFAULT: 'rgba(220, 220, 220, 0.4)',
   SLIDER_WINDOW: 'rgba(150, 150, 150, 0.5)',
   POSITION_DOT: '#999999',
-  SLIDER_MARKER: '#3CB173'
+  SLIDER_MARKER: '#3CB173',
+  TRACK_SELECTOR_BG: 'rgba(240, 240, 240, 0.9)',
+  TRACK_SELECTOR_HOVER: 'rgba(220, 220, 220, 0.9)',
+  TRACK_SELECTOR_ICON: '#666666'
 } as const;
 
 // Tooltip Style Template
@@ -88,6 +94,7 @@ interface MSAHeaderOptions {
   width?: number;
   height?: number;
   onPositionChange?: (position: number, range: WindowRange) => void;
+  onHeaderHeightChange?: (height: number) => void;
 }
 
 interface Preventable {
@@ -98,6 +105,11 @@ interface Preventable {
 interface MSAHeaderState {
   isDragging: boolean;
   dragStartX: number;
+}
+
+// Track visibility configuration
+interface TrackVisibilityConfig {
+  [trackId: string]: boolean;
 }
 
 /**
@@ -660,6 +672,12 @@ export class MSAScrollingHeader {
   private seqColumn: DG.Column<string> | null = null;
   private onSelectionCallback: ((position: number, monomer: string) => void) | null = null;
 
+  // Track selector state
+  private isHoveringTrackSelector: boolean = false;
+  private userSelectedTracks: TrackVisibilityConfig | null = null;
+  private trackSelectorPopup: HTMLDivElement | null = null;
+  private isTrackSelectorOpen: boolean = false;
+
   constructor(options: MSAHeaderOptions) {
     this.config = {
       x: options.x || 0,
@@ -675,6 +693,7 @@ export class MSAScrollingHeader {
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
       sliderColor: options.sliderColor || COLORS.SLIDER_DEFAULT,
       onPositionChange: options.onPositionChange || ((_, __) => { }),
+      onHeaderHeightChange: options.onHeaderHeightChange || (() => { }),
       ...options
     };
 
@@ -685,6 +704,261 @@ export class MSAScrollingHeader {
     this.state = {isDragging: false, dragStartX: 0};
     this.setupEventListeners();
     this.init();
+  }
+
+  /**
+   * Get the bounding box for the track selector icon
+   */
+  private getTrackSelectorBounds(): DOMRect | null {
+    if (!this.shouldShowTrackSelector()) return null;
+
+    const x = this.config.x + this.config.width - LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE - LAYOUT_CONSTANTS.TRACK_SELECTOR_MARGIN;
+    const y = this.config.y + LAYOUT_CONSTANTS.TRACK_SELECTOR_MARGIN;
+
+    return new DOMRect(x, y, LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE, LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE);
+  }
+
+  /**
+   * Check if the track selector should be shown
+   */
+  private shouldShowTrackSelector(): boolean {
+    // Don't show if no tracks or all tracks are visible
+    const visibleTracks = Array.from(this.tracks.values()).filter((track) => track.isVisible());
+    const allTracksVisible = visibleTracks.length === this.tracks.size;
+
+    return this.tracks.size > 0 && (!allTracksVisible || this.userSelectedTracks !== null);
+  }
+
+  /**
+   * Check if a point is within the track selector bounds
+   */
+  private isInTrackSelector(x: number, y: number): boolean {
+    const bounds = this.getTrackSelectorBounds();
+    if (!bounds) return false;
+
+    return x >= bounds.x && x <= bounds.x + bounds.width &&
+           y >= bounds.y && y <= bounds.y + bounds.height;
+  }
+
+  /**
+   * Draw the track selector icon
+   */
+  private drawTrackSelector(): void {
+    if (!this.ctx || !this.shouldShowTrackSelector()) return;
+
+    const bounds = this.getTrackSelectorBounds();
+    if (!bounds) return;
+
+    // Adjust bounds to be relative to the canvas translation
+    const x = bounds.x - this.config.x;
+    const y = bounds.y - this.config.y;
+
+    // Draw background
+    this.ctx.fillStyle = this.isHoveringTrackSelector ? COLORS.TRACK_SELECTOR_HOVER : COLORS.TRACK_SELECTOR_BG;
+    this.ctx.fillRect(x, y, bounds.width, bounds.height);
+
+    // Draw border
+    this.ctx.strokeStyle = COLORS.BORDER_LIGHT;
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x, y, bounds.width, bounds.height);
+
+    // Draw icon (three horizontal lines)
+    this.ctx.strokeStyle = COLORS.TRACK_SELECTOR_ICON;
+    this.ctx.lineWidth = 2;
+    const lineGap = bounds.height / 4;
+
+    for (let i = 1; i <= 3; i++) {
+      const lineY = y + lineGap * i;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x + 4, lineY);
+      this.ctx.lineTo(x + bounds.width - 4, lineY);
+      this.ctx.stroke();
+    }
+  }
+  private closeTrackSelector(): void {
+    if (this.trackSelectorPopup) {
+      this.trackSelectorPopup.remove();
+      this.trackSelectorPopup = null;
+    }
+    this.isTrackSelectorOpen = false;
+  }
+
+  /**
+   * Show track selector menu
+   */
+  private showTrackSelectorMenu(x: number, y: number): void {
+    // Close if already open
+    if (this.isTrackSelectorOpen) {
+      this.closeTrackSelector();
+      return;
+    }
+
+    // Create popup container
+    this.trackSelectorPopup = ui.div([], {
+      style: {
+        position: 'fixed',
+        left: `${x}px`,
+        top: `${y}px`,
+        backgroundColor: 'white',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        zIndex: '10000',
+        minWidth: '150px',
+        padding: '8px 0'
+      }
+    });
+
+    // Add title
+    const title = ui.div([ui.divText('Select Tracks')], {
+      style: {
+        padding: '8px 12px',
+        borderBottom: '1px solid #ddd',
+        fontWeight: 'bold',
+        marginBottom: '4px'
+      }
+    });
+    this.trackSelectorPopup.appendChild(title);
+
+    // Add track toggles
+    const trackList = Array.from(this.tracks.entries());
+    trackList.forEach(([id, track]) => {
+      const isUserVisible = this.userSelectedTracks ? this.userSelectedTracks[id] : track.isVisible();
+      const trackTitle = track.getTitle() || id;
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isUserVisible;
+      checkbox.style.marginRight = '8px';
+
+      const label = ui.div([checkbox, ui.divText(trackTitle)], {
+        style: {
+          padding: '4px 12px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center'
+        }
+      });
+
+      label.addEventListener('mouseenter', () => {
+        label.style.backgroundColor = '#f0f0f0';
+      });
+      label.addEventListener('mouseleave', () => {
+        label.style.backgroundColor = 'transparent';
+      });
+
+      label.addEventListener('click', (e) => {
+        e.stopPropagation();
+        checkbox.checked = !checkbox.checked;
+        this.toggleTrackVisibility(id);
+      });
+
+      this.trackSelectorPopup!.appendChild(label);
+    });
+
+    // Add separator
+    const separator = ui.div([], {
+      style: {
+        height: '1px',
+        backgroundColor: '#ddd',
+        margin: '4px 0'
+      }
+    });
+    this.trackSelectorPopup.appendChild(separator);
+
+    // Add reset option
+    const resetBtn = ui.div([ui.divText('Reset to Auto')], {
+      style: {
+        padding: '4px 12px',
+        cursor: 'pointer'
+      }
+    });
+    resetBtn.addEventListener('mouseenter', () => {
+      resetBtn.style.backgroundColor = '#f0f0f0';
+    });
+    resetBtn.addEventListener('mouseleave', () => {
+      resetBtn.style.backgroundColor = 'transparent';
+    });
+    resetBtn.addEventListener('click', () => {
+      this.resetTrackVisibility();
+      this.closeTrackSelector();
+    });
+    this.trackSelectorPopup.appendChild(resetBtn);
+
+    // Add to document
+    document.body.appendChild(this.trackSelectorPopup);
+    this.isTrackSelectorOpen = true;
+
+    // Close on outside click
+    setTimeout(() => {
+      const closeHandler = (e: MouseEvent) => {
+        if (this.trackSelectorPopup && !this.trackSelectorPopup.contains(e.target as Node)) {
+          this.closeTrackSelector();
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      document.addEventListener('click', closeHandler);
+    }, 0);
+  }
+
+  /**
+   * Toggle track visibility
+   */
+  private toggleTrackVisibility(trackId: string): void {
+    if (!this.userSelectedTracks) {
+      // Initialize user selections from current state
+      this.userSelectedTracks = {};
+      this.tracks.forEach((track, id) => {
+        this.userSelectedTracks![id] = track.isVisible();
+      });
+    }
+
+    this.userSelectedTracks[trackId] = !this.userSelectedTracks[trackId];
+    this.applyUserTrackVisibility();
+  }
+
+  /**
+   * Reset track visibility to automatic mode
+   */
+  private resetTrackVisibility(): void {
+    this.userSelectedTracks = null;
+    // Trigger a redraw which will use automatic visibility
+    window.requestAnimationFrame(() => this.draw(
+      this.config.x, this.config.y, this.config.width, this.config.height,
+      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
+    ));
+  }
+
+  /**
+   * Apply user-selected track visibility and adjust header height
+   */
+  private applyUserTrackVisibility(): void {
+    if (!this.userSelectedTracks) return;
+
+    // Calculate required height
+    let requiredHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+    let firstVisibleTrack = true;
+
+    this.tracks.forEach((track, id) => {
+      if (this.userSelectedTracks![id]) {
+        if (!firstVisibleTrack)
+          requiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
+
+        requiredHeight += track.getDefaultHeight();
+        firstVisibleTrack = false;
+      }
+    });
+
+    // Update header height
+    if (this.config.onHeaderHeightChange)
+      this.config.onHeaderHeightChange(requiredHeight);
+
+
+    // Trigger a redraw
+    window.requestAnimationFrame(() => this.draw(
+      this.config.x, this.config.y, this.config.width, this.config.height,
+      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
+    ));
   }
 
   /**
@@ -733,6 +1007,27 @@ export class MSAScrollingHeader {
     if (!this.isValid) return;
 
     const {x, y} = this.getCoords(e);
+
+    // Check if hovering over track selector
+    const bounds = this.getTrackSelectorBounds();
+    const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
+    const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
+    const wasHoveringSelector = this.isHoveringTrackSelector;
+    this.isHoveringTrackSelector = this.isInTrackSelector(absoluteX, absoluteY);
+
+    if (wasHoveringSelector !== this.isHoveringTrackSelector) {
+      window.requestAnimationFrame(() => this.draw(
+        this.config.x, this.config.y, this.config.width, this.config.height,
+        this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
+      ));
+    }
+
+    if (this.isHoveringTrackSelector) {
+      this.hideTooltip();
+      this.clearHoverStates();
+      return;
+    }
+
     const cellWidth = this.config.positionWidth;
     const hoveredCellIndex = Math.floor(x / cellWidth);
     const windowStart = this.config.windowStartPosition;
@@ -830,6 +1125,11 @@ export class MSAScrollingHeader {
   private handleTooltipMouseLeave(): void {
     this.hideTooltip();
     this.clearHoverStates();
+    this.isHoveringTrackSelector = false;
+    window.requestAnimationFrame(() => this.draw(
+      this.config.x, this.config.y, this.config.width, this.config.height,
+      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
+    ));
   }
 
   private hideTooltip(): void {
@@ -913,7 +1213,12 @@ export class MSAScrollingHeader {
   private setupEventListeners(): void {
     this.eventElement.addEventListener('mousemove', (e) => {
       if (!this.isValid) return;
-      if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
+
+      const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
+      const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
+
+      if (this.isInTrackSelector(absoluteX, absoluteY)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
       else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
       else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
       else this.eventElement.style.cursor = 'default';
@@ -989,6 +1294,16 @@ export class MSAScrollingHeader {
    * Determine visible tracks based on available height and distribute extra space
    */
   private determineVisibleTracks(): void {
+    // If user has manually selected tracks, use those preferences
+    if (this.userSelectedTracks) {
+      this.tracks.forEach((track, id) => {
+        track.setVisible(this.userSelectedTracks![id] || false);
+        track.resetHeight(); // Use default heights
+      });
+      return;
+    }
+
+    // Otherwise, use automatic visibility determination
     const availableHeight = this.config.headerHeight -
                            (LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP);
 
@@ -1144,6 +1459,9 @@ export class MSAScrollingHeader {
         }
       }
     }
+
+    // Draw track selector icon
+    this.drawTrackSelector();
 
     this.ctx!.restore();
     preventable.preventDefault();
@@ -1373,6 +1691,8 @@ export class MSAScrollingHeader {
 
   private handleMouseUp(): void {
     this.state.isDragging = false;
+    if (this.isTrackSelectorOpen)
+      this.closeTrackSelector();
   }
 
   private handleSliderDrag(x: number): void {
@@ -1403,6 +1723,17 @@ export class MSAScrollingHeader {
 
   private handleClick(e: MouseEvent): void {
     if (!this.isValid) return;
+
+    const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
+    const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
+
+    // Check if clicking track selector
+    if (this.isInTrackSelector(absoluteX, absoluteY)) {
+      this.showTrackSelectorMenu(e.clientX, e.clientY);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
 
     const {x, y} = this.getCoords(e);
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
