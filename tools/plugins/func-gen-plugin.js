@@ -125,12 +125,7 @@ class FuncGeneratorPlugin {
     ]);
     const functionParams =
       node?.type === "MethodDefinition" ? this._readMethodParamas(node) : [];
-    const annotationByReturnType = node?.type === "MethodDefinition" ? this._readReturnType(node) : "";
-
-    const annotationByReturnTypeObj = {
-      name: "result",
-      type: annotationByReturnType,
-    };
+    const annotationByReturnObj = node?.type === "MethodDefinition" ? this._readOutputsFromReturnType(node) : undefined;
     const isMethodAsync = this._isMethodAsync(node);
     let importString = generateImport(
       node?.type === "MethodDefinition" ? className : identifierName,
@@ -142,8 +137,8 @@ class FuncGeneratorPlugin {
     }${identifierName}`;
     const funcAnnotaionOptions = {
       ...reservedDecorators[name]["metadata"],
-      ...(annotationByReturnType
-        ? { outputs: [annotationByReturnTypeObj ?? {}] }
+      ...(annotationByReturnObj
+        ? { outputs: annotationByReturnObj ?? [] }
         : {}),
       ...Object.fromEntries(decoratorOptions),
       ...{ inputs: functionParams },
@@ -345,21 +340,14 @@ class FuncGeneratorPlugin {
     }
   }
 
-  _readReturnType(node) {
+  _readReturnType(annotation) {
     let resultType = "dynamic";
-    let isArray = false;
-    let annotation = node.value?.returnType?.typeAnnotation;
+    let isArray = false; 
     if (
       annotation &&
       annotation.type !== "TSUnionType" &&
       annotation.type !== "TSIntersectionType"
     ) {
-      // if (annotation?.typeName?.name === "Promise") {
-      //   const argumnets = annotation.typeArguments?.params;
-      //   if (argumnets && argumnets.length === 1) {
-      //     annotation = argumnets[0];
-      //   } else annotation = {};
-      // }
       
       if (annotation.typeName || annotation.type === "TSTypeReference")
         resultType =
@@ -377,12 +365,49 @@ class FuncGeneratorPlugin {
           annotation?.elementType?.typeName?.right?.name;
       } 
     }
-
     resultType = typesToAnnotation[resultType];
     if (isArray && resultType) resultType = `list`;
     return resultType ?? 'dynamic';
   }
 
+  _readOutputsFromReturnType(node) {
+    let results = [];
+    let annotation = node.value?.returnType?.typeAnnotation;
+
+    if (node?.type === 'ClassDeclaration')
+      return [];
+    
+    if (annotation?.typeName?.name === "Promise") {
+      const argumnets = annotation.typeArguments?.params;
+      if (argumnets && argumnets.length === 1) {
+        annotation = argumnets[0];
+      } else annotation = {};
+    }
+
+    if (annotation?.type === "TSTypeLiteral"){
+      results = this._readOutputsFromReturnTypeObject(annotation);
+    }
+    else{
+      let resultType = this._readReturnType(annotation);
+      results.push({name: 'result', type: resultType});
+      if (resultType === 'void')
+        results = [];
+    }
+    return results;
+  }
+
+  _readOutputsFromReturnTypeObject(node) {
+    let i = 0;
+    let results = [];
+    for (let member of node.members) {
+      results.push({
+        name: member?.key?.name ?? `result${i}`,
+        type: this._readReturnType(member.typeAnnotation.typeAnnotation),
+      });
+      i++;
+    }
+    return results;
+  }
 
   _getTypeNameFromNode(typeNode) {
     if (typeNode.type === "TSTypeReference") {
