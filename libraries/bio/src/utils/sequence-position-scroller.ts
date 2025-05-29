@@ -240,76 +240,75 @@ export class WebLogoTrack extends MSAHeaderTrack {
       return this.createTooltipContent(position, data);
     });
   }
+  private createFrequencyTable(data: Map<string, number>): HTMLElement {
+    const sortedResidues = Array.from(data.entries()).sort((a, b) => b[1] - a[1]);
+
+    const table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
+    table.style.marginTop = '4px';
+    table.style.fontSize = '11px';
+
+    // Create header
+    const headerRow = table.insertRow();
+    const headerCell1 = headerRow.insertCell();
+    const headerCell2 = headerRow.insertCell();
+    headerCell1.textContent = 'Residue';
+    headerCell2.textContent = 'Frequency';
+    headerCell1.style.fontWeight = 'bold';
+    headerCell2.style.fontWeight = 'bold';
+    headerCell1.style.padding = '4px 8px';
+    headerCell2.style.padding = '4px 8px';
+    headerCell1.style.borderBottom = '1px solid #ccc';
+    headerCell2.style.borderBottom = '1px solid #ccc';
+
+    for (const [residue, freq] of sortedResidues) {
+      const row = table.insertRow();
+      const cell1 = row.insertCell();
+      const cell2 = row.insertCell();
+
+      const backgroundColor = this.getMonomerBackgroundColor(residue);
+      const textColor = this.getMonomerTextColor(residue);
+
+      cell1.textContent = residue;
+      cell1.style.backgroundColor = backgroundColor;
+      cell1.style.color = textColor;
+      cell1.style.textAlign = 'center';
+      cell1.style.fontWeight = 'bold';
+      cell1.style.padding = '4px 8px';
+      cell1.style.border = '1px solid rgba(0,0,0,0.1)';
+
+      cell2.textContent = `${(freq * 100).toFixed(0)}%`;
+      cell2.style.textAlign = 'right';
+      cell2.style.padding = '4px 8px';
+      cell2.style.border = '1px solid rgba(0,0,0,0.1)';
+    }
+
+    return table;
+  }
 
   private createTooltipContent(position: number, data: Map<string, number>): HTMLElement {
-    const container = ui.div([], {style: {...TOOLTIP_STYLE}});
+    const tooltipRows: HTMLElement[] = [];
 
-    // Position header
-    const positionDiv = ui.div([ui.divText(`Position: ${position + 1}`)], {
-      style: {fontWeight: 'bold', marginBottom: '6px', fontSize: FONTS.TOOLTIP_MAIN}
-    });
-    container.appendChild(positionDiv);
+    tooltipRows.push(ui.divText(`Position: ${position + 1}`, {
+      style: {fontWeight: 'bold', marginBottom: '6px', fontSize: '13px'}
+    }));
 
     if (data && data.size > 0) {
-      const gridContainer = this.createFrequencyGrid(data);
-      container.appendChild(gridContainer);
+      const freqTable = this.createFrequencyTable(data);
+      tooltipRows.push(freqTable);
     } else {
-      container.appendChild(ui.divText('No data available', {
+      tooltipRows.push(ui.divText('No data available', {
         style: {fontStyle: 'italic', color: '#666'}
       }));
     }
 
-    return container;
+    // Use the standard tooltip container approach
+    const tooltipEl = ui.divV(tooltipRows);
+    tooltipEl.style.maxHeight = '80vh';
+
+    return tooltipEl;
   }
 
-  private createFrequencyGrid(data: Map<string, number>): HTMLElement {
-    const sortedResidues = Array.from(data.entries()).sort((a, b) => b[1] - a[1]);
-
-    const gridContainer = ui.div([], {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: `repeat(auto-fit, minmax(${WEBLOGO_CONSTANTS.MIN_GRID_COLUMNS}px, 1fr))`,
-        gap: '3px',
-        marginTop: '4px'
-      }
-    });
-
-    for (const [residue, freq] of sortedResidues) {
-      const cellDiv = this.createFrequencyCell(residue, freq);
-      gridContainer.appendChild(cellDiv);
-    }
-
-    return gridContainer;
-  }
-
-  private createFrequencyCell(residue: string, freq: number): HTMLElement {
-    const backgroundColor = this.getMonomerBackgroundColor(residue);
-    const textColor = this.getMonomerTextColor(residue);
-
-    const cellDiv = ui.div([], {
-      style: {
-        backgroundColor: backgroundColor,
-        color: textColor,
-        textAlign: 'center',
-        padding: '4px 2px',
-        borderRadius: '2px',
-        fontSize: FONTS.TOOLTIP_SMALL,
-        fontWeight: 'bold',
-        border: '1px solid rgba(0,0,0,0.1)'
-      }
-    });
-
-    const residueText = ui.div([ui.divText(residue)], {
-      style: {fontSize: FONTS.TOOLTIP_SECONDARY, fontWeight: 'bold', lineHeight: '1'}
-    });
-    const freqText = ui.div([ui.divText(`${(freq * 100).toFixed(0)}%`)], {
-      style: {fontSize: '10px', lineHeight: '1', marginTop: '1px'}
-    });
-
-    cellDiv.appendChild(residueText);
-    cellDiv.appendChild(freqText);
-    return cellDiv;
-  }
 
   setMonomerLib(monomerLib: any): void {
     this.monomerLib = monomerLib;
