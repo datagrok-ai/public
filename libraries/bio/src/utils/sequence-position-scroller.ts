@@ -1,3 +1,4 @@
+/* eslint-disable new-cap */
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 /**
@@ -11,17 +12,17 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 // Layout Constants
-const LAYOUT_CONSTANTS = {
-  TITLE_HEIGHT: 12,
-  TRACK_GAP: 4,
-  DOTTED_CELL_HEIGHT: 30,
-  SLIDER_HEIGHT: 8,
-  TOP_PADDING: 5,
-  DEFAULT_TRACK_HEIGHT: 45,
-  MIN_TRACK_HEIGHT: 35,
-  TRACK_SELECTOR_SIZE: 20,
-  TRACK_SELECTOR_MARGIN: 5
-} as const;
+// const LAYOUT_CONSTANTS = {
+//   TITLE_HEIGHT: 16,
+//   TRACK_GAP: 4,
+//   DOTTED_CELL_HEIGHT: 30,
+//   SLIDER_HEIGHT: 8,
+//   TOP_PADDING: 5,
+//   DEFAULT_TRACK_HEIGHT: 45,
+//   MIN_TRACK_HEIGHT: 35,
+//   TRACK_SELECTOR_SIZE: 20,
+//   TRACK_SELECTOR_MARGIN: 5
+// } as const;
 
 // WebLogo Constants
 const WEBLOGO_CONSTANTS = {
@@ -34,6 +35,7 @@ const WEBLOGO_CONSTANTS = {
 // Typography Constants
 const FONTS = {
   TITLE: 'bold 10px sans-serif',
+  COLUMN_TITLE: 'bold 13px sans-serif',
   POSITION_LABELS: '12px monospace',
   CONSERVATION_TEXT: '9px monospace',
   TOOLTIP_MAIN: '13px',
@@ -130,7 +132,7 @@ export abstract class MSAHeaderTrack {
     title: string = '') {
     this.height = height;
     this.defaultHeight = height;
-    this.minHeight = minHeight + (title ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0);
+    this.minHeight = minHeight;
     this.title = title;
   }
 
@@ -203,19 +205,6 @@ export abstract class MSAHeaderTrack {
   }
 
   /**
-   * Draw track title
-   */
-  protected drawTitle(x: number, y: number, width: number): void {
-    if (!this.ctx || !this.title) return;
-
-    this.ctx.fillStyle = COLORS.TITLE_TEXT;
-    this.ctx.font = FONTS.TITLE;
-    this.ctx.textAlign = 'left';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillText(this.title, x + 5, y + 2);
-  }
-
-  /**
    * Draw the track at the specified position
    */
   abstract draw(
@@ -230,14 +219,6 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private biotype: string = 'PEPTIDE';
   private hoveredPosition: number = -1;
   private hoveredMonomer: string | null = null;
-
-  // Fallback color scheme if monomerLib doesn't work
-  private readonly aminoAcidColors: Record<string, string> = {
-    'A': '#80a0f0', 'R': '#f01505', 'N': '#00ff00', 'D': '#c048c0', 'C': '#f08080',
-    'Q': '#00ff00', 'E': '#c048c0', 'G': '#f09048', 'H': '#15a4a4', 'I': '#80a0f0',
-    'L': '#80a0f0', 'K': '#f01505', 'M': '#80a0f0', 'F': '#80a0f0', 'P': '#ffff00',
-    'S': '#00ff00', 'T': '#00ff00', 'W': '#80a0f0', 'Y': '#15a4a4', 'V': '#80a0f0'
-  };
 
   constructor(data: Map<number, Map<string, number>> = new Map(),
     height: number = LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT,
@@ -306,10 +287,13 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
   private createFrequencyCell(residue: string, freq: number): HTMLElement {
+    const backgroundColor = this.getMonomerBackgroundColor(residue);
+    const textColor = this.getMonomerTextColor(residue);
+
     const cellDiv = ui.div([], {
       style: {
-        backgroundColor: this.getMonomerTextColorForBackground(residue),
-        color: this.getContrastColor(this.getMonomerTextColorForBackground(residue)),
+        backgroundColor: backgroundColor,
+        color: textColor,
         textAlign: 'center',
         padding: '4px 2px',
         borderRadius: '2px',
@@ -348,20 +332,16 @@ export class WebLogoTrack extends MSAHeaderTrack {
     const residueFreqs = this.data.get(position);
     if (!residueFreqs || residueFreqs.size === 0) return null;
 
-    const titleHeight = LAYOUT_CONSTANTS.TITLE_HEIGHT + 2;
-    if (y < titleHeight) return null;
-
+    // No title offset needed since we don't draw titles in tracks anymore
+    const relativeY = y;
     const sortedResidues = Array.from(residueFreqs.entries()).sort((a, b) => b[1] - a[1]);
-    const relativeY = y - titleHeight;
     const totalFreq = sortedResidues.reduce((sum, [_, freq]) => sum + freq, 0);
-    const columnHeight = this.height - titleHeight;
-
+    const columnHeight = this.height;
     let currentY = 0;
     for (const [residue, freq] of sortedResidues) {
       const letterHeight = freq * columnHeight / totalFreq;
       if (relativeY >= currentY && relativeY < currentY + letterHeight)
         return residue;
-
       currentY += letterHeight;
     }
 
@@ -380,12 +360,9 @@ export class WebLogoTrack extends MSAHeaderTrack {
     positionWidth: number, totalPositions: number, currentPosition: number): void {
     if (!this.ctx || !this.visible || this.data.size === 0) return;
 
-    this.drawTitle(x, y, width);
-
     const visiblePositionsN = Math.floor(width / positionWidth);
-    const logoHeight = height - WEBLOGO_CONSTANTS.PADDING * 2;
-    const effectiveLogoHeight = logoHeight - LAYOUT_CONSTANTS.TITLE_HEIGHT - 2;
-    const columnY = y + LAYOUT_CONSTANTS.TITLE_HEIGHT + WEBLOGO_CONSTANTS.PADDING;
+    const effectiveLogoHeight = height - WEBLOGO_CONSTANTS.PADDING * 2;
+    const columnY = y + WEBLOGO_CONSTANTS.PADDING;
 
     for (let i = 0; i < visiblePositionsN; i++) {
       this.drawWebLogoColumn(i, x, y, width, height, windowStart, positionWidth,
@@ -454,8 +431,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private drawLetter(letter: string, x: number, y: number, width: number, height: number, isHovered: boolean = false): void {
     if (!this.ctx) return;
 
-    const backgroundColor = this.getMonomerTextColorForBackground(letter);
-    const textColor = this.getContrastColor(backgroundColor);
+    const backgroundColor = this.getMonomerBackgroundColor(letter);
+    const textColor = this.getMonomerTextColor(letter);
 
     // Fill background
     this.ctx.fillStyle = backgroundColor;
@@ -498,48 +475,28 @@ export class WebLogoTrack extends MSAHeaderTrack {
     }
   }
 
-  private getMonomerTextColorForBackground(letter: string): string {
-    if (this.monomerLib && typeof this.monomerLib.getMonomerTextColor === 'function') {
+  private getMonomerBackgroundColor(letter: string): string {
+    if (this.monomerLib) {
       try {
-        const textColor = this.monomerLib.getMonomerTextColor(this.biotype, letter);
-        if (textColor) return textColor;
+        const colors = this.monomerLib.getMonomerColors(this.biotype, letter);
+        if (colors && colors.backgroundcolor)
+          return colors.backgroundcolor;
       } catch (e) {
-        console.warn('Error getting text color from monomerLib:', e);
+        console.warn('Error getting background color from monomerLib:', e);
       }
     }
-
-    if (this.monomerLib && typeof this.monomerLib.getMonomerColor === 'function') {
-      try {
-        const color = this.monomerLib.getMonomerColor(this.biotype, letter);
-        if (color) return color;
-      } catch (e) {
-        console.warn('Error getting color from monomerLib:', e);
-      }
-    }
-
-    return this.aminoAcidColors[letter] || '#CCCCCC';
+    return '#CCCCCC';
   }
 
-  private getContrastColor(color: string): string {
-    try {
-      let r; let g; let b;
-      if (color.startsWith('rgb')) {
-        const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-        if (rgbMatch) {
-          r = parseInt(rgbMatch[1], 10);
-          g = parseInt(rgbMatch[2], 10);
-          b = parseInt(rgbMatch[3], 10);
-        } else return '#000000';
-      } else if (color.startsWith('#')) {
-        const hex = color.slice(1);
-        r = parseInt(hex.slice(0, 2), 16);
-        g = parseInt(hex.slice(2, 4), 16);
-        b = parseInt(hex.slice(4, 6), 16);
-      } else return '#000000';
+  private getMonomerTextColor(letter: string): string {
+    const backgroundColor = this.getMonomerBackgroundColor(letter);
 
-      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-      return (yiq >= 128) ? '#000000' : '#FFFFFF';
+    try {
+      const backgroundColorInt = DG.Color.fromHtml(backgroundColor);
+      const contrastColorInt = DG.Color.getContrastColor(backgroundColorInt);
+      return DG.Color.toHtml(contrastColorInt);
     } catch (e) {
+      console.warn('Error calculating contrast color:', e);
       return '#000000';
     }
   }
@@ -574,10 +531,6 @@ export class ConservationTrack extends MSAHeaderTrack {
     positionWidth: number, totalPositions: number, currentPosition: number): void {
     if (!this.ctx || !this.visible || this.data.length === 0) return;
 
-    this.drawTitle(x, y, width);
-
-    const barplotTop = y + LAYOUT_CONSTANTS.TITLE_HEIGHT;
-    const barplotHeight = height - LAYOUT_CONSTANTS.TITLE_HEIGHT;
     const visiblePositionsN = Math.floor(width / positionWidth);
 
     for (let i = 0; i < visiblePositionsN; i++) {
@@ -589,11 +542,11 @@ export class ConservationTrack extends MSAHeaderTrack {
       const cellCenterX = posX + cellWidth / 2;
 
       if (position - 1 < this.data.length) {
-        this.drawConservationBar(position - 1, posX, cellWidth, cellCenterX, barplotTop, barplotHeight);
+        this.drawConservationBar(position - 1, posX, cellWidth, cellCenterX, y, height);
 
         if (position === currentPosition) {
           this.ctx.fillStyle = COLORS.SELECTION_HIGHLIGHT;
-          this.ctx.fillRect(posX, barplotTop, cellWidth, barplotHeight);
+          this.ctx.fillRect(posX, y, cellWidth, height);
         }
       }
     }
@@ -647,9 +600,39 @@ export class ConservationTrack extends MSAHeaderTrack {
   }
 }
 
-/**
- * Main MSA header class that manages dotted cells and tracks
- */
+const LAYOUT_CONSTANTS = {
+  TITLE_HEIGHT: 16,
+  TRACK_GAP: 4,
+  DOTTED_CELL_HEIGHT: 30,
+  SLIDER_HEIGHT: 8,
+  TOP_PADDING: 5,
+  DEFAULT_TRACK_HEIGHT: 45,
+  MIN_TRACK_HEIGHT: 35,
+  TRACK_SELECTOR_SIZE: 20,
+  TRACK_SELECTOR_MARGIN: 5
+} as const;
+
+// STRICT HEIGHT THRESHOLDS - All pixel-perfect and deterministic
+const HEIGHT_THRESHOLDS = {
+  // Base: just dotted cells + slider
+  BASE: LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT, // 38px
+
+  // With title but no tracks
+  WITH_TITLE: function() {
+    return this.BASE + LAYOUT_CONSTANTS.TITLE_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP; // 58px
+  },
+
+  // With title + WebLogo track
+  WITH_WEBLOGO: function() {
+    return this.WITH_TITLE() + LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP; // 107px
+  },
+
+  // With title + WebLogo + Conservation tracks
+  WITH_BOTH: function() {
+    return this.WITH_WEBLOGO() + LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP; // 156px
+  }
+} as const;
+
 export class MSAScrollingHeader {
   private config: Required<MSAHeaderOptions>;
   private state: MSAHeaderState;
@@ -672,11 +655,9 @@ export class MSAScrollingHeader {
   private seqColumn: DG.Column<string> | null = null;
   private onSelectionCallback: ((position: number, monomer: string) => void) | null = null;
 
-  // Track selector state
-  private isHoveringTrackSelector: boolean = false;
+  // Track button state
+  private trackButtons: Array<{id: string, label: string, x: number, y: number, width: number, height: number}> = [];
   private userSelectedTracks: TrackVisibilityConfig | null = null;
-  private trackSelectorPopup: HTMLDivElement | null = null;
-  private isTrackSelectorOpen: boolean = false;
 
   constructor(options: MSAHeaderOptions) {
     this.config = {
@@ -687,7 +668,7 @@ export class MSAScrollingHeader {
       windowStartPosition: options.windowStartPosition || 1,
       positionWidth: options.positionWidth || 15,
       totalPositions: options.totalPositions || 5000,
-      headerHeight: options.headerHeight || 50,
+      headerHeight: options.headerHeight || HEIGHT_THRESHOLDS.BASE,
       sliderHeight: options.sliderHeight || LAYOUT_CONSTANTS.SLIDER_HEIGHT,
       currentPosition: options.currentPosition || 1,
       cellBackground: options.cellBackground !== undefined ? options.cellBackground : true,
@@ -706,264 +687,219 @@ export class MSAScrollingHeader {
     this.init();
   }
 
-  /**
-   * Get the bounding box for the track selector icon
-   */
-  private getTrackSelectorBounds(): DOMRect | null {
-    if (!this.shouldShowTrackSelector()) return null;
+  private determineVisibleTracks(): void {
+    const currentHeight = this.config.headerHeight;
+    const webLogoTrack = this.getTrack('weblogo');
+    const conservationTrack = this.getTrack('conservation');
 
-    const x = this.config.x + this.config.width - LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE - LAYOUT_CONSTANTS.TRACK_SELECTOR_MARGIN;
-    const y = this.config.y + LAYOUT_CONSTANTS.TRACK_SELECTOR_MARGIN;
+    // Reset all tracks
+    this.tracks.forEach((track) => {
+      track.setVisible(false);
+      track.setHeight(LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT);
+    });
 
-    return new DOMRect(x, y, LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE, LAYOUT_CONSTANTS.TRACK_SELECTOR_SIZE);
-  }
-
-  /**
-   * Check if the track selector should be shown
-   */
-  private shouldShowTrackSelector(): boolean {
-    // Don't show if no tracks or all tracks are visible
-    const visibleTracks = Array.from(this.tracks.values()).filter((track) => track.isVisible());
-    const allTracksVisible = visibleTracks.length === this.tracks.size;
-
-    return this.tracks.size > 0 && (!allTracksVisible || this.userSelectedTracks !== null);
-  }
-
-  /**
-   * Check if a point is within the track selector bounds
-   */
-  private isInTrackSelector(x: number, y: number): boolean {
-    const bounds = this.getTrackSelectorBounds();
-    if (!bounds) return false;
-
-    return x >= bounds.x && x <= bounds.x + bounds.width &&
-           y >= bounds.y && y <= bounds.y + bounds.height;
-  }
-
-  /**
-   * Draw the track selector icon
-   */
-  private drawTrackSelector(): void {
-    if (!this.ctx || !this.shouldShowTrackSelector()) return;
-
-    const bounds = this.getTrackSelectorBounds();
-    if (!bounds) return;
-
-    // Adjust bounds to be relative to the canvas translation
-    const x = bounds.x - this.config.x;
-    const y = bounds.y - this.config.y;
-
-    // Draw background
-    this.ctx.fillStyle = this.isHoveringTrackSelector ? COLORS.TRACK_SELECTOR_HOVER : COLORS.TRACK_SELECTOR_BG;
-    this.ctx.fillRect(x, y, bounds.width, bounds.height);
-
-    // Draw border
-    this.ctx.strokeStyle = COLORS.BORDER_LIGHT;
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(x, y, bounds.width, bounds.height);
-
-    // Draw icon (three horizontal lines)
-    this.ctx.strokeStyle = COLORS.TRACK_SELECTOR_ICON;
-    this.ctx.lineWidth = 2;
-    const lineGap = bounds.height / 4;
-
-    for (let i = 1; i <= 3; i++) {
-      const lineY = y + lineGap * i;
-      this.ctx.beginPath();
-      this.ctx.moveTo(x + 4, lineY);
-      this.ctx.lineTo(x + bounds.width - 4, lineY);
-      this.ctx.stroke();
-    }
-  }
-  private closeTrackSelector(): void {
-    if (this.trackSelectorPopup) {
-      this.trackSelectorPopup.remove();
-      this.trackSelectorPopup = null;
-    }
-    this.isTrackSelectorOpen = false;
-  }
-
-  /**
-   * Show track selector menu
-   */
-  private showTrackSelectorMenu(x: number, y: number): void {
-    // Close if already open
-    if (this.isTrackSelectorOpen) {
-      this.closeTrackSelector();
+    // Apply strict thresholds
+    if (currentHeight < HEIGHT_THRESHOLDS.WITH_TITLE()) {
+      // Below 58px: No tracks, no title
       return;
     }
 
-    // Create popup container
-    this.trackSelectorPopup = ui.div([], {
-      style: {
-        position: 'fixed',
-        left: `${x}px`,
-        top: `${y}px`,
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        zIndex: '10000',
-        minWidth: '150px',
-        padding: '8px 0'
+    if (currentHeight < HEIGHT_THRESHOLDS.WITH_WEBLOGO()) {
+      // 58px - 106px: Title only, no tracks
+      return;
+    }
+
+    if (currentHeight < HEIGHT_THRESHOLDS.WITH_BOTH()) {
+      // 107px - 155px: WebLogo only
+      if (webLogoTrack) {
+        webLogoTrack.setVisible(true);
+        // Scale WebLogo with extra space
+        const extraSpace = currentHeight - HEIGHT_THRESHOLDS.WITH_WEBLOGO();
+        webLogoTrack.setHeight(LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + extraSpace);
       }
-    });
+      return;
+    }
 
-    // Add title
-    const title = ui.div([ui.divText('Select Tracks')], {
-      style: {
-        padding: '8px 12px',
-        borderBottom: '1px solid #ddd',
-        fontWeight: 'bold',
-        marginBottom: '4px'
-      }
-    });
-    this.trackSelectorPopup.appendChild(title);
+    // 156px+: Both tracks
+    if (webLogoTrack)
+      webLogoTrack.setVisible(true);
 
-    // Add track toggles
-    const trackList = Array.from(this.tracks.entries());
-    trackList.forEach(([id, track]) => {
-      const isUserVisible = this.userSelectedTracks ? this.userSelectedTracks[id] : track.isVisible();
-      const trackTitle = track.getTitle() || id;
+    if (conservationTrack)
+      conservationTrack.setVisible(true);
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = isUserVisible;
-      checkbox.style.marginRight = '8px';
 
-      const label = ui.div([checkbox, ui.divText(trackTitle)], {
-        style: {
-          padding: '4px 12px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center'
-        }
+    // Distribute extra space to WebLogo
+    if (webLogoTrack && currentHeight > HEIGHT_THRESHOLDS.WITH_BOTH()) {
+      const extraSpace = currentHeight - HEIGHT_THRESHOLDS.WITH_BOTH();
+      webLogoTrack.setHeight(LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + extraSpace);
+    }
+
+    // Override with user selections if they exist (but still respect minimum heights)
+    if (this.userSelectedTracks) {
+      // Force hide tracks that user disabled
+      this.tracks.forEach((track, id) => {
+        if (!this.userSelectedTracks![id])
+          track.setVisible(false);
       });
 
-      label.addEventListener('mouseenter', () => {
-        label.style.backgroundColor = '#f0f0f0';
-      });
-      label.addEventListener('mouseleave', () => {
-        label.style.backgroundColor = 'transparent';
-      });
+      // But auto-hide if height is insufficient regardless of user preference
+      if (currentHeight < HEIGHT_THRESHOLDS.WITH_WEBLOGO() && webLogoTrack)
+        webLogoTrack.setVisible(false);
 
-      label.addEventListener('click', (e) => {
-        e.stopPropagation();
-        checkbox.checked = !checkbox.checked;
-        this.toggleTrackVisibility(id);
-      });
-
-      this.trackSelectorPopup!.appendChild(label);
-    });
-
-    // Add separator
-    const separator = ui.div([], {
-      style: {
-        height: '1px',
-        backgroundColor: '#ddd',
-        margin: '4px 0'
-      }
-    });
-    this.trackSelectorPopup.appendChild(separator);
-
-    // Add reset option
-    const resetBtn = ui.div([ui.divText('Reset to Auto')], {
-      style: {
-        padding: '4px 12px',
-        cursor: 'pointer'
-      }
-    });
-    resetBtn.addEventListener('mouseenter', () => {
-      resetBtn.style.backgroundColor = '#f0f0f0';
-    });
-    resetBtn.addEventListener('mouseleave', () => {
-      resetBtn.style.backgroundColor = 'transparent';
-    });
-    resetBtn.addEventListener('click', () => {
-      this.resetTrackVisibility();
-      this.closeTrackSelector();
-    });
-    this.trackSelectorPopup.appendChild(resetBtn);
-
-    // Add to document
-    document.body.appendChild(this.trackSelectorPopup);
-    this.isTrackSelectorOpen = true;
-
-    // Close on outside click
-    setTimeout(() => {
-      const closeHandler = (e: MouseEvent) => {
-        if (this.trackSelectorPopup && !this.trackSelectorPopup.contains(e.target as Node)) {
-          this.closeTrackSelector();
-          document.removeEventListener('click', closeHandler);
-        }
-      };
-      document.addEventListener('click', closeHandler);
-    }, 0);
+      if (currentHeight < HEIGHT_THRESHOLDS.WITH_BOTH() && conservationTrack)
+        conservationTrack.setVisible(false);
+    }
   }
 
-  /**
-   * Toggle track visibility
-   */
-  private toggleTrackVisibility(trackId: string): void {
+  private drawTrackButtons(): void {
+    if (!this.ctx) return;
+
+    this.trackButtons = [];
+
+    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
+    const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
+
+    const conservationVisible = conservationTrack?.isVisible() ?? false;
+    const webLogoVisible = webLogoTrack?.isVisible() ?? false;
+
+    const buttonWidth = 70;
+    const buttonHeight = 18;
+    const buttonGap = 4;
+    const rightMargin = 8;
+
+    let buttonX = this.config.width - rightMargin;
+
+    const buttonY = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE() ?
+      (LAYOUT_CONSTANTS.TITLE_HEIGHT - buttonHeight) / 2 : // Center in title area
+      2; // Or just 2px from top if no title
+
+
+    // // Show "Auto" button if user has made manual selections
+    // if (this.userSelectedTracks) {
+    //   buttonX -= buttonWidth;
+    //   this.drawTrackButton('auto', 'Auto', buttonX, buttonY, buttonWidth, buttonHeight, true);
+    //   buttonX -= buttonGap;
+    // }
+
+    // Show individual track buttons only if not both are visible
+    if (!(conservationVisible && webLogoVisible)) {
+      if (!conservationVisible && conservationTrack) {
+        buttonX -= buttonWidth;
+        this.drawTrackButton('conservation', 'Conservation', buttonX, buttonY, buttonWidth, buttonHeight);
+        buttonX -= buttonGap;
+      }
+
+      if (!webLogoVisible && webLogoTrack) {
+        buttonX -= buttonWidth;
+        this.drawTrackButton('weblogo', 'WebLogo', buttonX, buttonY, buttonWidth, buttonHeight);
+      }
+    }
+  }
+
+  private drawTrackButton(id: string, label: string, x: number, y: number, width: number, height: number, isAutoButton: boolean = false): void {
+    if (!this.ctx) return;
+
+    this.trackButtons.push({id, label, x, y, width, height});
+
+    this.ctx.fillStyle = isAutoButton ? 'rgba(100, 150, 200, 0.8)' : 'rgba(240, 240, 240, 0.8)';
+    this.ctx.fillRect(x, y, width, height);
+
+    this.ctx.strokeStyle = isAutoButton ? 'rgba(70, 120, 170, 0.8)' : 'rgba(180, 180, 180, 0.8)';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x, y, width, height);
+
+    this.ctx.fillStyle = isAutoButton ? '#ffffff' : '#666666';
+    this.ctx.font = '9px sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(label, x + width / 2, y + height / 2);
+  }
+
+  private handleTrackButtonClick(x: number, y: number): boolean {
+    for (const button of this.trackButtons) {
+      if (x >= button.x && x <= button.x + button.width &&
+          y >= button.y && y <= button.y + button.height) {
+        // if (button.id === 'auto')
+        //   this.resetToAutoMode();
+        // else
+        //   this.snapToTrackHeight(button.id);
+
+        // return true;
+        this.snapToTrackHeight(button.id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private snapToTrackHeight(trackId: string): void {
+    let targetHeight: number;
+
+    if (trackId === 'weblogo')
+      targetHeight = HEIGHT_THRESHOLDS.WITH_WEBLOGO();
+    else if (trackId === 'conservation')
+      targetHeight = HEIGHT_THRESHOLDS.WITH_BOTH();
+    else
+      return;
+
+
+    // Set user preference
     if (!this.userSelectedTracks) {
-      // Initialize user selections from current state
       this.userSelectedTracks = {};
       this.tracks.forEach((track, id) => {
-        this.userSelectedTracks![id] = track.isVisible();
+        this.userSelectedTracks![id] = false; // Start with all hidden
       });
     }
 
-    this.userSelectedTracks[trackId] = !this.userSelectedTracks[trackId];
-    this.applyUserTrackVisibility();
-  }
+    // Enable the requested track and any dependencies
+    if (trackId === 'conservation') {
+      this.userSelectedTracks['weblogo'] = true; // Conservation requires WebLogo
+      this.userSelectedTracks['conservation'] = true;
+    } else if (trackId === 'weblogo')
+      this.userSelectedTracks['weblogo'] = true;
+      // Don't change conservation setting
 
-  /**
-   * Reset track visibility to automatic mode
-   */
-  private resetTrackVisibility(): void {
-    this.userSelectedTracks = null;
-    // Trigger a redraw which will use automatic visibility
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-    ));
-  }
 
-  /**
-   * Apply user-selected track visibility and adjust header height
-   */
-  private applyUserTrackVisibility(): void {
-    if (!this.userSelectedTracks) return;
-
-    // Calculate required height
-    let requiredHeight = LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
-    let firstVisibleTrack = true;
-
-    this.tracks.forEach((track, id) => {
-      if (this.userSelectedTracks![id]) {
-        if (!firstVisibleTrack)
-          requiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
-
-        requiredHeight += track.getDefaultHeight();
-        firstVisibleTrack = false;
-      }
-    });
-
-    // Update header height
+    // Snap to exact height
     if (this.config.onHeaderHeightChange)
-      this.config.onHeaderHeightChange(requiredHeight);
+      this.config.onHeaderHeightChange(targetHeight);
 
 
-    // Trigger a redraw
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-    ));
+    window.requestAnimationFrame(() => this.redraw());
+  }
+
+  private resetToAutoMode(): void {
+    this.userSelectedTracks = null;
+
+    // Calculate automatic initial height
+    const hasMultipleSequences = this.tracks.size > 0;
+    const initialHeight = hasMultipleSequences ? HEIGHT_THRESHOLDS.WITH_BOTH() : HEIGHT_THRESHOLDS.BASE;
+
+    if (this.config.onHeaderHeightChange)
+      this.config.onHeaderHeightChange(initialHeight);
+
+
+    window.requestAnimationFrame(() => this.redraw());
   }
 
   /**
-   * Clear hover states for all tracks. Only triggers redraw if there was an active hover state.
+   * Draw the column title (shown when above threshold)
    */
+  private drawColumnTitle(x: number, y: number, width: number, columnName: string): void {
+    if (!this.ctx || !columnName) return;
+
+    if (this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE()) {
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      this.ctx.fillRect(x, y, width, LAYOUT_CONSTANTS.TITLE_HEIGHT);
+
+      this.ctx.fillStyle = COLORS.TITLE_TEXT;
+      this.ctx.font = FONTS.COLUMN_TITLE;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(columnName, x + width / 2, y + LAYOUT_CONSTANTS.TITLE_HEIGHT / 2);
+    }
+  }
+
   private clearHoverStates(): void {
     const hasHoverState = this.previousHoverPosition !== -1 ||
                          this.previousHoverTrack !== null ||
@@ -979,11 +915,16 @@ export class MSAScrollingHeader {
           track.setHovered(-1, null);
       });
 
-      window.requestAnimationFrame(() => this.draw(
-        this.config.x, this.config.y, this.config.width, this.config.height,
-        this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-      ));
+      window.requestAnimationFrame(() => this.redraw());
     }
+  }
+
+  private redraw(): void {
+    this.draw(
+      this.config.x, this.config.y, this.config.width, this.config.height,
+      this.config.currentPosition, this.config.windowStartPosition,
+      {preventDefault: () => {}}, this.seqColumn?.name
+    );
   }
 
   public setSelectionData(dataFrame: DG.DataFrame, seqColumn: DG.Column<string>, seqHandler: any,
@@ -999,10 +940,6 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('mouseleave', this.handleTooltipMouseLeave.bind(this));
   }
 
-  /**
-   * Handle mouse movement for tooltips and hover effects.
-   * Only triggers redraws when hover state actually changes to prevent flickering.
-   */
   private handleTooltipMouseMove(e: MouseEvent): void {
     if (!this.isValid) return;
 
@@ -1039,31 +976,42 @@ export class MSAScrollingHeader {
       return;
     }
 
+    const titleHeight = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE() ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
     const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
+    const tracksEndY = dottedCellsTop - LAYOUT_CONSTANTS.TRACK_GAP;
 
-    if (y >= dottedCellsTop) {
+    if (y >= dottedCellsTop || y < titleHeight) {
       this.hideTooltip();
       this.clearHoverStates();
       return;
     }
 
-    // Find which track is being hovered
-    let trackY = 0;
+    // Find hovered track working backwards from dotted cells
     let hoveredTrackId: string | null = null;
     let trackRelativeY = 0;
 
-    for (const [id, track] of this.tracks.entries()) {
-      if (!track.isVisible()) continue;
+    const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
+    const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
+    if (webLogoTrack && webLogoTrack.isVisible())
+      visibleTracks.push({id: 'weblogo', track: webLogoTrack});
 
+    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
+    if (conservationTrack && conservationTrack.isVisible())
+      visibleTracks.push({id: 'conservation', track: conservationTrack});
+
+    let currentY = tracksEndY;
+    for (const {id, track} of visibleTracks) {
       const trackHeight = track.getHeight();
-      if (y >= trackY && y < trackY + trackHeight) {
+      const trackStartY = currentY - trackHeight;
+
+      if (y >= trackStartY && y < currentY) {
         hoveredTrackId = id;
-        trackRelativeY = y - trackY;
+        trackRelativeY = y - trackStartY;
         break;
       }
 
-      trackY += trackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
+      currentY = trackStartY - LAYOUT_CONSTANTS.TRACK_GAP;
     }
 
     // Check for hovered monomer
@@ -1074,7 +1022,7 @@ export class MSAScrollingHeader {
         currentHoverMonomer = track.getMonomerAt(x, trackRelativeY, hoveredPosition);
     }
 
-    // Only update and redraw if the hover state has actually changed
+    // Update hover state if changed
     const hoverStateChanged = (
       this.previousHoverPosition !== hoveredPosition ||
       this.previousHoverTrack !== hoveredTrackId ||
@@ -1090,16 +1038,12 @@ export class MSAScrollingHeader {
         const track = this.tracks.get(hoveredTrackId);
         if (track instanceof WebLogoTrack) {
           track.setHovered(hoveredPosition, currentHoverMonomer);
-
-          window.requestAnimationFrame(() => this.draw(
-            this.config.x, this.config.y, this.config.width, this.config.height,
-            this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-          ));
+          window.requestAnimationFrame(() => this.redraw());
         }
       }
     }
 
-    // Handle tooltip updates
+    // Handle tooltips
     if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack) {
       this.currentHoverPosition = hoveredPosition;
       this.currentHoverTrack = hoveredTrackId;
@@ -1138,259 +1082,18 @@ export class MSAScrollingHeader {
     ui.tooltip.hide();
   }
 
-  /**
-   * Handle clicks for monomer selection
-   */
-  private handleSelectionClick(e: MouseEvent): void {
-    if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
-
-    const {x, y} = this.getCoords(e);
-    const cellWidth = this.config.positionWidth;
-    const clickedCellIndex = Math.floor(x / cellWidth);
-    const windowStart = this.config.windowStartPosition;
-    const clickedPosition = windowStart + clickedCellIndex - 1;
-
-    if (clickedPosition < 0 || clickedPosition >= this.config.totalPositions) return;
-
-    const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
-    const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
-
-    if (y >= dottedCellsTop) return;
-
-    // Find which track was clicked
-    let trackY = 0;
-    let clickedTrackId: string | null = null;
-    let trackRelativeY = 0;
-
-    for (const [id, track] of this.tracks.entries()) {
-      if (!track.isVisible()) continue;
-
-      const trackHeight = track.getHeight();
-      if (y >= trackY && y < trackY + trackHeight) {
-        clickedTrackId = id;
-        trackRelativeY = y - trackY;
-        break;
-      }
-
-      trackY += trackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
-    }
-
-    if (clickedTrackId) {
-      const track = this.tracks.get(clickedTrackId);
-      if (track) {
-        const monomer = track.getMonomerAt(x, trackRelativeY, clickedPosition);
-
-        if (monomer) {
-          if (this.onSelectionCallback) {
-            this.onSelectionCallback(clickedPosition, monomer);
-            return;
-          }
-
-          this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
-        }
-      }
-    }
-  }
-
-  private selectRowsWithMonomerAtPosition(position: number, monomer: string): void {
-    if (!this.dataFrame || !this.seqHandler) return;
-
-    try {
-      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
-        const seqSplitted = this.seqHandler.getSplitted(rowI);
-        if (!seqSplitted || position >= seqSplitted.length) return false;
-
-        const residue = seqSplitted.getCanonical(position);
-        return residue === monomer;
-      });
-
-      this.dataFrame.selection.init((i) => selBS.get(i));
-    } catch (error) {
-      console.error('Error selecting rows:', error);
-    }
-  }
-
-  private setupEventListeners(): void {
-    this.eventElement.addEventListener('mousemove', (e) => {
-      if (!this.isValid) return;
-
-      const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
-      const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
-
-      if (this.isInTrackSelector(absoluteX, absoluteY)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
-      else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else this.eventElement.style.cursor = 'default';
-    });
-
-    this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
-    this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
-    this.eventElement.addEventListener('click', this.handleClick.bind(this));
-    this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
-    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
-
-    window.addEventListener('keydown', this.handleKeyDown.bind(this));
-  }
-
-  private init(): void {
-    this.canvas = this.config.canvas;
-    if (!this.canvas) {
-      console.error('Canvas not found');
-      return;
-    }
-
-    const context = this.canvas.getContext('2d');
-    if (!context) {
-      console.error('Failed to get 2D context from canvas');
-      return;
-    }
-    this.ctx = context;
-
-    this.tracks.forEach((track) => track.init(context));
-  }
-
-  public addTrack(id: string, track: MSAHeaderTrack): void {
-    if (this.ctx) track.init(this.ctx);
-    this.tracks.set(id, track);
-  }
-
-  public removeTrack(id: string): void {
-    this.tracks.delete(id);
-  }
-
-  public getTrack<T extends MSAHeaderTrack>(id: string): T | undefined {
-    return this.tracks.get(id) as T | undefined;
-  }
-
-  public updateTrack<T extends MSAHeaderTrack>(id: string, updater: (track: T) => void): void {
-    const track = this.getTrack<T>(id);
-    if (track) updater(track);
-  }
-
-  public get isValid() {
-    return !!this.canvas && !!this.ctx &&
-           this.config.height >= LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT;
-  }
-
-  private calculateTotalTracksHeight(): number {
-    let totalHeight = 0;
-    let firstTrack = true;
-
-    this.tracks.forEach((track) => {
-      if (track.isVisible()) {
-        if (!firstTrack) totalHeight += LAYOUT_CONSTANTS.TRACK_GAP;
-        else firstTrack = false;
-        totalHeight += track.getHeight();
-      }
-    });
-
-    return totalHeight;
-  }
-
-  /**
-   * Determine visible tracks based on available height and distribute extra space
-   */
-  private determineVisibleTracks(): void {
-    // If user has manually selected tracks, use those preferences
-    if (this.userSelectedTracks) {
-      this.tracks.forEach((track, id) => {
-        track.setVisible(this.userSelectedTracks![id] || false);
-        track.resetHeight(); // Use default heights
-      });
-      return;
-    }
-
-    // Otherwise, use automatic visibility determination
-    const availableHeight = this.config.headerHeight -
-                           (LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT + LAYOUT_CONSTANTS.SLIDER_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP);
-
-    if (availableHeight <= 0) {
-      this.tracks.forEach((track) => track.setVisible(false));
-      return;
-    }
-
-    const DEFAULT_HEIGHTS = {'weblogo': 45, 'conservation': 45};
-
-    this.tracks.forEach((track, id) => {
-      const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || track.getDefaultHeight();
-      track.setHeight(defaultHeight);
-    });
-
-    const prioritizedTracks = Array.from(this.tracks.entries())
-      .map(([id, track]) => ({id, track}))
-      .sort((a, b) => {
-        const priorityA = a.id === 'weblogo' ? 2 : (a.id === 'conservation' ? 1 : 0);
-        const priorityB = b.id === 'weblogo' ? 2 : (b.id === 'conservation' ? 1 : 0);
-        return priorityB - priorityA;
-      });
-
-    let minRequiredHeight = 0;
-    let trackCount = 0;
-
-    for (const {track} of prioritizedTracks) {
-      if (trackCount > 0) minRequiredHeight += LAYOUT_CONSTANTS.TRACK_GAP;
-      minRequiredHeight += track.getMinHeight();
-      trackCount++;
-    }
-
-    if (minRequiredHeight <= availableHeight) {
-      prioritizedTracks.forEach(({track}) => track.setVisible(true));
-
-      // Distribute extra space to WebLogo track
-      const extraSpace = availableHeight - minRequiredHeight;
-      const webLogoTrack = this.getTrack('weblogo');
-
-      if (webLogoTrack && extraSpace > 0) {
-        const currentHeight = webLogoTrack.getHeight();
-        webLogoTrack.setHeight(currentHeight + extraSpace);
-      }
-    } else {
-      this.tracks.forEach((track) => track.setVisible(false));
-
-      let remainingHeight = availableHeight;
-      let isFirstTrack = true;
-
-      for (const {id, track} of prioritizedTracks) {
-        const minTrackHeight = track.getMinHeight();
-        const spaceNeeded = isFirstTrack ? minTrackHeight : minTrackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
-
-        if (remainingHeight >= spaceNeeded) {
-          track.setVisible(true);
-          const defaultHeight = DEFAULT_HEIGHTS[id as keyof typeof DEFAULT_HEIGHTS] || minTrackHeight;
-          track.setHeight(defaultHeight);
-
-          remainingHeight -= spaceNeeded;
-          isFirstTrack = false;
-        } else
-          track.setVisible(false);
-      }
-    }
-  }
-
   public draw(x: number, y: number, w: number, h: number, currentPos: number,
-    scrollerStart: number, preventable: Preventable): void {
-    const heightChanged = this.config.height !== h;
-
-    if (this.config.x != x || this.config.y != y || this.config.width != w || this.config.height != h ||
-        this.config.currentPosition != currentPos || this.config.windowStartPosition != scrollerStart) {
-      Object.assign(this.config, {
-        x, y, width: w, height: h,
-        currentPosition: currentPos,
-        windowStartPosition: scrollerStart
-      });
-    }
+    scrollerStart: number, preventable: Preventable, columnName?: string): void {
+    Object.assign(this.config, {
+      x, y, width: w, height: h,
+      currentPosition: currentPos,
+      windowStartPosition: scrollerStart
+    });
 
     if (!this.isValid) {
       this.eventElement.style.display = 'none';
       return;
     }
-
-    if (heightChanged)
-      this.tracks.forEach((track) => track.resetHeight());
-
 
     this.ctx!.save();
     this.ctx!.clearRect(x, y, w, h);
@@ -1400,38 +1103,40 @@ export class MSAScrollingHeader {
 
     this.determineVisibleTracks();
 
+    const showTitle = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE();
+    const titleHeight = showTitle ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+
+    if (columnName && showTitle)
+      this.drawColumnTitle(0, 0, w, columnName);
+
     const sliderTop = h - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
     const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
-    const totalTracksHeight = this.calculateTotalTracksHeight();
-
-    let trackY = Math.max(0, dottedCellsTop - totalTracksHeight - LAYOUT_CONSTANTS.TRACK_GAP);
+    const tracksEndY = dottedCellsTop - LAYOUT_CONSTANTS.TRACK_GAP;
     const visibleTrackPositions: { y: number, height: number }[] = [];
 
-    // Get visible tracks in correct order
+    // Draw tracks working backwards from dotted cells
     const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
-    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
-    if (conservationTrack && conservationTrack.isVisible())
-      visibleTracks.push({id: 'conservation', track: conservationTrack});
-
-
     const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
     if (webLogoTrack && webLogoTrack.isVisible())
       visibleTracks.push({id: 'weblogo', track: webLogoTrack});
 
+    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
+    if (conservationTrack && conservationTrack.isVisible())
+      visibleTracks.push({id: 'conservation', track: conservationTrack});
 
-    // Draw tracks
+    let currentY = tracksEndY;
     for (const {track} of visibleTracks) {
-      if (track.isVisible()) {
-        const trackHeight = track.getHeight();
+      const trackHeight = track.getHeight();
+      const trackStartY = currentY - trackHeight;
 
-        track.draw(0, trackY, w, trackHeight, this.config.windowStartPosition,
-          this.config.positionWidth, this.config.totalPositions, this.config.currentPosition);
+      track.draw(0, trackStartY, w, trackHeight, this.config.windowStartPosition,
+        this.config.positionWidth, this.config.totalPositions, this.config.currentPosition);
 
-        visibleTrackPositions.push({y: trackY, height: trackHeight});
-        trackY += trackHeight + LAYOUT_CONSTANTS.TRACK_GAP;
-      }
+      visibleTrackPositions.unshift({y: trackStartY, height: trackHeight});
+      currentY = trackStartY - LAYOUT_CONSTANTS.TRACK_GAP;
     }
 
+    // Draw dotted cells
     this.drawDottedCells(0, dottedCellsTop, w, LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT, sliderTop);
     visibleTrackPositions.push({y: dottedCellsTop, height: LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT});
 
@@ -1460,8 +1165,7 @@ export class MSAScrollingHeader {
       }
     }
 
-    // Draw track selector icon
-    this.drawTrackSelector();
+    this.drawTrackButtons();
 
     this.ctx!.restore();
     preventable.preventDefault();
@@ -1508,7 +1212,7 @@ export class MSAScrollingHeader {
       this.ctx.arc(cellCenterX, posIndexTop + 5, 1, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Draw position number for every 10th position or current position
+      // Draw position number
       if (position === currentPosition || ((position === 1 || position % 10 === 0) &&
           Math.abs(position - currentPosition) > 1)) {
         this.ctx.fillStyle = COLORS.TITLE_TEXT;
@@ -1608,6 +1312,152 @@ export class MSAScrollingHeader {
 
     return y > sliderTop && y < sliderTop + LAYOUT_CONSTANTS.SLIDER_HEIGHT &&
            x >= sliderStartPX && x < sliderStartPX + this.sliderWidth;
+  }
+
+  private setupEventListeners(): void {
+    this.eventElement.addEventListener('mousemove', (e) => {
+      if (!this.isValid) return;
+
+      if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
+      else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else this.eventElement.style.cursor = 'default';
+    });
+
+    this.eventElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('click', this.handleClick.bind(this));
+    this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
+    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
+
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
+  private handleSelectionClick(e: MouseEvent): void {
+    if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
+
+    const {x, y} = this.getCoords(e);
+
+    if (this.handleTrackButtonClick(x, y))
+      return;
+
+
+    const cellWidth = this.config.positionWidth;
+    const clickedCellIndex = Math.floor(x / cellWidth);
+    const windowStart = this.config.windowStartPosition;
+    const clickedPosition = windowStart + clickedCellIndex - 1;
+
+    if (clickedPosition < 0 || clickedPosition >= this.config.totalPositions) return;
+
+    const titleHeight = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE() ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+    const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
+    const dottedCellsTop = sliderTop - LAYOUT_CONSTANTS.DOTTED_CELL_HEIGHT;
+    const tracksEndY = dottedCellsTop - LAYOUT_CONSTANTS.TRACK_GAP;
+
+    if (y >= dottedCellsTop || y < titleHeight) return;
+
+    // Find clicked track
+    let clickedTrackId: string | null = null;
+    let trackRelativeY = 0;
+
+    const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
+    const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
+    if (webLogoTrack && webLogoTrack.isVisible())
+      visibleTracks.push({id: 'weblogo', track: webLogoTrack});
+
+    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
+    if (conservationTrack && conservationTrack.isVisible())
+      visibleTracks.push({id: 'conservation', track: conservationTrack});
+
+    let currentY = tracksEndY;
+    for (const {id, track} of visibleTracks) {
+      const trackHeight = track.getHeight();
+      const trackStartY = currentY - trackHeight;
+
+      if (y >= trackStartY && y < currentY) {
+        clickedTrackId = id;
+        trackRelativeY = y - trackStartY;
+        break;
+      }
+
+      currentY = trackStartY - LAYOUT_CONSTANTS.TRACK_GAP;
+    }
+
+    if (clickedTrackId) {
+      const track = this.tracks.get(clickedTrackId);
+      if (track) {
+        const monomer = track.getMonomerAt(x, trackRelativeY, clickedPosition);
+
+        if (monomer) {
+          if (this.onSelectionCallback) {
+            this.onSelectionCallback(clickedPosition, monomer);
+            return;
+          }
+
+          this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
+        }
+      }
+    }
+  }
+
+  private selectRowsWithMonomerAtPosition(position: number, monomer: string): void {
+    if (!this.dataFrame || !this.seqHandler) return;
+
+    try {
+      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
+        const seqSplitted = this.seqHandler.getSplitted(rowI);
+        if (!seqSplitted || position >= seqSplitted.length) return false;
+
+        const residue = seqSplitted.getCanonical(position);
+        return residue === monomer;
+      });
+
+      this.dataFrame.selection.init((i) => selBS.get(i));
+    } catch (error) {
+      console.error('Error selecting rows:', error);
+    }
+  }
+
+  private init(): void {
+    this.canvas = this.config.canvas;
+    if (!this.canvas) {
+      console.error('Canvas not found');
+      return;
+    }
+
+    const context = this.canvas.getContext('2d');
+    if (!context) {
+      console.error('Failed to get 2D context from canvas');
+      return;
+    }
+    this.ctx = context;
+
+    this.tracks.forEach((track) => track.init(context));
+  }
+
+  public addTrack(id: string, track: MSAHeaderTrack): void {
+    if (this.ctx) track.init(this.ctx);
+    this.tracks.set(id, track);
+  }
+
+  public removeTrack(id: string): void {
+    this.tracks.delete(id);
+  }
+
+  public getTrack<T extends MSAHeaderTrack>(id: string): T | undefined {
+    return this.tracks.get(id) as T | undefined;
+  }
+
+  public updateTrack<T extends MSAHeaderTrack>(id: string, updater: (track: T) => void): void {
+    const track = this.getTrack<T>(id);
+    if (track) updater(track);
+  }
+
+  public get isValid() {
+    return !!this.canvas && !!this.ctx &&
+           this.config.height >= HEIGHT_THRESHOLDS.BASE;
   }
 
   private handleMouseDown(e: MouseEvent): void {
@@ -1736,6 +1586,13 @@ export class MSAScrollingHeader {
     }
 
     const {x, y} = this.getCoords(e);
+
+    if (this.handleTrackButtonClick(x, y)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 
     if (y < sliderTop && y >= 0) {
@@ -1778,5 +1635,17 @@ export class MSAScrollingHeader {
 
     if (typeof this.config.onPositionChange === 'function')
       this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+  }
+
+  /**
+   * ADDED: Public methods for external control
+   */
+  public getHeightThresholds() {
+    return {
+      BASE: HEIGHT_THRESHOLDS.BASE,
+      WITH_TITLE: HEIGHT_THRESHOLDS.WITH_TITLE(),
+      WITH_WEBLOGO: HEIGHT_THRESHOLDS.WITH_WEBLOGO(),
+      WITH_BOTH: HEIGHT_THRESHOLDS.WITH_BOTH()
+    };
   }
 }
