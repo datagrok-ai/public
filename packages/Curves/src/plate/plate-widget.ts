@@ -12,6 +12,8 @@ import { FitConstants } from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
 import {savePlate} from "../plates/plates-crud";
+import { IPlateWellValidator, plateWellValidators } from './plate-well-validators';
+import { debounceTime } from 'rxjs/operators';
 
 
 export type AnalysisOptions = {
@@ -52,6 +54,8 @@ export class PlateWidget extends DG.Widget {
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
+  wellValidators: IPlateWellValidator[] = plateWellValidators;
+  wellValidationErrors: Map<string, string[]> = new Map();
 
   get editable() { return this._editable; }
   set editable(x: boolean) {
@@ -67,11 +71,21 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     this.root.appendChild(this.tabs.root);
 
-    this.subs.push(this.grid.onAfterDrawContent.subscribe(() => {
-      this.grid.root.querySelectorAll('.d4-range-selector').forEach((el) => (el as HTMLElement).style.display = 'none');
-    }));
-
+    this.grid.props.showHeatmapScrollbars = false;
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
+    this.grid.onCellRendered.subscribe((args) => {
+      const cell = args.cell;
+      if (cell.gridRow >= 0 && cell.gridColumn.idx > 0) {
+        try {
+          const pos = toExcelPosition(cell.gridRow, cell.gridColumn.idx - 1);
+          const errors = this.wellValidationErrors.get(pos);
+          if (errors && errors.length > 0) 
+            DG.Paint.marker(args.g, DG.MARKER_TYPE.CROSS_BORDER, cell.bounds.midX, cell.bounds.midY, DG.Color.red, 10);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
   }
 
   static fromPlate(plate: Plate) {
@@ -102,8 +116,16 @@ export class PlateWidget extends DG.Widget {
     return pw;
   }
 
-  initPlateGrid(grid: DG.Grid, isSummary: boolean) {
-    grid.root.querySelectorAll('.d4-range-selector').forEach((el) => (el as HTMLElement).style.display = 'none');
+  initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
+    grid.props.showHeatmapScrollbars = false;
+    grid.props.allowColReordering = false;
+    grid.props.allowRowReordering = false;
+    grid.props.allowSorting = false;
+    grid.props.allowEdit = !isSummary;
+    grid.props.showRowGridlines = true;
+    grid.props.showColumnGridlines = true;
+    grid.props.heatmapColors = false;
+
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
 
@@ -150,7 +172,16 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     for (const layer of this.plate.getLayerNames()) {
       this.tabs.addPane(layer, () => {
-        const grid = DG.Viewer.heatMap(this.plate.toGridDataFrame(layer));
+        const df = this.plate.toGridDataFrame(layer);
+        const grid = DG.Viewer.heatMap(df);
+        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});   // to show row numbers in Excel format - will be done in initPlateGrid
+        df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
+          const p = this.plate;
+          for (let i = 0; i < df.rowCount; i++)
+            for (let j = 0; j < df.columns.length - 1; j++)
+              p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+          this.wellValidationErrors = p.validateWells(this.wellValidators);
+        });
         this.initPlateGrid(grid, false);
         this.grids.set(layer, grid);
         return grid.root;
@@ -221,7 +252,9 @@ export class PlateWidget extends DG.Widget {
 
       g.stroke();
     }
-    args.preventDefault();
+
+    if (summary)
+      args.preventDefault();
   }
 
   getColor(dataRow: number, isLog?: boolean) {

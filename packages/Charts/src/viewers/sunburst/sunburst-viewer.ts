@@ -15,6 +15,7 @@ import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
+const MAXIMUM_COLUMN_NUMBER = 20;
 let sunburstId = 0;
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
@@ -108,15 +109,6 @@ export class SunburstViewer extends EChartViewer {
         return formattedValue === expectedValue;
       });
     };
-  }
-
-  private isRowMatch(rowIndex: number, targetName: string): boolean {
-    const { eligibleHierarchyNames, dataFrame } = this;
-    return eligibleHierarchyNames.some((colName, index) => {
-      const column = dataFrame.getCol(colName);
-      const value = column.getString(rowIndex);
-      return value === targetName;
-    });
   }
 
   initEventListeners(): void {
@@ -426,6 +418,7 @@ export class SunburstViewer extends EChartViewer {
 
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
+    this.eligibleHierarchyNames = this.eligibleHierarchyNames.slice(0, MAXIMUM_COLUMN_NUMBER);
     const data = await this.getSeriesData();
     Object.assign(this.option.series[0], {
       data,

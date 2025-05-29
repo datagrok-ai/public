@@ -28,6 +28,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
 
     const inputData = this.dataFrame;
     const IS_OUTLIER_COL_LABEL = 'isOutlier';
+    const IS_OUTLIER_SECONDARY_COL_LABEL = 'isOutlierSecondary';
     const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
     const OUTLIER_COUNT_COL_LABEL = 'Count';
     const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
@@ -35,6 +36,10 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
       inputData.columns
         .add(DG.Column.fromList(DG.TYPE.STRING, IS_OUTLIER_COL_LABEL, new Array(inputData.rowCount).fill('Inlier')));
+    }
+    if (!inputData.columns.byName(IS_OUTLIER_SECONDARY_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromList(DG.TYPE.STRING, IS_OUTLIER_SECONDARY_COL_LABEL, new Array(inputData.rowCount).fill('Inlier')));
     }
 
     if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
@@ -71,12 +76,17 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       inputData.col(IS_OUTLIER_COL_LABEL)?.meta.markers.assign('Last Inlier', DG.MARKER_TYPE.STAR);
       inputData.col(IS_OUTLIER_COL_LABEL)?.meta.colors.setCategorical({'Outlier': DG.Color.scatterPlotMarker,
         'Inlier': DG.Color.scatterPlotMarker, 'Last Inlier': DG.Color.red});
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.markers.assign('Outlier', DG.MARKER_TYPE.OUTLIER);
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.markers.assign('Last Inlier', DG.MARKER_TYPE.STAR);
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.colors.setCategorical({'Outlier': DG.Color.cyan,
+        'Inlier': DG.Color.cyan, 'Last Inlier': DG.Color.red});
 
       const newRationale =
         groupsListGrid.dataFrame?.cell(groupsListGrid.dataFrame.rowCount-1, OUTLIER_RATIONALE_COL_LABEL).value;
 
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.col(IS_OUTLIER_COL_LABEL)!.set(selectedIndex, 'Outlier', false);
+        inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)!.set(selectedIndex, 'Outlier', false);
         inputData.col(OUTLIER_RATIONALE_COL_LABEL)!.set(
           selectedIndex,
           newRationale,
@@ -117,6 +127,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
             if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === rationale) {
               inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false);
               inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, 'Inlier', false);
+              inputData.columns.byName(IS_OUTLIER_SECONDARY_COL_LABEL).set(i, 'Inlier', false);
             }
           }
           inputData.fireValuesChanged();

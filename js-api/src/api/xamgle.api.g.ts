@@ -45,7 +45,7 @@ export interface SettingsInterface {
   /// Determines when to show range sliders
   showRangeSlidersOnViewers: string;
 
-  /// Use WebGPU for rendering and hit testing.
+  /// (Experimental) Use WebGPU for rendering and hit testing. 
   scatterPlotWebGPUAcceleration: boolean;
 
   /// Auto-apply existing layout after selected rows are extracted

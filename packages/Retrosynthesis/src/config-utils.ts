@@ -2,11 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BASE_PATH, CONFIGS_PATH} from './const';
-import { _package } from './package';
+import {_package} from './package';
 
 export const STORAGE_NAME = 'retrosynthesis';
 export const KEY = 'config';
 export const DEFAULT_CONFIG_NAME = 'default';
+export const TOKEN_PARAM_NAME = 'token';
+let token = '';
 
 export function configIcon(): HTMLElement {
   const settings = ui.icons.settings(async () => {
@@ -141,14 +143,37 @@ export async function addConfigToDocker(files: string[], folder: string): Promis
   }
 }
 
-const token = '';
+async function getToken() {
+  if (token === '') {
+    const credentials = await _package.getCredentials();
+    if (!credentials)
+      throw new Error('Token is not set in package credentials');
+    if (!credentials.parameters[TOKEN_PARAM_NAME])
+      throw new Error('Token is not set in package credentials');
+    token = credentials.parameters[TOKEN_PARAM_NAME];
+  }
+}
+
+function getHostName() {
+  const host = window.location.origin;
+  if (host.includes('://localhost') || host.includes('://127.0.0.1'))
+    return `http://host.docker.internal:8082`;
+  return `${host}/api`;
+}
 
 export async function syncConfig(dirName: string): Promise<void> {
   const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
   try {
+    await getToken();
+    const url = getHostName();
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/sync_dir', {
       method: 'POST',
-      body: JSON.stringify({from_dir_name: `${_package.name}/${dirName}`, to_dir_name: dirName, token: token}),
+      body: JSON.stringify({
+        from_dir_name: `${_package.name}/${dirName}`,
+        to_dir_name: dirName,
+        token: token,
+        url: url,
+      }),
       headers: {
         'Content-Type': 'application/json',
       },

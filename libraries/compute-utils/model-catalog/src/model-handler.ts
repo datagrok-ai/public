@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {filter, map, take} from 'rxjs/operators';
+import {getContextHelp} from '../../shared-utils/utils';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -70,6 +71,10 @@ export class ModelHandler extends DG.ObjectHandler {
     return 'Model';
   }
 
+  override get helpUrl() {
+    return null;
+  }
+
   override async getById(id: string): Promise<DG.Func> {
     return await grok.dapi.functions.find(id);
   }
@@ -78,22 +83,9 @@ export class ModelHandler extends DG.ObjectHandler {
     return await this.getById(x.id);
   }
 
-  static async getHelp(func: DG.Func) {
-    if (!func.options['readme']) return;
-
-    const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-    const readmeExists = await grok.dapi.files.exists(path);
-
-    if (!readmeExists) return;
-    return await grok.dapi.files.readAsText(path);
-  }
-
   static async openHelp(func: DG.Func) {
-    if (!func.options['readme']) return;
-    const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-    const readmeExists = await grok.dapi.files.exists(path);
-    const readmeText = readmeExists ? await grok.dapi.files.readAsText(path) : 'No help file';
-    grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+    const readmeText = await getContextHelp(func);
+    grok.shell.windows.help.showHelp(ui.markdown(readmeText ?? ''));
   }
 
   static openModel(x: DG.Func) {
@@ -222,7 +214,7 @@ export class ModelHandler extends DG.ObjectHandler {
     const v = super.renderPreview(x);
     v.name = (x.friendlyName ?? x.name) + ' description';
     return DG.View.fromViewAsync(async () => {
-      const help = await ModelHandler.getHelp(x);
+      const help = await getContextHelp(x);
       const userGroups = await this.awaitUserGroups();
       const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
       const startBtnDiv = missingMandatoryGroups.length ?

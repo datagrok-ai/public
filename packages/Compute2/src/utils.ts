@@ -106,7 +106,7 @@ export const hasRunnableSteps = (data: PipelineState) =>
 
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly &&
-    data.stepTypes.filter(item => !item.disableUIAdding).length > 0;
+    data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName;
 

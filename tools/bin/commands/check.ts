@@ -364,9 +364,9 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
-  const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
-  if (dt && dt !== 'latest')
-    warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
+  // const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
+  // if (dt && dt !== 'latest')
+  //   warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
 
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
@@ -415,8 +415,6 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 
     if (!hasRCDependency) {
       for (let dependency of Object.keys(json.dependencies ?? {})) {
-        console.log(dependency);
-        console.log((json.dependencies ?? {})[dependency]);
         if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
           hasRCDependency = true;
           break;

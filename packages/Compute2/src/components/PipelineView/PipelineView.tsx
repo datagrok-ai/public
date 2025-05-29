@@ -52,18 +52,23 @@ export const PipelineView = Vue.defineComponent({
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
     const functionsHidden = Vue.ref(true);
+
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const functionsRef = Vue.shallowRef(null as HTMLElement | null);
+
     const state = Vue.computed(() => props.state);
+    const currentCall = Vue.computed(() => props.funcCall ? Vue.markRaw(props.funcCall) : undefined);
+
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const isRoot = Vue.computed(() => props.isRoot);
-    const helpText = Vue.ref<string | null | undefined>(null);
 
-    const showHelp = async (func: DG.Func) => {
+    const helpText = Vue.ref<string | null | undefined>(null);
+    const hasContextHelp = Vue.ref(false);
+
+    const showHelp = async (func?: DG.Func) => {
       if (!func)
         helpText.value = null;
       else {
@@ -86,13 +91,18 @@ export const PipelineView = Vue.defineComponent({
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
       version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
       helpText.value = null;
-    }, { immediate: true });
+    }, {immediate: true});
+
+    Vue.watch(currentCall, (call) => {
+      hasContextHelp.value = call ? Utils.hasContextHelp(call.func) : false;
+    }, {immediate: true});
 
     const description = Vue.computed(() => {
-      return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`
+      return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`;
     });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
+    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
       <div class='w-full h-full flex'>
@@ -100,9 +110,9 @@ export const PipelineView = Vue.defineComponent({
           onPanelClosed={handlePanelClose}
           key={props.uuid}
         >
-          { (!historyHidden.value && props.funcCall) &&
+          { (!historyHidden.value && currentCall.value) &&
             <History
-              func={props.funcCall.func}
+              func={currentCall.value.func}
               version={!isFuncCallState(state.value) ? state.value.version : undefined}
               allowOtherVersions={isRoot.value}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
@@ -121,7 +131,7 @@ export const PipelineView = Vue.defineComponent({
             ref={functionsRef}
           >
             { state.value.stepTypes
-              .filter(item => !item.disableUIAdding)
+              .filter((item) => !item.disableUIAdding)
               .map((stepType, idx) => {
                 const func = stepType.nqName ? Vue.markRaw(DG.Func.byName(stepType.nqName)): null;
                 const language = func instanceof DG.Script ? func.language: 'javascript';
@@ -198,7 +208,16 @@ export const PipelineView = Vue.defineComponent({
               </span>
 
               <div class={'grok-gallery-grid'}>
-                { props.funcCall &&
+                { hasContextHelp.value &&
+                  <div
+                    class={cardsClasses}
+                    onClick={() => showHelp(currentCall.value?.func)}
+                  >
+                    <IconFA name='question-circle' class={'d4-picture'} />
+                    <div> Show help </div>
+                  </div>
+                }
+                { currentCall.value &&
                   <div
                     class={cardsClasses}
                     onClick={() => historyHidden.value = false}
@@ -238,7 +257,7 @@ export const PipelineView = Vue.defineComponent({
               dock-spawn-dock-type='right'
               dock-spawn-dock-to='Steps to add'
               dock-spawn-dock-ratio={0.2}
-              style={{ overflow: 'scroll', height: '100%', padding: '5px' }}
+              style={{overflow: 'scroll', height: '100%', paddingLeft: '5px'}}
               ref={helpRef}
             >
               <MarkDown
