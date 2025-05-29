@@ -429,6 +429,8 @@ You can:
 * Set result limits and similarity thresholds
 * View associated patent information
 
+[Watch a video tutorial](https://www.youtube.com/watch?v=A31ZfDyNm7k) (~3 mins)
+
 1. **Finding related molecules**:
    1. In the dataset, click a cell containing your target molecule structure.
    1. In the **Context Panel**, expand **Databases** > **SureChEMBL**. 
@@ -631,9 +633,56 @@ dataset column and the scaffold tree.
 You can explore the most efficient synthetic pathways and commercially available
 starting materials for your target molecules. To view the results for your
 target, click or sketch a molecule, and expand the **Retrosynthesis** pane in
-the **Context Panel**.
+the **Context Panel**. Requires the [Retrosynthesis](https://github.com/datagrok-ai/public/blob/master/packages/Retrosynthesis/README.md) plugin.
 
 ![Retrosynthesis panel](img/retrosynthesis-panel.png)
+
+<details>
+<summary>How to use</summary>
+
+[Watch a video tutorial](https://youtu.be/FScZ4W_etEE) (~3 mins).
+
+To explore retrosynthesis pathways for a compound:
+1. **Select a target molecule**: Click on a molecule in your dataset or [sketch](#sketching) one
+1. In the **Context Panel**, open the **Retrosynthesis pane**
+1. **View routes**: Each tab shows a different pathway, ranked by score based on
+   stock availability, route length, and confidence. The best routes appear
+   first
+1. **Interact with the results**: 
+   * Click any precursor or intermediate to view its details in the **Context Panel**
+   * Hover over a pathway to reveal action icons, then click the **Add to
+     workspace** (**+**) icon to open the entire pathway in a separate [Table View](../../../navigation/views/table-view.md)
+ 
+You can use custom models, stock databases, and
+display parameters (e.g., route length). 
+
+To set up a custom configuration:
+1. **Create a configuration folder**: Go to **Browse** > **AppData** >
+   **Retrosynthesis** > **configs** and create a folder with your custom
+   configuration name
+1. **Add required files** to your configuration folder. The minimum required files are:
+   * Expansion model
+   * Templates file
+   * Stock file
+   * `config.yml` with file paths and parameters
+1. **Define file paths in `config.yml`**. Paths must follow this format: `/app/aizynthcli_data/configs/<your_custom_config_name>/<file_name>`
+  
+    **IMPORTANT**: Correct path naming is critical for the configuration to work properly.
+    
+    Example: 
+  
+   ```yaml
+    expansion:
+      full:
+        - /app/aizynthcli_data/configs/my_config/my_expansion_model.onnx
+        - /app/aizynthcli_data/configs/my_config/my_templates.csv.gz
+    stock:
+      my_stock: /app/aizynthcli_data/configs/my_config/my_stock.hdf5
+   ```
+1. **Apply your configuration**: Hover over any route and click the gear icon,
+   and select your custom configuration as the current one.
+
+</details>
 
 ### Elemental analysis
 
