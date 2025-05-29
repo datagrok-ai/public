@@ -367,7 +367,7 @@ export function handleSequenceHeaderRendering() {
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-        // Get maximum sequence length the simple way
+        // Get maximum sequence length
         let maxSeqLen = 0;
         const cats = seqCol.categories;
         for (let i = 0; i < cats.length; i++) {
@@ -385,16 +385,22 @@ export function handleSequenceHeaderRendering() {
         // Check if we have multiple sequences for MSA features
         const hasMultipleSequences = cats.filter(Boolean).length > 1;
 
-        // Layout constants
-        const dottedCellsHeight = 38;
-        const trackGap = 4;
-        const DEFAULT_WEBLOGO_HEIGHT = 45;
-        const DEFAULT_CONSERVATION_HEIGHT = 45;
+        const STRICT_THRESHOLDS = {
+          BASE: 38, // DOTTED_CELL_HEIGHT(30) + SLIDER_HEIGHT(8)
+          WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
+          WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+          WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+        };
 
-        // Calculate initial header height
-        const initialHeaderHeight = dottedCellsHeight +
-          (hasMultipleSequences ? DEFAULT_WEBLOGO_HEIGHT + trackGap : 0) +
-          (hasMultipleSequences ? DEFAULT_CONSERVATION_HEIGHT + trackGap : 0);
+        // Calculate initial header height based on available data
+        let initialHeaderHeight: number;
+        if (!hasMultipleSequences) {
+          // Single sequence: just dotted cells
+          initialHeaderHeight = STRICT_THRESHOLDS.BASE;
+        } else {
+          // Multiple sequences: show both tracks by default
+          initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
+        }
 
         // Initialize tracks with cached data
         const initializeHeaders = (monomerLib: any = null) => {
@@ -407,7 +413,7 @@ export function handleSequenceHeaderRendering() {
               seqCol,
               sh.splitter,
               maxSeqLen,
-              DEFAULT_CONSERVATION_HEIGHT,
+              45, // DEFAULT_TRACK_HEIGHT
               'default',
               'Conservation'
             );
@@ -418,7 +424,7 @@ export function handleSequenceHeaderRendering() {
               seqCol,
               sh.splitter,
               maxSeqLen,
-              DEFAULT_WEBLOGO_HEIGHT,
+              45, // DEFAULT_TRACK_HEIGHT
               'WebLogo'
             );
 
@@ -453,8 +459,10 @@ export function handleSequenceHeaderRendering() {
               });
             },
             onHeaderHeightChange: (newHeight) => {
-              if (grid && !grid.isDetached)
-                grid.props.colHeaderHeight = newHeight;
+              if (grid && !grid.isDetached) {
+                const validHeight = Math.max(STRICT_THRESHOLDS.BASE, newHeight);
+                grid.props.colHeaderHeight = validHeight;
+              }
             },
           });
 
@@ -467,7 +475,6 @@ export function handleSequenceHeaderRendering() {
 
           scroller.setSelectionData(df, seqCol, sh);
 
-          // Set initial header height
           grid.props.colHeaderHeight = initialHeaderHeight;
 
           // Set column width
@@ -501,7 +508,7 @@ export function handleSequenceHeaderRendering() {
               getCurrent(),
               start,
               e,
-              seqCol.name // Add the column name parameter
+              seqCol.name
             );
           }));
         };
