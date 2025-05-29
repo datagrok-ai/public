@@ -49,6 +49,7 @@ export function createPlatesView(): DG.View {
   // Create plate viewer
   let plate = new Plate(plateType.rows, plateType.cols);
   const plateWidget = PlateWidget.fromPlate(plate);
+  plateWidget.editable = true;
   plateWidget.root.style.height = '400px';
   setTemplate(plateTemplates[0]);
 

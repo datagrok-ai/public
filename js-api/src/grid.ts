@@ -942,10 +942,18 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
+   * Occurs after the grid cell has been rendered. Do `args.preventDefault()` to prevent standard rendering.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
-   * @returns {Observable<GridCellRenderArgs>} */
+   * See also {@link onCellRendered}. */
   get onCellRender(): Observable<GridCellRenderArgs> {
     return __obs('d4-grid-cell-render', this.dart);
+  }
+
+  /**
+   * Occurs after the grid cell has been rendered. See also {@link onCellRender}.
+   **/
+  get onCellRendered(): Observable<GridCellRenderArgs> {
+    return __obs('d4-grid-cell-rendered', this.dart);
   }
 
   /** @returns {HTMLCanvasElement} */
