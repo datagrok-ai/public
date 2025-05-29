@@ -41,7 +41,6 @@ const FONTS = {
   TOOLTIP_MAIN: '13px',
   TOOLTIP_SECONDARY: '12px',
   TOOLTIP_SMALL: '11px',
-  TRACK_SELECTOR: 'bold 16px sans-serif'
 } as const;
 
 // Color Constants
@@ -58,9 +57,6 @@ const COLORS = {
   SLIDER_WINDOW: 'rgba(150, 150, 150, 0.5)',
   POSITION_DOT: '#999999',
   SLIDER_MARKER: '#3CB173',
-  TRACK_SELECTOR_BG: 'rgba(240, 240, 240, 0.9)',
-  TRACK_SELECTOR_HOVER: 'rgba(220, 220, 220, 0.9)',
-  TRACK_SELECTOR_ICON: '#666666'
 } as const;
 
 // Tooltip Style Template
@@ -608,8 +604,6 @@ const LAYOUT_CONSTANTS = {
   TOP_PADDING: 5,
   DEFAULT_TRACK_HEIGHT: 45,
   MIN_TRACK_HEIGHT: 35,
-  TRACK_SELECTOR_SIZE: 20,
-  TRACK_SELECTOR_MARGIN: 5
 } as const;
 
 // STRICT HEIGHT THRESHOLDS - All pixel-perfect and deterministic
@@ -945,25 +939,6 @@ export class MSAScrollingHeader {
 
     const {x, y} = this.getCoords(e);
 
-    // Check if hovering over track selector
-    const bounds = this.getTrackSelectorBounds();
-    const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
-    const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
-    const wasHoveringSelector = this.isHoveringTrackSelector;
-    this.isHoveringTrackSelector = this.isInTrackSelector(absoluteX, absoluteY);
-
-    if (wasHoveringSelector !== this.isHoveringTrackSelector) {
-      window.requestAnimationFrame(() => this.draw(
-        this.config.x, this.config.y, this.config.width, this.config.height,
-        this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
-      ));
-    }
-
-    if (this.isHoveringTrackSelector) {
-      this.hideTooltip();
-      this.clearHoverStates();
-      return;
-    }
 
     const cellWidth = this.config.positionWidth;
     const hoveredCellIndex = Math.floor(x / cellWidth);
@@ -1069,7 +1044,6 @@ export class MSAScrollingHeader {
   private handleTooltipMouseLeave(): void {
     this.hideTooltip();
     this.clearHoverStates();
-    this.isHoveringTrackSelector = false;
     window.requestAnimationFrame(() => this.draw(
       this.config.x, this.config.y, this.config.width, this.config.height,
       this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
@@ -1541,8 +1515,6 @@ export class MSAScrollingHeader {
 
   private handleMouseUp(): void {
     this.state.isDragging = false;
-    if (this.isTrackSelectorOpen)
-      this.closeTrackSelector();
   }
 
   private handleSliderDrag(x: number): void {
@@ -1577,13 +1549,6 @@ export class MSAScrollingHeader {
     const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
     const absoluteY = e.clientY - this.canvas!.getBoundingClientRect().top;
 
-    // Check if clicking track selector
-    if (this.isInTrackSelector(absoluteX, absoluteY)) {
-      this.showTrackSelectorMenu(e.clientX, e.clientY);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
 
     const {x, y} = this.getCoords(e);
 
