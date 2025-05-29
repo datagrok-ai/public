@@ -15,7 +15,7 @@ const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, apiFile)
 const packagePath = path.join(curDir, 'package.json');
 const names = new Set<string>();
 
-const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+let _package : any = {};
 
 function generateQueryWrappers(): void {
   const queriesDir = path.join(curDir, 'queries');
@@ -47,7 +47,7 @@ function generateQueryWrappers(): void {
       const tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
-        .replace('PACKAGE_NAMESPACE', _package.name);
+        .replace('PACKAGE_NAMESPACE', _package?.name ?? '');
 
       const description = utils.getScriptDescription(q, utils.commentMap[utils.queryExtension]);
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
@@ -143,7 +143,7 @@ function generateFunctionWrappers(): void {
       const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
-        .replace('PACKAGE_NAMESPACE', _package.name)
+        .replace('PACKAGE_NAMESPACE', _package?.name ?? '')
         .replace('PARAMS_OBJECT', annotationInputs)
         .replace('FUNC_DESCRIPTION', description)
         .replace('TYPED_PARAMS', annotationInputs)
@@ -181,6 +181,7 @@ function checkNameColision(name: string) {
 }
 
 export function api(args: { _: string[] }): boolean {
+  _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 0) return false;
   if (!utils.isPackageDir(process.cwd())) {
