@@ -9,7 +9,7 @@ import {
   jstatStatistics,
   JSTATStatistics,
   numToExcel,
-  parseExcelPosition, toStandardSize
+  parseExcelPosition, toExcelPosition, toStandardSize
 } from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
@@ -18,6 +18,7 @@ import {AnalysisOptions, PlateWidget} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates-crud";
 import { PlateDrcAnalysis } from './plate-drc-analysis';
+import { IPlateWellValidator } from './plate-well-validators';
 
 
 /** Represents a well in the experimental plate */
@@ -173,7 +174,7 @@ export class Plate {
   /** Returns a dataframe representing the specified layer with the same layout as the plate.
    * The opposite of {@link fromGridDataFrame}. */
   toGridDataFrame(layer: string): DG.DataFrame {
-    const df = DG.DataFrame.create(this.rows);
+    const df = DG.DataFrame.create(this.rows, layer);
     const col = this.data.columns.byName(layer);
 
     for (let i = 0; i < this.cols; i++) {
@@ -343,7 +344,7 @@ export class Plate {
    * */
   get(field: string, rowIdxOrPos: number | string, colIdx?: number): any {
     assure(this.data.columns.byName(field) != null, `Field does not exist: ${field}`);
-    if (typeof rowIdxOrPos === 'number' && !colIdx)
+    if (typeof rowIdxOrPos === 'number' && colIdx == null)
       throw 'Column not defined';
 
     const [row, col] = (typeof rowIdxOrPos === 'string') ? parseExcelPosition(rowIdxOrPos) : [rowIdxOrPos, colIdx!];
@@ -506,9 +507,23 @@ export class Plate {
       }
     }
   }
+
+  /** Validates the wells of the plate using the specified validators.
+   * Returns a map of well positions to the errors. */
+  validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
+    const result = new Map<string, string[]>();
+    for (const validator of validators) {
+      for (let row = 0; row < this.rows; row++) {
+        for (let col = 0; col < this.cols; col++) { 
+          const error = validator.validate(this, row, col);
+          if (error) {
+            const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
+            errors.push(error);
+            result.set(`${toExcelPosition(row, col)}`, errors);
+          }
+        }
+      }
+    }
+    return result;
+  }
 }
-
-
-
-
-

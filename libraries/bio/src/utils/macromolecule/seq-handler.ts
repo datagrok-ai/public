@@ -88,6 +88,7 @@ export interface ISeqHandler {
   get joiner(): JoinerFunc;
 
   get posList(): string[];
+  get isCanonicalAlphabet(): boolean;
 
   isFasta(): boolean;
   isMsa(): boolean;
@@ -97,6 +98,9 @@ export interface ISeqHandler {
   getSplitted(rowIdx: number, limit?: number): ISeqSplitted;
   getValue(rowIdx: number, options?: any): SeqValueBase;
   getHelm(rowIdx: number): string;
+
+  getMonomerAtPosition(rowIdx: number, position: number, canonical: boolean): string;
+  getMonomersAtPosition(position: number, canonical: boolean): string[];
 
   getAlphabetSize(): number;
   getAlphabetIsMultichar(): boolean;

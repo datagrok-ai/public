@@ -1,7 +1,7 @@
-/* eslint-disable max-len */
-import {_PlateGridCellRenderer} from './package.g';
-import {_MultiCurveViewer} from './package.g';
-import {_FitChartCellRenderer} from './package.g';
+
+//@ts-ignore
+export * from './package.g';
+
 
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
@@ -219,11 +219,6 @@ export class PackageFunctions {
     return platesAppView();
   }
 
-  @grok.decorators.treeBrowser({ })
-  static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
-    await initPlatesAppTree(treeNode);
-  }
-
   @grok.decorators.func({ })
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
@@ -237,41 +232,9 @@ export class PackageFunctions {
   }
 }
 
-
-//name: Browse
-//tags: app
-//meta.browsePath: Plates
-//output: view result
-export function platesApp() {
-  return PackageFunctions.platesApp();
-}
-
+//name: platesAppTreeBrowser
 //input: dynamic treeNode
 //input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-  await PackageFunctions.platesAppTreeBrowser(treeNode);
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+  await initPlatesAppTree(treeNode);
 }
-
-//name: getPlateByBarcode
-//input: string barcode
-//output: dynamic plate
-export async function getPlateByBarcode(barcode: string): Promise<Plate> {
-  return PackageFunctions.getPlateByBarcode(barcode);
-}
-
-//name: createDummyPlateData
-export async function createDummyPlateData() {
-  await PackageFunctions.createDummyPlateData();
-}
-
-//top-menu: Data | Curves | Data to Curves
-//name: dataToCurves
-//description: Convert data to curves
-export function dataToCurves() {
-  dataToCurvesUI();
-}
-
-
-export * from './package.g'; export {_FitChartCellRenderer};
-export {_MultiCurveViewer};
-export {_PlateGridCellRenderer};

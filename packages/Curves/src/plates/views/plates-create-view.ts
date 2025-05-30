@@ -10,22 +10,33 @@ export function createPlatesView(): DG.View {
   view.name = 'Create Plate';
   const platePropertiesHost = ui.divV([]);
   let plateTemplateValues = {};
+  let plateType = plateTypes[0];
+  let plateTemplate = plateTemplates[0];
+
+  const updatePlate = () => {
+    plate = new Plate(plateType.rows, plateType.cols);
+    for (const property of plateTemplate.wellProperties) {
+      plate.data.columns.addNew(property.name!, property.value_type! as DG.ColumnType);
+    }
+    plateWidget.plateData = plate.data;
+    plateWidget.editable = true;
+  }
 
   const setTemplate = (template: PlateTemplate) => {
+    plateTemplate = template;
     plateTemplateValues = {};
     const form = ui.input.form(plateTemplateValues, template.plateProperties.map(p => DG.Property.js(p.name!, p.value_type! as DG.TYPE)));
     ui.empty(platePropertiesHost);
     platePropertiesHost.appendChild(form);
+    updatePlate();
   }
 
   const plateTypeSelector = ui.input.choice('Plate type', {
       items: plateTypes.map(pt => pt.name),
       value: plateTypes[0].name,
       onValueChanged: (v) => {
-          const selectedType = plateTypes.find(pt => pt.name === v)!;
-          plate = new Plate(selectedType.rows, selectedType.cols);
-          plate.data.columns.addNew('activity', DG.TYPE.FLOAT).init(i => Math.random() * 100);
-          plateWidget.plateData = plate.data;
+          plateType = plateTypes.find(pt => pt.name === v)!;
+          updatePlate();
       }
   });
 
@@ -34,17 +45,18 @@ export function createPlatesView(): DG.View {
     value: plateTemplates[0].name,
     onValueChanged: (v) => setTemplate(plateTemplates.find(pt => pt.name === v)!)
   });
-    
+
   // Create plate viewer
-  let plate = new Plate(plateTypes[0].rows, plateTypes[0].cols);
+  let plate = new Plate(plateType.rows, plateType.cols);
   const plateWidget = PlateWidget.fromPlate(plate);
+  plateWidget.editable = true;
   plateWidget.root.style.height = '400px';
   setTemplate(plateTemplates[0]);
 
   // Add components to view
   view.root.appendChild(ui.divV([
       ui.form([
-        plateTypeSelector, 
+        plateTypeSelector,
         plateTemplateSelector
       ]),
       platePropertiesHost,
@@ -62,4 +74,4 @@ export function createPlatesView(): DG.View {
   ]);
 
   return view;
-} 
+}

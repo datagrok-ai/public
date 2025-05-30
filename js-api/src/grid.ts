@@ -839,7 +839,7 @@ export class GridColumnList {
 
   /** Adds a new column to the grid (but not to the underlying dataframe). */
   add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
-    return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
+    return api.grok_GridColumnList_Add(this.dart, options.cellType, options?.gridColumnName, options?.index);
   }
 
   /** Removes a grid column at the specified position. */
@@ -942,10 +942,18 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
+   * Occurs after the grid cell has been rendered. Do `args.preventDefault()` to prevent standard rendering.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
-   * @returns {Observable<GridCellRenderArgs>} */
+   * See also {@link onCellRendered}. */
   get onCellRender(): Observable<GridCellRenderArgs> {
     return __obs('d4-grid-cell-render', this.dart);
+  }
+
+  /**
+   * Occurs after the grid cell has been rendered. See also {@link onCellRender}.
+   **/
+  get onCellRendered(): Observable<GridCellRenderArgs> {
+    return __obs('d4-grid-cell-rendered', this.dart);
   }
 
   /** @returns {HTMLCanvasElement} */

@@ -1,13 +1,16 @@
 import time as time_lib
-from typing import Any
+from typing import Any, Dict, Optional
 import uuid
 import json
 import inspect
 import traceback
+import threading
+import signal
+import sys
 
 import celery
 import websocket
-from celery.signals import worker_shutdown
+from celery.signals import worker_shutdown, task_revoked
 from celery import current_app
 
 from .utils import InputValueProcessor, ReturnValueProcessor, camel_to_snake, DatagrokFanoutType
@@ -16,6 +19,48 @@ from .settings import Settings
 from .logger import get_logger
 from .redirect import WebSocketRedirect, AmqpRedirect
 from .amqp_publisher import AmqpFanoutPublisher
+
+
+class FuncCallRegistry:
+    """Registry of currently tracked FuncCall objects keyed by their unique task ID. 
+    Thread safe to support other than prefork pools.
+    In a prefork worker pool it won't work since we terminate the whole process.
+    """
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._registry: Dict[str, FuncCall] = {}
+
+    def add(self, task_id: str, func_call: FuncCall) -> None:
+        with self._lock:
+            self._registry[task_id] = func_call
+
+    def get(self, task_id: str) -> Optional[FuncCall]:
+        with self._lock:
+            return self._registry.get(task_id)
+
+    def remove(self, task_id: str) -> None:
+        with self._lock:
+            self._registry.pop(task_id, None)
+
+    def contains(self, task_id: str) -> bool:
+        with self._lock:
+            return task_id in self._registry
+        
+        
+_task_registry = FuncCallRegistry()        
+
+
+@task_revoked.connect
+def on_task_cancel(request, terminated, signum, expired, **kwargs):
+    task_id = getattr(request, 'id', None)
+    if task_id is None:
+        return
+
+    if not _task_registry.contains(task_id):
+        return
+
+    call = _task_registry.get(task_id)
+    send_canceled_call(call)  
 
 
 @worker_shutdown.connect
@@ -28,7 +73,19 @@ def on_worker_shutdown(**kwargs):
 
 
 def get_worker_pool_type() -> str:
-    return current_app.conf.worker_pool       
+    return current_app.conf.worker_pool
+
+
+def send_canceled_call(call: FuncCall):   
+    if call.status in (FuncCallStatus.COMPLETED, FuncCallStatus.ERROR, FuncCallStatus.CANCELED):
+        return    
+    try:
+        call.status = FuncCallStatus.CANCELED
+        amqp_publisher = AmqpFanoutPublisher.get_instance()
+        amqp_publisher.publish(call.to_json(), call.id, DatagrokFanoutType.CALL)
+        _task_registry.remove(call.id)
+    except Exception:
+        pass  
 
 
 class DatagrokTask(celery.Task):
@@ -38,23 +95,30 @@ class DatagrokTask(celery.Task):
     def __init__(self):
         self._settings = Settings.get_instance()
         self._logger = get_logger()
-        self._redirect_stdout = get_worker_pool_type() == "prefork"
-
-        if AmqpFanoutPublisher._initialized:
-            self._amqp_publisher = AmqpFanoutPublisher.get_instance()
-        else:
-            self._amqp_publisher = AmqpFanoutPublisher(self._settings.broker_url, self._settings.calls_fanout)
-    
         self._pipe = None
+        self._is_prefork = get_worker_pool_type() == 'prefork'
 
     # Overrides celery.Task.before_start
     def before_start(self, task_id, args, kwargs):
         """This function can't throw. It is special hook called before the tasks lifecycle starts, so exceptions here won't be catched 
         and task will never start.
         """
-        
+        if AmqpFanoutPublisher._initialized:
+            self._amqp_publisher = AmqpFanoutPublisher.get_instance()
+        else:
+            self._amqp_publisher = AmqpFanoutPublisher(self._settings.broker_url, self._settings.calls_fanout)
+
+        # Register revoke signal for prefork worker
+        if self._is_prefork:
+            def _on_cancel(signum, frame):
+                if self._call is not None:
+                    send_canceled_call(self._call)
+                sys.exit(0)
+            signal.signal(signal.SIGTERM, _on_cancel)
+
         self._call: FuncCall = FuncCall(args[0])
         self._accepted_send = False 
+        _task_registry.add(self._call.id, self._call)
         # Try to establish AMQP connection to notify that call was accepted
         try:
             self._amqp_publisher.publish({}, self._call.id, DatagrokFanoutType.ACCEPTED)
@@ -72,6 +136,11 @@ class DatagrokTask(celery.Task):
 
     # Overrides celery.Task.after_return
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        _task_registry.remove(self._call.id)
+        # Unregister revoke signal for prefork worker
+        if self._is_prefork:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
         self._call.status = FuncCallStatus.COMPLETED if status == 'SUCCESS' else FuncCallStatus.ERROR
 
         if einfo is not None:
@@ -137,7 +206,7 @@ class DatagrokTask(celery.Task):
 
         self._process_input_params()
 
-        if not self._redirect_stdout:
+        if not self._is_prefork:
             return self._run_and_process()
 
         if self._call.requires_pipe:
@@ -163,7 +232,7 @@ class DatagrokTask(celery.Task):
         sig = inspect.signature(fn)
         parameters = [x for x in sig.parameters.values()]
         prepend_self = (
-            parameters and
+            len(parameters) > 0 and
             parameters[0].name == 'self' and
             not inspect.ismethod(fn)  # method means it's already bound
         )
@@ -294,7 +363,6 @@ class DatagrokTask(celery.Task):
                 
             if isinstance(message, str):
                 if message.startswith(f"PARAM_SENT {param.name}"):
-                    self._logger.debug("Received all chunks of %s parameter", param.name, extra={"task_id": self._call.id})
                     break
                 elif message.startswith("SENDING"):
                     self._logger.debug("Server is sending parameter data: %s", message, extra={"task_id": self._call.id})
@@ -317,9 +385,7 @@ class DatagrokTask(celery.Task):
                     self._logger.error("Received size of binary data is larger than expected for param %s", param.name, extra={"task_id": self._call.id})
                     raise ValueError("Received size of binary data is larger than expected.")      
                 if total_bytes_received == expected_size:
-                    self._pipe.recv() # receive fin message
                     self._logger.info("Received all bytes for param %s, elapsed: %d ms", param.name, (time_lib.monotonic() - start) * 1000, extra={"task_id": self._call.id})
-                    break
         
         if not chunks:
             return None

@@ -468,7 +468,7 @@ export class PeptidesModel {
     const trueLSTViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     const selectionDescription: HTMLElement[] = [];
     const selectedClusters: string = (trueLSTViewer === null ? [] :
-      trueLSTViewer.clusterSelection[CLUSTER_TYPE.ORIGINAL].concat(trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM]))
+      (trueLSTViewer.clusterSelection?.[CLUSTER_TYPE.ORIGINAL] ?? []).concat(trueLSTViewer.clusterSelection?.[CLUSTER_TYPE.CUSTOM] ?? []))
       .join(', ');
     const htmlTextEl = (t: string): HTMLElement => {
       const el = ui.divText(t);

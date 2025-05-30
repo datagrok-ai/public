@@ -34,6 +34,7 @@ export async function __createDummyPlateData() {
     wellProperties: [
       {name: 'Sample', value_type: DG.COLUMN_TYPE.STRING},
       {name: 'Concentration', value_type: DG.COLUMN_TYPE.FLOAT},
+      {name: 'Volume', value_type: DG.COLUMN_TYPE.FLOAT},
       {name: 'Activity', value_type: DG.COLUMN_TYPE.FLOAT},
     ]
   });

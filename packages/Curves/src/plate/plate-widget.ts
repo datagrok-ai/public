@@ -12,6 +12,8 @@ import { FitConstants } from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
 import {savePlate} from "../plates/plates-crud";
+import { IPlateWellValidator, plateWellValidators } from './plate-well-validators';
+import { debounceTime } from 'rxjs/operators';
 
 
 export type AnalysisOptions = {
@@ -49,7 +51,17 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create();
+  _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
+  grids: Map<string, DG.Grid> = new Map();
+  wellValidators: IPlateWellValidator[] = plateWellValidators;
+  wellValidationErrors: Map<string, string[]> = new Map();
+
+  get editable() { return this._editable; }
+  set editable(x: boolean) {
+    this._editable = x;
+    this.syncGrids();
+  }
 
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
@@ -59,11 +71,21 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     this.root.appendChild(this.tabs.root);
 
-    this.subs.push(this.grid.onAfterDrawContent.subscribe(() => {
-      this.grid.root.querySelectorAll('.d4-range-selector').forEach((el) => (el as HTMLElement).style.display = 'none');
-    }));
-
-    this.grid.onCellRender.subscribe((args) => this.renderCell(args));
+    this.grid.props.showHeatmapScrollbars = false;
+    this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
+    this.grid.onCellRendered.subscribe((args) => {
+      const cell = args.cell;
+      if (cell.gridRow >= 0 && cell.gridColumn.idx > 0) {
+        try {
+          const pos = toExcelPosition(cell.gridRow, cell.gridColumn.idx - 1);
+          const errors = this.wellValidationErrors.get(pos);
+          if (errors && errors.length > 0) 
+            DG.Paint.marker(args.g, DG.MARKER_TYPE.CROSS_BORDER, cell.bounds.midX, cell.bounds.midY, DG.Color.red, 10);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
   }
 
   static fromPlate(plate: Plate) {
@@ -94,9 +116,22 @@ export class PlateWidget extends DG.Widget {
     return pw;
   }
 
+  initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
+    grid.props.showHeatmapScrollbars = false;
+    grid.props.allowColReordering = false;
+    grid.props.allowRowReordering = false;
+    grid.props.allowSorting = false;
+    grid.props.allowEdit = !isSummary;
+    grid.props.showRowGridlines = true;
+    grid.props.showColumnGridlines = true;
+    grid.props.heatmapColors = false;
+
+    grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
+  }
+
   get plate(): Plate {
     const plate = new Plate(this.rows, this.cols);
-    for (const column of this.plateData.columns) 
+    for (const column of this.plateData.columns)
       if (column.name != 'row' && column.name != 'col') {
         plate.data.columns.addNew(column.name, column.type).init(i => {
           const [row, col] = plate.rowIndexToExcel(i);
@@ -121,8 +156,8 @@ export class PlateWidget extends DG.Widget {
 
     let rowCol: DG.Column<number> = this._plateData.col('row')!;
     let colCol: DG.Column<number> = this._plateData.col('col')!;
-    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows;
-    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols;
+    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows!;
+    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols!;
 
     if (this.rows == null || this.cols == null)
       throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1536)';
@@ -137,10 +172,22 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     for (const layer of this.plate.getLayerNames()) {
       this.tabs.addPane(layer, () => {
-        const grid = DG.Viewer.heatMap(this.plate.toGridDataFrame(layer));
+        const df = this.plate.toGridDataFrame(layer);
+        const grid = DG.Viewer.heatMap(df);
+        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});   // to show row numbers in Excel format - will be done in initPlateGrid
+        df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
+          const p = this.plate;
+          for (let i = 0; i < df.rowCount; i++)
+            for (let j = 0; j < df.columns.length - 1; j++)
+              p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+          this.wellValidationErrors = p.validateWells(this.wellValidators);
+        });
+        this.initPlateGrid(grid, false);
+        this.grids.set(layer, grid);
         return grid.root;
       });
     }
+    this.syncGrids();
     this.tabs.currentPane = this.tabs.getPane('Summary');
 
     // row header + all columns
@@ -158,7 +205,7 @@ export class PlateWidget extends DG.Widget {
     return this._posToRow.get(`${gc.gridRow}:${gc.gridColumn.idx - 1}`);
   }
 
-  renderCell(args:DG.GridCellRenderArgs) {
+  renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
     args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
     args.g.strokeStyle = 'grey';
@@ -179,7 +226,7 @@ export class PlateWidget extends DG.Widget {
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
     }
-    else if (h > 0 && dataRow != null) {
+    else if (summary && h > 0 && dataRow != null) {
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
@@ -205,7 +252,9 @@ export class PlateWidget extends DG.Widget {
 
       g.stroke();
     }
-    args.preventDefault();
+
+    if (summary)
+      args.preventDefault();
   }
 
   getColor(dataRow: number, isLog?: boolean) {
@@ -214,5 +263,11 @@ export class PlateWidget extends DG.Widget {
     const min = (isLog ? safeLog(Math.max(this._colorColumn!.min, 1)) : this._colorColumn!.min);
     const max = isLog ? safeLog((this._colorColumn!.max - this._colorColumn!.min) * 1e9) : this._colorColumn!.max;
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
+  }
+
+  /** Applies plate widget options to all grids */
+  syncGrids() {
+    for (const grid of this.grids.values())
+      grid.props.allowEdit = this.editable;
   }
 }

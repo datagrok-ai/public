@@ -137,12 +137,6 @@ export function platesApp() {
   return PackageFunctions.platesApp();
 }
 
-//name: platesAppTreeBrowser
-//input: dynamic treeNode 
-export async function platesAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.platesAppTreeBrowser(treeNode);
-}
-
 //name: getPlateByBarcode
 //input: string barcode 
 //output: dynamic result

@@ -157,7 +157,6 @@ export namespace decorators {
     name?: string,
     tags?: string[],
     description?: string,
-    inputs?: Input[],
     meta?: Meta | Record<string, string>,
     outputs?: Output[],
     sidebar?: string;

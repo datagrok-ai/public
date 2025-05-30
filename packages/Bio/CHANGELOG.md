@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.21.11 (2025-05-29)
+
+* Add faster methods for getting monomers at given positions
+
 ## 2.21.10 (2025-05-22)
 
 * Fix all monomers script
