@@ -14,16 +14,18 @@ import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/type
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 // ============================================================================
-// SIMPLE VIEWPORT-AWARE CACHING
+// VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
 // ============================================================================
 
 /**
- * Lazy viewport-aware MSA data manager
- * Only calculates data for positions that are actually rendered
+ * Lazy viewport-aware MSA data manager with force update capability
  */
 class MSAViewportManager {
   private static conservationCache: DG.LruCache<string, number[]> = new DG.LruCache<string, number[]>(100);
   private static webLogoCache: DG.LruCache<string, Map<number, Map<string, number>>> = new DG.LruCache<string, Map<number, Map<string, number>>>(100);
+
+  // Track when data was last invalidated for force updates
+  private static lastInvalidationTime: number = 0;
 
   // Cache chunks of 200 positions at a time
   private static readonly CHUNK_SIZE = 200;
@@ -38,23 +40,73 @@ class MSAViewportManager {
     return Math.abs(hash).toString(36);
   }
 
-  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number, type: string): string {
-    const sequences = column.categories.filter(Boolean);
-    const dataHash = MSAViewportManager.simpleHash(sequences.join('|'));
-    return `${column.dataFrame.id}_${column.name}_v${column.version}_${dataHash}_${type}_chunk_${chunkStart}_${chunkEnd}`;
+  /**
+   * Clear all caches and update invalidation timestamp for force updates
+   */
+  static clearAllCaches(): void {
+    MSAViewportManager.conservationCache = new DG.LruCache<string, number[]>(100);
+    MSAViewportManager.webLogoCache = new DG.LruCache<string, Map<number, Map<string, number>>>(100);
+    MSAViewportManager.lastInvalidationTime = Date.now();
   }
 
   /**
-   * Get conservation scores for a specific range (lazy calculated and cached)
+   * Get the last invalidation time (used by tracks to detect forced updates)
+   */
+  static getLastInvalidationTime(): number {
+    return MSAViewportManager.lastInvalidationTime;
+  }
+
+  /**
+   * Modified cache key generation that includes filter state
+   */
+  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number, type: string): string {
+    // Get only the visible/filtered sequences
+    const dataFrame = column.dataFrame;
+    const visibleSequences: string[] = [];
+
+    if (dataFrame.filter.trueCount === dataFrame.rowCount) {
+      // No filters applied, use all sequences
+      visibleSequences.push(...column.categories.filter(Boolean));
+    } else {
+      // Filters applied, get only visible sequences
+      for (let i = 0; i < dataFrame.rowCount; i++) {
+        if (dataFrame.filter.get(i)) {
+          const seq = column.get(i);
+          if (seq) visibleSequences.push(seq);
+        }
+      }
+    }
+
+    const dataHash = MSAViewportManager.simpleHash(visibleSequences.join('|'));
+    const filterHash = dataFrame.filter.trueCount; // Simple filter state indicator
+
+    return `${column.dataFrame.id}_${column.name}_v${column.version}_${dataHash}_f${filterHash}_${type}_chunk_${chunkStart}_${chunkEnd}`;
+  }
+
+  /**
+   * Conservation chunk method that works with filtered data
    */
   private static getConservationChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): number[] {
     const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'conservation');
 
     return MSAViewportManager.conservationCache.getOrCreate(cacheKey, () => {
-      const sequences = column.categories.filter(Boolean);
+      // Get only visible/filtered sequences
+      const dataFrame = column.dataFrame;
+      const sequences: string[] = [];
+
+      if (dataFrame.filter.trueCount === dataFrame.rowCount)
+        sequences.push(...column.categories.filter(Boolean));
+      else {
+        for (let i = 0; i < dataFrame.rowCount; i++) {
+          if (dataFrame.filter.get(i)) {
+            const seq = column.get(i);
+            if (seq) sequences.push(seq);
+          }
+        }
+      }
+
       if (sequences.length <= 1)
         return new Array(end - start).fill(0);
-
 
       const splitSequences: ISeqSplitted[] = sequences
         .map((seq) => splitter(seq))
@@ -92,18 +144,31 @@ class MSAViewportManager {
   }
 
   /**
-   * Get WebLogo data for a specific range (lazy calculated and cached)
+   * WebLogo chunk method that works with filtered data
    */
   private static getWebLogoChunk(column: DG.Column, splitter: SplitterFunc, start: number, end: number): Map<number, Map<string, number>> {
     const cacheKey = MSAViewportManager.getChunkCacheKey(column, start, end, 'weblogo');
 
     return MSAViewportManager.webLogoCache.getOrCreate(cacheKey, () => {
-      const sequences = column.categories.filter(Boolean);
+      // Get only visible/filtered sequences
+      const dataFrame = column.dataFrame;
+      const sequences: string[] = [];
+
+      if (dataFrame.filter.trueCount === dataFrame.rowCount)
+        sequences.push(...column.categories.filter(Boolean));
+      else {
+        for (let i = 0; i < dataFrame.rowCount; i++) {
+          if (dataFrame.filter.get(i)) {
+            const seq = column.get(i);
+            if (seq) sequences.push(seq);
+          }
+        }
+      }
+
       const webLogoData: Map<number, Map<string, number>> = new Map();
 
       if (sequences.length <= 1)
         return webLogoData;
-
 
       const splitSequences: ISeqSplitted[] = sequences
         .map((seq) => splitter(seq))
@@ -132,7 +197,6 @@ class MSAViewportManager {
         const residueFreqs: Map<string, number> = new Map();
         for (const [residue, count] of residueCounts.entries())
           residueFreqs.set(residue, count / totalResidues);
-
 
         webLogoData.set(pos, residueFreqs);
       }
@@ -192,11 +256,11 @@ class MSAViewportManager {
 }
 
 // ============================================================================
-// SMART TRACKS THAT USE FULL DATA BUT CACHE IT
+// SMART TRACKS WITH FORCE UPDATE CAPABILITY
 // ============================================================================
 
 /**
- * WebLogoTrack that loads data on-demand based on what's actually being rendered
+ * WebLogoTrack that loads data on-demand with force update capability
  */
 class LazyWebLogoTrack extends WebLogoTrack {
   private column: DG.Column;
@@ -204,6 +268,8 @@ class LazyWebLogoTrack extends WebLogoTrack {
   private maxLength: number;
   private lastViewportStart: number = -1;
   private lastViewportEnd: number = -1;
+  private lastInvalidationTime: number = 0;
+  private forceNextUpdate: boolean = false;
 
   constructor(
     column: DG.Column,
@@ -223,17 +289,42 @@ class LazyWebLogoTrack extends WebLogoTrack {
   }
 
   /**
+   * Force the next update regardless of viewport
+   */
+  public forceUpdate(): void {
+    this.forceNextUpdate = true;
+  }
+
+  /**
+   * Reset viewport tracking to force update on next draw
+   */
+  public resetViewportTracking(): void {
+    this.lastViewportStart = -1;
+    this.lastViewportEnd = -1;
+  }
+
+  /**
    * Update data only for the positions that are actually being rendered
    */
   private updateForViewport(viewportStart: number, viewportEnd: number): void {
-    // Only update if viewport changed significantly (avoid excessive recalculation)
-    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
-        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+    const currentInvalidationTime = MSAViewportManager.getLastInvalidationTime();
+    const cacheWasInvalidated = currentInvalidationTime > this.lastInvalidationTime;
+
+    const viewportChanged = (
+      Math.abs(this.lastViewportStart - viewportStart) >= 10 ||
+      Math.abs(this.lastViewportEnd - viewportEnd) >= 10
+    );
+
+    // Only update if viewport changed significantly OR cache was invalidated OR force update is set
+    if (!viewportChanged && !cacheWasInvalidated && !this.forceNextUpdate)
       return;
 
 
+    // Reset flags and update tracking
+    this.forceNextUpdate = false;
     this.lastViewportStart = viewportStart;
     this.lastViewportEnd = viewportEnd;
+    this.lastInvalidationTime = currentInvalidationTime;
 
     // Add buffer to reduce cache misses on small scrolls
     const bufferedStart = Math.max(0, viewportStart - 50);
@@ -266,7 +357,7 @@ class LazyWebLogoTrack extends WebLogoTrack {
 }
 
 /**
- * ConservationTrack that loads data on-demand based on what's actually being rendered
+ * ConservationTrack that loads data on-demand with force update capability
  */
 class LazyConservationTrack extends ConservationTrack {
   private column: DG.Column;
@@ -274,6 +365,8 @@ class LazyConservationTrack extends ConservationTrack {
   private maxLength: number;
   private lastViewportStart: number = -1;
   private lastViewportEnd: number = -1;
+  private lastInvalidationTime: number = 0;
+  private forceNextUpdate: boolean = false;
 
   constructor(
     column: DG.Column,
@@ -294,17 +387,42 @@ class LazyConservationTrack extends ConservationTrack {
   }
 
   /**
+   * Force the next update regardless of viewport
+   */
+  public forceUpdate(): void {
+    this.forceNextUpdate = true;
+  }
+
+  /**
+   * Reset viewport tracking to force update on next draw
+   */
+  public resetViewportTracking(): void {
+    this.lastViewportStart = -1;
+    this.lastViewportEnd = -1;
+  }
+
+  /**
    * Update data only for the positions that are actually being rendered
    */
   private updateForViewport(viewportStart: number, viewportEnd: number): void {
-    // Only update if viewport changed significantly (avoid excessive recalculation)
-    if (Math.abs(this.lastViewportStart - viewportStart) < 10 &&
-        Math.abs(this.lastViewportEnd - viewportEnd) < 10)
+    const currentInvalidationTime = MSAViewportManager.getLastInvalidationTime();
+    const cacheWasInvalidated = currentInvalidationTime > this.lastInvalidationTime;
+
+    const viewportChanged = (
+      Math.abs(this.lastViewportStart - viewportStart) >= 10 ||
+      Math.abs(this.lastViewportEnd - viewportEnd) >= 10
+    );
+
+    // Only update if viewport changed significantly OR cache was invalidated OR force update is set
+    if (!viewportChanged && !cacheWasInvalidated && !this.forceNextUpdate)
       return;
 
 
+    // Reset flags and update tracking
+    this.forceNextUpdate = false;
     this.lastViewportStart = viewportStart;
     this.lastViewportEnd = viewportEnd;
+    this.lastInvalidationTime = currentInvalidationTime;
 
     // Add buffer to reduce cache misses on small scrolls
     const bufferedStart = Math.max(0, viewportStart - 50);
@@ -383,7 +501,8 @@ export function handleSequenceHeaderRendering() {
         if (maxSeqLen < 50) continue;
 
         // Check if we have multiple sequences for MSA features
-        const hasMultipleSequences = cats.filter(Boolean).length > 1;
+        const getHasMultipleSequences = () => getVisibleSequenceCount(seqCol) > 1;
+        let hasMultipleSequences = getHasMultipleSequences();
 
         const STRICT_THRESHOLDS = {
           BASE: 38, // DOTTED_CELL_HEIGHT(30) + SLIDER_HEIGHT(8)
@@ -402,6 +521,58 @@ export function handleSequenceHeaderRendering() {
           initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
         }
 
+        // Store track references for force updates
+        let webLogoTrackRef: LazyWebLogoTrack | null = null;
+        let conservationTrackRef: LazyConservationTrack | null = null;
+
+        // ADD FILTER CHANGE SUBSCRIPTION WITH FORCE UPDATE CAPABILITY
+        const filterChangeSub = DG.debounce(df.onFilterChanged, 100).subscribe(() => {
+          // 1. Clear all caches (this also updates invalidation timestamp)
+          MSAViewportManager.clearAllCaches();
+
+          // 2. Force track updates by resetting viewport tracking
+          if (webLogoTrackRef) {
+            webLogoTrackRef.resetViewportTracking();
+            webLogoTrackRef.forceUpdate();
+          }
+          if (conservationTrackRef) {
+            conservationTrackRef.resetViewportTracking();
+            conservationTrackRef.forceUpdate();
+          }
+
+          // 3. Update hasMultipleSequences based on filtered data
+          const newHasMultipleSequences = getHasMultipleSequences();
+          if (newHasMultipleSequences !== hasMultipleSequences) {
+            hasMultipleSequences = newHasMultipleSequences;
+
+            // Potentially adjust header height if sequence count changed significantly
+            let newHeaderHeight: number;
+            if (!hasMultipleSequences)
+              newHeaderHeight = STRICT_THRESHOLDS.BASE;
+            else
+              newHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
+
+            if (newHeaderHeight !== initialHeaderHeight) {
+              initialHeaderHeight = newHeaderHeight;
+              grid.props.colHeaderHeight = newHeaderHeight;
+            }
+          }
+
+          // 4. Force grid redraw
+          grid.invalidate();
+
+          // 5. Additional redraw attempts to ensure update
+          setTimeout(() => {
+            if (!grid.isDetached)
+              grid.invalidate();
+          }, 50);
+        });
+
+        // Store the subscription for cleanup if needed
+        if (!grid.temp) grid.temp = {};
+        if (!grid.temp.filterSubs) grid.temp.filterSubs = [];
+        grid.temp.filterSubs.push(filterChangeSub);
+
         // Initialize tracks with cached data
         const initializeHeaders = (monomerLib: any = null) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
@@ -417,6 +588,7 @@ export function handleSequenceHeaderRendering() {
               'default',
               'Conservation'
             );
+            conservationTrackRef = conservationTrack; // Store reference
             tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
 
             // WebLogo track
@@ -427,6 +599,7 @@ export function handleSequenceHeaderRendering() {
               45, // DEFAULT_TRACK_HEIGHT
               'WebLogo'
             );
+            webLogoTrackRef = webLogoTrack; // Store reference
 
             if (monomerLib) {
               webLogoTrack.setMonomerLib(monomerLib);
@@ -539,5 +712,29 @@ export function handleSequenceHeaderRendering() {
   for (const tv of openTables) {
     const grid = tv?.grid;
     if (grid) handleGrid(grid);
+  }
+}
+
+// Helper function to get visible sequence count
+function getVisibleSequenceCount(seqCol: DG.Column): number {
+  const dataFrame = seqCol.dataFrame;
+  if (dataFrame.filter.trueCount === dataFrame.rowCount)
+    return seqCol.categories.filter(Boolean).length;
+
+  const visibleSequences = new Set<string>();
+  for (let i = 0; i < dataFrame.rowCount; i++) {
+    if (dataFrame.filter.get(i)) {
+      const seq = seqCol.get(i);
+      if (seq) visibleSequences.add(seq);
+    }
+  }
+  return visibleSequences.size;
+}
+
+// Optional: Add cleanup method for when grids are destroyed
+export function cleanupMSAHeaderSubscriptions(grid: DG.Grid) {
+  if (grid.temp && grid.temp.filterSubs) {
+    grid.temp.filterSubs.forEach((sub: any) => sub.unsubscribe());
+    grid.temp.filterSubs = [];
   }
 }
