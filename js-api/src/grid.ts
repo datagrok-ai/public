@@ -562,6 +562,9 @@ export class GridCell {
     return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
   }
 
+  /** For debugging mostly. Returns `${this.gridColumn.name}: ${this.gridRow}`. */
+  get position(): string { return `${this.gridColumn.name}: ${this.gridRow}`};
+
   /** Custom text to be shown in a cell . */
   get customText(): string { return api.grok_GridCell_Get_CustomText(this.dart); }
   set customText(x: string) { api.grok_GridCell_Set_CustomText(this.dart, x); }
