@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BASE_PATH, CONFIGS_PATH} from './const';
 import {_package} from './package';
+import {updateRetrosynthesisWidget} from './utils';
 
 export const STORAGE_NAME = 'retrosynthesis';
 export const KEY = 'config';
@@ -10,7 +11,7 @@ export const DEFAULT_CONFIG_NAME = 'default';
 export const TOKEN_PARAM_NAME = 'token';
 let token = '';
 
-export function configIcon(): HTMLElement {
+export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElement {
   const settings = ui.icons.settings(async () => {
     const currentConfig = grok.userSettings.getValue(STORAGE_NAME, KEY);
     const configsInAppData = await getConfigFilesFromAppData();
@@ -22,9 +23,12 @@ export function configIcon(): HTMLElement {
     const dlg = ui.dialog('Settings')
       .add(configFolderInput.root)
       .onOK(() => {
-        grok.userSettings.add(STORAGE_NAME, KEY,
-          configFolderInput!.value! === DEFAULT_CONFIG_NAME ? '' : configFolderInput!.value!);
-        grok.shell.info(`Current config saved`);
+        const newConfig = configFolderInput!.value! === DEFAULT_CONFIG_NAME ? '' : configFolderInput!.value!;
+        if (currentConfig !== newConfig) {
+          grok.userSettings.add(STORAGE_NAME, KEY, newConfig);
+          grok.shell.info(`Current config updated`);
+          updateRetrosynthesisWidget(currentMolecule, widget);
+        }
       });
     dlg.root.classList.add('retrosynthesis-settings-dlg');
     dlg.show();
@@ -135,7 +139,6 @@ export async function addConfigToDocker(files: string[], folder: string): Promis
       throw new Error(`Failed to load config: ${errorText}`);
     }
 
-    const configs = await response.json();
     grok.shell.info('Configuration added successfully');
   } catch (error) {
     grok.shell.error(`Error loading config folder: ${error}`);

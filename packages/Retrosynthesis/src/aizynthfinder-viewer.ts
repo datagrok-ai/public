@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {ReactionData, Tree} from './aizynth-api';
 import {SAMPLE_TREE} from './mock-data';
 import {RotatePath} from './const';
-import {createPathsTreeTabs} from './utils';
+import {createPathsTreeTabs} from './tree-creation-utils';
 
 export class AiZynthFinderViewer extends DG.JsViewer {
   scoreCutoff: number;
