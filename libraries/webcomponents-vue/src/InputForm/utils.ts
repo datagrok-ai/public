@@ -48,6 +48,6 @@ export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
   return arg && arg.root && arg.onInput;
 }
 
-export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
+export function isInputInjected(arg: any): boolean {
   return arg?.setStatus && isFuncCallInput(arg);
 }
