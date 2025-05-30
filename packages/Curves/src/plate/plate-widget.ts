@@ -222,7 +222,7 @@ export class PlateWidget extends DG.Widget {
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
     // row header
-    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0) {
+    else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow >= 0) {
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
     }
