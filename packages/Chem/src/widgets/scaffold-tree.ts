@@ -643,8 +643,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   closeAll?: boolean = false;
   setHighlightTag = true;
 
-  _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
+  _iconGenerate: HTMLElement | null = null;
   _iconAdd: HTMLElement | null = null;
   _iconDelete: HTMLElement | null = null;
   _bitOpInput: InputBase | null = null;
@@ -692,7 +692,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.moleculeColumnName = this.column('molecule', {
       defaultValue: defaultMolColName,
       category: 'Data',
-      userEditable: !!defaultMolColName,
       nullable: false,
       semType: DG.SEMTYPE.MOLECULE,
     });
@@ -1538,7 +1537,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
 
     const rowCount = this.dataFrame.rowCount;
-    const columnName = this.title;
+    const columnName = `${this.title}_${this.molColumn?.name}_colors`;
     this.fragmentsColumn = this.dataFrame.columns.byName(columnName);
     const isNewColumn = !this.fragmentsColumn;
 
@@ -1548,6 +1547,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.fragmentsColumn) {
       this.fragmentsColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
       this.fragmentsColumn.name = columnName;
+      this.fragmentsColumn.setTag(DG.TAGS.DESCRIPTION, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
     }
 
     this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
@@ -1909,16 +1909,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
   }
 
-  toggleTreeGenerationVisibility(): void {
-    this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
-    const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.Table);
-    const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
-    if (this.allowGenerate && isMolDataset && dataFrame && dataFrame.rowCount < MAX_MOL_NUMBER) {
-      this._generateLink!.style.color = '';
-      this._generateLink!.style.pointerEvents = 'auto';
-    }
-  }
-
   makeNodeActiveAndFilter(node: DG.TreeViewNode): void {
     this.checkBoxesUpdateInProgress = true;
     this.selectGroup(node);
@@ -1938,16 +1928,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
   }
 
-  makeGenerateInactive(message?: string) {
-    this.toggleTreeGenerationVisibility();
-    this._generateLink!.style.pointerEvents = 'none';
-    this._generateLink!.style.color = 'lightgrey';
-    this.message = message ?? NO_MOL_COL_ERROR_MSG;
-    this._message!.style.visibility = this.allowGenerate === false ? 'hidden' : 'visible';
-    if (!this.molColumn) {
-      (this._iconAdd! as any).inert = true;
-      this._iconAdd!.style.color = 'grey';
-    }
+  makeGenerateInactive() {
+    const disableIcon = (icon?: HTMLElement | null) => {
+      if (icon) {
+        (icon as any).inert = true;
+        icon.style.setProperty('color', 'gray', 'important');
+      }
+    };
+
+    const molCol = this.molColumn;
+    if (!molCol) {
+      disableIcon(this._iconAdd);
+      disableIcon(this._iconGenerate);
+    } else if (molCol.categories.length >= MAX_MOL_NUMBER)
+      disableIcon(this._iconGenerate);
+
     this.moleculeColumnName = '';
   }
 
@@ -1980,8 +1975,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div)
         div.innerHTML = this.moleculeColumnName;
 
-      this.toggleTreeGenerationVisibility();
-
       // Set the DataFrame last to trigger onFrameAttached and ensure correct filtering
       if (df)
         this.dataFrame = df;
@@ -2006,11 +1999,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       updateVisibleMols(this);
       this.updateUI();
-    } else if (p.name === 'allowGenerate')
-      this.toggleTreeGenerationVisibility();
-    else if (p.name === 'title') {
+    } else if (p.name === 'title') {
       if (this.fragmentsColumn)
-        this.fragmentsColumn.name = this.title;
+        this.fragmentsColumn.name = `${this.title}_${this.molColumn?.name}_colors`;
     }
   }
 
@@ -2146,18 +2137,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }));
 
     this.render();
-    const isMolDataset = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null;
-
-    if (!isMolDataset) {
-      this.makeGenerateInactive();
-      return;
-    }
-
-    if (dataFrame.rowCount > MAX_MOL_NUMBER) {
-      this.makeGenerateInactive(EXCEED_MAX_MOL_ERROR_MSG);
-      return;
-    }
-
+    this.message = '<br><b>Scaffold Tree is empty</b><br>Use icons above to add scaffolds';
+    this.makeGenerateInactive();
     updateVisibleMols(this);
     attached = true;
     scaffoldTreeId += 1;
@@ -2179,14 +2160,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.clearFilters();
     this.setScaffoldTag(this.molColumn!, [], true);
+    this.removeFragmentsColumn();
 
+    disconnectExistingObservers(this);
+    super.detach();
+  }
+
+  removeFragmentsColumn() {
     if (this.fragmentsColumn && this.dataFrame) {
       this.dataFrame.columns.remove(this.fragmentsColumn.name);
       this.fragmentsColumn = null;
     }
-
-    disconnectExistingObservers(this);
-    super.detach();
   }
 
   setScaffoldTag(column: DG.Column, scaffolds: any, detach: boolean = false) {
@@ -2205,7 +2189,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
-    if (!detach)
+    if (!detach && scaffolds.length > 0)
       this.assignScaffoldColors();
   }
 
@@ -2230,8 +2214,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const itemCount = this.tree.items.length;
     this._iconDelete!.style.display = itemCount > 0 ? 'flex' : 'none';
-    this._generateLink!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
-    this._message!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
+    this._message!.style.visibility = itemCount > 0 ? 'hidden' : 'visible';
 
     const c = this.root.getElementsByClassName('grok-icon fal fa-filter grok-icon-filter');
     if (c.length > 0)
@@ -2249,13 +2232,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add new root structure'),
-      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
-      ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
+      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree(), 'Generate from molecular column') : null,
+      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Sketch scaffolds manually'),
+      ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
+      ui.div([], 'd4-ribbon-separator'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.iconFA('sort', () => this.expandAndCollapse(), 'Expand / collapse all'),
+      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
+      this._bitOpInput.root,
       ui.divText(' '),
-      this._iconDelete = ui.iconFA('trash-alt',
+      this._iconDelete = ui.divH([ui.div([], 'd4-ribbon-separator'), ui.iconFA('trash-alt',
         () => {
           const dialog = ui.dialog({title: 'Delete Tree'});
           dialog
@@ -2263,24 +2249,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
             .addButton('Yes', () => {
               thisViewer.cancelled = true;
               thisViewer.clear();
+              thisViewer.removeFragmentsColumn();
               dialog.close();
             })
             .show();
-        }, 'Drop all trees'),
-      ui.divText(' '),
-      this._bitOpInput.root,
+        }, 'Drop all trees')]),
     ], 'chem-scaffold-tree-scrollbar'), 'chem-scaffold-tree-toolbar');
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
     enableToolbar(thisViewer);
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
     this.root.appendChild(this._message);
-
-    this._generateLink = ui.link('Generate',
-      async () => await thisViewer.generateTree(),
-      'Generates scaffold tree',
-      'chem-scaffold-tree-generate-hint');
-    this.root.appendChild(this._generateLink);
     this.updateSizes();
     this.updateUI();
   }
