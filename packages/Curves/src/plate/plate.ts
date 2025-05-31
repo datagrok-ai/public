@@ -186,24 +186,42 @@ export class Plate {
 
 
   /** Constructs a plate from a dataframe where each row corresponds to a well.
-   * Automatically detects position column (has to be in Excel notation). */
-  static fromTableByRow(table: DG.DataFrame): Plate {
-    const posCol = wu(table.columns)
-      .find((c) => c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
-    if (!posCol)
-      throw 'Column with well positions not found';
+   * Automatically detects position column (either one column in Excel notation, or two integer "row" and "col" columns). */
+  static fromTableByRow(
+    table: DG.DataFrame, options?: {
+      posColName?: string,
+      rowColName?: string,
+      colColName?: string
+    }): Plate
+  {
+    const posCol = wu(table.columns).find((c) =>
+      (!options?.posColName || c.name.toLowerCase() == options.posColName) &&
+      c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
 
-    const [rows, cols] = toStandardSize(getMaxPosition(wu(posCol.values()).map(parseExcelPosition)));
+    const rowColName = options?.rowColName ?? 'row';
+    const colColName = options?.colColName ?? 'col';
+    const rowCol = table.col(rowColName)?.type === DG.TYPE.INT ? table.col(rowColName) : null;
+    const colCol = table.col(colColName)?.type === DG.TYPE.INT ? table.col(colColName) : null;
+    if (!posCol && !(rowCol && colCol))
+      throw 'Columns with well positions not identified';
+
+    const rowToPos: (i: number) => [row: number, col: number] = posCol
+      ? (i => parseExcelPosition(posCol!.get(i)))
+      : (i => [rowCol!.get(i), colCol?.get(i)]);
+
+    const positions = DG.range(table.rowCount).map(rowToPos);
+    const [rows, cols] = toStandardSize(getMaxPosition(positions));
+
     const plate = new Plate(rows, cols);
 
     for (const col of table.columns) {
-      if (col.isEmpty || col == posCol)
+      if (col.isEmpty || col == posCol || col == rowCol || col == colCol)
         continue;
 
       const plateCol = plate.data.columns.addNew(col.name, col.type);
       for (let r = 0; r < col.length; r++) {
-        const [wellRow, wellCol] = parseExcelPosition(posCol.get(r));
-        plateCol.set(wellRow * cols + wellCol, col.get(r), false);
+        const [wellRow, wellCol] = rowToPos(r);
+        plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
     }
 
@@ -514,7 +532,7 @@ export class Plate {
     const result = new Map<string, string[]>();
     for (const validator of validators) {
       for (let row = 0; row < this.rows; row++) {
-        for (let col = 0; col < this.cols; col++) { 
+        for (let col = 0; col < this.cols; col++) {
           const error = validator.validate(this, row, col);
           if (error) {
             const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
