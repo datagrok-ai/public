@@ -83,6 +83,8 @@ array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you on
 
 ## Visualizations
 
+Here are some approaches we can use to make our [viewers](../visualize/viewers/viewers.md) fast: 
+
 * **Raw performance improvements**.
   Use BitSet efficiently, switch to raw arrays, minimize the number of arithmetic
   operations, do micro optimizations, get rid of lambda functions, extract conditional logic outside loops, use “for”
