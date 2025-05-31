@@ -16,7 +16,7 @@ import { PlateWidget } from './plate-widget';
 
 export class PlateDrcAnalysis {
   static analysisView(plate: Plate, options?: Partial<AnalysisOptions>): PlateWidget {
-    const pw = PlateWidget.detailedView(plate.data);
+    const pw = PlateWidget.detailedView(plate);
     const gridRoot = pw.grid.root;
     const detailsRoot = pw.detailsDiv;
     pw.plateActionsDiv = ui.div();

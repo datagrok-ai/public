@@ -79,7 +79,7 @@ export class PlateWidget extends DG.Widget {
         try {
           const pos = toExcelPosition(cell.gridRow, cell.gridColumn.idx - 1);
           const errors = this.wellValidationErrors.get(pos);
-          if (errors && errors.length > 0) 
+          if (errors && errors.length > 0)
             DG.Paint.marker(args.g, DG.MARKER_TYPE.CROSS_BORDER, cell.bounds.midX, cell.bounds.midY, DG.Color.red, 10);
         } catch (e) {
           console.error(e);
@@ -89,15 +89,15 @@ export class PlateWidget extends DG.Widget {
   }
 
   static fromPlate(plate: Plate) {
-    return PlateWidget.detailedView(plate.data);
+    return PlateWidget.detailedView(plate);
   }
 
-  static detailedView(table: DG.DataFrame): PlateWidget {
+  static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
     pw.grid.root.style.width = '100%';
-    pw.plateData = table;
+    pw.plate = plate;
     pw.colorSelector = ui.input.column('Color by', {
-      table: table,
+      table: plate.data,
       value: pw._colorColumn,
       onValueChanged: (v) => { pw._colorColumn = v; pw.grid.invalidate(); }
     });

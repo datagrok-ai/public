@@ -18,7 +18,7 @@ export function createPlatesView(): DG.View {
     for (const property of plateTemplate.wellProperties) {
       plate.data.columns.addNew(property.name!, property.value_type! as DG.ColumnType);
     }
-    plateWidget.plateData = plate.data;
+    plateWidget.plate = plate;
     plateWidget.editable = true;
   }
 
