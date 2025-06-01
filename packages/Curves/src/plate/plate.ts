@@ -104,6 +104,8 @@ export class Plate {
     return new Plate(rows, cols);
   }
 
+  /** Returns the internal index of the DataFrame row that stores information
+   * for the grid cell with 0-based (row, col) coordinates. */
   _idx(row: number, col: number): number {
     return row * this.cols + col;
   }

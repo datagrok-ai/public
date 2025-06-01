@@ -13,7 +13,7 @@ import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import { _package } from '../package';
 import {savePlate} from "../plates/plates-crud";
 import { IPlateWellValidator, plateWellValidators } from './plate-well-validators';
-import { debounceTime } from 'rxjs/operators';
+import {debounceTime, filter} from 'rxjs/operators';
 
 
 export type AnalysisOptions = {
@@ -37,13 +37,11 @@ export const dimensions = new Map([
   [1536, {rows: 32, cols: 48}],
 ]);
 
+/** Visualizes multiple layers of {@link Plate} in tabbed interface and lets you edit it */
 export class PlateWidget extends DG.Widget {
-  _plateData: DG.DataFrame = DG.DataFrame.create();
-  _colorColumn?: DG.Column;
-  grid: DG.Grid = DG.Viewer.heatMap(this._plateData);
-  _posToRow: Map<String, number> = new Map();
-  rows = 0;
-  cols = 0;
+  _colorColumn?: DG.Column | undefined;
+  _plate: Plate = new Plate(8, 12);
+  grid: DG.Grid = DG.Viewer.heatMap(DG.DataFrame.create());
   colorColumnName: string = '';
   colorSelector?: DG.InputBase;
   detailsDiv?: HTMLElement;
@@ -104,11 +102,10 @@ export class PlateWidget extends DG.Widget {
     pw.detailsDiv = ui.divV([]);
     pw.wellDetailsDiv = div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
-    pw.grid.onCurrentCellChanged.subscribe((gc) => {
+    pw.grid.onCurrentCellChanged.pipe(filter(gc => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
       ui.empty(pw.wellDetailsDiv!);
-      const row = pw.dataRow(gc);
-      if (row != null && row >= 0)
-        pw.wellDetailsDiv!.appendChild(ui.tableFromMap(pw.mapFromRowFunc(pw.plateData.rows.get(row))));
+      const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)))
+      pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
     });
 
     pw.root.prepend(pw.colorSelector.root);
@@ -129,45 +126,13 @@ export class PlateWidget extends DG.Widget {
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
 
-  get plate(): Plate {
-    const plate = new Plate(this.rows, this.cols);
-    for (const column of this.plateData.columns)
-      if (column.name != 'row' && column.name != 'col') {
-        plate.data.columns.addNew(column.name, column.type).init(i => {
-          const [row, col] = plate.rowIndexToExcel(i);
-          const dataIdx = this._posToRow.get(`${row}:${col}`);
-          return dataIdx != null ? column.get(dataIdx) : null;
-        });
-      }
-    return plate;
-  }
+  get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
-    this.plateData = p.data;
+    this._plate = p;
   }
 
-  get plateData() { return this._plateData; }
-  set plateData(t: DG.DataFrame) {
-    this._plateData = t;
-    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
-      ?? (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
-
-    let rowCol: DG.Column<number> = this._plateData.col('row')!;
-    let colCol: DG.Column<number> = this._plateData.col('col')!;
-    this.rows = rowCol?.stats?.max ?? dimensions.get(t.rowCount)?.rows!;
-    this.cols = colCol?.stats?.max ?? dimensions.get(t.rowCount)?.cols!;
-
-    if (this.rows == null || this.cols == null)
-      throw 'Row/col columns not found, and dataframe length is not of the recognized sizes (96, 384, 1536)';
-
-    for (let i = 0; i < this._plateData.rowCount; i++)
-      if (rowCol && colCol)
-        this._posToRow.set(`${rowCol.get(i)}:${colCol.get(i)}`, i);
-      else
-        this._posToRow.set(`${Math.floor(i / this.cols)}:${i % this.cols}`, i);
-
+  /** Re-renders the UI */
+  refresh() {
     this.tabs.clear();
     this.tabs.addPane('Summary', () => this.grid.root);
     for (const layer of this.plate.getLayerNames()) {
@@ -187,22 +152,24 @@ export class PlateWidget extends DG.Widget {
         return grid.root;
       });
     }
-    this.syncGrids();
     this.tabs.currentPane = this.tabs.getPane('Summary');
 
+    this.syncGrids();
+
+    const t = this.plate.data;
+    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
+      ?? (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
+
     // row header + all columns
-    this.grid.dataFrame = DG.DataFrame.create(this.rows);
+    this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
-    for (let i = 0; i <= this.cols; i++)
+    for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
     this.grid.invalidate();
-  }
-
-  dataRow(gc: DG.GridCell): number | undefined {
-    // we do not increment gridColumn index by 1 because there is a row number column with index 0 which we do not count
-    // so data columns start with 1 anyway
-    return this._posToRow.get(`${gc.gridRow}:${gc.gridColumn.idx - 1}`);
   }
 
   renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
@@ -212,7 +179,6 @@ export class PlateWidget extends DG.Widget {
     args.g.lineWidth = 1;
     let g = args.g;
     let x = args.bounds.x, y = args.bounds.y, w = args.bounds.width, h = args.bounds.height;
-    const dataRow  = this.dataRow(gc);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
@@ -226,7 +192,9 @@ export class PlateWidget extends DG.Widget {
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
     }
-    else if (summary && h > 0 && dataRow != null) {
+    else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
+      const dataRow  = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
+
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
@@ -238,7 +206,7 @@ export class PlateWidget extends DG.Widget {
           : this._colorColumn.meta.colors.getColor(dataRow);
         g.fillStyle = DG.Color.toHtml(color);
         g.fill();
-        const outlierCol = this.plateData.col(PLATE_OUTLIER_WELL_NAME);
+        const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
         if (outlierCol?.get(dataRow)) {
           g.strokeStyle = DG.Color.toHtml(DG.Color.red);
           g.lineWidth = 2;
