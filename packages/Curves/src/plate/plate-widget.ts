@@ -1,18 +1,12 @@
 import * as DG from 'datagrok-api/dg';
+import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
-import {TYPE} from "datagrok-api/dg";
-import {div} from "datagrok-api/ui";
-import {safeLog, mapFromRow, toExcelPosition } from './utils';
-import {IPlateWellFilter, Plate, PLATE_OUTLIER_WELL_NAME, randomizeTableId} from './plate';
+import {div} from 'datagrok-api/ui';
+import {mapFromRow, safeLog, toExcelPosition} from './utils';
+import {Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
-import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import { FitConstants } from '../fit/const';
-import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
-import { _package } from '../package';
-import {savePlate} from "../plates/plates-crud";
-import { IPlateWellValidator, plateWellValidators } from './plate-well-validators';
+import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
 import {debounceTime, filter} from 'rxjs/operators';
 
 
@@ -129,6 +123,7 @@ export class PlateWidget extends DG.Widget {
   get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
     this._plate = p;
+    this.refresh();
   }
 
   /** Re-renders the UI */
@@ -208,13 +203,14 @@ export class PlateWidget extends DG.Widget {
         g.fill();
         const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
         if (outlierCol?.get(dataRow)) {
-          g.strokeStyle = DG.Color.toHtml(DG.Color.red);
-          g.lineWidth = 2;
-          g.moveTo(x + w / 2 - r, y + h / 2 - r);
-          g.lineTo(x + w / 2 + r, y + h / 2 + r);
-          g.moveTo(x + w / 2 + r, y + h / 2 - r);
-          g.lineTo(x + w / 2 - r, y + h / 2 + r);
-          g.stroke();
+          DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + w / 2, DG.Color.red, r);
+          // g.strokeStyle = DG.Color.toHtml(DG.Color.red);
+          // g.lineWidth = 2;
+          // g.moveTo(x + w / 2 - r, y + h / 2 - r);
+          // g.lineTo(x + w / 2 + r, y + h / 2 + r);
+          // g.moveTo(x + w / 2 + r, y + h / 2 - r);
+          // g.lineTo(x + w / 2 - r, y + h / 2 + r);
+          // g.stroke();
         }
       }
 
