@@ -106,6 +106,8 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
     app.unmount();
   });
 
+  grok.shell.windows.showHelp = false;
+
   return view;
 }
 
@@ -143,6 +145,8 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+
+  grok.shell.windows.showHelp = false;
 
   return view;
 }
