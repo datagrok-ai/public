@@ -35,7 +35,7 @@ interface DataFrameState {
   name: string,
   df: DG.DataFrame,
   type: 'dataframe',
-  config: Record<string,any>,
+  config: Record<string, any>,
 }
 
 type TabContent = Map<string, ScalarsState | DataFrameState>;
@@ -74,7 +74,7 @@ const tabToProperties = (fc: DG.FuncCall) => {
     if (dfViewers.length === 0) return;
 
     dfViewers.forEach((dfViewer) => {
-      const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' '
+      const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
       const dfNameWithViewer = `${dfBlockTitle} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
@@ -108,7 +108,7 @@ const tabToProperties = (fc: DG.FuncCall) => {
 
       const categoryProps = map.outputs.get(category);
       const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
-      const scalarProp = {name: outputProp.caption || outputProp.name, rawValue, formattedValue, units}
+      const scalarProp = {name: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
       if (categoryProps && categoryProps.type === 'scalars')
         categoryProps.scalarsData.push(scalarProp);
       else
@@ -191,11 +191,6 @@ export const RichFunctionView = Vue.defineComponent({
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
     'formReplaced': (_a: DG.InputForm | undefined) => true,
-    'layoutReset': () => true,
-  },
-  methods: {
-    savePersonalState: () => {},
-    loadPersonalLayout: () => {},
   },
   setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
@@ -221,7 +216,7 @@ export const RichFunctionView = Vue.defineComponent({
     const buttonActions = Vue.computed(() => props.buttonActions);
 
     const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
-    const tabLabels = Vue.shallowRef<string[]>([])
+    const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
 
     const viewerTabsCount = Vue.ref<number>(0);
@@ -265,8 +260,8 @@ export const RichFunctionView = Vue.defineComponent({
       ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME)?.length;
 
       hasContextHelp.value = Utils.hasContextHelp(call.func);
-      const features = Utils.getFeatures(call.func)
-      isSAenabled.value =  Utils.getFeature(features, 'sens-analysis', false);
+      const features = Utils.getFeatures(call.func);
+      isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
     }, {immediate: true});
@@ -280,7 +275,7 @@ export const RichFunctionView = Vue.defineComponent({
         ({
           tabLabel,
           tabContent: tabToPropertiesMap.inputs.get(tabLabel) ?? tabToPropertiesMap.outputs.get(tabLabel)!,
-          isInput: !!tabToPropertiesMap.inputs.has(tabLabel)
+          isInput: !!tabToPropertiesMap.inputs.has(tabLabel),
         }));
     }, {immediate: true});
 
@@ -383,114 +378,90 @@ export const RichFunctionView = Vue.defineComponent({
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
-    return () => {
-      let lastCardLabel = null as string | null;
-      let scalarCardCount = 0;
-
-      const getElementToDock = () => {
-        return lastCardLabel &&
-        visibleTabLabels.value.includes(lastCardLabel) &&
-        scalarCardCount < 3 ? lastCardLabel: null;
-      };
-
-      const getDockRatio = () => {
-        return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
-      };
-
-      const getDockStrategy = (categoryProps: ScalarState[]) => {
-        if (viewerTabsCount.value === 0) return null;
-
-        if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill';
-
-        if (!lastCardLabel) return 'down';
-
-        return scalarCardCount < 3 ? 'right': 'down';
-      };
-
-      return (
-        Vue.withDirectives(<div class='w-full h-full flex'>
-          <RibbonMenu groupName='Panels' view={currentView.value}>
-            <span
-              onClick={() => formHidden.value = !formHidden.value}
-              class={'flex justify-between w-full'}
-            >
-              <div> <IconFA name='sign-in' style={menuIconStyle}/> Show inputs </div>
-              { !formHidden.value && <IconFA name='check'/>}
-            </span>
-            <span
-              onClick={() => visibleTabLabels.value = [...tabLabels.value]}
-              class={'flex justify-between'}
-            >
-              <div> <IconFA name='sign-out'
-                style={menuIconStyle}/> Show output tabs </div>
-              { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
-            </span>
-            { hasContextHelp.value && <span
-              onClick={() => helpHidden.value = !helpHidden.value}
-              class={'flex justify-between'}
-            >
-              <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
-              { !helpHidden.value && <IconFA name='check'/>}
-            </span> }
-            { props.historyEnabled && <span
-              onClick={() => historyHidden.value = !historyHidden.value}
-              class={'flex justify-between'}
-            >
-              <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
-              { !historyHidden.value && <IconFA name='check'/>}
-            </span> }
-          </RibbonMenu>
-          { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-            <RibbonMenu groupName={category} view={currentView.value}>
-              {
-                actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
-                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
-                </span>, [[tooltip, action.description]]))
-              }
-            </RibbonMenu>)
-          }
-          <RibbonPanel view={currentView.value}>
-            { isReportEnabled.value && !isOutputOutdated.value && <IconFA
-              name='arrow-to-bottom'
-              onClick={async () => {
-                const [blob] = await Utils.richFunctionViewReport(
-                  'Excel',
-                  currentCall.value.func,
-                  currentCall.value,
-                  Utils.dfToViewerMapping(currentCall.value),
-                );
-                DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
-              }}
-              tooltip='Generate standard report for the current step'
-            />}
-            { isSAenabled.value && <IconFA
-              name='analytics'
-              onClick={runSA}
-              tooltip='Run sensitivity analysis'
-            />}
-            { isFittingEnabled.value && <IconFA
-              name='chart-line'
-              onClick={runFitting}
-              tooltip='Fit inputs'
-            />}
-            { hasContextHelp.value && <IconFA
-              name='question'
-              tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
-              onClick={() => helpHidden.value = !helpHidden.value}
-              style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-            /> }
-            { props.historyEnabled && <IconFA
-              name='history'
-              tooltip='Open history panel'
-              onClick={() => historyHidden.value = !historyHidden.value}
-              style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
-            /> }
-          </RibbonPanel>
-          <DockManager
-            key={currentUuid.value}
-            onPanelClosed={handlePanelClose}
+    return () => (
+      Vue.withDirectives(<div class='w-full h-full flex'>
+        <RibbonMenu groupName='Panels' view={currentView.value}>
+          <span
+            onClick={() => formHidden.value = !formHidden.value}
+            class={'flex justify-between w-full'}
           >
-            { !historyHidden.value && props.historyEnabled &&
+            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show inputs </div>
+            { !formHidden.value && <IconFA name='check'/>}
+          </span>
+          <span
+            onClick={() => visibleTabLabels.value = [...tabLabels.value]}
+            class={'flex justify-between'}
+          >
+            <div> <IconFA name='sign-out'
+              style={menuIconStyle}/> Show all outputs </div>
+            { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
+          </span>
+          { hasContextHelp.value && <span
+            onClick={() => helpHidden.value = !helpHidden.value}
+            class={'flex justify-between'}
+          >
+            <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
+            { !helpHidden.value && <IconFA name='check'/>}
+          </span> }
+          { props.historyEnabled && <span
+            onClick={() => historyHidden.value = !historyHidden.value}
+            class={'flex justify-between'}
+          >
+            <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
+            { !historyHidden.value && <IconFA name='check'/>}
+          </span> }
+        </RibbonMenu>
+        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+          <RibbonMenu groupName={category} view={currentView.value}>
+            {
+              actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
+                <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
+              </span>, [[tooltip, action.description]]))
+            }
+          </RibbonMenu>)
+        }
+        <RibbonPanel view={currentView.value}>
+          { isReportEnabled.value && !isOutputOutdated.value && <IconFA
+            name='arrow-to-bottom'
+            onClick={async () => {
+              const [blob] = await Utils.richFunctionViewReport(
+                'Excel',
+                currentCall.value.func,
+                currentCall.value,
+                Utils.dfToViewerMapping(currentCall.value),
+              );
+              DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+            }}
+            tooltip='Generate standard report for the current step'
+          />}
+          { isSAenabled.value && <IconFA
+            name='analytics'
+            onClick={runSA}
+            tooltip='Run sensitivity analysis'
+          />}
+          { isFittingEnabled.value && <IconFA
+            name='chart-line'
+            onClick={runFitting}
+            tooltip='Fit inputs'
+          />}
+          { hasContextHelp.value && <IconFA
+            name='question'
+            tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
+            onClick={() => helpHidden.value = !helpHidden.value}
+            style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
+          /> }
+          { props.historyEnabled && <IconFA
+            name='history'
+            tooltip='Open history panel'
+            onClick={() => historyHidden.value = !historyHidden.value}
+            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
+          /> }
+        </RibbonPanel>
+        <DockManager
+          key={currentUuid.value}
+          onPanelClosed={handlePanelClose}
+        >
+          { !historyHidden.value && props.historyEnabled &&
               <History
                 func={currentCall.value.func}
                 onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
@@ -504,7 +475,7 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={historyRef}
                 class='overflow-scroll h-full'
               /> }
-            { !formHidden.value &&
+          { !formHidden.value &&
               <div
                 class='flex flex-col p-2 overflow-scroll h-full'
                 dock-spawn-dock-type='left'
@@ -556,64 +527,59 @@ export const RichFunctionView = Vue.defineComponent({
                   }
                 </div>
               </div> }
-            {
-              tabsData.value
-                .map(({tabLabel, tabContent, isInput}) => {
-                  if (tabContent?.type === 'dataframe') {
-                    const options = tabContent.config;
-                    return <div
-                      class='flex flex-col pl-2 h-full w-full'
-                      dock-spawn-title={tabLabel}
-                      dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
-                      key={tabLabel}
-                    >
-                      {
-                        Vue.withDirectives(<Viewer
-                          type={options['type'] as string}
-                          options={options}
-                          dataFrame={tabContent.df}
-                          class='w-full'
-                          onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
-                        />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
-                      }
-                    </div>;
-                  }
-
-                  if (tabContent?.type === 'scalars') {
-                    const scalarsData = tabContent.scalarsData;
-
-                    const panel = <ScalarsPanel
-                      class='h-full overflow-scroll'
-                      scalarsData={scalarsData}
-                      dock-spawn-panel-icon='sign-out-alt'
-                      dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={getElementToDock()}
-                      dock-spawn-dock-type={getDockStrategy(scalarsData)}
-                      dock-spawn-dock-ratio={getDockRatio()}
-                      key={tabLabel}
-                    />;
-
-                    if (scalarsData.length < 3) {
-                      scalarCardCount += scalarsData.length;
-                      lastCardLabel = tabLabel;
+          {
+            tabsData.value
+              .map(({tabLabel, tabContent, isInput}) => {
+                if (tabContent?.type === 'dataframe') {
+                  const options = tabContent.config;
+                  return <div
+                    class='flex flex-col pl-2 h-full w-full'
+                    dock-spawn-title={tabLabel}
+                    dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
+                    key={tabLabel}
+                  >
+                    {
+                      Vue.withDirectives(<Viewer
+                        type={options['type'] as string}
+                        options={options}
+                        dataFrame={tabContent.df}
+                        class='w-full'
+                        onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
+                      />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                     }
+                  </div>;
+                }
 
-                    return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
-                  }
-                })
-            }
-            { !helpHidden.value && helpText.value ?
+                if (tabContent?.type === 'scalars') {
+                  const scalarsData = tabContent.scalarsData;
+
+                  const panel = <ScalarsPanel
+                    class='h-full overflow-scroll'
+                    scalarsData={scalarsData}
+                    dock-spawn-panel-icon='sign-out-alt'
+                    dock-spawn-title={tabLabel}
+                    key={tabLabel}
+                  />;
+
+                  return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
+                }
+              })
+          }
+          { !helpHidden.value && helpText.value ?
+            <div
+              dock-spawn-title='Help'
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.2}
+              style={{overflow: 'scroll', height: '100%', padding: '5px'}}
+              ref={helpRef}
+            >
               <MarkDown
                 markdown={helpText.value}
-                dock-spawn-title='Help'
-                dock-spawn-dock-type='right'
-                dock-spawn-dock-ratio={0.15}
-                ref={helpRef}
-              /> : null
-            }
-          </DockManager>
-        </div>, [[ifOverlapping, isLocked.value]])
-      );
-    };
+              />
+            </div>: null
+          }
+        </DockManager>
+      </div>, [[ifOverlapping, isLocked.value]])
+    );
   },
 });

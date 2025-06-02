@@ -682,6 +682,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
   clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
+    return;
+  }
+
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -793,6 +799,12 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
   radarGrid: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
+    return;
+  }
+
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name && (radarViewer || radarGrid)) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
     return;
   }
 
@@ -944,6 +956,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
   if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
     grok.shell.error(`Column ${activities.name} is not numeric`);
+    return;
+  }
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
     return;
   }
 
@@ -1817,7 +1834,7 @@ export function addScaffoldTree(): void {
 
 //name: Matched Molecular Pairs Analysis
 //tags: viewer
-//meta.disableInViewerGallery: true
+//meta.showInGallery: false
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
@@ -1836,6 +1853,12 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
 
   if (activities.length < 1) {
     grok.shell.warning('MMP analysis requires at least one activity');
+    return;
+  }
+
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not an current table view`);
     return;
   }
 

@@ -16,10 +16,12 @@ import {
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
+import {DartList, MapProxy} from "./proxies";
+import {_toJson, _getIterator, _toIterable } from "./utils_convert";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
-import {Color, Widget} from './widgets';
+import type {Widget} from './widgets';
+import {Color} from './color';
 import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
@@ -31,7 +33,7 @@ import wu, {WuIterable} from "wu";
 
 declare let grok: any;
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
@@ -682,7 +684,7 @@ export class Column<T = any, TInit = T> {
   /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
   static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
     return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
-      (<any>window).grok_BigIntJs_To_BigInt(v.toString())));
+      api.grok_BigIntJs_To_BigInt(v.toString())));
   }
 
   /**

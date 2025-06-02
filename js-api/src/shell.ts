@@ -6,16 +6,17 @@ import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
-import {_toIterable} from "./utils";
+import {_toIterable} from "./utils_convert";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
 import {ComponentBuildInfo, Dapi} from "./dapi";
 import {UserSettingsStorage} from "./user_settings_storage";
 
+declare let DG: any;
 declare let ui: any;
 declare let grok: { shell: Shell, dapi: Dapi, userSettings:  UserSettingsStorage};
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 class AppBuildInfo {
   get client(): ComponentBuildInfo { return api.grok_Shell_GetClientBuildInfo(); }
@@ -44,7 +45,7 @@ export class Shell {
   }
 
   async reportTest(type: String, params: object): Promise<void> {
-    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}&ciCd=${(<any>window).DG.Test.isCiCd}`, {
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${DG.Test.isInBenchmark}&ciCd=${DG.Test.isCiCd}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       credentials: 'same-origin',
       body: api.grok_JSON_encode(toDart(params))

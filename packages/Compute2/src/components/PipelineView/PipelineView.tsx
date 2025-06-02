@@ -7,7 +7,6 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
 import {isFuncCallState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {computedAsync} from '@vueuse/core';
 
 
 export const PipelineView = Vue.defineComponent({
@@ -53,23 +52,30 @@ export const PipelineView = Vue.defineComponent({
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
     const functionsHidden = Vue.ref(true);
+
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const functionsRef = Vue.shallowRef(null as HTMLElement | null);
+
     const state = Vue.computed(() => props.state);
+    const currentCall = Vue.computed(() => props.funcCall ? Vue.markRaw(props.funcCall) : undefined);
+
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const isRoot = Vue.computed(() => props.isRoot);
 
-    const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
+    const helpText = Vue.ref<string | null | undefined>(null);
+    const hasContextHelp = Vue.ref(false);
 
-    const helpText = computedAsync(async () => {
-      if (!hoveredFunc.value) return null;
-
-      return Utils.getContextHelp(hoveredFunc.value);
-    }, null);
+    const showHelp = async (func?: DG.Func) => {
+      if (!func)
+        helpText.value = null;
+      else {
+        helpText.value = await Utils.getContextHelp(func);
+        helpHidden.value = false;
+      }
+    };
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -84,13 +90,19 @@ export const PipelineView = Vue.defineComponent({
       hasInnerStep.value = !isFuncCallState(state) && state.steps.length > 0;
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
       version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
-    }, { immediate: true });
+      helpText.value = null;
+    }, {immediate: true});
+
+    Vue.watch(currentCall, (call) => {
+      hasContextHelp.value = call ? Utils.hasContextHelp(call.func) : false;
+    }, {immediate: true});
 
     const description = Vue.computed(() => {
-      return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`
+      return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`;
     });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
+    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
       <div class='w-full h-full flex'>
@@ -98,9 +110,9 @@ export const PipelineView = Vue.defineComponent({
           onPanelClosed={handlePanelClose}
           key={props.uuid}
         >
-          { (!historyHidden.value && props.funcCall) &&
+          { (!historyHidden.value && currentCall.value) &&
             <History
-              func={props.funcCall.func}
+              func={currentCall.value.func}
               version={!isFuncCallState(state.value) ? state.value.version : undefined}
               allowOtherVersions={isRoot.value}
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
@@ -119,6 +131,7 @@ export const PipelineView = Vue.defineComponent({
             ref={functionsRef}
           >
             { state.value.stepTypes
+              .filter((item) => !item.disableUIAdding)
               .map((stepType, idx) => {
                 const func = stepType.nqName ? Vue.markRaw(DG.Func.byName(stepType.nqName)): null;
                 const language = func instanceof DG.Script ? func.language: 'javascript';
@@ -127,8 +140,6 @@ export const PipelineView = Vue.defineComponent({
                 return <div
                   class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
                   style={{width: '208px'}}
-                  onMouseover={() => hoveredFunc.value = func ? Vue.markRaw(func) : null}
-                  onMouseleave={() => hoveredFunc.value = null}
                 >
                   <div class='flex flex-col'>
                     <div class='flex flex-row justify-between'>
@@ -145,8 +156,8 @@ export const PipelineView = Vue.defineComponent({
                         { func?.options.help && <IconFA
                           class='d4-ribbon-item'
                           name='question-circle'
-                          tooltip={helpText.value}
                           style={{'padding-left': '5px'}}
+                          onClick={() => showHelp(func)}
                         />
                         }
                         <IconFA
@@ -197,7 +208,16 @@ export const PipelineView = Vue.defineComponent({
               </span>
 
               <div class={'grok-gallery-grid'}>
-                { props.funcCall &&
+                { hasContextHelp.value &&
+                  <div
+                    class={cardsClasses}
+                    onClick={() => showHelp(currentCall.value?.func)}
+                  >
+                    <IconFA name='question-circle' class={'d4-picture'} />
+                    <div> Show help </div>
+                  </div>
+                }
+                { currentCall.value &&
                   <div
                     class={cardsClasses}
                     onClick={() => historyHidden.value = false}
@@ -231,6 +251,20 @@ export const PipelineView = Vue.defineComponent({
               </div>
             </div>
           </div>
+          { !helpHidden.value && helpText.value ?
+            <div
+              dock-spawn-title='Help'
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-to='Steps to add'
+              dock-spawn-dock-ratio={0.2}
+              style={{overflow: 'scroll', height: '100%', paddingLeft: '5px'}}
+              ref={helpRef}
+            >
+              <MarkDown
+                markdown={helpText.value}
+              />
+            </div>: null
+          }
         </DockManager>
       </div>
     );

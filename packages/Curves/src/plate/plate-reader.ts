@@ -1,8 +1,8 @@
-import {Plate} from "./plate";
-import {BmgPherastar96PlateReader} from "./readers/bmg-pherastar-96";
-import {DelfiaEnvision96MaxRluPlateReader} from "./readers/delfia-envision-96-max-rlu";
-import {SpectramaxPlateReader} from "./readers/spectramax";
-import {DelfiaEnvisionByRowPlateReader} from "./readers/delfia-envision-by-row";
+import {Plate} from './plate';
+import {BmgPherastar96PlateReader} from './readers/bmg-pherastar-96';
+import {DelfiaEnvision96MaxRluPlateReader} from './readers/delfia-envision-96-max-rlu';
+import {SpectramaxPlateReader} from './readers/spectramax';
+import {DelfiaEnvisionByRowPlateReader} from './readers/delfia-envision-by-row';
 
 export interface IPlateReader {
   isApplicable(s: string): boolean;

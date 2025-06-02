@@ -286,9 +286,13 @@ def add_user_config():
     to_dir_name = request.json.get('to_dir_name')
     from_dir_name = request.json.get('from_dir_name')
     token = request.json.get('token')
+    url = request.json.get('url')
 
     if not token:
       return jsonify({ "success": False, "error": "No token provided"}), 400
+
+    if not token:
+      return jsonify({ "success": False, "error": "No sync url provided"}), 400
     
     if not from_dir_name:
       return jsonify({"success": False, "error": "Directory to sync was not provided"}), 400
@@ -296,7 +300,7 @@ def add_user_config():
     output_dir = os.getcwd()
     config_path = os.path.join(output_dir, "aizynthcli_data", to_dir_name)
 
-    api = DatagrokClient(token, 'http://host.docker.internal:8082')
+    api = DatagrokClient(token, url)
     api.sync_dir('System:AppData', from_dir_name, config_path, False)
     
     logging.info(f"Directory {from_dir_name} synchronized successfully with {config_path}")

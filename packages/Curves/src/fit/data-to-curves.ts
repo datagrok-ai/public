@@ -116,7 +116,7 @@ export function dataToCurvesUI() {
           const markerType = getMarkerType(runID);
           const s: IFitSeries = {
             fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
-            points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 8})).sort((a, b) => a.x - b.x),
+            points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 6})).sort((a, b) => a.x - b.x),
           };
           const fitData: Omit<FitChartData, 'seriesOptions'> = {
             chartOptions: {
@@ -153,8 +153,8 @@ export function dataToCurvesUI() {
     };
 
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
-      const params = {df: resDF, colName: seriesColumn.name, propName: statName, seriesName: 'series 0', seriesNumber: 0, newColName: alias};
-      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false});
+      const params = {table: resDF, colName: seriesColumn.name, propName: statName, seriesNumber: 0};
+      DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false}).getOutputParamValue().name = alias;
     });
     if (actualStatNames['interceptX'])
       resDF.col(actualStatNames['interceptX']) && (resDF.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
@@ -174,8 +174,8 @@ export function dataToCurvesUI() {
       const df = await onOK();
       if (df) {
         const tv = grok.shell.addTableView(df);
-        const trellis = tv.trellisPlot({yColumnNames: [], xColumnNames: ['Batch ID'], viewerType: 'MultiCurveViewer',
-          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: true, showYSelectors: false, packCategories: false,
+        const trellis = tv.trellisPlot({yColumnNames: ['Batch ID'], xColumnNames: [], viewerType: 'MultiCurveViewer',
+          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: false, showYSelectors: true, packCategories: true,
           onClick: 'Select'
         });
         tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, null, 'Fitted Curves', 0.5);
@@ -192,7 +192,7 @@ export function dataToCurvesUI() {
           groupByColumnNames: ['Assay'], aggregateColumnNames: ['IC50', 'AUC', 'Hill', 'Min', 'Max'],
           aggregateAggTypes: ['geomean', 'avg', 'geomean', 'avg', 'avg'], showHeader: false
         });
-        pivot.props.title = 'Seleted Statistics';
+        pivot.props.title = 'Selected Statistics';
         tv.dockManager.dock(pivot, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(trellis.root), 'Selected Statistics', 0.1);
       }
     })

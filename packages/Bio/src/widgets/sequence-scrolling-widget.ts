@@ -501,6 +501,7 @@ export function handleSequenceHeaderRendering() {
 
             webLogoTrack.setupDefaultTooltip();
             tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+
           }
 
           // Create the scrolling header

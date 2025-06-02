@@ -1,18 +1,20 @@
-import {Balloon, Color} from './widgets';
+import {Balloon} from './widgets';
+import {Color} from './color';
 import {toDart, toJs} from './wrappers';
-import {COLUMN_TYPE, ColumnType, MARKER_TYPE, ViewerType} from './const';
-import {Point, Rect} from './grid';
+import {COLUMN_TYPE, MARKER_TYPE, ViewerType, ColumnType} from './const';
+import type {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
 import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
 import wu from 'wu';
+import { MapProxy } from './proxies';
 
 declare let DG: any;
 declare let grok: any;
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 declare global {
   interface CanvasRenderingContext2D {
@@ -37,66 +39,70 @@ declare global {
   }
 }
 
-HTMLCanvasElement.prototype.g2 = function() { return this.getContext('2d')!; }
+if (typeof HTMLCanvasElement != 'undefined') {
+  HTMLCanvasElement.prototype.g2 = function () {
+    return this.getContext('2d')!;
+  }
 
-CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
-  this.fillStyle = fill;
-  return this;
-}
+  CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
+    this.fillStyle = fill;
+    return this;
+  }
 
-CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
-  this.strokeStyle = stroke;
-  return this;
-}
+  CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
+    this.strokeStyle = stroke;
+    return this;
+  }
 
-CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
-  if (w < 2 * r) r = w / 2;
-  if (h < 2 * r) r = h / 2;
-  this.beginPath();
-  this.moveTo(x + r, y);
-  this.arcTo(x + w, y, x + w, y + h, r);
-  this.arcTo(x + w, y + h, x, y + h, r);
-  this.arcTo(x, y + h, x, y, r);
-  this.arcTo(x, y, x + w, y, r);
-  this.closePath();
-  return this;
-}
+  CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  }
 
-CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
-  this.beginPath();
-  this.strokeStyle = Color.toRgb(color);
-  this.moveTo(x1, y1);
-  this.lineTo(x2, y2);
-  this.stroke();
+  CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
+    this.beginPath();
+    this.strokeStyle = Color.toRgb(color);
+    this.moveTo(x1, y1);
+    this.lineTo(x2, y2);
+    this.stroke();
 
-  return this;
-}
+    return this;
+  }
 
-CanvasRenderingContext2D.prototype.lines = function (points: Iterable<Point>) {
-  let first = true;
-  for (const point of points) {
-    if (first) {
-      this.moveTo(point.x, point.y);
-      first = false;
-    } else {
-      this.lineTo(point.x, point.y);
+  CanvasRenderingContext2D.prototype.lines = function (points: Iterable<Point>) {
+    let first = true;
+    for (const point of points) {
+      if (first) {
+        this.moveTo(point.x, point.y);
+        first = false;
+      } else {
+        this.lineTo(point.x, point.y);
+      }
     }
+    return this;
   }
-  return this;
-}
 
-CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
-  this.beginPath();
+  CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
+    this.beginPath();
 
-  const last_p = pa[pa.length - 1]
-  this.moveTo(last_p.x, last_p.y);
+    const last_p = pa[pa.length - 1]
+    this.moveTo(last_p.x, last_p.y);
 
-  for (let p of pa) {
-    this.lineTo(p.x, p.y);
+    for (let p of pa) {
+      this.lineTo(p.x, p.y);
+    }
+    this.closePath();
+
+    return this;
   }
-  this.closePath();
-
-  return this;
 }
 
 
@@ -153,7 +159,7 @@ export namespace Paint {
       let img = new Image();
 
       img.onload = function() {
-        bounds = new Rect(bounds.x, bounds.y, bounds.width, bounds.height).fit(img.width, img.height)
+        bounds = new DG.Rect(bounds.x, bounds.y, bounds.width, bounds.height).fit(img.width, img.height)
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
@@ -350,8 +356,7 @@ export class Utils {
         if ((success !== true && skipped !== true) && stopOnFail)
           break;
       }
-
-      if ((<any>window).DG.Test.isInDebug) {
+      if (DG.Test.isInDebug) {
         console.log('on browser closing debug point');
         debugger
       }
@@ -359,8 +364,8 @@ export class Utils {
 
     } catch (e) {
       failed = true;
-      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
-        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}`;
     }
 
     return {
@@ -405,56 +410,6 @@ export class Utils {
 }
 
 
-/** A proxy to a Dart `List<T>`. */
-export class DartList<T> implements Iterable<T> {
-  dart: any;
-
-  /** Creates a proxy to an existing Dart list. */
-  static fromDart<T>(dart: any): DartList<T> {
-    let list = new DartList();
-    list.dart = dart;
-    return list as DartList<T>;
-  }
-
-  [key: number]: any;
-
-  /** Returns the number of objects in this list. */
-  get length(): number { return api.grok_List_Get_Length(this.dart); }
-
-  /** Removes all objects from this list; the length of the list becomes zero. */
-  clear() { api.grok_List_Clear(this.dart); }
-
-  /** Sorts this list. */
-  sort() { api.grok_List_Sort(this.dart); }
-
-  /** Adds [value] to the end of this list, extending the length by one. */
-  push(value: T) { api.grok_List_Add(this.dart, value); }
-
-  /** Returns the object at the given [index] in the list. */
-  get(index: number): T { return api.grok_List_Get(this.dart, index); }
-
-  /** Sets the value at the given [index] in the list to [value]. */
-  set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
-
-  /** Removes the first occurrence of [value] from the list. */
-  remove(value: T) { api.grok_List_Remove(this.dart, value); }
-
-  includes(item: T, start?: number) {
-    const length = this.length;
-    for (let i = (start ? start : 0); i < length; i++) {
-      if (this.get(i) === item)
-        return true;
-    }
-    return false;
-  }
-
-  * [Symbol.iterator](): Iterator<T> {
-    for (let i = 0; i < this.length; i++)
-      yield this.get(i);
-  }
-}
-
-
 /** Html-related utilities */
 export namespace HtmlUtils {
 
@@ -464,142 +419,16 @@ export namespace HtmlUtils {
   }
 
   export function htmlGetBounds(element: HTMLElement): Rect {
-    return Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
+    return DG.Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
   }
-}
-
-/**
- * Proxies a Dart Map, API-compliant to ES 2015+
- */
-export const MapProxy = new Proxy(class {
-    dart: any;
-    objectName: string | null;
-    valueType: string | null;
-    constructor(dart: any, objectName: string | null = null, valueType: string | null = null) {
-      this.dart = dart;
-      this.objectName = objectName;
-      this.valueType = valueType;
-    }
-    keys(): Iterable<any> {
-      return _toIterable(api.grok_Map_Keys(this.dart));
-    }
-    values() {
-      return _toIterable(toJs(api.grok_Map_Values(this.dart)));
-    }
-    * [Symbol.iterator] () {
-      for (let key of this.keys()) {
-        const value = toJs(api.grok_Map_Get(this.dart, key));
-        yield [key, toJs(value)];
-      }
-    }
-    entries() {
-      return this;
-    }
-    forEach(callback: (key: string, value: any) => void) {
-      for (const [key, value] of this) {
-        callback(key, toJs(value));
-      }
-    }
-    delete(key: string) {
-      return toJs(api.grok_Map_Delete(this.dart, toDart(key)));
-    }
-    get(key: any) {
-      return toJs(api.grok_Map_Get(this.dart, key));
-    }
-    has(key: string) {
-      return api.grok_Map_Has(this.dart, toDart(key));
-    }
-    set(key: string, value: any) {
-      api.grok_Map_Set(this.dart, key, toDart(value));
-      return this;
-    }
-    clear() {
-      api.grok_Map_Clear(this.dart);
-    }
-    size() {
-      return toJs(api.grok_Map_Size(this.dart));
-    }
-  }, {
-    construct(target, args) {
-      // @ts-ignore
-      return new Proxy(new target(...args), {
-        get: function (target: any, prop) {
-          const val = target[prop];
-          if (typeof val === 'function') {
-            return function (...args :string[]) {
-              return val.apply(target, args);
-            };
-          } else {
-            return toJs(api.grok_Map_Get(target.dart, prop));
-          }
-        },
-        set: function (target, prop, value) {
-          const valueType = typeof(value);
-          if (!target.valueType || target.valueType === valueType) {
-            api.grok_Map_Set(target.dart, prop, toDart(value));
-          } else {
-            throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
-          }
-          return true;
-        },
-        deleteProperty: function (target, prop) {
-          api.grok_Map_Delete(target.dart, toDart(prop));
-          return true;
-        },
-        has: function (target, prop) {
-          return api.grok_Map_Has(target.dart, toDart(prop));
-        },
-        getOwnPropertyDescriptor(target, prop) {
-          return {
-            enumerable: true,
-            configurable: true
-          };
-        },
-        ownKeys: function (target) {
-          return Array.from(target.keys());
-        }
-      });
-    }
-  }
-);
-
-// export class PropProxy {
-//     constructor(dart) {
-//         this.dart = dart;
-//         return new Proxy({}, {
-//             get: function(target, prop) { return DG.toJs(api.grok_PropMixin_Get(dart, prop)); },
-//             set: function(target, prop, value) { api.grok_PropMixin_Set(dart, prop, DG.toDart(value)); }
-//         })
-//     }
-// }
-
-
-export function _toIterable(dart: any): Iterable<any> {
-  let iterable = {};
-  // @ts-ignore
-  iterable[Symbol.iterator] = () => _getIterator(dart);
-  // @ts-ignore
-  return iterable;
-}
-
-export function _getIterator(dart: any) {
-  let iterator = api.grok_Iterable_Get_Iterator(dart);
-  return {
-    next: function () {
-      return api.grok_Iterator_MoveNext(iterator) ?
-        {value: toJs(api.grok_Iterator_Current(iterator)), done: false} :
-        {done: true};
-    }
-  };
 }
 
 export function _isDartium() {
+  if (typeof document.head == 'undefined')
+    return false;
   return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
 }
 
-export function _toJson(x: any) {
-  return x === null ? null : JSON.stringify(x);
-}
 
 function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
@@ -831,57 +660,6 @@ export function _options(element: HTMLElement, options: any) {
   if (options.onClick != null)
     element.addEventListener('click', options.onClick);
   return element;
-}
-
-/**
- * Converts entity properties between JavaScript and Dart.
- * See also: {@link include}
- */
-export function _propsToDart(s: string, cls: string): string {
-  const jsToDart: { [indes:string] : {[index: string]: string} } = {
-    'Group' : {
-      'adminMemberships': 'parents.parent',
-      'memberships': 'parents.parent',
-      'members': 'children.child',
-      'adminMembers': 'children.child',
-    },
-    'Project': {
-      'children': 'relations.entity',
-      'links': 'relations.entity'
-    },
-    'Function': {
-      'inputs': 'params',
-      'outputs': 'params'
-    }
-  };
-
-  let propsMap = jsToDart[cls];
-  if (!propsMap)
-    return s;
-  let res = '';
-  if (s === res) return res;
-  let ents = s.split(',');
-  for (let ent of ents) {
-    let props = ent.trim();
-
-    while (props) {
-      let idx = props.indexOf('.');
-      let match = propsMap[props];
-      if (match) res += match;
-      else {
-        let p = (idx === -1) ? props : props.slice(0, idx);
-        res += propsMap[p] || p;
-      }
-      if (idx === -1) props = '';
-      else {
-        props = props.slice(idx + 1);
-        res += '.';
-      }
-    }
-
-    res += ',';
-  }
-  return res;
 }
 
 export function format(x: number, format?: string): string {

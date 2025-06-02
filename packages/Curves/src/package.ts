@@ -1,7 +1,7 @@
-/* eslint-disable max-len */
-import {_PlateGridCellRenderer} from './package.g';
-import {_MultiCurveViewer} from './package.g';
-import {_FitChartCellRenderer} from './package.g';
+
+//@ts-ignore
+export * from './package.g';
+
 
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
@@ -17,17 +17,30 @@ import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
 import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
-import {getPlatesFolderPreview, PlateWidget} from './plate/plate-widget';
+import {PlateWidget} from './plate/plate-widget';
 import {PlateReader} from './plate/plate-reader';
-import {initPlatesAppTree, platesAppView} from './plates/plates_app';
-import {__createDummyPlateData, initPlates} from './plates/plates_crud';
+import {initPlatesAppTree, platesAppView} from './plates/plates-app';
+import {initPlates} from './plates/plates-crud';
+import {__createDummyPlateData} from './plates/plates-demo';
 import {dataToCurvesUI} from './fit/data-to-curves';
+import {getPlatesFolderPreview} from './plate/plates-folder-preview';
+import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
+import wu from 'wu';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
+
+class Sync {
+  private static _currentPromise: Promise<any> = Promise.resolve();
+  public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
+    Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
+    return Sync._currentPromise;
+  }
+  // the number at the end is the column version
+}
 
 
 export class PackageFunctions {
@@ -57,59 +70,69 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new PlateCellHandler());
   }
 
-  @grok.decorators.func({tags: ['Transform']})
-  static addStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName?: string): void {
-    const grid = DG.Viewer.grid(df);
-    const chartColumn = grid.col(colName)!;
-    const column = DG.Column.float(newColName ?? `${colName} ${seriesName} ${propName}`, chartColumn.column?.length);
-    column.tags[SOURCE_COLUMN_TAG] = colName;
+  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'})seriesNumber: number): DG.Column {
+    const df = table;
+    const col = df.col(colName)!;
+    const sourceColName = col.name;
+    const initialName = df.columns.getUnusedName(`${colName} ${seriesNumber + 1} ${propName}`);
+
+    //const grid = DG.Viewer.grid(df);
+    const column = DG.Column.float(initialName, col.length);
+
+    column.tags[SOURCE_COLUMN_TAG] = col.name;
     column.tags[SERIES_NUMBER_TAG] = seriesNumber?.toString();
     column.tags[STATISTICS_TAG] = propName;
 
     column
       .init((i) => {
-        const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
-        if (gridCell.cell.value === '')
+        //const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
+        const cell = df.cell(i, sourceColName);
+        if (!cell || !cell.value)
           return null;
-        const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
+        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell, true); // false because there is no dataframe
         if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
           chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
           substituteZeroes(chartData);
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-        const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, gridCell);
+        const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, cell, true);
         return fitResult[propName as keyof FitStatistics];
       });
-    df.columns.insert(column, chartColumn.idx);
+
+    df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
+    return column;
   }
 
-  @grok.decorators.func({tags: ['Transform']})
-  static addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propName: string, aggrType: string): void {
-    const grid = DG.Viewer.grid(df);
-    const chartColumn = grid.col(colName)!;
-    const column = DG.Column.float(`${colName} ${aggrType} ${propName}`, chartColumn.column?.length);
+  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  static addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string): DG.Column {
+    const df = table;
+    const col = df.col(colName)!;
+    const nName = `${colName} ${aggrType} ${propName}`;
+    const column = DG.Column.float(df.columns.getUnusedName(nName), col?.length);
+
     column.tags[SOURCE_COLUMN_TAG] = colName;
     column.tags[SERIES_AGGREGATION_TAG] = aggrType;
     column.tags[STATISTICS_TAG] = propName;
-
     column
       .init((i) => {
-        const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
-        if (gridCell.cell.value === '')
+        const cell = df.cell(i, colName);
+        if (!cell || !cell.value)
           return null;
-        const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell);
+        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
           chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
           substituteZeroes(chartData);
-        const fitResult = getChartDataAggrStats(chartData, aggrType, gridCell);
+        const fitResult = getChartDataAggrStats(chartData, aggrType, cell);
         return fitResult[propName as keyof FitStatistics];
       });
-    df.columns.insert(column, chartColumn.idx);
+    df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
+    return column;
   }
 
   @grok.decorators.folderViewer({})
@@ -148,7 +171,7 @@ export class PackageFunctions {
   static async importPlateXlsx(fileContent: Uint8Array) : Promise<any[]> {
     const view = DG.View.create();
     const plate = await PackageFunctions.parseExcelPlate(fileContent);
-    view.root.appendChild(PlateWidget.analysisView(plate).root);
+    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
     view.name = 'Plate';
     grok.shell.addView(view);
     return [];
@@ -159,7 +182,7 @@ export class PackageFunctions {
     const view = DG.View.create();
     view.name = file.friendlyName;
     const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
-    view.root.appendChild(PlateWidget.analysisView(plate).root);
+    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
     return view;
   }
 
@@ -196,11 +219,6 @@ export class PackageFunctions {
     return platesAppView();
   }
 
-  @grok.decorators.treeBrowser({ })
-  static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
-    await initPlatesAppTree(treeNode);
-  }
-
   @grok.decorators.func({ })
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
@@ -214,41 +232,9 @@ export class PackageFunctions {
   }
 }
 
-
-//name: Browse
-//tags: app
-//meta.browsePath: Plates
-//output: view result
-export function platesApp() {
-  return PackageFunctions.platesApp();
-}
-
+//name: platesAppTreeBrowser
 //input: dynamic treeNode
 //input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-  await PackageFunctions.platesAppTreeBrowser(treeNode);
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+  await initPlatesAppTree(treeNode);
 }
-
-//name: getPlateByBarcode
-//input: string barcode
-//output: dynamic plate
-export async function getPlateByBarcode(barcode: string): Promise<Plate> {
-  return PackageFunctions.getPlateByBarcode(barcode);
-}
-
-//name: createDummyPlateData
-export async function createDummyPlateData() {
-  await PackageFunctions.createDummyPlateData();
-}
-
-//top-menu: Data | Curves | Data to Curves
-//name: dataToCurves
-//description: Convert data to curves
-export function dataToCurves() {
-  dataToCurvesUI();
-}
-
-
-export * from './package.g'; export {_FitChartCellRenderer};
-export {_MultiCurveViewer};
-export {_PlateGridCellRenderer};

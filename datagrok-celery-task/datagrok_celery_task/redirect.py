@@ -57,13 +57,26 @@ class WebSocketRedirect(BaseRedirect):
     def __init__(self, ws: websocket.WebSocket):
         super().__init__()
         self.ws = ws
+        self.notified_overflow = False
 
     def write(self, message: str):
         if self.message_count > self.max_message_count:
-           return 
+            if not self.notified_overflow:
+                try:
+                    log_entry = {
+                        "level": "warning",
+                        "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        "message": "Stdout overflow. Possible printing in the loop?",
+                        "params": {self.service_log_key: True}
+                    }
+                    self.ws.send(f"LOG {json.dumps(log_entry)}")
+                    self.notified_overflow = True
+                except Exception:
+                    pass
+            return 
         try:
             self.message_count += 1
-            self.ws.send_text(f"LOG {json.dumps(self.formatMessage(message))}") 
+            self.ws.send(f"LOG {json.dumps(self.formatMessage(message))}") 
         except Exception:
             pass    
               
@@ -79,12 +92,22 @@ class AmqpRedirect(BaseRedirect):
         super().__init__()
         self.call_id = call_id
         self.amqp_publisher = AmqpFanoutPublisher.get_instance()
+        self.notified_overflow = False
      
     def write(self, message: str):
         if self.message_count > self.max_message_count:
-           return 
+            if not self.notified_overflow:
+                try:
+                    self.amqp_publisher.publish({"level": "warning", 
+                                                 "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                                                 "message": "Stdout overflow. Possible printing in the loop?",
+                                                 "params": {self.service_log_key: True}}, self.call_id, DatagrokFanoutType.LOG)
+                    self.notified_overflow = True
+                except Exception:
+                    pass
+            return 
         try:   
             self.message_count += 1
-            self.amqp_publisher.publish(self.formatMessage(message), self.call_id, DatagrokFanoutType.LOG.value)
+            self.amqp_publisher.publish(self.formatMessage(message), self.call_id, DatagrokFanoutType.LOG)
         except Exception:
-            pass                    
+            pass                  

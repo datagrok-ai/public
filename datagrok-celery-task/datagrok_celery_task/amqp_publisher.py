@@ -2,6 +2,10 @@ import time
 from threading import Lock
 from typing import Optional, Dict, Any
 from kombu import Connection, Exchange, Producer
+from amqp.exceptions import (
+    ConnectionError,
+    ChannelError
+)
 from kombu.exceptions import KombuError
 
 from .utils import DatagrokFanoutType
@@ -98,16 +102,23 @@ class AmqpFanoutPublisher:
         if not AmqpFanoutPublisher._initialized:
             raise RuntimeError("AmqpFanoutPublisher is not initialized")
 
-        self._ensure_amqp_conn()
-        self._producer.publish(
-            payload,
-            exchange=self._exchange,
-            routing_key=routing_key,
-            correlation_id=correlation_id,
-            type=type_.value,
-            serializer=serializer,
-            timeout=self._publish_timeout
-        )
+        try:
+            self._ensure_amqp_conn()
+            self._producer.publish(
+                payload,
+                exchange=self._exchange,
+                routing_key=routing_key,
+                correlation_id=correlation_id,
+                type=type_.value,
+                serializer=serializer,
+                timeout=self._publish_timeout
+            )
+        except (ConnectionError, ChannelError, OSError):
+            self._amqp_conn = None
+            self._producer = None
+            self._exchange = None
+            raise
+
 
     def close(self) -> None:
         if self._amqp_conn:

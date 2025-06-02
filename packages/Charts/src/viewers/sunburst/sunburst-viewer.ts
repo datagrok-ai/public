@@ -15,6 +15,7 @@ import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
+const MAXIMUM_COLUMN_NUMBER = 20;
 let sunburstId = 0;
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
@@ -110,15 +111,6 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  private isRowMatch(rowIndex: number, targetName: string): boolean {
-    const { eligibleHierarchyNames, dataFrame } = this;
-    return eligibleHierarchyNames.some((colName, index) => {
-      const column = dataFrame.getCol(colName);
-      const value = column.getString(rowIndex);
-      return value === targetName;
-    });
-  }
-
   initEventListeners(): void {
     if (!this.chart) return;
 
@@ -142,35 +134,23 @@ export class SunburstViewer extends EChartViewer {
     };
 
     const handleChartMouseover = async (params: any) => {
-      const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
-      const bitset = this.filter;
+      const { x, y } = params.event.event;
+      const { name, value, data } = params;
+      const tooltipDiv = ui.div();
 
-      const matchDf = this.dataFrame.clone();
-      matchDf.rows.removeWhere((row) => bitset && !bitset.get(row.idx));
+      ui.tooltip.show(tooltipDiv, x + 10, y);
 
-      this.handleDataframeFiltering(path, matchDf);
-      const matchCount = matchDf.filter.trueCount;
-
-      const tooltipX = params.event.event.x + 10;
-      const tooltipY = params.event.event.y;
-      const tooltipText = `${matchCount}\n${params.name}`;
-
-      ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
-      if (params.data.semType === DG.SEMTYPE.MOLECULE) {
-        const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
-        const { width, height } = image;
-
-        if (width && height) {
-          const pixels = image!.getContext('2d')!.getImageData(0, 0, width, height).data;
-
-          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
-            ui.tooltip.root.appendChild(image);
-            return;
-          }
-        }
+      if (data.semType !== DG.SEMTYPE.MOLECULE) {
+        tooltipDiv.innerText = `${value}\n${name}`;
+        return;
       }
 
-      ui.tooltip.root.innerText = tooltipText;
+      const image = await TreeUtils.getMoleculeImage(name, 150, 100);
+      tooltipDiv.appendChild(ui.divText(`${value}\n`));
+      if (name) {
+        tooltipDiv.appendChild(image);
+        return;
+      }
     };
 
     const handleCanvasDblClick = (event: MouseEvent) => {
@@ -437,6 +417,7 @@ export class SunburstViewer extends EChartViewer {
 
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
+    this.eligibleHierarchyNames = this.eligibleHierarchyNames.slice(0, MAXIMUM_COLUMN_NUMBER);
     const data = await this.getSeriesData();
     Object.assign(this.option.series[0], {
       data,

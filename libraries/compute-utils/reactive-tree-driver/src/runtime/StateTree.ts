@@ -16,6 +16,7 @@ import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
+import {NestedItemContext} from '../config/PipelineConfiguration';
 
 const MAX_CONCURENT_SAVES = 5;
 

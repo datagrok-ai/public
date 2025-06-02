@@ -45,24 +45,26 @@ export function _initCurves() {
 
 //name: addStatisticsColumn
 //tags: Transform
-//input: dataframe df 
+//input: dataframe table 
 //input: string colName 
 //input: string propName 
-//input: string seriesName 
-//input: double seriesNumber 
-//input: string newColName 
-export function addStatisticsColumn(df: any, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName: string) {
-  return PackageFunctions.addStatisticsColumn(df, colName, propName, seriesName, seriesNumber, newColName);
+//input: int seriesNumber 
+//output: column result
+//meta.vectorFunc: true
+export function addStatisticsColumn(table: any, colName: string, propName: string, seriesNumber: number) {
+  return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
 //name: addAggrStatisticsColumn
 //tags: Transform
-//input: dataframe df 
+//input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
-export function addAggrStatisticsColumn(df: any, colName: string, propName: string, aggrType: string) {
-  return PackageFunctions.addAggrStatisticsColumn(df, colName, propName, aggrType);
+//output: column result
+//meta.vectorFunc: true
+export function addAggrStatisticsColumn(table: any, colName: string, propName: string, aggrType: string) {
+  return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
 
 //name: platesFolderPreview
@@ -133,12 +135,6 @@ export function checkFileIsPlate(content: string) {
 //meta.browsePath: Plates
 export function platesApp() {
   return PackageFunctions.platesApp();
-}
-
-//name: platesAppTreeBrowser
-//input: dynamic treeNode 
-export async function platesAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.platesAppTreeBrowser(treeNode);
 }
 
 //name: getPlateByBarcode

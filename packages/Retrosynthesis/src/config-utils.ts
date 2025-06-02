@@ -2,13 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BASE_PATH, CONFIGS_PATH} from './const';
-import { _package } from './package';
+import {_package} from './package';
+import {updateRetrosynthesisWidget} from './utils';
 
 export const STORAGE_NAME = 'retrosynthesis';
 export const KEY = 'config';
 export const DEFAULT_CONFIG_NAME = 'default';
+export const TOKEN_PARAM_NAME = 'token';
+let token = '';
 
-export function configIcon(): HTMLElement {
+export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElement {
   const settings = ui.icons.settings(async () => {
     const currentConfig = grok.userSettings.getValue(STORAGE_NAME, KEY);
     const configsInAppData = await getConfigFilesFromAppData();
@@ -20,9 +23,12 @@ export function configIcon(): HTMLElement {
     const dlg = ui.dialog('Settings')
       .add(configFolderInput.root)
       .onOK(() => {
-        grok.userSettings.add(STORAGE_NAME, KEY,
-          configFolderInput!.value! === DEFAULT_CONFIG_NAME ? '' : configFolderInput!.value!);
-        grok.shell.info(`Current config saved`);
+        const newConfig = configFolderInput!.value! === DEFAULT_CONFIG_NAME ? '' : configFolderInput!.value!;
+        if (currentConfig !== newConfig) {
+          grok.userSettings.add(STORAGE_NAME, KEY, newConfig);
+          grok.shell.info(`Current config updated`);
+          updateRetrosynthesisWidget(currentMolecule, widget);
+        }
       });
     dlg.root.classList.add('retrosynthesis-settings-dlg');
     dlg.show();
@@ -133,7 +139,6 @@ export async function addConfigToDocker(files: string[], folder: string): Promis
       throw new Error(`Failed to load config: ${errorText}`);
     }
 
-    const configs = await response.json();
     grok.shell.info('Configuration added successfully');
   } catch (error) {
     grok.shell.error(`Error loading config folder: ${error}`);
@@ -141,14 +146,37 @@ export async function addConfigToDocker(files: string[], folder: string): Promis
   }
 }
 
-const token = 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImF1dGgifQ.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjYzMzQzL2xvZ2luLmh0bWw_ZGFwaVVybD1odHRwOi8vMTI3LjAuMC4xOjgwODIiLCJpZCI6ImYzN2M2MWEwLTEwMzAtMTFmMC1hZGUzLTNkZDYyZTg4YWQ2MiIsImV4cCI6IjIwMjUtMDUtMDdUMTM6NTc6MTUuMDUyMjA1WiIsInN1YiI6eyJpZCI6Ijg3OGM0MmIwLTlhNTAtMTFlNi1jNTM3LTZiZjhlOWFiMDJlZSIsImxvZ2luIjoiYWRtaW4iLCJwcm9qZWN0Ijp7ImlkIjoiODc4YzQyYjAtOWE1MC0xMWU2LWM1MzctNmJmOGU5YWIwMjk5IiwibmFtZSI6IkFkbWluIn0sImdyb3VwIjp7ImlkIjoiYTRiNDU4NDAtOWE1MC0xMWU2LWM1MzctNmJmOGU5YWIwMmVlIn19fQ.TAWTt0jovll7RaWFthnzlelpY8Y4E9ZMxWhPNpMcGE9z6VlYc_9jI_pt9cyS226nnBdlAb47G22D4RMu4S4uOKkiIJesp7x9SJlk2uUXL46O_NKb_gMem9qopgfRUDPcB9NTKCBRarnjaFk4C0mF-5xqG1rEErThsaS7oVkiVsezY4t1BGHLwY8P09R-Tr4tjI4O2AN9DN4owCris5raLM7BnR7kApij7EAEvJ0j74o54opdUXERZ40lvqxIwjo1PPvFKXcsEuockfyccZ6NJxA94Sg8NnleGOHUj2V1Ti6d47VOVEwY4NxDQcYJ-yW8CJlWZT5yAg2axGDWdQgBXA'
+async function getToken() {
+  if (token === '') {
+    const credentials = await _package.getCredentials();
+    if (!credentials)
+      throw new Error('Token is not set in package credentials');
+    if (!credentials.parameters[TOKEN_PARAM_NAME])
+      throw new Error('Token is not set in package credentials');
+    token = credentials.parameters[TOKEN_PARAM_NAME];
+  }
+}
+
+function getHostName() {
+  const host = window.location.origin;
+  if (host.includes('://localhost') || host.includes('://127.0.0.1'))
+    return `http://host.docker.internal:8082`;
+  return `${host}/api`;
+}
 
 export async function syncConfig(dirName: string): Promise<void> {
   const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
   try {
+    await getToken();
+    const url = getHostName();
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/sync_dir', {
       method: 'POST',
-      body: JSON.stringify({from_dir_name: `${_package.name}/${dirName}`, to_dir_name: dirName, token: token}),
+      body: JSON.stringify({
+        from_dir_name: `${_package.name}/${dirName}`,
+        to_dir_name: dirName,
+        token: token,
+        url: url,
+      }),
       headers: {
         'Content-Type': 'application/json',
       },
