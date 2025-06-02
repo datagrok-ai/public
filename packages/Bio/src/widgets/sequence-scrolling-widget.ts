@@ -373,7 +373,7 @@ export function handleSequenceHeaderRendering() {
         };
 
         let initialHeaderHeight: number;
-        if (seqCol.length > 100_000) {
+        if (seqCol.length > 100_000 || maxSeqLen < 50) {
           // Single sequence: just dotted cells
           initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
         } else {
