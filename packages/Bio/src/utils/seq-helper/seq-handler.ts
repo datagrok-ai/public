@@ -415,7 +415,7 @@ export class SeqHandler implements ISeqHandler {
   public get maxLength(): number {
     if (this._maxLength === null) {
       this._maxLength = this.column.length === 0 ? 0 :
-        Math.max(...wu.count(0).take(this.column.length).map((rowIdx) => this.getSplitted(rowIdx).length));
+        wu.count(0).take(this.column.length).map((rowIdx) => this.getSplitted(rowIdx).length).reduce((a, b) => a > b ? a : b, 0);
     }
     return this._maxLength!;
   }
