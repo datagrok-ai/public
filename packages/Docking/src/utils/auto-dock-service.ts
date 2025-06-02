@@ -134,14 +134,14 @@ export class AutoDockService implements IAutoDockService {
       autodock_gpf: autodockGpf,
       pose_count: poseCount,
     };
-    const params: RequestInit = {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(form),
-    };
 
-    const path = `/autodock/dock_ligand`;
-    const adRes = (await this.fetchAndCheck(path, params)) as Forms.dockLigandRes;
+    const dockingResult = await grok.functions.call('Docking:dockLigandCached', {
+      jsonForm: JSON.stringify(form), containerId: this.dc.id
+    });
+
+    const adRes = (await JSON.parse(dockingResult)) as Forms.dockLigandRes;
+    ensureNoDockingError(adRes);
+
     const result = adRes as unknown as Forms.LigandResults;
     const poses = result.poses;
 
@@ -223,11 +223,7 @@ export class AutoDockService implements IAutoDockService {
       // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
-    if ('datagrok-error' in adRes) {
-      const errVal = adRes['datagrok-error'];
-      const errMsg = errVal ? errVal.toString() : 'Unknown error';
-      throw new Error(errMsg);
-    }
+    ensureNoDockingError(adRes);
     return adRes;
   }
 
@@ -237,6 +233,15 @@ export class AutoDockService implements IAutoDockService {
     return svc;
   }
 }
+
+export function ensureNoDockingError(response: any) {
+  if ('datagrok-error' in response) {
+    const errVal = response['datagrok-error'];
+    const errMsg = errVal ? errVal.toString() : 'Unknown error';
+    throw new Error(errMsg);
+  }
+}
+
 
 export async function _runAutodock(
   receptor: DG.FileInfo, ligand: DG.FileInfo, npts: GridSize

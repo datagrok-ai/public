@@ -91,6 +91,24 @@ export async function prepareAutoDockData(
   };
 }
 
+//name: dockLigandCached
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: string jsonForm
+//input: string containerId
+//output: string dockingResult
+export async function dockLigandCached(jsonForm: string, containerId: string): Promise<string> {
+  const params: RequestInit = {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: jsonForm,
+  };
+  
+  const path = `/autodock/dock_ligand`;
+  const dockingResult = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
+  return await dockingResult.text();
+}
+
 //top-menu: Chem | Docking | AutoDock...
 //name: Autodock
 //tags: HitTriageFunction
