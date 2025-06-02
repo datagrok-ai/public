@@ -126,6 +126,11 @@ export class Driver {
   }
 
   public sendCommand(msg: ViewConfigCommands) {
+    if (this.globalROLocked$.value || this.treeMutationsLocked$.value) {
+      grok.shell.warning(`Ignoring event ${msg.event}`);
+      console.warn(`Ignoring event ${msg.event}`);
+      return;
+    }
     this.commands$.next(msg);
   }
 

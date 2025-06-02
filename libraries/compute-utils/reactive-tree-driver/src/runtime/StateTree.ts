@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
+import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest, EMPTY} from 'rxjs';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, catchError} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -16,9 +16,10 @@ import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
-import {NestedItemContext} from '../config/PipelineConfiguration';
 
 const MAX_CONCURENT_SAVES = 5;
+
+export class LockError extends Error {}
 
 export class StateTree {
   private closed$ = new Subject<true>();
@@ -834,14 +835,13 @@ export class StateTree {
 
   private treeLock() {
     if (this.globalROLocked$.value)
-      throw new Error(`Changes double lock`);
+      throw new LockError(`Changes double lock`);
     this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
-    if (!this.globalROLocked$.value)
-      throw new Error(`Changes double unlock`);
-    this.globalROLocked$.next(false);
+    if (this.globalROLocked$.value)
+      this.globalROLocked$.next(false);
   }
 
   private getMutationSlice(path: NodePath) {
