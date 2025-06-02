@@ -16,7 +16,7 @@ export class SearchBaseViewer extends DG.JsViewer {
   constructor(name: string, semType: string) {
     super();
     this.limit = this.int('limit', 10, {min: 1, max: this.maxLimit});
-    this.targetColumnName = this.string('targetColumnName', null, {...(semType ? {semType: semType} : {})});
+    this.targetColumnName = this.string('targetColumnName', null, {...(semType ? {semType: semType} : {}), nullable: false});
     this.name = name;
     this.semType = semType;
   }
@@ -89,7 +89,7 @@ export class SearchBaseViewer extends DG.JsViewer {
   }
 
   beforeRender() {
-    if (!this.initialized)
+    if (!this.initialized || !this.targetColumnName)
       return false;
     if (this.dataFrame && this.targetColumnName &&
           this.dataFrame.col(this.targetColumnName)!.semType !== this.semType) {
