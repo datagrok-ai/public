@@ -82,6 +82,22 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`);
    
     grok.shell.windows.showContextPanel = true;
+    const getPieChartHeader = () => {
+      const propPanel = document.getElementsByClassName('grok-prop-panel');
+      if (propPanel.length)
+        return propPanel[0].querySelector('[name="Pie chart"]');
+    }
+    await this.action('Go to Pie chart tab', new Observable((subscriber: any) => {
+      const observer = new MutationObserver((mutationsList, observer) => {
+        const pieChartH = getPieChartHeader() as HTMLElement;
+        if (pieChartH.classList.contains('selected')) {
+          subscriber.next(true);
+          observer.disconnect();
+        }
+      });
+      observer.observe($('.grok-prop-panel').get(0)!, { childList: true, subtree: true });
+    }), getPieChartHeader() as HTMLElement);
+
     await this.action('Under Pie chart tab > Data, set Category to LC/MS', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
@@ -91,7 +107,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           }
         });
       });
-      observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
+      observer.observe($('.grok-prop-panel').get(0)!, { childList: true, subtree: true });
     }));
 
     this.title('Analyze and explore', true);
