@@ -1267,6 +1267,8 @@ export interface IDartApi {
   grok_Property_Set_Description(p: any, x: String): any;
   grok_Property_Get_Nullable(p: any): any;
   grok_Property_Set_Nullable(p: any, x: Bool): any;
+  grok_Property_Get_InitialValue(p: any): any;
+  grok_Property_Set_InitialValue(p: any, x: any): any;
   grok_Property_Get_DefaultValue(p: any): any;
   grok_Property_Set_DefaultValue(p: any, x: any): any;
   grok_Property_Get_Choices(p: any): any;

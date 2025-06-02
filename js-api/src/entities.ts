@@ -1477,6 +1477,10 @@ export class Property {
   get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
+  /** Initial value used when initializing UI */
+  get initialValue(): any { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: any) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
+
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
   set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, toDart(s)); }
