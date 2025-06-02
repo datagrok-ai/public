@@ -20,6 +20,7 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 let attached = false;
 let scaffoldTreeId = 0;
 const SCAFFOLD_TREE_SKETCHER_ACTION = 'scaffold-tree-sketcher-action';
+const EXCLUDE_FROM_FILTER_COLUMN_SELECT = '.exclude-from-filter-column-select';
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -1548,6 +1549,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.fragmentsColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
       this.fragmentsColumn.name = columnName;
       this.fragmentsColumn.setTag(DG.TAGS.DESCRIPTION, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
+      this.fragmentsColumn.setTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT, 'true');
     }
 
     this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
