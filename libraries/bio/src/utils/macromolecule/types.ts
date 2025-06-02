@@ -20,6 +20,14 @@ export interface ISeqSplitted {
   // get(posIdx: number): ISeqMonomer;
 
   length: number;
+
+  /** Returns list of canonical monomers in the region specified */
+  getCanonicalRegion(start: number, end: number): string[];
+
+  /** Returns the list of original monomers in the region specified */
+  getOriginalRegion(start: number, end: number): string[];
+
+  get gapOriginal(): string;
 }
 
 export interface INotationProvider {

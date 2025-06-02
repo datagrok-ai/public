@@ -44,6 +44,24 @@ export class StringListSeqSplitted implements ISeqSplitted {
     return this.mList[posIdx];
   }
 
+  getCanonicalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    const len = actEnd - actStart;
+    const gap = this.gapOriginalMonomer;
+    return new Array(len).fill(null).map((_, i) => { const om = this.mList[i + actStart]; return om === gap ? GAP_SYMBOL : om; });
+  }
+
+  getOriginalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    const len = actEnd - actStart;
+    return new Array(len).fill(null).map((_, i) => this.mList[i + actStart]);
+  }
+  get gapOriginal(): string {
+    return this.gapOriginalMonomer;
+  }
+
   constructor(
     private readonly mList: SeqSplittedBase,
     private readonly gapOriginalMonomer: string
@@ -69,6 +87,27 @@ export class FastaSimpleSeqSplitted implements ISeqSplitted {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');
     return this.seqS[posIdx];
+  }
+
+  getCanonicalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    const len = actEnd - actStart;
+    const gap = GapOriginals[NOTATION.FASTA];
+    return new Array(len).fill(null).map((_, i) => {
+      const om = this.seqS[i + actStart];
+      return om === gap ? GAP_SYMBOL : om;
+    });
+  }
+
+  getOriginalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    return this.seqS.slice(actStart, actEnd) as unknown as string[]; // hacky way but quite effective
+  }
+
+  get gapOriginal(): string {
+    return GapOriginals[NOTATION.FASTA];
   }
 
   constructor(

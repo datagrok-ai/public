@@ -10,6 +10,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {ISeqHandler} from './macromolecule/seq-handler';
 
 // Layout Constants
 // const LAYOUT_CONSTANTS = {
@@ -34,8 +35,8 @@ const WEBLOGO_CONSTANTS = {
 
 // Typography Constants
 const FONTS = {
-  TITLE: 'bold 10px sans-serif',
-  COLUMN_TITLE: 'bold 13px sans-serif',
+  TITLE: 'bold 10px Roboto, Roboto Local',
+  COLUMN_TITLE: 'bold 13px Roboto, Roboto Local',
   POSITION_LABELS: '12px monospace',
   CONSERVATION_TEXT: '9px monospace',
   TOOLTIP_MAIN: '13px',
@@ -66,7 +67,7 @@ const TOOLTIP_STYLE = {
   borderRadius: '3px',
   padding: '8px',
   fontSize: '12px',
-  fontFamily: 'sans-serif',
+  fontFamily: 'Roboto, Roboto Local',
   minWidth: '120px'
 } as const;
 
@@ -463,7 +464,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
     const fontSize = Math.min(height * 0.8, width * 0.8);
     if (fontSize >= 7) {
       this.ctx!.fillStyle = textColor;
-      this.ctx!.font = `bold ${fontSize}px sans-serif`;
+      this.ctx!.font = `bold ${fontSize}px Roboto, Roboto Local`;
       this.ctx!.textAlign = 'center';
       this.ctx!.textBaseline = 'middle';
       this.ctx!.fillText(letter, x + width / 2, y + height / 2);
@@ -644,7 +645,7 @@ export class MSAScrollingHeader {
 
   // Selection state
   private dataFrame: DG.DataFrame | null = null;
-  private seqHandler: any = null;
+  private seqHandler: ISeqHandler | null = null;
   private seqColumn: DG.Column<string> | null = null;
   private onSelectionCallback: ((position: number, monomer: string) => void) | null = null;
 
@@ -745,7 +746,9 @@ export class MSAScrollingHeader {
   }
 
   private drawTrackButtons(): void {
-    if (!this.ctx) return;
+    const buttonWidth = 70;
+    // todo: Make sure buttons are not colliding with the header
+    if (!this.ctx || this.config.width < buttonWidth * 4) return;
 
     this.trackButtons = [];
 
@@ -755,10 +758,9 @@ export class MSAScrollingHeader {
     const conservationVisible = conservationTrack?.isVisible() ?? false;
     const webLogoVisible = webLogoTrack?.isVisible() ?? false;
 
-    const buttonWidth = 70;
-    const buttonHeight = 18;
+    const buttonHeight = 14;
     const buttonGap = 4;
-    const rightMargin = 8;
+    const rightMargin = 16;
 
     let buttonX = this.config.width - rightMargin;
 
@@ -766,13 +768,6 @@ export class MSAScrollingHeader {
       (LAYOUT_CONSTANTS.TITLE_HEIGHT - buttonHeight) / 2 : // Center in title area
       2; // Or just 2px from top if no title
 
-
-    // // Show "Auto" button if user has made manual selections
-    // if (this.userSelectedTracks) {
-    //   buttonX -= buttonWidth;
-    //   this.drawTrackButton('auto', 'Auto', buttonX, buttonY, buttonWidth, buttonHeight, true);
-    //   buttonX -= buttonGap;
-    // }
 
     // Show individual track buttons only if not both are visible
     if (!(conservationVisible && webLogoVisible)) {
@@ -802,7 +797,7 @@ export class MSAScrollingHeader {
     this.ctx.strokeRect(x, y, width, height);
 
     this.ctx.fillStyle = isAutoButton ? '#ffffff' : '#666666';
-    this.ctx.font = '9px sans-serif';
+    this.ctx.font = '9px Roboto, Roboto Local';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillText(label, x + width / 2, y + height / 2);
@@ -1045,7 +1040,7 @@ export class MSAScrollingHeader {
     this.clearHoverStates();
     window.requestAnimationFrame(() => this.draw(
       this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}
+      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}, this.seqColumn?.name
     ));
   }
 
@@ -1301,9 +1296,9 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
     this.eventElement.addEventListener('mouseup', this.handleMouseUp.bind(this));
     this.eventElement.addEventListener('mouseleave', this.handleMouseUp.bind(this));
+    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
     this.eventElement.addEventListener('click', this.handleClick.bind(this));
     this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
-    this.eventElement.addEventListener('click', this.handleSelectionClick.bind(this));
 
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
@@ -1370,6 +1365,8 @@ export class MSAScrollingHeader {
           }
 
           this.selectRowsWithMonomerAtPosition(clickedPosition, monomer);
+          e.stopPropagation();
+          e.stopImmediatePropagation();
         }
       }
     }
@@ -1379,15 +1376,9 @@ export class MSAScrollingHeader {
     if (!this.dataFrame || !this.seqHandler) return;
 
     try {
-      const selBS = DG.BitSet.create(this.dataFrame.rowCount, (rowI: number) => {
-        const seqSplitted = this.seqHandler.getSplitted(rowI);
-        if (!seqSplitted || position >= seqSplitted.length) return false;
-
-        const residue = seqSplitted.getCanonical(position);
-        return residue === monomer;
-      });
-
-      this.dataFrame.selection.init((i) => selBS.get(i));
+      const selection = this.dataFrame.selection;
+      const monomersAtPositon = this.seqHandler.getMonomersAtPosition(position, true);
+      selection.init((i) => monomersAtPositon[i] === monomer);
     } catch (error) {
       console.error('Error selecting rows:', error);
     }
@@ -1430,7 +1421,7 @@ export class MSAScrollingHeader {
 
   public get isValid() {
     return !!this.canvas && !!this.ctx &&
-           this.config.height >= HEIGHT_THRESHOLDS.BASE;
+           this.config.height >= HEIGHT_THRESHOLDS.WITH_TITLE();
   }
 
   private handleMouseDown(e: MouseEvent): void {

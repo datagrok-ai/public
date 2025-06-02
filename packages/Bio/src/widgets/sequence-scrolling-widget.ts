@@ -8,10 +8,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {ALPHABET, TAGS as bioTAGS, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package} from '../package';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import * as RxJs from 'rxjs';
+import {filter} from 'rxjs/operators';
 
 // ============================================================================
 // OPTIMIZED VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
@@ -24,7 +26,7 @@ class MSAViewportManager {
   private static lastInvalidationTime: number = 0;
 
   // Cache chunks of 200 positions at a time
-  private static readonly CHUNK_SIZE = 200;
+  private static readonly CHUNK_SIZE = 50;
 
   /**
    * Clear all caches and update invalidation timestamp for force updates
@@ -42,115 +44,68 @@ class MSAViewportManager {
     return MSAViewportManager.lastInvalidationTime;
   }
 
-  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number, type: string): string {
+  private static getChunkCacheKey(column: DG.Column, chunkStart: number, chunkEnd: number): string {
     const dataFrame = column.dataFrame;
     // Use framework's built-in versioning instead of complex hash
-    return `${dataFrame.id}_${column.name}_v${column.version}_f${dataFrame.filter.version}_${type}_${chunkStart}_${chunkEnd}`;
+    return `${dataFrame.id}_${column.name}_f${dataFrame.filter.version}_${chunkStart}_${chunkEnd}`;
   }
 
-  private static getConservationChunk(seqHandler: any, start: number, end: number, cacheKey: string): number[] {
+  private static getConservationChunk(seqHandler: ISeqHandler, start: number, end: number, cacheKey: string): number[] {
     return MSAViewportManager.conservationCache.getOrCreate(cacheKey, () => {
-      const dataFrame = seqHandler.column.dataFrame;
+      // conservation track is only shown together with weblogo track, so we can reuse weblogo for this caluclation
+      const webLogoChunk = MSAViewportManager.getWebLogoChunk(seqHandler, start, end, cacheKey);
       const chunkSize = end - start;
-
-      // Pre-allocate result array
-      const scores = new Array(chunkSize);
-
-      const visibleCount = dataFrame.filter.trueCount;
-      if (visibleCount <= 1) {
-        scores.fill(0);
-        return scores;
-      }
-
-      // Pre-allocate sequences array with known size
-      const sequences = new Array(visibleCount);
-      let seqIndex = 0;
-
-      const filter = dataFrame.filter;
-      for (let i = -1; (i = filter.findNext(i, true)) !== -1;)
-        sequences[seqIndex++] = seqHandler.getSplitted(i);
-
-
-      // Calculate conservation for the chunk
-      for (let pos = start; pos < end; pos++) {
-        const residueCounts: Record<string, number> = {};
-        let totalResidues = 0;
-        const relativePos = pos - start;
-
-        for (let seqIdx = 0; seqIdx < sequences.length; seqIdx++) {
-          const seq = sequences[seqIdx];
-          if (pos < seq.length) {
-            const residue = seq.getCanonical(pos);
-            if (residue && !seq.isGap(pos)) {
-              residueCounts[residue] = (residueCounts[residue] || 0) + 1;
-              totalResidues++;
-            }
-          }
-        }
-
-        if (totalResidues === 0) {
-          scores[relativePos] = 0;
+      const scores = new Array(chunkSize).fill(0);
+      for (let i = start; i < end; i++) {
+        const entries = webLogoChunk.get(i);
+        if (!entries || entries.size === 0)
           continue;
+        let totalResidues = 0;
+        let mostCommonCount = 0;
+        const gapS = seqHandler.defaultGapOriginal;
+        // Single pass to find both total and max
+        for (const [mon, count] of entries.entries()) {
+          if (!mon || mon === gapS) continue; // Skip gaps
+          totalResidues += count;
+          if (count > mostCommonCount)
+            mostCommonCount = count;
         }
-
-        const mostCommonCount = Math.max(...Object.values(residueCounts), 0);
-        scores[relativePos] = mostCommonCount / totalResidues;
+        // Calculate conservation score
+        scores[i - start] = totalResidues > 0 ? mostCommonCount / totalResidues : 0;
       }
-
       return scores;
     });
   }
 
-  private static getWebLogoChunk(seqHandler: any, start: number, end: number, cacheKey: string): Map<number, Map<string, number>> {
+  private static getWebLogoChunk(seqHandler: ISeqHandler, start: number, end: number, cacheKey: string): Map<number, Map<string, number>> {
     return MSAViewportManager.webLogoCache.getOrCreate(cacheKey, () => {
       const dataFrame = seqHandler.column.dataFrame;
       const webLogoData: Map<number, Map<string, number>> = new Map();
-
       // OPTIMIZED: Use filter iterator
       const visibleCount = dataFrame.filter.trueCount;
       if (visibleCount <= 1)
         return webLogoData;
 
-
-      // Pre-allocate sequences array
-      const sequences = new Array(visibleCount);
-      let seqIndex = 0;
+      // pre-alocate residue counts map
+      for (let i = start; i < end; i++)
+        webLogoData.set(i, new Map());
 
       const filter = dataFrame.filter;
+
+      const oneOverCount = 1 / visibleCount; // Pre-calculate for performance
+
       for (let i = -1; (i = filter.findNext(i, true)) !== -1;) {
         // OPTIMIZED: Use seqHandler.getSplitted which has internal caching
-        sequences[seqIndex++] = seqHandler.getSplitted(i);
-      }
-
-      // Calculate WebLogo data for the chunk
-      for (let pos = start; pos < end; pos++) {
-        const residueCounts: Map<string, number> = new Map();
-        let totalResidues = 0;
-
-        for (let seqIdx = 0; seqIdx < sequences.length; seqIdx++) {
-          const seq = sequences[seqIdx];
-          if (pos < seq.length) {
-            const residue = seq.getCanonical(pos);
-            if (residue && !seq.isGap(pos)) {
-              residueCounts.set(residue, (residueCounts.get(residue) || 0) + 1);
-              totalResidues++;
-            }
-          }
+        const seqChunk = seqHandler.getSplitted(i).getOriginalRegion(start, end);
+        if (seqChunk.length === 0) continue;
+        for (let pos = 0; pos < seqChunk.length; pos++) {
+          const residue = seqChunk[pos];
+          // in weblogo, do not skip gaps, they are important
+          const residueMap = webLogoData.get(start + pos)!;
+          // add oneOverCount here to avoid division later
+          residueMap.set(residue, (residueMap.get(residue) || 0) + oneOverCount);
         }
-
-        if (totalResidues === 0) {
-          webLogoData.set(pos, new Map());
-          continue;
-        }
-
-        const residueFreqs: Map<string, number> = new Map();
-        for (const [residue, count] of residueCounts.entries())
-          residueFreqs.set(residue, count / totalResidues);
-
-
-        webLogoData.set(pos, residueFreqs);
       }
-
       return webLogoData;
     });
   }
@@ -166,7 +121,7 @@ class MSAViewportManager {
     // Get all needed chunks and place them in the correct positions
     for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
       const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
-      const cacheKey = MSAViewportManager.getChunkCacheKey(seqHandler.column, chunkStart, chunkEnd, 'conservation');
+      const cacheKey = MSAViewportManager.getChunkCacheKey(seqHandler.column, chunkStart, chunkEnd);
       const chunkData = MSAViewportManager.getConservationChunk(seqHandler, chunkStart, chunkEnd, cacheKey);
 
       // Copy chunk data to the correct positions in the result array
@@ -187,7 +142,7 @@ class MSAViewportManager {
     // Get all needed chunks and place them in the correct positions
     for (let chunkStart = startChunk; chunkStart < endChunk; chunkStart += MSAViewportManager.CHUNK_SIZE) {
       const chunkEnd = Math.min(chunkStart + MSAViewportManager.CHUNK_SIZE, maxLength);
-      const cacheKey = MSAViewportManager.getChunkCacheKey(seqHandler.column, chunkStart, chunkEnd, 'weblogo');
+      const cacheKey = MSAViewportManager.getChunkCacheKey(seqHandler.column, chunkStart, chunkEnd);
       const chunkData = MSAViewportManager.getWebLogoChunk(seqHandler, chunkStart, chunkEnd, cacheKey);
 
       // Copy chunk data to the result map (positions are already correct)
@@ -256,8 +211,8 @@ class LazyWebLogoTrack extends WebLogoTrack {
     this.lastInvalidationTime = currentInvalidationTime;
 
     // Add buffer to reduce cache misses on small scrolls
-    const bufferedStart = Math.max(0, viewportStart - 50);
-    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+    const bufferedStart = Math.max(0, viewportStart - 20);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 20);
 
     const webLogoData = MSAViewportManager.getWebLogoForViewport(
       this.seqHandler,
@@ -336,8 +291,8 @@ class LazyConservationTrack extends ConservationTrack {
     this.lastInvalidationTime = currentInvalidationTime;
 
     // Add buffer to reduce cache misses on small scrolls
-    const bufferedStart = Math.max(0, viewportStart - 50);
-    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 50);
+    const bufferedStart = Math.max(0, viewportStart - 20);
+    const bufferedEnd = Math.min(this.maxLength, viewportEnd + 20);
 
     const conservationScores = MSAViewportManager.getConservationForViewport(
       this.seqHandler,
@@ -393,48 +348,46 @@ export function handleSequenceHeaderRendering() {
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
         const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-        // Get maximum sequence length
-        let maxSeqLen = 0;
-        if (sh.maxLength)
-          maxSeqLen = sh.maxLength;
-        else {
-          // Fallback to manual calculation if needed
-          const cats = seqCol.categories;
-          for (let i = 0; i < cats.length; i++) {
-            const seq = cats[i];
-            if (seq && seq.length > 0) {
-              const split = sh.splitter(seq);
-              if (split && split.length > maxSeqLen)
-                maxSeqLen = split.length;
-            }
+        // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
+        // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
+        let pseudoMaxLenIndex = 0;
+        let pseudoMaxLength = 0;
+        const cats = seqCol.categories;
+        for (let i = 0; i < cats.length; i++) {
+          const seq = cats[i];
+          if (seq && seq.length > pseudoMaxLength) {
+            pseudoMaxLength = seq.length;
+            pseudoMaxLenIndex = i;
           }
         }
+        const seq = cats[pseudoMaxLenIndex];
+        const split = sh.splitter(seq);
+        const maxSeqLen = split ? split.length : 30;
 
-        // Skip if sequence is too short
-        if (maxSeqLen < 50) continue;
-
-        const getHasMultipleSequences = () => df.filter.trueCount > 1;
-        let hasMultipleSequences = getHasMultipleSequences();
+        // Do not Skip if sequences are too short, rather, just don't render the tracks by default
 
         const STRICT_THRESHOLDS = {
-          BASE: 38, // DOTTED_CELL_HEIGHT(30) + SLIDER_HEIGHT(8)
           WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
           WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
           WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
         };
 
         let initialHeaderHeight: number;
-        if (!hasMultipleSequences) {
+        if (seqCol.length > 100_000) {
           // Single sequence: just dotted cells
-          initialHeaderHeight = STRICT_THRESHOLDS.BASE;
+          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
         } else {
-          // Multiple sequences: show both tracks by default
-          initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
+          if (seqCol.length > 50_000)
+            initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
+          else
+            initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
         }
 
         let webLogoTrackRef: LazyWebLogoTrack | null = null;
         let conservationTrackRef: LazyConservationTrack | null = null;
-        const filterChangeSub = DG.debounce(df.onFilterChanged, 100).subscribe(() => {
+        const filterChangeSub = DG.debounce(
+          RxJs.merge(df.onFilterChanged, df.onDataChanged.pipe(filter((a) => a?.args?.column === seqCol))), 100
+        ).subscribe(() => {
           MSAViewportManager.clearAllCaches();
 
           if (webLogoTrackRef) {
@@ -445,22 +398,6 @@ export function handleSequenceHeaderRendering() {
             conservationTrackRef.resetViewportTracking();
             conservationTrackRef.forceUpdate();
           }
-          const newHasMultipleSequences = getHasMultipleSequences();
-          if (newHasMultipleSequences !== hasMultipleSequences) {
-            hasMultipleSequences = newHasMultipleSequences;
-            let newHeaderHeight: number;
-            if (!hasMultipleSequences)
-              newHeaderHeight = STRICT_THRESHOLDS.BASE;
-            else
-              newHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
-
-
-            if (newHeaderHeight !== initialHeaderHeight) {
-              initialHeaderHeight = newHeaderHeight;
-              grid.props.colHeaderHeight = newHeaderHeight;
-            }
-          }
-          grid.invalidate();
           setTimeout(() => {
             if (!grid.isDetached)
               grid.invalidate();
@@ -473,36 +410,35 @@ export function handleSequenceHeaderRendering() {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
           // Create lazy tracks only if we have multiple sequences
-          if (hasMultipleSequences) {
-            // OPTIMIZED: Pass seqHandler directly instead of column/splitter
-            const conservationTrack = new LazyConservationTrack(
-              sh,
-              maxSeqLen,
-              45, // DEFAULT_TRACK_HEIGHT
-              'default',
-              'Conservation'
-            );
-            conservationTrackRef = conservationTrack; // Store reference
-            tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
 
-            // OPTIMIZED: Pass seqHandler directly
-            const webLogoTrack = new LazyWebLogoTrack(
-              sh,
-              maxSeqLen,
-              45, // DEFAULT_TRACK_HEIGHT
-              'WebLogo'
-            );
-            webLogoTrackRef = webLogoTrack; // Store reference
+          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
+          const conservationTrack = new LazyConservationTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'default',
+            'Conservation'
+          );
+          conservationTrackRef = conservationTrack; // Store reference
+          tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
 
-            if (monomerLib) {
-              webLogoTrack.setMonomerLib(monomerLib);
-              webLogoTrack.setBiotype(sh.defaultBiotype || 'PEPTIDE');
-            }
+          // OPTIMIZED: Pass seqHandler directly
+          const webLogoTrack = new LazyWebLogoTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'WebLogo'
+          );
+          webLogoTrackRef = webLogoTrack; // Store reference
 
-            webLogoTrack.setupDefaultTooltip();
-            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
-
+          if (monomerLib) {
+            webLogoTrack.setMonomerLib(monomerLib);
+            webLogoTrack.setBiotype(sh.defaultBiotype || 'PEPTIDE');
           }
+
+          webLogoTrack.setupDefaultTooltip();
+          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+
 
           // Create the scrolling header
           const scroller = new MSAScrollingHeader({
@@ -526,11 +462,10 @@ export function handleSequenceHeaderRendering() {
                 }
               });
             },
-            onHeaderHeightChange: (newHeight) => {
-              if (grid && !grid.isDetached) {
-                const validHeight = Math.max(STRICT_THRESHOLDS.BASE, newHeight);
-                grid.props.colHeaderHeight = validHeight;
-              }
+            onHeaderHeightChange: (_newHeight) => {
+              // Update grid header height
+              if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
+              setTimeout(() => grid.props.colHeaderHeight = _newHeight);
             },
           });
 
