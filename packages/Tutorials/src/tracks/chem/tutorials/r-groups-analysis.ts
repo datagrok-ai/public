@@ -6,6 +6,7 @@ import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src
 import {Observable, combineLatest, interval} from 'rxjs';
 import $, {Cash} from 'cash-dom';
 import { _package } from '../../../package';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 
 export class RGroupsAnalysisTutorial extends Tutorial {
@@ -135,15 +136,25 @@ export class RGroupsAnalysisTutorial extends Tutorial {
         pane.on('click', () => subscriber.next(true));
       }), $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').get(0));
     
-    await this.action('In the pane, hover over line charts', new Observable((subscriber: any) => {
-      const onMousemove = () => {
+    const getDistrLineChart = () => {
+      const distrPane = document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded');
+      if (distrPane.length) {
+        const canvases = distrPane[0].getElementsByTagName('canvas');
+        if (canvases.length)
+          return canvases[0] as HTMLElement;
+      }
+      return undefined;
+    }
+    await this.action('In the pane, hover over line charts to see dictibutions', new Observable((subscriber: any) => {
+      const onMousemove = async () => {
         if ($('.d4-tooltip').css('display') === 'block') {
+          await delay(1000);
           subscriber.next(true);
-          document.querySelector('.grok-prop-panel')!.removeEventListener('mousemove', onMousemove);
+          document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded')[0]!.removeEventListener('mousemove', onMousemove);
         }
       };
-      document.querySelector('.grok-prop-panel')!.addEventListener('mousemove', onMousemove);
-    }));
+      document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded')[0]!!.addEventListener('mousemove', onMousemove);
+    }), getDistrLineChart());
 
     this.title('Get a different view', true);
     this.describe(`The trellis plot initially shows pie charts, but you can change visualizations to
