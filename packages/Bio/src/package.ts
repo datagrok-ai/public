@@ -82,7 +82,7 @@ export const _package = new BioPackage(/*{debug: true}/**/);
 // let monomerLib: MonomerLib | null = null;
 
 //name: getMonomerLibHelper
-//description:
+//description: Returns an instance of the monomer library helper
 //output: object result
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return await MonomerLibManager.getInstance();
@@ -377,7 +377,6 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
-// eslint-disable-next-line max-len
 //input: string alignTable {choices: ['AUTO', 'NUCLEOTIDES', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62','BLOSUM80','BLOSUM90','PAM30','PAM70','PAM250','SCHNEIDER','TRANS']}
 //input: double gap
 //input: string seq1
@@ -975,12 +974,12 @@ export async function manageMonomersView() {
   await monomerManager.getViewRoot();
 }
 
-//name: Monomers
+//name: Manage Monomer Libraries
 //tags: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
 //output: view v
-export async function manageLibrariesApp(): Promise<DG.View> {
+export async function manageMonomerLibrariesView(): Promise<DG.View> {
   return await showManageLibrariesView(false);
 }
 
