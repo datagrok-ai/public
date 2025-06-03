@@ -14,6 +14,8 @@ import {ISeqHandler} from './macromolecule/seq-handler';
 import {HelmType} from '../helm/types';
 import {HelmTypes} from '../helm/consts';
 import {buildCompositionTable} from './composition-table';
+import {BioType} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
+import {IMonomerLib} from '../types';
 
 
 // WebLogo Constants
@@ -113,7 +115,7 @@ export abstract class MSAHeaderTrack {
   protected defaultHeight: number;
   protected title: string = '';
   protected tooltipEnabled: boolean = false;
-  protected tooltipContent: ((position: number, data: any) => HTMLElement) | null = null;
+  protected tooltipContent: ((position: number, monomer: string | null, data: Map<string, number>) => HTMLElement) | null = null;
 
   constructor(height: number = LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT,
     minHeight: number = LAYOUT_CONSTANTS.MIN_TRACK_HEIGHT,
@@ -131,7 +133,7 @@ export abstract class MSAHeaderTrack {
     this.ctx = ctx;
   }
 
-  public getMonomerAt(x: number, y: number, position: number): string | null {
+  public getMonomerAt(_x: number, _y: number, _position: number): string | null {
     return null;
   }
 
@@ -139,20 +141,20 @@ export abstract class MSAHeaderTrack {
     this.tooltipEnabled = enabled;
   }
 
-  public setTooltipContentGenerator(contentGenerator: (position: number, data: any) => HTMLElement): void {
+  public setTooltipContentGenerator(contentGenerator: (position: number, monomer: string | null, data: Map<string, number>) => HTMLElement): void {
     this.tooltipContent = contentGenerator;
   }
 
-  public getTooltipContent(position: number): HTMLElement | null {
+  public getTooltipContent(position: number, monomer: string | null): HTMLElement | null {
     if (!this.tooltipEnabled || !this.tooltipContent) return null;
-    const positionData = this.getPositionData(position);
-    return this.tooltipContent(position, positionData);
+    const positionData = this.getPositionData(position) ?? new Map();
+    return this.tooltipContent(position, monomer, positionData);
   }
 
   /**
    * Get data for a specific position (to be implemented by subclasses)
    */
-  protected getPositionData(position: number): any {
+  protected getPositionData(position: number): Map<string, number> | null {
     return null;
   }
 
@@ -203,8 +205,8 @@ export abstract class MSAHeaderTrack {
 
 export class WebLogoTrack extends MSAHeaderTrack {
   private data: Map<number, Map<string, number>> = new Map();
-  private monomerLib: any = null;
-  private biotype: string = 'PEPTIDE';
+  private monomerLib: IMonomerLib | null = null;
+  private biotype: HelmType = 'HELM_AA';
   private hoveredPosition: number = -1;
   private hoveredMonomer: string | null = null;
 
@@ -228,8 +230,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
 
   public setupDefaultTooltip(): void {
     this.enableTooltip(true);
-    this.setTooltipContentGenerator((position: number, data: Map<string, number>) => {
-      return this.createTooltipContent(position, data);
+    this.setTooltipContentGenerator((position: number, monomer: string | null, data: Map<string, number>) => {
+      return this.createTooltipContent(position, monomer, data);
     });
   }
 
@@ -237,15 +239,16 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private createFrequencyTable(data: Map<string, number>): HTMLElement {
     let helmType: HelmType;
     switch (this.biotype) {
-    case 'DNA':
-    case 'RNA':
-    case 'NUCLEOTIDE':
+    case 'HELM_BASE':
+    case 'HELM_SUGAR':
+    case 'HELM_NUCLETIDE':
       helmType = HelmTypes.NUCLEOTIDE;
-    case 'PEPTIDE':
-    case 'PROTEIN':
-    case 'AA':
+      break;
+    case 'HELM_AA':
+    case 'HELM_LINKER':
     default:
       helmType = HelmTypes.AA;
+      break;
     }
     const totalFrequency = Array.from(data.values()).reduce((sum, freq) => sum + freq, 0);
     const displayTotal = 100;
@@ -255,7 +258,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
       counts[monomer] = Math.max(1, Math.round((frequency / totalFrequency) * displayTotal));
 
 
-    const table = buildCompositionTable(counts, helmType, this.monomerLib);
+    const table = buildCompositionTable(counts, helmType, this.monomerLib!);
     table.style.fontSize = '11px';
     table.style.marginTop = '4px';
 
@@ -263,12 +266,23 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
 
-  private createTooltipContent(position: number, data: Map<string, number>): HTMLElement {
+  private createTooltipContent(position: number, monomer: string | null, data: Map<string, number>): HTMLElement {
     const tooltipRows: HTMLElement[] = [];
 
     tooltipRows.push(ui.divText(`Position: ${position + 1}`, {
       style: {fontWeight: 'bold', marginBottom: '6px', fontSize: '13px'}
     }));
+
+    if (monomer) {
+      tooltipRows.push(ui.divText(`Monomer: ${monomer}`, {
+        style: {marginBottom: '6px', fontSize: '13px'}
+      }));
+      if (data.has(monomer)) {
+        tooltipRows.push(ui.divText(`${(data.get(monomer)! * 100).toFixed(2)}%`, {
+          style: {marginBottom: '6px', fontSize: '13px'}
+        }));
+      }
+    }
 
     if (data && data.size > 0) {
       // Use the datagrok buildCompositionTable
@@ -286,11 +300,11 @@ export class WebLogoTrack extends MSAHeaderTrack {
   }
 
 
-  setMonomerLib(monomerLib: any): void {
+  setMonomerLib(monomerLib: IMonomerLib): void {
     this.monomerLib = monomerLib;
   }
 
-  setBiotype(biotype: string): void {
+  setBiotype(biotype: HelmType): void {
     this.biotype = biotype;
   }
 
@@ -614,6 +628,7 @@ export class MSAScrollingHeader {
   // Tooltip and hover state
   private currentHoverPosition: number = -1;
   private currentHoverTrack: string | null = null;
+  private currentHoverMonomer: string | null = null;
   private previousHoverPosition: number = -1;
   private previousHoverTrack: string | null = null;
   private previousHoverMonomer: string | null = null;
@@ -890,7 +905,7 @@ export class MSAScrollingHeader {
     );
   }
 
-  public setSelectionData(dataFrame: DG.DataFrame, seqColumn: DG.Column<string>, seqHandler: any,
+  public setSelectionData(dataFrame: DG.DataFrame, seqColumn: DG.Column<string>, seqHandler: ISeqHandler,
     callback?: (position: number, monomer: string) => void): void {
     this.dataFrame = dataFrame;
     this.seqColumn = seqColumn;
@@ -988,14 +1003,14 @@ export class MSAScrollingHeader {
     }
 
     // Handle tooltips
-    if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack) {
+    if (hoveredPosition !== this.currentHoverPosition || hoveredTrackId !== this.currentHoverTrack || currentHoverMonomer !== this.currentHoverMonomer) {
       this.currentHoverPosition = hoveredPosition;
       this.currentHoverTrack = hoveredTrackId;
-
+      this.currentHoverMonomer = currentHoverMonomer;
       if (hoveredTrackId) {
         const track = this.tracks.get(hoveredTrackId);
         if (track) {
-          const tooltipContent = track.getTooltipContent(hoveredPosition);
+          const tooltipContent = track.getTooltipContent(hoveredPosition, currentHoverMonomer);
           if (tooltipContent) {
             ui.tooltip.show(tooltipContent, e.clientX + 16, e.clientY + 16);
             return;

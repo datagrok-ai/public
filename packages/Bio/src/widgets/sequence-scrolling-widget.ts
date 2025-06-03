@@ -14,6 +14,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import * as RxJs from 'rxjs';
 import {filter} from 'rxjs/operators';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 
 // ============================================================================
 // OPTIMIZED VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
@@ -110,7 +111,7 @@ class MSAViewportManager {
     });
   }
 
-  static getConservationForViewport(seqHandler: any, viewportStart: number, viewportEnd: number, maxLength: number): number[] {
+  static getConservationForViewport(seqHandler: ISeqHandler, viewportStart: number, viewportEnd: number, maxLength: number): number[] {
     // Create a full-sized array filled with zeros
     const result: number[] = new Array(maxLength).fill(0);
 
@@ -132,7 +133,7 @@ class MSAViewportManager {
     return result;
   }
 
-  static getWebLogoForViewport(seqHandler: any, viewportStart: number, viewportEnd: number, maxLength: number): Map<number, Map<string, number>> {
+  static getWebLogoForViewport(seqHandler: ISeqHandler, viewportStart: number, viewportEnd: number, maxLength: number): Map<number, Map<string, number>> {
     const result: Map<number, Map<string, number>> = new Map();
 
     // Calculate which chunks we need
@@ -161,7 +162,7 @@ class MSAViewportManager {
 // ============================================================================
 
 class LazyWebLogoTrack extends WebLogoTrack {
-  private seqHandler: any;
+  private seqHandler: ISeqHandler;
   private maxLength: number;
   private lastViewportStart: number = -1;
   private lastViewportEnd: number = -1;
@@ -169,7 +170,7 @@ class LazyWebLogoTrack extends WebLogoTrack {
   private forceNextUpdate: boolean = false;
 
   constructor(
-    seqHandler: any,
+    seqHandler: ISeqHandler,
     maxLength: number,
     height: number = 45,
     title: string = 'WebLogo'
@@ -239,7 +240,7 @@ class LazyWebLogoTrack extends WebLogoTrack {
 }
 
 class LazyConservationTrack extends ConservationTrack {
-  private seqHandler: any;
+  private seqHandler: ISeqHandler;
   private maxLength: number;
   private lastViewportStart: number = -1;
   private lastViewportEnd: number = -1;
@@ -247,7 +248,7 @@ class LazyConservationTrack extends ConservationTrack {
   private forceNextUpdate: boolean = false;
 
   constructor(
-    seqHandler: any,
+    seqHandler: ISeqHandler,
     maxLength: number,
     height: number = 45,
     colorScheme: 'default' | 'rainbow' | 'heatmap' = 'default',
@@ -406,7 +407,7 @@ export function handleSequenceHeaderRendering() {
 
         grid.sub(filterChangeSub);
 
-        const initializeHeaders = (monomerLib: any = null) => {
+        const initializeHeaders = (monomerLib: IMonomerLib) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
           // Create lazy tracks only if we have multiple sequences
@@ -433,7 +434,7 @@ export function handleSequenceHeaderRendering() {
 
           if (monomerLib) {
             webLogoTrack.setMonomerLib(monomerLib);
-            webLogoTrack.setBiotype(sh.defaultBiotype || 'PEPTIDE');
+            webLogoTrack.setBiotype(sh.defaultBiotype || 'HELM_AA');
           }
 
           webLogoTrack.setupDefaultTooltip();
@@ -478,13 +479,15 @@ export function handleSequenceHeaderRendering() {
 
           scroller.setSelectionData(df, seqCol, sh);
 
-          grid.props.colHeaderHeight = initialHeaderHeight;
+          if (maxSeqLen > 50) {
+            grid.props.colHeaderHeight = initialHeaderHeight;
 
-          // Set column width
-          setTimeout(() => {
-            if (grid.isDetached) return;
-            gCol.width = 400;
-          }, 300);
+            // Set column width
+            setTimeout(() => {
+              if (grid.isDetached) return;
+              gCol.width = 400;
+            }, 300);
+          }
 
           // Handle cell rendering
           grid.sub(grid.onCellRender.subscribe((e) => {
@@ -524,8 +527,9 @@ export function handleSequenceHeaderRendering() {
             initializeHeaders(monomerLib);
           })
           .catch((error) => {
-            console.error('Error loading monomerLib:', error);
-            initializeHeaders();
+            grok.shell.warning(`Failed to initialize monomer library`);
+            //initializeHeaders();
+            console.error('Failed to initialize monomer library:', error);
           });
       }
     }, 1000);
