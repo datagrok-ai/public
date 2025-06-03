@@ -1,8 +1,10 @@
 # Bio changelog
 
-## 2.21.12 (2025-06-02)
+## 2.22.0 (2025-06-03)
 
-* MSA header tracks (Conseration and weblogo)
+* MSA header tracks (Conseration and WebLogo)
+* Tooltips for WebLogo header
+* Speedup calculations for conservation and weblogo, corrected limits
 
 ## 2.21.11 (2025-05-29)
 
