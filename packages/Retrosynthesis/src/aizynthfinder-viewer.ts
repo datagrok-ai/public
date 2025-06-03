@@ -56,8 +56,8 @@ export class AiZynthFinderViewer extends DG.JsViewer {
     ui.empty(this.root);
     if (computeData) {
       ui.setUpdateIndicator(this.root, true, `Generating retrosynthesis paths`);
-      const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-        {molecule: this.currentMolecule});
+      const result = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+        {molecule: this.currentMolecule, config: ''});
       const reactionData = JSON.parse(result) as ReactionData;
       if (reactionData.data?.length) {
         const paths = reactionData.data[0].trees as Tree[];

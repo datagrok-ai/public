@@ -40,10 +40,10 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
   let paths: Tree[] = [];
   if (molecule !== DEMO_MOLECULE) {
     try {
-      const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-        {molecule: molecule, configDir: configName ?? ''});
-      const reactionData: ReactionData = JSON.parse(result);
-      paths = reactionData?.data?.[0]?.trees;
+
+      const res = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+        {molecule: molecule, config: configName ?? ''});
+      paths = JSON.parse(res);
     } catch (e: any) {
       updateWidgetRoot(ui.divText(e?.message ?? e));
       return;
