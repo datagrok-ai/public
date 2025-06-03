@@ -463,7 +463,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
   options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
@@ -594,7 +594,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 ): Promise<DG.ScatterPlotViewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
   const tableView =
