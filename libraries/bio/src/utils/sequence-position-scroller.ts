@@ -11,19 +11,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {ISeqHandler} from './macromolecule/seq-handler';
+import {HelmType} from '../helm/types';
+import {HelmTypes} from '../helm/consts';
+import {buildCompositionTable} from './composition-table';
 
-// Layout Constants
-// const LAYOUT_CONSTANTS = {
-//   TITLE_HEIGHT: 16,
-//   TRACK_GAP: 4,
-//   DOTTED_CELL_HEIGHT: 30,
-//   SLIDER_HEIGHT: 8,
-//   TOP_PADDING: 5,
-//   DEFAULT_TRACK_HEIGHT: 45,
-//   MIN_TRACK_HEIGHT: 35,
-//   TRACK_SELECTOR_SIZE: 20,
-//   TRACK_SELECTOR_MARGIN: 5
-// } as const;
 
 // WebLogo Constants
 const WEBLOGO_CONSTANTS = {
@@ -241,51 +232,36 @@ export class WebLogoTrack extends MSAHeaderTrack {
       return this.createTooltipContent(position, data);
     });
   }
+
+
   private createFrequencyTable(data: Map<string, number>): HTMLElement {
-    const sortedResidues = Array.from(data.entries()).sort((a, b) => b[1] - a[1]);
-
-    const table = document.createElement('table');
-    table.style.borderCollapse = 'collapse';
-    table.style.marginTop = '4px';
-    table.style.fontSize = '11px';
-
-    // Create header
-    const headerRow = table.insertRow();
-    const headerCell1 = headerRow.insertCell();
-    const headerCell2 = headerRow.insertCell();
-    headerCell1.textContent = 'Residue';
-    headerCell2.textContent = 'Frequency';
-    headerCell1.style.fontWeight = 'bold';
-    headerCell2.style.fontWeight = 'bold';
-    headerCell1.style.padding = '4px 8px';
-    headerCell2.style.padding = '4px 8px';
-    headerCell1.style.borderBottom = '1px solid #ccc';
-    headerCell2.style.borderBottom = '1px solid #ccc';
-
-    for (const [residue, freq] of sortedResidues) {
-      const row = table.insertRow();
-      const cell1 = row.insertCell();
-      const cell2 = row.insertCell();
-
-      const backgroundColor = this.getMonomerBackgroundColor(residue);
-      const textColor = this.getMonomerTextColor(residue);
-
-      cell1.textContent = residue;
-      cell1.style.backgroundColor = backgroundColor;
-      cell1.style.color = textColor;
-      cell1.style.textAlign = 'center';
-      cell1.style.fontWeight = 'bold';
-      cell1.style.padding = '4px 8px';
-      cell1.style.border = '1px solid rgba(0,0,0,0.1)';
-
-      cell2.textContent = `${(freq * 100).toFixed(0)}%`;
-      cell2.style.textAlign = 'right';
-      cell2.style.padding = '4px 8px';
-      cell2.style.border = '1px solid rgba(0,0,0,0.1)';
+    let helmType: HelmType;
+    switch (this.biotype) {
+    case 'DNA':
+    case 'RNA':
+    case 'NUCLEOTIDE':
+      helmType = HelmTypes.NUCLEOTIDE;
+    case 'PEPTIDE':
+    case 'PROTEIN':
+    case 'AA':
+    default:
+      helmType = HelmTypes.AA;
     }
+    const totalFrequency = Array.from(data.values()).reduce((sum, freq) => sum + freq, 0);
+    const displayTotal = 100;
+    const counts: { [m: string]: number } = {};
+
+    for (const [monomer, frequency] of data.entries())
+      counts[monomer] = Math.max(1, Math.round((frequency / totalFrequency) * displayTotal));
+
+
+    const table = buildCompositionTable(counts, helmType, this.monomerLib);
+    table.style.fontSize = '11px';
+    table.style.marginTop = '4px';
 
     return table;
   }
+
 
   private createTooltipContent(position: number, data: Map<string, number>): HTMLElement {
     const tooltipRows: HTMLElement[] = [];
@@ -295,6 +271,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
     }));
 
     if (data && data.size > 0) {
+      // Use the datagrok buildCompositionTable
       const freqTable = this.createFrequencyTable(data);
       tooltipRows.push(freqTable);
     } else {
@@ -303,10 +280,8 @@ export class WebLogoTrack extends MSAHeaderTrack {
       }));
     }
 
-    // Use the standard tooltip container approach
     const tooltipEl = ui.divV(tooltipRows);
     tooltipEl.style.maxHeight = '80vh';
-
     return tooltipEl;
   }
 
