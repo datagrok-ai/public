@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.6.2 (2025-05-03)
+
+- Update Compute2 API
+
 ## 0.6.1 (2025-05-13)
 
 - Update Compute2 API
