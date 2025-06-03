@@ -12,9 +12,10 @@ from datagrok_api import DatagrokClient
 
 settings = Settings(log_level=logging.DEBUG)
 app = Celery(settings.celery_name, broker=settings.broker_url)
+
+# TODO: Remove it when grok_spawner is updated
 settings.api_url = 'http://host.docker.internal:8082'
 
-logging.getLogger("aizynthfinder").setLevel(logging.CRITICAL + 1)
 
 CONFIGS_DIR = Path.cwd() / "configs"
 CONFIGS_DIR.mkdir(parents=True, exist_ok=True)
