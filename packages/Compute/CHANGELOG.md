@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.43.9 (2025-06-03)
+
+- Update deps
+
 ## 1.43.7 (2025-05-28)
 
 - Help tweaks
