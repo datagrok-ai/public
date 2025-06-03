@@ -681,7 +681,7 @@ export interface IDartApi {
   grok_ShowHelp(x: any): any;
   grok_AddView(v: any, dockStyle: String, width: Num, preview: Bool): any;
   grok_CloseAll(): any;
-  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any): any;
+  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, addToWorkspace: Bool): any;
   grok_OpenTable(id: String): Promise<any>;
   grok_DockElement(e: any, title: String, dockStyle: String, ratio: Num): any;
   grok_OnEvent(eventName: String, f: any): any;

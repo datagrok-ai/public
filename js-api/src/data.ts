@@ -4,6 +4,7 @@ import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
 import {DataConnection, TableQueryBuilder} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
+import { Grid } from "./grid";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -183,14 +184,15 @@ export class Data {
    * Opens the visual table comparison tool.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/compare-tables}
    * */
-  compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[]):
+  compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], addToWorkspace: boolean = false):
     { changedColumns: number,
       changedValues: number,
       diffTable: DataFrame,
+      diffView: Grid,
       missingRows: number,
       t1MissingRows: number,
       t2MissingRows: number } {
-    return toJs(api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2));
+    return toJs(api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, addToWorkspace));
   };
 
   /**
