@@ -154,6 +154,7 @@ export type PipelineConfigurationBase<P> = {
   tags?: string[];
   structureCheck?: StructureCheckHook;
   customExports?: CustomExport[];
+  disableHistory?: boolean;
   approversGroup?: string; // not used rn
 };
 

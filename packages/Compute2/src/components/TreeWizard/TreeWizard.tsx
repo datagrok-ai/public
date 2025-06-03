@@ -29,6 +29,7 @@ import {take} from 'rxjs/operators';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {setHelpService} from '../../composables/use-help';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -85,6 +86,8 @@ export const TreeWizard = Vue.defineComponent({
       moveStep,
       changeFuncCall,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'));
+
+    setHelpService();
 
     const chosenStepUuid = Vue.ref<string | undefined>();
     const currentView = Vue.computed(() => Vue.markRaw(props.view));

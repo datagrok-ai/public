@@ -25,6 +25,7 @@ import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {take} from 'rxjs/operators';
+import {useHelp} from '../../composables/use-help';
 
 interface ScalarsState {
   type: 'scalars',
@@ -196,6 +197,12 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.onRenderTriggered((event) => {
       console.log('RichFunctionView onRenderTriggered', event);
     });
+    const {
+      helpHidden,
+      helpContent,
+      helpLoading,
+      changeHelpFunc,
+    } = useHelp();
 
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -220,7 +227,6 @@ export const RichFunctionView = Vue.defineComponent({
     const visibleTabLabels = Vue.shallowRef([] as string[]);
 
     const viewerTabsCount = Vue.ref<number>(0);
-    const hasContextHelp = Vue.ref(false);
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
@@ -229,13 +235,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     const formHidden = Vue.ref(false);
     const historyHidden = Vue.ref(true);
-    const helpHidden = Vue.ref(true);
 
-    const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
-    const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
-    const formRef = Vue.shallowRef(null as HTMLElement | null);
-
-    const helpText = Vue.ref(null as null | string);
+    const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
+    const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
+    const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
 
     ////
     // FuncCall related
@@ -259,7 +262,6 @@ export const RichFunctionView = Vue.defineComponent({
         ...call.outputParams.values(),
       ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME)?.length;
 
-      hasContextHelp.value = Utils.hasContextHelp(call.func);
       const features = Utils.getFeatures(call.func);
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
@@ -280,8 +282,7 @@ export const RichFunctionView = Vue.defineComponent({
     }, {immediate: true});
 
     Vue.watch(currentCall, async (call) => {
-      const help = await Utils.getContextHelp(call.func);
-      helpText.value = help ?? null;
+      changeHelpFunc(call?.func);
     }, {immediate: true});
 
     const run = async () => {
@@ -298,7 +299,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
-      if (el === helpRef.value?.$el) helpHidden.value = true;
+      if (el === helpRef.value) helpHidden.value = true;
       if (el === formRef.value) formHidden.value = true;
 
       const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.getAttribute('dock-spawn-title'));
@@ -396,7 +397,7 @@ export const RichFunctionView = Vue.defineComponent({
               style={menuIconStyle}/> Show all outputs </div>
             { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
           </span>
-          { hasContextHelp.value && <span
+          { <span
             onClick={() => helpHidden.value = !helpHidden.value}
             class={'flex justify-between'}
           >
@@ -444,7 +445,7 @@ export const RichFunctionView = Vue.defineComponent({
             onClick={runFitting}
             tooltip='Fit inputs'
           />}
-          { hasContextHelp.value && <IconFA
+          { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
             onClick={() => helpHidden.value = !helpHidden.value}
@@ -565,17 +566,18 @@ export const RichFunctionView = Vue.defineComponent({
                 }
               })
           }
-          { !helpHidden.value && helpText.value ?
+          { !helpHidden.value ?
             <div
               dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
               ref={helpRef}
-            >
-              <MarkDown
-                markdown={helpText.value}
-              />
+            > { Vue.withDirectives(
+                <MarkDown
+                  markdown={helpContent.value ?? 'Help file is not avaliable'}
+                />, [[ifOverlapping, helpLoading.value]])
+              }
             </div>: null
           }
         </DockManager>
