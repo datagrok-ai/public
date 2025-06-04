@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/webcomponents-vue",
   "sideEffects": false,
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
