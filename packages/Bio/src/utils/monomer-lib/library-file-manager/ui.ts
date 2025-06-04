@@ -283,6 +283,14 @@ class LibManagerView {
         this._duplicateManager.root],
       {style: {width: '100%', height: '100%'}},
       true);
+    if (this._view) {
+      try {
+        this._view.subs.forEach((s) => s.unsubscribe());
+        this._view.detach();
+        this._view.close();
+      } catch (_e) {
+      }
+    }
     this._view = DG.View.fromRoot(v);
     this._view.name = LibManagerView.viewName;
     if (addView)
@@ -304,7 +312,7 @@ class LibManagerView {
       this._view.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
         try {
           const inst = LibManagerView._instance;
-          if (inst && inst._view && 'id' in grok.shell.v && grok.shell.v.id === inst._view.id)
+          if (inst && inst._view && grok.shell.v && 'id' in grok.shell.v && grok.shell.v.id === inst._view.id)
             inst._duplicateManager?.refresh();
         } catch (e) {
           console.error(e);
