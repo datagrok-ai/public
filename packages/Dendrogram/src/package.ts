@@ -250,16 +250,17 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //meta.fileViewer: nwk,newick
 //input: file file
 //output: view preview
-export async function previewNewick(file: DG.FileInfo) {
+export async function previewNewick(file: DG.FileInfo): Promise<DG.View> {
   const newickString = await file.readAsString();
   const treeHelper = await getTreeHelper();
   const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
+  const preview = DG.View.create();
   const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
   viewerRoot.style.setProperty('width', '100%', 'important');
   viewerRoot.style.setProperty('height', '100%', 'important');
-
-  return DG.View.fromRoot(viewerRoot);
+  preview.append(viewerRoot);
+  return preview;
 }
 
 // -- Top menu --
