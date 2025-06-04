@@ -245,15 +245,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.pairedGrids!.currentTab = tabs.currentPane.name as MMP_NAMES;
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
         this.pairedGrids!.enableFilters = true;
-        //setting masks on fragments grid and pairs grid
-        this.pairedGrids!.mmpGridTrans.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskTrans);
-        this.pairedGrids!.fpGrid!.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskByMolecule!);
         this.pairedGrids!.fpGrid!.dataFrame.rows.requestFilter();
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
         this.pairedGrids!.enableFiltersGroup();
         if (!fragmentsTab.content.classList.contains('mmpa-fragments-tab'))
           fragmentsTab.content.classList.add('mmpa-fragments-tab');
-        this.pairedGrids!.refreshMaskFragmentPairsFilter();
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
         if (!cliffsTab.content.classList.contains('mmpa-cliffs-tab'))
           cliffsTab.content.classList.add('mmpa-cliffs-tab');
@@ -306,6 +302,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         if (value === SHOW_FRAGS_MODE.All) {
           this.pairedGrids!.fpMaskByMolecule.setAll(true);
           this.pairedGrids!.fpGrid.dataFrame.filter.setAll(true);
+          //combine with parent df filter
+          this.pairedGrids!.fpGrid.dataFrame.filter.and(this.pairedGrids!.parentFragmentsFilter);
         } else
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
