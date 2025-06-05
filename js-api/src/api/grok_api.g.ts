@@ -1508,6 +1508,7 @@ export interface IDartApi {
   grok_Func_Get_HelpUrl(func: any): any;
   grok_Func_Set_HelpUrl(func: any, x: String): any;
   grok_Func_Get_Package(func: any): any;
+  grok_Func_Get_HasVectorTag(func: any): any;
   grok_Func_Get_Description(func: any): any;
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;
@@ -1523,6 +1524,7 @@ export interface IDartApi {
   grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
+  grok_Script_Get_HasVectorTag(script: any): any;
   grok_Script_Get_Environment(script: any): any;
   grok_Script_Set_Environment(script: any, s: String): any;
   grok_Script_Get_Reference(script: any): any;

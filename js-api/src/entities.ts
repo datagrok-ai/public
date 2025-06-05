@@ -262,6 +262,9 @@ export class Func extends Entity {
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
+  /** If true, func has a `meta.vectorFunc = true` tag */
+  get hasVectorTag(): boolean { return api.grok_Func_Get_HasVectorTag(this.dart); }
+
   /** Returns {@link FuncCall} object in a stand-by state */
   prepare(parameters: {[name: string]: any} = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
@@ -1031,6 +1034,9 @@ export class Script extends Func {
   /** Script language. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
+
+  /** If true, script has a `meta.vectorFunc = true` tag and proper language set */
+  get hasVectorTag(): boolean { return api.grok_Script_Get_HasVectorTag(this.dart); }
 
   /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
