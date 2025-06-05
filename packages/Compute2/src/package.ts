@@ -91,8 +91,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 
   const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
-  // view.root.classList.add('ui-box');
-  view.root.style.overflow = 'hidden';
+  view.root.classList.add('ui-box');
   setVueAppOptions(app);
 
   app.mount(view.root);
@@ -130,7 +129,9 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   if (instanceConfig)
     instanceConfig = Vue.markRaw(instanceConfig);
 
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, view: Vue.markRaw(view)});
+  const { resolve } = call.aux;
+
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   setVueAppOptions(app);
@@ -144,6 +145,8 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
     take(1),
   ).subscribe(() => {
     app.unmount();
+    if (resolve)
+      resolve();
   });
 
   grok.shell.windows.showHelp = false;
@@ -154,11 +157,16 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 //input: string nqName
 //input: string version
 //input: object instanceConfig
-export async function StartWorkflow(nqName: string, version: string, instanceConfig: PipelineInstanceConfig) {
+//output: object result
+export async function StartWorkflow(nqName: string, version: string, instanceConfig?: PipelineInstanceConfig) {
   const func = DG.Func.byName(nqName);
+  // @ts-ignore-next-line
+  const { promise, resolve } = Promise.withResolvers();
   const call = func.prepare({version});
   call.options.instanceConfig = serialize(instanceConfig);
+  call.aux.resolve = resolve;
   call.edit();
+  return promise;
 }
 
 ////

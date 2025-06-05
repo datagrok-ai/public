@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
@@ -22,6 +22,16 @@ export class ControllerBase<T> {
     public id: string,
     public scopeInfo?: ScopeInfo,
   ) {}
+
+  getAll<T = any>(name: string): T[] {
+    this.checkIsClosed();
+    this.checkInput(name);
+    return this.inputs[name];
+  }
+
+  getFirst<T = any>(name: string): T {
+    return this.getAll<T>(name)?.[0];
+  }
 
   protected checkInput(name: string) {
     if (!this.inputsSet.has(name)) {
@@ -74,16 +84,6 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
   }
 
-  getAll<T = any>(name: string): T[] {
-    this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
-  }
-
-  getFirst<T = any>(name: string): T {
-    return this.getAll<T>(name)?.[0];
-  }
-
   setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
@@ -102,16 +102,6 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     public scopeInfo?: ScopeInfo,
   ) {
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
-  getAll<T = any>(name: string): T[] {
-    this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
-  }
-
-  getFirst<T = any>(name: string): T {
-    return this.getAll<T>(name)?.[0];
   }
 
   getValidationAction(name: string, actionId: string): string | undefined {
@@ -139,16 +129,6 @@ export class MetaController extends ControllerBase<any | undefined> implements I
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
   }
 
-  getAll<T = any>(name: string): T[] {
-    this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
-  }
-
-  getFirst<T = any>(name: string): T {
-    return this.getAll<T>(name)?.[0];
-  }
-
   setViewMeta(name: string, meta?: any | undefined) {
     this.checkIsClosed();
     this.checkOutput(name);
@@ -165,16 +145,6 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
     public scopeInfo?: ScopeInfo,
   ) {
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
-  getAll<T = any>(name: string): T[] {
-    this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
-  }
-
-  getFirst<T = any>(name: string): T {
-    return this.getAll<T>(name)?.[0];
   }
 
   setPipelineState(name: string, state?: PipelineInstanceConfig) {
@@ -195,23 +165,15 @@ export class NameSelectorController extends ControllerBase<any | undefined> impl
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
   }
 
-  getAll<T = any>(name: string): T[] {
-    this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
-  }
-
-  getFirst<T = any>(name: string): T {
-    return this.getAll<T>(name)?.[0];
-  }
-
   setDescriptionItem(name: string, val: string) {
     this.checkIsClosed();
     this.outputs[name] = val;
   }
 }
 
-export class FuncallActionController extends ControllerBase<any | undefined> implements IFuncallActionController {
+export class RuntimeReturnController  extends ControllerBase<any | undefined> implements IRuntimeReturnController {
+  public result: any;
+
   constructor(
     public inputs: Record<string, any[]>,
     public inputsSet: Set<string>,
@@ -222,14 +184,22 @@ export class FuncallActionController extends ControllerBase<any | undefined> imp
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
   }
 
-  getAll<T = any>(name: string): T[] | undefined {
+  returnResult(result: any) {
     this.checkIsClosed();
-    this.checkInput(name);
-    return this.inputs[name];
+    this.result = result;
   }
+}
 
-  getFirst<T = any>(name: string) {
-    return this.getAll<T>(name)?.[0];
+export class FuncallActionController extends ControllerBase<any | undefined> implements IFuncallActionController {
+
+  constructor(
+    public inputs: Record<string, any[]>,
+    public inputsSet: Set<string>,
+    public outputsSet: Set<string>,
+    public id: string,
+    public scopeInfo?: ScopeInfo,
+  ) {
+    super(inputs, inputsSet, outputsSet, id, scopeInfo);
   }
 
   setFuncCall(name: string, state: DG.FuncCall) {

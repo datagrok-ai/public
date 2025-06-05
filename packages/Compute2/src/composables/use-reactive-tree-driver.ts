@@ -35,6 +35,7 @@ export function useReactiveTreeDriver(
   const logs = useObservable(driver.logger.logs$);
   const config = useObservable(driver.currentConfig$);
   const links = useObservable(driver.currentLinks$);
+  const result = useObservable(driver.result$);
 
   const states = Vue.reactive({
     calls: {} as Record<string, FuncCallStateInfo | undefined>,
@@ -153,6 +154,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
   };
 
+  const returnResult = () => {
+    driver.sendCommand({event: 'returnResult'});
+  };
+
   return {
     // driver,
     treeMutationsLocked,
@@ -164,6 +169,7 @@ export function useReactiveTreeDriver(
     logs,
     config,
     links,
+    result,
     //
     loadPipeline,
     loadAndReplaceNestedPipeline,
@@ -177,6 +183,7 @@ export function useReactiveTreeDriver(
     removeStep,
     moveStep,
     changeFuncCall,
+    returnResult,
   };
 }
 

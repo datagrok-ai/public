@@ -97,4 +97,8 @@ export interface UpdateFuncCall {
   funcCall: DG.FuncCall,
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall;
+export interface ReturnResult {
+  event: 'returnResult',
+}
+
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;

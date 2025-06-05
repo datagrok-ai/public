@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
 import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
@@ -40,6 +40,7 @@ export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutation
 export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
 export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
+export type ReturnHandler = HandlerBase<{ controller: IRuntimeReturnController }, void>;
 
 export type ExportUtils = {
   reportFuncCallExcel: (fc: DG.FuncCall) => Promise<readonly [Blob, ExcelJS.Workbook]>;
@@ -79,11 +80,18 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   handler: MetaHandler;
 };
 
-export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   base?: undefined,
   actions?: undefined;
   handler: Handler;
+};
+
+export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'return',
+  base?: undefined,
+  actions?: undefined;
+  handler: ReturnHandler;
 };
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -92,7 +100,7 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
   handler: SelectorHandler;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P> | PipelineSelectorConfiguration<P>;
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
 
 export type ActionInfo = {
   id: string;
@@ -149,7 +157,8 @@ export type PipelineConfigurationBase<P> = {
   friendlyName?: string;
   links?: PipelineLinkConfiguration<P>[];
   actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
-  onInit?: PipelineHookConfiguration<P>;
+  onInit?: PipelineInitConfiguration<P>;
+  onReturn?: PipelineReturnConfiguration<P>;
   states?: StateItem[];
   tags?: string[];
   structureCheck?: StructureCheckHook;
