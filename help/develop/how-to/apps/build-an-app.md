@@ -9,8 +9,6 @@ executing database queries, accessing web services, or running
 
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
-<!--* [Enamine molecule browser](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
-* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
 From the technical perspective, an app is a [function](../../../datagrok/concepts/functions/functions.md)
 that resides in a [package](../../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
