@@ -8,6 +8,7 @@
    * Bar chart, Pie chart, Trellis plot (on click = filter), 
    * Pivot table (Row source = All),
    * PC plot (range slider on axes)
+   * Histogram (range slider under X axis)
 1. Verify that collaborative filtering works correctly across all viewers
 1. Hover over the question mark on Filter Panel - **all the filtering should be listed**
 4. Reset filtering for each viewer separately and by the **Reset Filter** icon on the **Filter Panel** - check the question mark each time
