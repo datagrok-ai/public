@@ -52,6 +52,7 @@ export class MmpPairedGrids {
   lastFragmentIdx: number | null = null;
   currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
   fragsShowAllMode = true;
+  currentRowChanged = false;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.rdkit = getRdKitModule();
@@ -92,7 +93,9 @@ export class MmpPairedGrids {
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
     // Subscribe to parent table filter changes
-    subs.push(DG.debounce(this.parentTable.onFilterChanged, 100).subscribe(() => {
+    subs.push(DG.debounce(this.parentTable.onFilterChanged, 300).subscribe(() => {
+      if (this.currentTab === MMP_NAMES.TAB_CLIFFS || this.currentTab === MMP_NAMES.TAB_GENERATION)
+        return;
       this.updateFiltersFromParent();
       if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS) {
       /*   in case we are in current molecule mode and current molecule was
@@ -103,20 +106,21 @@ export class MmpPairedGrids {
             this.mmpGridTrans.dataFrame.filter.setAll(false);
             return;
         }
-        this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-        this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
       }
-      this.fpGrid.dataFrame.filter.and(this.parentFragmentsFilter);
-      this.mmpGridTrans.dataFrame.filter.and(this.parentPairsFilter);
+      this.updateFragmentsDfFilters();
+      this.updateMoleculePairsFilters();
     }));
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 100).subscribe(() => {
-      if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
-        withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
-          this.refilterFragmentPairsByMolecule(true);
-          await this.refreshMatchedPair();
-        });
-      }
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS) {
+        if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
+          withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
+            this.refilterFragmentPairsByMolecule(true);
+            await this.refreshMatchedPair();
+          });
+        }
+      } else if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode)
+        this.currentRowChanged = true;
     }));
 
     this.initialResizeGridColsSize(this.fpGrid);
@@ -138,27 +142,52 @@ export class MmpPairedGrids {
   }
 
   disableFiltersGroup() {
-    if (this.filters) {
-      for (const f of this.filters.filters)
-        this.filters.setEnabled(f, false);
-    }
+    this.filters?.setActive(false);
   }
 
   enableFiltersGroup() {
-    if (this.filters) {
-      for (const f of this.filters.filters)
-        this.filters.setEnabled(f, true);
+    this.filters?.setActive(true);
+  }
+
+  switchToSubstitutionsTab() {
+    this.enableFilters = true;
+    this.updateFiltersFromParent();
+    /* if current row was changed while we were on tab other than 'Substitution',
+     re-calculate pairs (in case we are not in show all mode) */
+    if (this.currentRowChanged && !this.fragsShowAllMode) {
+      this.currentRowChanged = false;
+      withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
+        this.refilterFragmentPairsByMolecule(true);
+        await this.refreshMatchedPair();
+      });
+    } else {
+      this.updateMoleculePairsFilters();
+      this.fpGrid.dataFrame.rows.requestFilter();
     }
   }
 
-  restoreSubstitutionsTabFilters() {
-    //setting masks on fragments grid and pairs grid
-    this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
-    this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-    //combine with parent df filters
-    this.mmpGridTrans.dataFrame.filter.and(this.parentPairsFilter);
-    this.fpGrid!.dataFrame.filter.and(this.parentFragmentsFilter);
+  switchToFragmentsTab() {
+    this.enableFilters = false;
+    this.updateFiltersFromParent();
+    this.unPinMatchedPair();
+    this.enableFiltersGroup();
+    this.updateFragmentsDfFilters();
+    this.updateMoleculePairsFilters();
   }
+
+  updateFragmentsDfFilters() {
+    if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+      this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+    this.fpGrid.dataFrame.filter.and(this.parentFragmentsFilter);
+  }
+
+  updateMoleculePairsFilters(): void {
+    const mask = this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS ? this.mmpMaskTrans :
+      this.currentTab === MMP_NAMES.TAB_FRAGMENTS ? this.mmpMaskFrag : this.pairsMaskCliffsTab;
+    this.mmpGridFrag.dataFrame.filter.copyFrom(mask);
+    this.mmpGridFrag.dataFrame.filter.and(this.parentPairsFilter);
+  };
+
 
   updateInfoMessage(grid: DG.Grid, div: HTMLElement, compName: string) {
     DG.debounce(grid.dataFrame.onFilterChanged, 100).subscribe(() => {
@@ -184,20 +213,18 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    this.fpGrid.table.onFilterChanged.subscribe(() => {
+    DG.debounce(this.fpGrid.table.onFilterChanged, 300).subscribe(() => {
       //show error in case grid is empty
-      this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
     });
 
     // when swithcing from Fragments to Substitutions tab the following steps are triggered:
     // disable of filters from filters panel -> collaborative filtering ->
-    // -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask) ->
-    // -> in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
-    this.fpGrid.dataFrame.onRowsFiltering.subscribe((_) => {
-      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
-        this.restoreSubstitutionsTabFilters();
-      else if (this.currentTab === MMP_NAMES.TAB_FRAGMENTS)
-        this.restoreFragmentTabFilters();
+    // -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask)
+    // in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
+    this.fpGrid.dataFrame.onRowsFiltering.subscribe(() => {
+      this.updateFragmentsDfFilters();
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
@@ -235,15 +262,6 @@ export class MmpPairedGrids {
       } else
         return false;
     });
-  };
-
-  restoreFragmentTabFilters(): void {
-    this.enableFilters = false;
-    this.unPinMatchedPair();
-    this.mmpGridFrag.dataFrame.filter.copyFrom(this.mmpMaskFrag);
-    //combine with filter from parent df
-    this.mmpGridFrag.dataFrame.filter.and(this.parentPairsFilter);
-    this.fpGrid.dataFrame.filter.and(this.parentFragmentsFilter);
   };
 
   /**
@@ -423,8 +441,7 @@ export class MmpPairedGrids {
         }
       }
     }
-  /* masks will be applied in restoreFragmentTabFilters which is called when trellis is re-rendered ->
-    -> rereshCharts is called -> fpGrid.dataFrame onRowsFiltering is called */
+    this.updateMoleculePairsFilters();
   }
 
   updateFiltersFromParent(): void {
@@ -452,14 +469,17 @@ export class MmpPairedGrids {
     }
   }
 
-  updatePairsParentFilter() {
+  updatePairsParentFilter(cliffs?: boolean) {
     const parentFilter = this.parentTable.filter;
 
     this.parentPairsFilter.setAll(true);
     const [fromIndices, toIndices] = this.mmpa.rulesBased.moleculePairIndices;
 
-    for (let i = 0; i < fromIndices.length; i++)
-      this.parentPairsFilter.set(i, parentFilter.get(fromIndices[i]) || parentFilter.get(toIndices[i]));
+    for (let i = 0; i < fromIndices.length; i++) {
+      this.parentPairsFilter.set(i,
+        cliffs ? parentFilter.get(fromIndices[i]) && parentFilter.get(toIndices[i]) :
+          parentFilter.get(fromIndices[i]) || parentFilter.get(toIndices[i]));
+    }
   }
 }
 

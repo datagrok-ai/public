@@ -105,7 +105,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   calculatedOnGPU: boolean | null = null;
   parentTableFilterBackup: DG.BitSet | null = null;
-  cliffsFiltered = false;
   mWCalulationsReady = false;
 
   fragSortingInfo: SortData = {fragmentIdxs: [], frequencies: []};
@@ -234,20 +233,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ui.tooltip.bind(genTab.header, decript4);
     genTab.header.onmousedown = () => this.pairedGrids!.disableFiltersGroup();
 
-    let refilter = true;
+    let firstCliffsOpening = true;
     tabs.onTabChanged.subscribe(() => {
       this.lastOpenedHint?.remove();
-      if (this.currentTab === MMP_NAMES.TAB_CLIFFS && tabs.currentPane.name !== MMP_NAMES.TAB_CLIFFS) {
-        if (this.parentTableFilterBackup)
-          this.parentTable!.filter.copyFrom(this.parentTableFilterBackup);
-      }
+      const prevTab = this.currentTab;
       this.currentTab = tabs.currentPane.name;
+      //when switching from cliffs tab - need to reset parent table filters
+      if (prevTab === MMP_NAMES.TAB_CLIFFS && this.currentTab !== MMP_NAMES.TAB_CLIFFS)
+        this.parentTable?.rows.requestFilter();
+
       this.pairedGrids!.currentTab = tabs.currentPane.name as MMP_NAMES;
-      if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
-        this.pairedGrids!.enableFilters = true;
-        this.pairedGrids!.fpGrid!.dataFrame.rows.requestFilter();
-      } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
-        this.pairedGrids!.enableFiltersGroup();
+
+      if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.pairedGrids!.switchToSubstitutionsTab();
+      else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
+        this.pairedGrids!.switchToFragmentsTab();
         if (!fragmentsTab.content.classList.contains('mmpa-fragments-tab'))
           fragmentsTab.content.classList.add('mmpa-fragments-tab');
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
@@ -256,16 +256,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
         this.sp!.root.append(this.mmpFilters!.filtersDiv);
 
-        if (refilter)
+        if (firstCliffsOpening)
           grok.shell.warning('Cutoff filters were applied for all activities');
 
-        this.refilterCliffs(this.mmpFilters!.activitySliderInputs.map((si) => si.value),
-          this.mmpFilters!.activityActiveInputs.map((ai) => ai.value), refilter);
-        refilter = false;
+        firstCliffsOpening = false;
+
+        //requestFilter will call onRowsFiltering, where correct masks will be set
+        this.parentTable?.rows.requestFilter();
+        //setting current arrow
         if (this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx !== this.lastCurrentRowOnCliffsTab) {
           this.lastCurrentRowOnCliffsTab = this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx;
           this.setCurrentArrow(this.lastCurrentRowOnCliffsTab);
         }
+
+        //opening context panel with molecule pair info
         if (this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx !== -1) {
           setTimeout(() => {
             grok.shell.windows.showContextPanel = true;
@@ -301,9 +305,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.pairedGrids!.fragsShowAllMode = value === SHOW_FRAGS_MODE.All;
         if (value === SHOW_FRAGS_MODE.All) {
           this.pairedGrids!.fpMaskByMolecule.setAll(true);
-          this.pairedGrids!.fpGrid.dataFrame.filter.setAll(true);
-          //combine with parent df filter
-          this.pairedGrids!.fpGrid.dataFrame.filter.and(this.pairedGrids!.parentFragmentsFilter);
+          this.pairedGrids!.mmpMaskTrans.setAll(true);
+          this.pairedGrids!.updateFragmentsDfFilters();
+          this.pairedGrids!.updateMoleculePairsFilters();
         } else
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
@@ -446,7 +450,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       ),
       ui.splitH([this.tp.root, this.pairedGrids!.filters.root], {style: {paddingBottom: '4px'}}, true),
     ], {style: {width: '100%', height: '100%'}});
-    this.updateTrellisFiltersWithDefaultValues(tpDiv);
+    if (!this.pairedGrids!.parentFragmentsFilter.anyFalse)
+      this.updateTrellisFiltersWithDefaultValues(tpDiv);
 
 
     this.tp.onEvent('d4-viewer-rendered').subscribe(() => {
@@ -591,8 +596,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     });
 
+    this.parentTable!.onRowsFiltering.subscribe(() => {
+      if (this.currentTab === MMP_NAMES.TAB_CLIFFS) {
+        this.parentTable!.filter.and(this.totalCutoffMask!);
+        this.pairedGrids!.updatePairsParentFilter(true);
+        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.setAll(true);
+        //adding mask from sp filters
+        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.and(this.pairedGrids.pairsMaskCliffsTab);
+        //adding mask from parent df
+        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.and(this.pairedGrids.parentPairsFilter);
+      }
+    });
+
     this.refilterCliffs(this.mmpFilters.activitySliderInputs.map((si) => si.value),
-      this.mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
+      this.mmpFilters.activityActiveInputs.map((ai) => ai.value));
 
     const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID, this.pairedGrids!.pairsGridCliffsTab,
       MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
@@ -694,16 +711,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   //cliffs filters on scatter plot
   setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array): void {
     for (let i = 0; i < mmpFilters.activitySliderInputs.length; i++) {
-      mmpFilters.activityActiveInputs[i].onChanged.subscribe(() => {
+      DG.debounce(mmpFilters.activityActiveInputs[i].onChanged, 300).subscribe(() => {
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
-          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+          mmpFilters.activityActiveInputs.map((ai) => ai.value));
+        this.parentTable?.rows.requestFilter();
       });
 
-      mmpFilters.activitySliderInputs[i].onChanged.subscribe(() => {
+      DG.debounce(mmpFilters.activitySliderInputs[i].onChanged, 300).subscribe(() => {
         mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
           getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
-          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+          mmpFilters.activityActiveInputs.map((ai) => ai.value));
+        this.parentTable?.rows.requestFilter();
       });
 
       mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
@@ -910,6 +929,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   sortTrellis(axis: TrellisAxis, sorting: SortType, tp: DG.Viewer) {
+    //sorting will reset the filter so need to save it for backup
     const filterBackup = this.pairedGrids!.fpGrid.dataFrame.filter.clone();
     switch (sorting.property) {
     case TrellisSortByProp.None:
@@ -972,23 +992,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.activityMeanNames = activityMeanNames;
     this.parentTable = mmpInput.table;
     this.diffs = diffs;
-    this.parentTableFilterBackup = DG.BitSet.create(this.parentTable.rowCount).copyFrom(this.parentTable.filter);
     this.colorPalette = palette;
     this.mmpa = mmpa;
-
-
-    this.subs.push(DG.debounce(this.parentTable!.onFilterChanged, 1000).subscribe(() => {
-      if (!this.cliffsFiltered) {
-          this.parentTableFilterBackup!.copyFrom(this.parentTable!.filter);
-          if (this.currentTab === MMP_NAMES.TAB_CLIFFS) {
-            setTimeout(() => {
-              this.cliffsFiltered = true;
-              this.parentTable!.filter.and(this.totalCutoffMask!);
-            }, 10);
-          }
-      } else
-        this.cliffsFiltered = false;
-    }));
 
 
     //main grids
@@ -1052,47 +1057,41 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
 
-  refilterCliffs(cutoffs: number[], isActiveVar: boolean[], refilter: boolean): void {
-    if (refilter) {
-      for (let i = 0; i < this.cutoffMasks!.length; i ++)
+  refilterCliffs(cutoffs: number[], isActiveVar: boolean[]): void {
+    for (let i = 0; i < this.cutoffMasks!.length; i++)
       this.cutoffMasks![i].setAll(false);
 
-      this.totalCutoffMask!.setAll(false);
-      this.linesMask!.setAll(false);
-      this.pairedGrids?.pairsMaskCliffsTab.setAll(false);
+    this.totalCutoffMask!.setAll(false);
+    this.linesMask!.setAll(false);
+    this.pairedGrids?.pairsMaskCliffsTab.setAll(false);
 
-      //setting activity associated masks
-      for (let i = 0; i < this.lines!.from.length; i++) {
-        const activityNumber = this.linesActivityCorrespondance![i];
-        //line is idx of pair in pairs dataset
-        const line = this.linesIdxs![i];
-        //if 'isActive' checkbox for variable is unset
-        //setting line to invisible and continue, otherwise look at cutoff
-        if (!isActiveVar[activityNumber]) {
-          this.linesMask!.setBit(i, false, false);
-          continue;
-        }
-        if (this.diffs![activityNumber][line] >= cutoffs[activityNumber]) {
-          this.cutoffMasks![activityNumber].set(this.lines!.from[i], true, false);
-          this.cutoffMasks![activityNumber].set(this.lines!.to[i], true, false);
-          this.linesMask!.setBit(i, true, false);
-          this.pairedGrids?.pairsMaskCliffsTab.set(line, true);
-        }
+    //setting activity associated masks
+    for (let i = 0; i < this.lines!.from.length; i++) {
+      const activityNumber = this.linesActivityCorrespondance![i];
+      //line is idx of pair in pairs dataset
+      const line = this.linesIdxs![i];
+      //if 'isActive' checkbox for variable is unset
+      //setting line to invisible and continue, otherwise look at cutoff
+      if (!isActiveVar[activityNumber]) {
+        this.linesMask!.setBit(i, false, false);
+        continue;
       }
-
-      //setting resulting masks
-      //TODO: refine
-      for (let j = 0; j < this.totalCutoffMask!.length; j++) {
-        let res = false;
-        for (let i = 0; i < this.cutoffMasks!.length; i++)
-          res = res || this.cutoffMasks![i].get(j);
-        this.totalCutoffMask!.set(j, res, false);
+      if (this.diffs![activityNumber][line] >= cutoffs[activityNumber]) {
+        this.cutoffMasks![activityNumber].set(this.lines!.from[i], true, false);
+        this.cutoffMasks![activityNumber].set(this.lines!.to[i], true, false);
+        this.linesMask!.setBit(i, true, false);
+        this.pairedGrids?.pairsMaskCliffsTab.set(line, true);
       }
     }
 
-    this.cliffsFiltered = true;
-    this.parentTable!.filter.copyFrom(this.parentTableFilterBackup!).and(this.totalCutoffMask!);
-    this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.copyFrom(this.pairedGrids.pairsMaskCliffsTab);
+    //setting resulting masks
+    //TODO: refine
+    for (let j = 0; j < this.totalCutoffMask!.length; j++) {
+      let res = false;
+      for (let i = 0; i < this.cutoffMasks!.length; i++)
+        res = res || this.cutoffMasks![i].get(j);
+      this.totalCutoffMask!.set(j, res, false);
+    }
     this.linesRenderer!.linesVisibility = this.linesMask!;
   }
 
