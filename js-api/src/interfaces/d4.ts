@@ -662,6 +662,17 @@ export enum AxisType {
 export interface IBoxPlotSettings {
   categoryColumnNames: Array<string>;
 
+  category1: string;
+  category1ColumnName: string;
+
+  /// Aggregation function for "Category Column Names" (applicable to dates only).
+  category1Map: string;
+
+  category2: string;
+  category2ColumnName: string;
+
+  category2Map: string;
+
   showStatistics: boolean;
 
   showCategoryAxis: boolean;
