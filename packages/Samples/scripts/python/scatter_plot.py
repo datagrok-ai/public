@@ -1,3 +1,4 @@
+
 #name: Scatter Plot Python
 #language: python
 #tags: demo, viewers, hide-suggestions
@@ -5,8 +6,7 @@
 #input: column xColumnName {type:numerical}
 #input: column yColumnName {type:numerical}
 #input: column colorColumnName {type:numerical}
-#output: graphics
-
+#output: graphics res
 import numpy as np
 import matplotlib.pyplot as plt
 

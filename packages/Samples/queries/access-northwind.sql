@@ -1,4 +1,4 @@
---name: Orders
+--name: Access Orders
 --friendlyName: Orders
 --connection: AccessNorthwind
 --input: int employeeId = 5
@@ -21,7 +21,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 --end
 
---name: Products
+--name: Access Products
 --friendlyName: Products
 --connection: AccessNorthwind
 
