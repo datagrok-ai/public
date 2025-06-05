@@ -9,8 +9,8 @@ executing database queries, accessing web services, or running
 
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
-* [Enamine molecule browser](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
-<!--* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
+<!--* [Enamine molecule browser](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
+* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
 From the technical perspective, an app is a [function](../../../datagrok/concepts/functions/functions.md)
 that resides in a [package](../../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
@@ -294,7 +294,7 @@ aggregations.
 
 Dataframes are comprised of columns. Columns may be used as Datagrok functions arguments. For columns, it's possible to
 get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
-column. There is also a diverse [system of events](https://datagrok.ai/api/js/api/dg/classes/DataFrame) one can subscribe on
+column. There is also a diverse [system of events](https://datagrok.ai/api/js/dg/classes/DataFrame) one can subscribe on
 a dataframe.
 
 Let's create a dataframe and check what we can do with it.
