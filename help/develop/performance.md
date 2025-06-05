@@ -29,7 +29,7 @@ work, and why. Here are some universal recommendations:
 
 ## DataFrame
 
-**DO NOT** use row-based access for iterating over rows when [performance](help/develop/advanced/performance.md)
+**DO NOT** use row-based access for iterating over rows when [performance](./advanced/performance-tips.md)
 matters (pretty much anytime when the size of the dataset is not known in advance). Each call to `row(i)` creates
 a `Row` object that is unnecessary, since the underlying storage is columnar. Only use it for passing a reference to a
 particular row. Prefer using `column.get(i)` methods, instead.
