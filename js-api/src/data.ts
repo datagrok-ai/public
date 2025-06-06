@@ -188,7 +188,7 @@ export class Data {
     { changedColumns: number,
       changedValues: number,
       diffTable: DataFrame,
-      diffView: Grid,
+      diffGrid: Grid,
       missingRows: number,
       t1MissingRows: number,
       t2MissingRows: number } {
