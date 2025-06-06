@@ -1,0 +1,5 @@
+numpy==1.26.4
+datagrok-celery-task
+celery
+datagrok-api
+filelock

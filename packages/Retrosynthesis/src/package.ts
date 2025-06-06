@@ -9,42 +9,6 @@ import {updateRetrosynthesisWidget} from './utils';
 
 export const _package = new DG.Package();
 
-//name: CalculateRetroSynthesisPaths
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * 1
-//input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
-//input: string configDir
-//output: string paths
-export async function calculateRetroSynthesisPaths(molecule: string, configDir?: string): Promise<string> {
-  let progressBar: DG.TaskBarProgressIndicator | null = null;
-  try {
-    const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-    if (configDir) {
-      const syncStartTime = performance.now();
-      progressBar = DG.TaskBarProgressIndicator.create(`Config synchronization in progress...`);
-      await syncConfig(`${CONFIGS_PATH}/${configDir}`);
-      console.log(`Synchronized ${CONFIGS_PATH}/${configDir} in ${performance.now() - syncStartTime} ms`);
-      progressBar.close();
-    }
-    const startTime = performance.now();
-    progressBar = DG.TaskBarProgressIndicator.create(`Calculating retrosynthesis paths...`);
-    const currentUser = await grok.dapi.users.current();
-    const userId = currentUser.id;
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/aizynthfind', {
-      method: 'POST',
-      body: JSON.stringify({smiles: molecule, user_id: userId, config_dir: configDir !== '' ? `${CONFIGS_PATH}/${configDir}` : ''}),
-      headers: {'Content-Type': 'application/json'},
-    });
-    console.log(`Request to aizynthfinder finished in ${performance.now() - startTime} ms`);
-    const resJson = await response.json();
-    if (!resJson['success'])
-      throw new Error(`Error occured during paths generation: ${resJson['error']}`);
-    return resJson['result'];
-  } finally {
-    progressBar?.close();
-  }
-}
-
 
 //name: Chemistry | Retrosynthesis
 //tags: panel, chem, widgets

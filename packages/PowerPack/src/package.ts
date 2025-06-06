@@ -16,8 +16,9 @@ import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
-import { newUsersSearch, registerDGUserHandler } from './dg-db';
-import {merge} from "rxjs";
+import {newUsersSearch, registerDGUserHandler} from './dg-db';
+import {merge} from 'rxjs';
+import type ExcelJS from 'exceljs';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -249,4 +250,55 @@ export async function markdownFileViewer(file: DG.FileInfo): Promise<DG.View> {
   const preview = await ui.input.markdownPreview(mdText);
   viewFile.append(preview);
   return viewFile;
+}
+
+//name: xlsxFileHandler
+//description: Opens Excel file
+//tags: file-handler
+//meta.ext: xlsx
+//input: list bytes
+//output: list tables
+export async function xlsxFileHandler(bytes: Uint8Array): Promise<DG.DataFrame[]> {
+  await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+  const ExcelJS = (window as any).ExcelJS as typeof import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  const wb = await workbook.xlsx.load(bytes);
+  return convertWorkbookToDataFrames(wb);
+}
+
+function convertWorkbookToDataFrames(workbook: ExcelJS.Workbook): DG.DataFrame[] {
+  return workbook.worksheets.map((sheet) => {
+    const df = convertSheetToDataFrame(sheet);
+    df.name = sheet.name;
+    return df;
+  });
+}
+
+/// Converts a single ExcelJS Worksheet to a DG.DataFrame efficiently
+function convertSheetToDataFrame(sheet: ExcelJS.Worksheet): DG.DataFrame {
+  const rows: (string | null)[][] = [];
+  sheet.eachRow({includeEmpty: false}, (row) => {
+    const values = Array.isArray(row.values) ? row.values.slice(1) : []; // 1-based row.values
+    rows.push(values.map((cell) => (cell != null ? cell.toString() : null)));
+  });
+
+  if (rows.length === 0)
+    return DG.DataFrame.fromCsv('');
+
+  const headers = rows[0].map((name, i) => name ?? `col${i + 1}`);
+  const columnCount = headers.length;
+  const rowCount = rows.length - 1;
+
+  const columnData: string[][] = Array.from({length: columnCount}, () => new Array<string>(rowCount));
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < columnCount; j++)
+      columnData[j][i - 1] = row[j] ?? '';
+  }
+
+  const columns: DG.Column[] = headers.map((name: string, i: number) =>
+    DG.Column.fromStrings(name, columnData[i]));
+
+  return DG.DataFrame.fromColumns(columns);
 }

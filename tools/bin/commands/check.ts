@@ -13,8 +13,8 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
+  const nOptions = Object.keys(args).length - 1; 
+  if (args['_'].length !== 1 || nOptions > 2)
     return false;
   const curDir = process.cwd();
 
@@ -301,7 +301,6 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       }
       let wrongInputNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''))
       if (f.name) {
-        console.log(f);
         if (namesInFiles.has(f.name))
           namesInFiles.get(f.name)?.push(file);
         else
@@ -572,7 +571,6 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
       if (!isHeader)
         isHeader = true;
       const param = match[1];
-      console.log(param);
       if (param === 'name')
         data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
       else if (param === 'description')

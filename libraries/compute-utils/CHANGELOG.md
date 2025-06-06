@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.43.8 (2025-06-03)
+
+Compute2 help improvements
+
 ## 1.43.7 (2025-05-28)
 
 Compute help related fixes

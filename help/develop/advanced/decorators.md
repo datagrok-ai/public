@@ -5,7 +5,7 @@ title: "Decorators"
 # Decorators
 
 Package functions are typically registered in the main package file `package.ts`. Each function has a special [parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
-You can use [decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to register annotated functions based on decorated class/object.
+You can use [decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to register annotated functions based on decorated class/object Decorators add the ability to create strong type annotation instead of writing it by hand.
 
 You can use a decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so you should commit this file to the repository.
 
@@ -79,7 +79,7 @@ Additionally, it is possible to decorate methods. There is no ability to decorat
 
 This functionality enables the automatic generation of annotated functions from decorated class methods. Base annotation gets created from the method's signature, which is an option in the decorator's input options. You can see [list](https://github.com/datagrok-ai/public/blob/master/js-api/src/decorators/functions.ts) of decorators and their options in the js-api package.
 
-There is`@grok.decorators.param` decorator that allows setting input options. You can easily set the name, type, and options in the decorator's input object.
+There is`@grok.decorators.param` decorator that allows setting input options. You can easily set the name, type, and options in the decorator's input object. Most of the types are already [registered](https://github.com/datagrok-ai/public/blob/7ce4edaca2a937b934120a8894ea927c1eca8c7f/js-api/src/const.ts#L82) in `DG.TYPE` enum and you can easily use it to set params type.
 
 ### Example 
 
@@ -128,8 +128,8 @@ export class PackageFunctions {
   static ballFlight(
     @grok.decorators.param({options:{initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number, 
     @grok.decorators.param({options:{initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number, 
-    @grok.decorators.param({options:{initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number, 
-    @grok.decorators.param({options:{initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
+    @grok.decorators.param({type: DG.TYPE.INT, options:{initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number, 
+    @grok.decorators.param({type: DG.TYPE.FLOAT, options:{initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {
   }
 }
 ```

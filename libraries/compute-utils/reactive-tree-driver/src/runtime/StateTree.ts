@@ -31,6 +31,7 @@ export class StateTree {
   public makeStateRequests$ = new Subject<true>();
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
+  public result$ = new Subject<any>();
 
   constructor(
     item: StateTreeNode,
@@ -398,6 +399,16 @@ export class StateTree {
       });
     } else
       return action.exec(additionalParams);
+  }
+
+  public returnResult() {
+    return this.withTreeLock(() => {
+      return this.linksState.runReturnResults(this.nodeTree).pipe(
+        tap((res) => {
+          this.result$.next(res);
+        }),
+      );
+    });
   }
 
   public updateFuncCall(uuid: string, call: DG.FuncCall) {
