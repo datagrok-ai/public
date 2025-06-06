@@ -20,8 +20,6 @@ import {ConvertFunc, ISeqHandler, JoinerFunc, SeqTemps, SeqValueBase} from '@dat
 
 import {SeqHelper} from './seq-helper';
 
-/* eslint-enable max-len */
-
 /** Class for handling notation units in Macromolecule columns and
  * conversion of notation systems in Macromolecule columns
  */
@@ -322,6 +320,44 @@ export class SeqHandler implements ISeqHandler {
     }
   }
 
+  /// Faster method to get monomers at certain position.
+  /// for canonical sequences in fasta (large proteins/nucleotides)
+  /// will be faster than getSplitted(rowIdx).getCanonical(posIdx)
+  getMonomerAtPosition(rowIdx: number, posIdx: number, canonical: boolean): string {
+    if (this.isCanonicalAlphabet && this.isFasta() && !this.getAlphabetIsMultichar()) {
+      const seq = this.column.get(rowIdx) ?? '';
+      const res = seq[posIdx];
+      return canonical ? (res === GapOriginals[NOTATION.FASTA] ? GAP_SYMBOL : (res ?? GAP_SYMBOL)) : (res ?? '');
+    }
+    const mSeq: ISeqSplitted = this.getSplitted(rowIdx);
+    if (posIdx < 0 || posIdx >= mSeq.length)
+      return this.defaultGapOriginal;
+    return canonical ? mSeq.getCanonical(posIdx) : mSeq.getOriginal(posIdx);
+  }
+
+  getMonomersAtPosition(position: number, canonical: boolean): string[] {
+    const length = this.column.length;
+    const res: string[] = new Array(length).fill(GAP_SYMBOL);
+    if (this.isCanonicalAlphabet && this.isFasta() && !this.getAlphabetIsMultichar()) {
+      const colCategories = this.column.categories;
+      const colIndexes = this.column.getRawData();
+      for (let i = 0; i < length; i++) {
+        const seq = colCategories[colIndexes[i]] ?? '';
+        if (position < seq.length) {
+          const resChar = seq[position];
+          res[i] = canonical ? (resChar === GapOriginals[NOTATION.FASTA] ? GAP_SYMBOL : (resChar ?? GAP_SYMBOL)) : (resChar ?? '');
+        }
+      }
+    } else {
+      for (let i = 0; i < length; i++) {
+        const mSeq: ISeqSplitted = this.getSplitted(i);
+        if (position >= 0 && position < mSeq.length)
+          res[i] = canonical ? mSeq.getCanonical(position) : mSeq.getOriginal(position);
+      }
+    }
+    return res;
+  }
+
   /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
   public getValue(rowIdx: number, options?: any): SeqValueBase {
     const seq: string = this.column.get(rowIdx);
@@ -343,6 +379,11 @@ export class SeqHandler implements ISeqHandler {
   }
 
   private _stats: SeqColStats | null = null;
+
+  public get isCanonicalAlphabet(): boolean {
+    const alphabet = this.alphabet;
+    return alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA || alphabet === ALPHABET.PT;
+  }
 
   public get stats(): SeqColStats {
     if (this._stats === null) {
@@ -374,7 +415,7 @@ export class SeqHandler implements ISeqHandler {
   public get maxLength(): number {
     if (this._maxLength === null) {
       this._maxLength = this.column.length === 0 ? 0 :
-        Math.max(...wu.count(0).take(this.column.length).map((rowIdx) => this.getSplitted(rowIdx).length));
+        wu.count(0).take(this.column.length).map((rowIdx) => this.getSplitted(rowIdx).length).reduce((a, b) => a > b ? a : b, 0);
     }
     return this._maxLength!;
   }
@@ -392,6 +433,8 @@ export class SeqHandler implements ISeqHandler {
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
 
   public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR || !!this.separator; }
+
+  public isFastaOrSeparator(): boolean { return this.isFasta() || this.isSeparator(); }
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 

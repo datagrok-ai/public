@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datagrok-celery-task"
+version = "0.1.2"
+authors = [
+  { name = "Andrew Skalkin", email = "askalkin@datagrok.ai" },
+  { name = "Pavlo Polovyi", email = "ppolovyi@datagrok.ai" },
+  { name = "Alexander Paramonov", email = "aparamonov@datagrok.ai" },
+]
+description = "Celery Task wrapper to integrate Python functions into the Datagrok platform."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "celery>=5.5.2",
+  "pyarrow>=17.0.0",
+  "pandas>=2.0.3",
+  "websocket-client>=1.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/datagrok-ai/public"
+Issues = "https://github.com/datagrok-ai/public/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["datagrok_celery_task"]
+
+[tool.hatch.build.targets.sdist]
+include = ["datagrok_celery_task/**", "README.md", "pyproject.toml"]

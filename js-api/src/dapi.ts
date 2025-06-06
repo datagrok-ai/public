@@ -19,18 +19,17 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
-import {ViewLayout, ViewInfo} from "./views/view";
 import {toJs, toDart} from "./wrappers";
-import {_propsToDart} from "./utils";
+import {_propsToDart} from "./utils_convert";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export class ComponentBuildInfo {
   branch: string = '';
@@ -52,6 +51,22 @@ export class Dapi {
   get root(): string {
     return api.grok_Dapi_Root();
   }
+  set root(root: string) {
+    // @ts-ignore
+    api.grok_Dapi_Set_Root(root);
+  }
+
+
+  get token(): string {
+    // @ts-ignore
+    return api.grok_Dapi_Get_Token();
+  }
+  // @ts-ignore
+  set token(token: string) {
+
+    // @ts-ignore
+
+     api.grok_Dapi_Set_Token(token); }
 
   /** Retrieves entities from server by list of IDs
    *  @returns {Promise<Entity[]>} */
@@ -708,7 +723,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
  * @extends HttpDataSource
  * */
 export class ViewsDataSource extends HttpDataSource<ViewInfo> {
-  /** @constructs ViewInfoDataSource*/
+  /** @constructs ViewsDataSource*/
   constructor(s: any) {
     super(s);
   }

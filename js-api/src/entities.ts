@@ -14,17 +14,19 @@ import {
 } from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
-import {FileSource} from "./dapi";
-import {MapProxy} from "./utils";
+import type {FileSource} from "./dapi";
+import {MapProxy} from "./proxies";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
-import { Tags } from "../dg";
+import { Tags } from "./api/ddt.api.g";
+import {View} from "./views/view";
 
 declare var grok: any;
-const api: IDartApi = <any>window;
+declare var DG: any;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 type PropertyGetter<TSource = any, TProp = any> = (a: TSource) => TProp;
@@ -259,6 +261,9 @@ export class Func extends Entity {
 
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
+
+  /** If true, func has a `meta.vectorFunc = true` tag */
+  get hasVectorTag(): boolean { return api.grok_Func_Get_HasVectorTag(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
   prepare(parameters: {[name: string]: any} = {}): FuncCall {
@@ -1030,6 +1035,9 @@ export class Script extends Func {
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
+  /** If true, script has a `meta.vectorFunc = true` tag and proper language set */
+  get hasVectorTag(): boolean { return api.grok_Script_Get_HasVectorTag(this.dart); }
+
   /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
@@ -1304,7 +1312,7 @@ export class Package extends Entity {
 
   /** Global application data */
   get files(): FileSource {
-    return new FileSource(`System:AppData/${this.name}`);
+    return new DG.FileSource(`System:AppData/${this.name}`);
   }
 
   public async getTests(core: boolean = false) {
@@ -1474,6 +1482,10 @@ export class Property {
   /** Nullable */
   get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
+
+  /** Initial value used when initializing UI */
+  get initialValue(): any { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: any) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
 
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
@@ -1679,5 +1691,93 @@ export class UserReportsRule extends Entity {
 
   static async showAddDialog(): Promise<void> {
     await api.grok_ReportsRule_Add_Dialog();
+  }
+}
+
+
+
+export class ViewLayout extends Entity {
+
+  /** @constructs ViewLayout */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewLayout {
+    return toJs(api.grok_ViewLayout_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewLayout {
+    return toJs(api.grok_ViewLayout_FromViewState(state));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewLayout_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewLayout_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewLayout_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewLayout_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewLayout_ToJson(this.dart);
+  }
+
+  get columns(): ColumnInfo[] {
+    return toJs(api.grok_ViewLayout_Get_Columns(this.dart));
+  }
+
+}
+
+export class ViewInfo extends Entity {
+
+  /** @constructs ViewInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
+  }
+
+  get table() : TableInfo {
+    return toJs(api.grok_ViewInfo_Get_Table(this.dart));
+  }
+
+  /** Only defined within the context of the OnViewLayoutXXX events */
+  get view(): View {
+    return toJs(api.grok_ViewInfo_Get_View(this.dart));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewInfo_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewInfo_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewInfo_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewInfo_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewInfo_ToJson(this.dart);
   }
 }

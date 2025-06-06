@@ -1,10 +1,16 @@
 # compute-utils changelog
 
-## 1.43.6 (2025-05-22)
+## 1.43.8 (2025-06-03)
 
-- Updated UI/UX in the Sensitivity Analysis view
-- Implemented the MOEA/D method for multi-objective optimization
-- Added the optimization view
+Compute2 help improvements
+
+## 1.43.7 (2025-05-28)
+
+Compute help related fixes
+
+## 1.43.6 (2025-05-28)
+
+Compute2 related typings tweak
 
 ## 1.43.5 (2025-05-12)
 

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.43.5",
+  "version": "1.43.8",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -31,6 +31,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",
+    "datagrok-tools": "^4.14.8",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -42,7 +43,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",
-    "build": "tsc",
+    "build": "grok check && tsc",
     "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",

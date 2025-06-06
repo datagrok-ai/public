@@ -1,5 +1,35 @@
 # Bio changelog
 
+## 2.22.0 (2025-06-03)
+
+* MSA header tracks (Conseration and WebLogo)
+* Tooltips for WebLogo header
+* Speedup calculations for conservation and weblogo, corrected limits
+
+## 2.21.11 (2025-05-29)
+
+* Add faster methods for getting monomers at given positions
+
+## 2.21.10 (2025-05-22)
+
+* Fix all monomers script
+* Optional Sequence scrolling header for short sequences
+
+## 2.21.9 (2025-05-15)
+
+* Correct scrolling header alignment with sequences.
+* Correct detection of max length sequence
+* Better display of current position
+* Fix keyboard navigation for sequence position scroller
+
+## 2.21.7 (2025-05-14)
+
+* Enable Header scrolling for non-MSA
+
+## 2.21.6 (2025-05-14)
+
+* Sequence position scrolling header
+
 ## 2.21.5 (2025-05-12)
 
 * Shifted sequence rendering support

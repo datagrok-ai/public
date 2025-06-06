@@ -1,5 +1,6 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import { PLATE_OUTLIER_WELL_NAME } from './plate';
+import {PLATE_OUTLIER_WELL_NAME} from './plate';
 import wu from 'wu';
 //@ts-ignore
 import * as jStat from 'jstat';
@@ -13,9 +14,10 @@ export function assure(condition: boolean, errorMessage: string | (() => string)
 
 
 export function firstWhere<T>(items: Iterable<T>, check: ((item: T) => boolean)): T | null {
-  for (const x of items)
+  for (const x of items) {
     if (check(x))
       return x;
+  }
   return null;
 }
 
@@ -61,12 +63,17 @@ export function excelToNum(row: string): number {
 export function parseExcelPosition(cell: string): [number, number] {
   const match = cell.match(/^([A-Za-z]+)(\d+)$/);
   if (!match)
-    throw new Error("Invalid cell format. Expected format like 'A3'.");
+    throw new Error('Invalid cell format. Expected format like \'A3\'.');
 
   const row = excelToNum(match[1].toUpperCase());
   const col = parseInt(match[2]) - 1;
 
-  return [ row, col ];
+  return [row, col];
+}
+
+/** Converts 0-based {row, col} to Excel position notation. */
+export function toExcelPosition(row: number, col: number): string {
+  return `${numToExcel(row)}${col + 1}`;
 }
 
 export function getMaxPosition(positions: Iterable<[number, number]>): [number, number] {
@@ -80,7 +87,7 @@ export function toStandardSize([rows, cols]: number[]): [number, number] {
     return [16, 24];
   if (rows <= 32 && cols <= 48)
     return [32, 48];
-  throw `${rows}x${cols} exceeds maximum plate size 32x48`;
+  throw new Error(`${rows}x${cols} exceeds maximum plate size 32x48`);
 }
 
 export function safeLog(num: number) {
@@ -100,17 +107,16 @@ export function mapFromRow(row: DG.Row, outlierSetFunc?: (row: number, checkBoxS
       check.checked = check.value = currentVal;
       check.onchange = (e) => outlierSetFunc(row.idx, check.checked);
       res[column.name] = check;
-    } else
-      res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx);
+    } else { res[column.name] = column.isNone(idx) ? 'No data' : column.isNumerical && column.type !== DG.COLUMN_TYPE.DATE_TIME ? formatTableNumber(column.get(idx)) : column.get(idx); }
   }
   return res;
 }
 
 export function formatTableNumber(num: number): string | number {
-  if (num === 0) 
+  if (num === 0)
     return '0';
   if (Math.abs(num) < 1e-3)
-      return DG.format(num, 'scientific');
+    return DG.format(num, 'scientific');
   else if (Math.abs(num) < 1)
     return DG.format(num, '0.0000');
   return num;
@@ -126,4 +132,4 @@ export const jstatStatistics: Record<JSTATStatistics, (val: number[]) => number>
   max: jStat.max,
   meansqerr: jStat.meansqerr,
   geomean: jStat.geomean
-}
+};

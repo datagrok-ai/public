@@ -50,7 +50,7 @@ export async function ivpFileHandler(content: string) {
 
 //name: previewIvp
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: ivp
 export async function previewIvp(file: any) {
@@ -109,7 +109,8 @@ export async function solveODE(problem: string) {
   return PackageFunctions.solveODE(problem);
 }
 
-//name: pkPdNew
+//name: PK-PD
+//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
 //tags: model
 //meta.icon: files/icons/pkpd.png
 export async function pkPdNew() {

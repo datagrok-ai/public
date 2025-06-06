@@ -17,6 +17,7 @@ export function _FitChartCellRenderer() {
 //tags: viewer
 //output: viewer result
 //meta.icon: icons/multi-curve-viewer.png
+//meta.trellisable: true
 export function _MultiCurveViewer() {
   return new MultiCurveViewer();
 }
@@ -44,30 +45,32 @@ export function _initCurves() {
 
 //name: addStatisticsColumn
 //tags: Transform
-//input: dynamic df 
+//input: dataframe table 
 //input: string colName 
 //input: string propName 
-//input: string seriesName 
-//input: double seriesNumber 
-//input: string newColName 
-export function addStatisticsColumn(df: any, colName: string, propName: string, seriesName: string, seriesNumber: number, newColName: string) {
-  return PackageFunctions.addStatisticsColumn(df, colName, propName, seriesName, seriesNumber, newColName);
+//input: int seriesNumber 
+//output: column result
+//meta.vectorFunc: true
+export function addStatisticsColumn(table: any, colName: string, propName: string, seriesNumber: number) {
+  return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
 //name: addAggrStatisticsColumn
 //tags: Transform
-//input: dynamic df 
+//input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
-export function addAggrStatisticsColumn(df: any, colName: string, propName: string, aggrType: string) {
-  return PackageFunctions.addAggrStatisticsColumn(df, colName, propName, aggrType);
+//output: column result
+//meta.vectorFunc: true
+export function addAggrStatisticsColumn(table: any, colName: string, propName: string, aggrType: string) {
+  return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
 
 //name: platesFolderPreview
 //tags: folderViewer
-//input: dynamic folder 
-//input: dynamic files 
+//input: file folder 
+//input: list<file> files 
 //output: widget result
 export async function platesFolderPreview(folder: any, files: any) {
   return PackageFunctions.platesFolderPreview(folder, files);
@@ -75,7 +78,7 @@ export async function platesFolderPreview(folder: any, files: any) {
 
 //name: previewPlate
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
@@ -95,7 +98,7 @@ export async function importPlate(fileContent: string) {
 
 //name: importPlateXlsx
 //tags: file-handler
-//input: dynamic fileContent 
+//input: blob fileContent 
 //meta.ext: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
 export async function importPlateXlsx(fileContent: any) {
@@ -104,7 +107,7 @@ export async function importPlateXlsx(fileContent: any) {
 
 //name: viewPlateXlsx
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
@@ -113,7 +116,7 @@ export async function previewPlateXlsx(file: any) {
 }
 
 //name: checkExcelIsPlate
-//input: dynamic content 
+//input: blob content 
 //output: bool result
 export async function checkExcelIsPlate(content: any) {
   return PackageFunctions.checkExcelIsPlate(content);
@@ -132,12 +135,6 @@ export function checkFileIsPlate(content: string) {
 //meta.browsePath: Plates
 export function platesApp() {
   return PackageFunctions.platesApp();
-}
-
-//name: platesAppTreeBrowser
-//input: dynamic treeNode 
-export async function platesAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.platesAppTreeBrowser(treeNode);
 }
 
 //name: getPlateByBarcode

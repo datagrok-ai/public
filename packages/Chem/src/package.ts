@@ -175,9 +175,9 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const initialHeight = 90;
   const tooltipMaxWidth = 500;
   const version = col.version;
-
-  for (let i = 0; i < col.length; ++i) {
-    if (!col.isNone(i) && _isSmarts(col.get(i)))
+  const colCategories = col.categories;
+  for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
+    if (!!colCategories[i] && _isSmarts(colCategories[i]))
       return;
   }
 
@@ -185,11 +185,10 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
   const divStructures = ui.div([ui.loader()]);
   divStructures.classList.add('chem-tooltip-structure-div');
-
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -199,7 +198,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     ui.empty(divStructures);
     const molIdsCached = col.temp['molIds'];
     for (let i = 0; i < molIdsCached.length; ++i)
-      divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
+      divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
   };
 
   divMain.append(divStructures);
@@ -683,6 +682,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
   clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
+    return;
+  }
+
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -794,6 +799,12 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
   radarGrid: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
+    return;
+  }
+
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name && (radarViewer || radarGrid)) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -945,6 +956,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
   if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
     grok.shell.error(`Column ${activities.name} is not numeric`);
+    return;
+  }
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -1818,7 +1834,7 @@ export function addScaffoldTree(): void {
 
 //name: Matched Molecular Pairs Analysis
 //tags: viewer
-//meta.disableInViewerGallery: true
+//meta.showInGallery: false
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
@@ -1837,6 +1853,12 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
 
   if (activities.length < 1) {
     grok.shell.warning('MMP analysis requires at least one activity');
+    return;
+  }
+
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -1869,25 +1891,27 @@ export async function getScaffoldTree(data: DG.DataFrame,
   dischargeAndDeradicalize: boolean = false,
 ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const invalid: number[] = new Array<number>(data.columns.length);
-  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = new Array<string>(data.columns.length);
-  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
-    let el: string = molColumn?.get(rowI);
-    if (!smiles) {
-      try {
-        el = convertMolNotation(el, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
-      } catch {
-        invalid[rowI] = rowI;
-      }
-    }
 
-    smilesList[rowI] = el;
+  const categories = molColumn?.categories;
+  if (categories?.length === 1 && !categories[0]?.trim())
+    throw new Error('Molecule column is empty.');
+
+  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
+  const invalid: number[] = [];
+  const smilesList: string[] = [];
+  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
+    const mol = molColumn?.get(rowI);
+    try {
+      smilesList[smilesList.length] = smiles ?
+        mol :
+        convertMolNotation(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+    } catch {
+      invalid[invalid.length] = rowI;
+    }
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-  smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
-  data.columns.add(smilesColumn);
-  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
+  const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }

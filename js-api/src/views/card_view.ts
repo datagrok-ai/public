@@ -2,7 +2,7 @@ import {View} from "./view";
 import {ObjectHandler} from "../../ui";
 import {toJs} from "../wrappers";
 import {IDartApi} from "../api/grok_api.g";
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export enum RENDER_MODE {
   BRIEF = "Brief",

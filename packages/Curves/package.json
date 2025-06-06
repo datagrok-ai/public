@@ -16,10 +16,14 @@
     "dayjs": "^1.11.7",
     "rxjs": "^6.5.5",
     "jstat": "^1.9.6",
-    "exceljs": "^4.3.0"
+    "exceljs": "^4.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "eslint": "^8.1.0",
+    "eslint-config-google": "^0.14.0"
   },
   "devDependencies": {
-    "datagrok-tools": "../../tools",
+    "datagrok-tools": "^4.14.1",
     "css-loader": "^5.0.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",

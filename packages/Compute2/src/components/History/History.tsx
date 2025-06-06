@@ -305,7 +305,7 @@ export const History = Vue.defineComponent({
       try {
         isLoading.value = true;
         await from(currentSelection).pipe(
-          mergeMap(call => from(deleteRun(call.id)), 5),
+          mergeMap((call) => from(deleteRun(call.id)), 5),
           toArray(),
         ).toPromise();
       } finally {
@@ -321,7 +321,7 @@ export const History = Vue.defineComponent({
       const compareView = await RunComparisonView.fromComparedRuns(fullFuncCalls, currentFunc);
       grok.shell.addView(compareView);
       compareView.defaultCustomize();
-    }
+    };
 
     const currentFunc = Vue.computed(() => Vue.markRaw(props.func));
     const visibleFilterColumns = Vue.computed(() => {
@@ -377,7 +377,7 @@ export const History = Vue.defineComponent({
             onUpdate:value={(val) => showInputs.value = val}
           />}
         </div>
-        <div style={{display: 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
+        <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA
             name='sync'
             tooltip={'Refresh'}

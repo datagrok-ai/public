@@ -67,8 +67,8 @@ the functions of interest.
 
 ## Inputs and outputs
 
-Each input and output definition take one line that starts with the comment, followed 
-by type, name, optional default value, options, and optional description, just like here:
+Each input and output definition takes one line, starting with a comment, followed 
+by type, name, optional initial value used to pre-fill the UI, options, and optional description, just like here:
 
 ```
 #input: string country {choices: ["USA", "Canada"]} [Country to ship from]
@@ -684,10 +684,7 @@ FROM target_dictionary td
 
 ```
 
-Here, the `state` and `city` parameters are defined as strings with default
-values. The `city` parameter's choices query references the `state` parameter
-using `@state`. This ensures that the choices are filtered based on the value of
-`state`.
+Here, the `species` and `organism` parameters are inferred from the search pattern. For example, if you search for "Bioactivity for bacteria targets for Shigella", the `species` parameter will be set to "bacteria" and the `organism` parameter will be set to "shigella".
 
 </details>
 

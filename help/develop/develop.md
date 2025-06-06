@@ -30,7 +30,7 @@ package might contain different things:
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/apps/build-an-app.md)
 * [Scripts](../compute/scripting/scripting.mdx) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
-* [Tables](../access/files/supported-formats.md#tabular-formats), files, and other objects
+* [Tables](../access/files/supported-formats.md#tabular-and-semi-structured-data), files, and other objects
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
 the [step-by-step guide](how-to/packages/create-package.md) for creating your own package.
@@ -57,8 +57,8 @@ In addition to that, it might contain the following folders:
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
-  Examples: [EnamineStore](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
-  , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
+  Examples: [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi), 
+  [Samples](https://github.com/datagrok-ai/public/tree/master/packages/Samples)
 * `connections` and `queries`: [connections](../access/access.md#data-connection)
   and [queries](../access/access.md#data-query) for data retrieval.
   Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)

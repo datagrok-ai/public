@@ -1,3 +1,5 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable rxjs/no-nested-subscribe */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
 /* eslint max-lines: "off" */
@@ -10,7 +12,7 @@ import {DimReductionBaseEditor, PreprocessFunctionReturnType} from '@datagrok-li
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -73,14 +75,14 @@ import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
-
+import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 export const _package = new BioPackage(/*{debug: true}/**/);
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
 
 //name: getMonomerLibHelper
-//description:
+//description: Returns an instance of the monomer library helper
 //output: object result
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return await MonomerLibManager.getInstance();
@@ -167,6 +169,7 @@ async function initBioInt() {
   // hydrophobPalette = new SeqPaletteCustom(palette);
 
   _package.logger.debug(`${logPrefix}, end`);
+  handleSequenceHeaderRendering();
 }
 
 //name: sequenceTooltip
@@ -374,7 +377,6 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
-// eslint-disable-next-line max-len
 //input: string alignTable {choices: ['AUTO', 'NUCLEOTIDES', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62','BLOSUM80','BLOSUM90','PAM30','PAM70','PAM250','SCHNEIDER','TRANS']}
 //input: double gap
 //input: string seq1
@@ -459,6 +461,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
   similarity: number, methodName: DimReductionMethods,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
   options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
+    return;
+  }
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(table);
@@ -585,6 +592,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
   clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
+  //workaround for functions which add viewers to tableView (can be run only on active table view)
+  if (table.name !== grok.shell.tv.dataFrame.name) {
+    grok.shell.error(`Table ${table.name} is not a current table view`);
+    return;
+  }
   const tableView =
     grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
@@ -962,12 +974,12 @@ export async function manageMonomersView() {
   await monomerManager.getViewRoot();
 }
 
-//name: Monomers
+//name: Manage Monomer Libraries
 //tags: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
 //output: view v
-export async function manageLibrariesApp(): Promise<DG.View> {
+export async function manageMonomerLibrariesView(): Promise<DG.View> {
   return await showManageLibrariesView(false);
 }
 

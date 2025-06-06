@@ -92,6 +92,7 @@ services:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
     user: root
     environment:
+      GROK_SPAWNER_DATAGROK_API_URL: http://datagrok:8080/api
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
       GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-true}

@@ -1,6 +1,6 @@
 import * as rxjs from 'rxjs';
 import {toJs} from './wrappers';
-import {_toIterable} from './utils';
+import {_toIterable} from './utils_convert';
 import {DockType} from './const';
 import {Viewer} from './viewer';
 import {IDartApi} from "./api/grok_api.g";
@@ -8,7 +8,7 @@ import {StreamSubscription} from "./events";
 
 
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Dock node.

@@ -1,5 +1,22 @@
 # Compute2 changelog
 
+## 1.3.6 (2025-06-03)
+
+- Allow all users to use
+
+## 1.3.5 (2025-06-03)
+
+- Help tweaks
+
+## 1.3.4 (2025-05-28)
+
+- Vue and vueuse versions Bump
+- Help tweaks
+
+## 1.3.3 (2025-05-21)
+
+- Fix step reordering ui sync
+
 ## 1.3.2 (2025-05-12)
 
 - Compute-utils update

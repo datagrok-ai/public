@@ -19,6 +19,54 @@ const decoratorOptionToAnnotation = new Map<string, string>([
   ['initialValue', 'default']
 ]);
 
+export const dgAnnotationTypes: Record<string, string> = {
+  INT: "int",
+  BIG_INT: "bigint",
+  FLOAT: "double",
+  NUM: "num",
+  QNUM: "qnum",
+  BOOL: "bool",
+  STRING: "string",
+  STRING_LIST: "string_list",
+  DATE_TIME: "datetime",
+  OBJECT: "object",
+  BYTE_ARRAY: "byte_array",
+  DATA_FRAME: "dataframe",
+  DATA_FRAME_LIST: "dataframe_list",
+  CELL: "cell",
+  COLUMN: "column",
+  COLUMN_LIST: "column_list",
+  GRAPHICS: "graphics",
+  FILE: "file",
+  BLOB: "blob",
+  ROW_FILTER: "tablerowfiltercall",
+  COLUMN_FILTER: "colfiltercall",
+  BIT_SET: "bitset",
+  MAP: "map",
+  DYNAMIC: "dynamic",
+  VIEWER: "viewer",
+  LIST: "list",
+  SEM_VALUE: "semantic_value",
+  FUNC: "func",
+  FUNC_CALL: "funccall",
+  PROPERTY: "property",
+  CATEGORICAL: "categorical",
+  NUMERICAL: "numerical",
+  GRID_CELL_RENDER_ARGS: "GridCellRenderArgs",
+  ELEMENT: "element",
+  VIEW: "view",
+  TABLE_VIEW: "TableView",
+  USER: "User",
+  MENU: "Menu",
+  PROJECT: "Project",
+  SEMANTIC_VALUE: "semantic_value",
+  EVENT_DATA: "event_data",
+  PROGRESS_INDICATOR: "progressindicator",
+  CREDENTIALS: "Credentials",
+  SCRIPT_ENVIRONMENT: "ScriptEnvironment",
+  NOTEBOOK: "Notebook"
+}
+
 export enum FUNC_TYPES {
   APP = 'app',
   CELL_RENDERER = 'cellRenderer',
@@ -40,7 +88,7 @@ export enum FUNC_TYPES {
   MODEL = 'model'
 }
 
-export const typesToAnnotation : Record<string, string> = {
+export const typesToAnnotation: Record<string, string> = {
   'DataFrame': 'dataframe',
   'DG.DataFrame': 'dataframe',
   'Column': 'column',
@@ -84,41 +132,39 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       data.tags.concat(data[pseudoParams.EXTENSIONS].map((ext: string) => 'fileViewer-' + ext)).join(', ') :
       data.tags.join(', ')}${sep}`;
   }
-  
-  for(let input of data.inputs ?? [])
-  {
-    if(!input)
+
+  for (let input of data.inputs ?? []) {
+    if (!input)
       continue;
     let type = input?.type;
     let isArray = false;
-    if(type?.includes(`[]`)){
+    if (type?.includes(`[]`)) {
       type = type.replace(/\[\]$/, '');
       isArray = true;
     }
     const annotationType = typesToAnnotation[type ?? ''];
-    if((input?.options as any)?.type)
+    if ((input?.options as any)?.type)
       type = (input?.options as any)?.type;
-    else if(annotationType)
-    {
-      if(isArray)
+    else if (annotationType) {
+      if (isArray)
         type = `list<${annotationType}>`;
       else
         type = annotationType;
     }
     else
       type = 'dynamic';
-    const options = ((input?.options as any)?.options? buildStringOfOptions((input.options as any).options ?? {}) : '');
-    const functionName  = ((input.options as any)?.name ?  (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
+    const options = ((input?.options as any)?.options ? buildStringOfOptions((input.options as any).options ?? {}) : '');
+    const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs)
-      if (output.type  !== 'void')
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options?` ${buildStringOfOptions(output.options)}`:''}` : '') + sep;
+      if (output.type !== 'void')
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
   }
-  
+
   if (data.meta) {
-    for(let entry of Object.entries(data.meta))
+    for (let entry of Object.entries(data.meta))
       s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
   }
 
@@ -129,7 +175,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       if (isFileViewer)
         continue;
       s += `${comment}meta.ext: ${data[parameter]}${sep}`;
-    } else if (!headerParams.includes(parameter)){
+    } else if (!headerParams.includes(parameter)) {
       if (nonMetaData.includes(parameter))
         s += `${comment}${parameter}: ${data[parameter]}${sep}`;
       else
@@ -137,13 +183,12 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     }
   }
 
-  if (data.test)
-  {
-    for(let entry of Object.entries(data.test)){
+  if (data.test) {
+    for (let entry of Object.entries(data.test)) {
       if (entry[0] === 'test' || entry[0] === 'wait')
         s += `${comment}`;
-      else 
-        s+= `, `;
+      else
+        s += `, `;
       s += `${entry[0]}: ${entry[1]} `;
     }
     s += `${sep}`;
@@ -151,14 +196,14 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   return s;
 }
 
-function buildStringOfOptions(options: any){
-  let optionsInString : string[] = [];
+function buildStringOfOptions(options: any) {
+  let optionsInString: string[] = [];
   for (const [key, value] of Object.entries(options ?? {})) {
     let val = value;
     let option = key;
     option = decoratorOptionToAnnotation.get(option) ?? option;
 
-    if(Array.isArray(value))
+    if (Array.isArray(value))
       val = JSON.stringify(value);
     optionsInString.push(`${option}: ${val}`);
   }
@@ -342,13 +387,21 @@ export function generateClassFunc(annotation: string, className: string, sep: st
   return annotation + `export function _${className}() {${sep}  return new ${className}();${sep}}${sep.repeat(2)}`;
 }
 
+const primitives = new Set([
+  'string',
+  'string[]',
+  'number',
+  'number[]',
+  'boolean',
+  'boolean[]',
+]);
+
 /** Generates a DG function. */
-export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string 
-{
-  let funcSigNature = (inputs.map((e)=>`${e.name}: ${e.type}`)).join(', ');
-  let funcArguments = (inputs.map((e)=>e.name)).join(', ');
-  
-  return annotation + `export ${isAsync? 'async ': ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string {
+  let funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] ? e.type : 'any')}`)).join(', ');
+  let funcArguments = (inputs.map((e) => e.name)).join(', ');
+
+  return annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {

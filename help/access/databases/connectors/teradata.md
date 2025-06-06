@@ -3,7 +3,7 @@ title: "Teradata"
 ---
 
 Provides access to
-[Teradata](https://www.teradata.ru/Products/Software/Database) database using
+[Teradata](https://www.teradata.com/resources/datasheets/teradata-database) database using
 SQL queries via JDBC driver.
 
 ## Connection parameters
@@ -75,4 +75,4 @@ SQL queries via JDBC driver.
 See also:
 
 * [Data connection](../../access.md#data-connection)
-* [Teradata](https://www.teradata.ru/Products/Software/Database)
+* [Teradata](https://www.teradata.com/resources/datasheets/teradata-database)

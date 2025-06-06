@@ -18,7 +18,6 @@ very extensible, and almost any functionality can be implemented as a package:
   [PDF](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors/README.md), or
   [JDX](https://github.com/datagrok-ai/public/blob/master/packages/nmrium/README.md)
 * Scientific methods implemented in R, Python, or Julia
-<!--* File metadata extractors, such as [Tika](https://github.com/datagrok-ai/labs/tree/master/packages/Tika/README.md)-->
 * Custom predictive models that work with the built-in [predictive modeling](../learn/learn.md)
   , such as [EDA](https://github.com/datagrok-ai/public/blob/master/packages/EDA/README.md)
 * Platform enhancements, such
@@ -32,7 +31,7 @@ there are some restrictions related to the server computational capacities. Orga
 typically establish their own private repositories that contain proprietary extensions.
 
 For developers: check out [getting started](../develop/develop.md)
-and [contributor's guide](https://github.com/datagrok-ai/public/tree/master/CONTRIB.md).
+and [contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md).
 
 ## Academia
 

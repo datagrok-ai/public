@@ -5,7 +5,10 @@ import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate,
 import {DataConnection, TableQueryBuilder} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+
+declare let grok: any;
+declare let DG: any;
 
 /** Provides convenient file shares access **/
 export class Files {
@@ -187,11 +190,7 @@ export class Data {
       missingRows: number,
       t1MissingRows: number,
       t2MissingRows: number } {
-    console.log(t1.toCsv());
-    console.log(t2.toCsv());
-    let r = toJs(api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2));
-    console.log(r.diffTable);
-    return r;
+    return toJs(api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2));
   };
 
   /**

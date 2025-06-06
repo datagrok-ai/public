@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ANY_READOUT_CHOICE, ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, IN_NOT_IN_COND_CHOICES, PROTOCOL_COND_CHOICES, PROTOCOL_RUN_COND_CHOICES, ProtocolCond, ProtocolRunCond } from './constants';
-import { getProtocols, MoleculeFieldSearch, Protocol } from './cdd-vault-api';
+import { MoleculeFieldSearch, Protocol, queryProtocols } from './cdd-vault-api';
 
 type CDDSerachParams = {
     structure?: string;
@@ -95,23 +95,28 @@ export class SeachEditor {
     }
 
     async init() {
-        const protocols = (await getProtocols(this.vaultId)).data?.objects;
-        if (protocols && protocols.length) {
-            protocols.forEach((it) => this.protocols[it.name] = it);
-            this.protocolNames = Object.keys(this.protocols);
-            //update the list of availabale protocols in choice input
-            ui.empty(this.protocolListChoiceDiv);
-            this.protocolListChoice = ui.input.choice('', {
-                value: '', items: [''].concat(this.protocolNames), onValueChanged: () => {
-                    this.runAndReadoutDiv.style.display = !this.protocolListChoice!.value ? 'none' : 'flex';
-                    if (this.protocolListChoice!.value) {
-                       // this.updateReadoutDefinition(this.protocolListChoice!.value);
-                        this.runChoice.value = ANY_RUN_CHOICE;
-                        this.updateRuns(this.protocolListChoice!.value);
+        try {
+            const protocolsStr = await grok.functions.call('CDDVaultLink:getProtocolsAsync', {vaultId: this.vaultId, timeoutMinutes: 1});
+            const protocols = protocolsStr !== '' ? JSON.parse(protocolsStr) as Protocol[] : [];
+            if (protocols && protocols.length) {
+                protocols.forEach((it) => this.protocols[it.name] = it);
+                this.protocolNames = Object.keys(this.protocols);
+                //update the list of availabale protocols in choice input
+                ui.empty(this.protocolListChoiceDiv);
+                this.protocolListChoice = ui.input.choice('', {
+                    value: '', items: [''].concat(this.protocolNames), onValueChanged: () => {
+                        this.runAndReadoutDiv.style.display = !this.protocolListChoice!.value ? 'none' : 'flex';
+                        if (this.protocolListChoice!.value) {
+                           // this.updateReadoutDefinition(this.protocolListChoice!.value);
+                            this.runChoice.value = ANY_RUN_CHOICE;
+                            this.updateRuns(this.protocolListChoice!.value);
+                        }
                     }
-                }
-            });
-            this.protocolListChoiceDiv.append(this.protocolListChoice.root);
+                });
+                this.protocolListChoiceDiv.append(this.protocolListChoice.root);
+            }
+        } catch(e: any) {
+            grok.shell.error(e?.message ?? e);
         }
     }
 
