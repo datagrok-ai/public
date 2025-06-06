@@ -3,8 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
-import {getUserConfigsFromDocker, syncConfig} from './config-utils';
-import {CONFIGS_PATH, DEMO_MOLECULE} from './const';
+import {DEMO_MOLECULE} from './const';
 import {updateRetrosynthesisWidget} from './utils';
 
 export const _package = new DG.Package();
@@ -26,12 +25,6 @@ export function retroSynthesisPath(molecule: string): DG.Widget {
 //name: retrosynthesisTopMenu
 export function retrosynthesisTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
-}
-
-//name: GetUserConfigs
-//output: list<string> configs
-export async function getUserConfigs(): Promise<string[]> {
-  return getUserConfigsFromDocker();
 }
 
 //name: Retrosynthesis Demo

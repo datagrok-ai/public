@@ -30,6 +30,9 @@ LOCK_DIR.mkdir(parents=True, exist_ok=True)
 #meta.cache.invalidateOn: 0 0 * * 1
 #input: string molecule = "O=C1Nc2ccccc2C(C2CCCCC2)=NC1" { semType: Molecule }
 #input: string config
+#input: string expansion
+#input: string filter
+#input: string stock
 #output: string paths
 @app.task(name='run_aizynthfind', bind=True, base=DatagrokTask)
 def run_aizynthfind(self, molecule: str, config: str, **kwargs):
@@ -44,8 +47,10 @@ def run_aizynthfind(self, molecule: str, config: str, **kwargs):
     try:    
         finder = AiZynthFinder(configfile=config_path)
         _silence_aizynth_logs()
-        finder.stock.select(finder.stock.items)
-        finder.expansion_policy.select_all()
+        finder.stock.select(finder.stock.items if stock == "" else stock)
+        finder.expansion_policy.select_all() if expansion_policy == "" else finder.expansion_policy.select(expansion_policy)
+        if (filter_policy != "")
+            finder.filter_policy.select(filter_policy)
         finder.target_smiles = molecule
         finder.tree_search()
         finder.build_routes()
