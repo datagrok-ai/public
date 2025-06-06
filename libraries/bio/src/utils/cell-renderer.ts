@@ -39,6 +39,9 @@ export const PrintOptionsDefaults = new class {
   /** Map of monomers' text sizes */ monomerTextSizeMap: { [key: string]: TextMetrics } = {};
   /** */ logger?: ILogger = undefined;
   selectedPosition?: number = undefined;
+  // Multiline stuff
+  isMultiLineContext: boolean = false;
+  lineNumber: number = 0;
 }();
 
 export type PrintOptions = typeof PrintOptionsDefaults;
@@ -55,14 +58,59 @@ export type PrintOptions = typeof PrintOptionsDefaults;
 export function printLeftOrCentered(g: CanvasRenderingContext2D,
   s: string, x: number, y: number, w: number, h: number, options: Partial<PrintOptions>
 ): number {
-  const opts = Object.assign(Object.assign({}, PrintOptionsDefaults), options);
+  const opts = {...PrintOptionsDefaults, ...options};
 
   const logPrefix: string = `Bio: printLeftOrCentered()`;
+
+  if (opts.isMultiLineContext) {
+    g.textAlign = 'start';
+    g.textBaseline = 'middle'; // Use middle for better vertical centering
+
+    let colorPart = s;
+    const grayPart = opts.last ? '' : opts.separator;
+
+    // Apply monomer shortening if needed
+    if (opts.maxLengthOfMonomer != null)
+      colorPart = monomerToShortFunction(colorPart, opts.maxLengthOfMonomer);
+
+
+    // FIX: Use the same transparency logic as single-line
+    // Apply transparency for diff mode
+    const actualTransparency = typeof opts.transparencyRate === 'number' ? opts.transparencyRate : 0.0;
+    g.globalAlpha = 1.0 - actualTransparency; // This should be 1.0 - 0.0 = 1.0 for normal rendering
+
+    // Simple vertical centering - use middle of the cell
+    const centerY = y + h / 2;
+
+    // Draw color part
+    g.fillStyle = opts.color;
+    g.fillText(colorPart, x, centerY);
+
+    // Draw separator (gray part) if not last
+    if (grayPart.length > 0) {
+      opts.monomerTextSizeMap[colorPart] ??= g.measureText(colorPart);
+      const colorPartWidth = opts.monomerTextSizeMap[colorPart].width;
+      g.fillStyle = grayColor;
+      g.fillText(grayPart, x + colorPartWidth, centerY);
+    }
+
+    // Reset alpha and baseline
+    g.globalAlpha = 1.0;
+    g.textBaseline = 'top'; // Reset to default
+
+    // Return next x position
+    opts.monomerTextSizeMap[colorPart] ??= g.measureText(colorPart);
+    opts.monomerTextSizeMap[grayPart] ??= g.measureText(grayPart);
+    return x + opts.monomerTextSizeMap[colorPart].width + opts.monomerTextSizeMap[grayPart].width;
+  }
+
+  // Existing single-line logic unchanged
   options.logger?.debug(`${logPrefix}, start`);
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = opts.last ? '' : opts.separator;
   if (opts.drawStyle === DrawStyle.MSA) grayPart = '';
+
   let colorCode = true;
   let compareWithCurrent = true;
   let highlightDifference = 'difference';
@@ -106,7 +154,7 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
       drawColor = DG.Color.toHtml(DG.Color.setAlpha(DG.Color.fromHtml(drawColor), 255));
     }
     g.fillStyle = drawColor;
-    g.globalAlpha = opts.transparencyRate;
+    g.globalAlpha = 1.0 - opts.transparencyRate; // FIX: Use consistent transparency logic
     if (opts.drawStyle === DrawStyle.classic) {
       g.fillText(colorPart, x + dx1, y + dy);
       g.fillStyle = grayColor;
@@ -114,6 +162,7 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
     }
     if (opts.drawStyle === DrawStyle.MSA)
       g.fillText(colorPart, x + dx1, y + dy);
+    g.globalAlpha = 1.0; // Reset alpha
   }
 
   const placeX: number = (opts.maxWord[opts.wordIdx] ?? 0) - (opts.maxWord[0] ?? 0);

@@ -113,6 +113,16 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     }
   }
 
+  private calculateLineBreaks(totalMonomers: number, monomersPerLine: number): Array<{start: number, end: number}> {
+    const lines: Array<{start: number, end: number}> = [];
+    for (let i = 0; i < totalMonomers; i += monomersPerLine) {
+      lines.push({
+        start: i,
+        end: Math.min(i + monomersPerLine, totalMonomers)
+      });
+    }
+    return lines;
+  }
   public async init(): Promise<void> {
     await Promise.all([
       (async () => {
@@ -365,6 +375,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const v = tableCol.temp[MmcrTemps.maxMonomerLength];
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
+    const isMultiLineEnabled = tableCol.getTag('renderMultiline') === 'true';
+    const monomersPerLine = parseInt(tableCol.getTag('monomersPerLine') ?? '10');
+    const maxVisibleLines = parseInt(tableCol.getTag('maxVisibleLines') ?? '3');
+
 
     g.save();
     try {
@@ -394,11 +408,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const minDistanceRenderer = 50;
       if (isRenderedOnGrid)
         w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
+
       g.beginPath();
       g.rect(x + this.padding, y, w - this.padding - 1, h);
       g.clip();
       g.font = this.props?.font ?? '12px monospace';
       g.textBaseline = 'top';
+
 
       //TODO: can this be replaced/merged with splitSequence?
       const units = tableCol.meta.units;
@@ -427,40 +443,125 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         maxLengthWordsSum = this.getSummedMonomerLengths(this.getCellMonomerLengthsForSeqValue(value, w));
 
       let drawStyle = DrawStyle.classic;
-
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
+
+      const shouldUseMultiLine = isMultiLineEnabled && drawStyle !== DrawStyle.MSA;
+      console.log(`Multi-line enabled: ${shouldUseMultiLine}, monomers per line: ${monomersPerLine}`);
+
 
       // if the sequence is rendered in shifted mode, we will also render three dots at start, indicating the shift
       this._leftThreeDotsPadding = this.shouldRenderShiftedThreeDots(positionShift) ? g.measureText(shiftedLeftPaddingText).width : 0;
       // currently selected position to highlight
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
-      for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
-        const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
-        const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
 
-        let color = undefinedColor;
-        const monomerLib = this.getMonomerLib();
-        if (monomerLib) {
-          const biotype = sh.defaultBiotype;
-          //this.logger.debug(`${logPrefix}, biotype: ${biotype}, amino: ${amino}`);
-          color = monomerLib.getMonomerTextColor(biotype, cm);
+      if (shouldUseMultiLine) {
+        const totalMonomers = visibleSeqLength - positionShift;
+        const lineBreaks = this.calculateLineBreaks(totalMonomers, monomersPerLine);
+        const actualLines = Math.min(lineBreaks.length, maxVisibleLines);
+        const lineHeight = h / actualLines;
+
+        for (let lineIdx = 0; lineIdx < actualLines; lineIdx++) {
+          const line = lineBreaks[lineIdx];
+          const lineY = y + (lineIdx * lineHeight);
+
+          for (let monomerInLine = line.start; monomerInLine < line.end; monomerInLine++) {
+            const posIdx = monomerInLine + positionShift;
+            if (posIdx >= visibleSeqLength) break;
+
+            const monomerX = x + this.padding + (monomerInLine - line.start) * (w - this.padding) / monomersPerLine;
+            const monomerW = (w - this.padding) / monomersPerLine;
+
+            const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
+            const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
+
+            let color = undefinedColor;
+            const monomerLib = this.getMonomerLib();
+            if (monomerLib) {
+              const biotype = sh.defaultBiotype;
+              color = monomerLib.getMonomerTextColor(biotype, cm);
+            }
+
+            const last = posIdx === subParts.length - 1;
+
+            // FIX: Calculate transparency properly for multi-line
+            let transparency = 0.0; // Default to fully opaque
+            if (referenceSequence && referenceSequence.length > 0) {
+              const currentMonomerCanonical = referenceSequence[posIdx - positionShift];
+              const colorCode = gridCell?.cell?.column?.temp?.['color-code'] ?? true;
+              const compareWithCurrent = gridCell?.cell?.column?.temp?.['compare-with-current'] ?? true;
+              const highlightDifference = gridCell?.cell?.column?.temp?.['highlight-difference'] ?? 'difference';
+
+              if (compareWithCurrent && highlightDifference === 'difference')
+                transparency = (om === currentMonomerCanonical) ? 0.3 : 0.0;
+              else if (compareWithCurrent && highlightDifference === 'equal')
+                transparency = (om !== currentMonomerCanonical) ? 0.3 : 0.0;
+            }
+
+            const opts: Partial<PrintOptions> = {
+              color: color,
+              pivot: 0,
+              left: true,
+              transparencyRate: transparency, // FIX: Use calculated transparency instead of 1.0
+              separator: separator,
+              last: last,
+              drawStyle: drawStyle,
+              maxWord: maxLengthWordsSum,
+              wordIdx: posIdx - positionShift,
+              gridCell: gridCell,
+              referenceSequence: referenceSequence,
+              maxLengthOfMonomer: maxLengthOfMonomer,
+              monomerTextSizeMap: this._monomerLengthMap,
+              logger: this.logger,
+              selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
+              isMultiLineContext: true,
+              lineNumber: lineIdx,
+            };
+
+            printLeftOrCentered(g, om, monomerX, lineY, monomerW, lineHeight, opts);
+          }
         }
-        g.fillStyle = undefinedColor;
-        const last = posIdx === subParts.length - 1;
-        /*x1 = */
-        const opts: Partial<PrintOptions> = {
-          color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
-          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
-          referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
-          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
-          selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
-        };
-        printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
-        if (minDistanceRenderer > w) break;
+
+        // Add ellipsis indicator if there are more lines than visible
+        if (lineBreaks.length > maxVisibleLines) {
+          const ellipsisY = y + (maxVisibleLines - 1) * lineHeight + lineHeight * 0.8;
+          g.fillStyle = undefinedColor;
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillText('...', x + w / 2, ellipsisY);
+          g.textAlign = 'start'; // Reset alignment
+          g.textBaseline = 'top'; // Reset baseline
+        }
+      } else {
+        // Existing single-line rendering (unchanged)
+        for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
+          const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
+          const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
+
+          let color = undefinedColor;
+          const monomerLib = this.getMonomerLib();
+          if (monomerLib) {
+            const biotype = sh.defaultBiotype;
+            color = monomerLib.getMonomerTextColor(biotype, cm);
+          }
+          g.fillStyle = undefinedColor;
+          const last = posIdx === subParts.length - 1;
+          const opts: Partial<PrintOptions> = {
+            color: color, pivot: 0, left: true, transparencyRate: 0.0, // FIX: Also fix single-line transparency
+            separator: separator, last: last,
+            drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
+            referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
+            monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
+            selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
+          };
+          printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
+          if (minDistanceRenderer > w) break;
+        }
       }
-      if (this.shouldRenderShiftedThreeDots(positionShift)) {
+
+      // Handle position shift dots (only for single-line)
+      if (this.shouldRenderShiftedThreeDots(positionShift) && !shouldUseMultiLine) {
         const opts: Partial<PrintOptions> = {
           color: undefinedColor, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: false,
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
