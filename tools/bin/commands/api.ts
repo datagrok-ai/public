@@ -15,7 +15,7 @@ const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, apiFile)
 const packagePath = path.join(curDir, 'package.json');
 const names = new Set<string>();
 
-let _package : any = {};
+let _package: any = {};
 
 function generateQueryWrappers(): void {
   const queriesDir = path.join(curDir, 'queries');
@@ -65,43 +65,49 @@ function generateQueryWrappers(): void {
 
 function generateScriptWrappers(): void {
   const scriptsDir = path.join(curDir, 'scripts');
+  const pythonDir = fs.existsSync(srcDir) ? path.join(srcDir, 'python') : path.join(curDir, 'python');
   if (!fs.existsSync(scriptsDir)) {
     color.warn(`Directory ${scriptsDir} not found`);
     console.log('Skipping API generation for scripts...');
     return;
   }
-
-  const files = walk.sync({
-    path: scriptsDir,
-    ignoreFiles: ['.npmignore', '.gitignore'],
-  });
   const wrappers = [];
-  for (const file of files) {
-    let extension: string;
-    if (!utils.scriptExtensions.some((ext) => (extension = ext, file.endsWith(ext)))) continue;
 
-    const filepath = path.join(scriptsDir, file);
-    const script = fs.readFileSync(filepath, 'utf8');
-    if (!script) continue;
+  for (let dir of [scriptsDir, pythonDir]) {
+    const files = walk.sync({
+      path: dir,
+      ignoreFiles: ['.npmignore', '.gitignore'],
+    });
+    console.log(files);
+    for (const file of files) {
+      let extension: string;
+      if (!utils.scriptExtensions.some((ext) => (extension = ext, file.endsWith(ext)))) continue;
 
-    const name = utils.getScriptName(script, utils.commentMap[extension!]);
-    if (!name) continue;
-    const description = utils.getScriptDescription(script);
+      const filepath = path.join(dir, file);
+      const script = fs.readFileSync(filepath, 'utf8');
+      if (!script) continue;
+      console.log(filepath);
+      console.log(script);
 
-    checkNameColision(name)
+      const name = utils.getScriptName(script, utils.commentMap[extension!]);
+      if (!name) continue;
+      const description = utils.getScriptDescription(script);
 
-    const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
-      .replace('FUNC_NAME', name)
-      .replace('FUNC_NAME_LOWERCASE', name)
-      .replace('PACKAGE_NAMESPACE', _package.name);
+      checkNameColision(name)
 
-    const inputs = utils.getScriptInputs(script);
-    const outputType = utils.getScriptOutputType(script);
-    tb.replace('PARAMS_OBJECT', inputs)
-      .replace('TYPED_PARAMS', inputs)
-      .replace('FUNC_DESCRIPTION', description)
-      .replace('OUTPUT_TYPE', outputType);
-    wrappers.push(tb.build(1));
+      const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
+        .replace('FUNC_NAME', name)
+        .replace('FUNC_NAME_LOWERCASE', name)
+        .replace('PACKAGE_NAMESPACE', _package.name);
+
+      const inputs = utils.getScriptInputs(script);
+      const outputType = utils.getScriptOutputType(script);
+      tb.replace('PARAMS_OBJECT', inputs)
+        .replace('TYPED_PARAMS', inputs)
+        .replace('FUNC_DESCRIPTION', description)
+        .replace('OUTPUT_TYPE', outputType);
+      wrappers.push(tb.build(1));
+    }
   }
 
   saveWrappersToFile('scripts', wrappers);
