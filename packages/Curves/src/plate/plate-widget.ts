@@ -202,16 +202,8 @@ export class PlateWidget extends DG.Widget {
         g.fillStyle = DG.Color.toHtml(color);
         g.fill();
         const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
-        if (outlierCol?.get(dataRow)) {
+        if (outlierCol?.get(dataRow))
           DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + w / 2, DG.Color.red, r);
-          // g.strokeStyle = DG.Color.toHtml(DG.Color.red);
-          // g.lineWidth = 2;
-          // g.moveTo(x + w / 2 - r, y + h / 2 - r);
-          // g.lineTo(x + w / 2 + r, y + h / 2 + r);
-          // g.moveTo(x + w / 2 + r, y + h / 2 - r);
-          // g.lineTo(x + w / 2 - r, y + h / 2 + r);
-          // g.stroke();
-        }
       }
 
       g.stroke();

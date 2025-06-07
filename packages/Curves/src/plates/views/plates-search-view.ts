@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {debounceTime} from "rxjs/operators";
 import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
-import {PlateProperty, plateProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, queryPlates, wellProperties} from "../plates-crud";
+import {PlateProperty, plateProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, queryPlates, queryWells, wellProperties} from "../plates-crud";
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
@@ -61,7 +61,7 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   return matchers;
 }
 
-export function searchPlatesView(): DG.View {
+function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onResults: (grid: DG.Grid) => void): DG.View {
   const dummy = DG.DataFrame.create(5, 'Search plates');
   const view = DG.TableView.create(dummy);
   const platesForm = getPlatesSearchForm();
@@ -73,10 +73,9 @@ export function searchPlatesView(): DG.View {
       wellMatchers: searchFormToMatchers(wellsForm)
     };
 
-    queryPlates(query).then((df) => {
+    search(query).then((df) => {
       view.dataFrame = df;
-      view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
-        .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+      onResults(view.grid);
     });
   }
 
@@ -90,31 +89,13 @@ export function searchPlatesView(): DG.View {
   return view;
 }
 
+export function searchPlatesView(): DG.View {
+  return getSearchView(queryPlates, (grid) => {
+    grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
+        .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`
+  });
+}
+
 export function searchWellsView(): DG.View {
-  const dummy = DG.DataFrame.create(5, 'Search wells');
-  const view = DG.TableView.create(dummy);
-  const platesForm = getPlatesSearchForm();
-  const wellsForm = getWellsSearchForm();
-
-  const refresh = () => {
-    const query: PlateQuery = {
-      plateMatchers: searchFormToMatchers(platesForm),
-      wellMatchers: searchFormToMatchers(wellsForm)
-    };
-
-    queryPlates(query).then((df) => {
-      view.dataFrame = df;
-      view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
-        .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
-    });
-  }
-
-  platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
-  wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
-
-  //@ts-ignore
-  view.dockManager.dock(ui.divH([platesForm.root, wellsForm.root]), DG.DOCK_TYPE.TOP);
-
-  refresh();
-  return view;
+  return getSearchView(queryWells, (grid) => {});
 }

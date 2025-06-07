@@ -219,6 +219,98 @@ ORDER BY fp.id;
 `.trim();
 }
 
+/**
+ * Build SQL that
+ *   1) keeps only wells whose plate-level and well-level properties match the user's filters
+ *   2) returns every well-level property (name + value) for those wells
+ *      packed into a single JSONB column called "properties".
+ *
+ *   The JSON looks like:
+ *   {
+ *     "Volume":        "100.0",
+ *     "Concentration": "10.5",
+ *     "Sample":        "ABC-123",
+ *     "Well Role":     "DMSO",
+ *     ...
+ *   }
+ */
+function getWellSearchSql(query: PlateQuery): string {
+  // ---------- 1. Build the boolean conditions for the filter ----------
+  const whereClauses: string[] = [];
+
+  // Handle plate-level property conditions (using EXISTS for parent plate)
+  for (const condition of query.plateMatchers) {
+    const dbColumn = plateDbColumn[condition.property.value_type];
+    whereClauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM plates.plate_details pd_f
+        WHERE pd_f.plate_id = pwv.plate_id
+          AND pd_f.property_id = ${condition.property.id}
+          AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
+      )`);
+  }
+
+  // Handle well-level property conditions (direct filter on wells)
+  for (const condition of query.wellMatchers) {
+    const dbColumn = plateDbColumn[condition.property.value_type];
+    whereClauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM plates.plate_well_values pwv_f
+        WHERE pwv_f.plate_id = pwv.plate_id
+          AND pwv_f.row = pwv.row
+          AND pwv_f.col = pwv.col
+          AND pwv_f.property_id = ${condition.property.id}
+          AND (${condition.matcher.toSql(`pwv_f.${dbColumn}`)})
+      )`);
+  }
+
+  const whereFilter =
+    whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+  // ---------- 2. Final query – filter first, then collect all well properties ----------
+  return `
+WITH filtered_wells AS (
+  SELECT DISTINCT pwv.plate_id, pwv.row, pwv.col
+  FROM plates.plate_well_values pwv
+  JOIN plates.plates p ON p.id = pwv.plate_id
+  ${whereFilter}
+)
+SELECT
+  fw.plate_id,
+  p.barcode,
+  p.description AS plate_description,
+  fw.row,
+  fw.col,
+  jsonb_pretty(
+    jsonb_object_agg(
+      pr.name,
+      CASE
+        WHEN pwv.value_string IS NOT NULL THEN to_jsonb(pwv.value_string)
+        WHEN pwv.value_num    IS NOT NULL THEN to_jsonb(pwv.value_num)
+        WHEN pwv.value_bool   IS NOT NULL THEN to_jsonb(pwv.value_bool)
+        ELSE to_jsonb(NULL::text)               -- should never happen
+      END
+    )
+  ) AS properties
+FROM filtered_wells fw
+JOIN plates.plates p ON p.id = fw.plate_id
+JOIN plates.plate_well_values pwv ON pwv.plate_id = fw.plate_id 
+                                   AND pwv.row = fw.row 
+                                   AND pwv.col = fw.col
+JOIN plates.properties pr ON pr.id = pwv.property_id
+GROUP BY fw.plate_id, p.barcode, p.description, fw.row, fw.col
+ORDER BY fw.plate_id, fw.row, fw.col;
+`.trim();
+}
+
+export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
+  const df = await grok.data.db.query('Admin:Plates', getWellSearchSql(query));
+  Utils.jsonToColumns(df.col('properties')!);
+  df.col('properties')!.name = '~properties';
+  return df;
+}
 
 export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
   const df = await grok.data.db.query('Admin:Plates', getPlateSearchSql(query));
