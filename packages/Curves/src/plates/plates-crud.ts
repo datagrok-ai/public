@@ -34,6 +34,7 @@ export type PlateTemplate = {
   id: number;
   name: string;
   description: string;
+  plate_layout_id: number;
   plateProperties: Partial<PlateProperty>[];
   wellProperties: Partial<PlateProperty>[];
 }
@@ -129,6 +130,12 @@ function sqlStr(s?: string | number) {
     return `'${s}'`;
   else
     return `${s}`;
+}
+
+
+export async function getPlateById(id: number)  {
+  const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesById', {id: id});
+  return Plate.fromDbDataFrame(df);
 }
 
 
@@ -233,7 +240,7 @@ export async function savePlate(plate: Plate){
     `insert into plates.plates(plate_type_id, barcode)
      values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
      returning id`;
-  plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);   
+  plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);
 
   // register new plate level properties
   for (const layer of Object.keys(plate.details))
@@ -250,9 +257,15 @@ export async function savePlate(plate: Plate){
       wellProperties.push(await createProperty({name: layer, value_type: col!.type}));
       grok.shell.info('Well layer created: ' + layer);
     }
-    
+
   await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
   grok.shell.info('Plate saved');
+}
+
+export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate) {
+  await savePlate(plate);
+  const sql = `update plates.templates set plate_layout_id = ${plate.id} where id = ${template.id}`;
+  await grok.data.db.query('Admin:Plates', sql);
 }
 
 
@@ -282,9 +295,9 @@ function getPlateInsertSql(plate: Plate): string {
 
 
 export async function createPlateTemplate(template: Partial<PlateTemplate>): Promise<PlateTemplate> {
-  template.id = await grok.functions.call('Curves:createTemplate', {name: template.name, description: template.description})!;  
+  template.id = await grok.functions.call('Curves:createTemplate', {name: template.name, description: template.description})!;
   let sql = '';
-  
+
   for (let property of template.plateProperties ?? []) {
     property = await createProperty(property);
     sql += `insert into plates.template_plate_properties(template_id, property_id) values (${template.id}, ${property.id});\n`;

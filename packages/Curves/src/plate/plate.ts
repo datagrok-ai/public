@@ -190,7 +190,8 @@ export class Plate {
 
 
   /** Constructs a plate from a dataframe where each row corresponds to a well.
-   * Automatically detects position column (either one column in Excel notation, or two integer "row" and "col" columns). */
+   * Automatically detects position column (either one column in Excel notation, or two integer "row" and "col" columns).
+   * If positions columns are not provided, assumes the data is sorted by [row, col] asc. */
   static fromTableByRow(
     table: DG.DataFrame, options?: {
       posColName?: string,
