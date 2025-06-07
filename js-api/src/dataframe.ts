@@ -311,14 +311,18 @@ export class DataFrame {
     return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
   }
 
-  /** Exports the content to JSON format */
+  /** Converts the contents to array of objects, with column names as keys.
+   * Keep in mind that the internal DataFrame format is far more efficient than JSON, so
+   * use it only as a convenience for working with relatively small datasets. */
   toJson(): any[] {
-    return Array.from({length: this.rowCount}, (_, idx) =>
-      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
-        entry[colName] = this.get(colName, idx);
-        return entry;
-      }, {})
-    );
+    const rows = this.rowCount;
+    const result: any[] = Array.from({ length: rows }, () => ({}));
+    for (const col of this.columns)
+      for (let i = 0; i < rows; i++)
+        if (!col.isNone(i))
+          result[i][col.name] = col.get(i);
+
+    return result;
   }
 
   /** Exports dataframe to binary */
@@ -1309,6 +1313,14 @@ export class ColumnList {
   /** Creates an array of columns. */
   toList(): Column[] {
     return this.names().map((name: string) => this.byName(name));
+  }
+
+  /** Returns a name->column map. Use it when you need to access columns frequently. */
+  toMap(): Map<string, Column> {
+    const map = new Map();
+    for (const col of this)
+      map.set(col.name, col);
+    return map;
   }
 
   /** Adds a column, and optionally notifies the parent dataframe.
