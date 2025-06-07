@@ -9,7 +9,7 @@ import {
   jstatStatistics,
   JSTATStatistics,
   numToExcel,
-  parseExcelPosition, toExcelPosition, toStandardSize
+  parseExcelPosition, standardPlateSizes, toExcelPosition, toStandardSize
 } from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
@@ -112,9 +112,11 @@ export class Plate {
 
   /** Converts a row index in the internal dataframe to 0-based row/col position. */
   rowIndexToExcel(dataFrameRow: number): [row: number, col: number] {
-    const row = Math.floor(dataFrameRow / this.cols);
-    const col = dataFrameRow % this.cols;
-    return [row, col];
+    return Plate._idxToPos(dataFrameRow, this.cols);
+  }
+
+  static _idxToPos(dataFrameRow: number, cols: number): [row: number, col: number] {
+    return [Math.floor(dataFrameRow / cols), dataFrameRow % cols];
   }
 
   //well(row: number, col: number): PlateWell { return new PlateWell(); }
@@ -204,12 +206,15 @@ export class Plate {
     const colColName = options?.colColName ?? 'col';
     const rowCol = table.col(rowColName)?.type === DG.TYPE.INT ? table.col(rowColName) : null;
     const colCol = table.col(colColName)?.type === DG.TYPE.INT ? table.col(colColName) : null;
-    if (!posCol && !(rowCol && colCol))
-      throw 'Columns with well positions not identified';
 
-    const rowToPos: (i: number) => [row: number, col: number] = posCol
+    const rowToPos: ((i: number) => [row: number, col: number]) | null = posCol
       ? (i => parseExcelPosition(posCol!.get(i)))
-      : (i => [rowCol!.get(i), colCol?.get(i)]);
+      : rowCol && colCol ? (i => [rowCol!.get(i), colCol?.get(i)])
+      : standardPlateSizes[table.rowCount] ? (i => Plate._idxToPos(i, standardPlateSizes[table.rowCount][1]))
+      : null;
+
+    if (rowToPos == null)
+      throw 'Columns with well positions not identified';
 
     const positions = DG.range(table.rowCount).map(rowToPos);
     const [rows, cols] = toStandardSize(getMaxPosition(positions));
@@ -222,7 +227,7 @@ export class Plate {
 
       const plateCol = plate.data.columns.addNew(col.name, col.type);
       for (let r = 0; r < col.length; r++) {
-        const [wellRow, wellCol] = rowToPos(r);
+        const [wellRow, wellCol] = rowToPos!(r);
         plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
     }
