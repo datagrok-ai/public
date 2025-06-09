@@ -54,7 +54,6 @@ module.exports = {
     'wu': 'wu',
     'exceljs': 'ExcelJS',
     'html2canvas': 'html2canvas',
-    'escher': 'escher',
   },
   output: {
     filename: '[name].js',
