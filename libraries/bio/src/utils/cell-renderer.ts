@@ -73,17 +73,35 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
     if (opts.maxLengthOfMonomer != null)
       colorPart = monomerToShortFunction(colorPart, opts.maxLengthOfMonomer);
 
+    // FIX: Apply transparency correctly for multiline (same logic as single-line)
+    let actualTransparencyRate = opts.transparencyRate ?? 0.0;
 
-    // FIX: Use the same transparency logic as single-line
-    // Apply transparency for diff mode
-    const actualTransparency = typeof opts.transparencyRate === 'number' ? opts.transparencyRate : 0.0;
-    g.globalAlpha = 1.0 - actualTransparency; // This should be 1.0 - 0.0 = 1.0 for normal rendering
+    // Check for reference sequence comparison (same as single-line logic)
+    if (opts.referenceSequence && opts.gridCell) {
+      const currentMonomerCanonical = opts.referenceSequence[opts.wordIdx];
+      const colorCode = opts.gridCell.cell.column?.temp?.['color-code'] ?? true;
+      const compareWithCurrent = opts.gridCell.cell.column?.temp?.['compare-with-current'] ?? true;
+      const highlightDifference = opts.gridCell.cell.column?.temp?.['highlight-difference'] ?? 'difference';
+
+      if (compareWithCurrent && opts.referenceSequence.length > 0) {
+        if (highlightDifference === 'difference') {
+        // Make matching monomers more transparent
+          actualTransparencyRate = (colorPart === currentMonomerCanonical) ? 0.7 : 0.0;
+        } else if (highlightDifference === 'equal') {
+        // Make non-matching monomers more transparent
+          actualTransparencyRate = (colorPart !== currentMonomerCanonical) ? 0.7 : 0.0;
+        }
+      }
+    }
+
+    // Apply transparency: transparencyRate 0.0 = fully opaque, 1.0 = fully transparent
+    g.globalAlpha = 1.0 - actualTransparencyRate;
 
     // Simple vertical centering - use middle of the cell
     const centerY = y + h / 2;
 
     // Draw color part
-    g.fillStyle = opts.color;
+    g.fillStyle = opts.color ?? undefinedColor;
     g.fillText(colorPart, x, centerY);
 
     // Draw separator (gray part) if not last
