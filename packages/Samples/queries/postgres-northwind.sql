@@ -1,34 +1,34 @@
---name: states
+--name: postgres states
 --connection: PostgresNorthwind
 select distinct stateabbr from usstates order by stateabbr
 --end
 
 
---name: countries
+--name: postgres countries
 --connection: PostgresNorthwind
 select distinct country from customers order by country
 --end
 
 
---name: products
+--name: postgres products
 --connection: PostgresNorthwind
 select * from products
 --end
 
 
---name: employees
+--name: postgres employees
 --connection: PostgresNorthwind
 select * from employees
 --end
 
 
---name: customers
+--name: postgres customers
 --connection: PostgresNorthwind
 select * from customers
 --end
 
 
---name: order details by @quantity, @productName, @country
+--name: postgres order details by @quantity, @productName, @country
 --connection: PostgresNorthwind
 --input: int quantity = 9
 --input: string productName = "Tofu" {choices: Query("SELECT distinct productname FROM products")}
@@ -56,21 +56,21 @@ where
 --end
 
 
---name: customers in @country
+--name: postgres customers in @country
 --connection: PostgresNorthwind
 --input: string country = "France"
 select * from customers where country = @country
 --end
 
 
---name: productLookup
+--name: postgres productLookup
 --connection: PostgresNorthwind
 --input: string lookup = "starts with Chef" {pattern: string}
 select productname from products where @lookup(productname)
 --end
 
 
---name: productDetails
+--name: postgres productDetails
 --connection: PostgresNorthwind
 --input: string productName {suggestions: Samples:productLookup}
 select * from products where productname = @productName

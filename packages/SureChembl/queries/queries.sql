@@ -1,5 +1,7 @@
 --name: searchPatentBySubstructure
 --connection: SureChembl
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
 --input: string pattern {semType: Substructure}
 --input: int maxMols = 10
 with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@pattern::qmol limit @maxMols)
@@ -22,6 +24,8 @@ with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@patter
 
 --name: searchPatentBySimilarity
 --connection: SureChembl
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
 --input: double threshold = 0.6 { min: 0, max: 1 }

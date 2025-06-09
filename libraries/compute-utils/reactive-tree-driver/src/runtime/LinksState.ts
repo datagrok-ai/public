@@ -7,7 +7,7 @@ import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity} from 'rxjs';
-import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
+import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
 import {parseLinkIO} from '../config/LinkSpec';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
@@ -340,7 +340,7 @@ export class LinksState {
         const minfo = matchNodeLink(node, item.config.onInit, path);
         if (!minfo)
           return acc;
-        const initLink = new Link(path, minfo[0]);
+        const initLink = new Link(path, minfo[0], undefined, this.logger);
         const obs$ = defer(() => {
           initLink.wire(state, this);
           this.runnedInit.add(item.uuid);
@@ -358,6 +358,28 @@ export class LinksState {
     }, [] as Observable<undefined>[]);
     return concat(...obs);
   }
+
+  public runReturnResults(state: BaseTree<StateTreeNode>) {
+    const obs$ = defer(() => {
+      const item = state.root.getItem();
+      if (isFuncCallNode(item) || !item.config.onReturn)
+        return of(undefined);
+      const minfo = matchNodeLink(state.root, item.config.onReturn, []);
+      if (!minfo)
+        return of(undefined);
+      const returnLink = new Link([], minfo[0], undefined, this.logger);
+      returnLink.wire(state, this);
+      returnLink.trigger();
+      return returnLink.isRunning$.pipe(
+        filter((x) => !x),
+        take(1),
+        map(() => returnLink.returnResult),
+        finalize(() => returnLink.destroy()),
+      );
+    });
+    return obs$;
+  }
+
 
   public wireLinks(state: BaseTree<StateTreeNode>) {
     for (const [, link] of this.links) {

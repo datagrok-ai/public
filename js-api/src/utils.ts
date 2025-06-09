@@ -356,8 +356,7 @@ export class Utils {
         if ((success !== true && skipped !== true) && stopOnFail)
           break;
       }
-
-      if ((<any>window).DG.Test.isInDebug) {
+      if (DG.Test.isInDebug) {
         console.log('on browser closing debug point');
         debugger
       }
@@ -365,8 +364,8 @@ export class Utils {
 
     } catch (e) {
       failed = true;
-      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
-        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}`;
     }
 
     return {

@@ -24,6 +24,7 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'Boolean', predicate: boolPredicate, checker: eqChecker},
   {name: 'String', predicate: stringPredicate, checker: eqChecker},
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
+  {name: 'BigInt', predicate: bigIntPredicate, checker: eqChecker},
   {name: 'Float', predicate: floatPredicate, checker: floatChecker},
   {name: 'Map', predicate: mapPredicate, checker: mapChecker},
   {name: 'Set', predicate: setPredicate, checker: setChecker},
@@ -81,6 +82,10 @@ function stringPredicate(actual: any, expected: any) {
 
 function boolPredicate(actual: any, expected: any) {
   return (typeof actual === 'boolean' && typeof expected === 'boolean');
+}
+
+function bigIntPredicate(actual: any, expected: any) {
+  return (typeof actual === 'bigint' && typeof expected === 'bigint');
 }
 
 function eqChecker(actual: any, expected: any) {

@@ -1,3 +1,5 @@
+import * as dayjs from "dayjs";
+import * as wu from "wu";
 
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
@@ -14,17 +16,29 @@ const WebSocket = require('ws');
     return new WebSocket(url, { headers: headers['o'] });
 };
 
-export async function startDatagrok(): Promise<any> {
+export async function startDatagrok(options: {apiUrl: string, apiToken: string}): Promise<any> {
     //@ts-ignore
     await import ('./src/datagrok/web/grok_shared.dart.js');
 
     await new Promise(resolve => setTimeout(resolve, 100));
     (globalThis as any).document = {createElement: () => {return {bind: {}}}};
+    let DG = await import('./node-api');
+
+    (globalThis as any).grok = DG.grok;
+    (globalThis as any).DG = DG;
+    const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
+    api.dayjs = dayjs;
+    api.wu = wu;
+    api.grok = DG.grok;
+    api.DG = DG;
+    (globalThis as any).wu = wu;
+    (globalThis as any).dayjs = dayjs;
 
 
-    await import('./node-api');
+    DG.grok.dapi.token = options.apiToken;
+    DG.grok.dapi.root = options.apiUrl;
+
+    let status = await (globalThis as any).window.grok_Init();
+    console.log(status);
+
 }
-
-
-export type {DG as _DG, grok as _grok} from './node-api';
-

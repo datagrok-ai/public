@@ -32,8 +32,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.dataFrame) {
       if (computeData && this.targetColumn) {
-        const sh = this.seqHelper.getSeqHandler(this.targetColumn);
-        await (sh.isFasta() ? this.computeByMM() : this.computeByChem());
+        await this.computeByMM();
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
           `diverse (${this.targetColumnName})`;
@@ -55,18 +54,6 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         this.computeCompleted.next(true);
       }
     }
-  }
-
-  private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.targetColumn!, this.seqHelper);
-    //need to create df to calculate fingerprints
-    const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
-    this.renderMolIds = await grok.functions.call('Chem:callChemDiversitySearch', {
-      col: monomericMols,
-      metricName: this.distanceMetric,
-      limit: this.limit,
-      fingerprint: this.fingerprint,
-    });
   }
 
   private async computeByMM() {

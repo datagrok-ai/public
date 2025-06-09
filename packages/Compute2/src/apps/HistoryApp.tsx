@@ -28,7 +28,7 @@ export const HistoryApp = Vue.defineComponent({
     const func = Vue.computed(() => {
       const f = DG.Func.byName(props.name);
       return f ? Vue.markRaw(f) : undefined;
-    })
+    });
     return () => (
       (showHistory.value && func.value) ?
         <History

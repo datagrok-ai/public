@@ -2,27 +2,103 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BASE_PATH, CONFIGS_PATH} from './const';
-import { _package } from './package';
+import {_package} from './package';
+import {updateRetrosynthesisWidget} from './utils';
+import {parse} from 'yaml';
 
 export const STORAGE_NAME = 'retrosynthesis';
 export const KEY = 'config';
 export const DEFAULT_CONFIG_NAME = 'default';
+export const TOKEN_PARAM_NAME = 'token';
+export const CONFIG_PARAMS = ['expansion', 'filter', 'stock'];
+export interface UserRetrosynthesisConfig {
+  configName: string,
+  expansion: string,
+  filter: string,
+  stock: string,
+}
 
-export function configIcon(): HTMLElement {
+export interface RetrosynthesisPolicies {
+  expansion: string[],
+  filter: string[],
+  stock: string[],
+}
+
+export let currentUserConfig: UserRetrosynthesisConfig =
+  {configName: DEFAULT_CONFIG_NAME, expansion: '', filter: '', stock: ''};
+
+export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElement {
   const settings = ui.icons.settings(async () => {
-    const currentConfig = grok.userSettings.getValue(STORAGE_NAME, KEY);
     const configsInAppData = await getConfigFilesFromAppData();
     const configChoices = [DEFAULT_CONFIG_NAME].concat(configsInAppData);
+    await setValidUserConfig();
+    const policiesDiv = ui.div();
+
+    const newConfig = Object.assign({}, currentUserConfig);
+    const updateAdditionalParams = async (first?: boolean) => {
+      ui.empty(policiesDiv);
+      const paramsDiv = ui.divV([]);
+      if (configFolderInput.value !== DEFAULT_CONFIG_NAME) {
+        const configJson = await getCustomConfigJson(configFolderInput.value!);
+        if (configJson) {
+          //expansion policy
+          if (Object.keys(configJson.expansion).length) {
+            const expansionChoice = ui.input.choice('expansion', {
+              value: first ? currentUserConfig.expansion : '',
+              items: [''].concat(Object.keys(configJson.expansion)),
+              onValueChanged: () => {
+                newConfig.expansion = expansionChoice.value!;
+              },
+            });
+            paramsDiv.append(expansionChoice.root);
+          }
+
+          //stock
+          if (Object.keys(configJson.stock).length) {
+            const stockChoice = ui.input.choice('stock', {
+              value: first ? currentUserConfig.stock : '',
+              items: [''].concat(Object.keys(configJson.stock)),
+              onValueChanged: () => {
+                newConfig.stock = stockChoice.value!;
+              },
+            });
+            paramsDiv.append(stockChoice.root);
+          }
+
+          //filter policy
+          if (Object.keys(configJson.filter).length) {
+            const filterChoice = ui.input.choice('filter', {
+              value: first ? currentUserConfig.filter : '',
+              items: [''].concat(Object.keys(configJson.filter)),
+              onValueChanged: () => {
+                newConfig.filter = filterChoice.value!;
+              },
+            });
+            paramsDiv.append(filterChoice.root);
+          }
+        }
+      }
+      policiesDiv.append(paramsDiv);
+    };
+
     const configFolderInput = ui.input.choice('Config', {
-      value: currentConfig && configChoices.includes(currentConfig) ? currentConfig : DEFAULT_CONFIG_NAME,
+      value: currentUserConfig.configName,
       items: configChoices,
+      onValueChanged: async () => {
+        currentUserConfig.configName = configFolderInput.value!;
+        updateAdditionalParams();
+      },
     });
+
+    updateAdditionalParams(true);
     const dlg = ui.dialog('Settings')
-      .add(configFolderInput.root)
+      .add(ui.divV([configFolderInput.root, policiesDiv]))
       .onOK(() => {
-        grok.userSettings.add(STORAGE_NAME, KEY,
-          configFolderInput!.value! === DEFAULT_CONFIG_NAME ? '' : configFolderInput!.value!);
-        grok.shell.info(`Current config saved`);
+        if (Object.keys(currentUserConfig).some((key) => (currentUserConfig as any)[key] !== (newConfig as any)[key])) {
+          grok.userSettings.add(STORAGE_NAME, KEY, JSON.stringify(newConfig));
+          grok.shell.info(`Current config updated`);
+          updateRetrosynthesisWidget(currentMolecule, widget);
+        }
       });
     dlg.root.classList.add('retrosynthesis-settings-dlg');
     dlg.show();
@@ -37,131 +113,82 @@ export async function getConfigFilesFromAppData(): Promise<string[]> {
   return configDirs;
 }
 
-export async function addUserDefinedConfig(file: DG.FileInfo): Promise<void> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-  const fileContent = await file.readAsString();
-  const currentUser = await grok.dapi.users.current();
-  const userId = currentUser.id;
+export async function setValidUserConfig(availableConfigs?: string[]): Promise<void> {
+  const storedConfig = getStoredUserConfig();
+  if (!availableConfigs)
+    availableConfigs = await getConfigFilesFromAppData();
+  const validConfig = await updateConfigConsideringConfigYml(storedConfig, availableConfigs);
+  if (validConfig.error)
+    grok.shell.warning(validConfig.error);
+  currentUserConfig = validConfig.config;
+}
 
-  console.log(JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}));
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/add_user_custom_config', {
-      method: 'POST',
-      body: JSON.stringify({config: fileContent, user_id: userId, config_name: file.name}),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to add configuration: ${errorText}`);
+export function getStoredUserConfig(): UserRetrosynthesisConfig {
+  const currentConfigStr = grok.userSettings.getValue(STORAGE_NAME, KEY);
+  let storedConfig: UserRetrosynthesisConfig;
+  if (!currentConfigStr)
+    storedConfig = {configName: DEFAULT_CONFIG_NAME, expansion: '', filter: '', stock: ''};
+  else {
+    try { //for compatibility with previous user storage, which contained only config name
+      storedConfig = JSON.parse(currentConfigStr);
+    } catch (e) {
+      storedConfig = {configName: currentConfigStr, expansion: '', filter: '', stock: ''};
     }
+  }
+  return storedConfig;
+}
 
-    grok.shell.info('Configuration added successfully');
-  } catch (error) {
-    grok.shell.error(`Error adding configuration: ${error}`);
-    throw error;
+export async function updateConfigConsideringConfigYml(storedConfig: UserRetrosynthesisConfig,
+  availableConfigs: string[]): Promise<{config: UserRetrosynthesisConfig, error: string}> {
+  const updatedConfig: UserRetrosynthesisConfig =
+    {configName: DEFAULT_CONFIG_NAME, expansion: '', filter: '', stock: ''};
+  if (!availableConfigs.includes(storedConfig.configName)) {
+    return {
+      config: updatedConfig,
+      error: `Config folder ${storedConfig.configName} not found`,
+    };
+  } else
+    updatedConfig.configName = storedConfig.configName;
+
+  try {
+    let error = '';
+    const configJson = await getCustomConfigJson(storedConfig.configName);
+    if (storedConfig.expansion && !configJson?.expansion.includes(storedConfig.expansion))
+      error = `Expansion policy ${storedConfig.expansion} not found in config.yml`;
+    else
+      updatedConfig.expansion = storedConfig.expansion;
+
+    if (storedConfig.stock && !configJson?.stock.includes(storedConfig.stock))
+      error = `Stock ${storedConfig.stock} not found in config.yml`;
+    else
+      updatedConfig.stock = storedConfig.stock;
+
+    if (storedConfig.filter && !configJson?.filter.includes(storedConfig.filter))
+      error = `Filter policy ${storedConfig.filter} not found in config.yml`;
+    else
+      updatedConfig.filter = storedConfig.filter;
+
+    return {
+      config: updatedConfig,
+      error: error,
+    };
+  } catch (e: any) {
+    return {
+      config: updatedConfig,
+      error: e?.message ?? e,
+    };
   }
 }
 
-export async function getUserConfigsFromDocker(): Promise<string[]> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-  const currentUser = await grok.dapi.users.current();
-  const userId = currentUser.id;
-
+export async function getCustomConfigJson(configName: string): Promise< RetrosynthesisPolicies| null> {
+  let res = null;
   try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, `/get_user_configs`, {
-      method: 'POST',
-      body: JSON.stringify({user_id: userId}),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get configuration files: ${errorText}`);
-    }
-
-    const configs = await response.json();
-    return configs.configs ?? [];
-  } catch (error) {
-    grok.shell.error(`Error getting configuration files: ${error}`);
-    throw error;
+    const fileContent = await grok.dapi.files
+      .readAsText(`${BASE_PATH}/${_package.name}/${CONFIGS_PATH}/${configName}/config.yml`);
+    res = parse(fileContent);
+  } catch (e: any) {
+    grok.shell.error(`Error reading config.yml file: ${e?.message ?? e}`);
   }
+  return res;
 }
 
-export async function getConfigsFromDocker(): Promise<string[]> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, `/get_configs`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get config folders: ${errorText}`);
-    }
-
-    const configs = await response.json();
-    return configs.result ?? [];
-  } catch (error) {
-    grok.shell.error(`Error getting config folders: ${error}`);
-    throw error;
-  }
-}
-
-export async function addConfigToDocker(files: string[], folder: string): Promise<void> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, `/save_config_files`, {
-      method: 'POST',
-      body: JSON.stringify({files: files, token: token, folder: folder}),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to load config: ${errorText}`);
-    }
-
-    const configs = await response.json();
-    grok.shell.info('Configuration added successfully');
-  } catch (error) {
-    grok.shell.error(`Error loading config folder: ${error}`);
-    throw error;
-  }
-}
-
-const token = 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImF1dGgifQ.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjYzMzQzL2xvZ2luLmh0bWw_ZGFwaVVybD1odHRwOi8vMTI3LjAuMC4xOjgwODIiLCJpZCI6ImYzN2M2MWEwLTEwMzAtMTFmMC1hZGUzLTNkZDYyZTg4YWQ2MiIsImV4cCI6IjIwMjUtMDUtMDdUMTM6NTc6MTUuMDUyMjA1WiIsInN1YiI6eyJpZCI6Ijg3OGM0MmIwLTlhNTAtMTFlNi1jNTM3LTZiZjhlOWFiMDJlZSIsImxvZ2luIjoiYWRtaW4iLCJwcm9qZWN0Ijp7ImlkIjoiODc4YzQyYjAtOWE1MC0xMWU2LWM1MzctNmJmOGU5YWIwMjk5IiwibmFtZSI6IkFkbWluIn0sImdyb3VwIjp7ImlkIjoiYTRiNDU4NDAtOWE1MC0xMWU2LWM1MzctNmJmOGU5YWIwMmVlIn19fQ.TAWTt0jovll7RaWFthnzlelpY8Y4E9ZMxWhPNpMcGE9z6VlYc_9jI_pt9cyS226nnBdlAb47G22D4RMu4S4uOKkiIJesp7x9SJlk2uUXL46O_NKb_gMem9qopgfRUDPcB9NTKCBRarnjaFk4C0mF-5xqG1rEErThsaS7oVkiVsezY4t1BGHLwY8P09R-Tr4tjI4O2AN9DN4owCris5raLM7BnR7kApij7EAEvJ0j74o54opdUXERZ40lvqxIwjo1PPvFKXcsEuockfyccZ6NJxA94Sg8NnleGOHUj2V1Ti6d47VOVEwY4NxDQcYJ-yW8CJlWZT5yAg2axGDWdQgBXA'
-
-export async function syncConfig(dirName: string): Promise<void> {
-  const container = await grok.dapi.docker.dockerContainers.filter('retrosynthesis').first();
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/sync_dir', {
-      method: 'POST',
-      body: JSON.stringify({from_dir_name: `${_package.name}/${dirName}`, to_dir_name: dirName, token: token}),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to sync config: ${errorText}`);
-    }
-
-    grok.shell.info('Configuration synchronized successfully');
-  } catch (error) {
-    grok.shell.error(`Failed to sync config: ${error}`);
-    throw error;
-  }
-}

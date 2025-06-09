@@ -29,11 +29,22 @@ export const TreeWizardApp = Vue.defineComponent({
       type: DG.ViewBase,
       required: true,
     },
+    resolve: {
+      type: Function,
+      required: false,
+    },
   },
   setup(props) {
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const resolve = Vue.computed(() => props.resolve ? Vue.markRaw(props.resolve) : undefined);
+    const onReturn = (data: any) => {
+      if (resolve.value)
+        resolve.value(data);
+      if (currentView.value)
+        currentView.value.close();
+    }
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} />
+      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} showReturn={!!resolve.value} onReturn={onReturn}/>
     );
   },
 });

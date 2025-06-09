@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHookConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
@@ -124,22 +124,25 @@ async function configProcessing(
 function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
-  const onInit = processHook(conf.onInit);
-  return {...conf, links, actions, onInit};
+  const onInit = processInitHook(conf.onInit);
+  const onReturn = processReturnHook(conf.onReturn);
+  return {...conf, links, actions, onInit, onReturn};
 }
 
 function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
-  const onInit = processHook(conf.onInit);
-  return {...conf, actions, links, onInit};
+  const onInit = processInitHook(conf.onInit);
+  const onReturn = processReturnHook(conf.onReturn);
+  return {...conf, actions, links, onInit, onReturn};
 }
 
 function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
-  const onInit = processHook(conf.onInit);
-  return {...conf, links, actions, onInit};
+  const onInit = processInitHook(conf.onInit);
+  const onReturn = processReturnHook(conf.onReturn);
+  return {...conf, links, actions, onInit, onReturn};
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
@@ -177,11 +180,17 @@ function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString
   return actions;
 }
 
-function processHook(hooksInput?: PipelineHookConfiguration<LinkSpecString>) {
-  return hooksInput ? processLinkData(hooksInput) : undefined;
+function processReturnHook(hooksInput?: PipelineReturnConfiguration<LinkSpecString>) {
+  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineReturnConfiguration<LinkIOParsed[]> | undefined;
+  return hook;
 }
 
-function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpecString>>>(link: L) {
+function processInitHook(hooksInput?: PipelineInitConfiguration<LinkSpecString>) {
+  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineInitConfiguration<LinkIOParsed[]> | undefined;
+  return hook;
+}
+
+function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>>(link: L) {
   const from = processLink(link.from ?? [], 'input');
   const to = processLink(link.to ?? [], 'output');
   const base = processLink(link.base ?? [], 'base');

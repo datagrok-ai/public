@@ -1,305 +1,105 @@
-
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {TreeNode, Tree} from './aizynth-api';
-import {HORIZONTAL_SPACING, MOL_HEIGHT, MOL_WIDTH, PADDING, StructureType, VERTICAL_SPACING} from './const';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import '../css/aizynthfinder.css';
+import {createPathsTreeTabs, isFragment, TAB_ID} from './tree-creation-utils';
+import {Tree} from './aizynth-api';
+import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
+import {configIcon, currentUserConfig, DEFAULT_CONFIG_NAME, KEY, setValidUserConfig, STORAGE_NAME} from './config-utils';
+import {DEMO_MOLECULE} from './const';
 
-export const TAB_ID = 'tab_id';
+export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget) {
+  ui.empty(w.root);
+  ui.setUpdateIndicator(w.root, true, 'Calculating paths...');
+  const updateWidgetRoot = (el: HTMLElement) => {
+    ui.setUpdateIndicator(w.root, false);
+    w.root.append(el);
+  };
+  if (molecule !== DEMO_MOLECULE) {
+    if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule)) {
+      updateWidgetRoot(ui.divText('Molecule is empty'));
+      return;
+    }
+    if (DG.chem.isSmarts(molecule) || isFragment(molecule)) {
+      updateWidgetRoot(ui.divText('Not applicable for smarts or moleculer fragments'));
+      return;
+    }
 
-export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:{smiles: string, type: string}[]},
-  isHorizontal: boolean = true): DG.TabControl {
-  const tabControl = ui.tabControl();
+    //check molecule is valid and convert to smiles
+    try {
+      molecule = DG.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+    } catch {
+      updateWidgetRoot(ui.divText('Molecule is possibly malformed'));
+      return;
+    }
+  }
 
-  for (let i = 0; i < paths.length; i++) {
-    tabControl.addPane(paths[i].scores['state score'].toFixed(3),
-      () => {
-        const pathObject = buildNestedStructure(paths[i]);
-        pathsObjects[`${i}`] = processNestedStructure(pathObject, [], 0);
-        const container = ui.div([], {classes: 'retrosynthesis-reaction-container'});
-        const svgTree = createReactionTreeSVG(pathObject, isHorizontal);
-        container.setAttribute(TAB_ID, `${i}`);
-        container.appendChild(svgTree);
-        //this.rotate !== 'None' && this.rotateCanvas90Degrees(c, this.rotate === 'Clockwise');
-        return container;
+
+  let paths: Tree[] = [];
+  if (molecule !== DEMO_MOLECULE) {
+    try {
+      if (!currentUserConfig)
+        await setValidUserConfig();
+      const res = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+        {
+          molecule: molecule,
+          config: currentUserConfig.configName === DEFAULT_CONFIG_NAME ? '' : currentUserConfig.configName,
+          expansion: currentUserConfig.expansion,
+          stock: currentUserConfig.stock,
+          filter: currentUserConfig.filter,
+        });
+      paths = JSON.parse(res);
+    } catch (e: any) {
+      updateWidgetRoot(ui.divText(e?.message ?? e));
+      return;
+    }
+  } else
+    paths = DEMO_DATA;
+
+  try {
+    if (paths.length) {
+      const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
+      let currentTreeObjId: string | null = null;
+      const tabControl = createPathsTreeTabs(paths, pathsObjects, false);
+      const settings = configIcon(molecule, w);
+      const addToWorkSpace = ui.icons.add(() => {
+        if (currentTreeObjId) {
+          const df = DG.DataFrame.fromObjects(pathsObjects[currentTreeObjId]);
+          if (df) {
+            df.name = tabControl.currentPane.name;
+            grok.shell.addTableView(df);
+          }
+        }
+      }, 'Add paths to workspace as dataframe');
+      addToWorkSpace.classList.add('retrosynthesis-add-to-workspace-icon');
+      const iconsDiv = ui.divH([addToWorkSpace, settings], 'retrosynthesis-icons-div');
+      const updateCurrentPane = () => {
+        tabControl.currentPane.content.append(iconsDiv);
+        currentTreeObjId = tabControl.currentPane.content.getAttribute(TAB_ID);
+      };
+      tabControl.onTabChanged.subscribe(() => {
+        updateCurrentPane();
       });
+      updateCurrentPane();
+      //workaround to make tree visible in undocked panel
+      ui.tools.waitForElementInDom(w.root).then(() => {
+        if (w.root.closest('.dialog-floating')) {
+          const accPanel = w.root.closest('.panel-content') as HTMLElement;
+          if (accPanel) {
+            const sub = ui.onSizeChanged(accPanel).subscribe((_) => {
+              const waitParentEl = w.root.parentElement;
+              if (waitParentEl?.classList.contains('grok-wait'))
+                waitParentEl.style.height = `100%`;
+              sub.unsubscribe();
+            });
+          }
+        }
+      });
+      updateWidgetRoot(tabControl.root);
+    } else
+      updateWidgetRoot(ui.divText('No paths found for the molecule'));
+  } catch {
+    updateWidgetRoot(ui.divText('Error processing retrosynthesis data'));
   }
-  return tabControl;
-}
-
-
-export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: any } {
-  const result: { [key: string]: any } = {};
-
-  // If the current node is of type 'mol', add it to the result
-  if (node.type === 'mol') {
-    const smiles = node.smiles;
-    const children = node.children || [];
-
-    // Recursively process children
-    const nestedChildren: { [key: string]: any } = {};
-    children.forEach((child) => {
-      const childResult = buildNestedStructure(child);
-      Object.assign(nestedChildren, childResult);
-    });
-
-    // Add the current node's smiles as a key and its nested children as the value
-    result[smiles] = nestedChildren;
-  } else if (node.type === 'reaction') {
-    // If the current node is of type 'reaction', process its children
-    const children = node.children || [];
-    children.forEach((child) => {
-      const childResult = buildNestedStructure(child);
-      Object.assign(result, childResult);
-    });
-  }
-  return result;
-}
-
-
-export function processNestedStructure(paths: { [key: string]: any },
-  result: {smiles: string, type: string, depth: number}[], depth: number):
-  {smiles: string, type: string, depth: number}[] {
-  for (const [smiles, children] of Object.entries(paths)) {
-    let type;
-    if (depth === 0 && Object.keys(children).length > 0)
-      type = StructureType.Root;
-    else if (Object.keys(children).length > 0)
-      type = StructureType.Interim;
-    else
-      type = StructureType.Leaf;
-
-    result.push({smiles, type, depth});
-
-    if (Object.keys(children).length > 0)
-      processNestedStructure(children, result, depth + 1);
-  }
-  return result;
-}
-
-function stringToColor(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  let color = '#';
-  for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xff;
-    color += ('00' + value.toString(16)).substr(-2);
-  }
-  return color;
-}
-
-
-export function isFragment(molString: string) {
-  if (DG.chem.isMolBlock(molString))
-    return MolfileHandler.getInstance(molString).isFragment();
-  else
-    return !!molString.match(/\[.?:|\*.?\]/g);
-}
-
-
-export function createReactionTreeSVG(reactionData: any, isHorizontal: boolean = true): SVGElement {
-  const moleculesPerLevel: any = {};
-
-  // Traverse the reaction data to determine the number of molecules per level
-  function traverseLevels(data: any, level = 0) {
-    Object.keys(data).forEach((product) => {
-      moleculesPerLevel[level] ??= [];
-      moleculesPerLevel[level].push(product);
-      traverseLevels(data[product], level + 1);
-    });
-  }
-  traverseLevels(reactionData);
-
-  const maxLevel = Object.keys(moleculesPerLevel).length - 1;
-  const levelHeights = new Array(maxLevel + 1).fill(0);
-  const levelWidths = new Array(maxLevel + 1).fill(0);
-
-  // Calculate the height and width for each level
-  Object.entries(moleculesPerLevel).forEach(([level, molecules]) => {
-    const numMolecules = (molecules as string[]).length;
-    if (isHorizontal) {
-      levelHeights[Number(level)] =
-        numMolecules * (MOL_HEIGHT + PADDING) + (numMolecules - 1) * VERTICAL_SPACING + PADDING * 2;
-      levelWidths[Number(level)] = MOL_WIDTH + PADDING * 2;
-    } else {
-      levelWidths[Number(level)] =
-        numMolecules * (MOL_WIDTH + PADDING) + (numMolecules - 1) * HORIZONTAL_SPACING + PADDING * 2;
-      levelHeights[Number(level)] = MOL_HEIGHT + PADDING * 2;
-    }
-  });
-
-  // Calculate the total SVG size
-  const neededHeight = isHorizontal ?
-    levelHeights.reduce((acc, height) => Math.max(acc, height), 0) + PADDING * 2 :
-    levelHeights.reduce((acc, height) => acc + height + VERTICAL_SPACING, 0);
-  const neededWidth = isHorizontal ?
-    levelWidths.reduce((acc, width) => acc + width + HORIZONTAL_SPACING, 0) :
-    levelWidths.reduce((acc, width) => Math.max(acc, width), 0) + PADDING * 2;
-
-  // Create SVG element
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  setAttributes(svg, {'width': neededWidth.toString(), 'height': neededHeight.toString(),
-    'viewBox': `0 0 ${neededWidth} ${neededHeight}`});
-
-  // Add background
-  const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  setAttributes(bgRect, {'width': '100%', 'height': '100%', 'fill': 'white'});
-  svg.appendChild(bgRect);
-
-  const reagentStartHeights = new Array(maxLevel + 1).fill(-1);
-  const reagentStartWidths = new Array(maxLevel + 1).fill(-1);
-
-  drawTreeSVG(svg, levelHeights, levelWidths, reagentStartHeights, reagentStartWidths,
-    neededHeight, neededWidth, reactionData, 0, 0, 0, null, isHorizontal);
-
-  return svg;
-}
-
-function drawTreeSVG(
-  svg: SVGElement,
-  levelHeights: number[],
-  levelWidths: number[],
-  reagentStartHeights: number[],
-  reagentStartWidths: number[],
-  neededHeight: number,
-  neededWidth: number,
-  data: any,
-  startX: number,
-  startY: number,
-  level: number,
-  parent: string | null,
-  isHorizontal: boolean,
-) {
-  const color = parent ? stringToColor(parent) : '#2083D5';
-  const molecules = Object.keys(data);
-
-  const levelStartX = isHorizontal ?
-    level * (MOL_WIDTH + HORIZONTAL_SPACING + PADDING) + PADDING :
-    (neededWidth - levelWidths[level]) / 2;
-  const levelStartY = isHorizontal ?
-    (neededHeight - levelHeights[level]) / 2 :
-    level * (MOL_HEIGHT + VERTICAL_SPACING + PADDING) + PADDING;
-
-  if (reagentStartHeights[level] === -1) reagentStartHeights[level] = levelStartY;
-  if (reagentStartWidths[level] === -1) reagentStartWidths[level] = levelStartX;
-
-  for (const mol of molecules) {
-    if (level > 0) {
-      if (isHorizontal)
-        reactionLinesToMoleculeSVG(svg, startX, startY, levelStartX, reagentStartHeights[level], isHorizontal);
-      else
-        reactionLinesToMoleculeSVG(svg, startX, startY, reagentStartWidths[level], levelStartY, isHorizontal);
-    }
-
-    drawMoleculeSVG(svg, mol, reagentStartWidths[level], reagentStartHeights[level], color);
-
-    drawTreeSVG(
-      svg,
-      levelHeights,
-      levelWidths,
-      reagentStartHeights,
-      reagentStartWidths,
-      neededHeight,
-      neededWidth,
-      data[mol],
-      isHorizontal ? levelStartX : reagentStartWidths[level],
-      isHorizontal ? reagentStartHeights[level] : levelStartY,
-      level + 1,
-      mol,
-      isHorizontal,
-    );
-
-    if (isHorizontal)
-      reagentStartHeights[level] += MOL_HEIGHT + VERTICAL_SPACING;
-    else
-      reagentStartWidths[level] += MOL_WIDTH + HORIZONTAL_SPACING;
-  }
-}
-
-function reactionLinesToMoleculeSVG(
-  svg: SVGElement,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-  isHorizontal: boolean,
-) {
-  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  if (isHorizontal) {
-    // Horizontal orientation: draw lines from right to left
-    const startLineX = startX + MOL_WIDTH + PADDING / 2;
-    const startLineY = startY + MOL_HEIGHT / 2;
-    const endLineX = endX - PADDING / 2;
-    const endLineY = endY + MOL_HEIGHT / 2;
-    const midX = (startLineX + endLineX) / 2;
-
-    drawLineSVG(group, startLineX, startLineY, midX, startLineY, true);
-    drawLineSVG(group, midX, startLineY, midX, endLineY);
-    drawLineSVG(group, midX, endLineY, endLineX, endLineY);
-  } else {
-    // Vertical orientation: draw lines from top to bottom
-    const startLineX = startX + MOL_WIDTH / 2;
-    const startLineY = startY + MOL_HEIGHT + PADDING / 2;
-    const endLineX = endX + MOL_WIDTH / 2;
-    const endLineY = endY - PADDING / 2;
-    const midY = (startLineY + endLineY) / 2;
-
-    drawLineSVG(group, startLineX, startLineY, startLineX, midY, true);
-    drawLineSVG(group, startLineX, midY, endLineX, midY);
-    drawLineSVG(group, endLineX, midY, endLineX, endLineY);
-  }
-
-  svg.appendChild(group);
-}
-
-function drawMoleculeSVG(svg: SVGElement, smiles: string, x: number, y: number, color: string) {
-  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  // Create clickable rectangle
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  setAttributes(rect, {'x': (x - PADDING / 2).toString(), 'y': (y - PADDING / 2).toString(),
-    'width': (MOL_WIDTH + PADDING).toString(), 'height': (MOL_HEIGHT + PADDING).toString(), 'rx': '5',
-    'stroke': color, 'fill': 'transparent', 'stroke-width': '1'});
-  group.appendChild(rect);
-
-  // Create foreignObject for the molecule rendering
-  const foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-  setAttributes(foreignObject, {'x': x.toString(), 'y': y.toString(), 'width': MOL_WIDTH.toString(),
-    'height': MOL_HEIGHT.toString()});
-
-  const molDiv = grok.chem.drawMolecule(smiles, MOL_WIDTH, MOL_HEIGHT);
-  molDiv.classList.add('retrosynthesis-mol-rect');
-
-  foreignObject.appendChild(molDiv);
-  group.appendChild(foreignObject);
-
-  svg.appendChild(group);
-}
-
-function drawLineSVG(
-  group: SVGGElement,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-  withDot = false,
-) {
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  setAttributes(line, {'x1': startX.toString(), 'y1': startY.toString(), 'x2': endX.toString(), 'y2': endY.toString(),
-    'stroke': 'black', 'stroke-width': '1'});
-  group.appendChild(line);
-
-  if (withDot) {
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    setAttributes(circle, {'cx': endX.toString(), 'cy': endY.toString(), 'r': '2', 'fill': 'black'});
-    group.appendChild(circle);
-  }
-}
-
-function setAttributes(element: SVGElement, attributes: {[key: string]: string}) {
-  for (const key of Object.keys(attributes))
-    element.setAttribute(key, attributes[key]);
 }

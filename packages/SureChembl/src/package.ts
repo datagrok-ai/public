@@ -24,7 +24,7 @@ export function init() {
 //output: widget result
 //condition: true
 export function sureChemblSubstructureSearchWidget(molecule: string): DG.Widget {
-  return molecule ? patentSearch(molecule, sureChemblSubstructureSearch) : new DG.Widget(ui.divText('SMILES is empty'));
+  return molecule ? patentSearch(molecule, 'sureChemblSubstructureSearch') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Databases | SureChEMBL | Similarity Search
@@ -33,7 +33,7 @@ export function sureChemblSubstructureSearchWidget(molecule: string): DG.Widget 
 //output: widget result
 //condition: true
 export function sureChemblSimilaritySearchWidget(molecule: string): DG.Widget {
-  return molecule ? patentSearch(molecule, sureChemblSimilaritySearch, true) : new DG.Widget(ui.divText('SMILES is empty'));
+  return molecule ? patentSearch(molecule, 'sureChemblSimilaritySearch', true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 
@@ -44,12 +44,19 @@ type PatentInfo = {
   assign_applic: string,
   published: string,
   smiles: string,
+  fields: string
 }
 
 
 function patentSearch(molecule: string,
-  searchFunction: (molecule: string, limit: number, threshold?: number) => Promise<DG.DataFrame | null>,
+  searchFunction: string,
   isSimilarity?: boolean): DG.Widget {
+  //these dictionary is required to terminate previous searches if new one has started while previous was running
+  const currentSearches: {[key: string]: string} = {
+    [SearchType.substructure]: '',
+    [SearchType.similarity]: '',
+  };
+
   const widget = ui.divV([]);
 
   const compsHost = ui.div();
@@ -58,7 +65,7 @@ function patentSearch(molecule: string,
   const molLimit = ui.input.int('Molecules limit', {value: 10});
   DG.debounce(molLimit.onChanged, 1000).subscribe(() => {
     runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
-      isSimilarity ? SearchType.similarity: SearchType.substructure, similarityThreshold?.value ?? undefined);
+      isSimilarity ? SearchType.similarity : SearchType.substructure, currentSearches, similarityThreshold?.value ?? undefined);
   });
 
   widget.append(molLimit.root);
@@ -68,7 +75,7 @@ function patentSearch(molecule: string,
     similarityThreshold = ui.input.float('Similarity cutoff', {value: defaultSimilarityThreshold, min: 0, max: 1, step: 0.05, showSlider: true});
     DG.debounce(similarityThreshold.onChanged, 1000).subscribe(() => {
       runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
-        isSimilarity ? SearchType.similarity: SearchType.substructure, similarityThreshold!.value ?? defaultSimilarityThreshold);
+        isSimilarity ? SearchType.similarity: SearchType.substructure, currentSearches, similarityThreshold!.value ?? defaultSimilarityThreshold);
     });
     widget.append(similarityThreshold.root);
   }
@@ -76,43 +83,33 @@ function patentSearch(molecule: string,
   widget.append(compsHost);
 
   runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit, isSimilarity ? SearchType.similarity: SearchType.substructure,
-    similarityThreshold && similarityThreshold.value ? similarityThreshold.value : defaultSimilarityThreshold );
+    currentSearches, similarityThreshold && similarityThreshold.value ? similarityThreshold.value : defaultSimilarityThreshold );
   return new DG.Widget(widget);
 }
 
-//these two variables are required to terminate previous searches if new one has started while previous was running
-let currentSimSearch: string = '';
-let currentSubSearch: string = '';
-
 
 function runSearch(molecule: string,
-  searchFunction: (molecule: string, limit: number, threshold?: number) => Promise<DG.DataFrame | null>,
-  compsHost: HTMLDivElement, limit: number, searchType: SearchType, threshold?: number) {
+  searchFunction: string,
+  compsHost: HTMLDivElement, limit: number, searchType: SearchType, currentSearches: {[key: string]: string}, threshold?: number) {
   const currentSearch = `${molecule}|${limit}|${threshold}`;
-  if (searchType === SearchType.substructure) {
-    if (currentSubSearch == currentSearch)
-      return;
-    else
-      currentSubSearch = currentSearch;
-  } else {
-    if (currentSimSearch == currentSearch)
-      return;
-    else
-      currentSimSearch = currentSearch;
-  }
+  if (currentSearches[searchType] === currentSearch)
+    return;
+  currentSearches[searchType] = currentSearch;
 
   ui.empty(compsHost);
   compsHost.append(ui.loader());
 
-  searchFunction(molecule, limit, threshold)
+  const params: {[key: string]: any} = {molecule: molecule, limit: limit};
+  if (searchType === SearchType.similarity)
+    params.threshold = threshold;
+
+  grok.functions.call(`${_package.name}:${searchFunction}`, params)
     .then((table: DG.DataFrame | null) => {
-      if ((searchType === SearchType.substructure && currentSearch == currentSubSearch) ||
-        (searchType === SearchType.similarity && currentSearch == currentSimSearch))
+      if (currentSearch === currentSearches[searchType])
         updateSearchPanel(table, compsHost);
     })
     .catch((err: any) => {
-      if ((searchType === SearchType.substructure && currentSearch !== currentSubSearch) ||
-        (searchType === SearchType.similarity && currentSearch !== currentSimSearch))
+      if (currentSearch !== currentSearches[searchType])
         return;
 
       if (compsHost.children.length > 0)
@@ -143,25 +140,25 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
     return addToWorkspaceButton;
   };
 
-  const downloadPatents = (patentsIds: string[], className: string): HTMLElement => {
-    const downloadPatentsButton = ui.iconFA('arrow-to-bottom', () => {
-      grok.shell.info('Started downloading patents');
-      downloadPatentDocuments(patentsIds).then((res: any) => {
-        const infoDiv = ui.div([ui.divText('Patents download finished')]);
-        const df = DG.DataFrame.fromObjects(res);
-        if (df) {
-          df.name = 'Patents download results';
-          const openResultsButton = ui.button('Open', () => {
-            grok.shell.addTableView(DG.DataFrame.fromObjects(res)!);
-          });
-          infoDiv.append(openResultsButton);
-        }
-        grok.shell.info(infoDiv);
-      });
-    }, 'Download patents');
-    downloadPatentsButton.classList.add(className);
-    return downloadPatentsButton;
-  };
+  // const downloadPatents = (patentsIds: string[], className: string): HTMLElement => {
+  //   const downloadPatentsButton = ui.iconFA('arrow-to-bottom', () => {
+  //     grok.shell.info('Started downloading patents');
+  //     downloadPatentDocuments(patentsIds).then((res: any) => {
+  //       const infoDiv = ui.div([ui.divText('Patents download finished')]);
+  //       const df = DG.DataFrame.fromObjects(res);
+  //       if (df) {
+  //         df.name = 'Patents download results';
+  //         const openResultsButton = ui.button('Open', () => {
+  //           grok.shell.addTableView(DG.DataFrame.fromObjects(res)!);
+  //         });
+  //         infoDiv.append(openResultsButton);
+  //       }
+  //       grok.shell.info(infoDiv);
+  //     });
+  //   }, 'Download patents');
+  //   downloadPatentsButton.classList.add(className);
+  //   return downloadPatentsButton;
+  // };
 
   const numPatentsByMol: {[key: string]: PatentInfo[]} = {};
   const similarities: {[key: string]: number} = {};
@@ -182,6 +179,7 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
       language: table.col('language')?.get(i),
       assign_applic: table.col('assign_applic')?.get(i),
       published: table.col('published')?.get(i).toString(),
+      fields: table.col('fields')?.get(i),
     };
     numPatentsByMol[smiles].push(patentInfo);
     patentsIdsByMol[smiles].push(patentId);
@@ -193,9 +191,7 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
 
   const addAllPatentsToWorkspace = createAddToWorkspaceButton(Object.values(numPatentsByMol).reduce((acc, val) => acc.concat(val), []),
     `All patents`, 'Add all found patents to workspace', 'surechembl-add-all-patents-to-workspace-button');
-  const downloadAllPatentsButton = downloadPatents(Object.values(patentsIdsByMol).reduce((acc, val) => acc.concat(val), []),
-    'surechembl-download-all-patents-to-workspace-button');
-  compsHost.append(ui.divH([addAllPatentsToWorkspace, downloadAllPatentsButton]));
+  compsHost.append(ui.divH([addAllPatentsToWorkspace]));
 
   Object.keys(numPatentsByMol).forEach((key: string) => {
     const molHost = ui.div();
@@ -212,13 +208,10 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
 
     const addToWorkspaceButton = createAddToWorkspaceButton(numPatentsByMol[key], `Patents for ${key}`,
       'Add table to workspace', 'surechembl-add-patents-to-workspace-button');
-    const downloadPatentsButton = downloadPatents(patentsIdsByMol[key], 'surechembl-add-patents-to-workspace-button');
 
     const accPaneHeader = accPane.root.getElementsByClassName('d4-accordion-pane-header');
-    if (accPaneHeader.length) {
+    if (accPaneHeader.length)
       accPaneHeader[0].append(addToWorkspaceButton);
-      accPaneHeader[0].append(downloadPatentsButton);
-    }
     const molDiv = ui.divV([molHost], {style: {paddingBottom: '15px'}});
     if (isSimilarity)
       molDiv.prepend(ui.divText(similarities[key].toFixed(4).toString()));
@@ -229,6 +222,8 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
 
 
 //name: sureChemblSubstructureSearch
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string molecule {semType: Molecule}
 //input: int limit
 //output: dataframe df
@@ -247,6 +242,8 @@ export async function sureChemblSubstructureSearch(molecule: string, limit: numb
 }
 
 //name: sureChemblSimilaritySearch
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string molecule {semType: Molecule}
 //input: int limit
 //input: double similarityThreshold

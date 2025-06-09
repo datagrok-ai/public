@@ -19,3 +19,4 @@ export const HORIZONTAL_SPACING = 30;
 
 export const BASE_PATH = 'System:AppData';
 export const CONFIGS_PATH = 'configs';
+export const DEMO_MOLECULE = 'demo_molecule';

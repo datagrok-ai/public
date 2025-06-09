@@ -44,7 +44,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       }));
       if (value.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
-    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE, nullable: false});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
@@ -96,7 +96,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
+  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!, nullable: false,
     onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: (value) => {

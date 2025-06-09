@@ -17,6 +17,9 @@ enum HELP_ITEMS {
   SAMPLES = '`Samples`',
 };
 
+export const LOCAL_HELP = '/help/compute/function-analysis#sensitivity-analysis';
+export const HELP_LINK = `https://datagrok.ai${LOCAL_HELP}`;
+
 /** Starting help markdown */
 export const STARTING_HELP = `# Sensitivity Analysis
 
@@ -25,13 +28,12 @@ and analyzes the relationship between inputs and outputs.
 
 Use one of the following methods:
 
-* [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo) explores a function 
+* **Monte Carlo** explores a function 
 at randomly taken points
 
-* [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
-decomposes output variance into fractions, which can be attributed to inputs
+* **Sobol** decomposes output variance into fractions, which can be attributed to inputs
 
-* [Grid](https://datagrok.ai/help/compute/function-analysis#grid) studies a function at the points of a grid with the specified step
+* **Grid** studies a function at the points of a grid with the specified step
 
 ## Monte Carlo
 
@@ -56,8 +58,7 @@ inputs count) showing a behavior of each output separately
   * [Grid](https://datagrok.ai/help/visualize/viewers/grid) containing inputs and outputs values 
 of each function evaluation
 
-* Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
-[Sensitivity Analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+* Press **?** on the top panel to learn more about [Sensitivity Analysis](${HELP_LINK})
 
 ## Sobol
 

@@ -16,7 +16,7 @@ category('Property: General', () => {
       .call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
     expect(dfList[0].columns instanceof DG.ColumnList, true);
   });
-  
+
   test('def param', async () => {
     await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
   });
@@ -46,10 +46,10 @@ category('Property: Header parsing', () => {
     expectArray(func.inputs[0].choices, ['Standardized', 'Actual']);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15701'});
   test('Default string val', async () => {
-    expect(JSON.parse(func.inputs[1].options['default']), 'Default val');
+    expect(JSON.parse(func.inputs[1].initialValue), 'Default val');
   });
   test('Default int val', async () => {
-    expect(JSON.parse(func.inputs[2].options['default']), 3);
+    expect(JSON.parse(func.inputs[2].initialValue), 3);
   });
   test('Caption', async () => {
     expect(func.inputs[3].caption, 'My custom caption');

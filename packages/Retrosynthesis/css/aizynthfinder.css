@@ -17,7 +17,7 @@
   font-size: 16px;
   top: 0px;
   gap: 5px;
-  right: 0px;
+  left: 10px;
   visibility: hidden;
 }
 
@@ -45,4 +45,8 @@
 .retrosynthesis-demo .d4-tab-host {
   width: 100%!important;
   height: 100%!important;
+}
+
+.retrosynthesis-widget-div .d4-tab-host {
+  height: fit-content!important;
 }

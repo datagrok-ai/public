@@ -30,10 +30,10 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 
 import {AggFunc, getAgg} from '../utils/agg';
-import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
 import {_package, getMonomerLibHelper} from '../package';
 import {numbersWithinMaxDiff} from './utils';
+import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
 
 declare global {
   interface HTMLCanvasElement {

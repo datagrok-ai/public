@@ -10,8 +10,8 @@ category('retrosynthesis', async () => {
 
   test('retrosynthesis', async () => {
     await ensureContainerRunning('retrosynthesis-aizynthfinder', CONTAINER_TIMEOUT);
-    const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-      {molecule: molStr, configDir: ''});
+    const result = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+      {molecule: molStr, config: ''});
     const reactionData: ReactionData = JSON.parse(result);
     const paths: Tree[] = reactionData?.data?.[0]?.trees;
     expect(paths.length > 0, true);

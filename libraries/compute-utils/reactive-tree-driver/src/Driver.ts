@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
@@ -26,6 +26,7 @@ export class Driver {
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
   public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
+  public result$ = new Subject<any>();
 
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
@@ -123,9 +124,19 @@ export class Driver {
       distinctUntilChanged(),
       takeUntil(this.closed$),
     ).subscribe(this.treeMutationsLocked$);
+
+    stateUpdates$.pipe(
+      switchMap((state) => state ? state.result$ : of()),
+      takeUntil(this.closed$),
+    ).subscribe(this.result$);
   }
 
   public sendCommand(msg: ViewConfigCommands) {
+    if (this.globalROLocked$.value || this.treeMutationsLocked$.value) {
+      grok.shell.warning(`Ignoring event ${msg.event}`);
+      console.warn(`Ignoring event ${msg.event}`);
+      return;
+    }
     this.commands$.next(msg);
   }
 
@@ -163,6 +174,8 @@ export class Driver {
       return this.initPipeline(msg);
     case 'updateFuncCall':
       return this.updateFuncCall(msg, state);
+    case 'returnResult':
+      return this.returnResult(msg, state);
     }
     throw new Error(`Unknow tree driver command ${(msg as any).event}`);
   }
@@ -305,6 +318,11 @@ export class Driver {
   private updateFuncCall(msg: UpdateFuncCall, state?: StateTree) {
     this.checkState(msg, state);
     return state.updateFuncCall(msg.stepUuid, msg.funcCall);
+  }
+
+  private returnResult(msg: ReturnResult, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.returnResult();
   }
 
   private checkState(msg: ViewConfigCommands, state?: StateTree): asserts state is StateTree {

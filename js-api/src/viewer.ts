@@ -467,6 +467,10 @@ export class FilterGroup extends Viewer {
     api.grok_FilterGroup_SetExpanded(this.dart, filter, active);
   }
 
+  setActive(active: boolean, notify = true) {
+    api.grok_FilterGroup_SetActive(this.dart, active, notify);
+  }
+
   remove(filter: Filter | Widget) {
     api.grok_FilterGroup_Remove(this.dart, filter);
   }

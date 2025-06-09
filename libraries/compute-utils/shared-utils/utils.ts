@@ -682,13 +682,13 @@ export const showHelpWithDelay = async (helpContent: string) => {
 const helpCache = new DG.LruCache<string, string>();
 
 export const getContextHelp = async (func: DG.Func) => {
-  const helpPath = func.options['help'];
+  const helpPath = func.options['help'] ?? func.options['readme'];
 
-  if (!helpPath) return null;
+  if (!helpPath) return undefined;
 
   if (helpCache.get(func.id)) return helpCache.get(func.id);
 
-  const packagePath = `System:AppData/${helpPath}`;
+  const packagePath = `System:AppData/${func.package.name}/${helpPath}`;
   if (await grok.dapi.files.exists(packagePath)) {
     const readme = await grok.dapi.files.readAsText(packagePath);
     helpCache.set(func.id, readme);
@@ -702,11 +702,11 @@ export const getContextHelp = async (func: DG.Func) => {
     return readme;
   }
 
-  return null;
+  return undefined;
 };
 
-export const hasContextHelp = (func: DG.Func) => {
-  return !!(func.options['help'] as string | undefined);
+export const hasContextHelp = (func?: DG.Func) => {
+  return !!(func?.options?.['help']);
 };
 
 export const categoryToDfParamMap = (func: DG.Func) => {

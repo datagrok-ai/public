@@ -74,14 +74,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     const seqHelper = PeptideUtils.getSeqHelper();
     const sequenceColumn = this.dataFrame.col(this.sequenceColumnName)!;
     const seqHandler = seqHelper.getSeqHandler(sequenceColumn);
-
-    this._positionColumn.init((i) => {
-      try {
-        return seqHandler.getSplitted(i).getCanonical(this.position);
-      } catch (_) {
-        return seqHandler.defaultGapOriginal;
-      }
-    });
+    const canonicalMonomers: string[] = seqHandler.getMonomersAtPosition(this.position, true);
+    this._positionColumn.init((i) => canonicalMonomers[i]);
 
     this._boxPlotViewer = this.dataFrame.plot.box({categoryColumnNames: [this._positionColumn.name], plotStyle: 'violin',
       valueColumnName: this.valueColumnName, colorColumnName: this._positionColumn.name, showColorSelector: false, showSizeSelector: false, showCategorySelector: false,

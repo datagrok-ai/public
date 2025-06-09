@@ -528,7 +528,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
         this._viewerGrid = null;
       break;
     }
-    if (this._mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
+    if (this._mutationCliffs === null && this.sequenceColumnName && this.activityColumnName && this.dataFrame)
       this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
 
     // do this last to avoid recalculating mutation cliffs

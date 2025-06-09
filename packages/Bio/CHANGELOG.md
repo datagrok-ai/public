@@ -1,5 +1,15 @@
 # Bio changelog
 
+## 2.22.0 (2025-06-03)
+
+* MSA header tracks (Conseration and WebLogo)
+* Tooltips for WebLogo header
+* Speedup calculations for conservation and weblogo, corrected limits
+
+## 2.21.11 (2025-05-29)
+
+* Add faster methods for getting monomers at given positions
+
 ## 2.21.10 (2025-05-22)
 
 * Fix all monomers script

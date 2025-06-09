@@ -104,8 +104,8 @@ export namespace decorators {
   }
 
   interface Output {
-    name?: string;
-    type?: string;
+    name: string;
+    type: string;
     options?: Record<string, string>;
   }
 
@@ -157,7 +157,6 @@ export namespace decorators {
     name?: string,
     tags?: string[],
     description?: string,
-    inputs?: Input[],
     meta?: Meta | Record<string, string>,
     outputs?: Output[],
     sidebar?: string;

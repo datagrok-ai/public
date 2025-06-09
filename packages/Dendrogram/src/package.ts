@@ -255,20 +255,11 @@ export async function previewNewick(file: DG.FileInfo) {
   const treeHelper = await getTreeHelper();
   const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
-  const preview = DG.View.create();
-  const host = ui.divH([
-    ui.button('Load dataframe', () => {
-      const view = grok.shell.addTableView(df);
-      const viewer = DG.Viewer.fromType('PhylocanvasGL', df);
-      view.addViewer(viewer);
-      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
-      return view;
-    }, 'View in a dataframe'),
-    DG.Viewer.fromType('Dendrogram', df).root,
-  ], 'd4-ngl-viewer');
+  const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
+  viewerRoot.style.setProperty('width', '100%', 'important');
+  viewerRoot.style.setProperty('height', '100%', 'important');
 
-  preview.append(host);
-  return preview;
+  return DG.View.fromRoot(viewerRoot);
 }
 
 // -- Top menu --

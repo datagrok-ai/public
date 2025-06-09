@@ -81,6 +81,7 @@ CREATE TABLE plates.plate_details (
 -- See also template_plate_properties and template_well_properties.
 CREATE TABLE plates.templates (
     id SERIAL PRIMARY KEY,
+    plate_layout_id INTEGER REFERENCES plates.plates(id),
     name TEXT,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

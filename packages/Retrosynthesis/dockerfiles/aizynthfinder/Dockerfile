@@ -1,47 +1,45 @@
-FROM python:3.10
+FROM python:3.10 as builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
-RUN apt-get update && apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    wget \
-    unzip \
-    bzip2 \
-    xz-utils \
-    libgomp1 \
-    swig \
-    cmake \
-    build-essential \
-    python3-dev \
-    libgomp1 \
-    libeigen3-dev \
-    zlib1g-dev \
-    libffi-dev \
-    libpq-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up application
 WORKDIR /app
-ENV PATH="/app/venv/bin:$PATH"
 
-# Create virtual environment and install packages
-RUN python3.10 -m venv /app/venv
+COPY requirements.txt /app/
+RUN pip install --upgrade pip && \
+    pip install --prefix=/install -r requirements.txt && \
+    pip install --prefix=/install aizynthfinder[all]
 
-RUN /app/venv/bin/pip install --upgrade pip
+FROM python:3.10-slim
 
-RUN /app/venv/bin/pip install aizynthfinder[all] Flask flask_cors gunicorn datagrok-api==0.0.6
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Download public data
-RUN mkdir ./aizynthcli_data && \
-    /app/venv/bin/python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', 'aizynthcli_data']; main()"
+RUN useradd -m datagrok
 
-# Copy application
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 libpq5 libxrender1 libxext6 libsm6 libgl1 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /install/lib /usr/local/lib
+COPY --from=builder /install/bin /usr/local/bin
+RUN mkdir -p /app/configs/default && \
+    python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()"
 COPY app.py /app/
 
+RUN chown -R datagrok:datagrok /app
+USER datagrok
+# grok_spawner expects port to be exposed
 EXPOSE 8000
 
-# Run with Gunicorn (--preload is critical for multiprocessing.Manager)
-CMD ["gunicorn", "--preload", "-w", "4", "-b", "0.0.0.0:8000", "--timeout", "300", "app:app"]
+# Datagrok will populate this env variables based on DockerContainer id and config properties
+# Use concurrency=cpu in container.json
+CMD celery -A app worker \
+    --loglevel=info \
+    --hostname=$CELERY_HOSTNAME \
+    --concurrency=1 \
+    -Q $TASK_QUEUE_NAME

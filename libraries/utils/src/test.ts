@@ -126,7 +126,7 @@ export class TestExecutionOptions {
 
 export async function testEvent<T>(event: Observable<T>,
   handler: (args: T) => void, trigger: () => void, ms: number = 0, reason: string = `timeout`
-): Promise<string> {
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
       try {
@@ -150,7 +150,7 @@ export async function testEvent<T>(event: Observable<T>,
 
 export async function testEventAsync<T>(event: Observable<T>,
   handler: (args: T) => Promise<void>, trigger: () => void, ms: number = 0, reason: string = `timeout`
-): Promise<string> {
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
       handler(args).then(() => {
@@ -425,7 +425,7 @@ function resetConsole(): void {
 
 export async function runTests(options?: TestExecutionOptions) {
   console.log('--------------------')
-  const package_ = grok.functions.getCurrentCall()?.func?.package;
+  const package_ = grok.functions.getCurrentCall()?.func?.package!;
   const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>')) ?? ['', ''])[1];
   await initAutoTests(package_);
   const results: {
@@ -548,7 +548,8 @@ export async function runTests(options?: TestExecutionOptions) {
           continue;
 
         stdLog(`Started ${key} category`);
-        const skipped = value.tests?.every((t) => t.options?.skipReason);
+        //@ts-ignore
+        const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
         if (!skipped)
           value.beforeStatus = await invokeCategoryMethod(value.before, options.category ?? '');
 
@@ -715,7 +716,7 @@ export async function delay(ms: number) {
 }
 
 export async function awaitCheck(checkHandler: () => boolean,
-  error: string = 'Timeout exceeded', wait: number = 500, interval: number = 50): Promise<void> {
+  error: string = 'Timeout exceeded', wait: number = 500, interval: number = 50): Promise<any> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       clearInterval(intervalId);
@@ -725,7 +726,7 @@ export async function awaitCheck(checkHandler: () => boolean,
     const intervalId: Timeout = setInterval(() => {
       if (checkHandler()) {
         clearInterval(intervalId);
-        resolve();
+        resolve(null);
       }
     }, interval);
   });

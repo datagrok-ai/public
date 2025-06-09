@@ -67,8 +67,8 @@ the functions of interest.
 
 ## Inputs and outputs
 
-Each input and output definition take one line that starts with the comment, followed 
-by type, name, optional default value, options, and optional description, just like here:
+Each input and output definition takes one line, starting with a comment, followed 
+by type, name, optional initial value used to pre-fill the UI, options, and optional description, just like here:
 
 ```
 #input: string country {choices: ["USA", "Canada"]} [Country to ship from]

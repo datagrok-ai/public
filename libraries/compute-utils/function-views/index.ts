@@ -5,5 +5,7 @@ import {RichFunctionView} from './src/rich-function-view';
 import {RunComparisonView} from './src/run-comparison-view';
 import {SensitivityAnalysisView} from './src/sensitivity-analysis-view';
 import {CustomFunctionView} from './src/custom-function-view';
+import {OptimizationView} from './src/optimization-view';
 
-export {FunctionView, ComputationView, PipelineView, RichFunctionView, RunComparisonView, SensitivityAnalysisView, CustomFunctionView};
+export {FunctionView, ComputationView, PipelineView, RichFunctionView, RunComparisonView,
+  SensitivityAnalysisView, CustomFunctionView, OptimizationView};

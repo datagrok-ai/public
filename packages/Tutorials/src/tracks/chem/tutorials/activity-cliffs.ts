@@ -131,6 +131,8 @@ export class ActivityCliffsTutorial extends Tutorial {
 
     let initH: number;
     const grid: DG.Grid = [...tv.viewers].find((v) => v.dataFrame.columns.length === 6) as DG.Grid;
+    const panel = grid.root.closest('.panel-base') as HTMLElement;
+    const observeEl = panel ?? grid.root;
     await this.action(`Drag the top border of that table upwards to create more space for it`,
       new Observable((subscriber: any) => {
         const ro = new ResizeObserver((entries) => {
@@ -140,11 +142,11 @@ export class ActivityCliffsTutorial extends Tutorial {
           }
           if (entries[0].contentRect.height > initH) {
             subscriber.next(true);
-            ro.unobserve(grid.root);
+            ro.unobserve(observeEl);
           }
         });
-        ro.observe(grid.root);
-      }), grid.root);
+        ro.observe(observeEl);
+      }), observeEl);
 
     await this.action('In the cliffs table, click any cell in the first row',
       new Observable((subscriber: any) => {

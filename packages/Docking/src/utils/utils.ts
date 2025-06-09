@@ -5,13 +5,10 @@ import $ from 'cash-dom';
 
 import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
-import { BINDING_ENERGY_COL, CACHED_RESULTS, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
+import { BINDING_ENERGY_COL, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
 
 export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
-  const col = pdb.cell.column;
-  if (CACHED_RESULTS.has(col.toString()))
-    return CACHED_RESULTS.get(col.toString())!;
-    
+  const col = pdb.cell.column;    
   const resultDf = DG.DataFrame.create(col.length);
   
   for (let idx = 0; idx < col.length; idx++) {
@@ -29,8 +26,6 @@ export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
       resultDf.set(colName, idx, value);
     }
   }
-  
-  CACHED_RESULTS.set(col.toString(), resultDf);
   
   return resultDf;
 }

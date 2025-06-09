@@ -12,13 +12,11 @@ import {MoleculeFieldSearch, queryVaults, MoleculeQueryParams, queryMolecules, q
 import { CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { CDDVaultStats, createCDDContextPanel, createCDDTableView, createCDDTableViewWithPreview, createInitialSatistics, createLinks,
-  createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, getAsyncResults, getAsyncResultsAsDf,
+import { addNodeWithEmptyResults, CDDVaultStats, createCDDContextPanel, createCDDTableView, createCDDTableViewWithPreview, createInitialSatistics, createLinks,
+  createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
   getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
 
 export const _package = new DG.Package();
-
-const openedViews: {[key: string]: DG.View} = {};
 
 //tags: app
 //name: CDD Vault
@@ -66,22 +64,15 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       //vault node
       const vaultNode = treeNode.group(vault.name);
       vaultNode.onSelected.subscribe(() => {
-        openedViews[vault.id]?.close();
-        openedViews[vault.id] = DG.View.create();
-        openedViews[vault.id].name = vault.name;
-        const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, SEARCH_TAB], treeNode, openedViews[vault.id]);
-        openedViews[vault.id].append(tabs);
-        grok.shell.addPreview(openedViews[vault.id]);
-        setBreadcrumbsInViewName([vault.name], treeNode, openedViews[vault.id]);
-        openedViews[vault.id].path = createPath(vault.name);
+        createVaultNode(vault, treeNode);
       });
   
       //protocols node
   
       let protocols: Protocol[] | null = null;
-      createNestedCDDNode(openedViews, protocols, PROTOCOLS_TAB, vaultNode, 'CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
+      createNestedCDDNode(protocols, PROTOCOLS_TAB, vaultNode, 'CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
         async (item: any) => {
-          createCDDTableView(vault.id, openedViews, [PROTOCOLS_TAB, item.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
+          createCDDTableView([PROTOCOLS_TAB, item.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
             {
               vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
               structure_similarity_threshold: 0, protocol: item.id, run: undefined
@@ -93,27 +84,22 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   
       //saved searches node - only asyn method is available (so createCDDTableViewWithPreview function is not applicable)
       let savedSearches: SavedSearch[] | null = null; 
-      createNestedCDDNode(openedViews, savedSearches, SAVED_SEARCHES_TAB, vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
+      createNestedCDDNode(savedSearches, SAVED_SEARCHES_TAB, vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
         async (item: any) => {
-          createCDDTableView(vault.id, openedViews, [SAVED_SEARCHES_TAB, item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
+          createCDDTableView([SAVED_SEARCHES_TAB, item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
             { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5}, vault.name, treeNode);
         }
       );
   
       //collections
       let collections: Collection[] | null = null;
-      createNestedCDDNode(openedViews, collections, COLLECTIONS_TAB, vaultNode, 'CDDVaultLink:getCollectionsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
+      createNestedCDDNode(collections, COLLECTIONS_TAB, vaultNode, 'CDDVaultLink:getCollectionsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
         async (item: any) => {
           //in case collection doesn't contain molecules - add empty tableView
           if (!item.molecules || !item.molecules.length) {
-            const itemFullName = `${COLLECTIONS_TAB}|${item.name}`;
-            openedViews[itemFullName]?.close();
-            const df = DG.DataFrame.create();
-            df.name = item.name;
-            openedViews[itemFullName] = grok.shell.addTablePreview(DG.DataFrame.create());
-            grok.shell.warning(`No molecules found for ${item.name} collection`);
+            addNodeWithEmptyResults(item.name, `No molecules found for ${item.name} collection`);
           }
-          createCDDTableViewWithPreview(vault.id, openedViews, [COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
+          createCDDTableViewWithPreview([COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
             'CDDVaultLink:getMolecules',
             {
               vaultId: vault.id,
@@ -131,55 +117,14 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       //molecules node
       const moleculesNode = vaultNode.item(MOLECULES_TAB);
       moleculesNode.onSelected.subscribe(async (_) => {
-        createCDDTableViewWithPreview(vault.id, openedViews, [MOLECULES_TAB], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
+        createCDDTableViewWithPreview([MOLECULES_TAB], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
           {vaultId: vault.id, moleculesIds: ''}, 'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5}, vault.name, treeNode);
       });
   
       //search node
       const searchNode = vaultNode.item(SEARCH_TAB);
       searchNode.onSelected.subscribe(() => {
-        openedViews[`${vault.id}|${SEARCH_TAB}`]?.close();
-        openedViews[`${vault.id}|${SEARCH_TAB}`] = DG.View.create();
-        const funcEditor = new SeachEditor(vault.id);
-        const acc = funcEditor.getEditor();
-        let df: DG.DataFrame | null = null;
-        const runButton = ui.bigButton('SEARCH', async () => {
-          ui.setUpdateIndicator(gridDiv, true);
-          const params = funcEditor.getParams();
-          df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-            {
-              vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-              structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run 
-            });
-          ui.empty(gridDiv);
-          if (df) {
-            const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
-            const run = params.run ? `, run: ${params.run}` : '';
-            const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
-              `:${params.structure_similarity_threshold}`: ''} search for ${params.structure}` : '';
-  
-            df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
-            gridDiv.append(df.plot.grid().root);
-          }
-          ui.setUpdateIndicator(gridDiv, false);
-        });
-        const gridDiv = ui.div('', 'cdd-vault-search-res-div');
-        runButton.classList.add('cdd-vault-run-search-button');
-  
-        const addToWorkspaceButton = ui.icons.add(() => {
-          if (df)
-            grok.shell.addTablePreview(df);
-        }, 'Add results to workspace');
-        openedViews[`${vault.id}|${SEARCH_TAB}`].setRibbonPanels([[addToWorkspaceButton]]);
-        openedViews[`${vault.id}|${SEARCH_TAB}`].name = 'Search CDD Vault'
-        openedViews[`${vault.id}|${SEARCH_TAB}`].root.append(ui.divV([
-          acc,
-          runButton,
-          gridDiv
-        ], {style: {height: '100%'}}));
-        grok.shell.addPreview(openedViews[`${vault.id}|${SEARCH_TAB}`]);
-        setBreadcrumbsInViewName([vault.name, SEARCH_TAB], treeNode, openedViews[`${vault.id}|${SEARCH_TAB}`]);
-        openedViews[`${vault.id}|${SEARCH_TAB}`].path = createPath(vault.name, [SEARCH_TAB]);
+        createSearchNode(vault, treeNode);
       });
      //TODO! unlock other tabs
      // vaultNode.group('Plates');

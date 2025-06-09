@@ -193,7 +193,7 @@ export class TreeViewer extends EChartViewer {
 
     const showTooltip = async (params: any) => {
       const ancestors = params.treeAncestors
-        .filter((item: any) => item.name)
+        .filter((item: any) => item.value)
         .map((item: any) => item.name);
 
       const div = ui.divH([]);

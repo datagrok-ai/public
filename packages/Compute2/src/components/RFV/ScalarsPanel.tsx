@@ -25,7 +25,7 @@ export const ScalarsPanel = Vue.defineComponent({
     });
 
     const hoveredIdx = Vue.ref(null as null | number);
-    const scalarsData = Vue.computed(()  => Vue.markRaw(props.scalarsData));
+    const scalarsData = Vue.computed(() => Vue.markRaw(props.scalarsData));
 
     const copyToClipboard = async (text: string) => {
       await navigator.clipboard.writeText(text);
@@ -64,7 +64,7 @@ export const ScalarsPanel = Vue.defineComponent({
             <tbody>
               {
                 scalarsData.value.map((prop, idx) => {
-            const {formattedValue, rawValue, units, name} = prop;
+                  const {formattedValue, rawValue, units, name} = prop;
 
                   return <tr
                     onMouseenter={() => hoveredIdx.value = idx}

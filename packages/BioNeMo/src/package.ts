@@ -64,18 +64,27 @@ export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
 //output: widget result
 export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
   const result = new DG.Widget(ui.div());
+  const loader = ui.loader();
+  result.root.appendChild(loader);
+
   try {
     const apiKey = await getApiKey();
-    const loader = ui.loader();
-    result.root.appendChild(loader);
-    grok.functions.call('BioNeMo:esmfold', { sequence: sequence.value, api_key: apiKey }).then(async (res) => {
-      result.root.removeChild(loader);
-      const molstarViewer = await sequence.cell.dataFrame.plot.fromType('Biostructure', { pdb: res });
+    const res = await grok.functions.call('BioNeMo:esmfold', { sequence: sequence.value, api_key: apiKey });
+    const { success, error, pdb } = JSON.parse(res);
+
+    result.root.removeChild(loader);
+
+    if (error)
+      result.root.appendChild(ui.divText(error));
+    else {
+      const molstarViewer = await sequence.cell.dataFrame.plot.fromType('Biostructure', { pdb });
       result.root.appendChild(molstarViewer.root);
-    });
+    }
   } catch (e: any) {
+    result.root.removeChild(loader);
     result.root.appendChild(ui.divText(e.message));
   }
+
   return result;
 }
 

@@ -357,7 +357,7 @@ export class PipelineNodeBase implements IStoreProvider {
       this.nodeDescription.setState('tags', nval);
   }
 
-  toBaseState(options: StateTreeSerializationOptions) {
+  toSerializedState(options: StateTreeSerializationOptions) {
     const res = {
       configId: this.config.id,
       uuid: this.uuid,
@@ -368,6 +368,18 @@ export class PipelineNodeBase implements IStoreProvider {
     };
     if (options.disableNodesUUID)
       res.uuid = '';
+    return res;
+  }
+
+  toState(options: StateTreeSerializationOptions) {
+    const state = this.toSerializedState(options);
+    const res = {
+      ...state,
+      nqName: this.config.nqName,
+      approversGroup: this.config.approversGroup,
+      disableHistory: !!this.config.disableHistory,
+      customExports: this.config.customExports,
+    };
     return res;
   }
 
@@ -393,23 +405,20 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[], approversGroup?: string): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
-    const state = this.toSerializedState(options);
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
+    const state = super.toState(options);
     return {
       ...state,
       type: this.nodeType,
       steps: [],
       actions,
-      approversGroup,
-      customExports: this.config.customExports,
     };
   }
 
   toSerializedState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallSerializedState, {}> {
-    const base = this.toBaseState(options);
+    const base = super.toSerializedState(options);
     const res: PipelineStateStatic<StepFunCallSerializedState, {}> = {
       ...base,
-      nqName: this.config.nqName,
       type: this.nodeType,
       steps: [],
     };
@@ -427,33 +436,25 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[], approversGroup?: string): PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
-    const state = this.toSerializedState(options);
-    return {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
+    const state = super.toState(options);
+    const res: PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> = {
       ...state,
       type: this.nodeType,
       steps: [],
+      stepTypes: getStepTypes(this.config),
       actions,
-      approversGroup,
-      customExports: this.config.customExports,
     };
+    return res;
   }
 
   toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallSerializedState, {}> {
-    const base = this.toBaseState(options);
+    const base = super.toSerializedState(options);
     const res: PipelineStateParallel<StepFunCallSerializedState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],
-      stepTypes: this.config.stepTypes.map((s) => {
-        if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
-          const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName} = s;
-          return {configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName};
-        } else {
-          const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving} = s;
-          return {configId, disableUIAdding, disableUIDragging, disableUIRemoving};
-        }
-      }),
+      stepTypes: getStepTypes(this.config),
     };
     return res;
   }
@@ -469,33 +470,25 @@ export class SequentialPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[], approversGroup?: string): PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
-    const state = this.toSerializedState(options);
-    return {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
+    const state = super.toState(options);
+    const res: PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> = {
       ...state,
       type: this.nodeType,
       steps: [],
+      stepTypes: getStepTypes(this.config),
       actions,
-      approversGroup,
-      customExports: this.config.customExports,
     };
+    return res;
   }
 
   toSerializedState(options: StateTreeSerializationOptions): PipelineStateSequential<StepFunCallSerializedState, {}> {
-    const base = this.toBaseState(options);
+    const base = super.toSerializedState(options);
     const res: PipelineStateSequential<StepFunCallSerializedState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],
-      stepTypes: this.config.stepTypes.map((s) => {
-        if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
-          const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName} = s;
-          return {configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName};
-        } else {
-          const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving} = s;
-          return {configId, disableUIAdding, disableUIDragging, disableUIRemoving};
-        }
-      }),
+      stepTypes: getStepTypes(this.config),
     };
     return res;
   }
@@ -517,4 +510,16 @@ export function isParallelPipelineNode(node: StateTreeNode): node is ParallelPip
 
 export function isSequentialPipelineNode(node: StateTreeNode): node is SequentialPipelineNode {
   return node.nodeType === 'sequential';
+}
+
+function getStepTypes(conf: PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed) {
+  return conf.stepTypes.map((s) => {
+    if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
+      const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName} = s;
+      return {configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName};
+    } else {
+      const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving} = s;
+      return {configId, disableUIAdding, disableUIDragging, disableUIRemoving};
+    }
+  });
 }

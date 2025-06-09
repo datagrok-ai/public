@@ -21,3 +21,9 @@
     height: 24px;
     width: 24px;
 }
+
+.sensitivity-analysis-help-icon {
+    font-size: large;
+    margin-right: 8px;
+    font-weight: bold;
+}

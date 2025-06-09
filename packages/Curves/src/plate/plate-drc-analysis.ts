@@ -16,7 +16,7 @@ import { PlateWidget } from './plate-widget';
 
 export class PlateDrcAnalysis {
   static analysisView(plate: Plate, options?: Partial<AnalysisOptions>): PlateWidget {
-    const pw = PlateWidget.detailedView(plate.data);
+    const pw = PlateWidget.detailedView(plate);
     const gridRoot = pw.grid.root;
     const detailsRoot = pw.detailsDiv;
     pw.plateActionsDiv = ui.div();
@@ -132,7 +132,7 @@ export class PlateDrcAnalysis {
     roleCol.init((i) => seriesVals[i][0]);
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
-    df.name = pw.plateData.name;
+    df.name = pw.plate.data.name;
     df.id = randomizeTableId();
 
     curveCol.semType ='fit';
@@ -150,7 +150,7 @@ export class PlateDrcAnalysis {
     //categorize the curves
 
     const criteriaCol = df.columns.addNewString(df.columns.getUnusedName('Criteria'));
-    criteriaCol.applyFormula(`if(${actOptions.categorizeFormula}, "Qualified", "Fails Criteria")`, 'string');
+    criteriaCol.applyFormula(`if(${actOptions.categorizeFormula}, "Qualified", "Fails Criteria")`, DG.COLUMN_TYPE.STRING);
     criteriaCol.meta.colors.setCategorical({ "Fails Criteria":4294922560, "Qualified":4283477800 });
 
     curvesGrid.root.style.width = '100%';
@@ -199,17 +199,17 @@ export class PlateDrcAnalysis {
       clearPreviousSelection();
       if (gc?.gridRow == null || gc?.gridRow == -1 || !gc?.gridColumn || gc?.gridColumn.idx == 0)
         return;
-      const row = pw.dataRow(gc);
+      const row = pw.plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
       if (row == undefined || row < 0)
         return;
-      const catValue = pw.plateData.get(actOptions.roleName, row)?.toLowerCase();
+      const catValue = pw.plate.data.get(actOptions.roleName, row)?.toLowerCase();
       if (!catValue)
         return;
       const seriesIndex = seriesVals.findIndex(([serName, _]) => serName?.toLowerCase() === catValue);
       if (seriesIndex < 0)
         return;
-      const conscentration: number = pw.plateData.get(actOptions.concentrationName, row);
-      const value: number = pw.plateData.get(normed ? actOptions.normalizedColName! : actOptions.valueName, row);
+      const conscentration: number = pw.plate.data.get(actOptions.concentrationName, row);
+      const value: number = pw.plate.data.get(normed ? actOptions.normalizedColName! : actOptions.valueName, row);
 
       const pointInSeriesIndex: number = seriesVals[seriesIndex][1].points.findIndex((p) => p.x === conscentration && p.y === value);
       if (pointInSeriesIndex < 0)

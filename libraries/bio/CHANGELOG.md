@@ -1,5 +1,10 @@
 # bio changelog
 
+## 5.53.3 (2025-06-02)
+
+* MSA header tracks
+* Faster methods for getting regions from ISeqSplitted
+
 ## 5.52.0 (2025-05-12)
 
 Sequence rendering with shift configuration. MSA improvements

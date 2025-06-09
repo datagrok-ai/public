@@ -75,6 +75,16 @@ order by property_id, row, col
 -- end
 
 
+-- name: getWellValuesById
+-- connection: Admin:Plates
+-- input: int id
+select v.row, v.col, v.value_num, v.value_string, v.value_bool, v.property_id from plates.plate_well_values v
+join plates.plates p on v.plate_id = p.id
+where p.id = @id
+order by property_id, row, col
+-- end
+
+
 -- name: getAllowedValues
 -- connection: Admin:Plates
 -- input: string propertyName { choices: getPropertyNames() }

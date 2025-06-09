@@ -19,6 +19,7 @@
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "4.14.9",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "typescript": "^5.6.3"
@@ -28,7 +29,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "clean": "npx tsc --build --clean",
-    "build": "npx tsc --build",
+    "build": "grok check --soft && npx tsc --build",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

@@ -7,10 +7,10 @@ import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
 import {delay, map, switchMap, tap} from 'rxjs/operators';
-import {StaticPipelineNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallNode, StaticPipelineNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 
-category('ComputeUtils: Driver onInit hook running', async () => {
+category('ComputeUtils: Driver hooks running', async () => {
   let testScheduler: TestScheduler;
 
   before(async () => {
@@ -67,6 +67,27 @@ category('ComputeUtils: Driver onInit hook running', async () => {
     }],
   };
 
+  const config4: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2',
+      },
+    ],
+    onReturn: {
+      id: 'link1',
+      from: 'in1:step1/res',
+      type: 'return',
+      to: [],
+      handler({controller}) {
+        const res = controller.getFirst('in1');
+        controller.returnResult(res);
+      },
+    },
+  };
+
   test('Run onInit', async () => {
     const pconf = await getProcessedConfig(config1);
 
@@ -105,6 +126,22 @@ category('ComputeUtils: Driver onInit hook running', async () => {
         switchMap((item) => item.getStateStore().getStateChanges('meta1')),
       );
       expectObservable(item$).toBe('250ms b', {b: 10});
+    });
+  });
+
+  test('Run onReturn hook', async () => {
+    const pconf = await getProcessedConfig(config4);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.root.getChild({idx: 0}).getItem() as FuncCallNode;
+      node.getStateStore().run({res: 10}, 10).subscribe();
+      cold('20ms a').subscribe(() => {
+        tree.returnResult().subscribe();
+      });
+      expectObservable(tree.result$).toBe('20ms a', {a: 10});
     });
   });
 });

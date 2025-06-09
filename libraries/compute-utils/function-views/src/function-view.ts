@@ -928,4 +928,8 @@ export abstract class FunctionView extends DG.ViewBase {
   protected get isFittingEnabled() {
     return this.getFeature('fitting', false);
   }
+
+  protected get isOptimizationEnabled() {
+    return this.getFeature('optimization', false);
+  }
 }

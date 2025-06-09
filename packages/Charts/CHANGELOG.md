@@ -1,5 +1,17 @@
 # Charts changelog
 
+## 1.5.4 (2025-05-29)
+
+### Bug Fixes
+
+* Charts: Sunburst: Limit number of rendered columns
+
+## 1.5.3 (2025-05-27)
+
+### Bug Fixes
+
+* [3377](https://github.com/datagrok-ai/public/issues/3377): Sunburst: Tooltip displays wrong number of rows
+
 ## 1.5.2 (2025-05-12)
 
 ### Features

@@ -40,10 +40,10 @@ title: "Enterprise evaluation FAQ"
   * [Scaling and stability under load](../../../../develop/under-the-hood/infrastructure.md#scalability)
 
 * Extensibility
-  * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)
-  * [Creating custom server-side components](https://github.com/datagrok-ai/labs/tree/master/packages/Pedometer)
+  * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)
+  * [Creating custom server-side components](https://github.com/datagrok-ai/public/tree/master/packages/Admetica)
   * [Creating custom scripts](https://datagrok.ai/help/compute/scripting) and utilizing them in other components
-  * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/spgi)
+  * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/HitTriage/HitTriage?browse=apps)
   * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)
 
 * Frontend
@@ -74,7 +74,7 @@ title: "Enterprise evaluation FAQ"
 For AWS deployment, we rely on Amazon's built-in encryption for
 [RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html)
 and
-[S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html).
+[S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html).
 
 ## Encryption in transit
 
@@ -107,7 +107,6 @@ Datagrok Docker containers are built using Jenkins, all software are upgraded an
 Docker-compose manifest is used to describe and deploy Datagrok applications.
 
 Also, there are multiple advanced options to deploy application:
-
 * [CloudFormation template](https://github.com/datagrok-ai/public/blob/master/help/deploy/cloudformation/cloudformation.json)
   to deploy to AWS ECS
 * [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/deploy/terraform/terraform.tf)

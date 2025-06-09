@@ -172,7 +172,7 @@ class BioPackageDetectors extends DG.Package {
         this.sample(col, SEQ_SAMPLE_LIMIT))
         .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
         .filter((seq) => seq.length !== 0/* skip empty values for detector */),
-      )];
+      )].map((s) => s?.trim());
       last.categoriesSample = categoriesSample;
 
       // To collect alphabet freq three strategies can be used:

@@ -1,5 +1,10 @@
 # REtrosynthesis changelog
 
+## 1.0.5 (2025-05-29)
+
+* Ability to add results to workspace
+* Ability to use user specific configuration
+
 ## 1.0.4 (2025-04-07)
 
 * Removed Retrosynthesis function from top menu

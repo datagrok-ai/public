@@ -5,6 +5,7 @@ import './tests/search';
 import './tests/dialogs';
 import './tests/add-new-column';
 import './tests/utils';
+import './tests/excel';
 
 export const _package = new DG.Package();
 export {tests};

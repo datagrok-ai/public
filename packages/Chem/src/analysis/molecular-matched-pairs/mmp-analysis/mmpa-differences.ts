@@ -4,15 +4,59 @@ import {SortData} from '../mmp-viewer/mmp-viewer';
 
 export function getPlainData(rules: MmpRules, frags: MmpFragments,
   initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
-  const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo); //rules n objects
+  const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo);
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
     ruleNum, diffs, activityPairsIdxs, coreNums] =
     calculateActivityDiffs(initData.molecules, initData.activities, rules, frags, allCasesNumber, occasions);
 
-  const rulesBased: MmpRulesBasedData = {fromFrag, toFrag, occasions, meanDiffs};
-  const allCasesBased: MmpAllCasesBasedData = {maxActs, molFrom, molTo, pairNum,
-    molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coreNums};
+  // fragmentParentIndices - for each fragment pair there is an array of
+  // parent molecule indexes where this fragment was identified
+  // moleculePairIndices - indexes of 'from' parent molecules and 'to' parent molecules
+  const fragmentParentIndices: Uint32Array[] = [];
+  const moleculePairIndices: [Uint32Array, Uint32Array] = [
+    new Uint32Array(allCasesNumber),
+    new Uint32Array(allCasesNumber),
+  ];
+  let pairIdx = 0;
+  for (let i = 0; i < rules.rules.length; i++) {
+    const rule = rules.rules[i];
+    const indices = new Uint32Array(rule.pairs.length * 2);
+    for (let j = 0; j < rule.pairs.length; j++) {
+      const pair = rule.pairs[j];
+      // Set fragment parent indices
+      indices[j * 2] = pair.fs;
+      indices[j * 2 + 1] = pair.ss;
+      // Set molecule pair indices
+      moleculePairIndices[0][pairIdx] = pair.fs;
+      moleculePairIndices[1][pairIdx] = pair.ss;
+      pairIdx++;
+    }
+    fragmentParentIndices.push(indices);
+  }
+
+  const rulesBased: MmpRulesBasedData = {
+    fromFrag,
+    toFrag,
+    occasions,
+    meanDiffs,
+    fragmentParentIndices,
+    moleculePairIndices,
+  };
+  const allCasesBased: MmpAllCasesBasedData = {
+    maxActs,
+    molFrom,
+    molTo,
+    pairNum,
+    molNumFrom,
+    molNumTo,
+    pairsFromSmiles,
+    pairsToSmiles,
+    ruleNum,
+    diffs,
+    activityPairsIdxs,
+    coreNums,
+  };
 
   return [rulesBased, allCasesBased];
 }

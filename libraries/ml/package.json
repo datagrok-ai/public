@@ -8,7 +8,7 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.10.1",
+  "version": "6.10.2",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "4.14.9",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",
@@ -48,7 +49,7 @@
     "debug-ml": "grok publish",
     "release-ml": "grok publish --release",
     "build-ml": "git clean -f -X -d ./src && tsc",
-    "build": "tsc",
+    "build": "grok check --soft && tsc",
     "debug-ml-public": "grok publish public",
     "release-ml-public": "grok publish public --release",
     "debug-ml-local": "grok publish local",

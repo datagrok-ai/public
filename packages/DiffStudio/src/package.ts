@@ -62,7 +62,7 @@ export class PackageFunctions {
       const view = await solver.runSolverApp();
 
       if (view !== null)
-        grok.shell.addPreview(view);
+        grok.shell.addView(view);
     }, UI_TIME.APP_RUN_SOLVING);
 
     return proxiView;
@@ -104,7 +104,7 @@ export class PackageFunctions {
     setTimeout(async () => {
       proxiView.close();
       const solver = new DiffStudio(false, true, true);
-      grok.shell.addPreview(await solver.getFilePreview(file, path));
+      grok.shell.addView(await solver.getFilePreview(file, path));
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return proxiView;

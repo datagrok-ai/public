@@ -28,7 +28,6 @@ export const RFVApp = Vue.defineComponent({
     },
   },
   setup(props) {
-
     const runRequests$ = new Subject<true>();
     const isFormValid$ = new BehaviorSubject<boolean>(false);
 

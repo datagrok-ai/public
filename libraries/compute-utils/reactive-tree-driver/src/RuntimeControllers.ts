@@ -14,6 +14,10 @@ export interface IRuntimeLinkController extends IControllerBase {
   setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
 }
 
+export interface IRuntimeReturnController extends IControllerBase {
+  returnResult<T = any>(data: T): void;
+}
+
 export interface IRuntimeValidatorController extends IControllerBase {
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   getValidationAction(id: string, actionId: string): string | undefined;

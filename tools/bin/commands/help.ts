@@ -197,12 +197,12 @@ https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 const HELP_LINK = `
 Usage: grok link
 
-Link \`datagrok-api\` and libraries for local development
+Link \`datagrok-api\`, all necessary libraries and packages for local development by \`npm link\` command 
 
 Options:
 --dev               Links also dev dependencies
 --path              Instead of npm linking sets dependecies in package.json to local
---unlink            Unlinks packages and sets last versions instead of local path in package.json dependecies 
+--unlink            Unlinks packages and sets last versions instead of local path in package.json dependencies 
 --verbose           Prints detailed information about linked packages  
 `;
 
