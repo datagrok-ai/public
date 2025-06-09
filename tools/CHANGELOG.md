@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.14.10 (2025-06-08)
+
+### Features
+
+* Grok Check checks update
+
+
 ## 4.14.9 (2025-06-06)
 
 ### Features
