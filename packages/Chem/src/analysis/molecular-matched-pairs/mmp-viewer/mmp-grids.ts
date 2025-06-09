@@ -31,6 +31,8 @@ export class MmpPairedGrids {
   mmpMaskTransSelection: DG.BitSet;
   parentTableFragSelection: DG.BitSet;
   parentTableTransSelection: DG.BitSet;
+  parentFragmentsFilter: DG.BitSet;
+  parentPairsFilter: DG.BitSet;
 
   mmpGridFrag: DG.Grid;
   mmpGridFragMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
@@ -50,6 +52,7 @@ export class MmpPairedGrids {
   lastFragmentIdx: number | null = null;
   currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
   fragsShowAllMode = true;
+  currentRowChanged = false;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.rdkit = getRdKitModule();
@@ -59,28 +62,65 @@ export class MmpPairedGrids {
     this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa);
     this.fpCatsFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).categories;
     this.fpCatsTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).categories;
-
     this.mmpGridTrans = getMatchedPairsGrid(mmpa, this.rdkit);
-    this.fpMaskByMolecule = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
-    this.mmpMaskTrans = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.mmpMaskTransSelection = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.parentTableFragSelection = DG.BitSet.create(this.parentTable.rowCount);
     this.parentTableTransSelection = DG.BitSet.create(this.parentTable.rowCount);
 
     this.mmpGridFrag = this.mmpGridTrans.dataFrame.plot.grid();
-    this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
 
     this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid();
+
+
+    //Filter masks
+
+    //fragment pairs for current molecule in parent df on substitutions tab
+    this.fpMaskByMolecule = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
+
+    //molecule pairs for current fragments pair on substitutions tab
+    this.mmpMaskTrans = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
+
+    //selected cell in trellis plot on Fragments tab (molecule pairs df)
+    this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
+
+    //parent table filter (fragments df)
+    this.parentFragmentsFilter = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
+
+    //parent table filter (molecule pairs df)
+    this.parentPairsFilter = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount).setAll(true);
+
+    //scatter plot activity filters (molecule pairs df) on Cliffs tab
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
+    // Subscribe to parent table filter changes
+    subs.push(DG.debounce(this.parentTable.onFilterChanged, 300).subscribe(() => {
+      if (this.currentTab === MMP_NAMES.TAB_CLIFFS || this.currentTab === MMP_NAMES.TAB_GENERATION)
+        return;
+      this.updateFiltersFromParent();
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS) {
+      /*   in case we are in current molecule mode and current molecule was
+        filtered out - reset fragments and molecule pairs grids */
+        if (!this.fragsShowAllMode && this.parentTable.currentRowIdx !== -1 &&
+          !this.parentTable.filter.get(this.parentTable.currentRowIdx)) {
+            this.fpGrid!.dataFrame.filter.setAll(false);
+            this.mmpGridTrans.dataFrame.filter.setAll(false);
+            return;
+        }
+      }
+      this.updateFragmentsDfFilters();
+      this.updateMoleculePairsFilters();
+    }));
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 100).subscribe(() => {
-      if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
-        withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
-          this.refilterFragmentPairsByMolecule(true);
-          await this.refreshMatchedPair();
-        })
-      }
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS) {
+        if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
+          withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
+            this.refilterFragmentPairsByMolecule(true);
+            await this.refreshMatchedPair();
+          });
+        }
+      } else if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode)
+        this.currentRowChanged = true;
     }));
 
     this.initialResizeGridColsSize(this.fpGrid);
@@ -102,16 +142,52 @@ export class MmpPairedGrids {
   }
 
   disableFiltersGroup() {
-    if (this.filters)
-      for (let f of this.filters.filters)
-        this.filters.setEnabled(f, false);
+    this.filters?.setActive(false);
   }
 
   enableFiltersGroup() {
-    if (this.filters)
-      for (let f of this.filters.filters)
-        this.filters.setEnabled(f, true);
+    this.filters?.setActive(true);
   }
+
+  switchToSubstitutionsTab() {
+    this.enableFilters = true;
+    this.updateFiltersFromParent();
+    /* if current row was changed while we were on tab other than 'Substitution',
+     re-calculate pairs (in case we are not in show all mode) */
+    if (this.currentRowChanged && !this.fragsShowAllMode) {
+      this.currentRowChanged = false;
+      withTimedProgressIndicator('Refreshing pairs...', 200, async () => {
+        this.refilterFragmentPairsByMolecule(true);
+        await this.refreshMatchedPair();
+      });
+    } else {
+      this.updateMoleculePairsFilters();
+      this.fpGrid.dataFrame.rows.requestFilter();
+    }
+  }
+
+  switchToFragmentsTab() {
+    this.enableFilters = false;
+    this.updateFiltersFromParent();
+    this.unPinMatchedPair();
+    this.enableFiltersGroup();
+    this.updateFragmentsDfFilters();
+    this.updateMoleculePairsFilters();
+  }
+
+  updateFragmentsDfFilters() {
+    if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+      this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+    this.fpGrid.dataFrame.filter.and(this.parentFragmentsFilter);
+  }
+
+  updateMoleculePairsFilters(): void {
+    const mask = this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS ? this.mmpMaskTrans :
+      this.currentTab === MMP_NAMES.TAB_FRAGMENTS ? this.mmpMaskFrag : this.pairsMaskCliffsTab;
+    this.mmpGridFrag.dataFrame.filter.copyFrom(mask);
+    this.mmpGridFrag.dataFrame.filter.and(this.parentPairsFilter);
+  };
+
 
   updateInfoMessage(grid: DG.Grid, div: HTMLElement, compName: string) {
     DG.debounce(grid.dataFrame.onFilterChanged, 100).subscribe(() => {
@@ -137,17 +213,18 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
+    DG.debounce(this.fpGrid.table.onFilterChanged, 300).subscribe(() => {
       //show error in case grid is empty
-      this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
+      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
     });
 
-    //when swithcing from Fragments to Substitutions tab the following steps are triggered:
-    //disable of filters from filters panel -> collaborative filtering -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask) -> 
-    // -> in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
-    this.fpGrid.dataFrame.onRowsFiltering.subscribe((_) => {
-      if (this.currentTab === MMP_NAMES.TAB_TRANSFORMATIONS)
-        this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+    // when swithcing from Fragments to Substitutions tab the following steps are triggered:
+    // disable of filters from filters panel -> collaborative filtering ->
+    // -> onRowsFiltering (in case we are aleady on Substitution tab, we set the required mask)
+    // in onTabChanged we call requestFilter() for fpGrid.dataFrame to trigger filtration
+    this.fpGrid.dataFrame.onRowsFiltering.subscribe(() => {
+      this.updateFragmentsDfFilters();
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
@@ -173,24 +250,18 @@ export class MmpPairedGrids {
     this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_DESCRIPTIONS);
 
     this.mmpMaskTrans.setAll(true);
+    this.mmpMaskFrag.setAll(true);
   }
 
   createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}) {
     grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
       if (cell.isColHeader && cell.tableColumn && cell.tableColumn.semType === DG.SEMTYPE.MOLECULE) {
-        let tooltip = tooltips[cell.tableColumn.name] ?? '';
+        const tooltip = tooltips[cell.tableColumn.name] ?? '';
         ui.tooltip.show(ui.divText(tooltip), x, y);
         return true;
       } else
         return false;
     });
-  };
-
-  refreshMaskFragmentPairsFilter(): void {
-    this.enableFilters = false;
-    this.mmpMaskFrag.setAll(true);
-    this.unPinMatchedPair();
-    this.mmpGridFrag.dataFrame.filter.setAll(true);
   };
 
   /**
@@ -219,6 +290,8 @@ export class MmpPairedGrids {
 
     if (this.enableFilters) {
       this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+      //combine with filters from parent dataframe
+      this.fpGrid!.dataFrame.filter.and(this.parentFragmentsFilter);
       this.fpGrid!.invalidate();
       if (rowChanged) {
         this.fpGrid!.table.currentRowIdx = idxTrue;
@@ -244,6 +317,8 @@ export class MmpPairedGrids {
     }
 
     this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
+    //combine with filter from parent df
+    this.mmpGridTrans.dataFrame.filter.and(this.parentPairsFilter);
   }
 
   /**
@@ -366,20 +441,63 @@ export class MmpPairedGrids {
         }
       }
     }
+    this.updateMoleculePairsFilters();
+  }
 
-    this.mmpGridFrag.dataFrame.filter.copyFrom(this.mmpMaskFrag);
+  updateFiltersFromParent(): void {
+    this.updateFragmentsParentFilter();
+    this.updatePairsParentFilter();
+  }
+
+
+  updateFragmentsParentFilter() {
+    const parentFilter = this.parentTable.filter;
+
+    this.parentFragmentsFilter.setAll(true);
+    const fragmentParentIndices = this.mmpa.rulesBased.fragmentParentIndices;
+
+    for (let i = 0; i < fragmentParentIndices.length; i++) {
+      const parentIndices = fragmentParentIndices[i];
+      let hasVisibleMolecule = false;
+      for (const idx of parentIndices) {
+        if (parentFilter.get(idx)) {
+          hasVisibleMolecule = true;
+          break;
+        }
+      }
+      this.parentFragmentsFilter.set(i, hasVisibleMolecule);
+    }
+  }
+
+  updatePairsParentFilter(cliffs?: boolean) {
+    const parentFilter = this.parentTable.filter;
+
+    this.parentPairsFilter.setAll(true);
+    const [fromIndices, toIndices] = this.mmpa.rulesBased.moleculePairIndices;
+
+    for (let i = 0; i < fromIndices.length; i++) {
+      this.parentPairsFilter.set(i,
+        cliffs ? parentFilter.get(fromIndices[i]) && parentFilter.get(toIndices[i]) :
+          parentFilter.get(fromIndices[i]) || parentFilter.get(toIndices[i]));
+    }
   }
 }
 
+
 function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid {
-  const fromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.rulesBased.fromFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
-  const toCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.rulesBased.toFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
-  const occasionsCol = createColWithDescription('', MMP_NAMES.PAIRS_COUNT, mmpa.rulesBased.occasions, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'int32', undefined, true);
+  const fromCol = createColWithDescription('string', MMP_NAMES.FROM,
+    mmpa.rulesBased.fromFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const toCol = createColWithDescription('string', MMP_NAMES.TO,
+    mmpa.rulesBased.toFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const occasionsCol = createColWithDescription('', MMP_NAMES.PAIRS_COUNT,
+    mmpa.rulesBased.occasions, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'int32', undefined, true);
 
   const fpCols = [fromCol, toCol];
 
-  for (let i = 0; i < activityMeanNames.length; i++)
-    fpCols.push(createColWithDescription('', activityMeanNames[i], mmpa.rulesBased.meanDiffs[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, true));
+  for (let i = 0; i < activityMeanNames.length; i++) {
+    fpCols.push(createColWithDescription('', activityMeanNames[i],
+      mmpa.rulesBased.meanDiffs[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, true));
+  }
   fpCols.push(occasionsCol);
 
   const colorsPal = new Int32Array(fromCol.length);
@@ -396,8 +514,10 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
 }
 
 function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
-  const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.allCasesBased.molFrom, PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
-  const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo, PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM,
+    mmpa.allCasesBased.molFrom, PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
+  const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo,
+    PAIRS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM, mmpa.allCasesBased.pairNum);
   const pairNumberSortCol = DG.Column.bool(MMP_NAMES.PAIR_SORT, mmpa.allCasesBased.pairNum.length);
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, mmpa.allCasesBased.molNumFrom);
@@ -416,7 +536,8 @@ function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
 
   for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.DIFF + ' ' + mmpa.initData.activitiesNames[i];
-    const actCol = createColWithDescription('', name, mmpa.allCasesBased.diffs[i], PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false)
+    const actCol = createColWithDescription('', name, mmpa.allCasesBased.diffs[i],
+      PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false);
     allTransformationsCols.push(actCol);
   }
 
@@ -439,7 +560,7 @@ async function withTimedProgressIndicator(pgName: string, time: number, func: ()
   let pg: DG.TaskBarProgressIndicator | null = null;
   const timer = setTimeout(() => {
     pg = DG.TaskBarProgressIndicator.create(pgName);
-  })
+  });
   try {
     await func();
   } catch (e) {

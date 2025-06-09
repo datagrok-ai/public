@@ -1,5 +1,17 @@
 # Compute2 changelog
 
+## 1.3.7 (2025-06-09)
+
+- Add StartWorkflow return
+
+## 1.3.6 (2025-06-03)
+
+- Allow all users to use
+
+## 1.3.5 (2025-06-03)
+
+- Help tweaks
+
 ## 1.3.4 (2025-05-28)
 
 - Vue and vueuse versions Bump

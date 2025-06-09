@@ -177,8 +177,8 @@ class DatagrokTask(celery.Task):
         try:
             percent = meta.get("percent") if meta else None
             description = meta.get("description") if meta else None
-            if percent is None:
-                self._logger.warning("Incorrect usage of update_state, meta['percent'] key should be present.")
+            if description is None:
+                self._logger.warning("Incorrect usage of update_state, meta['description'] key should be present.")
                 return
             message = {'percent': percent, 'description': description}
             if self._call.requires_pipe:

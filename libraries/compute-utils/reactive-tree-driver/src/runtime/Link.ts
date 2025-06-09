@@ -10,7 +10,7 @@ import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from '
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
@@ -34,12 +34,14 @@ export class Link {
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isSelector = this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
+  public readonly isReturn = this.matchInfo.spec.type === 'return';
 
   // probably a better api
   public lastPipelineMutations?: {
     path: NodePath,
     initConfig: PipelineInstanceConfig,
   }[];
+  public returnResult: any;
 
   private nextScheduled$ = new BehaviorSubject(-1);
   private lastFinished$ = new BehaviorSubject(-1);
@@ -232,6 +234,9 @@ export class Link {
     if (this.isFuncallAction)
       return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
+    if (this.isReturn)
+      return new RuntimeReturnController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
@@ -251,7 +256,7 @@ export class Link {
     return p0;
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController | FuncallActionController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
@@ -267,6 +272,10 @@ export class Link {
       });
       return [outputAlias, nodes] as const;
     });
+    if (controller instanceof RuntimeReturnController) {
+      this.returnResult = controller.result;
+      return;
+    }
     for (const [outputAlias, nodesData] of outputsEntries) {
       for (const [ioName, nodePath, node] of nodesData) {
         if (controller instanceof ValidatorController) {

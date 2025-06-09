@@ -43,6 +43,8 @@ export type MmpRulesBasedData = {
     toFrag: string[];
     occasions: Int32Array;
     meanDiffs: Float32Array[];
+    fragmentParentIndices: Uint32Array[]; // Array of parent molecule indices for each fragment pair
+    moleculePairIndices: [Uint32Array, Uint32Array]; // [from indices, to indices] for molecule pairs
   };
 
 export type MmpAllCasesBasedData = {

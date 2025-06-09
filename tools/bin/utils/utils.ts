@@ -147,7 +147,7 @@ export const queryExtension = '.sql';
 export const jsExtention = '.js';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
-  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/')) &&
+  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/') || filepath.startsWith('python/')) &&
     scriptExtensions.some((ext: any) => filepath.endsWith(ext)))
     return false;
 
@@ -166,7 +166,7 @@ export function getParam(name: string, script: string, comment: string = '#'): s
   return match ? match[1]?.trim() : null;
 };
 
-export const cahceValues = ['all', 'server' , 'client', 'true'];
+export const cacheValues = ['all', 'server' , 'client', 'true'];
 
 export function isValidCron(cronExpression: string) : boolean {
   const cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/;
@@ -195,7 +195,7 @@ export const headerTags = [
   'name', 'description', 'help-url', 'input', 'output', 'tags',
   'sample', 'language', 'returns', 'test', 'sidebar', 'condition',
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
-  'reference', 'editor', 'meta',
+  'reference', 'editor', 'meta', 'connection', 'friendlyName'
 ];
  
 export const fileParamRegex = {
@@ -205,9 +205,9 @@ export const fileParamRegex = {
   sql: new RegExp(`^--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
 }
 
-export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;
+export const nameAnnRegex = /\s*(name[^:]*): ([^\n\r\[\{]+)/;
 
-export const nameRegex = /(?:|(?:static)(?:export )(?:async )function )\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?).*/;
+export const nameRegex = /(?:|(?:static)(?:export )(?:async ))\s+function\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?).*/;
 
 export const absUrlRegex = new RegExp('^(?:[a-z+]+:)?//', 'i');
 
@@ -260,8 +260,6 @@ export interface Config {
 
 export interface Indexable { [key: string]: any }
 
-
-
 export async function runScript(script: string, path: string, verbose: boolean = false) {
   try {
     const { stdout, stderr } = await execAsync(script, { cwd: path });
@@ -273,7 +271,7 @@ export async function runScript(script: string, path: string, verbose: boolean =
     }
   } catch (error: any) {
     console.error(`Execution failed: ${error.message}`);
-    throw new Error(`Cant run script ${script}`);
+    throw new Error(`Error executing '${script}'. Error message: ${error.message}`);
   }
 }
 

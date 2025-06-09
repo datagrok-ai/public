@@ -684,7 +684,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -804,7 +804,7 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
 
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name && (radarViewer || radarGrid)) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -960,7 +960,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 
@@ -1858,7 +1858,7 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
 
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
 

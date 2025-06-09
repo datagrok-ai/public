@@ -85,6 +85,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static async openHelp(func: DG.Func) {
     const readmeText = await getContextHelp(func);
+    grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp(ui.markdown(readmeText ?? ''));
   }
 

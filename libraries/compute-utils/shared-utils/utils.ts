@@ -561,7 +561,7 @@ const helpCache = new DG.LruCache<string, string>();
 export const getContextHelp = async (func: DG.Func) => {
   const helpPath = func.options['help'] ?? func.options['readme'];
 
-  if (!helpPath) return null;
+  if (!helpPath) return undefined;
 
   if (helpCache.get(func.id)) return helpCache.get(func.id);
 
@@ -579,11 +579,11 @@ export const getContextHelp = async (func: DG.Func) => {
     return readme;
   }
 
-  return null;
+  return undefined;
 };
 
-export const hasContextHelp = (func: DG.Func) => {
-  return !!(func.options['help'] as string | undefined);
+export const hasContextHelp = (func?: DG.Func) => {
+  return !!(func?.options?.['help']);
 };
 
 

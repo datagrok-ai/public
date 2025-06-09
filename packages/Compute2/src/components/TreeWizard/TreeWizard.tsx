@@ -29,6 +29,7 @@ import {take} from 'rxjs/operators';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {setHelpService} from '../../composables/use-help';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -47,6 +48,10 @@ export const TreeWizard = Vue.defineComponent({
       type: Object as Vue.PropType<PipelineInstanceConfig>,
       required: false,
     },
+    showReturn: {
+      type: Boolean,
+      default: false,
+    },
     modelName: {
       type: String,
       required: true,
@@ -56,7 +61,10 @@ export const TreeWizard = Vue.defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  emits: {
+    'return': (_result: any) => true,
+  },
+  setup(props, {emit}) {
     Vue.onRenderTriggered((event) => {
       console.log('TreeWizard onRenderTriggered', event);
     });
@@ -71,6 +79,7 @@ export const TreeWizard = Vue.defineComponent({
       logs,
       config,
       links,
+      result,
       //
       loadPipeline,
       loadAndReplaceNestedPipeline,
@@ -84,7 +93,10 @@ export const TreeWizard = Vue.defineComponent({
       removeStep,
       moveStep,
       changeFuncCall,
+      returnResult,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'));
+
+    setHelpService();
 
     const chosenStepUuid = Vue.ref<string | undefined>();
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
@@ -92,6 +104,20 @@ export const TreeWizard = Vue.defineComponent({
     const modelName = Vue.computed(() => props.modelName);
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
     const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
+    const showReturn = Vue.computed(() => props.showReturn);
+
+    ////
+    // results
+    ////
+
+    let isResultPending = false;
+
+    Vue.watch(result, (result) => {
+      if (!isResultPending)
+        return;
+      isResultPending = false;
+      emit('return', result);
+    });
 
     ////
     // actions
@@ -173,6 +199,16 @@ export const TreeWizard = Vue.defineComponent({
     const onFuncCallChange = (call: DG.FuncCall) => {
       if (chosenStepUuid.value)
         changeFuncCall(chosenStepUuid.value, call);
+    };
+
+    const onReturnClicked = () => {
+      ui.dialog(`Action confirmation`)
+        .add(ui.markdown(`Close this workflow and return its results`))
+        .onOK(() => {
+          isResultPending = true;
+          returnResult();
+        })
+        .show({center: true, modal: true});
     };
 
     ////
@@ -436,6 +472,13 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={saveEntireModelState}
           /> }
+          {isTreeReady.value && showReturn.value && <IconFA
+            name='check'
+            tooltip={'Confim data'}
+            style={{'padding-right': '3px'}}
+            onClick={onReturnClicked}
+          />
+          }
         </RibbonPanel>
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>

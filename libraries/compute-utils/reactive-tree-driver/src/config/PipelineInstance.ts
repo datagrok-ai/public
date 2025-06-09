@@ -112,6 +112,7 @@ export type StepFunCallState = {
 export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
   approversGroup: string | undefined;
+  disableHistory: boolean;
   customExports: CustomExport[] | undefined;
   structureCheckResults?: ValidationResult | undefined;
 }

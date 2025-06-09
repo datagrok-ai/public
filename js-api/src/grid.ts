@@ -491,7 +491,7 @@ export class Rect {
 }
 
 /** Represents a grid cell */
-export class GridCell {
+export class GridCell<TData = any> {
   dart: any;
 
   constructor(dart: any) {
@@ -538,7 +538,7 @@ export class GridCell {
   }
 
   /** @returns {Column} Corresponding table column, or null. */
-  get tableColumn(): Column | null {
+  get tableColumn(): Column<TData> | null {
     return this.gridColumn.column;
   }
 
@@ -558,9 +558,12 @@ export class GridCell {
   }
 
   /** @returns {GridColumn} Corresponding grid column. */
-  get gridColumn(): GridColumn {
+  get gridColumn(): GridColumn<TData> {
     return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
   }
+
+  /** For debugging mostly. Returns `${this.gridColumn.name}: ${this.gridRow}`. */
+  get position(): string { return `${this.gridColumn.name}: ${this.gridRow}`};
 
   /** Custom text to be shown in a cell . */
   get customText(): string { return api.grok_GridCell_Get_CustomText(this.dart); }
@@ -580,7 +583,7 @@ export class GridCell {
    * Note that the value could differ from the corresponding table cell due to the following:
    * 1. setting gridCell.value inside onPrepareCell
    * 2. as a result of evaluating onPrepareValueScript */
-  get value(): any {
+  get value(): TData {
     return toJs(api.grok_GridCell_Get_Value(this.dart));
   }
 
@@ -658,7 +661,7 @@ export class GridCellWidget {
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
 
 /** Represents a grid column */
-export class GridColumn {
+export class GridColumn<TData = any> {
   dart: any;
 
   constructor(dart: any) {
@@ -675,7 +678,7 @@ export class GridColumn {
   }
 
   /** @returns {Column} Corresponding table column, or null. */
-  get column(): Column | null {
+  get column(): Column<TData> | null {
     let col = api.grok_GridColumn_Get_Column(this.dart);
     return col === null ? null : new Column(col);
   }
@@ -1240,7 +1243,7 @@ export class CanvasRenderer {
 }
 
 
-export class GridCellRenderer extends CanvasRenderer {
+export class GridCellRenderer<TData = any> extends CanvasRenderer {
   clip: boolean = true;
 
   get name(): string {
@@ -1251,9 +1254,9 @@ export class GridCellRenderer extends CanvasRenderer {
     throw '"cellType" property not implemented';
   }
 
-  renderSettings(gridColumn: GridColumn): Element | null { return null; }
+  renderSettings(gridColumn: GridColumn<TData>): Element | null { return null; }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell<TData>, cellStyle: GridCellStyle): void {
     try {
       if (this.clip) {
         g.save()
@@ -1276,19 +1279,19 @@ export class GridCellRenderer extends CanvasRenderer {
     return api.grok_GridCellRenderer_ByName(rendererName);
   }
 
-  hasContextValue(gridCell: GridCell): boolean { return false; }
-  async getContextValue(gridCell: GridCell): Promise<any> { return null; }
+  hasContextValue(gridCell: GridCell<TData>): boolean { return false; }
+  async getContextValue(gridCell: GridCell<TData>): Promise<any> { return null; }
 
-  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void { }
-  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void { }
+  onKeyDown(gridCell: GridCell<TData>, e: KeyboardEvent): void { }
+  onKeyPress(gridCell: GridCell<TData>, e: KeyboardEvent): void { }
 
-  onMouseEnter(gridCell: GridCell, e: MouseEvent): void { }
-  onMouseLeave(gridCell: GridCell, e: MouseEvent): void { }
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void { }
-  onMouseUp(gridCell: GridCell, e: MouseEvent): void { }
-  onMouseMove(gridCell: GridCell, e: MouseEvent): void { }
-  onClick(gridCell: GridCell, e: MouseEvent): void { }
-  onDoubleClick(gridCell: GridCell, e: MouseEvent): void { }
+  onMouseEnter(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseLeave(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseDown(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseUp(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseMove(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onClick(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onDoubleClick(gridCell: GridCell<TData>, e: MouseEvent): void { }
 }
 
 /** Proxy class for the Dart-based grid cell renderers. */

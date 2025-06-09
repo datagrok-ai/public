@@ -1,5 +1,28 @@
 # Datagrok-tools changelog
 
+## 4.14.10 (2025-06-08)
+
+### Features
+
+* Grok Check checks update
+
+
+## 4.14.9 (2025-06-06)
+
+### Features
+
+* Grok Check added soft mode 
+
+
+## 4.14.8 (2025-06-06)
+
+### Features
+
+* Grok Check added collision checks 
+* Grok Publish runs check before invocation 
+* Grok Api creates api for the scripts in the python directory.
+
+
 ## 4.14.6 (2025-05-29)
 
 ### Features

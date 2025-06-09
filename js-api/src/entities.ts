@@ -262,6 +262,9 @@ export class Func extends Entity {
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
+  /** If true, func has a `meta.vectorFunc = true` tag */
+  get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
+
   /** Returns {@link FuncCall} object in a stand-by state */
   prepare(parameters: {[name: string]: any} = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
@@ -1032,6 +1035,9 @@ export class Script extends Func {
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
+  /** If true, script has a `meta.vectorFunc = true` tag and proper language set */
+  get isVectorFunc(): boolean { return api.grok_Script_Get_IsVectorFunc(this.dart); }
+
   /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
@@ -1476,6 +1482,10 @@ export class Property {
   /** Nullable */
   get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
+
+  /** Initial value used when initializing UI */
+  get initialValue(): any { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: any) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
 
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }

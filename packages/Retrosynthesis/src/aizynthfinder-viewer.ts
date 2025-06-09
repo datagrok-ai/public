@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {ReactionData, Tree} from './aizynth-api';
 import {SAMPLE_TREE} from './mock-data';
 import {RotatePath} from './const';
-import {createPathsTreeTabs} from './utils';
+import {createPathsTreeTabs} from './tree-creation-utils';
 
 export class AiZynthFinderViewer extends DG.JsViewer {
   scoreCutoff: number;
@@ -56,8 +56,8 @@ export class AiZynthFinderViewer extends DG.JsViewer {
     ui.empty(this.root);
     if (computeData) {
       ui.setUpdateIndicator(this.root, true, `Generating retrosynthesis paths`);
-      const result = await grok.functions.call('Retrosynthesis:calculateRetroSynthesisPaths',
-        {molecule: this.currentMolecule});
+      const result = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+        {molecule: this.currentMolecule, config: ''});
       const reactionData = JSON.parse(result) as ReactionData;
       if (reactionData.data?.length) {
         const paths = reactionData.data[0].trees as Tree[];
