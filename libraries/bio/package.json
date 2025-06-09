@@ -36,7 +36,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.8",
+    "datagrok-tools": "4.14.9",
     "eslint": "8.57.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-deprecation": "^3.0.0",
@@ -49,7 +49,7 @@
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils @datagrok-libraries/ml",
     "build-bio": "git clean -f -X -d ./src && tsc",
-    "build": "grok check && tsc",
+    "build": "grok check --soft && tsc",
     "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"

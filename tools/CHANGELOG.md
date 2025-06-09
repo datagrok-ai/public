@@ -1,6 +1,13 @@
 # Datagrok-tools changelog
 
-## 4.14.6 (2025-06-06)
+## 4.14.9 (2025-06-06)
+
+### Features
+
+* Grok Check added soft mode 
+
+
+## 4.14.8 (2025-06-06)
 
 ### Features
 

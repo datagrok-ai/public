@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
 import {createPathsTreeTabs, isFragment, TAB_ID} from './tree-creation-utils';
-import {ReactionData, Tree} from './aizynth-api';
+import {Tree} from './aizynth-api';
 import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
-import {configIcon, KEY, STORAGE_NAME} from './config-utils';
+import {configIcon, currentUserConfig, DEFAULT_CONFIG_NAME, KEY, setValidUserConfig, STORAGE_NAME} from './config-utils';
 import {DEMO_MOLECULE} from './const';
 
 export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget) {
@@ -35,14 +35,20 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
     }
   }
 
-  const configName = grok.userSettings.getValue(STORAGE_NAME, KEY);
 
   let paths: Tree[] = [];
   if (molecule !== DEMO_MOLECULE) {
     try {
-
+      if (!currentUserConfig)
+        await setValidUserConfig();
       const res = await grok.functions.call('Retrosynthesis:run_aizynthfind',
-        {molecule: molecule, config: configName ?? ''});
+        {
+          molecule: molecule,
+          config: currentUserConfig.configName === DEFAULT_CONFIG_NAME ? '' : currentUserConfig.configName,
+          expansion: currentUserConfig.expansion,
+          stock: currentUserConfig.stock,
+          filter: currentUserConfig.filter,
+        });
       paths = JSON.parse(res);
     } catch (e: any) {
       updateWidgetRoot(ui.divText(e?.message ?? e));

@@ -14,7 +14,7 @@ const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1; 
-  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
+  if (args['_'].length !== 1 || nOptions > 2)
     return false;
   const curDir = process.cwd();
 

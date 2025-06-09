@@ -24,7 +24,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.8",
+    "datagrok-tools": "4.14.9",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",
@@ -38,7 +38,7 @@
     "debug-statistics": "grok publish",
     "release-statistics": "grok publish --release",
     "build-statistics": "tsc",
-    "build": "grok check && tsc",
+    "build": "grok check --soft && tsc",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"

@@ -682,7 +682,7 @@ export interface IDartApi {
   grok_ShowHelp(x: any): any;
   grok_AddView(v: any, dockStyle: String, width: Num, preview: Bool): any;
   grok_CloseAll(): any;
-  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any): any;
+  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, addToWorkspace: Bool): any;
   grok_OpenTable(id: String): Promise<any>;
   grok_DockElement(e: any, title: String, dockStyle: String, ratio: Num): any;
   grok_OnEvent(eventName: String, f: any): any;
@@ -1508,7 +1508,7 @@ export interface IDartApi {
   grok_Func_Get_HelpUrl(func: any): any;
   grok_Func_Set_HelpUrl(func: any, x: String): any;
   grok_Func_Get_Package(func: any): any;
-  grok_Func_Get_HasVectorTag(func: any): any;
+  grok_Func_Get_IsVectorFunc(func: any): any;
   grok_Func_Get_Description(func: any): any;
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;
@@ -1524,7 +1524,7 @@ export interface IDartApi {
   grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
-  grok_Script_Get_HasVectorTag(script: any): any;
+  grok_Script_Get_IsVectorFunc(script: any): any;
   grok_Script_Get_Environment(script: any): any;
   grok_Script_Set_Environment(script: any, s: String): any;
   grok_Script_Get_Reference(script: any): any;
