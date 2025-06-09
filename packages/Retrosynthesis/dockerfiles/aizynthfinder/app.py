@@ -35,7 +35,7 @@ LOCK_DIR.mkdir(parents=True, exist_ok=True)
 #input: string stock
 #output: string paths
 @app.task(name='run_aizynthfind', bind=True, base=DatagrokTask)
-def run_aizynthfind(self, molecule: str, config: str, **kwargs):
+def run_aizynthfind(self, molecule: str, config: str, expansion: str, filter: str, stock: str, **kwargs):
     if config == "":
         config_path = DEFAULT_CONFIG
     else:
@@ -48,9 +48,9 @@ def run_aizynthfind(self, molecule: str, config: str, **kwargs):
         finder = AiZynthFinder(configfile=config_path)
         _silence_aizynth_logs()
         finder.stock.select(finder.stock.items if stock == "" else stock)
-        finder.expansion_policy.select_all() if expansion_policy == "" else finder.expansion_policy.select(expansion_policy)
-        if (filter_policy != "")
-            finder.filter_policy.select(filter_policy)
+        finder.expansion_policy.select_all() if expansion == "" else finder.expansion_policy.select(expansion)
+        if filter != "":
+            finder.filter_policy.select(filter)
         finder.target_smiles = molecule
         finder.tree_search()
         finder.build_routes()

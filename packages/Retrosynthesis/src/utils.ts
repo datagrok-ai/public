@@ -9,6 +9,9 @@ import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
 import {configIcon, currentUserConfig, DEFAULT_CONFIG_NAME, KEY, setValidUserConfig, STORAGE_NAME} from './config-utils';
 import {DEMO_MOLECULE} from './const';
 
+const activeFuncCalls: {[key: string]: DG.FuncCall} = {};
+let currentFuncCallId = '';
+
 export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget) {
   ui.empty(w.root);
   ui.setUpdateIndicator(w.root, true, 'Calculating paths...');
@@ -38,21 +41,43 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
 
   let paths: Tree[] = [];
   if (molecule !== DEMO_MOLECULE) {
+    let funcId = '';
     try {
       if (!currentUserConfig)
         await setValidUserConfig();
-      const res = await grok.functions.call('Retrosynthesis:run_aizynthfind',
-        {
-          molecule: molecule,
-          config: currentUserConfig.configName === DEFAULT_CONFIG_NAME ? '' : currentUserConfig.configName,
-          expansion: currentUserConfig.expansion,
-          stock: currentUserConfig.stock,
-          filter: currentUserConfig.filter,
-        });
+      const func = DG.Func.find({package: 'Retrosynthesis', name: 'run_aizynthfind'});
+      if (!func.length)
+        throw new Error(`run_aizynthfind function not found`);
+      //if previous function is still runing - cancel
+      if (Object.keys(activeFuncCalls)) {
+        if (activeFuncCalls[currentFuncCallId]) {
+          console.log(`Cancelling function: ${currentFuncCallId}`);
+          await activeFuncCalls[currentFuncCallId].cancel();
+          delete activeFuncCalls[currentFuncCallId];
+        }
+      }
+      const fc = func[0].prepare({
+        molecule: molecule,
+        config: currentUserConfig!.configName === DEFAULT_CONFIG_NAME ? '' : currentUserConfig!.configName,
+        expansion: currentUserConfig!.expansion,
+        stock: currentUserConfig!.stock,
+        filter: currentUserConfig!.filter,
+      });
+      funcId = fc.id;
+      currentFuncCallId = fc.id;
+      activeFuncCalls[currentFuncCallId] = fc;
+      console.log(`Running function: ${fc.id}`);
+      await fc.call();
+      const res = fc.getOutputParamValue();
       paths = JSON.parse(res);
+      if (!activeFuncCalls[funcId])
+        return;
     } catch (e: any) {
-      updateWidgetRoot(ui.divText(e?.message ?? e));
+      if (activeFuncCalls[funcId])
+        updateWidgetRoot(ui.divText(e?.message ?? e));
       return;
+    } finally {
+      delete activeFuncCalls[funcId];
     }
   } else
     paths = DEMO_DATA;
