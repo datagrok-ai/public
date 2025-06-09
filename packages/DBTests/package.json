@@ -17,6 +17,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.10",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -29,7 +30,7 @@
     "debug-dbtests": "webpack && grok publish",
     "release-dbtests": "webpack && grok publish --release",
     "build-dbtests": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-dbtests-public": "webpack && grok publish public",
     "release-dbtests-public": "webpack && grok publish public --release",
     "debug-dbtests-local": "webpack && grok publish local",

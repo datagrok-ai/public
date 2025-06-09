@@ -13,19 +13,20 @@
     "directory": "packages/PubChemApi"
   },
   "dependencies": {
-    "datagrok-api": "^1.25.0",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "@datagrok-libraries/utils": "^4.5.7",
+    "datagrok-api": "^1.25.0"
   },
   "devDependencies": {
+    "@datagrok/chem": "^1.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.10",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "@datagrok/chem": "^1.13.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -33,7 +34,7 @@
     "debug-pubchemapi": "grok publish",
     "release-pubchemapi": "grok publish --release",
     "build-pubchemapi": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-pubchemapi-dev": "grok publish dev",
     "release-pubchemapi-dev": "grok publish dev --release",
     "debug-pubchemapi-local": "grok publish local",

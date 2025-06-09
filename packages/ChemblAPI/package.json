@@ -21,20 +21,21 @@
     "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@datagrok/chem": "^1.13.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.10",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@datagrok/chem": "^1.13.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"

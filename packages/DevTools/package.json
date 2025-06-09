@@ -25,13 +25,14 @@
     "@typescript-eslint/parser": "^5.32.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^5.2.4",
+    "datagrok-tools": "^4.14.10",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
-		"webpack-cli": "latest"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -39,7 +40,7 @@
     "debug-dev-tools": "grok publish",
     "release-dev-tools": "grok publish --release",
     "build-dev-tools": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "debug-dev-tools-public": "grok publish public",

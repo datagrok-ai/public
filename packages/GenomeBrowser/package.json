@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "latest",
+    "datagrok-tools": "^4.14.10",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -64,7 +64,7 @@
     "debug-genomefilebrowse": "webpack && grok publish",
     "release-genomefilebrowse": "webpack && grok publish --release",
     "build-genomefilebrowse": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-genomefilebrowse-public": "webpack && grok publish public",
     "release-genomefilebrowse-public": "webpack && grok publish public --release",
     "debug-genomefilebrowse-local": "webpack && grok publish local",
@@ -95,7 +95,7 @@
   },
   "sideEffects": [
     "rxjs/operators"
-  ],  
+  ],
   "sources": [
     "css/app-styles.css"
   ]
