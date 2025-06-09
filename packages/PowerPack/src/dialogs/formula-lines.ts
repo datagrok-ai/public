@@ -330,7 +330,7 @@ class Preview {
         this._scrAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
-        const innerLook = src.getOptions()['look'];
+        const innerLook = src.getOptions()['look']['innerViewerLook'];
         this._scrAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName']};
       } else {
         this.dataFrame = src.dataFrame!;
