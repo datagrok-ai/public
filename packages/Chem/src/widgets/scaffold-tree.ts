@@ -424,6 +424,7 @@ export async function updateVisibleMols(thisViewer: ScaffoldTreeViewer) {
 
   function scheduleGroupUpdate(group: DG.TreeViewGroup) {
     if (pendingGroups.has(group)) return;
+    if (isOrphans(group)) return;
 
     pendingGroups.add(group);
     if (!frameRequested) {
