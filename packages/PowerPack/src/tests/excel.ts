@@ -22,6 +22,7 @@ async function testExcelImport(path: string) {
 
 category('Excel', () => {
   category('Excel: Import', () => {
+    test('1MB', async () => await testExcelImport('System:AppData/PowerPack/excel/excel-1mb.xlsx'));
     test('5MB', async () => await testExcelImport('System:AppData/PowerPack/excel/excel-5mb.xlsx'));
     test('10MB', async () => await testExcelImport('System:AppData/PowerPack/excel/excel-10mb.xlsx'));
     test('40MB 2 spreadsheets', async () => await testExcelImport('System:AppData/PowerPack/excel/excel-40mb-2-spreadsheets.xlsx'));

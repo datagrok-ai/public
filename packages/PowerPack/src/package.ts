@@ -23,6 +23,61 @@ import type ExcelJS from 'exceljs';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
 
+
+export class ExcelJSService {
+  private _worker: Worker;
+  protected constructor() {
+    this._worker = new Worker(new URL('./workers/exceljs-worker', import.meta.url));
+  };
+
+  private static _instance: ExcelJSService | null = null;
+  public static getInstance() {
+    return ExcelJSService._instance ?? (ExcelJSService._instance = new ExcelJSService());
+  }
+
+  public parse(bytes: Uint8Array): Promise<DG.DataFrame[]> {
+    return new Promise((resolve, reject) => {
+      this._worker.postMessage({action: 'parse', data: bytes});
+      this._worker.onmessage = (e) => {
+        if (e.data.error) {
+          reject(e.data.error);
+          return;
+        }
+        const results: (string | null)[][][] = e.data.result;
+        const names: string[] = e.data.names;
+        const dfResults = results.map((result, index) => {
+          if (result.length === 0)
+            return DG.DataFrame.fromCsv('');
+
+          const headers = result[0].map((name, i) => name ?? `col${i + 1}`);
+          const columnCount = headers.length;
+          const rowCount = result.length - 1;
+
+          const columnData: string[][] = Array.from({length: columnCount}, () => new Array<string>(rowCount));
+
+          for (let i = 1; i < result.length; i++) {
+            const row = result[i];
+            for (let j = 0; j < columnCount; j++)
+              columnData[j][i - 1] = row[j] ?? '';
+          }
+
+          const columns: DG.Column[] = headers.map((name: string, i: number) =>
+            DG.Column.fromStrings(name, columnData[i]));
+
+          const df = DG.DataFrame.fromColumns(columns);
+          df.name = names[index] || `Sheet ${index + 1}`;
+          return df;
+        });
+        resolve(dfResults);
+      };
+    });
+  }
+
+  public terminate(): void {
+    this._worker.terminate();
+  }
+}
+
 //name: compareColumns
 //top-menu: Data | Compare Columns...
 export function _compareColumns(): void {
@@ -259,46 +314,17 @@ export async function markdownFileViewer(file: DG.FileInfo): Promise<DG.View> {
 //input: list bytes
 //output: list tables
 export async function xlsxFileHandler(bytes: Uint8Array): Promise<DG.DataFrame[]> {
-  await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
-  const ExcelJS = (window as any).ExcelJS as typeof import('exceljs');
-  const workbook = new ExcelJS.Workbook();
-  const wb = await workbook.xlsx.load(bytes);
-  return convertWorkbookToDataFrames(wb);
-}
-
-function convertWorkbookToDataFrames(workbook: ExcelJS.Workbook): DG.DataFrame[] {
-  return workbook.worksheets.map((sheet) => {
-    const df = convertSheetToDataFrame(sheet);
-    df.name = sheet.name;
-    return df;
-  });
-}
-
-/// Converts a single ExcelJS Worksheet to a DG.DataFrame efficiently
-function convertSheetToDataFrame(sheet: ExcelJS.Worksheet): DG.DataFrame {
-  const rows: (string | null)[][] = [];
-  sheet.eachRow({includeEmpty: false}, (row) => {
-    const values = Array.isArray(row.values) ? row.values.slice(1) : []; // 1-based row.values
-    rows.push(values.map((cell) => (cell != null ? cell.toString() : null)));
-  });
-
-  if (rows.length === 0)
-    return DG.DataFrame.fromCsv('');
-
-  const headers = rows[0].map((name, i) => name ?? `col${i + 1}`);
-  const columnCount = headers.length;
-  const rowCount = rows.length - 1;
-
-  const columnData: string[][] = Array.from({length: columnCount}, () => new Array<string>(rowCount));
-
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    for (let j = 0; j < columnCount; j++)
-      columnData[j][i - 1] = row[j] ?? '';
+  const XLSX_MAX_FILE_SIZE = 80 * 1024 * 1024; // 80 MB
+  if (bytes.length > XLSX_MAX_FILE_SIZE) {
+    grok.shell.error(`The file you are trying to open is too large. Excel max file size is 80MB.`);
+    return [];
   }
-
-  const columns: DG.Column[] = headers.map((name: string, i: number) =>
-    DG.Column.fromStrings(name, columnData[i]));
-
-  return DG.DataFrame.fromColumns(columns);
+  const excelJSService = ExcelJSService.getInstance();
+  try {
+    return await excelJSService.parse(bytes);
+  } catch (error) {
+    console.error(error);
+    grok.shell.error(`Failed to parse Excel file`);
+    return [];
+  }
 }
