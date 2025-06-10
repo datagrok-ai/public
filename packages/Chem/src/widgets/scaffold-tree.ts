@@ -649,6 +649,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   _iconGenerate: HTMLElement | null = null;
   _iconAdd: HTMLElement | null = null;
   _iconDelete: HTMLElement | null = null;
+  _iconUpload: HTMLElement | null = null;
   _bitOpInput: InputBase | null = null;
   skipAutoGenerate: boolean = false;
   workersInit: boolean = false;
@@ -1943,6 +1944,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!molCol) {
       disableIcon(this._iconAdd);
       disableIcon(this._iconGenerate);
+      disableIcon(this._iconUpload);
+      this.message = '<br><b>No molecule column found</b><br>';
     } else if (molCol.categories.length >= MAX_MOL_NUMBER)
       disableIcon(this._iconGenerate);
 
@@ -1963,8 +1966,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.molColumns = df?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
         this.moleculeColumnName = this.molColumns[0]?.name ?? '';
         this.molCol = this.molColumns[0];
-        if (this.molCol)
-          this.message = null;
       }
 
       this.dataFrameSwitchgInProgress = false;
@@ -2242,7 +2243,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const iconHost = ui.box(ui.divH([
       this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree(), 'Generate from molecular column') : null,
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Sketch scaffolds manually'),
-      ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
+      this._iconUpload = ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
       ui.div([], 'd4-ribbon-separator'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.iconFA('sort', () => this.expandAndCollapse(), 'Expand / collapse all'),
