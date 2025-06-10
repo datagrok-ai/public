@@ -686,9 +686,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
 
-    this.Table = this.string('Table', null, {fieldName: 'Table', category: 'Data', editor: 'table'});
-
     const currentDf = grok.shell.tv.dataFrame;
+    this.Table = this.string('Table', currentDf.name, {fieldName: 'Table', category: 'Data', editor: 'table', nullable: false});
+
     this.molColumns = currentDf?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
 
     const defaultMolColName = this.molColumns[0]?.name ?? null;
@@ -1780,7 +1780,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   public createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null, checked: boolean = false, isNot: boolean = false, expanded: boolean = true, orphansBitset: DG.BitSet | null = null) : TreeViewGroup | null {
-    if (this.molColumn === null)
+    if (!this.molColumn)
       return null;
 
     const thisViewer = this;
@@ -1946,10 +1946,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       disableIcon(this._iconGenerate);
       disableIcon(this._iconUpload);
       this.message = '<br><b>No molecule column found</b><br>';
+      this.moleculeColumnName = '';
     } else if (molCol.categories.length >= MAX_MOL_NUMBER)
       disableIcon(this._iconGenerate);
-
-    this.moleculeColumnName = '';
   }
 
   onPropertyChanged(p: DG.Property): void {
@@ -2168,7 +2167,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     this.clearFilters();
-    this.setScaffoldTag(this.molColumn!, [], true);
+    if (this.molColumn)
+      this.setScaffoldTag(this.molColumn, [], true);
     this.removeFragmentsColumn();
 
     disconnectExistingObservers(this);
