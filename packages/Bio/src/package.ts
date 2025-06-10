@@ -544,8 +544,16 @@ export async function macromoleculePreprocessingFunction(
   fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
     return {entries: col.toList(), options: {}};
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
-  return {entries: seqList, options: {...options, gapOpen, gapExtend}};
+
+  // Use the new DistanceFunctionParams object structure
+  const params = {
+    fingerprintType,
+    gapOpen,
+    gapExtend
+  };
+
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, params);
+  return {entries: seqList, options};
 }
 
 //name: Helm Fingerprints

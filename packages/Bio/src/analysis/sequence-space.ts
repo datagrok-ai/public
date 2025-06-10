@@ -14,10 +14,18 @@ export interface ISequenceSpaceResult {
   coordinates: DG.ColumnList;
 }
 
+export interface DistanceFunctionParams {
+  fingerprintType?: string;
+  gapOpen?: number;
+  gapExtend?: number;
+}
+
 export async function getEncodedSeqSpaceCol(
-  seqCol: DG.Column, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, fingerprintType: string = 'Morgan'
+  seqCol: DG.Column,
+  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
+  params: DistanceFunctionParams = {}
 ): Promise<{ seqList: string[], options: { [_: string]: any } }> {
-// encodes sequences using utf characters to also support multichar and non fasta sequences
+  // encodes sequences using utf characters to also support multichar and non fasta sequences
   const rowCount = seqCol.length;
   const sh = _package.seqHelper.getSeqHandler(seqCol);
   const encList = Array<string>(rowCount);
@@ -25,6 +33,7 @@ export async function getEncodedSeqSpaceCol(
   const charCodeMap = new Map<string, string>();
   const seqColCats = seqCol.categories;
   const seqColRawData = seqCol.getRawData();
+
   for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
     const catI = seqColRawData[rowIdx];
     const seq = seqColCats[catI];
@@ -44,11 +53,15 @@ export async function getEncodedSeqSpaceCol(
       encList[rowIdx] += charCodeMap.get(char)!;
     }
   }
-  let options = {} as mmDistanceFunctionArgs;
+
+  let options = {};//as mmDistanceFunctionArgs;
+
+  // Handle fingerprint-based distance functions
   if (
     similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE ||
     similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH
   ) {
+    const fingerprintType = params.fingerprintType || 'Morgan';
     const monomers = Array.from(charCodeMap.keys());
     const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
 
@@ -56,9 +69,24 @@ export async function getEncodedSeqSpaceCol(
     Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
       monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
     });
+
     // sets distance function args in place.
-    const maxLength = encList.reduce((acc, val) => Math.max(acc, val.length), 0);
-    options = {scoringMatrix: monomerRes.scoringMatrix, alphabetIndexes: monomerHashToMatrixMap, maxLength};
+    const maxLength = encList.reduce((acc, val) => Math.max(acc, val?.length || 0), 0);
+    options = {
+      scoringMatrix: monomerRes.scoringMatrix,
+      alphabetIndexes: monomerHashToMatrixMap,
+      maxLength
+    };
   }
+
+  // Add gap penalties for Needleman-Wunsch
+  if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
+    options = {
+      ...options,
+      gapOpen: params.gapOpen ?? 1,
+      gapExtend: params.gapExtend ?? 1,
+    };
+  }
+
   return {seqList: encList, options};
 }
