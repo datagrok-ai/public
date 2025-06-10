@@ -3,6 +3,11 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
+//invocation: 
+//ts-node .\packages-walker.ts --commands="command1 && command2 ..." --rootDir="direcotry"
+//without rootDir input script uses package dir of the public repo
+//without commands input script runs npm i command
+
 const execAsync = promisify(exec);
 
 const argv = require('minimist')(process.argv.slice(2), {
