@@ -72,6 +72,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
   public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
 
+  private _ellipsisBounds: DG.Rect | undefined = undefined;
+  private _totalLinesNeeded: number = 0;
+  private _lineHeight: number = 20;
+
   private seqHelper!: ISeqHelper;
 
   private sysMonomerLib: IMonomerLibBase | null = null;
@@ -119,12 +123,61 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   bounds: DG.Rect;
   sequencePosition: number;
 }> = [];
+
+  private calculateFontBasedSpacing(g: CanvasRenderingContext2D): {
+  lineHeight: number;
+  monomerSpacing: number;
+} {
+  // Get font metrics to derive spacing
+    const metrics = g.measureText('M'); // Use 'M' as it's typically the widest character
+    const fontSize = parseInt(this.props.font.match(/(\d+)px/)?.[1] || '12');
+
+    // Line height should be font size + some padding (typically 1.2-1.5x font size)
+    const lineHeight = Math.max(fontSize * 1.4, metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent + 4);
+
+    // Monomer spacing should be proportional to character width
+    const monomerSpacing = Math.max(2, this.props.fontCharWidth * 0.2);
+
+    return {lineHeight, monomerSpacing};
+  }
+
+
   private shouldUseMultilineRendering(tableCol: DG.Column): boolean {
     const renderMultiline = tableCol.getTag('renderMultiline');
     return renderMultiline === 'true';
   }
+  override onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    const logPrefix = `${this.toLog()}.onClick()`;
 
-  private calculateMultiLineLayoutImproved(
+    if (!this._ellipsisBounds) return;
+
+    const gridCellBounds: DG.Rect = gridCell.bounds;
+    const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
+    const argsY = e.offsetY - gridCellBounds.y;
+
+    // Check if click is within ellipsis bounds
+    if (argsX >= this._ellipsisBounds.x &&
+        argsX <= this._ellipsisBounds.x + this._ellipsisBounds.width &&
+        argsY >= this._ellipsisBounds.y &&
+        argsY <= this._ellipsisBounds.y + this._ellipsisBounds.height) {
+      // Calculate required height to show all lines
+      const requiredHeight = (this._totalLinesNeeded * this._lineHeight) + (this.padding * 2) + 10; // Add some extra padding
+
+      // Update grid row height to accommodate full sequence
+      if (this.gridCol && this.gridCol.grid) {
+        const grid = this.gridCol.grid;
+        const currentRowHeight = grid.props.rowHeight;
+
+        if (requiredHeight > currentRowHeight) {
+          grid.props.rowHeight = requiredHeight;
+          grid.invalidate();
+        }
+      }
+    }
+  }
+
+
+  private calculateMultiLineLayoutDynamic(
     g: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -132,103 +185,97 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     h: number,
     subParts: ISeqSplitted,
     positionShift: number,
-    visibleSeqLength: number,
-    monomersPerLine: number,
+    totalSequenceLength: number,
     maxVisibleLines: number,
-    maxLengthOfMonomer: number,
-    separator: string
+    maxLengthOfMonomer: number
   ): {
-  lineLayouts: Array<{
-    lineIdx: number;
-    monomers: Array<{
-      posIdx: number;
-      x: number;
-      width: number;
-      om: string;
+    lineLayouts: Array<{
+        lineIdx: number;
+        monomers: Array<{ posIdx: number; x: number; width: number; om: string; }>;
     }>;
-  }>;
-  lineHeight: number;
+    lineHeight: number;
+    totalLinesNeeded: number;
+    ellipsisBounds?: DG.Rect;
 } {
     const lineLayouts: Array<{
-    lineIdx: number;
-    monomers: Array<{
-      posIdx: number;
-      x: number;
-      width: number;
-      om: string;
-    }>;
-  }> = [];
+        lineIdx: number;
+        monomers: Array<{ posIdx: number; x: number; width: number; om: string; }>;
+    }> = [];
 
+    const {lineHeight, monomerSpacing} = this.calculateFontBasedSpacing(g);
+    const maxLinesThatFit = Math.floor(h / lineHeight);
+    const actualMaxLines = Math.min(maxVisibleLines, maxLinesThatFit);
     const availableWidth = w - (this.padding * 2);
-    const lineHeight = h / Math.min(maxVisibleLines, Math.ceil((visibleSeqLength - positionShift) / monomersPerLine));
 
-    let currentLineIdx = 0;
-    let currentLineWidth = 0;
-    let currentLineMonomers: Array<{
-    posIdx: number;
-    x: number;
-    width: number;
-    om: string;
-  }> = [];
-
-    // Dynamic layout that actually measures each monomer
-    for (let posIdx = positionShift; posIdx < visibleSeqLength && currentLineIdx < maxVisibleLines; posIdx++) {
+    // Pre-calculate all monomer widths for the entire sequence
+    const monomerData: Array<{ posIdx: number, om: string, width: number }> = [];
+    for (let posIdx = positionShift; posIdx < totalSequenceLength; posIdx++) {
       const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : '';
-
-      // Apply monomer shortening before measuring
       const shortMon = this.props.monomerToShort(om, maxLengthOfMonomer);
+      const width = g.measureText(shortMon).width;
+      monomerData.push({posIdx, om, width});
+    }
 
-      // Measure actual text width
-      const textWidth = g.measureText(shortMon).width;
-      const separatorWidth = g.measureText(separator).width;
-      const monomerWidth = textWidth + (posIdx < visibleSeqLength - 1 ? separatorWidth : 0);
+    let currentMonomerIdx = 0;
+    let totalLinesNeeded = 0;
 
-      // Check if this monomer fits on the current line
-      if (currentLineWidth + monomerWidth > availableWidth && currentLineMonomers.length > 0) {
-      // Finalize current line
-        lineLayouts.push({
-          lineIdx: currentLineIdx,
-          monomers: currentLineMonomers
-        });
+    // Single-pass loop: iterates through all monomers to calculate total lines
+    // and build layouts for visible lines simultaneously.
+    while (currentMonomerIdx < monomerData.length) {
+      const lineMonomers: Array<{ posIdx: number; x: number; width: number; om: string; }> = [];
+      let lineWidth = 0;
+      let currentX = x + this.padding;
 
-        // Start new line
-        currentLineIdx++;
-        if (currentLineIdx >= maxVisibleLines) break;
+      // This flag determines if we need to store detailed layout info
+      const isVisibleLine = totalLinesNeeded < actualMaxLines;
 
-        currentLineMonomers = [];
-        currentLineWidth = 0;
+      // Inner loop: fills a single line
+      while (currentMonomerIdx < monomerData.length) {
+        const monomer = monomerData[currentMonomerIdx];
+        // A more robust check that includes spacing
+        const monomerWidthWithSpacing = monomer.width + monomerSpacing;
+
+        // Break if the next monomer doesn't fit (and the line isn't empty)
+        if (lineWidth + monomerWidthWithSpacing > availableWidth && lineMonomers.length > 0)
+          break;
+
+
+        // If the current line is visible, store the monomer's layout details
+        if (isVisibleLine) {
+          lineMonomers.push({
+            posIdx: monomer.posIdx,
+            x: currentX,
+            width: monomer.width,
+            om: monomer.om
+          });
+        }
+
+        lineWidth += monomerWidthWithSpacing;
+        currentX += monomerWidthWithSpacing;
+        currentMonomerIdx++;
       }
 
-      // Add monomer to current line
-      currentLineMonomers.push({
-        posIdx,
-        x: x + this.padding + currentLineWidth,
-        width: monomerWidth,
-        om: om
-      });
-
-      currentLineWidth += monomerWidth;
+      // If we processed any monomers for this line, increment the total line count
+      if (lineWidth > 0) {
+        if (isVisibleLine && lineMonomers.length > 0) {
+          lineLayouts.push({
+            lineIdx: totalLinesNeeded,
+            monomers: lineMonomers
+          });
+        }
+        totalLinesNeeded++;
+      } else {
+        // No progress was made, so break to prevent an infinite loop
+        break;
+      }
     }
 
-    if (currentLineMonomers.length > 0) {
-      lineLayouts.push({
-        lineIdx: currentLineIdx,
-        monomers: currentLineMonomers
-      });
-    }
+    const ellipsisBounds: DG.Rect | undefined = undefined; // Ellipsis logic can be built here later
 
-    return {lineLayouts, lineHeight};
+    return {lineLayouts, lineHeight, totalLinesNeeded, ellipsisBounds};
   }
-  private calculateLineBreaks(totalMonomers: number, monomersPerLine: number): Array<{start: number, end: number}> {
-    const lines: Array<{start: number, end: number}> = [];
-    for (let i = 0; i < totalMonomers; i += monomersPerLine) {
-      lines.push({
-        start: i,
-        end: Math.min(i + monomersPerLine, totalMonomers)
-      });
-    }
-    return lines;
-  }
+
+
   public async init(): Promise<void> {
     await Promise.all([
       (async () => {
@@ -476,8 +523,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const dpr = window.devicePixelRatio;
     const positionShift = this.positionShift;
 
-    const sh = this.seqHelper.getSeqHandler(tableCol);
-
 
     const logPrefix = `${this.toLog()}.render()`;
     this.logger.debug(`${logPrefix}, start`);
@@ -492,13 +537,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const v = tableCol.temp[MmcrTemps.maxMonomerLength];
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
-    const renderMultilineTag = tableCol.getTag('renderMultiline');
-    const isMultiLineEnabled = renderMultilineTag === 'true';
-
-    const maxVisibleLines = parseInt(tableCol.getTag('maxVisibleLines') ?? '3');
-
-    const defaultMonomersPerLine = sh.alphabet === 'PT' ? '6' : '10'; // Fewer for proteins with long names
-    const monomersPerLine = parseInt(tableCol.getTag('monomersPerLine') ?? defaultMonomersPerLine);
+    //TODO: this is hacky, but i wanted to leave a parameter for max visible lines initally. Perhaps this should just be calculated dynamically.
+    const maxVisibleLines = parseInt(tableCol.getTag('maxVisibleLines') ?? '999');
 
 
     g.save();
@@ -525,7 +565,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       const value: any = gridCell.cell.value;
       const rowIdx = gridCell.cell.rowIndex;
-      const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
       if (isRenderedOnGrid)
         w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
@@ -560,6 +599,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       })();
 
       const subParts: ISeqSplitted = isRenderedOnGrid ? sh.getSplitted(rowIdx) : sh.splitter(value);
+
       if (!isRenderedOnGrid)
         maxLengthWordsSum = this.getSummedMonomerLengths(this.getCellMonomerLengthsForSeqValue(value, w));
 
@@ -569,24 +609,26 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol) && drawStyle !== DrawStyle.MSA;
 
-      console.log(`Multi-line enabled: ${shouldUseMultiLine}, monomers per line: ${monomersPerLine}`);
-
-
       // if the sequence is rendered in shifted mode, we will also render three dots at start, indicating the shift
       this._leftThreeDotsPadding = this.shouldRenderShiftedThreeDots(positionShift) ? g.measureText(shiftedLeftPaddingText).width : 0;
-      // currently selected position to highlight
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
       const visibleSeqLength = Math.min(subParts.length, splitLimit);
+
 
       if (shouldUseMultiLine) {
         // Clear previous bounds for hit detection
         this._multiLineMonomerBounds = [];
+        this._ellipsisBounds = undefined;
 
-        // Improved layout calculation for 3+ letter monomers
-        const layout = this.calculateMultiLineLayoutImproved(
-          g, x, y, w, h, subParts, positionShift, visibleSeqLength,
-          monomersPerLine, maxVisibleLines, maxLengthOfMonomer, separator
+        // Dynamic layout calculation that fits optimal monomers per line
+        const layout = this.calculateMultiLineLayoutDynamic(
+          g, x, y, w, h, subParts, positionShift,
+          subParts.length, // <-- FIX: Pass the *full* sequence length here
+          maxVisibleLines, maxLengthOfMonomer
         );
+
+        // Store ellipsis bounds for click detection
+        this._ellipsisBounds = layout.ellipsisBounds;
 
         for (const lineLayout of layout.lineLayouts) {
           const lineY = y + (lineLayout.lineIdx * layout.lineHeight);
@@ -603,19 +645,20 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
             const last = monomer.posIdx === subParts.length - 1;
 
-            let transparencyRate = 0.0; // Default to fully opaque (transparencyRate 0.0 = no transparency)
+            // Better transparency handling for multiline
+            let transparencyRate = 0.0;
             if (referenceSequence && referenceSequence.length > 0) {
-              const currentMonomerCanonical = referenceSequence[monomer.posIdx - positionShift];
-              const colorCode = gridCell?.cell?.column?.temp?.['color-code'] ?? true;
-              const compareWithCurrent = gridCell?.cell?.column?.temp?.['compare-with-current'] ?? true;
-              const highlightDifference = gridCell?.cell?.column?.temp?.['highlight-difference'] ?? 'difference';
+              const refIndex = monomer.posIdx - positionShift;
+              if (refIndex >= 0 && refIndex < referenceSequence.length) {
+                const currentMonomerCanonical = referenceSequence[refIndex];
+                const colorCode = gridCell?.cell?.column?.temp?.['color-code'] ?? true;
+                const compareWithCurrent = gridCell?.cell?.column?.temp?.['compare-with-current'] ?? true;
+                const highlightDifference = gridCell?.cell?.column?.temp?.['highlight-difference'] ?? 'difference';
 
-              if (compareWithCurrent && highlightDifference === 'difference') {
-                // Make matching monomers more transparent (transparencyRate 0.7 = 70% transparent, 30% opaque)
-                transparencyRate = (monomer.om === currentMonomerCanonical) ? 0.7 : 0.0;
-              } else if (compareWithCurrent && highlightDifference === 'equal') {
-                // Make non-matching monomers more transparent
-                transparencyRate = (monomer.om !== currentMonomerCanonical) ? 0.7 : 0.0;
+                if (compareWithCurrent && highlightDifference === 'difference')
+                  transparencyRate = (monomer.om === currentMonomerCanonical) ? 0.7 : 0.0;
+                else if (compareWithCurrent && highlightDifference === 'equal')
+                  transparencyRate = (monomer.om !== currentMonomerCanonical) ? 0.7 : 0.0;
               }
             }
 
@@ -623,8 +666,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
               color: color,
               pivot: 0,
               left: true,
-              transparencyRate: transparencyRate, 
-              separator: separator,
+              transparencyRate: transparencyRate,
+              separator: '', // No separator in multiline mode
               last: last,
               drawStyle: drawStyle,
               maxWord: maxLengthWordsSum,
@@ -652,30 +695,47 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
               sequencePosition: monomer.posIdx
             });
 
-            printLeftOrCentered(g, monomer.om, monomer.x, lineY, monomer.width, layout.lineHeight, opts);
+            printLeftOrCentered(g, monomer.om, monomer.x, lineY, monomer.width + 4, layout.lineHeight, opts);
           }
         }
 
-        // Improved ellipsis rendering (unchanged)
-        const totalMonomers = visibleSeqLength - positionShift;
-        const lineBreaks = this.calculateLineBreaks(totalMonomers, monomersPerLine);
-        if (lineBreaks.length > maxVisibleLines) {
-          const lastVisibleLineY = y + ((maxVisibleLines - 1) * layout.lineHeight);
-          const ellipsisY = lastVisibleLineY + (layout.lineHeight * 0.5);
+        // Render clickable ellipsis for overflow indication
+        if (layout.ellipsisBounds && layout.totalLinesNeeded > layout.lineLayouts.length) {
+          const ellipsisAbsX = x + layout.ellipsisBounds.x;
+          const ellipsisAbsY = y + layout.ellipsisBounds.y;
 
-          if (ellipsisY + 10 < y + h) {
-            g.save();
-            g.fillStyle = undefinedColor;
-            g.textAlign = 'right';
-            g.textBaseline = 'middle';
-            g.font = this.props?.font ?? '12px monospace';
-            g.fillText('...', x + w - this.padding - 5, ellipsisY);
-            g.restore();
-          }
+          g.save();
+
+          // Draw subtle background for ellipsis
+          g.fillStyle = 'rgba(200, 200, 200, 0.15)';
+          g.fillRect(
+            ellipsisAbsX,
+            ellipsisAbsY,
+            layout.ellipsisBounds.width,
+            layout.ellipsisBounds.height
+          );
+
+          // Draw ellipsis text
+          g.fillStyle = undefinedColor;
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.font = this.props?.font ?? '12px monospace';
+
+          g.fillText('...',
+            ellipsisAbsX + layout.ellipsisBounds.width / 2,
+            ellipsisAbsY + layout.ellipsisBounds.height / 2
+          );
+
+          // Store total lines needed for click handler
+          this._totalLinesNeeded = layout.totalLinesNeeded;
+          this._lineHeight = layout.lineHeight;
+
+          g.restore();
         }
       } else {
-        // Clear multi-line bounds when in single-line mode
         this._multiLineMonomerBounds = [];
+        this._ellipsisBounds = undefined;
+
 
         // Existing single-line rendering (unchanged)
         for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
@@ -736,7 +796,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return positionShift > 0 && (!this.gridCol || !this.gridCol.dart || !this.gridCol.grid || !this.gridCol.grid.dart || (this.gridCol.grid.props.colHeaderHeight ?? 0) <= 50);
   }
 
-  // Replace the existing onMouseMove method:
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const logPrefix = `${this.toLog()}.onMouseMove()`;
     if (!this.seqHelper || gridCell.tableRowIndex == null) return;
@@ -744,34 +803,52 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const positionShift = this.positionShift;
     const gridCellBounds: DG.Rect = gridCell.bounds;
 
-    // Calculate mouse position relative to cell bounds
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
-    const argsY = e.offsetY - gridCellBounds.y; // Simple relative Y position within the cell
+    const argsY = e.offsetY - gridCellBounds.y;
+
+    if (this._ellipsisBounds &&
+        argsX >= this._ellipsisBounds.x &&
+        argsX <= this._ellipsisBounds.x + this._ellipsisBounds.width &&
+        argsY >= this._ellipsisBounds.y &&
+        argsY <= this._ellipsisBounds.y + this._ellipsisBounds.height) {
+      const sh = this.seqHelper.getSeqHandler(this.tableCol);
+      const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
+      const hiddenCount = seqSS.length - this._multiLineMonomerBounds.length;
+
+      ui.tooltip.show(
+        ui.divText(`Click to expand and show all ${seqSS.length} monomers (${hiddenCount} hidden)`),
+        e.x + 16, e.y + 16
+      );
+
+      if (this.gridCol && this.gridCol.grid && this.gridCol.grid.canvas)
+        this.gridCol.grid.canvas.style.cursor = 'pointer';
+
+
+      return;
+    }
+
+    if (this.gridCol && this.gridCol.grid && this.gridCol.grid.canvas)
+      this.gridCol.grid.canvas.style.cursor = 'default';
+
 
     let left: number | null = null;
 
-    // Check if we're in multi-line mode
+    // Check if we're in multi-line mode for monomer detection
     if (this._multiLineMonomerBounds.length > 0) {
-    // Multi-line hit detection - adjust coordinates to be relative to cell
       for (const bound of this._multiLineMonomerBounds) {
-      // Convert bound coordinates to be relative to cell bounds
-        const relativeX = argsX;
-        const relativeY = argsY;
-
-        // Check if mouse is within this monomer's bounds
-        if (relativeX >= bound.bounds.x && relativeX <= bound.bounds.x + bound.bounds.width &&
-          relativeY >= bound.bounds.y && relativeY <= bound.bounds.y + bound.bounds.height) {
+        if (argsX >= bound.bounds.x && argsX <= bound.bounds.x + bound.bounds.width &&
+            argsY >= bound.bounds.y && argsY <= bound.bounds.y + bound.bounds.height) {
           left = bound.monomerIdx;
           break;
         }
       }
     } else {
-    // Single-line hit detection
+      // Single-line hit detection
       const leftPadding = this.shouldRenderShiftedThreeDots(positionShift) && (this._leftThreeDotsPadding ?? 0) > 0 ? this._leftThreeDotsPadding : 0;
       left = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width, leftPadding);
     }
 
-    this.logger.debug(`${logPrefix}, start, argsX: ${argsX}, argsY: ${argsY}, left: ${left}`);
+    this.logger.debug(`${logPrefix}, argsX: ${argsX}, argsY: ${argsY}, left: ${left}`);
 
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
@@ -786,7 +863,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       const tooltipElements: HTMLElement[] = [];
       let monomerDiv = this._monomerStructureMap[seqMonomer.symbol];
-      if (!monomerDiv || true) {
+      if (!monomerDiv) {
         const monomerLib = this.getMonomerLib();
         monomerDiv = this._monomerStructureMap[seqMonomer.symbol] = (() => {
           return monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
