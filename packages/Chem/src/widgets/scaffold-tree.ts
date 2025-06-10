@@ -1984,7 +1984,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } else if (p.name === 'moleculeColumnName') {
       this.clear();
       this.summary = this.getFilterSum();
-      this.molCol = this.dataFrame.columns.byName(this.moleculeColumnName);
+      if (this.moleculeColumnName)
+        this.molCol = this.dataFrame.columns.byName(this.moleculeColumnName);
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
         return;
@@ -2144,8 +2145,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.makeGenerateInactive();
     updateVisibleMols(this);
     attached = true;
-    scaffoldTreeId += 1;
-    this.title = `${this.title}_${scaffoldTreeId}`;
+    this.updateTitle();
+  }
+
+  updateTitle() {
+    const title = `${this.title}_${++scaffoldTreeId}`;
+    this.title = this.getProperty('title')!.defaultValue = title;
   }
 
   detach(): void {
