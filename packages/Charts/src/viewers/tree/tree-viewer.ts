@@ -329,14 +329,6 @@ export class TreeViewer extends EChartViewer {
     return undefined;
   }
 
-  handleTreeClick(pathString: string, color: number): void {
-    if (this.filteredPaths)
-      this.cleanTree(this.filteredPaths);
-    if (this.selectedPaths)
-      this.cleanTree(this.selectedPaths);
-    this.paintBranchByPath(pathString, color);
-  }
-
   paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
       lineStyle: { color: DG.Color.toHtml(color) },
@@ -611,7 +603,7 @@ export class TreeViewer extends EChartViewer {
 
     const { filter, rowCount } = this.dataFrame;
     const hasActiveFilter = filter.trueCount !== rowCount;
-    const treeData = hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
+    const treeData = !isFilter || hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
 
     const pathKeys = Object.keys(treeData);
     const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
@@ -627,6 +619,9 @@ export class TreeViewer extends EChartViewer {
   }
 
   getSelectionFilterData(bitset: DG.BitSet): SelectionData {
+    if (!this.eligibleHierarchyNames || this.eligibleHierarchyNames.length === 0)
+      return {};
+
     const rowMask = bitset.clone();
     const selectionBuilder = this.dataFrame
       .groupBy(this.eligibleHierarchyNames)
@@ -635,11 +630,12 @@ export class TreeViewer extends EChartViewer {
     const selectionAggregated = selectionBuilder.aggregate();
 
     const treeData: SelectionData = {};
-    for (let i = 0; i < selectionAggregated.rowCount; ++i) {
-      const path = selectionAggregated.columns.byNames(this.eligibleHierarchyNames)
+    const {rowCount, columns} = selectionAggregated;
+    for (let i = 0; i < rowCount; ++i) {
+      const path = columns.byNames(this.eligibleHierarchyNames)
         .map((col) => col.getString(i))
         .join(' ||| ');
-      treeData[path] = selectionAggregated.columns.byName('count').get(i);
+      treeData[path] = columns.byName('count').get(i);
     }
     return treeData;
   }
