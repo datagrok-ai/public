@@ -1,6 +1,7 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MmpAllCasesBasedData, MmpFragments, MmpInitData, MmpRules, MmpRulesBasedData} from './mmpa-misc';
 import {SortData} from '../mmp-viewer/mmp-viewer';
+import * as DG from 'datagrok-api/dg';
 
 export function getPlainData(rules: MmpRules, frags: MmpFragments,
   initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
@@ -129,7 +130,7 @@ function calculateActivityDiffs(
 
   let pairIdx = 0;
   for (let i = 0; i < allSize; i++) {
-    const mean = new Float32Array(variates);
+    const mean = new Float32Array(variates).fill(DG.FLOAT_NULL);
     for (let j = 0; j < occasions[i]; j++) {
       const idx1 = mmpr.rules[i].pairs[j].fs;
       const idx2 = mmpr.rules[i].pairs[j].ss;
@@ -141,6 +142,10 @@ function calculateActivityDiffs(
       for (let k = 0; k < variates; k++) {
         //TODO: make more efficient
         const col = activities[k];
+        if (col[idx2] == DG.FLOAT_NULL || col[idx1] == DG.FLOAT_NULL) {
+          diffs[k][pairIdx] = DG.FLOAT_NULL;
+          continue;
+        }
         const diff = col[idx2] - col[idx1];
         diffs[k][pairIdx] = diff;
         if (diff > 0) {

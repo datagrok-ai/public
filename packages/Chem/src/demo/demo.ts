@@ -186,10 +186,10 @@ export async function _demoMMPA(): Promise<void> {
       'type': 'histogram',
       'column': '\u0394 CYP3A4',
       'active': true,
-      'filterOutMissingValues': false,
+      'filterOutMissingValues': true,
       'showMissingValuesOnly': false,
-      'min': 4.69,
-      'max': 7.40,
+      'min': -0.06,
+      'max': 1.30,
       'showHistogram': true,
       'showSlider': true,
       'showMinMax': false,
@@ -199,10 +199,10 @@ export async function _demoMMPA(): Promise<void> {
       'type': 'histogram',
       'column': '\u0394 hERG_pIC50',
       'active': true,
-      'filterOutMissingValues': false,
+      'filterOutMissingValues': true,
       'showMissingValuesOnly': false,
-      'min': 0.89,
-      'max': 7,
+      'min': -0.24,
+      'max': 0.39,
       'showHistogram': true,
       'showSlider': true,
       'showMinMax': false,
@@ -228,7 +228,7 @@ export async function _demoMMPA(): Promise<void> {
       }, '', 20000);
     } catch (e) {};
     mmpViewer!.defaultFragmentsFiltersStates = filterStates;
-    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 6;
+    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 2797;
     mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
       grok.shell.windows.showHelp = true;
