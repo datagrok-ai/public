@@ -106,6 +106,15 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     },
     tooltipText: 'When on, all sequences get rendered in the "diff" mode'
   });
+  const renderMultilineInput = ui.input.bool('Multiline Rendering', {
+    value: col.getTag('renderMultiline') === 'true',
+    onValueChanged: (value) => {
+      col.tags['renderMultiline'] = value ? 'true' : 'false';
+      col.dataFrame.fireValuesChanged();
+    },
+    tooltipText: 'Render sequences across multiple lines when they exceed cell width'
+  });
+
 
   const sequenceConfigInputs = ui.inputs([
     fontSizeInput,
@@ -114,6 +123,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     referenceSequenceInput,
     colorCodeInput,
     compareWithCurrentInput,
+    renderMultilineInput
   ]);
 
   return new DG.Widget(sequenceConfigInputs);
