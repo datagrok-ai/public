@@ -203,7 +203,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const tabs = ui.tabControl(null, false);
 
     const transformationsTab = tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
-      this.pairedGrids!.enableFilters = true;
       return this.getTransformationsTab();
     });
     ui.tooltip.bind(transformationsTab.header, decript1);
@@ -263,6 +262,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
         //requestFilter will call onRowsFiltering, where correct masks will be set
         this.parentTable?.rows.requestFilter();
+        this.pairedGrids!.pairsGridCliffsTab.dataFrame.rows.requestFilter();
         //setting current arrow
         if (this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx !== this.lastCurrentRowOnCliffsTab) {
           this.lastCurrentRowOnCliffsTab = this.pairedGrids!.mmpGridTrans.dataFrame.currentRowIdx;
@@ -292,7 +292,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
 
     mmPairsRoot1.prepend(
-      ui.divText('Select fragments pair from \'Fragments\' dataset to see corresponding molecule pairs',
+      ui.divText('No molecule pairs found. Try to change filter or select fragments pair from \'Fragments\' dataset.',
         'chem-mmpa-no-pairs-warning'));
     this.subs.push(this.pairedGrids!.showEmptyPairsWarningEvent.subscribe((showWarning: boolean) => {
       showWarning ? mmPairsRoot1.classList.add('chem-mmp-no-pairs') :
@@ -306,19 +306,30 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         if (value === SHOW_FRAGS_MODE.All) {
           this.pairedGrids!.fpMaskByMolecule.setAll(true);
           this.pairedGrids!.mmpMaskTrans.setAll(true);
-          this.pairedGrids!.updateFragmentsDfFilters();
-          this.pairedGrids!.updateMoleculePairsFilters();
+          this.pairedGrids!.fpGrid.dataFrame.rows.requestFilter();
+          this.pairedGrids!.mmpGridTrans.dataFrame.rows.requestFilter();
         } else
-          this.pairedGrids!.refilterFragmentPairsByMolecule(true);
+          this.pairedGrids!.refreshFragmentsAndPairs(true);
       }});
     this.showFragmentsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
     ui.tooltip.bind(this.showFragmentsChoice.input,
       `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
 
+    const followCurrentRowInFragGrid = ui.input.bool('Follow current row', {
+      value: false,
+      onValueChanged: () => {
+        this.pairedGrids!.followCurrentRowInFragmentsGrid = followCurrentRowInFragGrid.value;
+        this.pairedGrids!.refreshFragmentsAndPairs(false);
+      },
+    });
+
+    followCurrentRowInFragGrid.classList.add('chem-mmp-fragments-grid-follow-current-row');
+
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
-      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, this.showFragmentsChoice.root);
+      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage,
+      ui.divH([this.showFragmentsChoice.root, followCurrentRowInFragGrid.root]));
     fpGrid.prepend(
-      ui.divText('No substitutions found for current molecule. Select another molecule or switch to \'All\' mode.',
+      ui.divText('No substitutions found. Try to change filters or select another molecule if you are in \'Current\' mode.',
         'chem-mmpa-no-fragments-error'));
     this.subs.push(this.pairedGrids!.showErrorEvent.subscribe((showError: boolean) => {
       showError ? fpGrid.classList.add('chem-mmp-no-fragments') : fpGrid.classList.remove('chem-mmp-no-fragments');
@@ -413,6 +424,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.tp.onEvent('d4-trellis-plot-inner-viewer-clicked').subscribe((cats) => {
       //grok.shell.info(cats);
       this.pairedGrids?.refilterMatchedPairsByFragments(cats);
+      this.pairedGrids?.mmpGridFrag.dataFrame.rows.requestFilter();
     });
 
     //setup trellis filters
@@ -597,15 +609,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     this.parentTable!.onRowsFiltering.subscribe(() => {
-      if (this.currentTab === MMP_NAMES.TAB_CLIFFS) {
+      if (this.currentTab === MMP_NAMES.TAB_CLIFFS)
         this.parentTable!.filter.and(this.totalCutoffMask!);
-        this.pairedGrids!.updatePairsParentFilter(true);
-        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.setAll(true);
-        //adding mask from sp filters
-        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.and(this.pairedGrids.pairsMaskCliffsTab);
-        //adding mask from parent df
-        this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.and(this.pairedGrids.parentPairsFilter);
-      }
     });
 
     this.refilterCliffs(this.mmpFilters.activitySliderInputs.map((si) => si.value),
