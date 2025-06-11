@@ -5,7 +5,6 @@ import * as grok from 'datagrok-api/grok';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SearchBaseViewer} from '@datagrok-libraries/ml/src/viewers/search-base-viewer';
-import {DistanceFunctionParams} from './sequence-space';
 
 const MAX_ROWS_FOR_DISTANCE_MATRIX = 10000;
 
@@ -51,14 +50,6 @@ export class SequenceSearchBaseViewer extends SearchBaseViewer {
       this.preComputeDistanceMatrix = rowCount <= MAX_ROWS_FOR_DISTANCE_MATRIX;
       this.requiresSampling = rowCount > MAX_ROWS_FOR_DISTANCE_MATRIX;
     }
-  }
-
-  getDistanceFunctionParams(): DistanceFunctionParams {
-    return {
-      fingerprintType: this.fingerprint,
-      gapOpen: this.gapOpen,
-      gapExtend: this.gapExtend
-    };
   }
 
   needsGapPenalties(): boolean {

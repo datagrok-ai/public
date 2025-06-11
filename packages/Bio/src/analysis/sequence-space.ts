@@ -14,16 +14,12 @@ export interface ISequenceSpaceResult {
   coordinates: DG.ColumnList;
 }
 
-export interface DistanceFunctionParams {
-  fingerprintType?: string;
-  gapOpen?: number;
-  gapExtend?: number;
-}
-
 export async function getEncodedSeqSpaceCol(
   seqCol: DG.Column,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
-  params: DistanceFunctionParams = {}
+  fingerprintType: string = 'Morgan',
+  gapOpen: number = 1,
+  gapExtend: number = 0.6
 ): Promise<{ seqList: string[], options: { [_: string]: any } }> {
   // encodes sequences using utf characters to also support multichar and non fasta sequences
   const rowCount = seqCol.length;
@@ -54,14 +50,13 @@ export async function getEncodedSeqSpaceCol(
     }
   }
 
-  let options = {};//as mmDistanceFunctionArgs;
+  let options = {} as mmDistanceFunctionArgs;
 
   // Handle fingerprint-based distance functions
   if (
     similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE ||
     similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH
   ) {
-    const fingerprintType = params.fingerprintType || 'Morgan';
     const monomers = Array.from(charCodeMap.keys());
     const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
 
@@ -76,16 +71,13 @@ export async function getEncodedSeqSpaceCol(
       scoringMatrix: monomerRes.scoringMatrix,
       alphabetIndexes: monomerHashToMatrixMap,
       maxLength
-    };
-  }
+    } as mmDistanceFunctionArgs;
 
-  // Add gap penalties for Needleman-Wunsch
-  if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
-    options = {
-      ...options,
-      gapOpen: params.gapOpen ?? 1,
-      gapExtend: params.gapExtend ?? 1,
-    };
+    // Add gap penalties only for Needleman-Wunsch
+    if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
+      (options as any).gapOpen = gapOpen;
+      (options as any).gapExtend = gapExtend;
+    }
   }
 
   return {seqList: encList, options};

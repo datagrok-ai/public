@@ -18,7 +18,7 @@ import {MmcrTemps, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-render
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
   hotSearch: boolean;
-  similarColumnLabel: string | null;
+  similarColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
 
   sketchedMolecule: string = '';
   curIdx: number = 0;
@@ -63,10 +63,16 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.targetColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx;
 
-        await this.computeByMM();
+      // Force recomputation if parameters changed
+      const parametersChanged =
+        this.lastDistanceMetric !== this.distanceMetric ||
+        this.lastFingerprint !== this.fingerprint ||
+        this.lastGapOpen !== this.gapOpen ||
+        this.lastGapExtend !== this.gapExtend;
+
+      if ((computeData && !this.gridSelect) || parametersChanged) {
+        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx; await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.targetColumn})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -125,9 +131,15 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
 
     if (needsRecalculation) {
       const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
-      const params = this.getDistanceFunctionParams();
 
-      const encodedResult = await getEncodedSeqSpaceCol(this.targetColumn!, distanceFunction, params);
+      // Call with individual parameters instead of params object
+      const encodedResult = await getEncodedSeqSpaceCol(
+        this.targetColumn!,
+        distanceFunction,
+        this.fingerprint,
+        this.gapOpen,
+        this.gapExtend
+      );
       const encodedSequences = encodedResult.seqList;
       const options = encodedResult.options;
 

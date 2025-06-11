@@ -1,4 +1,3 @@
-
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -13,11 +12,8 @@ import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
-import {_package} from '../package';
-import {getMonomerSubstitutionMatrix} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 const MAX_SAMPLE_SIZE = 10000;
-
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   diverseColumnLabel: string | null;
@@ -72,17 +68,21 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     if (this.requiresSampling && totalLength > MAX_SAMPLE_SIZE) {
       workingIndices = this.createRandomSample(totalLength, MAX_SAMPLE_SIZE);
       this.sampledIndices = workingIndices;
-      grok.shell.info(`Sampled ${workingIndices.length} sequences from ${totalLength} for diversity calculation.`);
     } else {
-      // Use the full dataset
       workingIndices = Array.from({length: totalLength}, (_, i) => i);
       this.sampledIndices = null;
     }
 
     const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
-    const params = this.getDistanceFunctionParams();
 
-    const encodedResult = await getEncodedSeqSpaceCol(this.targetColumn!, distanceFunction, params);
+    // Call with individual parameters instead of params object
+    const encodedResult = await getEncodedSeqSpaceCol(
+      this.targetColumn!,
+      distanceFunction,
+      this.fingerprint,
+      this.gapOpen,
+      this.gapExtend
+    );
     const fullEncodedSequences = encodedResult.seqList;
     const options = encodedResult.options;
 
@@ -105,8 +105,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       workingLength,
       Math.min(workingLength, this.limit),
       (i1: number, i2: number) => {
-        return this.targetColumn!.isNone(workingIndices[i1]) || this.targetColumn!.isNone(workingIndices[i2]) ? 0 :
-          distanceMatrixData[linearizeFunc(i1, i2)];
+        return distanceMatrixData[linearizeFunc(i1, i2)];
       }
     );
 
@@ -131,10 +130,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       validIndices[j] = temp;
     }
 
-    // Return first sampleSize elements, sorted for better cache performance
-    const result = validIndices.slice(0, sampleSize);
-    result.sort((a, b) => a - b);
-    return result;
+    return validIndices.slice(0, sampleSize);
   }
 
   // // Helper method to get information about sampling (useful for debugging/info)

@@ -545,14 +545,7 @@ export async function macromoleculePreprocessingFunction(
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
     return {entries: col.toList(), options: {}};
 
-  // Use the new DistanceFunctionParams object structure
-  const params = {
-    fingerprintType,
-    gapOpen,
-    gapExtend
-  };
-
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, params);
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType, gapOpen, gapExtend);
   return {entries: seqList, options};
 }
 
