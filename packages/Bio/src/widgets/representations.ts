@@ -106,26 +106,52 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     },
     tooltipText: 'When on, all sequences get rendered in the "diff" mode'
   });
-  const renderMultilineInput = ui.input.bool('Multiline Rendering', {
-    value: col.getTag('renderMultiline') === 'true',
-    onValueChanged: (value) => {
-      col.tags['renderMultiline'] = value ? 'true' : 'false';
-      col.dataFrame.fireValuesChanged();
-    },
-    tooltipText: 'Render sequences across multiple lines when they exceed cell width'
-  });
+
+  const shouldShowMultilineToggle = (): boolean => {
+    const alphabet = col.getTag('alphabet');
+    const units = col.meta.units;
+
+    // Don't show for MSA or UN types (these use sequence headers)
+    if (alphabet === 'SEQ.MSA' || alphabet === 'UN')
+      return false;
 
 
-  const sequenceConfigInputs = ui.inputs([
+    // Don't show for helm or custom units
+    if (units === 'helm' || units === 'custom')
+      return false;
+
+
+    // Only show for fasta, separator, and regular monomers
+    return units === 'fasta' || units === 'separator' || !units || units === '';
+  };
+
+  let renderMultilineInput = null;
+  if (shouldShowMultilineToggle()) {
+    renderMultilineInput = ui.input.bool('Multiline Rendering', {
+      value: col.getTag('renderMultiline') === 'true',
+      onValueChanged: (value) => {
+        col.tags['renderMultiline'] = value ? 'true' : 'false';
+        col.dataFrame.fireValuesChanged();
+      },
+      tooltipText: 'Render sequences across multiple lines when they exceed cell width'
+    });
+  }
+
+
+  const inputsArray = [
     fontSizeInput,
     maxMonomerLengthInput,
     gapLengthInput,
     referenceSequenceInput,
     colorCodeInput,
     compareWithCurrentInput,
-    renderMultilineInput
-  ]);
+  ];
 
+  if (renderMultilineInput)
+    inputsArray.push(renderMultilineInput);
+
+
+  const sequenceConfigInputs = ui.inputs(inputsArray);
   return new DG.Widget(sequenceConfigInputs);
 }
 
