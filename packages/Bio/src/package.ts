@@ -1101,7 +1101,7 @@ export function longSeqTableHelm(): void {
 
 // -- Handle context menu --
 
-///name: addCopyMenu
+//name: addCopyMenu
 //input: object cell
 //input: object menu
 export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
