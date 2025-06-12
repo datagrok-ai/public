@@ -215,7 +215,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
-  static platesApp() : any {
+  static platesApp(): DG.View {
     return platesAppView();
   }
 

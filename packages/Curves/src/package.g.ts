@@ -131,7 +131,7 @@ export function checkFileIsPlate(content: string) {
 
 //name: Browse
 //tags: app
-//output: dynamic result
+//output: view result
 //meta.browsePath: Plates
 export function platesApp() {
   return PackageFunctions.platesApp();
