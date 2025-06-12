@@ -368,12 +368,12 @@ export abstract class BaseViewApp {
         await this.setFunction();
       else
         console.warn('No form generator provided.');
+      await this.processFileData();
+    } catch (e) {
+
     } finally {
       splashScreen.close();
     }
-    splashScreen.close();
-
-    await this.processFileData();
   }
 
   protected async processFileData(): Promise<void> {}

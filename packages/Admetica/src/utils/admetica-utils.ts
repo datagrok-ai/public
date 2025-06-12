@@ -46,12 +46,8 @@ export async function runAdmeticaFunc(csvString: string, queryParams: string, ra
   if (!response || !started)
     throwError('Container failed to start.');
 
-  if (!response?.success) {
-    _package.logger.error(response?.error);
-    if (raiseException)
-      throw new Error(response?.error!);
-    throwError('Prediction attempt failed.');
-  }
+  if (!response?.success)
+    throwError(raiseException ? response?.error! : 'Prediction attempt failed.');
 
   return response.result ? await convertLD50(response.result, DG.DataFrame.fromCsv(csvString)) : null;
 }
