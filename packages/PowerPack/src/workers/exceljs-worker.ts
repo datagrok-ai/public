@@ -1,13 +1,14 @@
 import ExcelJS from 'exceljs';
 
-onmessage = async (event: {data: {data: Uint8Array}}) => {
+onmessage = async (event: {data: {data: Uint8Array, sheetName?: string}}) => {
   const bytes = event.data.data;
+  const sheetName = event.data.sheetName;
   const workbook = new ExcelJS.Workbook();
   const wb = await workbook.xlsx.load(bytes);
 
   const convertWorkbookToDataFrames = (workbook: ExcelJS.Workbook) => {
     const dfNames: string[] = [];
-    const dfs = workbook.worksheets.map((sheet) => {
+    const dfs = workbook.worksheets.filter((sheet) => !sheetName || sheet.name === sheetName).map((sheet) => {
       const rows: (string | null)[][] = convertSheetToDataFrame(sheet);
       dfNames.push(sheet.name);
       return rows;
