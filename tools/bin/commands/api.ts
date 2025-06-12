@@ -74,6 +74,8 @@ function generateScriptWrappers(): void {
   const wrappers = [];
 
   for (let dir of [scriptsDir, pythonDir]) {
+    if (!fs.existsSync(dir))
+      continue;
     const files = walk.sync({
       path: dir,
       ignoreFiles: ['.npmignore', '.gitignore'],
