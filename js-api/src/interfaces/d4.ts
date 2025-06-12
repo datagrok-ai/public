@@ -717,7 +717,13 @@ export interface IBoxPlotSettings {
   markerColor: string;
   markerColorColumnName: string;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   markers: string;
   markersColumnName: string;
@@ -3214,7 +3220,13 @@ export interface IPcPlotSettings {
 
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   /// Determines the way a value is mapped to the vertical scale.
   /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
