@@ -9,6 +9,7 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
+import _ from 'lodash';
 
 type onClickOptions = 'Select' | 'Filter' | 'None';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -410,9 +411,28 @@ export class TreeViewer extends EChartViewer {
 
   setChartOption(): void {
     const chartOption = this.chart.getOption();
-    if (chartOption && chartOption.series && chartOption.series[0])
-      this.option = chartOption;
-  }
+    if (!chartOption?.series?.[0]) return;
+  
+    const chartProps = new Set(this.getProperties().map(p => p.name));
+  
+    const customMergeSeries = (objValue: any, srcValue: any, key: string) => {
+      if (key !== 'series' || !Array.isArray(objValue) || !Array.isArray(srcValue))
+        return undefined;
+  
+      return objValue.map((item, i) => {
+        const srcItem = srcValue[i];
+        if (!srcItem) return item;
+  
+        // Update only properties that exist in chartProps and are not null or undefined
+        const filteredSrcItem = Object.fromEntries(
+          Object.entries(srcItem).filter(([k, v]) => chartProps.has(k) && v != null)
+        );
+  
+        return _.merge({}, item, filteredSrcItem);
+      });
+    };
+    this.option = _.mergeWith(chartOption, this.option, customMergeSeries);
+  }  
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (!p) return;
