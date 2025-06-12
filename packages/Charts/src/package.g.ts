@@ -1,15 +1,15 @@
-import {ChordViewer} from './viewers/chord/chord-viewer';
-import {GlobeViewer} from './viewers/globe/globe-viewer';
-import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
-import {MultiPlotViewer} from './viewers/multiplot/multiplot';
-import {RadarViewer} from './viewers/radar/radar-viewer';
-import {SankeyViewer} from './viewers/sankey/sankey';
-import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
-import {SurfacePlot} from './viewers/surface-plot/surface-plot';
-import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
-import {TreeViewer} from './viewers/tree/tree-viewer';
 import {WordCloudViewer} from './viewers/word-cloud/word-cloud-viewer';
-
+import {TreeViewer} from './viewers/tree/tree-viewer';
+import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
+import {SurfacePlot} from './viewers/surface-plot/surface-plot';
+import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
+import {SankeyViewer} from './viewers/sankey/sankey';
+import {RadarViewer} from './viewers/radar/radar-viewer';
+import {MultiPlotViewer} from './viewers/multiplot/multiplot';
+import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
+import {GlobeViewer} from './viewers/globe/globe-viewer';
+import {ChordViewer} from './viewers/chord/chord-viewer';
+import * as DG from 'datagrok-api/dg';
 //name: Chord
 //description: Creates a chord viewer
 //tags: viewer

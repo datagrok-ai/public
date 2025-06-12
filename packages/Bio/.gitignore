@@ -34,3 +34,4 @@ package.g.ts
 
 src/**/*.d.ts
 src/**/*.d.ts.map
+**/*.d.ts

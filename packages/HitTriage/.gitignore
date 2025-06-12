@@ -3,3 +3,5 @@ node_modules/
 dist/
 test-report.html
 test-console-output.log
+
+**/*.d.ts

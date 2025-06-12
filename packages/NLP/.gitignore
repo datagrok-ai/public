@@ -6,3 +6,5 @@ test-report.html
 # Emitted *.js files
 src/**/*.js
 test-console-output.log
+
+**/*.d.ts
