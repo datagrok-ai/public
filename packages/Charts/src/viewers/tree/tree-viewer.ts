@@ -10,10 +10,11 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
 
-type onClickOptions = 'Select' | 'Filter';
+type onClickOptions = 'Select' | 'Filter' | 'None';
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All',
+  None: 'All',
 };
 const aggregationMap = new Map<string, string[]>([
   // Aggregation for numeric columns: int, bigint, float, qnum
@@ -113,7 +114,7 @@ export class TreeViewer extends EChartViewer {
     this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Color' });
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {category: 'Data', columnTypeFilter: DG.TYPE.CATEGORICAL});
-    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter', 'None']});
     this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
@@ -187,8 +188,9 @@ export class TreeViewer extends EChartViewer {
             this.dataFrame.filter.and(this.viewerFilter);
         } else
           this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else
+      } else if (this.onClick === 'Select') {
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
+      }
     };
 
     const showTooltip = async (params: any) => {
