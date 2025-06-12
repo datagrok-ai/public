@@ -62,6 +62,9 @@ type MMPHint = {
   parentClass?: string,
 }
 
+export const STORAGE_NAME = 'mmpa';
+export const KEY = 'hints';
+
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
 
@@ -123,6 +126,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   showFragmentsChoice: DG.InputBase | null = null;
   lastCurrentRowOnCliffsTab = - 1;
   lastOpenedHint: HTMLDivElement | null = null;
+  showHints = true;
 
   constructor() {
     super();
@@ -379,7 +383,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   setupHint(hints: MMPHint[], i: number) {
+    if (!this.showHints)
+      return;
+    const doNotShow = ui.link('Do not show', () => {
+      this.lastOpenedHint?.remove();
+      this.showHints = false;
+      grok.userSettings.add(STORAGE_NAME, KEY, 'false');
+    });
+    doNotShow.style.paddingTop = '11px';
     const addHint = (i: number, el: HTMLElement) => {
+      if (!this.showHints)
+        return;
       this.lastOpenedHint = ui.hints.addHint(hints[i].element, el, hints[i].position);
       this.lastOpenedHint.classList.add(`chem-mmp-hint-${i}`);
       hints[i].element.classList.add('chem-mmp-active-hint-element');
@@ -389,17 +403,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         hints[i].element.parentElement?.classList.add(hints[i].parentClass);
     };
     this.lastOpenedHint?.remove();
-    if (i === hints.length - 1)
-      addHint(i, ui.divText(hints[i].text));
-    else {
-      const hintContent = ui.div();
-      hintContent.append(ui.divText(hints[i].text));
-      const nextButton = ui.button('Next', () => {
-        this.setupHint(hints, i + 1);
-      });
-      hintContent.append(nextButton);
-      addHint(i, hintContent);
-    }
+    const hintContent = ui.div();
+    hintContent.append(ui.divText(hints[i].text));
+    const nextButton = ui.button('Next', () => {
+      this.setupHint(hints, i + 1);
+    });
+    const buttons = ui.divH([], {style: {float: 'right'}});
+    if (i !== hints.length - 1)
+      buttons.append(nextButton);
+    buttons.append(doNotShow);
+    hintContent.append(buttons);
+    addHint(i, hintContent);
     const hintMutationObserver = new MutationObserver((mutationsList) => {
       for (let j = 0; j < mutationsList.length; j++) {
         for (const node of Array.from(mutationsList[j].removedNodes)) {
@@ -608,10 +622,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     });
 
-    this.parentTable!.onRowsFiltering.subscribe(() => {
+    this.subs.push(this.parentTable!.onRowsFiltering.subscribe(() => {
       if (this.currentTab === MMP_NAMES.TAB_CLIFFS)
         this.parentTable!.filter.and(this.totalCutoffMask!);
-    });
+    }));
 
     this.refilterCliffs(this.mmpFilters.activitySliderInputs.map((si) => si.value),
       this.mmpFilters.activityActiveInputs.map((ai) => ai.value));
@@ -1015,6 +1029,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   async runMMP(mmpInput: MmpInput) {
     //console.profile('MMP');
+    const showHints = grok.userSettings.getValue(STORAGE_NAME, KEY);
+    if (showHints === 'false')
+      this.showHints = false;
     const moleculesArray = mmpInput.molecules.toList();
     const variates = mmpInput.activities.length;
     const activitiesArrays = new Array<Float32Array>(variates);
