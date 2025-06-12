@@ -42,14 +42,19 @@ async function walkAllPackages(): Promise<void> {
       // if (fs.existsSync(nodeModulesDir))
       //   fs.rmdirSync(nodeModulesDir, {recursive:true});
       for (const command of commands) {
-        console.log(`${packagePath}: ${command} - Started`);
-        if (!(await runCommand(command, packagePath))) {
+        try {
+          console.log(`${packagePath}: ${command} - Started`);
+          if (!(await runCommand(command, packagePath))) {
+            console.log(`${packagePath}: ${command} - Error`);
+            break;
+          }
+          else
+            console.log(`${packagePath}: ${command} - Finished`);
+        }
+        catch (e) {
           console.log(`${packagePath}: ${command} - Error`);
           break;
         }
-        else
-          console.log(`${packagePath}: ${command} - Finished`);
-        await delay(1000);
       }
     }
   }
