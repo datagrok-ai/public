@@ -333,7 +333,13 @@ export function handleSequenceHeaderRendering() {
       const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
 
       for (const seqCol of seqCols) {
-        const sh = _package.seqHelper.getSeqHandler(seqCol);
+        let sh: ISeqHandler | null = null;
+
+        try {
+          sh = _package.seqHelper.getSeqHandler(seqCol);
+        } catch (_e) {
+          continue;
+        }
         if (!sh) continue;
         if (sh.isHelm() || sh.alphabet === ALPHABET.UN) continue;
 
