@@ -156,6 +156,34 @@ export function kpiWidget(): DG.Widget {
   return new KpiWidget();
 }
 
+//name: isFormulaColumn
+//input: column col
+//output: bool result
+export function isFormulaColumn(col: DG.Column): boolean {
+  return !!col.getTag(DG.Tags.Formula);
+}
+
+//name: Formula Widget
+//tags: panel
+//input: column col
+//output: widget result
+//condition: PowerPack:isFormulaColumn(col)
+export function formulaWidget(col: DG.Column): DG.Widget {
+  const expression = col.getTag(DG.Tags.Formula);
+  const table = col.dataFrame;
+  const f = DG.Func.byName('AddNewColumn');
+  const fc = f.prepare({
+    'table': table,
+    'expression': expression,
+    'name': col.name,
+    'type': col.type,
+  });
+  fc.aux['addColumn'] = false;
+  const widget = new DG.Widget(ui.div());
+  new AddNewColumnDialog(fc, widget);
+  return widget;
+}
+
 //description: Functions
 //tags: search
 //input: string s

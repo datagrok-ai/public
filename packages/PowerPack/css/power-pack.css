@@ -459,3 +459,11 @@ body.dartium .power-pack-widgets-host.ui-div {
     font-size: 0.9rem;
     backdrop-filter: blur(5px);
 }
+
+.add-new-column-dialog-cm-div {
+    height: 140px;
+}
+
+.add-new-column-widget-cm-div {
+    height: 100px;
+}
