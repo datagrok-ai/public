@@ -230,6 +230,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
+/** Same as iconFA but also blue. */
+export function iconFAB(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+  return _options(iconFA(name, handler, tooltipMsg), {classes: 'grok-icon-blue'});
+}
+
 export function iconImage(name: string, path: string,
                           handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
                           tooltipMsg: string | null = null,
