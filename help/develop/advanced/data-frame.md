@@ -507,17 +507,25 @@ Examples:
 #### Add a column by a formula
 
 [//]: # (TODO: Add link for 'any function')
-The `.columns` property of `DataFrame` provides for a method to create a column by a mathematical formula, specified
-with a string, which may also involve any function registered within the platform. For example, in a dataframe `df` with
-columns `X` and `Y` it's possible to add a new column `Z`, specified as follows:
+The `.columns` property of `DataFrame` provides the `addNewCalculated` method for creating new columns based on
+expressions. The expression is specified as a string and can include arithmetic operations, column references, or
+functions registered in the platform — either scalar functions or those marked with the meta.vectorFunc tag that
+operate on entire columns.
+
+For example, in a dataframe `df` with columns `X` and `Y` you can add a new column `Z` by:
 
 ```javascript
 df.columns.addNewCalculated('Z', 'Sin({X}+${Y})/2');
 ```
 
 The column type shall be deduced automatically, or may be specified explicitly as one of this method arguments.
+Similarly, the expression can be treated as a plain string instead of a formula, and automatic recalculation on
+source column changes can be disabled if needed.
 
-Run "Add calculated columns" example: [Link][131].
+Additionally, if the formula produces multiple columns (e.g., by using a function that returns a column group),
+`addNewCalculated` will automatically create all of them.
+
+Run "Add calculated columns" example: [Link](https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns/add-calculated-column).
 
 #### Manipulate rows
 
