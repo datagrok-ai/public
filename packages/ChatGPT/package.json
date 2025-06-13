@@ -10,7 +10,7 @@
     "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.11",
+    "datagrok-tools": "^4.14.12",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

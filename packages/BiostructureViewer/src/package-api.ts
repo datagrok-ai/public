@@ -3,222 +3,222 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
   export async function init(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:Init', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:Init', {});
   }
 
   export async function molecule3dCellRenderer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:Molecule3dCellRenderer', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:Molecule3dCellRenderer', {});
   }
 
   export async function pdbIdCellRenderer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PdbIdCellRenderer', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:PdbIdCellRenderer', {});
   }
 
   export async function viewPdbById(pdbId: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ViewPdbById', { pdbId });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ViewPdbById', { pdbId });
   }
 
   export async function viewPdbByData(pdbData: string, name: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ViewPdbByData', { pdbData, name });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ViewPdbByData', { pdbData, name });
   }
 
   export async function getNglGlService(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:GetNglGlService', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:GetNglGlService', {});
   }
 
   export async function viewBiostructure(content: string, format: string, name: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ViewBiostructure', { content, format, name });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ViewBiostructure', { content, format, name });
   }
 
   //Opens PDB file
   export async function importPdb(fileContent: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ImportPdb', { fileContent });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ImportPdb', { fileContent });
   }
 
   //Opens XYZ file
   export async function importXYZ(fileContent: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ImportXYZ', { fileContent });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ImportXYZ', { fileContent });
   }
 
   //Opens biostructure files supported with NGL
   export async function importWithNgl(fileContent: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ImportWithNgl', { fileContent });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ImportWithNgl', { fileContent });
   }
 
   //Opens .pdbqt file with docking result ligand poses
   export async function importPdbqt(fileContent: string, test: boolean): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ImportPdbqt', { fileContent, test });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ImportPdbqt', { fileContent, test });
   }
 
   export async function previewNglStructure(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewNglStructure', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewNglStructure', { file });
   }
 
   export async function previewNglSurface(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewNglSurface', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewNglSurface', { file });
   }
 
   export async function previewNglDensity(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewNglDensity', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewNglDensity', { file });
   }
 
   export async function previewBiostructureStructure(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewBiostructureStructure', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewBiostructureStructure', { file });
   }
 
   export async function previewBiostructureTopology(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewBiostructureTopology', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewBiostructureTopology', { file });
   }
 
   export async function previewBiostructureDensity(file: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PreviewBiostructureDensity', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PreviewBiostructureDensity', { file });
   }
 
   export async function openPdbResidues(fi: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:OpenPdbResidues', { fi });
+    return await grok.functions.call('@datagrok/biostructure-viewer:OpenPdbResidues', { fi });
   }
 
   export async function pdbIdNglPanelWidget(pdbId: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PdbIdNglPanelWidget', { pdbId });
+    return await grok.functions.call('@datagrok/biostructure-viewer:PdbIdNglPanelWidget', { pdbId });
   }
 
   //Example app for NGL drawing in grid cells
   export async function nglForGridTestApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:NglForGridTestApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:NglForGridTestApp', {});
   }
 
   //Test app for NglViewer
   export async function nglViewerApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:NglViewerApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:NglViewerApp', {});
   }
 
   //Test app for BiostructureViewer (molstar)
   export async function biostructureViewerApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:BiostructureViewerApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:BiostructureViewerApp', {});
   }
 
   //Test app for BiotrackViewer (saguaro)
   export async function biotrackViewerApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:BiotrackViewerApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:BiotrackViewerApp', {});
   }
 
   //Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)
   export async function biostructureAndTrackViewerApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:BiostructureAndTrackViewerApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:BiostructureAndTrackViewerApp', {});
   }
 
   export async function ligandsWithNglApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:LigandsWithNglApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:LigandsWithNglApp', {});
   }
 
   export async function ligandsWithBiostructureApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:LigandsWithBiostructureApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:LigandsWithBiostructureApp', {});
   }
 
   export async function biostructureDataProviderApp(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:BiostructureDataProviderApp', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:BiostructureDataProviderApp', {});
   }
 
   //3D structure viewer for large biological molecules (proteins, DNA, and RNA)
   export async function nglViewer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:NglViewer', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:NglViewer', {});
   }
 
   //3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
   export async function molstarViewer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:MolstarViewer', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:MolstarViewer', {});
   }
 
   //structure polymer annotation tracks
   export async function saguaroViewer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:SaguaroViewer', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:SaguaroViewer', {});
   }
 
   export async function getPdbHelper(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:GetPdbHelper', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:GetPdbHelper', {});
   }
 
   export async function dockingDemo(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DockingDemo', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DockingDemo', {});
   }
 
   export async function inGridDemo(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:InGridDemo', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:InGridDemo', {});
   }
 
   export async function copyRawBiostructureValue(gridCell: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:CopyRawBiostructureValue', { gridCell });
+    return await grok.functions.call('@datagrok/biostructure-viewer:CopyRawBiostructureValue', { gridCell });
   }
 
   export async function downloadRawBiostructureValue(gridCell: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DownloadRawBiostructureValue', { gridCell });
+    return await grok.functions.call('@datagrok/biostructure-viewer:DownloadRawBiostructureValue', { gridCell });
   }
 
   export async function showBiostructureViewerMenuItem(gridCell: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ShowBiostructureViewerMenuItem', { gridCell });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ShowBiostructureViewerMenuItem', { gridCell });
   }
 
   export async function showNglViewerMenuItem(gridCell: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ShowNglViewerMenuItem', { gridCell });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ShowNglViewerMenuItem', { gridCell });
   }
 
   export async function openTableResiduesMenuItem(fi: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:OpenTableResiduesMenuItem', { fi });
+    return await grok.functions.call('@datagrok/biostructure-viewer:OpenTableResiduesMenuItem', { fi });
   }
 
   //Display ligand poses along the structure
   export async function demoBioDockingConformations(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DemoBioDockingConformations', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DemoBioDockingConformations', {});
   }
 
   //View structures PDB in grids
   export async function demoBioProteins(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DemoBioProteins', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DemoBioProteins', {});
   }
 
   export async function demoFix1(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DemoFix1', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DemoFix1', {});
   }
 
   export async function demoFix2(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DemoFix2', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DemoFix2', {});
   }
 
   export async function demoFix3(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:DemoFix3', {});
+    return await grok.functions.call('@datagrok/biostructure-viewer:DemoFix3', {});
   }
 
   export async function readAsText(file: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ReadAsText', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ReadAsText', { file });
   }
 
   export async function readAsTextDapi(file: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:ReadAsTextDapi', { file });
+    return await grok.functions.call('@datagrok/biostructure-viewer:ReadAsTextDapi', { file });
   }
 
   //Get biostructure by id as PDB
   export async function getBiostructureRcsbPdb(id: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbPdb', { id });
+    return await grok.functions.call('@datagrok/biostructure-viewer:GetBiostructureRcsbPdb', { id });
   }
 
   //Get biostructure by id as mmCIF
   export async function getBiostructureRcsbMmcif(id: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbMmcif', { id });
+    return await grok.functions.call('@datagrok/biostructure-viewer:GetBiostructureRcsbMmcif', { id });
   }
 
   //Get biostructure by id as BinaryCIF
   export async function getBiostructureRcsbBcif(id: string): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbBcif', { id });
+    return await grok.functions.call('@datagrok/biostructure-viewer:GetBiostructureRcsbBcif', { id });
   }
 
   //Packs BiostructureData value into JSON string
   export async function biostructureDataToJson(binary: boolean, data: any, ext: string, options: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:BiostructureDataToJson', { binary, data, ext, options });
+    return await grok.functions.call('@datagrok/biostructure-viewer:BiostructureDataToJson', { binary, data, ext, options });
   }
 
   export async function structure3D(molecule: any): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:Structure3D', { molecule });
+    return await grok.functions.call('@datagrok/biostructure-viewer:Structure3D', { molecule });
   }
 }

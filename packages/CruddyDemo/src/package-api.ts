@@ -3,12 +3,12 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
   export async function northwindDemo(): Promise<any> {
-    return await grok.functions.call('Cruddydemo:NorthwindDemo', {});
+    return await grok.functions.call('cruddydemo:NorthwindDemo', {});
   }
 
   export async function chemblDemo(): Promise<any> {
-    return await grok.functions.call('Cruddydemo:ChemblDemo', {});
+    return await grok.functions.call('cruddydemo:ChemblDemo', {});
   }
 }

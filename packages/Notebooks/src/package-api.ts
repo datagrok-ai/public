@@ -3,6 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
 
 }

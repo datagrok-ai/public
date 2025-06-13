@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
   export async function init(): Promise<any> {
-    return await grok.functions.call('Webcomponents:Init', {});
+    return await grok.functions.call('@datagrok/webcomponents:Init', {});
   }
 }

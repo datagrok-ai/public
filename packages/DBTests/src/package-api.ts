@@ -3,1058 +3,1058 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Queries {
+export namespace queries {
   export async function clickHouseUuidType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseUuidType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseUuidType', {});
   }
 
   export async function clickHouseSignedIntTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseSignedIntTypes', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseSignedIntTypes', {});
   }
 
   export async function clickHouseUnsignedIntTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseUnsignedIntTypes', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseUnsignedIntTypes', {});
   }
 
   export async function clickHouseFloatTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseFloatTypes', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseFloatTypes', {});
   }
 
   export async function clickHouseArrayType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseArrayType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseArrayType', {});
   }
 
   export async function clickHouseTupleType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseTupleType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseTupleType', {});
   }
 
   export async function clickHouseMapType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseMapType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseMapType', {});
   }
 
   export async function clickHouseDateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseDateTypes', {});
   }
 
   export async function clickHouseNestedType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseNestedType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseNestedType', {});
   }
 
   export async function clickHouseGeoType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseGeoType', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHouseGeoType', {});
   }
 
   export async function clickHousePatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHousePatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:ClickHousePatternsAll', {});
   }
 
   export async function clickHouseIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseIntTypePatternNone', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpMore', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpLess', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpIn', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function clickHouseStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function clickHouseDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseDoubleTypePatternNone', { some_number });
   }
 
   export async function clickHouseStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function clickHouseStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function clickHouseStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function clickHouseStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function clickHouseStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternStringOpContains', { first_name });
   }
 
   export async function clickHouseStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function clickHouseStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function clickHouseStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternStringOpIn', { country });
   }
 
   export async function clickHouseStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHouseStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:ClickHouseStringTypePatternStringOpRegex', { email });
   }
 
   export async function clickHousePatternsAllParams(first_name: string, id: string, bool: boolean, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:ClickHousePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:ClickHousePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
   export async function mariaDbDateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbDateTypes', {});
   }
 
   export async function mariaDbBinaryTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbBinaryTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbBinaryTypes', {});
   }
 
   export async function mariaDbBitType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbBitType', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbBitType', {});
   }
 
   export async function mariaDbCharacterTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbCharacterTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbCharacterTypes', {});
   }
 
   export async function mariaDbFloatTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbFloatTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbFloatTypes', {});
   }
 
   export async function mariaDbIntegerTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbIntegerTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbIntegerTypes', {});
   }
 
   export async function mariaDbSpatialTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbSpatialTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbSpatialTypes', {});
   }
 
   export async function mariaDbPatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbPatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:MariaDbPatternsAll', {});
   }
 
   export async function mariaDbIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbIntTypePatternNone', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpMore', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpLess', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpIn', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function mariaDbStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function mariaDbDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MariaDbDoubleTypePatternNone', { some_number });
   }
 
   export async function mariaDbStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function mariaDbStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function mariaDbStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function mariaDbStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function mariaDbStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternStringOpContains', { first_name });
   }
 
   export async function mariaDbStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function mariaDbStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function mariaDbStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternStringOpIn', { country });
   }
 
   export async function mariaDbStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:MariaDbStringTypePatternStringOpRegex', { email });
   }
 
   export async function mariaDbPatternsAllParams(first_name: string, id: string, bool: boolean, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MariaDbPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:MariaDbPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
   export async function mssqldateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLDateTypes', {});
   }
 
   export async function mssqlcharacterTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLCharacterTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLCharacterTypes', {});
   }
 
   export async function mssqlxmlType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLXmlType', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLXmlType', {});
   }
 
   export async function mssqlbinaryTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLBinaryTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLBinaryTypes', {});
   }
 
   export async function mssqlnumericTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLNumericTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLNumericTypes', {});
   }
 
   export async function mssqlfloatTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLFloatTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLFloatTypes', {});
   }
 
   export async function mssqlmoneyTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLMoneyTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLMoneyTypes', {});
   }
 
   export async function mssqlgeographyType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLGeographyType', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLGeographyType', {});
   }
 
   export async function mssqlgeometryType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLGeometryType', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLGeometryType', {});
   }
 
   export async function mssqlpatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLPatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLPatternsAll', {});
   }
 
   export async function mssqlintTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLIntTypePatternNone', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpMore', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpLess', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpIn', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function mssqlstringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function mssqldoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MSSQLDoubleTypePatternNone', { some_number });
   }
 
   export async function mssqlstringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function mssqlstringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function mssqlstringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function mssqlstringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function mssqlstringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternStringOpContains', { first_name });
   }
 
   export async function mssqlstringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function mssqlstringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function mssqlstringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:MSSQLStringTypePatternStringOpIn', { country });
   }
 
   export async function mssqlpatternsAllParams(first_name: string, id: string, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLPatternsAllParams', { first_name, id, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:MSSQLPatternsAllParams', { first_name, id, email, some_number, country, date });
   }
 
   export async function mssqlall(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLAll', {});
+    return await grok.data.query('@datagrok/dbtests:MSSQLAll', {});
   }
 
   export async function mssqlbyInt(orderid: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByInt', { orderid });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByInt', { orderid });
   }
 
   export async function mssqlbyStringPatternInt(shipVia: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByStringPatternInt', { shipVia });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByStringPatternInt', { shipVia });
   }
 
   export async function mssqlbyDouble(freight: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByDouble', { freight });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByDouble', { freight });
   }
 
   export async function mssqlbyStringChoices(shipCountry: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByStringChoices', { shipCountry });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByStringChoices', { shipCountry });
   }
 
   export async function mssqlbyStringPatternString(shipCity: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByStringPatternString', { shipCity });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByStringPatternString', { shipCity });
   }
 
   export async function mssqlbyDatetime(requiredDate: any): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByDatetime', { requiredDate });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByDatetime', { requiredDate });
   }
 
   export async function mssqlbyStringPatternDatetime(orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLByStringPatternDatetime', { orderDate });
+    return await grok.data.query('@datagrok/dbtests:MSSQLByStringPatternDatetime', { orderDate });
   }
 
   export async function mssqlorders(employeeId: number, shipVia: string, freight: number, shipCountry: string, shipCity: string, freightLess1000: boolean, requiredDate: any, orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('@datagrok/dbtests:MSSQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function mssqlproducts(ProductID: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MSSQLProducts', { ProductID });
+    return await grok.data.query('@datagrok/dbtests:MSSQLProducts', { ProductID });
   }
 
   export async function mySqlDateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlDateTypes', {});
   }
 
   export async function mySqlBinaryTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlBinaryTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlBinaryTypes', {});
   }
 
   export async function mySqlBitType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlBitType', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlBitType', {});
   }
 
   export async function mySqlCharacterTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlCharacterTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlCharacterTypes', {});
   }
 
   export async function mySqlFloatTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlFloatTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlFloatTypes', {});
   }
 
   export async function mySqlJsonType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlJsonType', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlJsonType', {});
   }
 
   export async function mySqlIntegerTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlIntegerTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlIntegerTypes', {});
   }
 
   export async function mySqlSpatialTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlSpatialTypes', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlSpatialTypes', {});
   }
 
   export async function mySqlPatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlPatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:MySqlPatternsAll', {});
   }
 
   export async function mySqlIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlIntTypePatternNone', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpMore', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpLess', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpIn', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function mySqlStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function mySqlDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MySqlDoubleTypePatternNone', { some_number });
   }
 
   export async function mySqlStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function mySqlStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function mySqlStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function mySqlStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function mySqlStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternStringOpContains', { first_name });
   }
 
   export async function mySqlStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function mySqlStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function mySqlStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternStringOpIn', { country });
   }
 
   export async function mySqlStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:MySqlStringTypePatternStringOpRegex', { email });
   }
 
   export async function mySqlPatternsAllParams(first_name: string, id: string, bool: boolean, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:MySqlPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:MySqlPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
   export async function oracleXmlType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleXmlType', {});
+    return await grok.data.query('@datagrok/dbtests:OracleXmlType', {});
   }
 
   export async function oracleCharacterTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleCharacterTypes', {});
+    return await grok.data.query('@datagrok/dbtests:OracleCharacterTypes', {});
   }
 
   export async function oracleDateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:OracleDateTypes', {});
   }
 
   export async function oracleJsonType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleJsonType', {});
+    return await grok.data.query('@datagrok/dbtests:OracleJsonType', {});
   }
 
   export async function oracleUriType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleUriType', {});
+    return await grok.data.query('@datagrok/dbtests:OracleUriType', {});
   }
 
   export async function oracleVarrayType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleVarrayType', {});
+    return await grok.data.query('@datagrok/dbtests:OracleVarrayType', {});
   }
 
   export async function oracleNumericTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleNumericTypes', {});
+    return await grok.data.query('@datagrok/dbtests:OracleNumericTypes', {});
   }
 
   export async function oracleLobTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleLobTypes', {});
+    return await grok.data.query('@datagrok/dbtests:OracleLobTypes', {});
   }
 
   export async function oraclePatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OraclePatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:OraclePatternsAll', {});
   }
 
   export async function oracleIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleIntTypePatternNone', { id });
   }
 
   export async function oracleStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpMore', { id });
   }
 
   export async function oracleStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function oracleStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function oracleStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpLess', { id });
   }
 
   export async function oracleStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpIn', { id });
   }
 
   export async function oracleStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function oracleStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function oracleStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function oracleDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:OracleDoubleTypePatternNone', { some_number });
   }
 
   export async function oracleStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function oracleStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function oracleStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function oracleStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function oracleStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternStringOpContains', { first_name });
   }
 
   export async function oracleStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function oracleStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function oracleStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternStringOpIn', { country });
   }
 
   export async function oracleStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OracleStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:OracleStringTypePatternStringOpRegex', { email });
   }
 
   export async function oraclePatternsAllParams(first_name: string, id: string, email: string, some_number: string, country: string, dat: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:OraclePatternsAllParams', { first_name, id, email, some_number, country, dat });
+    return await grok.data.query('@datagrok/dbtests:OraclePatternsAllParams', { first_name, id, email, some_number, country, dat });
   }
 
   export async function packageTest(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PackageTest', {});
+    return await grok.data.query('@datagrok/dbtests:PackageTest', {});
   }
 
   export async function postgresAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresAll', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresAll', {});
   }
 
   export async function postgresByInt(orderid: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByInt', { orderid });
+    return await grok.data.query('@datagrok/dbtests:PostgresByInt', { orderid });
   }
 
   export async function postgresByStringPatternInt(shipVia: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByStringPatternInt', { shipVia });
+    return await grok.data.query('@datagrok/dbtests:PostgresByStringPatternInt', { shipVia });
   }
 
   export async function postgresByDouble(freight: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByDouble', { freight });
+    return await grok.data.query('@datagrok/dbtests:PostgresByDouble', { freight });
   }
 
   export async function postgresByStringChoices(shipCountry: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByStringChoices', { shipCountry });
+    return await grok.data.query('@datagrok/dbtests:PostgresByStringChoices', { shipCountry });
   }
 
   export async function postgresByStringPatternString(shipCity: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByStringPatternString', { shipCity });
+    return await grok.data.query('@datagrok/dbtests:PostgresByStringPatternString', { shipCity });
   }
 
   export async function postgresByBool(freightLess100: boolean): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByBool', { freightLess100 });
+    return await grok.data.query('@datagrok/dbtests:PostgresByBool', { freightLess100 });
   }
 
   export async function postgresByDatetime(requiredDate: any): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByDatetime', { requiredDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresByDatetime', { requiredDate });
   }
 
   export async function postgresByStringPatternDatetime(orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresByStringPatternDatetime', { orderDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresByStringPatternDatetime', { orderDate });
   }
 
   export async function postgresOrders(employeeId: number, shipVia: string, freight: number, shipCountry: string, shipCity: string, freightLess1000: boolean, requiredDate: any, orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function postgresProducts(ProductID: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresProducts', { ProductID });
+    return await grok.data.query('@datagrok/dbtests:PostgresProducts', { ProductID });
   }
 
   export async function postgresqlTestCacheTableNormal(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTestCacheTableNormal', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTestCacheTableNormal', {});
   }
 
   export async function postgresqlScalarCacheTest(): Promise<number> {
-    return await grok.data.query('Dbtests:PostgresqlScalarCacheTest', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlScalarCacheTest', {});
   }
 
   export async function postgresqlCachedConnTest(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlCachedConnTest', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlCachedConnTest', {});
   }
 
   export async function postgresqlCacheInvalidateQueryTest(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlCacheInvalidateQueryTest', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlCacheInvalidateQueryTest', {});
   }
 
   export async function postgresqlScalarCacheInvalidationTest(): Promise<number> {
-    return await grok.data.query('Dbtests:PostgresqlScalarCacheInvalidationTest', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlScalarCacheInvalidationTest', {});
   }
 
   export async function postgresqlGetNow(): Promise<any> {
-    return await grok.data.query('Dbtests:PostgresqlGetNow', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlGetNow', {});
   }
 
   export async function postgresqlScalarCacheTestClient(): Promise<number> {
-    return await grok.data.query('Dbtests:PostgresqlScalarCacheTestClient', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlScalarCacheTestClient', {});
   }
 
   export async function postgresqlTestCacheTableNormalClient(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTestCacheTableNormalClient', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTestCacheTableNormalClient', {});
   }
 
   export async function testConnCache(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:TestConnCache', {});
+    return await grok.data.query('@datagrok/dbtests:TestConnCache', {});
   }
 
   export async function postgresqlTableWideCachedClient(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTableWideCachedClient', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTableWideCachedClient', {});
   }
 
   export async function postgresqlTableWideCachedServer(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTableWideCachedServer', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTableWideCachedServer', {});
   }
 
   export async function postgresqlArrayType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlArrayType', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlArrayType', {});
   }
 
   export async function postgresqlBitString1(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlBitString1', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlBitString1', {});
   }
 
   export async function postgresqlBitString2(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlBitString2', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlBitString2', {});
   }
 
   export async function postgresqlComposite(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlComposite', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlComposite', {});
   }
 
   export async function postgresqlDates(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlDates', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlDates', {});
   }
 
   export async function postgresqlJSONB(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlJSONB', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlJSONB', {});
   }
 
   export async function postgresqlNumeric(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlNumeric', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlNumeric', {});
   }
 
   export async function postgresqlDouble(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlDouble', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlDouble', {});
   }
 
   export async function postgresqlReal(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlReal', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlReal', {});
   }
 
   export async function postgresqlBigInt(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlBigInt', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlBigInt', {});
   }
 
   export async function postgresqlNumericPrecision(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlNumericPrecision', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlNumericPrecision', {});
   }
 
   export async function postgresqlNumericPrecisionScale(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlNumericPrecisionScale', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlNumericPrecisionScale', {});
   }
 
   export async function postgresqlSmallSerial(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlSmallSerial', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlSmallSerial', {});
   }
 
   export async function postgresqlSerial(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlSerial', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlSerial', {});
   }
 
   export async function postgresqlBigSerial(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlBigSerial', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlBigSerial', {});
   }
 
   export async function postgresqlUUID(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlUUID', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlUUID', {});
   }
 
   export async function postgresqlXML(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlXML', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlXML', {});
   }
 
   export async function postgresqlPatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlPatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlPatternsAll', {});
   }
 
   export async function postgresqlIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlIntTypePatternNone', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpMore', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpLess', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpIn', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function postgresqlStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function postgresqlDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlDoubleTypePatternNone', { some_number });
   }
 
   export async function postgresqlStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function postgresqlStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function postgresqlStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function postgresqlStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function postgresqlStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternStringOpContains', { first_name });
   }
 
   export async function postgresqlStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function postgresqlStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function postgresqlStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternStringOpIn', { country });
   }
 
   export async function postgresqlStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlStringTypePatternStringOpRegex', { email });
   }
 
   export async function postgresqlPatternsAllParams(first_name: string, id: string, bool: boolean, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
   export async function postgresqlAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlAll', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlAll', {});
   }
 
   export async function postgresqlByInt(orderid: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByInt', { orderid });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByInt', { orderid });
   }
 
   export async function postgresqlByStringPatternInt(shipVia: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByStringPatternInt', { shipVia });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByStringPatternInt', { shipVia });
   }
 
   export async function postgresqlByDouble(freight: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByDouble', { freight });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByDouble', { freight });
   }
 
   export async function postgresqlByStringChoices(shipCountry: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByStringChoices', { shipCountry });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByStringChoices', { shipCountry });
   }
 
   export async function postgresqlByStringPatternString(shipCity: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByStringPatternString', { shipCity });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByStringPatternString', { shipCity });
   }
 
   export async function postgresqlByBool(freightLess100: boolean): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByBool', { freightLess100 });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByBool', { freightLess100 });
   }
 
   export async function postgresqlByDatetime(requiredDate: any): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByDatetime', { requiredDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByDatetime', { requiredDate });
   }
 
   export async function postgresqlByStringPatternDatetime(orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlByStringPatternDatetime', { orderDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlByStringPatternDatetime', { orderDate });
   }
 
   export async function postgresqlOrders(employeeId: number, shipVia: string, freight: number, shipCountry: string, shipCity: string, freightLess1000: boolean, requiredDate: any, orderDate: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('@datagrok/dbtests:PostgresqlOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function postgresqlProducts(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlProducts', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlProducts', {});
   }
 
   export async function postgresPerf(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresPerf', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresPerf', {});
   }
 
   export async function postgreScalarOutput(): Promise<number> {
-    return await grok.data.query('Dbtests:PostgreScalarOutput', {});
+    return await grok.data.query('@datagrok/dbtests:PostgreScalarOutput', {});
   }
 
   export async function postgresqlTableNormal(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTableNormal', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTableNormal', {});
   }
 
   export async function postgresqlTableWide(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTableWide', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTableWide', {});
   }
 
   export async function postgresqlTableLong(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:PostgresqlTableLong', {});
+    return await grok.data.query('@datagrok/dbtests:PostgresqlTableLong', {});
   }
 
   export async function testForColumnsOnEmptyResult(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:TestForColumnsOnEmptyResult', {});
+    return await grok.data.query('@datagrok/dbtests:TestForColumnsOnEmptyResult', {});
   }
 
   export async function simpleSelect(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SimpleSelect', {});
+    return await grok.data.query('@datagrok/dbtests:SimpleSelect', {});
   }
 
   export async function snowflakeBinaryType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeBinaryType', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakeBinaryType', {});
   }
 
   export async function snowflakeDateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeDateTypes', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakeDateTypes', {});
   }
 
   export async function snowflakeGeoType(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeGeoType', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakeGeoType', {});
   }
 
   export async function snowflakeNumericTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeNumericTypes', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakeNumericTypes', {});
   }
 
   export async function snowflakeSemiStructuredTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeSemiStructuredTypes', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakeSemiStructuredTypes', {});
   }
 
   export async function snowflakePatternsAll(): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakePatternsAll', {});
+    return await grok.data.query('@datagrok/dbtests:SnowflakePatternsAll', {});
   }
 
   export async function snowflakeIntTypePatternNone(id: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeIntTypePatternNone', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeIntTypePatternNone', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpMore(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpMore', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpMore', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpMoreEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpMoreEq', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpMoreEq', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpLessEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpLessEq', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpLessEq', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpLess(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpLess', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpLess', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpIn', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpIn', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpNotIn(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpNotIn', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpNotIn', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpMinMax(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpMinMax', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpMinMax', { id });
   }
 
   export async function snowflakeStringTypeIntPatternOpNotEq(id: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypeIntPatternOpNotEq', { id });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypeIntPatternOpNotEq', { id });
   }
 
   export async function snowflakeDoubleTypePatternNone(some_number: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeDoubleTypePatternNone', { some_number });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeDoubleTypePatternNone', { some_number });
   }
 
   export async function snowflakeStringTypePatternDoubleOpMore(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternDoubleOpMore', { some_number });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternDoubleOpMore', { some_number });
   }
 
   export async function snowflakeStringTypePatternDoubleOpMoreEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternDoubleOpMoreEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternDoubleOpMoreEq', { some_number });
   }
 
   export async function snowflakeStringTypePatternDoubleOpLess(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternDoubleOpLess', { some_number });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternDoubleOpLess', { some_number });
   }
 
   export async function snowflakeStringTypePatternDoubleOpLessEq(some_number: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternDoubleOpLessEq', { some_number });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternDoubleOpLessEq', { some_number });
   }
 
   export async function snowflakeStringTypePatternStringOpContains(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternStringOpContains', { first_name });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternStringOpContains', { first_name });
   }
 
   export async function snowflakeStringTypePatternStringOpStartsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternStringOpStartsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternStringOpStartsWith', { first_name });
   }
 
   export async function snowflakeStringTypePatternStringOpEndsWith(first_name: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternStringOpEndsWith', { first_name });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternStringOpEndsWith', { first_name });
   }
 
   export async function snowflakeStringTypePatternStringOpIn(country: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternStringOpIn', { country });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternStringOpIn', { country });
   }
 
   export async function snowflakeStringTypePatternStringOpRegex(email: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakeStringTypePatternStringOpRegex', { email });
+    return await grok.data.query('@datagrok/dbtests:SnowflakeStringTypePatternStringOpRegex', { email });
   }
 
   export async function snowflakePatternsAllParams(first_name: string, id: string, bool: boolean, email: string, some_number: string, country: string, date: string): Promise<DG.DataFrame> {
-    return await grok.data.query('Dbtests:SnowflakePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+    return await grok.data.query('@datagrok/dbtests:SnowflakePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 }
 
-export namespace Funcs {
+export namespace funcs {
   export async function info(): Promise<any> {
-    return await grok.functions.call('Dbtests:Info', {});
+    return await grok.functions.call('@datagrok/dbtests:Info', {});
   }
 
   export async function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): Promise<any> {
-    return await grok.functions.call('Dbtests:ExpectTable', { actual, expected });
+    return await grok.functions.call('@datagrok/dbtests:ExpectTable', { actual, expected });
   }
 }

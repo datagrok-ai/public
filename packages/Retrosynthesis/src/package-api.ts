@@ -3,17 +3,17 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
   export async function retroSynthesisPath(smiles: string): Promise<any> {
-    return await grok.functions.call('Retrosynthesis:RetroSynthesisPath', { smiles });
+    return await grok.functions.call('@datagrok/retrosynthesis:RetroSynthesisPath', { smiles });
   }
 
   export async function retrosynthesisTopMenu(): Promise<any> {
-    return await grok.functions.call('Retrosynthesis:RetrosynthesisTopMenu', {});
+    return await grok.functions.call('@datagrok/retrosynthesis:RetrosynthesisTopMenu', {});
   }
 
   //Generate retrosynthesis paths
   export async function retrosynthesisDemo(): Promise<any> {
-    return await grok.functions.call('Retrosynthesis:RetrosynthesisDemo', {});
+    return await grok.functions.call('@datagrok/retrosynthesis:RetrosynthesisDemo', {});
   }
 }

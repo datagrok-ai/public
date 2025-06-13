@@ -3,10 +3,10 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Scripts {
+export namespace scripts {
 
 }
 
-export namespace Funcs {
+export namespace funcs {
 
 }

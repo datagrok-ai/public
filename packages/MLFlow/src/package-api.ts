@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 
-export namespace Funcs {
+export namespace funcs {
   export async function info(): Promise<any> {
-    return await grok.functions.call('Mlflow:Info', {});
+    return await grok.functions.call('@datagrok/mlflow:Info', {});
   }
 }
