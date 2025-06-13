@@ -71,6 +71,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   //properties
   molecules: string | null = null;
   activities: string[] | null = null;
+  diffTypes: string[] | null = null;
   fragmentCutoff: number | null;
   totalData: string;
   totalDataUpdated: boolean = false;
@@ -127,6 +128,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   lastCurrentRowOnCliffsTab = - 1;
   lastOpenedHint: HTMLDivElement | null = null;
   showHints = true;
+  pcPlotActivity = '';
+  pcPlot: DG.Viewer | null = null;
 
   constructor() {
     super();
@@ -135,8 +138,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.molecules = this.string('molecules');
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
+    this.pcPlotActivity = this.string('pcPlotActivity', '', {
+      choices: [],
+      description: 'Select activity for PC plot',
+    });
 
     this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: true});
+    this.diffTypes = this.stringList('diffTypes', [], {userEditable: false, includeInLayout: true, nullable: false});
   }
 
   onPropertyChangedDebounced() {
@@ -145,15 +153,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (this.totalDataUpdated) {
       this.moleculesCol = this.dataFrame.col(this.molecules!);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
-
+      this.updatePcPlotChoices();
       this.render();
-
       return;
     }
 
     this.moleculesCol = this.dataFrame.col(this.molecules!);
     this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
     if (this.molecules && this.activities && this.fragmentCutoff) {
+      this.updatePcPlotChoices();
       this.render();
       return;
     }
@@ -164,8 +172,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (property?.name === 'totalData')
       this.totalDataUpdated = true;
+    if (property?.name === 'pcPlotActivity') {
+      this.pcPlot?.setOptions({columnNames: [`${this.pcPlotActivity}_from`, `${this.pcPlotActivity}_to`]});
+      return;
+    }
 
     this.onPropertyChangedObs.next(property);
+  }
+
+  updatePcPlotChoices() {
+    const pcPlotProperty = this.getProperty('pcPlotActivity');
+    if (pcPlotProperty && this.activities) {
+      pcPlotProperty.choices = this.activities;
+      this.pcPlotActivity = this.activities[0];
+    }
   }
 
   async render() {
@@ -293,7 +313,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   getTransformationsTab(): HTMLElement {
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
+      this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
+      this.pairedGrids!.mmpGridTransMessage);
+
+    this.pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.pairedGrids!.mmpGridTrans.dataFrame, {
+      columnNames: [`${this.pcPlotActivity}_from`, `${this.pcPlotActivity}_to`],
+    });
+    //  pcPlot.root.style.display = 'none';
+    mmPairsRoot1.append(this.pcPlot.root);
 
     mmPairsRoot1.prepend(
       ui.divText('No molecule pairs found. Try to change filter or select fragments pair from \'Fragments\' dataset.',
@@ -376,9 +403,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.setupHint(hints, 0);
     }, 1000);
 
-    return ui.splitV([
+    const gridsDiv = ui.splitV([
       fpGrid,
       mmPairsRoot1,
+    ], {}, true);
+
+    return ui.splitH([
+      gridsDiv,
+      this.pcPlot.root,
     ], {}, true);
   }
 
@@ -1047,12 +1079,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       if (this.totalDataUpdated) {
         mmpa = await MMPA.fromData(
           mmpInput.molecules.name, this.totalData, moleculesArray,
-          activitiesArrays, activitiesNames, this.fragSortingInfo);
+          activitiesArrays, activitiesNames, this.diffTypes!, this.fragSortingInfo);
         this.totalDataUpdated = false;
       } else {
         mmpa = await MMPA.init(
           mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff,
-          activitiesArrays, activitiesNames, this.fragSortingInfo);
+          activitiesArrays, activitiesNames, this.diffTypes!, this.fragSortingInfo);
       }
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();

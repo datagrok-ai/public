@@ -2,14 +2,16 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MmpAllCasesBasedData, MmpFragments, MmpInitData, MmpRules, MmpRulesBasedData} from './mmpa-misc';
 import {SortData} from '../mmp-viewer/mmp-viewer';
 import * as DG from 'datagrok-api/dg';
+import { MmpDiffTypes } from '../mmp-function-editor';
 
 export function getPlainData(rules: MmpRules, frags: MmpFragments,
   initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo);
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
-    ruleNum, diffs, activityPairsIdxs, coreNums] =
-    calculateActivityDiffs(initData.molecules, initData.activities, rules, frags, allCasesNumber, occasions);
+    ruleNum, diffs, activityPairsIdxs, coreNums, pairedActivities] =
+    calculateActivityDiffs(initData.molecules, initData.activities, initData.diffTypes,
+      rules, frags, allCasesNumber, occasions);
 
   // fragmentParentIndices - for each fragment pair there is an array of
   // parent molecule indexes where this fragment was identified
@@ -57,6 +59,7 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
     diffs,
     activityPairsIdxs,
     coreNums,
+    pairedActivities,
   };
 
   return [rulesBased, allCasesBased];
@@ -83,9 +86,13 @@ function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInf
   return [fromFrag, toFrag, occasions];
 }
 
+const delta = (x: number, y: number) => {return x - y;};
+const ratio = (x: number, y: number) => {return x / y;};
+
 function calculateActivityDiffs(
   molecules: string[],
   activities: Float32Array[],
+  diffTypes: string[],
   mmpr: MmpRules, frags: MmpFragments, allCasesNumber: number,
   occasions: Int32Array) :
   [ maxActs: number [],
@@ -101,12 +108,14 @@ function calculateActivityDiffs(
     diffs: Float32Array[],
     activityPairsIdxs: BitArray[],
     coreNums: Int32Array,
+    pairedActivities: Array<[Float32Array, Float32Array]>,
  ] {
   const variates = activities.length;
   const maxActs = new Array<number>(variates).fill(0);
   const allSize = mmpr.rules.length;
 
   const meanDiffs = new Array<Float32Array>(variates);
+  const pairedActivities = new Array<[Float32Array, Float32Array]>(variates);
   for (let i = 0; i < variates; i++)
     meanDiffs[i] = new Float32Array(allSize);
 
@@ -117,8 +126,10 @@ function calculateActivityDiffs(
   const molNumFrom = new Int32Array(allCasesNumber);
   const molNumTo = new Int32Array(allCasesNumber);
   const diffs = new Array<Float32Array>(variates);
-  for (let i = 0; i < variates; i++)
+  for (let i = 0; i < variates; i++) {
+    pairedActivities[i] = [new Float32Array(allCasesNumber), new Float32Array(allCasesNumber)];
     diffs[i] = new Float32Array(allCasesNumber);
+  }
 
   const pairsFromSmiles = new Array<string>(allCasesNumber);
   const pairsToSmiles = new Array<string>(allCasesNumber);
@@ -130,7 +141,8 @@ function calculateActivityDiffs(
 
   let pairIdx = 0;
   for (let i = 0; i < allSize; i++) {
-    const mean = new Float32Array(variates).fill(DG.FLOAT_NULL);
+    const mean = new Float32Array(variates).fill(0);
+    const validCounts = new Int32Array(variates).fill(0);
     for (let j = 0; j < occasions[i]; j++) {
       const idx1 = mmpr.rules[i].pairs[j].fs;
       const idx2 = mmpr.rules[i].pairs[j].ss;
@@ -140,13 +152,17 @@ function calculateActivityDiffs(
       coresNums[pairIdx] = mmpr.rules[i].pairs[j].core;
 
       for (let k = 0; k < variates; k++) {
+        const deltaFunc = diffTypes[k] as MmpDiffTypes === MmpDiffTypes.delta ? delta :
+          diffTypes[k] as MmpDiffTypes === MmpDiffTypes.ratio ? ratio : delta;
         //TODO: make more efficient
         const col = activities[k];
+        pairedActivities[k][0][pairIdx] = col[idx2];
+        pairedActivities[k][1][pairIdx] = col[idx1];
         if (col[idx2] == DG.FLOAT_NULL || col[idx1] == DG.FLOAT_NULL) {
           diffs[k][pairIdx] = DG.FLOAT_NULL;
           continue;
         }
-        const diff = col[idx2] - col[idx1];
+        const diff = deltaFunc(col[idx2], col[idx1]);
         diffs[k][pairIdx] = diff;
         if (diff > 0) {
           if (diff > maxActs[k])
@@ -155,6 +171,7 @@ function calculateActivityDiffs(
         }
 
         mean[k] += diff;
+        validCounts[k]++;
       }
 
       molNumFrom[pairIdx] = idx1;
@@ -167,12 +184,10 @@ function calculateActivityDiffs(
       pairIdx++;
     }
 
-    for (let k = 0; k < variates; k++) {
-      mean[k] /= occasions[i];
-      meanDiffs[k][i] = mean[k];
-    }
+    for (let k = 0; k < variates; k++)
+      meanDiffs[k][i] = validCounts[k] > 0 ?mean[k] / validCounts[k] : DG.FLOAT_NULL;
   }
 
-  return [maxActs, meanDiffs, molFrom, molTo,
-    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums];
+  return [maxActs, meanDiffs, molFrom, molTo, pairNum, molNumFrom, molNumTo, pairsFromSmiles,
+    pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums, pairedActivities];
 }

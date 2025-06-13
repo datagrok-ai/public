@@ -522,6 +522,14 @@ function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
     const actCol = createColWithDescription('', name, mmpa.allCasesBased.diffs[i],
       PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false);
     allTransformationsCols.push(actCol);
+    const actFromName = `${mmpa.initData.activitiesNames[i]}_from`;
+    const actFromCol = createColWithDescription('', actFromName, mmpa.allCasesBased.pairedActivities[i][0],
+      PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false);
+    allTransformationsCols.push(actFromCol);
+    const actToName = `${mmpa.initData.activitiesNames[i]}_to`;
+    const actToCol = createColWithDescription('', actToName, mmpa.allCasesBased.pairedActivities[i][1],
+      PAIRS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, false);
+    allTransformationsCols.push(actToCol);
   }
 
   const pairedTransformations = DG.DataFrame.fromColumns(allTransformationsCols);

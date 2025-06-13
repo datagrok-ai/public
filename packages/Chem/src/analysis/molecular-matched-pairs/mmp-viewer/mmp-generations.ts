@@ -53,7 +53,8 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   return [grid, gridCorr];
 }
 
-export function createColWithDescription(colType: any, colName: string, list: any, descriptions: {[key: string]: string}, type: string,
+export function createColWithDescription(colType: any, colName: string, list: any,
+  descriptions: {[key: string]: string}, type: string,
   semType?: DG.SemType, mean?: boolean): DG.Column {
   const col = type === 'int32' ? DG.Column.fromInt32Array(colName, list) : type === 'float32' ?
     DG.Column.fromFloat32Array(colName, list) : DG.Column.fromList(colType, colName, list);
