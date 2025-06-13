@@ -18,7 +18,6 @@ import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
-import type ExcelJS from 'exceljs';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
