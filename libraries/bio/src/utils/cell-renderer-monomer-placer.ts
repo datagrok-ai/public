@@ -527,7 +527,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       if (aligned?.includes('MSA') && units === NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
 
-      // --- referenceSequence is now built from CANONICAL forms for correct comparison ---
       const tempReferenceSequence: string | null = tableCol.temp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = this.tableCol.temp[tempTAGS.currentWord];
       const referenceSequence: string[] = (() => {
@@ -535,7 +534,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const seqSS = splitterFunc(
           ((tempReferenceSequence != null) && (tempReferenceSequence !== '')) ?
             tempReferenceSequence : tempCurrentWord ?? '');
-        // FIX: Use getCanonical() to build the reference sequence
         return wu.count(0).take(seqSS.length).slice(positionShift).map((posIdx) => seqSS.getCanonical(posIdx)).toArray();
       })();
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
@@ -547,8 +545,19 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const currentCellBounds: IMonomerLayoutData[] = [];
         const layout = this.calculateMultiLineLayoutDynamic(g, w, h, subParts, positionShift, maxLengthOfMonomer);
 
+        // --- NEW: Vertical Centering Logic for Single Lines ---
+        // Default to top-aligned layout
+        let yBase = y + this.padding;
+
+        // If there's exactly one line of content, calculate a new base Y to center it vertically.
+        if (layout.lineLayouts.length === 1)
+          yBase = y + (h - layout.lineHeight) / 2;
+
+        // --- End of New Logic ---
+
         for (const lineLayout of layout.lineLayouts) {
-          const lineY = y + this.padding + (lineLayout.lineIdx * layout.lineHeight);
+          // The Y position for each line is now based on our calculated `yBase`.
+          const lineY = yBase + (lineLayout.lineIdx * layout.lineHeight);
 
           for (const element of lineLayout.elements) {
             const elementX = x + element.x;
@@ -591,7 +600,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         if (gridCell.tableRowIndex !== null)
           this._cellBounds.set(gridCell.tableRowIndex, currentCellBounds);
       } else {
-        // --- Single-line rendering path ---
+        // --- Single-line rendering path (is unchanged) ---
         this._leftThreeDotsPadding = this.shouldRenderShiftedThreeDots(positionShift) ? g.measureText(shiftedLeftPaddingText).width : 0;
         const [, maxLengthWordsSum]: [number[], number[]] = this.getCellMonomerLengths(gridCell.tableRowIndex!, w);
         const visibleSeqLength = Math.min(subParts.length, Math.ceil(w / (this.props.fontCharWidth)) + positionShift);
