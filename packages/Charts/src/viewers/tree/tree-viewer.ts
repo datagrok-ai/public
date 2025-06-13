@@ -189,9 +189,8 @@ export class TreeViewer extends EChartViewer {
             this.dataFrame.filter.and(this.viewerFilter);
         } else
           this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else if (this.onClick === 'Select') {
+      } else if (this.onClick === 'Select')
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
-      }
     };
 
     const showTooltip = async (params: any) => {
@@ -412,27 +411,26 @@ export class TreeViewer extends EChartViewer {
   setChartOption(): void {
     const chartOption = this.chart.getOption();
     if (!chartOption?.series?.[0]) return;
-  
-    const chartProps = new Set(this.getProperties().map(p => p.name));
-  
+
+    const chartProps = new Set(this.getProperties().map((p) => p.name));
     const customMergeSeries = (objValue: any, srcValue: any, key: string) => {
       if (key !== 'series' || !Array.isArray(objValue) || !Array.isArray(srcValue))
         return undefined;
-  
+
       return objValue.map((item, i) => {
         const srcItem = srcValue[i];
         if (!srcItem) return item;
-  
+
         // Update only properties that exist in chartProps and are not null or undefined
         const filteredSrcItem = Object.fromEntries(
-          Object.entries(srcItem).filter(([k, v]) => chartProps.has(k) && v != null)
+          Object.entries(srcItem).filter(([k, v]) => chartProps.has(k) && v != null),
         );
-  
+
         return _.merge({}, item, filteredSrcItem);
       });
     };
     this.option = _.mergeWith(chartOption, this.option, customMergeSeries);
-  }  
+  }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (!p) return;
@@ -663,9 +661,11 @@ export class TreeViewer extends EChartViewer {
   }
 
   onTableAttached(): void {
-    const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
-    );
+    const categoricalColumns = [...this.dataFrame.columns.categorical]
+      .filter((col) => !col.name.startsWith('~'))
+      .sort((col1, col2) =>
+        col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
+      );
 
     if (categoricalColumns.length < 1)
       return;
@@ -842,13 +842,13 @@ export class TreeViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    if (this.filter.trueCount >= CATEGORIES_NUMBER) {
-      this.eligibleHierarchyNames = this.hierarchyColumnNames ? this.hierarchyColumnNames.filter(
-        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-      ) : [];
-    } else
-      this.eligibleHierarchyNames = this.hierarchyColumnNames;
-
+    this.eligibleHierarchyNames = this.hierarchyColumnNames?.filter((name) => {
+      if (name.startsWith('~'))
+        return false;
+      if (this.filter.trueCount >= CATEGORIES_NUMBER)
+        return this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER;
+      return true;
+    }) ?? [];
 
     if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0) {
       utils.MessageHandler._showMessage(this.root, `The Tree viewer requires at least one categorical column with fewer than ${CATEGORIES_NUMBER} unique categories`, utils.ERROR_CLASS);
