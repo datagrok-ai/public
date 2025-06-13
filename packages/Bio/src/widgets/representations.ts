@@ -107,15 +107,49 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     tooltipText: 'When on, all sequences get rendered in the "diff" mode'
   });
 
-  const sequenceConfigInputs = ui.inputs([
+  const shouldShowMultilineToggle = (): boolean => {
+    const units = col.meta.units;
+    const aligned = col.getTag('aligned');
+
+    //  Never show for any sequence that is MSA-aligned, regardless of alphabet.
+    //    The multiline layout is not compatible with the row-to-row alignment of MSA for now.
+    if (aligned?.includes('MSA'))
+      return false;
+
+    // Don't show for formats that have their own complex renderers (like Helm).
+    if (units === 'helm' || units === 'custom')
+      return false;
+
+    // For all other cases, including 'UN' (non-canonical), 'fasta', and 'separator' show the multiline toggle.
+    return true;
+  };
+
+  let renderMultilineInput = null;
+  if (shouldShowMultilineToggle()) {
+    renderMultilineInput = ui.input.bool('Multiline Rendering', {
+      value: col.getTag('renderMultiline') === 'true',
+      onValueChanged: (value) => {
+        col.tags['renderMultiline'] = value ? 'true' : 'false';
+        col.dataFrame.fireValuesChanged();
+      },
+      tooltipText: 'Render sequences across multiple lines when they exceed cell width'
+    });
+  }
+
+  const inputsArray = [
     fontSizeInput,
     maxMonomerLengthInput,
     gapLengthInput,
     referenceSequenceInput,
     colorCodeInput,
     compareWithCurrentInput,
-  ]);
+  ];
 
+  if (renderMultilineInput)
+    inputsArray.push(renderMultilineInput);
+
+
+  const sequenceConfigInputs = ui.inputs(inputsArray);
   return new DG.Widget(sequenceConfigInputs);
 }
 
