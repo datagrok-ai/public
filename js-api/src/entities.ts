@@ -23,6 +23,7 @@ import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
 import { Tags } from "./api/ddt.api.g";
 import {View} from "./views/view";
+import {InputType} from "./api/d4.api.g";
 
 declare var grok: any;
 declare var DG: any;
@@ -1595,6 +1596,18 @@ export class Property {
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+  }
+
+  static propertyOptions:{[name in keyof PropertyOptions]: PropertyOptions} = {
+    'name': { name: 'name', type: TYPE.STRING },
+    'type': { name: 'type', type: TYPE.STRING },
+    'inputType': { name: 'inputType', type: TYPE.STRING, friendlyName: 'Input type' },
+    'nullable': { name: 'nullable', type: TYPE.BOOL },
+    'description': { name: 'description', type: TYPE.STRING, editor: InputType.TextArea },
+    'semType': { name: 'semType', type: TYPE.STRING, friendlyName: 'Semantic type' },
+    'choices': { name: 'choices', type: TYPE.STRING_LIST },
+    'min': { name: 'min', type: TYPE.FLOAT },
+    'max': { name: 'max', type: TYPE.FLOAT },
   }
 }
 
