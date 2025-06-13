@@ -262,7 +262,8 @@ export class Func extends Entity {
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
-  /** If true, func has a `meta.vectorFunc = true` tag */
+  /** Indicates that script is already vector, which means that it works directly
+   * with whole column and doesn't require vectorization (`meta.vectorFunc = true`) */
   get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
