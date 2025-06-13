@@ -66,70 +66,44 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
   const logPrefix: string = `Bio: printLeftOrCentered()`;
 
   if (opts.isMultiLineContext) {
-    g.textAlign = 'left'; // Always left-align in multiline for column consistency
     g.textBaseline = 'middle';
+    g.textAlign = 'center'; // Center text horizontally
 
     let colorPart = s;
-
-    // Apply monomer shortening if needed
     if (opts.maxLengthOfMonomer != null)
       colorPart = monomerToShortFunction(colorPart, opts.maxLengthOfMonomer);
 
-    let actualTransparencyRate = opts.transparencyRate ?? 0.0;
-
-    // Check for reference sequence comparison
-    if (opts.referenceSequence && opts.gridCell && opts.wordIdx >= 0 && opts.wordIdx < opts.referenceSequence.length) {
-      const currentMonomerCanonical = opts.referenceSequence[opts.wordIdx];
-      const compareWithCurrent = opts.gridCell.cell.column?.temp?.['compare-with-current'] ?? true;
-      const highlightDifference = opts.gridCell.cell.column?.temp?.['highlight-difference'] ?? 'difference';
-
-      if (compareWithCurrent && opts.referenceSequence.length > 0) {
-        if (highlightDifference === 'difference') {
-          // Make matching monomers more transparent
-          actualTransparencyRate = (colorPart === currentMonomerCanonical) ? 0.7 : 0.0;
-        } else if (highlightDifference === 'equal') {
-          // Make non-matching monomers more transparent
-          actualTransparencyRate = (colorPart !== currentMonomerCanonical) ? 0.7 : 0.0;
-        }
-      }
-    }
-
-    const alpha = Math.max(0.1, 1.0 - actualTransparencyRate); // Minimum 10% opacity
+    // Apply transparency
+    const alpha = Math.max(0.1, 1.0 - (opts.transparencyRate ?? 0.0));
     g.globalAlpha = alpha;
 
-    // Use font-based vertical centering instead of hardcoded positioning
     const metrics = g.measureText(colorPart);
-    const fontSize = parseInt(g.font.match(/(\d+)px/)?.[1] || '12');
     const textHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
     const centerY = y + (h - textHeight) / 2 + metrics.fontBoundingBoxAscent;
 
     let fillColor = opts.color ?? undefinedColor;
     if (!fillColor || fillColor === undefinedColor)
-      fillColor = blackColor; // Fallback to black for better visibility
+      fillColor = blackColor;
 
     g.fillStyle = fillColor;
 
-    // Handle selection highlighting
     if (opts.selectedPosition === opts.wordIdx + 1) {
       g.save();
-      g.fillStyle = 'rgba(60, 177, 115, 0.2)'; // green for selected position
-      g.fillRect(x - 2, y, opts.monomerTextSizeMap[colorPart]?.width + 4 || 20, h);
+      g.fillStyle = 'rgba(60, 177, 115, 0.2)';
+      g.fillRect(x, y, w, h); // Fill the entire column bounds
       g.restore();
-      g.fillStyle = fillColor; // Restore text color
+      g.fillStyle = fillColor;
     }
 
-    g.fillText(colorPart, x, centerY);
+    // To center, provide the midpoint of the bounds
+    g.fillText(colorPart, x + w / 2, centerY);
 
-    // Reset alpha
+    // Reset alpha and other properties
     g.globalAlpha = 1.0;
-    g.textBaseline = 'top'; // Reset to default
+    g.textBaseline = 'top';
+    g.textAlign = 'start'; // Reset to default
 
-    // Return next x position with font-based spacing
-    opts.monomerTextSizeMap[colorPart] ??= g.measureText(colorPart);
-    const charWidth = parseInt(g.font.match(/(\d+)px/)?.[1] || '12') * 0.6; // Monospace ratio
-    const dynamicSpacing = Math.max(2, charWidth * 0.2);
-
-    return x + opts.monomerTextSizeMap[colorPart].width + dynamicSpacing;
+    return x + w;
   }
 
   // ... rest of the existing single-line logic remains unchanged
