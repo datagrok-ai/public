@@ -108,21 +108,20 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   });
 
   const shouldShowMultilineToggle = (): boolean => {
-    const alphabet = col.getTag('alphabet');
     const units = col.meta.units;
+    const aligned = col.getTag('aligned');
 
-    // Don't show for MSA or UN types (these use sequence headers)
-    if (alphabet === 'SEQ.MSA' || alphabet === 'UN')
+    //  Never show for any sequence that is MSA-aligned, regardless of alphabet.
+    //    The multiline layout is not compatible with the row-to-row alignment of MSA for now.
+    if (aligned?.includes('MSA'))
       return false;
 
-
-    // Don't show for helm or custom units
+    // Don't show for formats that have their own complex renderers (like Helm).
     if (units === 'helm' || units === 'custom')
       return false;
 
-
-    // Only show for fasta, separator, and regular monomers
-    return units === 'fasta' || units === 'separator' || !units || units === '';
+    // For all other cases, including 'UN' (non-canonical), 'fasta', and 'separator' show the multiline toggle.
+    return true;
   };
 
   let renderMultilineInput = null;
@@ -136,7 +135,6 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
       tooltipText: 'Render sequences across multiple lines when they exceed cell width'
     });
   }
-
 
   const inputsArray = [
     fontSizeInput,
