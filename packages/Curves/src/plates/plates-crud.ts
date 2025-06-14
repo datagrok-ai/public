@@ -17,6 +17,9 @@ export type PlateProperty = {
   id: number;
   name: string;
   unit?: string;
+  choices?: string[];
+  min?: number;
+  max?: number;
   value_type: string; //DG.COLUMN_TYPE;
 }
 
@@ -66,9 +69,10 @@ export const plateDbColumn: {[key: string]: string} = {
 };
 
 let _initialized = false;
-export async function initPlates() {
-  if (_initialized)
+export async function initPlates(force: boolean = false) {
+  if (_initialized && !force)
     return;
+  
   plateTemplates = (await grok.functions.call('Curves:getPlateTemplates') as DG.DataFrame).toJson();
   plateProperties = (await grok.functions.call('Curves:getPlateLevelProperties') as DG.DataFrame).toJson();
   wellProperties = (await grok.functions.call('Curves:getWellLevelProperties') as DG.DataFrame).toJson();
@@ -85,6 +89,24 @@ export async function initPlates() {
 
   _initialized = true;
 }
+
+
+
+/** Creates a new plate for a user to edit. Does not add it to the database. */
+export async function createNewPlateForTemplate(plateType: PlateType, plateTemplate: PlateTemplate){
+  if (!plateTemplate.plate_layout_id) {
+    const plate = new Plate(plateType.rows, plateType.cols);
+    for (const property of plateTemplate.wellProperties) {
+      plate.data.columns.addNew(property.name!, property.value_type! as DG.ColumnType);
+    }
+    return plate;
+  }
+
+  const p = await getPlateById(plateTemplate.plate_layout_id);
+  p.id = undefined;
+  return p;
+}
+
 
 export function findProp(props: PlateProperty[], id: number | string): PlateProperty {
   if (typeof id === 'number')

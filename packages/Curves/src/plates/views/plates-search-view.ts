@@ -1,11 +1,11 @@
-import { PlateQuery, PropertyCondition } from "../plates-crud";
+import { PlateQuery, PlateTemplate, PropertyCondition } from "../plates-crud";
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {debounceTime} from "rxjs/operators";
 import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
-import {PlateProperty, plateProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, queryPlates, queryWells, wellProperties} from "../plates-crud";
+import {PlateProperty, plateProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, queryPlates, queryWells, wellProperties, plateTemplates} from "../plates-crud";
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
@@ -31,14 +31,13 @@ function getSearchForm(properties: PlateProperty[], getUniqueValues: (prop: any)
   return DG.InputForm.forInputs(inputs);
 }
 
-function getPlatesSearchForm(): DG.InputForm {
-  return getSearchForm(plateProperties, getPlateUniquePropertyValues);
+function getPlatesSearchForm(filteredProperties?: PlateProperty[]): DG.InputForm {
+  return getSearchForm(filteredProperties ?? plateProperties, getPlateUniquePropertyValues);
 }
 
-function getWellsSearchForm(): DG.InputForm {
-  return getSearchForm(wellProperties, getWellUniquePropertyValues);
+function getWellsSearchForm(filteredProperties?: PlateProperty[]): DG.InputForm {
+  return getSearchForm(filteredProperties ?? wellProperties, getWellUniquePropertyValues);
 }
-
 
 function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   const matchers: PropertyCondition[] = [];
@@ -64,10 +63,37 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
 function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onResults: (grid: DG.Grid) => void): DG.View {
   const dummy = DG.DataFrame.create(5, 'Search plates');
   const view = DG.TableView.create(dummy);
-  const platesForm = getPlatesSearchForm();
-  const wellsForm = getWellsSearchForm();
+  let platesForm = getPlatesSearchForm();
+  let wellsForm = getWellsSearchForm();
+  const platesFormHost = ui.div();
+  const wellsFormHost = ui.div();
+  let plateTemplate = plateTemplates[0];
 
-  const refresh = () => {
+  const refreshUI = () => {
+    ui.empty(platesFormHost);
+    ui.empty(wellsFormHost);
+    platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map(p => p as PlateProperty));
+    wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map(p => p as PlateProperty));
+    platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
+    wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
+    platesFormHost.appendChild(platesForm.root);
+    wellsFormHost.appendChild(wellsForm.root);
+  }
+
+  const setTemplate = (template: PlateTemplate) => {
+    plateTemplate = template;
+    refreshUI();
+  }
+
+  const plateTemplateSelector = ui.input.choice('Template', {
+    nullable: true,
+    items: plateTemplates.map(pt => pt.name),
+    value: plateTemplates[0].name,
+    onValueChanged: (v) => setTemplate(plateTemplates.find(pt => pt.name === v)!)
+  });
+
+
+  const refreshResults = () => {
     const query: PlateQuery = {
       plateMatchers: searchFormToMatchers(platesForm),
       wellMatchers: searchFormToMatchers(wellsForm)
@@ -79,13 +105,18 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onR
     });
   }
 
-  platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
-  wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refresh());
+  const searchHost = ui.divV([
+    plateTemplateSelector.root,
+    ui.divH([
+      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}), 
+      ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
+    ], {style: {height: '100%', width: '100%'}}),
+  ], {classes: 'ui-panel'});
+  view.dockManager.dock(searchHost, DG.DOCK_TYPE.TOP);
 
-  //@ts-ignore
-  view.dockManager.dock(ui.divH([platesForm.root, wellsForm.root]), DG.DOCK_TYPE.TOP);
-
-  refresh();
+  //refreshUI();
+  setTemplate(plateTemplates[0]);
+  refreshResults();
   return view;
 }
 

@@ -10,24 +10,11 @@ import {
   PlateType,
   plateTypes,
   savePlate,
-  savePlateAsTemplate
+  savePlateAsTemplate,
+  createNewPlateForTemplate
 } from '../plates-crud';
 import {PlateWidget} from '../../plate/plate-widget';
 
-/** Creates a new plate for a user to edit. Does not add it to the database. */
-async function createNewPlateForTemplate(plateType: PlateType, plateTemplate: PlateTemplate){
-  if (!plateTemplate.plate_layout_id) {
-    const plate = new Plate(plateType.rows, plateType.cols);
-    for (const property of plateTemplate.wellProperties) {
-      plate.data.columns.addNew(property.name!, property.value_type! as DG.ColumnType);
-    }
-    return plate;
-  }
-
-  const p = await getPlateById(plateTemplate.plate_layout_id);
-  p.id = undefined;
-  return p;
-}
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
