@@ -1488,8 +1488,25 @@ export class ValueMatcher {
 
   constructor(dart: any) { this.dart = dart; }
 
-  static forColumn(column: Column, pattern: string) {
+  static forColumn(column: Column, pattern: string): ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
+  }
+
+  static forType(type: TYPE, pattern: string): ValueMatcher {
+    switch (type) {
+      case TYPE.FLOAT:
+      case TYPE.INT:
+      case TYPE.BIG_INT:
+        return ValueMatcher.numerical(pattern);
+      case TYPE.STRING:
+        return ValueMatcher.string(pattern);
+      case TYPE.BOOL:
+        return ValueMatcher.bool(pattern);
+      case TYPE.DATE_TIME:
+        return ValueMatcher.dateTime(pattern);
+      default:
+        throw `Value matching not supported for type '${type}'`;
+    }
   }
 
   static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
@@ -1497,11 +1514,18 @@ export class ValueMatcher {
   static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
   static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
-  get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
-  get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+  /** Expression as entered by user (such as '>42') */
+  get pattern(): string { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
 
-  match(value: any) { return api.grok_ValueMatcher_Match(this.dart, value); }
-  validate(value: any) { return api.grok_ValueMatcher_Validate(this.dart, value); }
+  /** Operation (such as '<', 'EQUALS', 'BEFORE', etc). */
+  get operator(): string { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+
+  /** Whether [x] passes the filter specified by the [expression].
+   * See also {@link validate} for the explanation. */
+  match(value: any): boolean { return api.grok_ValueMatcher_Match(this.dart, value); }
+
+  /** Validates the specified conditions. Returns null, if valid, error string otherwise */
+  validate(value: any): string | null { return api.grok_ValueMatcher_Validate(this.dart, value); }
 }
 
 /**
