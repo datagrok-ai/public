@@ -741,7 +741,7 @@ export namespace input {
       return;
     const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
     if (!options.property)
-      options.property = Property.fromOptions({name: input.caption, inputType: inputType as string});
+      options.property = Property.fromOptions({name: input.caption, type: inputType as string});
     if (specificOptions.nullable !== undefined)
       optionsMap['nullable'](input, specificOptions.nullable);
     for (let key of Object.keys(specificOptions)) {

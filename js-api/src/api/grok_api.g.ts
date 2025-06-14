@@ -1257,6 +1257,10 @@ export interface IDartApi {
   grok_Property_Set_Name(p: any, x: String): any;
   grok_Property_Get_Category(p: any): any;
   grok_Property_Set_Category(p: any, x: String): any;
+  grok_Property_Get_Units(p: any): any;
+  grok_Property_Set_Units(p: any, x: String): any;
+  grok_Property_Get_InputType(p: any): any;
+  grok_Property_Set_InputType(p: any, x: String): any;
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
   grok_Property_Get_PropertySubType(p: any): any;
@@ -1288,6 +1292,8 @@ export interface IDartApi {
   grok_Property_Set_Max(p: any, x: any): any;
   grok_Property_Get_Step(p: any): any;
   grok_Property_Set_Step(p: any, x: any): any;
+  grok_Property_Get_Validators(p: any): any;
+  grok_Property_Set_Validators(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;

@@ -1484,15 +1484,19 @@ export class RowMatcher {
  * See usage example: {@link https://public.datagrok.ai/js/samples/data-frame/value-matching/value-matcher}
  * */
 export class ValueMatcher {
+  static supportedTypes: string[] = [TYPE.FLOAT, TYPE.INT, TYPE.BIG_INT, TYPE.STRING, TYPE.BOOL, TYPE.DATE_TIME];
+
   private readonly dart: any;
 
   constructor(dart: any) { this.dart = dart; }
 
+  /** Creates a matcher for the specified column. */
   static forColumn(column: Column, pattern: string): ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
   }
 
-  static forType(type: TYPE, pattern: string): ValueMatcher {
+  /** Creates a matcher for the specified data type. */
+  static forType(type: TYPE | string, pattern: string): ValueMatcher {
     switch (type) {
       case TYPE.FLOAT:
       case TYPE.INT:

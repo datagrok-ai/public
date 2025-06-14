@@ -1,7 +1,7 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
-import {Property, PropertyOptions} from "./entities";
+import {Property, IProperty} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
@@ -384,41 +384,41 @@ export class JsViewer extends Viewer {
 
   /** Returns the column bound to the specified data property.
    *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
-  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
-  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, DG.TYPE.COLUMN_LIST, defaultValue, options);
   }
 
   /** Registers an integer property with the specified name and defaultValue */
-  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
   /** Registers a floating point property with the specified name and defaultValue */
-  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
   /** Registers a string property with the specified name and defaultValue */
-  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue */
-  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
   /** Registers a boolean property with the specified name and defaultValue */
-  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & PropertyOptions | null = null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & IProperty | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
   /** Registers a datetime property with the specified name and defaultValue */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & PropertyOptions | null = null): dayjs.Dayjs {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & IProperty | null = null): dayjs.Dayjs {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }

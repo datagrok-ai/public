@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, PropertyOptions} from "./entities";
+import {Func, Property, IProperty} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -314,7 +314,7 @@ export class Widget<TSettings = any> {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & IProperty | null = null): any {
     const fieldName = options?.fieldName ?? propertyName;
 
     let obj = this;
