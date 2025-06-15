@@ -1,10 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {Plate} from '../../plate/plate';
-import {PlateProperty, PlateTemplate, plateTemplates, plateTypes, savePlate} from '../plates-crud';
+import {createPlateTemplate, initPlates, PlateProperty, PlateTemplate} from '../plates-crud';
 import {SchemaEditor} from '@datagrok-libraries/utils/src/schema-editor';
-import {PlateWidget} from '../../plate/plate-widget';
+import { merge } from 'rxjs';
 
 
 function platePropertyToOptions(p: Partial<PlateProperty>): DG.IProperty {
@@ -17,21 +16,39 @@ export function propertySchemaView(template: PlateTemplate): DG.View {
 
   const platePropEditor = new SchemaEditor({properties: template.plateProperties.map(platePropertyToOptions)});
   const wellPropEditor = new SchemaEditor({properties: template.wellProperties.map(platePropertyToOptions)});
+  const nameEditor = ui.input.string('Name', {value: template.name});
+  const descriptionEditor = ui.input.string('Description', {value: template.description});
 
-  platePropEditor.table.onChanged.subscribe((_) => grok.shell.info('x'));
-  platePropEditor.table.onItemChanged.subscribe((_) => grok.shell.info('changed'));
-  platePropEditor.table.onItemAdded.subscribe((_) => grok.shell.info('added'));
-  platePropEditor.table.onItemRemoved.subscribe((_) => grok.shell.info('removed'));
+  const saveButton = ui.bigButton('SAVE', async() => {
+    template.name = nameEditor.value;
+    template.description = descriptionEditor.value;
+    template.plateProperties = platePropEditor.properties.map(p => ({...p, value_type: p.type}));
+    template.wellProperties = wellPropEditor.properties.map(p => ({...p, value_type: p.type}));
+    await createPlateTemplate(template);
+    await initPlates(true);
+    grok.shell.info('Template saved');
+  });
+ 
+  const updateSaveVisibility = () => saveButton.style.display = template.id !== -1 ? 'none' : 'block';
+  updateSaveVisibility();
+
+  merge(platePropEditor.table.onChanged, wellPropEditor.table.onChanged).subscribe((_) => updateSaveVisibility());
 
   view.root.appendChild(ui.divV([
+    ui.h2('Template'),
+    ui.form([
+      nameEditor,
+      descriptionEditor,
+    ]),
+
     ui.h2('Plate properties'),
-    //ui.list(template.plateProperties.map(p => p.name)),
-    platePropEditor.root,
+    platePropEditor,
 
     ui.h2('Well properties'),
-    //ui.list(template.wellProperties.map(p => p.name)),
-    wellPropEditor.root,
+    wellPropEditor,
   ]));
+
+  view.setRibbonPanels([[saveButton]]);
 
   return view;
 }

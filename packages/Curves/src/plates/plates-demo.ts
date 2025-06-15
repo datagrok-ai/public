@@ -1,10 +1,6 @@
-import { PlateProperty, PlateTemplate, plateTypes, savePlate } from "./plates-crud";
-
+import { PlateProperty, plateTypes, savePlate } from "./plates-crud";
 import { initPlates } from "./plates-crud";
-
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import {Plate} from "../plate/plate";
 import { createPlateTemplate, createNewPlateForTemplate } from "./plates-crud";
 
 

@@ -7,9 +7,11 @@ import {IProperty, ValueMatcher} from "datagrok-api/dg";
 export class SchemaEditor extends DG.Widget {
   table: PropertyTable;
   allowedTypes: string[] = [DG.TYPE.STRING, DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATE_TIME];
+  properties: DG.IProperty[] = [];
 
   constructor(options: {properties: DG.IProperty[]}) {
     super(ui.div([]));
+    this.properties = options.properties;
 
     const typeProp: IProperty = {
       ...DG.Property.propertyOptions['type'],
