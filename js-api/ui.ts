@@ -1383,7 +1383,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  * TODO: search, destructuring to properties
  *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
-export class ObjectHandler {
+export class ObjectHandler<T = any> {
 
   /** Type of the object that this meta handles. */
   get type(): string {
@@ -1399,11 +1399,11 @@ export class ObjectHandler {
 
   toString(): string { return this.name; }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<T | null> {
     return null;
   }
 
-  async refresh(x: any): Promise<any> {
+  async refresh(x: T): Promise<T> {
     return x;
   }
   /**
@@ -1417,7 +1417,7 @@ export class ObjectHandler {
   /** String representation of the [item], by default item.toString().
    * @param x - item
    * @returns {string} */
-  getCaption(x: any): string {
+  getCaption(x: T): string {
     return `${x}`;
   }
 
@@ -1432,42 +1432,42 @@ export class ObjectHandler {
   }
 
   /** Renders icon for the item. */
-  renderIcon(x: any, context: any = null): HTMLElement {
+  renderIcon(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders markup for the item. */
-  renderMarkup(x: any, context: any = null): HTMLElement {
+  renderMarkup(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders tooltip for the item. */
-  renderTooltip(x: any, context: any = null): HTMLElement {
+  renderTooltip(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders card div for the item. */
-  renderCard(x: any, context: any = null): HTMLElement {
+  renderCard(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders properties list for the item. */
-  renderProperties(x: any, context: any = null): HTMLElement {
+  renderProperties(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders preview list for the item. */
-  renderPreview(x: any, context: any = null): View {
+  renderPreview(x: T, context: any = null): View {
     return View.create();
   }
 
   /** Renders view for the item. */
-  renderView(x: any, context: any = null): HTMLElement {
+  renderView(x: T, context: any = null): HTMLElement {
     return this.renderProperties(x);
   }
 
   /** Converts object to its markup description */
-  toMarkup(x: any): string | null {
+  toMarkup(T: any): string | null {
     return null;
   }
 
@@ -1496,6 +1496,7 @@ export class ObjectHandler {
       });
   }
 
+  /** All registered handlers */
   static list(): ObjectHandler[] {
     return toJs(api.grok_Meta_List());
   }
