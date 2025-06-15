@@ -1719,6 +1719,18 @@ export class TreeViewGroup extends TreeViewNode {
     return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
   }
 
+  /** Removes all children (going down recursively) that satisfy the predicate */
+  removeChildrenWhere(predicate: (node: TreeViewNode) => boolean): void {
+    for (const child of this.children) {
+      if (predicate(child)) {
+        child.remove();
+      }
+      else if (child instanceof TreeViewGroup) {
+        child.removeChildrenWhere(predicate);
+      }
+    }
+  }
+
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
 
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
@@ -1831,8 +1843,7 @@ export class HtmlTable extends DartWidget {
     super(dart);
   }
 
-  /** Creates a visual table based on [items], [renderer], and [columnNames]
-   * @returns {HtmlTable} */
+  /** Creates a visual table based on [items], [renderer], and [columnNames] */
   static create(items: any, renderer: any, columnNames: any = null): HtmlTable {
     return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames));
   }
