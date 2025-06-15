@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {plateTemplates} from '../plates-crud';
 import { propertySchemaView } from './plates-schema-view';
+import { PlateTemplateHandler } from '../objects/plate-template-handler';
 
 
 export function createTemplatesView(): DG.View {
@@ -12,8 +13,8 @@ export function createTemplatesView(): DG.View {
   const templatesTable = ui.table(plateTemplates, (t) => [
     t.name,
     t.description,
-    ui.button('Edit', () => grok.shell.addPreview(propertySchemaView(t))),
-    ui.button('Clone', () => grok.shell.addPreview(propertySchemaView({...t, id: -1}))),
+    ui.button('Edit', () => PlateTemplateHandler.editTemplate(t)),
+    ui.button('Clone', () => PlateTemplateHandler.openCloneTemplateView(t)),
   ]);
 
   view.root.appendChild(templatesTable);

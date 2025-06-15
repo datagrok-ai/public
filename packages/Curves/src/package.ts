@@ -26,6 +26,7 @@ import {dataToCurvesUI} from './fit/data-to-curves';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import wu from 'wu';
+import { PlateTemplateHandler } from './plates/objects/plate-template-handler';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -68,6 +69,7 @@ export class PackageFunctions {
   static _initCurves(): void {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
+    DG.ObjectHandler.register(new PlateTemplateHandler());
   }
 
   @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
