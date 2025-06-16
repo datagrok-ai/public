@@ -40,7 +40,7 @@ export async function link(args: LinkArgs) {
   pathMode = args.path ?? false;
   unlink = args.unlink ?? false; 
 
-  let collectedPackages = collectAvaliablePackages(args['without-common-dir']);
+  let collectedPackages = collectAvaliablePackages(args['repo-only']);
   packagesInRepo = collectedPackages.packagesInRepo;
   packagesOutOfRepo = collectedPackages.packagesOutOfRepo;
 
@@ -276,7 +276,7 @@ class PackageData {
 interface LinkArgs {
   verbose?: boolean,
   unlink?: boolean,
-  'without-common-dir'?: boolean,
+  'repo-only'?: boolean,
   path?: boolean,
   dev?: boolean,
 }
