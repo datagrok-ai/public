@@ -62,7 +62,7 @@ export class PropertyTable<T = any> extends DG.Widget {
         .map((p) => {
           const input = DG.InputBase.forProperty(DG.Property.fromOptions(p), item);
           for (const v of p.validators ?? [])
-            input.addValidator(ValueMatcher.forType(p.type!, v).validate);
+            input.addValidator((s) => ValueMatcher.forType(p.type!, v).validate(s));
           input.onChanged.subscribe(() => this.onItemChanged.next(item));
           input.input.onclick = () => this.onSelected.next(item);
           return input.input;

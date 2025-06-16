@@ -1,4 +1,3 @@
-
 //@ts-ignore
 export * from './package.g';
 
@@ -73,7 +72,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
-  static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'})seriesNumber: number): DG.Column {
+  static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const sourceColName = col.name;
@@ -170,7 +169,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
-  static async importPlateXlsx(fileContent: Uint8Array) : Promise<any[]> {
+  static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
     const view = DG.View.create();
     const plate = await PackageFunctions.parseExcelPlate(fileContent);
     view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
@@ -188,7 +187,7 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func({ })
+  @grok.decorators.func({})
   static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
       if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
@@ -206,10 +205,12 @@ export class PackageFunctions {
       const buf = await blob.arrayBuffer();
       const plate = await Plate.fromExcel(new Uint8Array(buf), name);
       return plate;
-    } else { return await Plate.fromExcel(content, name); }
+    } else {
+      return await Plate.fromExcel(content, name);
+    }
   }
 
-  @grok.decorators.func({ })
+  @grok.decorators.func({})
   static checkFileIsPlate(content: string): boolean {
     if (content.length > 1_000_000)
       return false;
@@ -221,15 +222,15 @@ export class PackageFunctions {
     return platesAppView();
   }
 
-  @grok.decorators.func({ })
+  @grok.decorators.func({})
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
     const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesByBarcode', {barcode: barcode});
     return Plate.fromDbDataFrame(df);
   }
 
-  @grok.decorators.func({ })
-  static async createDummyPlateData() : Promise<void> {
+  @grok.decorators.func({})
+  static async createDummyPlateData(): Promise<void> {
     await __createDummyPlateData();
   }
 }

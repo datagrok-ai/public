@@ -1,12 +1,22 @@
 import { PlateProperty, plateTypes, savePlate } from "./plates-crud";
 import { initPlates } from "./plates-crud";
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import { createPlateTemplate, createNewPlateForTemplate } from "./plates-crud";
+import { Plate } from '../plate/plate';
 
 
 export async function __createDummyPlateData() {
   await initPlates(true);
 
+  await createDummyPlates();
+  await createDummyPlatesFromExcel();
+
+  await initPlates(true);
+}
+
+/** Demonstrates construction of templates and plates on the fly */
+async function createDummyPlates() {
   const cellCountingTemplate = await createPlateTemplate({
     name: 'Cell counting',
     description: 'Microscopy-based cell counting',
@@ -66,6 +76,31 @@ export async function __createDummyPlateData() {
       await savePlate(plate);
     }
   }
+}
 
-  await initPlates(true);
+/** 
+ * Demonstrates importing plates from Excel files 
+ * and forcing them to comply to the template
+*/
+async function createDummyPlatesFromExcel() {
+  // create a template for excel plates (you only need to do this once)
+  const excelPlateTemplate = await createPlateTemplate({
+    name: 'Excel',
+    description: 'Excel plates',
+    plateProperties: [ {name: 'Barcode', value_type: DG.COLUMN_TYPE.STRING } ],
+    wellProperties: [
+      {name: 'raw data', value_type: DG.COLUMN_TYPE.FLOAT },
+      {name: 'plate layout', value_type: DG.COLUMN_TYPE.STRING},
+      {name: 'concentrations', min: 0, max: 100, value_type: DG.COLUMN_TYPE.FLOAT}
+    ]
+  });
+
+  // import excel plates from the directory
+  const xlsxFiles = await grok.dapi.files.list('System.DemoFiles/hts/xlsx_plates', false, '*.xlsx');
+  for (const file of xlsxFiles) {
+    const plate = await Plate.fromExcelFile(file);
+    plate.plateTemplateId = excelPlateTemplate.id;
+    plate.details = { Barcode: (Math.round(Math.random() * 100000)).toString().padStart(8, '0') };
+    await savePlate(plate, {autoCreateProperties: false});
+  }
 }

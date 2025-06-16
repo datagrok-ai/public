@@ -1645,8 +1645,8 @@ export class Property implements IProperty {
   }
 
   static propertyOptions:{[name in keyof IProperty]: IProperty} = {
-    'name': { name: 'name', type: TYPE.STRING, nullable: false, validators: ['not empty'] },
-    'type': { name: 'type', type: TYPE.STRING, nullable: false, validators: ['not empty'], description: 'Property data type, such as "int" or "string".' },
+    'name': { name: 'name', type: TYPE.STRING, nullable: false },
+    'type': { name: 'type', type: TYPE.STRING, nullable: false, description: 'Property data type, such as "int" or "string".' },
     'inputType': { name: 'inputType', type: TYPE.STRING, friendlyName: 'Input type', description: 'Property input type' },
     'nullable': { name: 'nullable', type: TYPE.BOOL, description: 'Whether an empty value is allowed. This is used by validators.' },
     'description': { name: 'description', type: TYPE.STRING, editor: InputType.TextArea, description: 'Property description' },

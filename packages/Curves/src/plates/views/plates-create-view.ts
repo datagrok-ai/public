@@ -53,6 +53,21 @@ export function createPlatesView(): DG.View {
     onValueChanged: (v) => setTemplate(plateTemplates.find(pt => pt.name === v)!)
   });
 
+  const fileInput = ui.input.file('Import from Excel', {
+    onValueChanged: async (file) => {
+      const plate = await Plate.fromExcel(await file.readAsBytes());
+      if (plate.rows !== plateType.rows || plate.cols !== plateType.cols) {
+        grok.shell.error(`Plate dimensions do not match the template: ${plate.rows}x${plate.cols} vs ${plateType.rows}x${plateType.cols}`);
+        return;
+      }
+      const missingLayers = plateTemplate.wellProperties.filter(p => !plate.getLayerNames().includes(p.name!));
+      if (missingLayers.length > 0) 
+        grok.shell.warning(`Plate is missing the following layers: ${missingLayers.map(p => p.name!).join(', ')}`);
+
+      plateWidget.plate = plate;
+    }
+  });
+
   // Create plate viewer
   let plate = new Plate(plateType.rows, plateType.cols);
   const plateWidget = PlateWidget.fromPlate(plate);
@@ -64,7 +79,8 @@ export function createPlatesView(): DG.View {
   view.root.appendChild(ui.divV([
       ui.form([
         plateTypeSelector,
-        plateTemplateSelector
+        plateTemplateSelector,
+        fileInput
       ]),
       platePropertiesHost,
       plateWidget.root

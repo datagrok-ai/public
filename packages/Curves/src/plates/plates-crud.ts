@@ -372,8 +372,13 @@ export async function createProperty(prop: Partial<PlateProperty>): Promise<Plat
   return prop as PlateProperty;
 }
 
-/** Saves the plate to the database. */
-export async function savePlate(plate: Plate) {
+/** 
+ * Saves the plate to the database. 
+ * When a property is not found in the plateProperties array, it is created automatically 
+ * if autoCreateProperties is true; otherwise, an error is thrown.
+*/
+export async function savePlate(plate: Plate, options?: {autoCreateProperties?: boolean}) {
+  const autoCreateProperties = options?.autoCreateProperties ?? true;
   await initPlates();
 
   const plateSql =
@@ -383,20 +388,28 @@ export async function savePlate(plate: Plate) {
   plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);
 
   // register new plate level properties
-  for (const layer of Object.keys(plate.details))
-    if (!plateProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())) {
+  for (const layer of Object.keys(plate.details)) {
+    const prop = findProp(plateProperties, layer);
+    if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
       plateProperties.push(await createProperty({name: layer, value_type: valueType}));
       grok.shell.info('Plate layer created: ' + layer);
     }
+    else if (!prop)
+      throw new Error(`Property ${layer} not found in plateProperties`);
+  }
 
   // register new well level properties
-  for (const layer of plate.getLayerNames())
-    if (!wellProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())) {
+  for (const layer of plate.getLayerNames()) {
+    const prop = findProp(wellProperties, layer);
+    if (autoCreateProperties && !prop) {
       const col = plate.data.col(layer);
       wellProperties.push(await createProperty({name: layer, value_type: col!.type}));
       grok.shell.info('Well layer created: ' + layer);
     }
+    else if (!prop)
+      throw new Error(`Property ${layer} not found in wellProperties`);
+  }
 
   await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
   events.next({on: 'after',eventType: 'created', objectType: TYPE.PLATE, object: plate});
@@ -440,11 +453,13 @@ export async function createPlateTemplate(template: Partial<PlateTemplate>): Pro
 
   for (let property of template.plateProperties ?? []) {
     property = await createProperty(property);
+    plateProperties.push(property as PlateProperty);
     sql += `insert into plates.template_plate_properties(template_id, property_id) values (${template.id}, ${property.id});\n`;
   }
 
   for (let property of template.wellProperties ?? []) {
     property = await createProperty(property);
+    wellProperties.push(property as PlateProperty);
     sql += `insert into plates.template_well_properties(template_id, property_id) values (${template.id}, ${property.id});\n`;
   }
 
