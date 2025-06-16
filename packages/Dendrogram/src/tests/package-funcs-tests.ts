@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package-test';
-import {category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 
 /** Tests for package functions, test apps, file previews, file handlers, ... */
 category('packageFuncs', () => {
@@ -11,6 +11,6 @@ category('packageFuncs', () => {
     const nwkFi: DG.FileInfo = (await grok.dapi.files.list(
       `System:AppData/${_package.name}/data`, false, 'tree95.nwk'))[0];
     await grok.functions.call(`${_package.name}:previewNewick`, {file: nwkFi});
-    await awaitCheck(() => true, 'Error', 200);
+    await DG.delay(500);
   });
 });
