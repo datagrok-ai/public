@@ -200,10 +200,11 @@ Usage: grok link
 Link \`datagrok-api\`, all necessary libraries and packages for local development by \`npm link\` command 
 
 Options:
---dev               Links also dev dependencies
---path              Instead of npm linking sets dependecies in package.json to local
---unlink            Unlinks packages and sets last versions instead of local path in package.json dependencies 
---verbose           Prints detailed information about linked packages  
+--dev                 Links also dev dependencies
+--path                Instead of npm linking sets dependecies in package.json to local
+--without-common-dir  Links packages only from the current repository
+--unlink              Unlinks packages and sets last versions instead of local path in package.json dependencies 
+--verbose             Prints detailed information about linked packages  
 `;
 
 // const HELP_MIGRATE = `

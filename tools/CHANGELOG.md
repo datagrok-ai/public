@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.14.13 (2025-06-16)
+
+### Features
+
+* Grok Link added ability to link packages from root directory
+* Grok Link added without-common-dir
+
 ## 4.14.10 (2025-06-08)
 
 ### Features
