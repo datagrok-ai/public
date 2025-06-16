@@ -755,3 +755,178 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   });
   return widget;
 }
+
+
+
+//! #-------------------------------------------------------------------------------
+//! #-------------------------------------------------------------------------------
+
+
+
+//name: extractProteinSequencesMolstar
+//description: Extract protein sequences using Molstar parser
+//input: string pdbId
+//output: object sequences
+export async function extractProteinSequencesMolstar(pdbId: string): Promise<{[chainId: string]: string}> {
+  
+  try {
+    // Get the PdbHelper instance (which has Molstar initialized)
+    const pdbHelper = await PdbHelper.getInstance();
+    // Download PDB data
+    const pdbData = await downloadPdbFileRaw(pdbId);
+    // Use the existing pdbToDf method to parse with Molstar
+    const resDf = await pdbHelper.pdbToDf(pdbData, pdbId);
+    // Extract sequences from the parsed DataFrame
+    const sequences = extractSequencesFromDataFrame(resDf);
+    return sequences;
+    
+  } catch (error: any) {
+    console.error(`Failed to extract sequences from ${pdbId}:`, error);
+    throw error;
+  }
+}
+
+// Download raw PDB file (not the wrapped version)
+async function downloadPdbFileRaw(pdbId: string): Promise<string> {
+  const cleanId = pdbId.trim().toUpperCase();
+  const url = `https://files.rcsb.org/download/${cleanId}.pdb`;
+  console.log(`Downloading raw PDB from: ${url}`);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  
+  const text = await response.text();
+  if (!text || text.length < 100) {
+    throw new Error(`Invalid PDB data received (too short: ${text.length} chars)`);
+  }
+  if (!text.includes('ATOM') && !text.includes('HETATM')) {
+    throw new Error('Downloaded data does not appear to be in PDB format');
+  }
+  
+  console.log(`Raw PDB downloaded successfully: ${text.length} chars, contains ATOM records`);
+  return text;
+}
+
+// Extract sequences from the Molstar-parsed DataFrame
+function extractSequencesFromDataFrame(resDf: any): {[chainId: string]: string} {
+  console.log('Extracting sequences from DataFrame...');
+  console.log(`DataFrame columns: ${resDf.columns.names()}`);
+  console.log(`DataFrame rows: ${resDf.rowCount}`);
+  
+  if (resDf.rowCount === 0) {
+    console.log('DataFrame is empty');
+    return {};
+  }
+  
+  // Group by entity/chain and build sequences
+  const chainSequences: {[chainId: string]: {[seqId: number]: string}} = {};
+  
+  for (let i = 0; i < resDf.rowCount; i++) {
+    const code = resDf.code.get(i);        // Single letter amino acid code
+    const seqId = resDf.seqId.get(i);      // Sequence position
+    const entityId = resDf.seq.get(i);     // Entity/chain identifier
+    
+    if (!code || !entityId || seqId === null || seqId === undefined) {
+      continue;
+    }
+    
+    // Use entity ID as chain identifier
+    const chainId = `Chain_${entityId}`;
+    
+    if (!chainSequences[chainId]) {
+      chainSequences[chainId] = {};
+    }
+    
+    chainSequences[chainId][seqId] = code;
+  }
+  
+  console.log(`Found chain data for: ${Object.keys(chainSequences).join(', ')}`);
+  const sequences: {[chainId: string]: string} = {};
+  
+  for (const [chainId, residues] of Object.entries(chainSequences)) {
+    // Sort by sequence ID and build sequence string
+    const sortedSeqIds = Object.keys(residues).map(n => parseInt(n)).sort((a, b) => a - b);
+    const sequence = sortedSeqIds.map(seqId => residues[seqId]).join('');
+    
+    console.log(`${chainId}: ${sequence.length} residues`);
+    
+    // Only include sequences with reasonable length
+    if (sequence.length >= 5) {
+      // Simplify chain name (remove "Chain_" prefix if desired)
+      const simpleChainId = chainId.replace('Chain_', '');
+      sequences[simpleChainId] = sequence;
+    }
+  }
+  
+  console.log(`Final sequences: ${Object.keys(sequences).map(k => `${k}:${sequences[k].length}`).join(', ')}`);
+  return sequences;
+}
+
+//name: testMolstarExtraction
+//description: Test the Molstar-based extraction
+//input: string pdbId = "3J7Z"
+export async function testMolstarExtraction(pdbId: string = "3J7Z"): Promise<void> {
+  console.log(`=== Testing Molstar extraction for ${pdbId} ===`);
+  
+  try {
+    const sequences = await extractProteinSequencesMolstar(pdbId);
+    
+    const chainCount = Object.keys(sequences).length;
+    console.log(`\n=== RESULTS ===`);
+    console.log(`Chains found: ${chainCount}`);
+    
+    if (chainCount === 0) {
+      grok.shell.warning(`No protein sequences found in ${pdbId}`);
+      return;
+    }
+    
+    // Show results
+    for (const [chainId, sequence] of Object.entries(sequences)) {
+      console.log(`Chain ${chainId}: ${sequence.length} residues`);
+      console.log(`  Sequence: ${sequence.substring(0, 80)}${sequence.length > 80 ? '...' : ''}`);
+      grok.shell.info(`Chain ${chainId}: ${sequence.length} residues`);
+    }
+    
+    console.log(`\n=== SUCCESS ===`);
+    
+  } catch (error: any) {
+    console.error(`=== ERROR ===`);
+    console.error(error);
+    grok.shell.error(`Failed to extract sequences: ${error.message}`);
+  }
+}
+
+//name: testMolstarMultiple
+//description: Test Molstar extraction with multiple PDBs
+export async function testMolstarMultiple(): Promise<void> {
+  const testPdbs = ['1BDQ', '1QBS', '3J7Z']; // Known simple structures
+  
+  console.log('=== Testing Molstar with multiple PDBs ===');
+  
+  for (const pdbId of testPdbs) {
+    try {
+      console.log(`\nTesting ${pdbId}...`);
+      const sequences = await extractProteinSequencesMolstar(pdbId);
+      const chainCount = Object.keys(sequences).length;
+      
+      if (chainCount > 0) {
+        const summary = Object.entries(sequences)
+          .map(([chain, seq]) => `${chain}:${seq.length}`)
+          .join(', ');
+        console.log(`✓ ${pdbId}: ${chainCount} chains (${summary})`);
+        grok.shell.info(`✓ ${pdbId}: ${chainCount} chains (${summary})`);
+      } else {
+        console.log(`✗ ${pdbId}: No sequences found`);
+        grok.shell.warning(`✗ ${pdbId}: No sequences found`);
+      }
+      
+    } catch (error: any) {
+      console.log(`✗ ${pdbId}: ERROR - ${error.message}`);
+      grok.shell.error(`✗ ${pdbId}: ${error.message}`);
+    }
+  }
+  
+  console.log('\n=== Test complete ===');
+}

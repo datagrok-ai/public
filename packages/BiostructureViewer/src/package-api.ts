@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  //export async function init() 
   export async function init(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:Init', {});
   }
@@ -140,10 +141,12 @@ export namespace funcs {
     return await grok.functions.call('@datagrok/biostructure-viewer:GetPdbHelper', {});
   }
 
+  //export async function dockingDemo() 
   export async function dockingDemo(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:DockingDemo', {});
   }
 
+  //export async function inGridDemo() 
   export async function inGridDemo(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:InGridDemo', {});
   }
@@ -221,4 +224,22 @@ export namespace funcs {
   export async function structure3D(molecule: any): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:Structure3D', { molecule });
   }
+
+  //? These are for demo purposes only.
+  //Extract protein sequences using Molstar parser (just demos)
+  export async function extractProteinSequencesMolstar(pdbId: string): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractProteinSequencesMolstar', { pdbId });
+  }
+
+  //Test the Molstar-based extraction
+  export async function testMolstarExtraction(pdbId: string): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarExtraction', { pdbId });
+  }
+
+  //Test Molstar extraction with multiple PDBs
+  export async function testMolstarMultiple(): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarMultiple', {});
+  }
+  //? These are for demo purposes only.
+
 }
