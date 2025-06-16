@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -268,21 +269,21 @@ export async function previewNewick(file: DG.FileInfo) {
 //name: Hierarchical Clustering (Sequences)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringSequences(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE));
 }
 
 //top-menu: Chem | Analyze | Hierarchical Clustering...
 //name: Hierarchical Clustering (Molecules)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringMolecules(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MOLECULE));
 }
 
 //top-menu: ML | Cluster | Hierarchical Clustering...
 //name: Hierarchical Clustering (All)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering2(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE));
 }
 
 // -- Demo --

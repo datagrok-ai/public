@@ -2,10 +2,10 @@
   "name": "@datagrok/dendrogram",
   "friendlyName": "Dendrogram",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
   "dependencies": {
     "@datagrok-libraries/bio": "^5.42.14",

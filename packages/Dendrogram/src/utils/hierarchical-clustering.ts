@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -10,7 +11,12 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {attachLoaderDivToGrid} from '.';
 
 // Custom UI Dialog for Hierarchical Clustering
-export async function hierarchicalClusteringDialog(): Promise<void> {
+export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.DataFrame) => DG.Column | null = (_t) => null): Promise<void> {
+  if (!grok.shell.tv?.table) {
+    grok.shell.warning('Please open a table for hierarchical clustering.');
+    return;
+  }
+
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
@@ -27,15 +33,17 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   };
 
   const onTableInputChanged = (table: DG.DataFrame) => {
+    const defaultCol = getDefaultCoulumn(table);
+    const defaultVal = defaultCol ? [defaultCol] : [];
     const newColInput = ui.input.columns('Features', {table: table,
-      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table)});
+      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table), value: defaultVal});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
-    currentSelectedColNames = [];
+    currentSelectedColNames = newColInput.value.map((c) => c.name);
   };
 
-  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables,
+  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables, nullable: false,
     onValueChanged: (value) => onTableInputChanged(value)});
   const columnsInput = ui.input.columns('Features', {table: currentTableView!,
     onValueChanged: (value) => onColNamesChange(value), available: availableColNames(currentTableView!)});
@@ -50,6 +58,8 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
     distanceInput.root,
     linkageInput.root,
   ]);
+
+  onTableInputChanged(currentTableView!);
 
   ui.dialog('Hierarchical Clustering')
     .add(verticalDiv)
