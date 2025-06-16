@@ -2107,6 +2107,10 @@ export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShare
   return FilesWidget.create(params);
 }
 
+export function time(time: dayjs.Dayjs): HTMLSpanElement {
+  return api.grok_UI_Time(toDart(time));
+}
+
 export namespace tools {
   export function click<T extends HTMLElement>(e: T, handler: () => void): T {
     e.addEventListener('click', handler);
