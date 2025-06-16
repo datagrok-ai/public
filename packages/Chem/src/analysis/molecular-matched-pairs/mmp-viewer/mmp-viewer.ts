@@ -72,6 +72,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   molecules: string | null = null;
   activities: string[] | null = null;
   diffTypes: string[] | null = null;
+  scalings: string[] | null = null;
   fragmentCutoff: number | null;
   totalData: string;
   totalDataUpdated: boolean = false;
@@ -145,6 +146,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: true});
     this.diffTypes = this.stringList('diffTypes', [], {userEditable: false, includeInLayout: true, nullable: false});
+    this.scalings = this.stringList('scalings', [], {userEditable: false, includeInLayout: true, nullable: false});
   }
 
   onPropertyChangedDebounced() {
@@ -160,7 +162,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.moleculesCol = this.dataFrame.col(this.molecules!);
     this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
-    if (this.molecules && this.activities && this.fragmentCutoff) {
+    if (this.molecules && this.activities && this.fragmentCutoff && this.scalings) {
       this.updatePcPlotChoices();
       this.render();
       return;
@@ -312,8 +314,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getTransformationsTab(): HTMLElement {
+    const followCurrentRowInFragGrid = ui.input.bool('Follow current row', {
+      value: false,
+      onValueChanged: () => {
+        this.pairedGrids!.followCurrentRowInFragmentsGrid = followCurrentRowInFragGrid.value;
+        this.pairedGrids!.refreshFragmentsAndPairs(false);
+        this.pcPlot!.setOptions({showAllLines: followCurrentRowInFragGrid.value});
+      },
+    });
+
     this.pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.pairedGrids!.mmpGridTrans.dataFrame, {
       columnNames: [`${this.pcPlotActivity}_from`, `${this.pcPlotActivity}_to`],
+      showAllLines: followCurrentRowInFragGrid.value!,
     });
 
     const hidePcPlot = ui.input.bool('Show PC plot', {
@@ -354,14 +366,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.showFragmentsChoice.input,
       `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
 
-    const followCurrentRowInFragGrid = ui.input.bool('Follow current row', {
-      value: false,
-      onValueChanged: () => {
-        this.pairedGrids!.followCurrentRowInFragmentsGrid = followCurrentRowInFragGrid.value;
-        this.pairedGrids!.refreshFragmentsAndPairs(false);
-        this.pcPlot!.setOptions({showAllLines: followCurrentRowInFragGrid.value});
-      },
-    });
 
     followCurrentRowInFragGrid.classList.add('chem-mmp-fragments-grid-follow-current-row');
 

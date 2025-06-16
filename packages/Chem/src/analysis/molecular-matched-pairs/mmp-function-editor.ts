@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
+import {SCALING_METHODS} from './mmp-viewer/mmp-constants';
 
 export enum MmpDiffTypes {
   delta = 'delta',
@@ -13,6 +14,7 @@ export type MMPFunctionParams = {
   molecules: DG.Column,
   activities: DG.ColumnList,
   diffTypes: MmpDiffTypes[],
+  scalings: SCALING_METHODS[],
   fragmentCutoff: number
 }
 
@@ -23,7 +25,7 @@ export class MmmpFunctionEditor {
   activitiesInput!: DG.InputBase;
   activitiesInputRoot = ui.div();
   cutoffInput = ui.input.float('Cutoff', {value: 0.4});
-  activitiesParams: {[key: string]: {deltaType: string}} = {};
+  activitiesParams: {[key: string]: {deltaType: string, scaling: string}} = {};
   activitiesParamsDiv = ui.divV([]);
 
   constructor() {
@@ -43,6 +45,7 @@ export class MmmpFunctionEditor {
       filter: (col: DG.Column) => Array.from(numericalColumns).includes(col),
       onValueChanged: () => {
         ui.empty(this.activitiesParamsDiv);
+        const df = this.tableInput.value!;
         const colNames: string[] = this.activitiesInput.value.map((it: DG.Column) => it.name);
         for (const key of (Object.keys(this.activitiesParams))) {
           if (!colNames.includes(key))
@@ -56,8 +59,16 @@ export class MmmpFunctionEditor {
               this.activitiesParams[it].deltaType = typeChoice.value!;
             },
           });
-          this.activitiesParams[it as string] = {deltaType: typeChoice.value!};
-          this.activitiesParamsDiv.append(typeChoice.root);
+          const scalingChoice = ui.input.choice('Scaling', {
+            items: df.col(it)!.stats.min < 0 ? [SCALING_METHODS.NONE] :
+              [SCALING_METHODS.NONE, SCALING_METHODS.LG, SCALING_METHODS.MINUS_LG],
+            value: this.activitiesParams[it]?.scaling ?? SCALING_METHODS.NONE,
+            onValueChanged: () => {
+              this.activitiesParams[it].scaling = scalingChoice.value!;
+            },
+          });
+          this.activitiesParams[it as string] = {deltaType: typeChoice.value!, scaling: scalingChoice.value!};
+          this.activitiesParamsDiv.append(ui.divH([typeChoice.root, scalingChoice.root]));
         });
       },
     } as ColumnInputOptions);
@@ -106,12 +117,21 @@ export class MmmpFunctionEditor {
     return arr;
   }
 
+  getScalings(): SCALING_METHODS[] {
+    const arr: SCALING_METHODS[] = [];
+    this.activitiesInput!.value.forEach((col: DG.Column) => {
+      arr.push(this.activitiesParams[col.name].scaling as SCALING_METHODS);
+    });
+    return arr;
+  }
+
   public getParams(): MMPFunctionParams {
     return {
       table: this.tableInput.value!,
       molecules: this.colInput.value!,
       activities: this.activitiesInput!.value,
       diffTypes: this.getDiffTypes(),
+      scalings: this.getScalings(),
       fragmentCutoff: this.cutoffInput.value!,
     };
   }
