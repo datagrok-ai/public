@@ -46,6 +46,3 @@ stats.json
 test-record.mp4
 test-report.csv
 test-console-output.log
-
-**/*.d.ts 
-!src/package-api.d.ts

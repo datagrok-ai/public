@@ -32,4 +32,3 @@ dist/
 src/**/*.js
 test-console-output.log
 
-**/*.d.ts

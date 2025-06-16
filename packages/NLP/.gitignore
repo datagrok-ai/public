@@ -7,4 +7,3 @@ test-report.html
 src/**/*.js
 test-console-output.log
 
-**/*.d.ts

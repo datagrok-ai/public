@@ -6,4 +6,3 @@ built/
 test-report.html
 test-console-output.log
 
-**/*.d.ts

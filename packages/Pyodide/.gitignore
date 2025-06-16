@@ -32,4 +32,3 @@ dist/
 src/**/*.js
 !src/worker.js
 
-**/*.d.ts

@@ -30,4 +30,3 @@ dist/
 test-report.html
 test-console-output.log
 
-**/*.d.ts

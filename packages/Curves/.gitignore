@@ -33,4 +33,4 @@ src/**/*.js
 src/**/*.js.map
 test-console-output.log
 
-**/*.d.ts
+

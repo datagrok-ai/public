@@ -28,4 +28,3 @@ dist/
 .idea/**/shelf
 .idea/codeStyles/
 
-**/*.d.ts

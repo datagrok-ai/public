@@ -37,4 +37,3 @@ vite-tests.config.js
 vite-tests.config.js.map
 test-console-output.log
 
-**/*.d.ts

@@ -44,5 +44,4 @@ test-console-output.log
 
 _deprecated
 
-**/*.d.ts 
-!src/package-api.d.ts
+
