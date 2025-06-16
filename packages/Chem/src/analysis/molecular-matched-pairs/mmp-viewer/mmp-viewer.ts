@@ -312,14 +312,22 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getTransformationsTab(): HTMLElement {
-    const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
-      this.pairedGrids!.mmpGridTransMessage);
-
     this.pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.pairedGrids!.mmpGridTrans.dataFrame, {
       columnNames: [`${this.pcPlotActivity}_from`, `${this.pcPlotActivity}_to`],
     });
-    //  pcPlot.root.style.display = 'none';
+
+    const hidePcPlot = ui.input.bool('Show PC plot', {
+      value: true,
+      onValueChanged: () => {
+        this.pcPlot!.root.style.display = hidePcPlot.value ? 'flex' : 'none';
+      },
+    });
+    hidePcPlot.root.classList.add('chem-mmp-hide-pc-plot');
+
+    const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
+      this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
+      this.pairedGrids!.mmpGridTransMessage, hidePcPlot.root);
+
     mmPairsRoot1.append(this.pcPlot.root);
 
     mmPairsRoot1.prepend(
@@ -351,6 +359,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       onValueChanged: () => {
         this.pairedGrids!.followCurrentRowInFragmentsGrid = followCurrentRowInFragGrid.value;
         this.pairedGrids!.refreshFragmentsAndPairs(false);
+        this.pcPlot!.setOptions({showAllLines: followCurrentRowInFragGrid.value});
       },
     });
 
