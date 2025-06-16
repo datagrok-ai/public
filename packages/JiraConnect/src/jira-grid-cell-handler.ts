@@ -32,7 +32,7 @@ const images = {
 export class JiraGridCellHandler extends DG.ObjectHandler {
 
     get type(): string {
-        return 'JIRA Ticket';
+        return 'Jira Ticket';
     }
 
     isApplicable(x: any): boolean {
@@ -188,8 +188,8 @@ function listRenderer(list: string[], withTooltip = true) {
 }
 
 class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
-    get name(): string { return 'JIRA Ticket'; }
-    get cellType(): string { return 'JIRA Ticket'; }
+    get name(): string { return 'Jira Ticket'; }
+    get cellType(): string { return 'Jira Ticket'; }
     get defaultWidth(): number | null { return 100; }
 
     currentTimeout: any = null;
