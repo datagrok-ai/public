@@ -263,8 +263,9 @@ export class Func extends Entity {
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
-  /** Indicates that script is already vector, which means that it works directly
-   * with whole column and doesn't require vectorization (`meta.vectorFunc = true`) */
+  /** Indicates that the function (or script) is already vector, meaning it
+   * accepts vector input (an entire column) and processes it in a single call,
+   * rather than being executed separately for each scalar element (row) */
   get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
@@ -1037,7 +1038,9 @@ export class Script extends Func {
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
-  /** If true, script has a `meta.vectorFunc = true` tag and proper language set */
+  /** Indicates that the script is already vector, meaning it accepts vector
+   * input (an entire column) and processes it in a single call, rather than
+   * being executed separately for each scalar element (row) */
   get isVectorFunc(): boolean { return api.grok_Script_Get_IsVectorFunc(this.dart); }
 
   /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
