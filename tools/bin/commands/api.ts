@@ -80,7 +80,6 @@ function generateScriptWrappers(): void {
       path: dir,
       ignoreFiles: ['.npmignore', '.gitignore'],
     });
-    console.log(files);
     for (const file of files) {
       let extension: string;
       if (!utils.scriptExtensions.some((ext) => (extension = ext, file.endsWith(ext)))) continue;
@@ -88,8 +87,6 @@ function generateScriptWrappers(): void {
       const filepath = path.join(dir, file);
       const script = fs.readFileSync(filepath, 'utf8');
       if (!script) continue;
-      console.log(filepath);
-      console.log(script);
 
       const name = utils.getScriptName(script, utils.commentMap[extension!]);
       if (!name) continue;
