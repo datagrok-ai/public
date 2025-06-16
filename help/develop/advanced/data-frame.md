@@ -510,7 +510,8 @@ Examples:
 The `.columns` property of `DataFrame` provides the `addNewCalculated` method for creating new columns based on
 expressions. The expression is specified as a string and can include arithmetic operations, column references, or
 functions registered in the platform — either scalar functions or those marked with the meta.vectorFunc tag that
-operate on entire columns.
+accept vector input (an entire column) and process it in a single call, rather than being executed separately for each
+scalar element (row).
 
 For example, in a dataframe `df` with columns `X` and `Y` you can add a new column `Z` by:
 
