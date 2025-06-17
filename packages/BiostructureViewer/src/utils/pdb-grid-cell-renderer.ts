@@ -164,6 +164,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
 
+
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
   imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
   pdbIdHeight: number = 25;
@@ -447,11 +448,14 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
             break;
           default:
             col.semType = 'Macromolecule';
+            col.setTag('alphabet', 'PT'); // Default to protein
             break;
         }
         
-        // Keep it simple - let Datagrok auto-detect the renderer
-        // Don't set cell.renderer or aligned tags to avoid MSA behavior
+        // Copy exact tags from working FASTA example
+        col.setTag('units', 'fasta');
+        col.setTag('aligned', 'SEQ');
+        col.setTag('cell.renderer', 'sequence');
         
         columns.push(col);
       }
