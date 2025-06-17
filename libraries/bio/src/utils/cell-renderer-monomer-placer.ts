@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -9,7 +8,7 @@ import wu from 'wu';
 import {getSeqHelper, ISeqHelper} from './seq-helper';
 import {ALPHABET, MonomerToShortFunc, NOTATION, SplitterFunc, TAGS as bioTAGS} from './macromolecule';
 import {ISeqSplitted} from './macromolecule/types';
-import {CellRendererBackBase, getGridCellColTemp} from './cell-renderer-back-base';
+import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
 import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {errInfo} from './err-info';
@@ -119,12 +118,23 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     if (this.tableCol && this.gridCol) {
       this.subs.push(this.tableCol.dataFrame.onCurrentRowChanged.subscribe(() => {
         const df = this.tableCol.dataFrame;
-        const grid = this.gridCol!.grid;
         if (df.currentRowIdx === -1) {
           this.tableCol.temp[tempTAGS.referenceSequence] = null;
           this.tableCol.temp[tempTAGS.currentWord] = null;
           this.invalidateGrid();
         }
+      }));
+      const resetTriggerTags = [
+        bioTAGS.positionShift,
+        'renderMultiline'
+      ];
+
+      this.subs.push(DG.debounce(this.tableCol.dataFrame.onMetadataChanged.pipe(
+        operators.filter((a) =>
+          a.args.source === this.tableCol && resetTriggerTags.includes(a.args.key)
+        )
+      ), 200).subscribe((_) => {
+        this.reset();
       }));
 
       this.subs.push(DG.debounce(this.tableCol.dataFrame.onMetadataChanged.pipe(
@@ -134,13 +144,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       }));
     }
   }
-
-  private _multiLineMonomerBounds: Array<{
-  lineIdx: number;
-  monomerIdx: number;
-  bounds: DG.Rect;
-  sequencePosition: number;
-}> = [];
 
 
   private calculateFontBasedSpacing(g: CanvasRenderingContext2D): {
@@ -167,12 +170,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return {lineHeight, monomerSpacing};
   }
 
-
   private shouldUseMultilineRendering(tableCol: DG.Column): boolean {
     const renderMultiline = tableCol.getTag('renderMultiline');
     return renderMultiline === 'true';
   }
-
 
   private calculateMultiLineLayoutDynamic(
     g: CanvasRenderingContext2D,
@@ -235,7 +236,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     return {lineLayouts, lineHeight};
   }
-
 
   public async init(): Promise<void> {
     await Promise.all([
@@ -359,27 +359,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return res;
   }
 
-  private getCellMonomerLengthsForSeqValue(value: string, width: number): number[] {
-    const sh = this.seqHelper.getSeqHandler(this.tableCol);
-    const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
-    const visibleSeqStart = this.positionShift;
-    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth) + visibleSeqStart;
-    const seqSS: ISeqSplitted = sh.splitter(value);
-    const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
-    const res = new Array<number>(visibleSeqEnd - visibleSeqStart);
-    let seqWidth: number = 0;
-    for (let seqMonI = visibleSeqStart; seqMonI < visibleSeqEnd; ++seqMonI) {
-      const seqMonLabel = seqSS.getOriginal(seqMonI);
-      const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
-      const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
-      const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
-      res[seqMonI - visibleSeqStart] = seqMonWidth;
-      seqWidth += seqMonWidth;
-      if (seqWidth > width) break;
-    }
-    return res;
-  }
-
   private getCellMonomerLengthsForSeqMsa(): number[] {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
     // this.logger.debug(`${logPrefix}, start`);
@@ -434,22 +413,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
   /** Returns seq position for pointer x */
   public getPosition(rowIdx: number, x: number, width: number, positionShiftPadding?: number): number | null {
-    const bounds = this._cellBounds.get(rowIdx);
-    if (bounds) {
-      // Use multi-line hit detection
-      for (const b of bounds) {
-        if (b.bounds.contains(x, 0)) // y is tricky, might need to adjust
-          return b.monomerIdx;
-      }
-      return null;
-    }
-
-    // Fall back to single-line detection
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] =
-    this.getCellMonomerLengths(rowIdx, width);
+      this.getCellMonomerLengths(rowIdx, width);
+
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(rowIdx);
     if (seqSS.length === 0) return null;
+
     return hitBounds(monomerMaxLengthSumList, x, positionShiftPadding);
   }
 
@@ -637,15 +607,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     } finally {
       g.restore();
     }
-  }
-  private getPositionMultiLine(x: number, y: number): number | null {
-    for (const bound of this._multiLineMonomerBounds) {
-    // Check if the point is within the monomer bounds
-      if (x >= bound.bounds.x && x <= bound.bounds.x + bound.bounds.width &&
-        y >= bound.bounds.y && y <= bound.bounds.y + bound.bounds.height)
-        return bound.monomerIdx;
-    }
-    return null;
   }
   private shouldRenderShiftedThreeDots(positionShift: number): boolean {
     return positionShift > 0 && (!this.gridCol || !this.gridCol.dart || !this.gridCol.grid || !this.gridCol.grid.dart || (this.gridCol.grid.props.colHeaderHeight ?? 0) <= 50);
