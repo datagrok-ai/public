@@ -3,9 +3,9 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import dayjs from 'dayjs';
 
-const resCsv = `col 1,col1,new_col
-0,val1,1
-1,val2,1`;
+const resCsv = `col1,new_col
+val1,1
+val2,1`;
 
 category('Pyodide: FuncCall execution', async () => {
   test('Simple types call js', async () => {

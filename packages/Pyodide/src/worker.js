@@ -27,7 +27,8 @@ async function init() {
 	    for (const [key, val] of Object.entries(argsObject)) {
 		let jsVal = valueToJS(val);
 		if (jsVal?.to_csv) {
-		    jsVal = jsVal.to_csv.callKwargs({sep: ","});
+		    jsVal = jsVal.to_csv.callKwargs({index: false});
+		    jsVal = jsVal.trim();
 		    typings[key] = "dataframe";
 		} else if (jsVal?.isoformat) {
 		    jsVal = jsVal.isoformat();
