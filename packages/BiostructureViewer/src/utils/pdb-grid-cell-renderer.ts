@@ -163,9 +163,19 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
 
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
+
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
   imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
   pdbIdHeight: number = 25;
+  
+  // Simple boolean to show/hide sequence button
+  private renderViewChainsPortal: boolean = true;
+  private buttonWidth: number = 50;
+  private buttonHeight: number = 16;
+  
+  // Hover state tracking
+  private hoveredCell: DG.GridCell | null = null;
+  private isButtonHovered: boolean = false;
 
   get defaultWidth() { return 100; }
   get defaultHeight() { return 100; }
@@ -179,43 +189,288 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     const renderedOnGrid = gridCell.gridColumn && gridCell.grid?.canvas === g.canvas;
     const cellValue = (renderedOnGrid ? gridCell.cell.valueString : (gridCell.cell?.value ?? '').toString()).toLowerCase();
 
-    if (h < 40 || cellValue.length < 4 || w < 40)
+    if (h < 40 || cellValue.length < 4 || w < 40) {
+      // Small cell - render text with optional button
+      this.renderSmallCell(g, x, y, w, h, gridCell, cellStyle);
+    } else {
+      // Large cell - render image with text header and optional button
+      this.renderLargeCell(g, x, y, w, h, gridCell, cellStyle, cellValue, renderedOnGrid);
+    }
+  }
+
+  private renderSmallCell(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ): void {
+    if (this.renderViewChainsPortal && w > this.buttonWidth + 10) {
+      // Render text in reduced area
+      const textWidth = w - this.buttonWidth - 4;
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, textWidth, h, gridCell, cellStyle);
+      
+      // Render button with hover state
+      const isHovered = this.hoveredCell === gridCell && this.isButtonHovered;
+      this.drawSequenceButton(g, x + textWidth + 2, y + 2, this.buttonWidth, h - 4, isHovered);
+    } else {
+      // Normal text rendering
       DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
-    else {
-      const pdb = cellValue;
-      const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
-      const cache = this.imageCache;
+    }
+  }
 
-      if (this.imageCache.has(url)) {
-        const img = this.imageCache.get(url);
-        if (img) {
-          const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
-          g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
-          DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
+  private renderLargeCell(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, cellValue: string, renderedOnGrid: boolean
+  ): void {
+    const pdb = cellValue;
+    const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
+    const cache = this.imageCache;
+
+    // Calculate text area width (leave space for button if enabled)
+    const textWidth = this.renderViewChainsPortal ? w - this.buttonWidth - 4 : w;
+    const isHovered = this.hoveredCell === gridCell && this.isButtonHovered;
+
+    if (this.imageCache.has(url)) {
+      const img = this.imageCache.get(url);
+      if (img) {
+        const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
+        g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
+        
+        // Render text in header
+        DG.GridCellRenderer.byName('string')?.render(g, x, y, textWidth, this.pdbIdHeight, gridCell, cellStyle);
+        
+        // Render button in header with hover state
+        if (this.renderViewChainsPortal) {
+          this.drawSequenceButton(g, x + textWidth + 2, y + 2, this.buttonWidth, this.pdbIdHeight - 4, isHovered);
         }
-      } else {
-        DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
-
-        fetch(url).then(async (response) => {
-          if (!response.ok) {
-            g.fillStyle = 'red';
-            g.fillRect(x + w - 5, y, 5, 5);
-            return;
-          }
-
-          const blob = await response.blob();
-          const img = new Image();
-          img.src = URL.createObjectURL(blob);
-          img.onload = () => {
-            cache.set(url, img);
-            if (renderedOnGrid)
-              gridCell.render();
-            else
-              this.render(g, x, y + this.pdbIdHeight, w, h - this.pdbIdHeight, gridCell, cellStyle);
-            URL.revokeObjectURL(img.src);
-          };
-        }).catch((_) => { });
       }
+    } else {
+      // Render text in header while loading
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, textWidth, this.pdbIdHeight, gridCell, cellStyle);
+      
+      // Render button in header with hover state
+      if (this.renderViewChainsPortal) {
+        this.drawSequenceButton(g, x + textWidth + 2, y + 2, this.buttonWidth, this.pdbIdHeight - 4, isHovered);
+      }
+
+      fetch(url).then(async (response) => {
+        if (!response.ok) {
+          g.fillStyle = 'red';
+          g.fillRect(x + w - 5, y, 5, 5);
+          return;
+        }
+
+        const blob = await response.blob();
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+        img.onload = () => {
+          cache.set(url, img);
+          if (renderedOnGrid)
+            gridCell.render();
+          else
+            this.render(g, x, y + this.pdbIdHeight, w, h - this.pdbIdHeight, gridCell, cellStyle);
+          URL.revokeObjectURL(img.src);
+        };
+      }).catch((_) => { });
+    }
+  }
+
+  private drawSequenceButton(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, hovered: boolean = false): void {
+    // Button background - different colors for hover state
+    g.fillStyle = hovered ? '#45a049' : '#4CAF50';
+    g.fillRect(x, y, w, h);
+    
+    // Button border
+    g.strokeStyle = hovered ? '#3d8b40' : '#45a049';
+    g.lineWidth = 1;
+    g.strokeRect(x, y, w, h);
+    
+    // Button text
+    g.fillStyle = 'white';
+    g.font = '9px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('SEQ', x + w/2, y + h/2);
+  }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!this.renderViewChainsPortal) return;
+    
+    const rect = gridCell.bounds;
+    const cellRect = gridCell.gridColumn.grid.canvas.getBoundingClientRect();
+    
+    // Calculate mouse position relative to cell
+    const mouseX = e.clientX - cellRect.left - rect.x;
+    const mouseY = e.clientY - cellRect.top - rect.y;
+    
+    // Check if mouse is in button area
+    let buttonX: number, buttonY: number;
+    
+    if (rect.height < 40 || rect.width < 40) {
+      // Small cell layout
+      buttonX = rect.width - this.buttonWidth - 2;
+      buttonY = 2;
+    } else {
+      // Large cell layout (button in header)
+      const textWidth = rect.width - this.buttonWidth - 4;
+      buttonX = textWidth + 2;
+      buttonY = 2;
+    }
+    
+    const wasHovered = this.isButtonHovered;
+    this.isButtonHovered = mouseX >= buttonX && mouseX <= buttonX + this.buttonWidth && 
+                          mouseY >= buttonY && mouseY <= buttonY + this.buttonHeight;
+    
+    if (this.isButtonHovered !== wasHovered) {
+      this.hoveredCell = gridCell;
+      gridCell.render(); // Trigger redraw to show hover state
+      
+      // Change cursor style
+      const canvas = gridCell.gridColumn.grid.canvas;
+      canvas.style.cursor = this.isButtonHovered ? 'pointer' : 'default';
+    }
+  }
+
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (this.hoveredCell === gridCell) {
+      this.hoveredCell = null;
+      this.isButtonHovered = false;
+      gridCell.render(); // Trigger redraw to remove hover state
+      
+      // Reset cursor
+      const canvas = gridCell.gridColumn.grid.canvas;
+      canvas.style.cursor = 'default';
+    }
+  }
+
+  onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!this.renderViewChainsPortal) return;
+    
+    const cellValue = gridCell.cell.valueString?.toLowerCase();
+    if (!cellValue || cellValue.length < 4) return;
+
+    // Get cell bounds
+    const rect = gridCell.bounds;
+    const cellRect = gridCell.gridColumn.grid.canvas.getBoundingClientRect();
+    
+    // Calculate click position relative to cell
+    const clickX = e.clientX - cellRect.left - rect.x;
+    const clickY = e.clientY - cellRect.top - rect.y;
+    
+    // Check if click is in button area
+    let buttonX: number, buttonY: number;
+    
+    if (rect.height < 40 || rect.width < 40) {
+      // Small cell layout
+      buttonX = rect.width - this.buttonWidth - 2;
+      buttonY = 2;
+    } else {
+      // Large cell layout (button in header)
+      const textWidth = rect.width - this.buttonWidth - 4;
+      buttonX = textWidth + 2;
+      buttonY = 2;
+    }
+    
+    // Check if click is within button bounds
+    if (clickX >= buttonX && clickX <= buttonX + this.buttonWidth && 
+        clickY >= buttonY && clickY <= buttonY + this.buttonHeight) {
+      
+      e.stopPropagation();
+      e.preventDefault();
+      
+      this.handleSequenceButtonClick(cellValue.toUpperCase());
+    }
+  }
+
+  private detectSequenceType(sequence: string): string {
+    const seq = sequence.toUpperCase();
+    const length = seq.length;
+    
+    // Count nucleotides and amino acids
+    const nucleotides = (seq.match(/[ATGCUN]/g) || []).length;
+    const aminoAcids = (seq.match(/[ACDEFGHIKLMNPQRSTVWY]/g) || []).length;
+    const hasU = seq.includes('U');
+    const hasT = seq.includes('T');
+    
+    // If mostly nucleotides
+    if (nucleotides / length > 0.85) {
+      if (hasU && !hasT) return 'RNA';
+      if (hasT && !hasU) return 'DNA';
+      return 'Nucleotide'; // Mixed or unclear
+    }
+    
+    // If mostly amino acids
+    if (aminoAcids / length > 0.85) {
+      return 'Protein';
+    }
+    
+    // Default fallback
+    return 'Macromolecule';
+  }
+
+  private async handleSequenceButtonClick(pdbId: string): Promise<void> {
+    try {
+      grok.shell.info(`Extracting sequences from ${pdbId}...`);
+      
+      // Call your existing sequence extraction function
+      const sequences = await grok.functions.call('BiostructureViewer:extractProteinSequencesMolstar', {
+        pdbId: pdbId
+      });
+      
+      if (!sequences || Object.keys(sequences).length === 0) {
+        grok.shell.warning(`No protein sequences found in ${pdbId}`);
+        return;
+      }
+      
+      // Create transposed dataframe - one column per chain
+      const chainIds = Object.keys(sequences);
+      const columns: DG.Column[] = [];
+      
+      for (const chainId of chainIds) {
+        const sequence = sequences[chainId] as string;
+        const sequenceType = this.detectSequenceType(sequence);
+        
+        // Create column for this chain
+        const col = DG.Column.string(`Chain_${chainId}`, 1).init((_i) => sequence);
+        
+        // Set appropriate semantic type based on sequence content
+        switch (sequenceType) {
+          case 'Protein':
+            col.semType = 'Macromolecule';
+            col.setTag('alphabet', 'PT'); // Protein
+            break;
+          case 'DNA':
+            col.semType = 'Macromolecule';
+            col.setTag('alphabet', 'DNA');
+            break;
+          case 'RNA':
+            col.semType = 'Macromolecule';
+            col.setTag('alphabet', 'RNA');
+            break;
+          default:
+            col.semType = 'Macromolecule';
+            break;
+        }
+        
+        // Keep it simple - let Datagrok auto-detect the renderer
+        // Don't set cell.renderer or aligned tags to avoid MSA behavior
+        
+        columns.push(col);
+      }
+      
+      // Create dataframe from columns
+      const df = DG.DataFrame.fromColumns(columns);
+      df.name = `${pdbId}_sequences`;
+      
+      // Use addTablePreview to make it floating by default
+      const tableView = grok.shell.addTablePreview(df);
+      tableView.name = `${pdbId} Protein Sequences`;
+      
+      const chainCount = chainIds.length;
+      const totalResidues = Object.values(sequences).reduce((sum:number, seq) => sum + (seq as string).length, 0);
+      grok.shell.info(`Extracted ${chainCount} chain${chainCount > 1 ? 's' : ''} (${totalResidues} total residues) from ${pdbId}`);
+      
+    } catch (error: any) {
+      console.error('Failed to extract sequences:', error);
+      grok.shell.error(`Failed to extract sequences from ${pdbId}: ${error.message}`);
     }
   }
 }

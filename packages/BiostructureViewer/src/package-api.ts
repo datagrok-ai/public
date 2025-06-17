@@ -225,8 +225,7 @@ export namespace funcs {
     return await grok.functions.call('@datagrok/biostructure-viewer:Structure3D', { molecule });
   }
 
-  //? These are for demo purposes only.
-  //Extract protein sequences using Molstar parser (just demos)
+  //Extract protein sequences using Molstar parser
   export async function extractProteinSequencesMolstar(pdbId: string): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:ExtractProteinSequencesMolstar', { pdbId });
   }
@@ -240,6 +239,4 @@ export namespace funcs {
   export async function testMolstarMultiple(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarMultiple', {});
   }
-  //? These are for demo purposes only.
-
 }
