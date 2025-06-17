@@ -1,13 +1,10 @@
+/* eslint-disable max-params */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Subject} from 'rxjs';
-
-import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {checkForSingleSeqClusters} from './multiple-sequence-alignment';
@@ -44,9 +41,9 @@ type PepseaBodyUnit = { ID: string, HELM: string };
  * @param {DG.Column} clustersCol - The column containing the clusters of the sequences.
  * @param logger {ILogger} Logger
  */
-export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
+export async function runPepsea(table: DG.DataFrame, srcCol: DG.Column<string>, unUsedName: string,
   method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
-  clustersCol: DG.Column<string | number> | null = null, logger?: ILogger
+  clustersCol: DG.Column<string | number> | null = null, logger?: ILogger, onlySelected: boolean = false
 ): Promise<DG.Column<string>> {
   const pepseaContainer = await Pepsea.getDockerContainer();
   const peptideCount = srcCol.length;
@@ -60,23 +57,42 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   const clusterIndexes: number[][] = new Array(clustersColCategories.length);
 
   // Grouping data by clusters
-  for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
-    const clusterCategoryIdx = clustersColData[rowIndex];
-    const cluster = clustersColCategories[clusterCategoryIdx];
-    if (cluster === '')
-      continue;
+  if (!onlySelected) {
+    for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
+      const clusterCategoryIdx = clustersColData[rowIndex];
+      const cluster = clustersColCategories[clusterCategoryIdx];
+      if (!cluster)
+        continue;
 
-    const clusterId = clustersColCategories.indexOf(cluster);
-    const helmSeq = srcCol.get(rowIndex);
-    if (helmSeq) {
-      (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
-      (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIndex);
+      const clusterId = clusterCategoryIdx;
+      const helmSeq = srcCol.get(rowIndex);
+      if (helmSeq) {
+        (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
+        (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIndex);
+      }
+    }
+  } else {
+    const selection = table.selection;
+    for (let rowIndex = -1; (rowIndex = selection.findNext(rowIndex, true)) !== -1;) {
+      const clusterCategoryIdx = clustersColData[rowIndex];
+      const cluster = clustersColCategories[clusterCategoryIdx];
+      if (!cluster)
+        continue;
+
+      const clusterId = clusterCategoryIdx;
+      const helmSeq = srcCol.get(rowIndex);
+      if (helmSeq) {
+        (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
+        (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIndex);
+      }
     }
   }
   checkForSingleSeqClusters(clusterIndexes, clustersColCategories);
 
-  const alignedSequences: string[] = new Array(peptideCount);
+  const alignedSequences: string[] = new Array(peptideCount).fill(null);
   for (const body of bodies) { // getting aligned sequences for each cluster
+    if (!body || body.length === 0)
+      continue;
     const alignedObject = await requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend, logger);
     const alignments = alignedObject.Alignment;
 
