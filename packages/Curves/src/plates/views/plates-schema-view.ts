@@ -1,34 +1,31 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {createPlateTemplate, initPlates, PlateProperty, PlateTemplate} from '../plates-crud';
+import {createPlateTemplate, initPlates, PlateTemplate} from '../plates-crud';
 import {SchemaEditor} from '@datagrok-libraries/utils/src/schema-editor';
 import { merge } from 'rxjs';
 
-
-function platePropertyToOptions(p: Partial<PlateProperty>): DG.IProperty {
-  return { name: p.name, type: p.value_type}
-}
 
 export function propertySchemaView(template: PlateTemplate): DG.View {
   const view = DG.View.create();
   view.name = 'Templates / ' + template.name;
 
-  const platePropEditor = new SchemaEditor({properties: template.plateProperties.map(platePropertyToOptions)});
-  const wellPropEditor = new SchemaEditor({properties: template.wellProperties.map(platePropertyToOptions)});
+  const extraPropertiesDiv = ui.div([]);
+  const platePropEditor = new SchemaEditor({properties: template.plateProperties, extraPropertiesDiv: extraPropertiesDiv});
+  const wellPropEditor = new SchemaEditor({properties: template.wellProperties, extraPropertiesDiv: extraPropertiesDiv});
   const nameEditor = ui.input.string('Name', {value: template.name});
   const descriptionEditor = ui.input.string('Description', {value: template.description});
 
   const saveButton = ui.bigButton('SAVE', async() => {
     template.name = nameEditor.value;
     template.description = descriptionEditor.value;
-    template.plateProperties = platePropEditor.properties.map(p => ({...p, value_type: p.type}));
-    template.wellProperties = wellPropEditor.properties.map(p => ({...p, value_type: p.type}));
+    template.plateProperties = platePropEditor.properties;
+    template.wellProperties = wellPropEditor.properties;
     await createPlateTemplate(template);
     await initPlates(true);
     grok.shell.info('Template saved');
   });
- 
+
   const updateSaveVisibility = () => saveButton.style.display = template.id !== -1 ? 'none' : 'block';
   updateSaveVisibility();
 
@@ -41,11 +38,15 @@ export function propertySchemaView(template: PlateTemplate): DG.View {
       descriptionEditor,
     ]),
 
-    ui.h2('Plate properties'),
-    platePropEditor,
-
-    ui.h2('Well properties'),
-    wellPropEditor,
+    ui.divH([
+      ui.divV([
+        ui.h2('Plate properties'),
+        platePropEditor,
+        ui.h2('Well properties'),
+        wellPropEditor,
+      ]),
+      extraPropertiesDiv
+    ]),
   ]));
 
   view.setRibbonPanels([[saveButton]]);

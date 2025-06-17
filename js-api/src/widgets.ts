@@ -1397,6 +1397,7 @@ export class InputForm extends DartWrapper {
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
+    inputs = inputs.filter((input) => input != null);
     return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
   }
 

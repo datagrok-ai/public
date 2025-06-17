@@ -1408,7 +1408,7 @@ export interface IProperty {
   /** Corresponding category on the context panel */
   category?: string;
 
-  /** Value format */
+  /** Value format, such as '0.000' */
   format?: string;
 
   /** Whether the property should be editable via the UI */
@@ -1440,6 +1440,12 @@ export interface IProperty {
   /** Filter for columns, can be numerical, categorical or directly a column type (string, int...)
    * Applicable when type = Column */
   columnTypeFilter?: ColumnType | 'numerical' | 'categorical' | null;
+}
+
+
+/** Properties of properties. See also {@link Property.propertyOptions}. */
+interface IPropertyMeta {
+  applicableTo?: string;
 }
 
 
@@ -1644,7 +1650,7 @@ export class Property implements IProperty {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 
-  static propertyOptions:{[name in keyof IProperty]: IProperty} = {
+  static propertyOptions:{[name in keyof IProperty]: IProperty & IPropertyMeta } = {
     'name': { name: 'name', type: TYPE.STRING, nullable: false },
     'type': { name: 'type', type: TYPE.STRING, nullable: false, description: 'Property data type, such as "int" or "string".' },
     'inputType': { name: 'inputType', type: TYPE.STRING, friendlyName: 'Input type', description: 'Property input type' },
@@ -1652,9 +1658,9 @@ export class Property implements IProperty {
     'description': { name: 'description', type: TYPE.STRING, editor: InputType.TextArea, description: 'Property description' },
     'semType': { name: 'semType', type: TYPE.STRING, friendlyName: 'Semantic type', description: 'Semantic type' },
     'units': { name: 'units', type: TYPE.STRING, description: 'Units of measurement. See also: [postfix]' },
-    'min': { name: 'min', type: TYPE.FLOAT, description: 'Minimum value. Applicable to numerical properties only' },
-    'max': { name: 'max', type: TYPE.FLOAT, description: 'Maximum value. Applicable to numerical properties only' },
-    'step': { name: 'step', type: TYPE.FLOAT, description: 'Step to be used in a slider. Only applies to numerical properties.' },
+    'min': { name: 'min', applicableTo: TYPE.NUM, type: TYPE.FLOAT, description: 'Minimum value. Applicable to numerical properties only' },
+    'max': { name: 'max', applicableTo: TYPE.NUM, type: TYPE.FLOAT, description: 'Maximum value. Applicable to numerical properties only' },
+    'step': { name: 'step', applicableTo: TYPE.NUM, type: TYPE.FLOAT, description: 'Step to be used in a slider. Only applies to numerical properties.' },
     'showSlider': { name: 'showSlider', type: TYPE.BOOL, description: 'Whether a slider appears next to the number input. Applies to numerical columns only.' },
     'showPlusMinus': { name: 'showPlusMinus', type: TYPE.BOOL, description: 'Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only.' },
     'choices': { name: 'choices', type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
@@ -1668,9 +1674,8 @@ export class Property implements IProperty {
     'valueValidators': { name: 'valueValidators', type: TYPE.OBJECT, description: 'List of value validators (functions that take a value and return error message or null)' },
     'friendlyName': { name: 'friendlyName', type: TYPE.STRING, description: 'Custom field friendly name shown in [PropertyGrid]' },
     'fieldName': { name: 'fieldName', type: TYPE.STRING, description: 'Name of the corresponding JavaScript field. No need to specify it if it is the same as name.' },
-    'tags': { name: 'tags', type: TYPE.OBJECT, description: 'Additional tags' },
-    'options': { name: 'options', type: TYPE.OBJECT, description: 'Additional options.' },
-    'columnTypeFilter': { name: 'columnTypeFilter', type: TYPE.STRING, description: 'Filter for columns, can be numerical, categorical or directly a column type (string, int...) Applicable when type = Column' }
+    'tags': { name: 'tags', type: TYPE.MAP, description: 'Additional tags' },
+    'options': { name: 'options', type: TYPE.MAP, description: 'Additional options.' },
   }
 }
 

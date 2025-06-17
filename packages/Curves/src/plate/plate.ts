@@ -248,9 +248,9 @@ export class Plate {
       const start = propBlock * plate.rows * plate.cols;
       const pid = pidCol?.get(start);
       const property = wellProperties.find(p => p.id == pid)!;
-      const valueColumn = df.col(plateDbColumn[property.value_type])!;
+      const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
-      plate.data.columns.addNew(property.name, property.value_type)
+      plate.data.columns.addNew(property.name, property.type)
         .init(i => valueColumn.get(start + i));
     }
 

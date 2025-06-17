@@ -850,7 +850,10 @@ export namespace input {
 
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source, options)));
+    const propInputs = props
+      .map((p) => forProperty(p, source, options))
+      .filter((input) => input !== null);
+    return inputs(propInputs);
   }
 
   function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
