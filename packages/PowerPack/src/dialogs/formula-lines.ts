@@ -145,7 +145,7 @@ class Table {
     return btn;
   }
 
-  constructor(items: DG.FormulaLine[], onItemChangedAction: Function) {
+  constructor(items: DG.FormulaLine[], onItemChangedAction: Function, srcAxes?: AxisNames) {
     this.items = items;
     this._onItemChangedAction = onItemChangedAction;
 
@@ -207,7 +207,15 @@ class Table {
       this._onItemChangedAction(this._currentItemIdx);
     });
 
-    delay(1).then((_) => this.setFirstItemAsCurrent());
+    if (srcAxes && srcAxes.x && srcAxes.y && items.length > 0) {
+      const neededItem = items.find((item) => item.formula?.includes(srcAxes.x!) && item.formula?.includes(srcAxes.y!));
+      if (neededItem) {
+        const itemIdx = items.indexOf(neededItem);
+        delay(1).then((_) => {
+          this._currentItemIdx = itemIdx;
+        });
+      }
+    }
   }
 
   setFirstItemAsCurrent() {
@@ -264,7 +272,7 @@ class Preview {
   items: DG.FormulaLine[];
 
   /** Source Scatter Plot axes */
-  _scrAxes?: AxisNames;
+  _srcAxes?: AxisNames;
 
   set height(h: number) {this.viewer.root.style.height = `${h}px`;}
   get root(): HTMLElement {return this.viewer.root;}
@@ -303,14 +311,14 @@ class Preview {
       [itemMeta.argName, itemMeta.funcName] : [itemMeta.funcName, itemMeta.argName];
 
     /** If the source axes exist, then we try to set similar axes */
-    if (this._scrAxes) {
-      [previewY, previewX] = [previewY ?? this._scrAxes.y, previewX ?? this._scrAxes.x];
+    if (this._srcAxes) {
+      [previewY, previewX] = [previewY ?? this._srcAxes.y, previewX ?? this._srcAxes.x];
 
-      if (previewX === this._scrAxes.y || previewY === this._scrAxes.x)
+      if (previewX === this._srcAxes.y || previewY === this._srcAxes.x)
         [previewY, previewX] = [previewX, previewY];
 
       if (previewX === previewY)
-        previewY = this._scrAxes.y;
+        previewY = this._srcAxes.y;
     }
 
     return {y: previewY, x: previewX};
@@ -327,14 +335,14 @@ class Preview {
         const yCols: string[] = src.props.yColumnNames;
         const yCol = this.dataFrame.columns.toList()
           .find((col) => col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
-        this._scrAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
+        this._srcAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
-        this._scrAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName']};
+        this._srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName']};
       } else {
         this.dataFrame = src.dataFrame!;
-        this._scrAxes = {y: src.props.yColumnName, x: src.props.xColumnName};
+        this._srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName};
       }
     } else
       throw 'Host is not DataFrame or Viewer.';
@@ -374,6 +382,8 @@ class Preview {
         xAxisHeight: 25,
       });
     }
+    if (this._srcAxes)
+      this._axes = this._srcAxes;
 
     /**
      * Creates special context menu for preview Scatter Plot.
@@ -394,8 +404,8 @@ class Preview {
    */
   update(itemIdx: number): boolean {
     /** If there are no lines, try to set the axes as in the original Scatter Plot. */
-    if (itemIdx < 0 && this._scrAxes)
-      this._axes = this._scrAxes;
+    if (itemIdx < 0 && this._srcAxes)
+      this._axes = this._srcAxes;
 
     try {
       /** Duplicate the original item to display it even if it's hidden */
@@ -1025,7 +1035,7 @@ export class FormulaLinesDialog {
       (itemIdx: number): boolean => {
         this.editor.update(itemIdx);
         return this.preview.update(itemIdx);
-      });
+      }, this.preview._srcAxes);
   }
 
   _onOKAction() {
