@@ -15,7 +15,7 @@ export function info() {
 //name: Excalidraw
 //tags: app
 //meta.browsePath: Misc
-//meta.icon: icons/excal.png
+//meta.icon: images/excal.png
 //output: view v
 export function excalidrawApp() {
   const div = renderExcalidraw();
