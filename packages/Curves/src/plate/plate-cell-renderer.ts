@@ -43,6 +43,6 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent) {
-    grok.shell.o = PlateWidget.detailedView(gridCell.value).root;
+    grok.shell.o = PlateWidget.detailedView(Plate.fromTableByRow(gridCell.value!)).root;
   }
 }

@@ -10,15 +10,16 @@
   "description": "Automated UI tests",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.8",
+    "@types/wu": "^2.1.42",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
-    "wu": "^2.1.0",
-    "@types/wu": "^2.1.42"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.15",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -31,7 +32,7 @@
     "debug-uitests": "webpack && grok publish",
     "release-uitests": "webpack && grok publish --release",
     "build-uitests": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-uitests-dev": "webpack && grok publish dev",
     "release-uitests-dev": "webpack && grok publish dev --release",
     "debug-uitests-public": "webpack && grok publish public",

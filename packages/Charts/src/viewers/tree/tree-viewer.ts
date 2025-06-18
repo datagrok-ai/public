@@ -9,11 +9,13 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
+import _ from 'lodash';
 
-type onClickOptions = 'Select' | 'Filter';
+type onClickOptions = 'Select' | 'Filter' | 'None';
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All',
+  None: 'All',
 };
 const aggregationMap = new Map<string, string[]>([
   // Aggregation for numeric columns: int, bigint, float, qnum
@@ -113,7 +115,7 @@ export class TreeViewer extends EChartViewer {
     this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Color' });
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {category: 'Data', columnTypeFilter: DG.TYPE.CATEGORICAL});
-    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter', 'None']});
     this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
@@ -187,13 +189,13 @@ export class TreeViewer extends EChartViewer {
             this.dataFrame.filter.and(this.viewerFilter);
         } else
           this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else
+      } else if (this.onClick === 'Select')
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
     const showTooltip = async (params: any) => {
       const ancestors = params.treeAncestors
-        .filter((item: any) => item.name)
+        .filter((item: any) => item.value)
         .map((item: any) => item.name);
 
       const div = ui.divH([]);
@@ -329,14 +331,6 @@ export class TreeViewer extends EChartViewer {
     return undefined;
   }
 
-  handleTreeClick(pathString: string, color: number): void {
-    if (this.filteredPaths)
-      this.cleanTree(this.filteredPaths);
-    if (this.selectedPaths)
-      this.cleanTree(this.selectedPaths);
-    this.paintBranchByPath(pathString, color);
-  }
-
   paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
       lineStyle: { color: DG.Color.toHtml(color) },
@@ -416,8 +410,26 @@ export class TreeViewer extends EChartViewer {
 
   setChartOption(): void {
     const chartOption = this.chart.getOption();
-    if (chartOption && chartOption.series && chartOption.series[0])
-      this.option = chartOption;
+    if (!chartOption?.series?.[0]) return;
+
+    const chartProps = new Set(this.getProperties().map((p) => p.name));
+    const customMergeSeries = (objValue: any, srcValue: any, key: string) => {
+      if (key !== 'series' || !Array.isArray(objValue) || !Array.isArray(srcValue))
+        return undefined;
+
+      return objValue.map((item, i) => {
+        const srcItem = srcValue[i];
+        if (!srcItem) return item;
+
+        // Update only properties that exist in chartProps and are not null or undefined
+        const filteredSrcItem = Object.fromEntries(
+          Object.entries(srcItem).filter(([k, v]) => chartProps.has(k) && v != null),
+        );
+
+        return _.merge({}, item, filteredSrcItem);
+      });
+    };
+    this.option = _.mergeWith(chartOption, this.option, customMergeSeries);
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
@@ -611,7 +623,7 @@ export class TreeViewer extends EChartViewer {
 
     const { filter, rowCount } = this.dataFrame;
     const hasActiveFilter = filter.trueCount !== rowCount;
-    const treeData = hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
+    const treeData = !isFilter || hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
 
     const pathKeys = Object.keys(treeData);
     const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
@@ -627,6 +639,9 @@ export class TreeViewer extends EChartViewer {
   }
 
   getSelectionFilterData(bitset: DG.BitSet): SelectionData {
+    if (!this.eligibleHierarchyNames || this.eligibleHierarchyNames.length === 0)
+      return {};
+
     const rowMask = bitset.clone();
     const selectionBuilder = this.dataFrame
       .groupBy(this.eligibleHierarchyNames)
@@ -635,19 +650,22 @@ export class TreeViewer extends EChartViewer {
     const selectionAggregated = selectionBuilder.aggregate();
 
     const treeData: SelectionData = {};
-    for (let i = 0; i < selectionAggregated.rowCount; ++i) {
-      const path = selectionAggregated.columns.byNames(this.eligibleHierarchyNames)
+    const {rowCount, columns} = selectionAggregated;
+    for (let i = 0; i < rowCount; ++i) {
+      const path = columns.byNames(this.eligibleHierarchyNames)
         .map((col) => col.getString(i))
         .join(' ||| ');
-      treeData[path] = selectionAggregated.columns.byName('count').get(i);
+      treeData[path] = columns.byName('count').get(i);
     }
     return treeData;
   }
 
   onTableAttached(): void {
-    const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
-    );
+    const categoricalColumns = [...this.dataFrame.columns.categorical]
+      .filter((col) => !col.name.startsWith('~'))
+      .sort((col1, col2) =>
+        col1.categories.length - col2.categories.length || col1.name.localeCompare(col2.name),
+      );
 
     if (categoricalColumns.length < 1)
       return;
@@ -824,13 +842,13 @@ export class TreeViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    if (this.filter.trueCount >= CATEGORIES_NUMBER) {
-      this.eligibleHierarchyNames = this.hierarchyColumnNames ? this.hierarchyColumnNames.filter(
-        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-      ) : [];
-    } else
-      this.eligibleHierarchyNames = this.hierarchyColumnNames;
-
+    this.eligibleHierarchyNames = this.hierarchyColumnNames?.filter((name) => {
+      if (name.startsWith('~'))
+        return false;
+      if (this.filter.trueCount >= CATEGORIES_NUMBER)
+        return this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER;
+      return true;
+    }) ?? [];
 
     if (this.eligibleHierarchyNames == null || this.eligibleHierarchyNames.length === 0) {
       utils.MessageHandler._showMessage(this.root, `The Tree viewer requires at least one categorical column with fewer than ${CATEGORIES_NUMBER} unique categories`, utils.ERROR_CLASS);

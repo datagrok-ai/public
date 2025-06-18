@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.6.3 (2025-06-09)
+
+- Add StartWorkflow return
+
 ## 0.6.2 (2025-05-03)
 
 - Update Compute2 API
@@ -28,17 +32,9 @@
 
 - Preparing 1.23.0 release
 
-## 0.1.1-rc (2024-09-06)
-
-- Preparing 1.21.1 release
-
 ## 0.1.0 (2024-09-05)
 
 - Release for 1.21.0
-
-## 0.1.0-rc (2024-09-04)
-
-- Preparing 1.21.0 release
 
 ## 0.0.8 (2024-07-01)
 

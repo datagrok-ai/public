@@ -5,7 +5,7 @@ import { loadProjectsList, loadIssues, loadIssueData, loadProjectData } from './
 import { ErrorMessageResponse, JiraIssue, Project } from './api/objects';
 import { AuthCreds } from './api/objects';
 import { getJiraCreds } from './app/credentials';
-import { addJIRADetector } from './detectors';
+import { addJiraDetector } from './detectors';
 import { JiraGridCellHandler } from './jira-grid-cell-handler';
 import '../css/jira_connect.css';
 import { LruCache } from "datagrok-api/dg";
@@ -25,7 +25,7 @@ export async function _init(): Promise<void> {
   const projects = await projectsList() ?? [];
   if (projects.length > 0) {
     const projectNames = projects.map(e => e.key);
-    addJIRADetector(projectNames, '');
+    addJiraDetector(projectNames, '');
     DG.ObjectHandler.register(new JiraGridCellHandler());
   }
 }
@@ -34,10 +34,9 @@ export async function _init(): Promise<void> {
 //output: object projects
 export async function projectsList(): Promise<Project[] | null> {
   const jiraCreds = await getJiraCreds();
-  if(!jiraCreds)
+  if (!jiraCreds)
     return null;
-  const projects = await loadProjectsList(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey))
-  return projects;
+  return await loadProjectsList(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey));
 }
 
 //name: projectData 
@@ -45,10 +44,9 @@ export async function projectsList(): Promise<Project[] | null> {
 //output: object projects
 export async function projectData(projectKey: string): Promise<Project | null> {
   const jiraCreds = await getJiraCreds();
-  if(!jiraCreds)
+  if (!jiraCreds)
     return null;
-  const project = await loadProjectData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), projectKey)
-  return project;
+  return await loadProjectData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), projectKey);
 }
 
 //name: issueData 
@@ -56,7 +54,7 @@ export async function projectData(projectKey: string): Promise<Project | null> {
 //output: object issue
 export async function issueData(issueKey: string): Promise<JiraIssue | null> {
   const jiraCreds = await getJiraCreds();
-  if(!jiraCreds)
+  if (!jiraCreds)
     return null;
   if (!issueKey || issueKey?.length === 0)
     return null;
@@ -80,7 +78,7 @@ export async function issueData(issueKey: string): Promise<JiraIssue | null> {
 //output: column result
 export async function getJiraField(ticketColumn: DG.Column, field: string): Promise<DG.Column | undefined> {
   const jiraCreds = await getJiraCreds();
-  if(!jiraCreds)
+  if (!jiraCreds)
     return undefined;
   const ticketsMap = new Map<string, string>()
   const keys = field.split(':');
@@ -136,7 +134,7 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
 //output: object result
 export async function getJiraTicketsByFilter(filter?: object): Promise<JiraIssue[]> {
   const jiraCreds = await getJiraCreds();
-  if(!jiraCreds)
+  if (!jiraCreds)
     return [];
   let result: JiraIssue[] = [];
   let total = -1;

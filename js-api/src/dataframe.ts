@@ -311,14 +311,18 @@ export class DataFrame {
     return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
   }
 
-  /** Exports the content to JSON format */
+  /** Converts the contents to array of objects, with column names as keys.
+   * Keep in mind that the internal DataFrame format is far more efficient than JSON, so
+   * use it only as a convenience for working with relatively small datasets. */
   toJson(): any[] {
-    return Array.from({length: this.rowCount}, (_, idx) =>
-      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
-        entry[colName] = this.get(colName, idx);
-        return entry;
-      }, {})
-    );
+    const rows = this.rowCount;
+    const result: any[] = Array.from({ length: rows }, () => ({}));
+    for (const col of this.columns)
+      for (let i = 0; i < rows; i++)
+        if (!col.isNone(i))
+          result[i][col.name] = col.get(i);
+
+    return result;
   }
 
   /** Exports dataframe to binary */
@@ -1311,6 +1315,14 @@ export class ColumnList {
     return this.names().map((name: string) => this.byName(name));
   }
 
+  /** Returns a name->column map. Use it when you need to access columns frequently. */
+  toMap(): Map<string, Column> {
+    const map = new Map();
+    for (const col of this)
+      map.set(col.name, col);
+    return map;
+  }
+
   /** Adds a column, and optionally notifies the parent dataframe.
    * @param {Column} column
    * @param {boolean} notify - whether DataFrame's `changed` event should be fired
@@ -1472,12 +1484,33 @@ export class RowMatcher {
  * See usage example: {@link https://public.datagrok.ai/js/samples/data-frame/value-matching/value-matcher}
  * */
 export class ValueMatcher {
+  static supportedTypes: string[] = [TYPE.FLOAT, TYPE.INT, TYPE.BIG_INT, TYPE.STRING, TYPE.BOOL, TYPE.DATE_TIME];
+
   private readonly dart: any;
 
   constructor(dart: any) { this.dart = dart; }
 
-  static forColumn(column: Column, pattern: string) {
+  /** Creates a matcher for the specified column. */
+  static forColumn(column: Column, pattern: string): ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
+  }
+
+  /** Creates a matcher for the specified data type. */
+  static forType(type: TYPE | string, pattern: string): ValueMatcher {
+    switch (type) {
+      case TYPE.FLOAT:
+      case TYPE.INT:
+      case TYPE.BIG_INT:
+        return ValueMatcher.numerical(pattern);
+      case TYPE.STRING:
+        return ValueMatcher.string(pattern);
+      case TYPE.BOOL:
+        return ValueMatcher.bool(pattern);
+      case TYPE.DATE_TIME:
+        return ValueMatcher.dateTime(pattern);
+      default:
+        throw `Value matching not supported for type '${type}'`;
+    }
   }
 
   static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
@@ -1485,11 +1518,18 @@ export class ValueMatcher {
   static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
   static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
-  get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
-  get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+  /** Expression as entered by user (such as '>42') */
+  get pattern(): string { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
 
-  match(value: any) { return api.grok_ValueMatcher_Match(this.dart, value); }
-  validate(value: any) { return api.grok_ValueMatcher_Validate(this.dart, value); }
+  /** Operation (such as '<', 'EQUALS', 'BEFORE', etc). */
+  get operator(): string { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+
+  /** Whether [x] passes the filter specified by the [expression].
+   * See also {@link validate} for the explanation. */
+  match(value: any): boolean { return api.grok_ValueMatcher_Match(this.dart, value); }
+
+  /** Validates the specified conditions. Returns null, if valid, error string otherwise */
+  validate(value: any): string | null { return api.grok_ValueMatcher_Validate(this.dart, value); }
 }
 
 /**

@@ -20,28 +20,29 @@
     "directory": "packages/Alation"
   },
   "dependencies": {
-    "datagrok-api": "^1.25.0",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.5.7",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.25.0",
+    "dayjs": "^1.11.13",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.15",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",
     "debug-alation": "webpack && grok publish ",
     "release-alation": "webpack && grok publish --release",
     "build-alation": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-alation-eval": "grok publish eval",
     "release-alation-eval": "grok publish eval --release",
     "lint": "eslint src --ext .ts",

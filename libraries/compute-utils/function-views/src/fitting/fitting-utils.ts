@@ -253,6 +253,17 @@ export function getSensAnWgt(): HTMLElement {
   return div;
 }
 
+/** Return optimization widget */
+export function getOptimizationAnWgt(): HTMLElement {
+  const span = ui.span(['Optimize']);
+  span.classList.add('fit-view-ribbon-text');
+  const icn = ui.iconFA('arrow-up');
+  const div = ui.div([icn, span]);
+  ui.tooltip.bind(div, 'Run optimization. Opens a separate view');
+
+  return div;
+}
+
 /** Return dataframe with loss function vals */
 export function getLossFuncDf(extr: Extremum): DG.DataFrame {
   return DG.DataFrame.fromColumns([

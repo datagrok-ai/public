@@ -26,7 +26,6 @@ import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
-import {color} from 'html2canvas/dist/types/css/types/color';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;

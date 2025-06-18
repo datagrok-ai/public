@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.7 (2025-06-09)
+
+- Add StartWorkflow return
+
 ## 1.3.6 (2025-06-03)
 
 - Allow all users to use

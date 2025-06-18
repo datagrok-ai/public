@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "LibTests",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -30,6 +30,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.15",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "source-map-loader": "^5.0.0",
@@ -41,10 +42,10 @@
   },
   "scripts": {
     "link-all": "npm link vue datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils @datagrok-libraries/compute-api @datagrok-libraries/webcomponents",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "lint": "eslint . --ext .ts,.tsx",
     "lint-fix": "eslint . --ext .ts,.tsx --fix",
-    "vite-build": "tsc && vite build --config vite.config.js && vite build --config vite-tests.config.js",
+    "vite-build": "grok api && grok check --soft && tsc && vite build --config vite.config.js && vite build --config vite-tests.config.js",
     "vite-dev": "tsc && vite build --config vite.config.js",
     "test": "grok test",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/compute-api run build && npm --prefix ./../../libraries/webcomponents run build && npm run build"

@@ -355,6 +355,15 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
   }
 
+  const selectionGrid = model.df.plot.grid({
+    rowSource: DG.RowSet.Selected,
+    selectedRowsColor: DG.Color.fromHtml('#ffffff'),
+    title: 'Selection',
+  });
+
+  const logoViewerNode = (model?.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE));
+  if (logoViewerNode)
+    model.analysisView.dockManager.dock(selectionGrid, DG.DOCK_TYPE.DOWN, logoViewerNode, 'Selection', 0.4);
 
   progress.close();
   return model;

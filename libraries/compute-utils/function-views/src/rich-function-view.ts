@@ -24,7 +24,8 @@ import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/ut
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
-import {getFittingWgt, getSensAnWgt} from '../src/fitting/fitting-utils';
+import {getFittingWgt, getOptimizationAnWgt, getSensAnWgt} from '../src/fitting/fitting-utils';
+import {OptimizationView} from './optimization-view';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -711,6 +712,9 @@ export class RichFunctionView extends FunctionView {
     const fitting = getFittingWgt();
     fitting.onclick = async () => await this.onFittingLaunch();
 
+    const optimize = getOptimizationAnWgt();
+    optimize.onclick = async () => await this.onOptimizationLaunch();
+
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
@@ -726,6 +730,7 @@ export class RichFunctionView extends FunctionView {
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isFittingEnabled ? [fitting]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.isOptimizationEnabled ? [optimize]: [],
       ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
@@ -1184,6 +1189,10 @@ export class RichFunctionView extends FunctionView {
 
   private async onFittingLaunch(): Promise<void> {
     await Optimization.fromEmpty(this.func);
+  }
+
+  private async onOptimizationLaunch(): Promise<void> {
+    await OptimizationView.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {

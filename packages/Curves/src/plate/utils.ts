@@ -90,6 +90,12 @@ export function toStandardSize([rows, cols]: number[]): [number, number] {
   throw new Error(`${rows}x${cols} exceeds maximum plate size 32x48`);
 }
 
+export const standardPlateSizes: { [index: number]: [rows: number, cols: number] } = {
+  96: [8, 12],
+  384: [16, 24],
+  1536: [32, 48]
+}
+
 export function safeLog(num: number) {
   return num <= 0 ? 0 : Math.log10(num);
 }

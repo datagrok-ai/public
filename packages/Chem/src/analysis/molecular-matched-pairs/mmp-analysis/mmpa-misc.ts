@@ -36,6 +36,7 @@ export type MmpInitData = {
     activities: Float32Array [];
     activitiesNames: string[];
     activitiesCount: number;
+    diffTypes: string[]
 };
 
 export type MmpRulesBasedData = {
@@ -60,6 +61,7 @@ export type MmpAllCasesBasedData = {
     diffs: Float32Array[];
     activityPairsIdxs: BitArray[];
     coreNums: Int32Array;
+    pairedActivities: Array<[Float32Array, Float32Array]>
 };
 
 export type MmpGeneration = {

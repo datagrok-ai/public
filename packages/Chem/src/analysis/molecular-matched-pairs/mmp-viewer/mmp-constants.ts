@@ -80,3 +80,9 @@ export const MMP_CONTEXT_PANE_CLASS = 'mmp-context-pane';
 
 export const MOL_CANVAS_WIDTH = 170;
 export const MOL_CANVAS_HEIGHT = 75;
+
+export enum SCALING_METHODS {
+  NONE = 'none',
+  LG = 'lg',
+  MINUS_LG = '-lg',
+}

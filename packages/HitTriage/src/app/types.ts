@@ -98,7 +98,7 @@ export type HitTriageTemplateCompute = {
 
 export type HitTriageTemplateSubmit = {
     fName: string,
-    package: string
+    package?: string | undefined
 };
 
 export type HitTriageCampaignStatus = string;

@@ -4,24 +4,24 @@
   "version": "0.0.2",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "latest",
-    "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "datagrok-api": "^1.25.0",
+    "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
+    "datagrok-tools": "^4.14.15",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "grok link",
     "debug-chatgpt": "webpack && grok publish",
     "release-chatgpt": "webpack && grok publish --release",
     "build-chatgpt": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-chatgpt-dev": "webpack && grok publish dev",
     "release-chatgpt-dev": "webpack && grok publish dev --release",
     "debug-chatgpt-public": "webpack && grok publish public",

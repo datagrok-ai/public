@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -10,6 +11,7 @@ import {getCampaignFieldEditors} from './new-template-accordeon';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
 import {getLayoutInput} from './layout-input';
+import {getFuncPackageNameSafe} from '../utils';
 
 export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   preset?: PeptiHitTemplate): Promise<INewTemplateResult<PeptiHitTemplate>> {
@@ -188,7 +190,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
               });
             }),
         },
-        ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
+        ...(submitFunction ? {submit: {fName: submitFunction.name, package: getFuncPackageNameSafe(submitFunction)}} : {}),
       };
       await saveHitDesignTemplate(out, app.appName);
       grok.shell.info('Template created successfully');

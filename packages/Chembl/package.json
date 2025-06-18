@@ -14,30 +14,31 @@
     "directory": "packages/Chembl"
   },
   "dependencies": {
+    "@datagrok-libraries/db-explorer": "1.1.4",
     "@datagrok-libraries/utils": "^4.5.7",
-    "datagrok-api": "^1.25.0",
     "@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.25.0",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "@datagrok-libraries/db-explorer": "1.1.4"
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@datagrok/chem": "latest",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.15",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@datagrok/chem": "latest"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"

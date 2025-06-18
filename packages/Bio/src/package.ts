@@ -544,8 +544,9 @@ export async function macromoleculePreprocessingFunction(
   fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
     return {entries: col.toList(), options: {}};
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
-  return {entries: seqList, options: {...options, gapOpen, gapExtend}};
+
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType, gapOpen, gapExtend);
+  return {entries: seqList, options};
 }
 
 //name: Helm Fingerprints
@@ -1100,7 +1101,7 @@ export function longSeqTableHelm(): void {
 
 // -- Handle context menu --
 
-///name: addCopyMenu
+//name: addCopyMenu
 //input: object cell
 //input: object menu
 export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {

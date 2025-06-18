@@ -13,8 +13,8 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
+  const nOptions = Object.keys(args).length - 1; 
+  if (args['_'].length !== 1 || nOptions > 2)
     return false;
   const curDir = process.cwd();
 
@@ -56,7 +56,9 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
   warnings.push(...checkScriptNames(packagePath));
-  errors.push(...checkFuncSignatures(packagePath, jsTsFiles));
+  const [signatureWarnings, signatureErrors] = checkFuncSignatures(packagePath, jsTsFiles);
+  warnings.push(...signatureWarnings);
+  errors.push(...signatureErrors);
   errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
   if (!isReleaseCandidateVersion)
     warnings.push(...checkChangelog(packagePath, json));
@@ -147,8 +149,9 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   return warnings;
 }
 
-export function checkFuncSignatures(packagePath: string, files: string[]): string[] {
+export function checkFuncSignatures(packagePath: string, files: string[]): [string[], string[]] {
   const warnings: string[] = [];
+  const errors: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
     app: ({ name }: { name?: string }) => {
       let value = true;
@@ -300,8 +303,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         }
       }
       let wrongInputNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''))
-      if (f.name) {
-        console.log(f);
+      if (f.name && f.name !== 'postprocess') {
         if (namesInFiles.has(f.name))
           namesInFiles.get(f.name)?.push(file);
         else
@@ -309,24 +311,24 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       }
 
       if (wrongInputNames.length > 0)
-        warnings.push(`File ${file}, function ${f.name}: Wrong input names: (${wrongInputNames.map((e) => e.name).join(', ')})`);
+        errors.push(`File ${file}, function ${f.name}: Wrong input names: (${wrongInputNames.map((e) => e.name).join(', ')})`);
       if (f.isInvalidateOnWithoutCache)
-        warnings.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
+        errors.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
 
       if (f.cache)
         if (!utils.cacheValues.includes(f.cache))
-          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
+          errors.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
       if (f.invalidateOn)
         if (!utils.isValidCron(f.invalidateOn))
-          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
+          errors.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
     }
   }
   for(const [name, files] of namesInFiles){
     if(files.length > 1)
-      warnings.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
+      errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
   }
 
-  return warnings;
+  return [warnings, errors];
 }
 
 const sharedLibExternals: { [lib: string]: {} } = {
@@ -572,7 +574,6 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
       if (!isHeader)
         isHeader = true;
       const param = match[1];
-      console.log(param);
       if (param === 'name')
         data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
       else if (param === 'description')

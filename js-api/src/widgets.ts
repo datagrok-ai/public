@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, PropertyOptions} from "./entities";
+import {Func, Property, IProperty} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -314,7 +314,7 @@ export class Widget<TSettings = any> {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & IProperty | null = null): any {
     const fieldName = options?.fieldName ?? propertyName;
 
     let obj = this;
@@ -1397,6 +1397,7 @@ export class InputForm extends DartWrapper {
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
+    inputs = inputs.filter((input) => input != null);
     return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
   }
 
@@ -1719,6 +1720,18 @@ export class TreeViewGroup extends TreeViewNode {
     return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
   }
 
+  /** Removes all children (going down recursively) that satisfy the predicate */
+  removeChildrenWhere(predicate: (node: TreeViewNode) => boolean): void {
+    for (const child of this.children) {
+      if (predicate(child)) {
+        child.remove();
+      }
+      else if (child instanceof TreeViewGroup) {
+        child.removeChildrenWhere(predicate);
+      }
+    }
+  }
+
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
 
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
@@ -1831,8 +1844,7 @@ export class HtmlTable extends DartWidget {
     super(dart);
   }
 
-  /** Creates a visual table based on [items], [renderer], and [columnNames]
-   * @returns {HtmlTable} */
+  /** Creates a visual table based on [items], [renderer], and [columnNames] */
   static create(items: any, renderer: any, columnNames: any = null): HtmlTable {
     return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames));
   }

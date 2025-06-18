@@ -115,6 +115,7 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch(result, (result) => {
       if (!isResultPending)
         return;
+      isResultPending = false;
       emit('return', result);
     });
 
