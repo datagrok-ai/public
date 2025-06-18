@@ -27,7 +27,7 @@ export const PrintOptionsDefaults = new class {
   /** Color of text to print */ color: string = undefinedColor;
   /** */ pivot: number = 0;
   /** Is left aligned */ left: boolean = false;
-  /** Transparency rate where 1.0 is fully transparent */ transparencyRate: number = 1.0;
+  /** Transparency rate where 1.0 is fully transparent */ transparencyRate: number = 0;
   /** Monomer's separator, if specified */ separator: string = '';
   /** Is checker if element last or not */ last: boolean = false;
   /** MSA - for aligned, classic - for other seq */ drawStyle: DrawStyle = DrawStyle.classic;
@@ -125,9 +125,9 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
   if (opts.referenceSequence) {
     const currentMonomerCanonical = opts.referenceSequence[opts.wordIdx];
     if (compareWithCurrent && (opts.referenceSequence.length > 0) && (highlightDifference === 'difference'))
-      opts.transparencyRate = (colorPart == currentMonomerCanonical) ? 0.3 : opts.transparencyRate;
+      opts.transparencyRate = (colorPart == currentMonomerCanonical) ? 0.7 : opts.transparencyRate;
     if (compareWithCurrent && (opts.referenceSequence.length > 0) && (highlightDifference === 'equal'))
-      opts.transparencyRate = (colorPart != currentMonomerCanonical) ? 0.3 : opts.transparencyRate;
+      opts.transparencyRate = (colorPart != currentMonomerCanonical) ? 0.7 : opts.transparencyRate;
   }
   if (opts.maxLengthOfMonomer != null)
     colorPart = monomerToShortFunction(colorPart, opts.maxLengthOfMonomer);

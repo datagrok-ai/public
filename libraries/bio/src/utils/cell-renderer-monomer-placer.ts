@@ -327,6 +327,27 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return resSum;
   }
 
+  private getCellMonomerLengthsForSeqValue(value: string, width: number): number[] {
+    const sh = this.seqHelper.getSeqHandler(this.tableCol);
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
+    const visibleSeqStart = this.positionShift;
+    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth) + visibleSeqStart;
+    const seqSS: ISeqSplitted = sh.splitter(value);
+    const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
+    const res = new Array<number>(visibleSeqEnd - visibleSeqStart);
+    let seqWidth: number = 0;
+    for (let seqMonI = visibleSeqStart; seqMonI < visibleSeqEnd; ++seqMonI) {
+      const seqMonLabel = seqSS.getOriginal(seqMonI);
+      const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
+      const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
+      const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
+      res[seqMonI - visibleSeqStart] = seqMonWidth;
+      seqWidth += seqMonWidth;
+      if (seqWidth > width) break;
+    }
+    return res;
+  }
+
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeq()`;
     // this.logger.debug(`${logPrefix}, start`);
@@ -449,6 +470,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle,
   ) {
+    // for cases when we render it on somewhere other than grid, gridRow might be null or incorrect (set to 0).
+    //for this case we can just recalculate split sequence without caching
     const isRenderedOnGrid = gridCell.grid?.canvas === g.canvas;
 
     if (!this.seqHelper) return;
@@ -468,6 +491,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
         this.monomerLengthLimit != maxLengthOfMonomer
       ) {
+        // this if means that the mm renderer settings have changed,
+        // particularly monomer representation and max width.
         let gapLength = 0;
         const msaGapLength = 8;
         gapLength = tableCol.temp[MmcrTemps.gapLength] as number ?? gapLength;
@@ -547,7 +572,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
                 const currentMonomerCanonical = cm;
                 const refMonomerCanonical = referenceSequence[refIndex];
                 if (currentMonomerCanonical === refMonomerCanonical)
-                  transparencyRate = 0.6;
+                  transparencyRate = 0.7;
               }
             }
 
@@ -572,8 +597,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       } else {
         // --- Single-line rendering path (is unchanged) ---
         this._leftThreeDotsPadding = this.shouldRenderShiftedThreeDots(positionShift) ? g.measureText(shiftedLeftPaddingText).width : 0;
-        const [, maxLengthWordsSum]: [number[], number[]] = this.getCellMonomerLengths(gridCell.tableRowIndex!, w);
-        const visibleSeqLength = Math.min(subParts.length, Math.ceil(w / (this.props.fontCharWidth)) + positionShift);
+        let [, maxLengthWordsSum]: [number[], number[]] = this.getCellMonomerLengths(gridCell.tableRowIndex!, w);
+        if (!isRenderedOnGrid)
+          maxLengthWordsSum = this.getSummedMonomerLengths(this.getCellMonomerLengthsForSeqValue(value, w));
+        const minMonomerWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
+        const visibleSeqLength = Math.min(subParts.length, Math.ceil(w / (minMonomerWidth)) + positionShift);
 
         for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
           const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
@@ -595,9 +623,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           printLeftOrCentered(g, om, x + this.padding + this._leftThreeDotsPadding, y, w, h, opts);
         }
         if (this.shouldRenderShiftedThreeDots(positionShift)) {
-          printLeftOrCentered(g, shiftedLeftPaddingText, x + this.padding, y, w, h, {
-            color: undefinedColor, transparencyRate: 1.0,
-          });
+          const opts = {
+            color: undefinedColor, pivot: 0, left: true, transparencyRate: 0, separator: separator, last: false,
+            drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: 0, gridCell: gridCell,
+            maxLengthOfMonomer: maxLengthOfMonomer,
+            monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
+          };
+          printLeftOrCentered(g, shiftedLeftPaddingText, x + this.padding, y, w, h, opts);
         }
       }
     } catch (err: any) {
