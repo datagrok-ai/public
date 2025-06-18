@@ -1141,6 +1141,8 @@ export class LogEvent extends Entity {
   /** Type of the event
    * @type {LogEventType} */
   get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.dart)); }
+
+  get eventTime(): dayjs.Dayjs { return dayjs(api.grok_LogEvent_Get_EventTime(this.dart)); }
 }
 
 export class LogEventParameter extends Entity {
@@ -1773,6 +1775,50 @@ export class UserReportsRule extends Entity {
 
   static async showAddDialog(): Promise<void> {
     await api.grok_ReportsRule_Add_Dialog();
+  }
+}
+
+export class UserNotification {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  };
+
+  get user(): User {
+    return toJs(api.grok_UserNotification_User(this.dart));
+  }
+
+  get name(): string {
+    return toJs(api.grok_UserNotification_Name(this.dart));
+  }
+
+  get friendlyName(): string {
+    return toJs(api.grok_UserNotification_FriendlyName(this.dart));
+  }
+
+  get text(): string {
+    return toJs(api.grok_UserNotification_Text(this.dart));
+  }
+
+  get data(): string {
+    return toJs(api.grok_UserNotification_Data(this.dart));
+  }
+
+  get sender(): string {
+    return toJs(api.grok_UserNotification_Sender(this.dart));
+  }
+
+  get createdAt(): dayjs.Dayjs {
+    return dayjs(api.grok_UserNotification_CreatedAt(this.dart));
+  }
+
+  get isRead(): boolean {
+    return api.grok_UserNotification_IsRead(this.dart);
+  }
+
+  get readAt(): dayjs.Dayjs {
+    return dayjs(api.grok_UserNotification_ReadAt(this.dart));
   }
 }
 

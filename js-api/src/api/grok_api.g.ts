@@ -911,12 +911,16 @@ export interface IDartApi {
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
   grok_Dapi_Log(): any;
+  grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any): any;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
   grok_Dapi_User_Reports(): any;
   grok_Dapi_User_Reports_Rules(): any;
+  grok_Dapi_Notifications(): any;
+  grok_Dapi_Notifications_ForCurrentUser(): any;
+  grok_Dapi_Notifications_CountUnread(): Promise<any>;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -1594,6 +1598,7 @@ export interface IDartApi {
   grok_LogEvent_Get_Session(logEvent: any): any;
   grok_LogEvent_Get_Parameters(logEvent: any): any;
   grok_LogEvent_Get_Type(logEvent: any): any;
+  grok_LogEvent_Get_EventTime(logEvent: any): any;
   grok_LogEventParameter_Get_Name(p: any): any;
   grok_LogEventParameter_Get_Type(p: any): any;
   grok_LogEventParameterValue_Get_Event(v: any): any;
@@ -1623,6 +1628,15 @@ export interface IDartApi {
   grok_UserReport_Reporter(report: any): any;
   grok_UserReport_Description(report: any): any;
   grok_UserReport_CreatedOn(report: any): any;
+  grok_UserNotification_User(notification: any): any;
+  grok_UserNotification_Name(notification: any): any;
+  grok_UserNotification_FriendlyName(notification: any): any;
+  grok_UserNotification_Text(notification: any): any;
+  grok_UserNotification_Data(notification: any): any;
+  grok_UserNotification_Sender(notification: any): any;
+  grok_UserNotification_CreatedAt(notification: any): any;
+  grok_UserNotification_ReadAt(notification: any): any;
+  grok_UserNotification_IsRead(notification: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
 
