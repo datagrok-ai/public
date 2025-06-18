@@ -16,7 +16,7 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
-import {_package, extractProteinSequencesMolstar} from '../package';
+import {_package, } from '../package';
 import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {

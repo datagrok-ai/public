@@ -762,177 +762,10 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
 //! #-------------------------------------------------------------------------------
 
 
-
-//name: extractProteinSequencesMolstar
-//description: Extract protein sequences using Molstar parser
-//input: string pdbId
-//output: object sequences
-export async function extractProteinSequencesMolstar(pdbId: string): Promise<{[chainId: string]: string}> {
-  
-  try {
-    // Get the PdbHelper instance (which has Molstar initialized)
-    const pdbHelper = await PdbHelper.getInstance();
-    // Download PDB data
-    const pdbData = await downloadPdbFileRaw(pdbId);
-    // Use the existing pdbToDf method to parse with Molstar
-    const resDf = await pdbHelper.pdbToDf(pdbData, pdbId);
-    // Extract sequences from the parsed DataFrame
-    const sequences = extractSequencesFromDataFrame(resDf);
-    return sequences;
-    
-  } catch (error: any) {
-    console.error(`Failed to extract sequences from ${pdbId}:`, error);
-    throw error;
-  }
-}
-
-// Download raw PDB file (not the wrapped version)
-async function downloadPdbFileRaw(pdbId: string): Promise<string> {
-  const cleanId = pdbId.trim().toUpperCase();
-  const url = `https://files.rcsb.org/download/${cleanId}.pdb`;
-  console.log(`Downloading raw PDB from: ${url}`);
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  const text = await response.text();
-  if (!text || text.length < 100) {
-    throw new Error(`Invalid PDB data received (too short: ${text.length} chars)`);
-  }
-  if (!text.includes('ATOM') && !text.includes('HETATM')) {
-    throw new Error('Downloaded data does not appear to be in PDB format');
-  }
-  
-  console.log(`Raw PDB downloaded successfully: ${text.length} chars, contains ATOM records`);
-  return text;
-}
-
-// Extract sequences from the Molstar-parsed DataFrame
-function extractSequencesFromDataFrame(resDf: any): {[chainId: string]: string} {
-  console.log('Extracting sequences from DataFrame...');
-  console.log(`DataFrame columns: ${resDf.columns.names()}`);
-  console.log(`DataFrame rows: ${resDf.rowCount}`);
-  
-  if (resDf.rowCount === 0) {
-    console.log('DataFrame is empty');
-    return {};
-  }
-  
-  // Group by entity/chain and build sequences
-  const chainSequences: {[chainId: string]: {[seqId: number]: string}} = {};
-  
-  for (let i = 0; i < resDf.rowCount; i++) {
-    const code = resDf.code.get(i);        // Single letter amino acid code
-    const seqId = resDf.seqId.get(i);      // Sequence position
-    const entityId = resDf.seq.get(i);     // Entity/chain identifier
-    
-    if (!code || !entityId || seqId === null || seqId === undefined) {
-      continue;
-    }
-    
-    // Use entity ID as chain identifier
-    const chainId = `Chain_${entityId}`;
-    
-    if (!chainSequences[chainId]) {
-      chainSequences[chainId] = {};
-    }
-    
-    chainSequences[chainId][seqId] = code;
-  }
-  
-  console.log(`Found chain data for: ${Object.keys(chainSequences).join(', ')}`);
-  const sequences: {[chainId: string]: string} = {};
-  
-  for (const [chainId, residues] of Object.entries(chainSequences)) {
-    // Sort by sequence ID and build sequence string
-    const sortedSeqIds = Object.keys(residues).map(n => parseInt(n)).sort((a, b) => a - b);
-    const sequence = sortedSeqIds.map(seqId => residues[seqId]).join('');
-    
-    console.log(`${chainId}: ${sequence.length} residues`);
-    
-    // Only include sequences with reasonable length
-    if (sequence.length >= 5) {
-      // Simplify chain name (remove "Chain_" prefix if desired)
-      const simpleChainId = chainId.replace('Chain_', '');
-      sequences[simpleChainId] = sequence;
-    }
-  }
-  
-  console.log(`Final sequences: ${Object.keys(sequences).map(k => `${k}:${sequences[k].length}`).join(', ')}`);
-  return sequences;
-}
-
-//name: testMolstarExtraction
-//description: Test the Molstar-based extraction
-//input: string pdbId = "3J7Z"
-export async function testMolstarExtraction(pdbId: string = "3J7Z"): Promise<void> {
-  console.log(`=== Testing Molstar extraction for ${pdbId} ===`);
-  
-  try {
-    const sequences = await extractProteinSequencesMolstar(pdbId);
-    
-    const chainCount = Object.keys(sequences).length;
-    console.log(`\n=== RESULTS ===`);
-    console.log(`Chains found: ${chainCount}`);
-    
-    if (chainCount === 0) {
-      grok.shell.warning(`No protein sequences found in ${pdbId}`);
-      return;
-    }
-    
-    // Show results
-    for (const [chainId, sequence] of Object.entries(sequences)) {
-      console.log(`Chain ${chainId}: ${sequence.length} residues`);
-      console.log(`  Sequence: ${sequence.substring(0, 80)}${sequence.length > 80 ? '...' : ''}`);
-      grok.shell.info(`Chain ${chainId}: ${sequence.length} residues`);
-    }
-    
-    console.log(`\n=== SUCCESS ===`);
-    
-  } catch (error: any) {
-    console.error(`=== ERROR ===`);
-    console.error(error);
-    grok.shell.error(`Failed to extract sequences: ${error.message}`);
-  }
-}
-
-//name: testMolstarMultiple
-//description: Test Molstar extraction with multiple PDBs
-export async function testMolstarMultiple(): Promise<void> {
-  const testPdbs = ['1BDQ', '1QBS', '3J7Z']; // Known simple structures
-  
-  console.log('=== Testing Molstar with multiple PDBs ===');
-  
-  for (const pdbId of testPdbs) {
-    try {
-      console.log(`\nTesting ${pdbId}...`);
-      const sequences = await extractProteinSequencesMolstar(pdbId);
-      const chainCount = Object.keys(sequences).length;
-      
-      if (chainCount > 0) {
-        const summary = Object.entries(sequences)
-          .map(([chain, seq]) => `${chain}:${seq.length}`)
-          .join(', ');
-        console.log(`✓ ${pdbId}: ${chainCount} chains (${summary})`);
-        grok.shell.info(`✓ ${pdbId}: ${chainCount} chains (${summary})`);
-      } else {
-        console.log(`✗ ${pdbId}: No sequences found`);
-        grok.shell.warning(`✗ ${pdbId}: No sequences found`);
-      }
-      
-    } catch (error: any) {
-      console.log(`✗ ${pdbId}: ERROR - ${error.message}`);
-      grok.shell.error(`✗ ${pdbId}: ${error.message}`);
-    }
-  }
-  
-  console.log('\n=== Test complete ===');
-}
+import {RcsbGraphQLAdapter} from './utils/rcsb-gql-adapter';
 
 //name: extractSequenceColumnsToDataFrame
-//description: Extract protein sequences from all PDB IDs and add as columns to current dataframe
+//description: Extract protein sequences from all PDB IDs and add as columns to current dataframe (GraphQL-powered)
 export async function extractSequenceColumnsToDataFrame(): Promise<void> {
   const tableView = grok.shell.tv;
   if (!tableView) {
@@ -954,12 +787,12 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
     return;
   }
 
-  grok.shell.info(`Found ${pdbIdColumns.length} PDB_ID column(s). Starting sequence extraction...`);
+  grok.shell.info(`Found ${pdbIdColumns.length} PDB_ID column(s). Starting GraphQL sequence extraction...`);
 
-  const pi = DG.TaskBarProgressIndicator.create('Extracting protein sequences...');
+  const pi = DG.TaskBarProgressIndicator.create('Extracting protein sequences via GraphQL...');
   
   try {
-    // Collect all unique PDB IDs
+    // Collect all unique PDB IDs (same as before)
     const allPdbIds = new Set<string>();
     for (const col of pdbIdColumns) {
       for (let i = 0; i < col.length; i++) {
@@ -976,36 +809,34 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
       return;
     }
 
-    grok.shell.info(`Processing ${uniquePdbIds.length} unique PDB ID(s)`);
+    grok.shell.info(`Processing ${uniquePdbIds.length} unique PDB ID(s) with GraphQL batch extraction`);
 
-    // Extract sequences for all PDB IDs
-    const allSequenceData: {[pdbId: string]: {[chainId: string]: string}} = {};
+    const allSequenceData = await RcsbGraphQLAdapter.batchGetProteinSequences(
+      uniquePdbIds,
+      10, 
+      (completed:any, total:any, currentPdbId:any) => {
+        const progress = (completed / total) * 90; 
+        pi.update(progress, `GraphQL extracting: ${currentPdbId} (${completed}/${total})`);
+      }
+    );
+
     let maxChainCount = 0;
-    let processedCount = 0;
+    let successCount = 0;
     let failedCount = 0;
 
-    for (const pdbId of uniquePdbIds) {
-      try {
-        pi.update((processedCount / uniquePdbIds.length) * 100, `Processing ${pdbId}...`);
+    for (const [pdbId, sequences] of Object.entries(allSequenceData)) {
+      if (sequences && Object.keys(sequences).length > 0) {
+        maxChainCount = Math.max(maxChainCount, Object.keys(sequences).length);
+        successCount++;
         
-        const sequences = await extractProteinSequencesMolstar(pdbId);
-        if (sequences && Object.keys(sequences).length > 0) {
-          allSequenceData[pdbId] = sequences;
-          maxChainCount = Math.max(maxChainCount, Object.keys(sequences).length);
-          
-          const chainSummary = Object.entries(sequences)
-            .map(([chain, seq]) => `${chain}:${seq.length}`)
-            .join(', ');
-          console.log(`✓ ${pdbId}: ${Object.keys(sequences).length} chains (${chainSummary})`);
-        } else {
-          console.log(`⚠ ${pdbId}: No sequences found`);
-          failedCount++;
-        }
-      } catch (error: any) {
-        console.error(`✗ ${pdbId}: ${error.message}`);
+        const chainSummary = Object.entries(sequences)
+          .map(([chain, seq]) => `${chain}:${seq.length}`)
+          .join(', ');
+        console.log(`✓ ${pdbId} (GraphQL): ${Object.keys(sequences).length} chains (${chainSummary})`);
+      } else {
+        console.log(`⚠ ${pdbId} (GraphQL): No protein sequences found`);
         failedCount++;
       }
-      processedCount++;
     }
 
     if (maxChainCount === 0) {
@@ -1013,9 +844,8 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
       return;
     }
 
-    pi.update(90, 'Adding sequence columns to dataframe...');
 
-    // Create sequence columns (Chain_1, Chain_2, etc.)
+    // Create sequence columns (same logic as before)
     const sequenceColumns: DG.Column<string>[] = [];
     for (let chainIndex = 1; chainIndex <= maxChainCount; chainIndex++) {
       let columnName = `Chain_${chainIndex}`;
@@ -1027,15 +857,12 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
         counter++;
       }
 
-      if (counter > 1) {
-        grok.shell.info(`Column 'Chain_${chainIndex}' already exists, using '${columnName}' instead`);
-      }
 
       const column = DG.Column.string(columnName, dataFrame.rowCount);
       sequenceColumns.push(column);
     }
 
-    // Populate sequence columns
+    // Populate sequence columns (same logic as before)
     for (let rowIndex = 0; rowIndex < dataFrame.rowCount; rowIndex++) {
       // Find PDB ID for this row from any PDB_ID column
       let pdbIdForRow: string | null = null;
@@ -1061,7 +888,7 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
       // Leave empty for rows without valid PDB IDs or failed extractions
     }
 
-    // Add columns to dataframe with appropriate semantic types
+    // Add columns to dataframe with appropriate semantic types (same as before)
     for (const column of sequenceColumns) {
       column.semType = 'Macromolecule';
       column.setTag('alphabet', 'PT'); // Protein
@@ -1072,28 +899,23 @@ export async function extractSequenceColumnsToDataFrame(): Promise<void> {
       dataFrame.columns.add(column);
     }
 
-    pi.update(100, 'Complete!');
-
-    const successCount = uniquePdbIds.length - failedCount;
-    grok.shell.info(
-      `Sequence extraction complete! Added ${maxChainCount} chain columns. ` +
-      `Successfully processed ${successCount}/${uniquePdbIds.length} PDB structures.`
-    );
 
     if (failedCount > 0) {
       grok.shell.warning(`${failedCount} PDB structure(s) failed to process - check console for details`);
     }
 
   } catch (error: any) {
-    console.error('Failed to extract sequences:', error);
-    grok.shell.error(`Failed to extract sequences: ${error.message}`);
+    console.error('GraphQL sequence extraction failed:', error);
+    grok.shell.error(`GraphQL sequence extraction failed: ${error.message}`);
   } finally {
     pi.close();
   }
 }
 
+
+// UPDATE: Also replace the simple alias
 //name: extractSequences
-//description: Alias for extractSequenceColumnsToDataFrame (shorter console command)
+//description: Extract protein sequences using GraphQL (fast method)
 export async function extractSequences(): Promise<void> {
-  await extractSequenceColumnsToDataFrame();
+  await extractSequenceColumnsToDataFrame(); // Now uses GraphQL!
 }

@@ -225,27 +225,12 @@ export namespace funcs {
     return await grok.functions.call('@datagrok/biostructure-viewer:Structure3D', { molecule });
   }
 
-  //Extract protein sequences using Molstar parser
-  export async function extractProteinSequencesMolstar(pdbId: string): Promise<any> {
-    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractProteinSequencesMolstar', { pdbId });
-  }
-
-  //Test the Molstar-based extraction
-  export async function testMolstarExtraction(pdbId: string): Promise<any> {
-    return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarExtraction', { pdbId });
-  }
-
-  //Test Molstar extraction with multiple PDBs
-  export async function testMolstarMultiple(): Promise<any> {
-    return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarMultiple', {});
-  }
-
-  //Extract protein sequences from all PDB IDs and add as columns to current dataframe
+  //Extract protein sequences from all PDB IDs and add as columns to current dataframe (GraphQL-powered)
   export async function extractSequenceColumnsToDataFrame(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequenceColumnsToDataFrame', {});
   }
 
-  //Alias for extractSequenceColumnsToDataFrame (shorter console command)
+  //Extract protein sequences using GraphQL (fast method)
   export async function extractSequences(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequences', {});
   }

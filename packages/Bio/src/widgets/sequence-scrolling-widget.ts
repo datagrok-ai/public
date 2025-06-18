@@ -351,7 +351,6 @@ export function handleSequenceHeaderRendering() {
 
         const isMSA = sh.isMsa();
 
-        // Only create scrolling header for MSA sequences
         if (isMSA) {
           const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
           const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
@@ -538,9 +537,7 @@ export function handleSequenceHeaderRendering() {
               console.error('Failed to initialize monomer library:', error);
             });
         } else {
-          // For non-MSA sequences, just use standard sequence rendering
-          // No scrolling header needed - the cell renderer will handle display
-          console.log(`Skipping scrolling header for non-MSA sequence column: ${seqCol.name}`);
+          // For non-MSA sequences, just use standard sequence rendering.
         }
       }
     }, 1000);
