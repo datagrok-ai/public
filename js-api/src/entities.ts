@@ -1663,7 +1663,7 @@ export class Property implements IProperty {
     'step': { name: 'step', applicableTo: TYPE.NUMERICAL, type: TYPE.FLOAT, description: 'Step to be used in a slider. Only applies to numerical properties.' },
     'showSlider': { name: 'showSlider', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a slider appears next to the number input. Applies to numerical columns only.' },
     'showPlusMinus': { name: 'showPlusMinus', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only.' },
-    'choices': { name: 'choices', applicableTo: DG.TYPE.STRING, type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
+    'choices': { name: 'choices', applicableTo: TYPE.STRING, type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
     'initialValue': { name: 'initialValue', type: TYPE.OBJECT, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
     'defaultValue': { name: 'defaultValue', type: TYPE.OBJECT, description: 'Default value used for deserialization and cloning. See also {@link initialValue}.' },
     'editor': { name: 'editor', type: TYPE.STRING, description: 'Custom editor (such as slider or text area)' },
