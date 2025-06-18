@@ -572,7 +572,7 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 }
 
 //name: clusterMCSTopMenu
-//FriendlyName: Cluster MCS
+//friendlyName: Cluster MCS
 //top-menu: Chem | Calculate | Cluster MCS...
 //description: Calculates most common substructures for each cluster
 //input: dataframe table

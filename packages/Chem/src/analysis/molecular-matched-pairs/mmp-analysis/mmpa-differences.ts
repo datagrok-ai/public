@@ -2,7 +2,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MmpAllCasesBasedData, MmpFragments, MmpInitData, MmpRules, MmpRulesBasedData} from './mmpa-misc';
 import {SortData} from '../mmp-viewer/mmp-viewer';
 import * as DG from 'datagrok-api/dg';
-import { MmpDiffTypes } from '../mmp-function-editor';
+import {MmpDiffTypes} from '../mmp-function-editor';
 
 export function getPlainData(rules: MmpRules, frags: MmpFragments,
   initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
@@ -15,27 +15,32 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
 
   // fragmentParentIndices - for each fragment pair there is an array of
   // parent molecule indexes where this fragment was identified
-  // moleculePairIndices - indexes of 'from' parent molecules and 'to' parent molecules
-  const fragmentParentIndices: Uint32Array[] = [];
-  const moleculePairIndices: [Uint32Array, Uint32Array] = [
+  // moleculePairParentIndices - indexes of 'from' parent molecules and 'to' parent molecules
+  // moleculePairParentIndices - indexes of pairs from molecule pairs dataset for each fragment pair
+  const fragmentParentIndices: Array<Uint32Array> = new Array<Uint32Array>(rules.rules.length);
+  const moleculePairParentIndices: [Uint32Array, Uint32Array] = [
     new Uint32Array(allCasesNumber),
     new Uint32Array(allCasesNumber),
   ];
+  const moleculePairIndices: Array<Uint32Array> = new Array<Uint32Array>(rules.rules.length);
   let pairIdx = 0;
   for (let i = 0; i < rules.rules.length; i++) {
     const rule = rules.rules[i];
     const indices = new Uint32Array(rule.pairs.length * 2);
+    const pairsIndices = new Uint32Array(rule.pairs.length);
     for (let j = 0; j < rule.pairs.length; j++) {
       const pair = rule.pairs[j];
       // Set fragment parent indices
       indices[j * 2] = pair.fs;
       indices[j * 2 + 1] = pair.ss;
-      // Set molecule pair indices
-      moleculePairIndices[0][pairIdx] = pair.fs;
-      moleculePairIndices[1][pairIdx] = pair.ss;
+      // Set molecule pair parent indices
+      moleculePairParentIndices[0][pairIdx] = pair.fs;
+      moleculePairParentIndices[1][pairIdx] = pair.ss;
+      pairsIndices[j] = pairIdx;
       pairIdx++;
     }
-    fragmentParentIndices.push(indices);
+    fragmentParentIndices[i] = indices;
+    moleculePairIndices[i] = pairsIndices;
   }
 
   const rulesBased: MmpRulesBasedData = {
@@ -44,6 +49,7 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
     occasions,
     meanDiffs,
     fragmentParentIndices,
+    moleculePairParentIndices,
     moleculePairIndices,
   };
   const allCasesBased: MmpAllCasesBasedData = {
@@ -144,6 +150,7 @@ function calculateActivityDiffs(
     const mean = new Float32Array(variates).fill(0);
     const validCounts = new Int32Array(variates).fill(0);
     for (let j = 0; j < occasions[i]; j++) {
+      mmpr.rules[i].pairs[j].id = pairIdx;
       const idx1 = mmpr.rules[i].pairs[j].fs;
       const idx2 = mmpr.rules[i].pairs[j].ss;
 
@@ -156,8 +163,8 @@ function calculateActivityDiffs(
           diffTypes[k] as MmpDiffTypes === MmpDiffTypes.ratio ? ratio : delta;
         //TODO: make more efficient
         const col = activities[k];
-        pairedActivities[k][0][pairIdx] = col[idx2];
-        pairedActivities[k][1][pairIdx] = col[idx1];
+        pairedActivities[k][0][pairIdx] = col[idx1];
+        pairedActivities[k][1][pairIdx] = col[idx2];
         if (col[idx2] == DG.FLOAT_NULL || col[idx1] == DG.FLOAT_NULL) {
           diffs[k][pairIdx] = DG.FLOAT_NULL;
           continue;
