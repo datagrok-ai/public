@@ -200,8 +200,8 @@ export namespace queries {
     return await grok.data.query('@datagrok/usage-analysis:FunctionsContextPane', { time_start, time_end });
   }
 
-  export async function functionsExecTime(function: string): Promise<DG.DataFrame> {
-    return await grok.data.query('@datagrok/usage-analysis:FunctionsExecTime', { function });
+  export async function functionsExecTime(func: string): Promise<DG.DataFrame> {
+    return await grok.data.query('@datagrok/usage-analysis:FunctionsExecTime', { func });
   }
 
   export async function entitiesTags(): Promise<DG.DataFrame> {
@@ -534,8 +534,8 @@ export namespace funcs {
     return await grok.functions.call('@datagrok/usage-analysis:ReportsWidget', {});
   }
 
-  export async function packageUsageWidget(package: any): Promise<any> {
-    return await grok.functions.call('@datagrok/usage-analysis:PackageUsageWidget', { package });
+  export async function packageUsageWidget(pckg: any): Promise<any> {
+    return await grok.functions.call('@datagrok/usage-analysis:PackageUsageWidget', { pckg });
   }
 
   export async function testDashboardsViewer(): Promise<any> {
