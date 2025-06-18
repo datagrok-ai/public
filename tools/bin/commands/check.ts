@@ -28,8 +28,7 @@ export function check(args: CheckArgs): boolean {
 }
 
 function runChecks(packagePath: string, soft: boolean = false): boolean {
-  const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-  console.log(files.filter(e=> e.includes('node_modules')))
+  const files = (walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] })).filter(e=> !e.includes('node_modules'));
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
