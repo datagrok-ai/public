@@ -108,7 +108,8 @@ Options:
 const HELP_PUBLISH = `
 Usage: grok publish [host]
 
-Upload a package
+Uploads a package
+Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
 [--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh] [--link]
@@ -116,6 +117,7 @@ Options:
 --all             Publish all available packages 
 --refresh         Publish all available already loaded packages 
 --link  	        Link the package to local utils
+--skip-check      Skip check stage 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -127,6 +129,7 @@ Options:
 [-r | --recursive]
 
 --recursive       Check all packages in the current directory
+--soft            Even if an error occurs, it doesn't throw an exception
 
 Check package content (function signatures, import statements of external modules, etc.)
 `;
