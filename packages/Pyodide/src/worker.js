@@ -5,9 +5,6 @@ importScripts("https://cdnjs.cloudflare.com/ajax/libs/uuid/8.2.0/uuidv4.min.js")
 
 let pyodide;
 let currentCallsExecutions = {};
-const tempio = {
-    arg: undefined,
-};
 
 function valueToJS(value) {
     if (value instanceof pyodide.ffi.PyProxy)
@@ -43,7 +40,6 @@ async function init() {
 	    return promise;
         },
     });
-    pyodide.registerJsModule("tempio", tempio);
 }
 
 let initCompleted = init();
@@ -81,13 +77,11 @@ async function handleWorkerScript(event) {
 const convertDFScriptText = `
 import pandas as pd
 from io import StringIO
-from tempio import arg
 result = pd.read_csv(StringIO(arg), sep=",")
 `;
 
 const convertDateScriptText = `
 from dateutil import parser
-from tempio import arg
 result = parser.parse(arg)
 `;
 
@@ -100,6 +94,7 @@ async function handleFuncCallResults(event) {
     }
     delete currentCallsExecutions[data.id];
     if (data.error) {
+        console.error(data.error);
 	const pyError = pyodide.toPy(data.error);
 	cbs.reject(pyError);
     } else {
@@ -108,12 +103,14 @@ async function handleFuncCallResults(event) {
 	// it goes back pyhton
 	for (const [name, typing] of Object.entries(data.typings ?? {})) {
 	    if (typing === 'datetime') {
-		tempio.arg = data.results?.[name];
-		pyodide.runPython(convertDateScriptText);
+		const arg = data.results?.[name];
+	        pyodide.globals.set('arg', arg);
+	        pyodide.runPython(convertDateScriptText);
 		results[name] = pyodide.globals.get('result');
 	    } else if (typing === 'dataframe') {
-		tempio.arg = data.results?.[name];
-		pyodide.runPython(convertDFScriptText)
+	        const arg = data.results?.[name];
+	        pyodide.globals.set('arg', arg);
+	        pyodide.runPython(convertDFScriptText);
 		results[name] = pyodide.globals.get('result');
 	    }
 	}
