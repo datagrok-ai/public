@@ -13,9 +13,7 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1; 
-  if (args['_'].length !== 1 || nOptions > 2)
-    return false;
+  const nOptions = Object.keys(args).length - 1;
   const curDir = process.cwd();
 
   if (args.recursive)
@@ -31,6 +29,7 @@ export function check(args: CheckArgs): boolean {
 
 function runChecks(packagePath: string, soft: boolean = false): boolean {
   const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
+  console.log(files.filter(e=> e.includes('node_modules')))
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
@@ -502,7 +501,7 @@ export function checkSourceMap(packagePath: string): string[] {
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
-  if (path.join(...[packagePath, '.npmignore'])) {
+  if (fs.existsSync(path.join(...[packagePath, '.npmignore']))) {
     const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
     for (const row of npmIgnoreContent.split('\n')) {
       if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
