@@ -872,6 +872,11 @@ export class ToolboxPage {
   static getOpenDialogs(): Dialog[] {
     return api.grok_Dialog_GetOpenDialogs();
   }
+
+  /** Initializes the dialog properties from local storage. */
+  initFromLocalStorage(): void {
+    api.grok_Dialog_InitFromLocalStorage(this.dart);
+  }
 }
 
 

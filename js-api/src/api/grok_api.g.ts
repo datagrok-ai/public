@@ -220,6 +220,7 @@ export interface IDartApi {
   grok_Dialog_OnClose(d: any, handler: any): any;
   grok_Dialog_Clear(d: any): any;
   grok_Dialog_GetOpenDialogs(): any;
+  grok_Dialog_InitFromLocalStorage(d: any): any;
   grok_Tooltip_Hide(): any;
   grok_Tooltip_SetOn(e: any, x: any, position: String): any;
   grok_Tooltip_Show(content: any, x: Num, y: Num): any;
@@ -1185,6 +1186,7 @@ export interface IDartApi {
   grok_RowList_Highlight(rows: any, check: any): any;
   grok_RowList_MouseOverRowFunc(rows: any): any;
   grok_RowList_Where(rows: any, check: any): any;
+  grok_RowList_Indexes(rows: any, onlyFiltered: Bool, onlySelected: Bool): any;
   grok_RowMatcher_Select(m: any): any;
   grok_RowMatcher_Filter(m: any): any;
   grok_RowMatcher_Highlight(m: any): any;

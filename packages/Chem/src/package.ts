@@ -431,12 +431,10 @@ export async function searchSubstructure(
 }
 
 //name: saveAsSdf
-//description: As SDF
+//description: As SDF...
 //tags: fileExporter
 export async function saveAsSdf(): Promise<void> {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
   saveAsSdfDialog();
-  progressIndicator.close();
 }
 
 //#region Top menu
