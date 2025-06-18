@@ -239,4 +239,14 @@ export namespace funcs {
   export async function testMolstarMultiple(): Promise<any> {
     return await grok.functions.call('@datagrok/biostructure-viewer:TestMolstarMultiple', {});
   }
+
+  //Extract protein sequences from all PDB IDs and add as columns to current dataframe
+  export async function extractSequenceColumnsToDataFrame(): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequenceColumnsToDataFrame', {});
+  }
+
+  //Alias for extractSequenceColumnsToDataFrame (shorter console command)
+  export async function extractSequences(): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequences', {});
+  }
 }

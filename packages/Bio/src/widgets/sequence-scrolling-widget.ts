@@ -350,193 +350,198 @@ export function handleSequenceHeaderRendering() {
           Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
 
         const isMSA = sh.isMsa();
-        const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
-        const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
-        const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
-        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-        // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
-        // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
-        let pseudoMaxLenIndex = 0;
-        let pseudoMaxLength = 0;
-        const cats = seqCol.categories;
-        for (let i = 0; i < cats.length; i++) {
-          const seq = cats[i];
-          if (seq && seq.length > pseudoMaxLength) {
-            pseudoMaxLength = seq.length;
-            pseudoMaxLenIndex = i;
+        // Only create scrolling header for MSA sequences
+        if (isMSA) {
+          const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
+          const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
+          const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
+          const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+
+          // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
+          // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
+          let pseudoMaxLenIndex = 0;
+          let pseudoMaxLength = 0;
+          const cats = seqCol.categories;
+          for (let i = 0; i < cats.length; i++) {
+            const seq = cats[i];
+            if (seq && seq.length > pseudoMaxLength) {
+              pseudoMaxLength = seq.length;
+              pseudoMaxLenIndex = i;
+            }
           }
-        }
-        const seq = cats[pseudoMaxLenIndex];
-        const split = sh.splitter(seq);
-        const maxSeqLen = split ? split.length : 30;
+          const seq = cats[pseudoMaxLenIndex];
+          const split = sh.splitter(seq);
+          const maxSeqLen = split ? split.length : 30;
 
-        // Do not Skip if sequences are too short, rather, just don't render the tracks by default
+          // Do not Skip if sequences are too short, rather, just don't render the tracks by default
 
-        const STRICT_THRESHOLDS = {
-          WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
-          WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-          WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-        };
+          const STRICT_THRESHOLDS = {
+            WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
+            WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+            WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+          };
 
-        let initialHeaderHeight: number;
-        if (seqCol.length > 100_000 || maxSeqLen < 50) {
-          // Single sequence: just dotted cells
-          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
-        } else {
-          if (seqCol.length > 50_000)
-            initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
-          else
-            initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
-        }
-
-        let webLogoTrackRef: LazyWebLogoTrack | null = null;
-        let conservationTrackRef: LazyConservationTrack | null = null;
-        const filterChangeSub = DG.debounce(
-          RxJs.merge(df.onFilterChanged, df.onDataChanged.pipe(filter((a) => a?.args?.column === seqCol))), 100
-        ).subscribe(() => {
-          MSAViewportManager.clearAllCaches();
-
-          if (webLogoTrackRef) {
-            webLogoTrackRef.resetViewportTracking();
-            webLogoTrackRef.forceUpdate();
-          }
-          if (conservationTrackRef) {
-            conservationTrackRef.resetViewportTracking();
-            conservationTrackRef.forceUpdate();
-          }
-          setTimeout(() => {
-            if (!grid.isDetached)
-              grid.invalidate();
-          }, 50);
-        });
-
-        grid.sub(filterChangeSub);
-
-        const initializeHeaders = (monomerLib: IMonomerLib) => {
-          const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
-
-          // Create lazy tracks only if we have multiple sequences
-
-          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
-          const conservationTrack = new LazyConservationTrack(
-            sh,
-            maxSeqLen,
-            45, // DEFAULT_TRACK_HEIGHT
-            'default',
-            'Conservation'
-          );
-          conservationTrackRef = conservationTrack; // Store reference
-          tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
-
-          // OPTIMIZED: Pass seqHandler directly
-          const webLogoTrack = new LazyWebLogoTrack(
-            sh,
-            maxSeqLen,
-            45, // DEFAULT_TRACK_HEIGHT
-            'WebLogo'
-          );
-          webLogoTrackRef = webLogoTrack; // Store reference
-
-          if (monomerLib) {
-            webLogoTrack.setMonomerLib(monomerLib);
-            webLogoTrack.setBiotype(sh.defaultBiotype || 'HELM_AA');
+          let initialHeaderHeight: number;
+          if (seqCol.length > 100_000 || maxSeqLen < 50) {
+            // Single sequence: just dotted cells
+            initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
+          } else {
+            if (seqCol.length > 50_000)
+              initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
+            else
+              initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
           }
 
-          webLogoTrack.setupDefaultTooltip();
-          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+          let webLogoTrackRef: LazyWebLogoTrack | null = null;
+          let conservationTrackRef: LazyConservationTrack | null = null;
+          const filterChangeSub = DG.debounce(
+            RxJs.merge(df.onFilterChanged, df.onDataChanged.pipe(filter((a) => a?.args?.column === seqCol))), 100
+          ).subscribe(() => {
+            MSAViewportManager.clearAllCaches();
 
-
-          // Create the scrolling header
-          const scroller = new MSAScrollingHeader({
-            canvas: grid.overlay,
-            headerHeight: initialHeaderHeight,
-            totalPositions: maxSeqLen + 1,
-            onPositionChange: (scrollerCur, scrollerRange) => {
-              setTimeout(() => {
-                const start = getStart();
-                const cur = getCurrent();
-                if (start !== scrollerRange.start)
-                  seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-
-                if (cur !== scrollerCur) {
-                  seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
-                  if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
-                    positionStatsViewerAddedOnce = true;
-                    const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
-                    grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
-                  }
-                }
-              });
-            },
-            onHeaderHeightChange: (_newHeight) => {
-              // Update grid header height
-              if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
-              setTimeout(() => grid.props.colHeaderHeight = _newHeight);
-            },
-          });
-
-          scroller.setupTooltipHandling();
-
-          // Add tracks to scroller
-          tracks.forEach(({id, track}) => {
-            scroller.addTrack(id, track);
-          });
-
-          scroller.setSelectionData(df, seqCol, sh);
-
-          if (maxSeqLen > 50) {
-            grid.props.colHeaderHeight = initialHeaderHeight;
-
-            // Set column width
+            if (webLogoTrackRef) {
+              webLogoTrackRef.resetViewportTracking();
+              webLogoTrackRef.forceUpdate();
+            }
+            if (conservationTrackRef) {
+              conservationTrackRef.resetViewportTracking();
+              conservationTrackRef.forceUpdate();
+            }
             setTimeout(() => {
-              if (grid.isDetached) return;
-              gCol.width = 400;
-            }, 300);
-          }
-
-          // Handle cell rendering
-          grid.sub(grid.onCellRender.subscribe((e) => {
-            const cell = e.cell;
-            if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
-              return;
-
-
-            const cellBounds = e.bounds;
-            if (!cellBounds) return;
-
-            // Set dynamic properties
-            scroller.headerHeight = cellBounds.height;
-            const font = getFontSize();
-            scroller.positionWidth = font + (isMSA ? 8 : 0);
-
-            const start = getStart();
-            const startPadding = isMSA ? 0 : 4;
-
-            scroller.draw(
-              cellBounds.x + startPadding,
-              cellBounds.y,
-              cellBounds.width - startPadding,
-              cellBounds.height,
-              getCurrent(),
-              start,
-              e,
-              seqCol.name
-            );
-          }));
-        };
-
-        // Initialize with monomer library
-        getMonomerLibHelper()
-          .then((libHelper) => {
-            const monomerLib = libHelper.getMonomerLib();
-            initializeHeaders(monomerLib);
-          })
-          .catch((error) => {
-            grok.shell.warning(`Failed to initialize monomer library`);
-            //initializeHeaders();
-            console.error('Failed to initialize monomer library:', error);
+              if (!grid.isDetached)
+                grid.invalidate();
+            }, 50);
           });
+
+          grid.sub(filterChangeSub);
+
+          const initializeHeaders = (monomerLib: IMonomerLib) => {
+            const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
+
+            // Create lazy tracks only for MSA sequences
+
+            // OPTIMIZED: Pass seqHandler directly instead of column/splitter
+            const conservationTrack = new LazyConservationTrack(
+              sh,
+              maxSeqLen,
+              45, // DEFAULT_TRACK_HEIGHT
+              'default',
+              'Conservation'
+            );
+            conservationTrackRef = conservationTrack; // Store reference
+            tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
+
+            // OPTIMIZED: Pass seqHandler directly
+            const webLogoTrack = new LazyWebLogoTrack(
+              sh,
+              maxSeqLen,
+              45, // DEFAULT_TRACK_HEIGHT
+              'WebLogo'
+            );
+            webLogoTrackRef = webLogoTrack; // Store reference
+
+            if (monomerLib) {
+              webLogoTrack.setMonomerLib(monomerLib);
+              webLogoTrack.setBiotype(sh.defaultBiotype || 'HELM_AA');
+            }
+
+            webLogoTrack.setupDefaultTooltip();
+            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+
+            // Create the scrolling header
+            const scroller = new MSAScrollingHeader({
+              canvas: grid.overlay,
+              headerHeight: initialHeaderHeight,
+              totalPositions: maxSeqLen + 1,
+              onPositionChange: (scrollerCur, scrollerRange) => {
+                setTimeout(() => {
+                  const start = getStart();
+                  const cur = getCurrent();
+                  if (start !== scrollerRange.start)
+                    seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
+
+                  if (cur !== scrollerCur) {
+                    seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
+                    if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
+                      positionStatsViewerAddedOnce = true;
+                      const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                      grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+                    }
+                  }
+                });
+              },
+              onHeaderHeightChange: (_newHeight) => {
+                // Update grid header height
+                if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
+                setTimeout(() => grid.props.colHeaderHeight = _newHeight);
+              },
+            });
+
+            scroller.setupTooltipHandling();
+
+            // Add tracks to scroller
+            tracks.forEach(({id, track}) => {
+              scroller.addTrack(id, track);
+            });
+
+            scroller.setSelectionData(df, seqCol, sh);
+
+            if (maxSeqLen > 50) {
+              grid.props.colHeaderHeight = initialHeaderHeight;
+
+              // Set column width
+              setTimeout(() => {
+                if (grid.isDetached) return;
+                gCol.width = 400;
+              }, 300);
+            }
+
+            // Handle cell rendering for MSA
+            grid.sub(grid.onCellRender.subscribe((e) => {
+              const cell = e.cell;
+              if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
+                return;
+
+              const cellBounds = e.bounds;
+              if (!cellBounds) return;
+
+              // Set dynamic properties
+              scroller.headerHeight = cellBounds.height;
+              const font = getFontSize();
+              scroller.positionWidth = font + 8; // MSA always has padding
+
+              const start = getStart();
+              const startPadding = 0; // MSA doesn't need extra padding
+
+              scroller.draw(
+                cellBounds.x + startPadding,
+                cellBounds.y,
+                cellBounds.width - startPadding,
+                cellBounds.height,
+                getCurrent(),
+                start,
+                e,
+                seqCol.name
+              );
+            }));
+          };
+
+          // Initialize with monomer library for MSA sequences
+          getMonomerLibHelper()
+            .then((libHelper) => {
+              const monomerLib = libHelper.getMonomerLib();
+              initializeHeaders(monomerLib);
+            })
+            .catch((error) => {
+              grok.shell.warning(`Failed to initialize monomer library`);
+              console.error('Failed to initialize monomer library:', error);
+            });
+        } else {
+          // For non-MSA sequences, just use standard sequence rendering
+          // No scrolling header needed - the cell renderer will handle display
+          console.log(`Skipping scrolling header for non-MSA sequence column: ${seqCol.name}`);
+        }
       }
     }, 1000);
   };

@@ -930,3 +930,170 @@ export async function testMolstarMultiple(): Promise<void> {
   
   console.log('\n=== Test complete ===');
 }
+
+//name: extractSequenceColumnsToDataFrame
+//description: Extract protein sequences from all PDB IDs and add as columns to current dataframe
+export async function extractSequenceColumnsToDataFrame(): Promise<void> {
+  const tableView = grok.shell.tv;
+  if (!tableView) {
+    grok.shell.error('No active table view found');
+    return;
+  }
+
+  const dataFrame = tableView.dataFrame;
+  if (!dataFrame) {
+    grok.shell.error('No dataframe found in active table view');
+    return;
+  }
+
+  // Find all columns with PDB_ID semType
+  const pdbIdColumns = dataFrame.columns.toList().filter(col => col.semType === 'PDB_ID');
+  
+  if (pdbIdColumns.length === 0) {
+    grok.shell.error('No columns with PDB_ID semantic type found');
+    return;
+  }
+
+  grok.shell.info(`Found ${pdbIdColumns.length} PDB_ID column(s). Starting sequence extraction...`);
+
+  const pi = DG.TaskBarProgressIndicator.create('Extracting protein sequences...');
+  
+  try {
+    // Collect all unique PDB IDs
+    const allPdbIds = new Set<string>();
+    for (const col of pdbIdColumns) {
+      for (let i = 0; i < col.length; i++) {
+        const pdbId = col.get(i);
+        if (pdbId && typeof pdbId === 'string' && pdbId.trim().length >= 4) {
+          allPdbIds.add(pdbId.trim().toUpperCase());
+        }
+      }
+    }
+
+    const uniquePdbIds = Array.from(allPdbIds);
+    if (uniquePdbIds.length === 0) {
+      grok.shell.warning('No valid PDB IDs found in the dataframe');
+      return;
+    }
+
+    grok.shell.info(`Processing ${uniquePdbIds.length} unique PDB ID(s)`);
+
+    // Extract sequences for all PDB IDs
+    const allSequenceData: {[pdbId: string]: {[chainId: string]: string}} = {};
+    let maxChainCount = 0;
+    let processedCount = 0;
+    let failedCount = 0;
+
+    for (const pdbId of uniquePdbIds) {
+      try {
+        pi.update((processedCount / uniquePdbIds.length) * 100, `Processing ${pdbId}...`);
+        
+        const sequences = await extractProteinSequencesMolstar(pdbId);
+        if (sequences && Object.keys(sequences).length > 0) {
+          allSequenceData[pdbId] = sequences;
+          maxChainCount = Math.max(maxChainCount, Object.keys(sequences).length);
+          
+          const chainSummary = Object.entries(sequences)
+            .map(([chain, seq]) => `${chain}:${seq.length}`)
+            .join(', ');
+          console.log(`✓ ${pdbId}: ${Object.keys(sequences).length} chains (${chainSummary})`);
+        } else {
+          console.log(`⚠ ${pdbId}: No sequences found`);
+          failedCount++;
+        }
+      } catch (error: any) {
+        console.error(`✗ ${pdbId}: ${error.message}`);
+        failedCount++;
+      }
+      processedCount++;
+    }
+
+    if (maxChainCount === 0) {
+      grok.shell.warning('No protein sequences could be extracted from any PDB structure');
+      return;
+    }
+
+    pi.update(90, 'Adding sequence columns to dataframe...');
+
+    // Create sequence columns (Chain_1, Chain_2, etc.)
+    const sequenceColumns: DG.Column<string>[] = [];
+    for (let chainIndex = 1; chainIndex <= maxChainCount; chainIndex++) {
+      let columnName = `Chain_${chainIndex}`;
+      
+      // Check if column already exists and find unique name
+      let counter = 1;
+      while (dataFrame.columns.contains(columnName)) {
+        columnName = `Chain_${chainIndex}_${counter}`;
+        counter++;
+      }
+
+      if (counter > 1) {
+        grok.shell.info(`Column 'Chain_${chainIndex}' already exists, using '${columnName}' instead`);
+      }
+
+      const column = DG.Column.string(columnName, dataFrame.rowCount);
+      sequenceColumns.push(column);
+    }
+
+    // Populate sequence columns
+    for (let rowIndex = 0; rowIndex < dataFrame.rowCount; rowIndex++) {
+      // Find PDB ID for this row from any PDB_ID column
+      let pdbIdForRow: string | null = null;
+      for (const pdbCol of pdbIdColumns) {
+        const pdbId = pdbCol.get(rowIndex);
+        if (pdbId && typeof pdbId === 'string' && pdbId.trim().length >= 4) {
+          pdbIdForRow = pdbId.trim().toUpperCase();
+          break;
+        }
+      }
+
+      if (pdbIdForRow && allSequenceData[pdbIdForRow]) {
+        const sequences = allSequenceData[pdbIdForRow];
+        const chainIds = Object.keys(sequences);
+        
+        // Assign sequences to columns (Chain_1, Chain_2, etc.)
+        for (let chainIndex = 0; chainIndex < Math.min(chainIds.length, maxChainCount); chainIndex++) {
+          const chainId = chainIds[chainIndex];
+          const sequence = sequences[chainId];
+          sequenceColumns[chainIndex].set(rowIndex, sequence);
+        }
+      }
+      // Leave empty for rows without valid PDB IDs or failed extractions
+    }
+
+    // Add columns to dataframe with appropriate semantic types
+    for (const column of sequenceColumns) {
+      column.semType = 'Macromolecule';
+      column.setTag('alphabet', 'PT'); // Protein
+      column.setTag('units', 'fasta');
+      column.setTag('aligned', 'SEQ');
+      column.setTag('cell.renderer', 'sequence');
+      
+      dataFrame.columns.add(column);
+    }
+
+    pi.update(100, 'Complete!');
+
+    const successCount = uniquePdbIds.length - failedCount;
+    grok.shell.info(
+      `Sequence extraction complete! Added ${maxChainCount} chain columns. ` +
+      `Successfully processed ${successCount}/${uniquePdbIds.length} PDB structures.`
+    );
+
+    if (failedCount > 0) {
+      grok.shell.warning(`${failedCount} PDB structure(s) failed to process - check console for details`);
+    }
+
+  } catch (error: any) {
+    console.error('Failed to extract sequences:', error);
+    grok.shell.error(`Failed to extract sequences: ${error.message}`);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: extractSequences
+//description: Alias for extractSequenceColumnsToDataFrame (shorter console command)
+export async function extractSequences(): Promise<void> {
+  await extractSequenceColumnsToDataFrame();
+}
