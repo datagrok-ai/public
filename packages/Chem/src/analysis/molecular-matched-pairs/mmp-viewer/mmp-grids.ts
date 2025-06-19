@@ -174,14 +174,6 @@ export class MmpPairedGrids {
     });
   }
 
-  disableFiltersGroup() {
-    this.filters?.setActive(false);
-  }
-
-  enableFiltersGroup() {
-    this.filters?.setActive(true);
-  }
-
   switchToSubstitutionsTab() {
     /* if current row was changed while we were on tab other than 'Substitution',
      re-calculate pairs (in case we are not in show all mode) */
@@ -195,7 +187,6 @@ export class MmpPairedGrids {
 
   switchToFragmentsTab() {
     this.unPinMatchedPair();
-    this.enableFiltersGroup(); //this will call requestFilter for fragments df and update its filters
     this.mmpGridTrans.dataFrame.rows.requestFilter();
   }
 
