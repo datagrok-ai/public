@@ -3335,6 +3335,8 @@ export interface IPcPlotSettings {
 
   interquartileLineWidth: number;
 
+  bins: number;
+
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
