@@ -1097,8 +1097,11 @@ export class AddNewColumnDialog {
 
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
-      this.gridPreview!.dataFrame.col(this.currentCalculatedColName)!.name = colName;
-      this.gridPreview!.invalidate();
+      const gridPreviewCol = this.gridPreview!.dataFrame.col(this.currentCalculatedColName);
+      if (gridPreviewCol) {
+        gridPreviewCol.name = colName;
+        this.gridPreview!.invalidate();
+      }
       this.currentCalculatedColName = colName;
       return;
     }
