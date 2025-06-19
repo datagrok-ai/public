@@ -302,6 +302,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       },
     });
 
+    ui.tooltip.bind(followCurrentRowInFragGrid.captionLabel,
+      'If true, then \'Molecule pairs\' dataset below will be filtered according to current fragment pair');
+
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS,
       this.pairedGrids!.mmpGridTransMessage);
@@ -374,6 +377,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         position: ui.hints.POSITION.RIGHT,
         class: 'chem-mmp-active-hint-element-horz',
       },
+      {
+        element: followCurrentRowInFragGrid.root,
+        text: `Change to true and click any row in 'Fragments' grid to filter molecule pairs with corresponding substitution in 'Molecule pairs' grid`,
+        position: ui.hints.POSITION.RIGHT,
+        class: 'chem-mmp-active-hint-element-horz',
+      },
     ];
 
     setTimeout(() => {
@@ -411,12 +420,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.lastOpenedHint?.remove();
     const hintContent = ui.div();
     hintContent.append(ui.divText(hints[i].text));
-    const nextButton = ui.button('Next', () => {
-      this.setupHint(hints, i + 1);
-    });
-    const buttons = ui.divH([], {style: {float: 'right'}});
-    if (i !== hints.length - 1)
-      buttons.append(nextButton);
+    const nextButton = i !== hints.length - 1 ? ui.button('Next', () => this.setupHint(hints, i + 1)) :
+      ui.button('Close', () => this.lastOpenedHint?.remove());
+    const buttons = ui.divH([], {style: {justifyContent: 'space-between'}});
+    buttons.append(nextButton);
     buttons.append(doNotShow);
     hintContent.append(buttons);
     addHint(i, hintContent);
@@ -533,7 +540,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         position: ui.hints.POSITION.LEFT,
       },
       {
-        element: this.pairedGrids!.filters.root,
+        element: filterIcon,
         text: `Use trellis plot filters to filter fragments of interest`,
         position: ui.hints.POSITION.LEFT,
       },

@@ -67,9 +67,8 @@ export enum TrellisAxis {From = 'From', To = 'To'};
 export enum TrellisSortByProp {Frequency = 'Frequency', MW = 'MW', None = 'None'};
 export enum TrellisSortType {Asc = 'Asc', Desc = 'Desc'};
 
-export const FRAGMENTS_GRID_TOOLTIP = `'Fragment Pairs' grid contains all fragment substitutions found in the dataset. Change current row in 'Fragment Pairs' grid to search for molecule pairs with corresponding substitution.`;
-export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS = `'Matched Molecular Pairs' grid shows all pairs of molecules associated with the
-  substitution from the upper table. Click any row to pin corresponding molecules on top of initial dataset.`;
+export const FRAGMENTS_GRID_TOOLTIP = `'Fragment Pairs' grid contains all fragment substitutions found in the dataset.`;
+export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS = `'Molecular Pairs' grid shows pairs of molecules with found substitutions. Click any row to pin corresponding molecules on top of initial dataset.`;
 export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS = `Click a non-empty cell in the trellis plot above to filter molecule pairs with corresponding fragment substitution.`;
 export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS = `Click any row to zoom to corresponding pair on scatter plot`;
 export const FRAGMENTS_TAB_TOOLTIP = `Charts in trellis plot cells show mean difference for corresponding activities. Click any non-empty cell on trellis plot to filter molecule pairs with corresponding fragment substitution in 'Matched Molecular Pairs' grid below.`;
