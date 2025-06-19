@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/pyodide",
   "friendlyName": "Pyodide",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)",
   "author": {
     "name": "Pavlo Polovyi",
