@@ -2,7 +2,7 @@
   "name": "@datagrok/excalidraw",
   "friendlyName": "Excalidraw",
   "version": "1.0.0",
-  "description": "",
+  "description": "Excalidraw sketcher integration for Datagrok",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
