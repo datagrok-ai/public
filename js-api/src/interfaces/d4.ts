@@ -2473,6 +2473,9 @@ export interface IBarChartSettings {
   stack: string;
   stackColumnName: string;
 
+  /// Stack map function (applicable to dates only).
+  stackMap: string;
+
   showStackSelector: boolean;
 
   /// Numerical column to be used for color-coding.
