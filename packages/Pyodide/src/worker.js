@@ -15,7 +15,6 @@ function valueToJS(value) {
 async function init() {
     pyodide = await loadPyodide();
     pyodide.setDebug(false);
-    await pyodide.loadPackage(["numpy", "pandas", "matplotlib", 'python-dateutil' /* "pyarrow" */]);
     pyodide.registerJsModule("dg", {
         async execFuncCall(nqName, args) {
 	    const jsArgs = {};
@@ -104,19 +103,22 @@ async function handleFuncCallResults(event) {
 	for (const [name, typing] of Object.entries(data.typings ?? {})) {
 	    if (typing === 'datetime') {
 		const arg = data.results?.[name];
-	        pyodide.globals.set('arg', arg);
-	        pyodide.runPython(convertDateScriptText);
-		results[name] = pyodide.globals.get('result');
+		results[name] = await runPyConvert(arg, convertDateScriptText);
 	    } else if (typing === 'dataframe') {
 	        const arg = data.results?.[name];
-	        pyodide.globals.set('arg', arg);
-	        pyodide.runPython(convertDFScriptText);
-		results[name] = pyodide.globals.get('result');
+		results[name] = await runPyConvert(arg, convertDFScriptText);
 	    }
 	}
 	const pyResults = pyodide.toPy(results);
 	cbs.resolve(pyResults);
     }
+}
+
+async function runPyConvert(arg, script) {
+    const globals = pyodide.toPy({arg});
+    await pyodide.loadPackagesFromImports(script);
+    await pyodide.runPythonAsync(script, { globals });
+    return globals.get('result');
 }
 
 onmessage = async (event) => {
