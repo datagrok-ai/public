@@ -49,6 +49,10 @@ export namespace Scripts {
     return await grok.functions.call('Pyodide:DatetimeTestPy', { input_datetime });
   }
 
+  export async function pyodideDepsTest(bool_input: boolean): Promise<boolean> {
+    return await grok.functions.call('Pyodide:PyodideDepsTest', { bool_input });
+  }
+
   export async function pyodideDouble(double_input: number): Promise<number> {
     return await grok.functions.call('Pyodide:PyodideDouble', { double_input });
   }

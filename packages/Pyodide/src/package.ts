@@ -23,6 +23,7 @@ interface StartWorkerScript {
   type: 'startWorkerScript';
   script: string;
   namespace: {[key: string]: any};
+  dependencies?: string[];
   outputs: string[];
 }
 
@@ -270,8 +271,11 @@ async function prepareRequest(scriptCall: DG.FuncCall): Promise<StartWorkerScrip
   code += (scriptCall.func as DG.Script).clientCode;
   const outputs: string[] = [];
   code += prepareOutputs(scriptCall, outputs);
+  let dependencies;
+  if (scriptCall.func.options['dependencies'])
+    dependencies = JSON.parse(scriptCall.func.options['dependencies']);
   // console.log(code);
-  return {id: uuidv4(), type: 'startWorkerScript', script: code, namespace: namespace, outputs: outputs};
+  return {id: uuidv4(), type: 'startWorkerScript', script: code, namespace, dependencies, outputs};
 }
 
 async function sendRequest(req: StartWorkerScript): Promise<Record<string, any>> {

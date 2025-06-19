@@ -15,7 +15,7 @@ function valueToJS(value) {
 async function init() {
     pyodide = await loadPyodide();
     pyodide.setDebug(false);
-    pyodide.registerJsModule("dg", {
+    pyodide.registerJsModule('dg', {
         async execFuncCall(nqName, args) {
 	    const jsArgs = {};
 	    const typings = {};
@@ -25,10 +25,10 @@ async function init() {
 		if (jsVal?.to_csv) {
 		    jsVal = jsVal.to_csv.callKwargs({index: false});
 		    jsVal = jsVal.trim();
-		    typings[key] = "dataframe";
+		    typings[key] = 'dataframe';
 		} else if (jsVal?.isoformat) {
 		    jsVal = jsVal.isoformat();
-		    typings[key] = "datetime";
+		    typings[key] = 'datetime';
 		}
 		jsArgs[key] = jsVal;
 	    }
@@ -43,13 +43,25 @@ async function init() {
 
 let initCompleted = init();
 
+const loadedItems = new Set();
+
 async function handleWorkerScript(event) {
-    const { id, script, namespace, outputs } = event.data;
+    const { id, script, namespace, outputs, dependencies } = event.data;
     let scriptNamespace;
     let formatError;
     let reformatExceptionFunc;
     pyodide.setStdout({ batched: (msg) => postMessage({ id, type: 'stdoutMessage', message: msg }) });
     try {
+	if (dependencies?.length) {
+	    await pyodide.loadPackage('micropip');
+	    const micropip = pyodide.pyimport("micropip");
+	    for (const dep of dependencies) {
+		if (loadedItems.has(dep))
+		    continue;
+		await micropip.install(dep);
+		loadedItems.add(dep);
+	    }
+	}
         await pyodide.loadPackagesFromImports(script);
         scriptNamespace = pyodide.toPy(namespace);
         await pyodide.runPythonAsync(script, { globals: scriptNamespace });
@@ -60,15 +72,15 @@ async function handleWorkerScript(event) {
         }
         postMessage({ id, type: 'scriptResults', result });
     } catch (error) {
-        reformatExceptionFunc = scriptNamespace.get("reformat_exception");
+        reformatExceptionFunc = scriptNamespace?.get('reformat_exception');
         formatError = reformatExceptionFunc ? reformatExceptionFunc() : [error?.message, error?.stack];
         error.message = formatError[0]?.trim();
         error.stack = formatError[1]?.trim();
         postMessage({ id, type: 'scriptResults', error });
     } finally {
-        scriptNamespace?.destroy();
-        formatError?.destroy();
-        reformatExceptionFunc?.destroy();
+        scriptNamespace?.destroy?.();
+        formatError?.destroy?.();
+        reformatExceptionFunc?.destroy?.();
         pyodide.setStdout();
     }
 }
