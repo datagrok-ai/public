@@ -25,3 +25,9 @@ export const enum tempTAGS {
   referenceSequence = 'reference-sequence',
   currentWord = 'current-word',
 }
+
+export const MULTILINE_TAGS = {
+  renderMultiline: '.mm.cellRenderer.renderMultiline',
+  monomersPerLine: '.mm.cellRenderer.monomersPerLine',
+  maxVisibleLines: '.mm.cellRenderer.maxVisibleLines'
+};

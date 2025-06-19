@@ -108,7 +108,8 @@ Options:
 const HELP_PUBLISH = `
 Usage: grok publish [host]
 
-Upload a package
+Uploads a package
+Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
 [--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh] [--link]
@@ -116,6 +117,7 @@ Options:
 --all             Publish all available packages 
 --refresh         Publish all available already loaded packages 
 --link  	        Link the package to local utils
+--skip-check      Skip check stage 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -127,6 +129,7 @@ Options:
 [-r | --recursive]
 
 --recursive       Check all packages in the current directory
+--soft            Even if an error occurs, it doesn't throw an exception
 
 Check package content (function signatures, import statements of external modules, etc.)
 `;
@@ -180,13 +183,13 @@ Options:
 --link-package  	  Link the packages to local utils
 --record            Records the test execution process in mp4 format
 --verbose           Prints detailed information about passed and skipped tests in the console
---core              Runs packages & core tests (applicable  for DevTools packages only)
+--core              Runs packages & core tests (applicable for DevTools packages only)
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
 --order             Specify order for tests invocation
 --tags              Filter tests by tag name for run
 --testRepeat        Set amount of tests repeats
---browsers-count      Set amount of browsers for tests run
+--browsers-count    Set amount of browsers for tests run
 
 Run tests of all or specified packages 
 
@@ -197,14 +200,16 @@ https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 const HELP_LINK = `
 Usage: grok link
 
-Link \`datagrok-api\`, all necessary libraries and packages for local development by \`npm link\` command 
+Links \`datagrok-api\`, all necessary libraries and packages for local development.
+Uses \`npm link\` unless the --path option specified. 
+By default, it links packages from the parent directory of the repository's root.
 
 Options:
---dev                 Links also dev dependencies
---path                Instead of npm linking sets dependecies in package.json to local
---without-common-dir  Links packages only from the current repository
---unlink              Unlinks packages and sets last versions instead of local path in package.json dependencies 
---verbose             Prints detailed information about linked packages  
+--dev               Links also dev dependencies
+--path              Instead of npm link, sets dependencies in package.json to local
+--repo-only         Links packages only from the current repository
+--unlink            Unlinks packages and sets last versions instead of local path in package.json dependencies 
+--verbose           Prints detailed information about linked packages  
 `;
 
 // const HELP_MIGRATE = `

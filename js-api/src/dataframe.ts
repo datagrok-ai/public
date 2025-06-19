@@ -1562,6 +1562,10 @@ export class RowList {
     return wu(_toIterable(api.grok_RowList_Where(this.dart, indexPredicate)));
   }
 
+  indexes(options?: {onlyFiltered?: boolean, onlySelected?: boolean}): WuIterable<number> {
+    return wu(_toIterable(api.grok_RowList_Indexes(this.dart, options?.onlyFiltered ?? false, options?.onlySelected ?? false)));
+  }
+
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.

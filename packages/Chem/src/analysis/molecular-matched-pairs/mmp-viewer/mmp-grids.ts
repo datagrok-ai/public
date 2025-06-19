@@ -13,6 +13,10 @@ import {resizeGridColsSize} from '../../../utils/ui-utils';
 import {MMPSubstructProvider} from './mmp-substruct-provider';
 import {addSubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
 import {fillPairInfo} from './mmp-cliffs';
+import {MmmpaActivityRenderer} from '../mmpa-activity-cell-renderer';
+import {PaletteCodes} from './palette';
+
+const MEAN_ACTIVITY_COL_WIDTH = 100;
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -53,16 +57,22 @@ export class MmpPairedGrids {
   fragsShowAllMode = true;
   currentRowChanged = false;
   followCurrentRowInFragmentsGrid = false;
+  activityColors: PaletteCodes | null = null;
+  contextPanelDiv = ui.divV([], 'mmpa-substitutions-context-panel');
+  moleculePairsContextPanelDiv = ui.div();
+  pcPlotContextPanelDiv = ui.div('', {style: {height: '100%'}});
 
-  constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
+  constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[],
+    activityColors: PaletteCodes) {
     this.rdkit = getRdKitModule();
     this.mmpa = mmpa;
+    this.activityColors = activityColors;
     this.parentTable = mmpInput.table;
     this.molColName = mmpInput.molecules.name;
-    this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa);
+    this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa, this.activityColors, subs);
+    this.mmpGridTrans = getMatchedPairsGrid(mmpa, this.rdkit);
     this.fpCatsFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).categories;
     this.fpCatsTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).categories;
-    this.mmpGridTrans = getMatchedPairsGrid(mmpa, this.rdkit);
     this.mmpMaskTransSelection = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.parentTableFragSelection = DG.BitSet.create(this.parentTable.rowCount);
     this.parentTableTransSelection = DG.BitSet.create(this.parentTable.rowCount);
@@ -71,6 +81,31 @@ export class MmpPairedGrids {
 
     this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid({allowColumnMenu: true});
 
+
+    subs.push(this.fpGrid.onCellClick.subscribe((gc) => {
+      const actIndex = activityMeanNames.indexOf(gc.cell?.column?.name);
+      if (actIndex !== -1) {
+        ui.empty(this.pcPlotContextPanelDiv);
+        this.pcPlotContextPanelDiv.classList.remove('mmpa-hide-context-panel');
+        const filter = `[${
+          mmpa.rulesBased.moleculePairIndices[gc.cell?.rowIndex].join(',')
+        }].contains(\${${MMP_NAMES.PAIRNUM}})`;
+        const fromColName = `${mmpa.initData.activitiesNames[actIndex]}_from`;
+        const toColName = `${mmpa.initData.activitiesNames[actIndex]}_to`;
+        const title = `${activityMeanNames[actIndex]} for substitution #${gc.cell?.rowIndex}`;
+        const pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.mmpGridTrans.dataFrame, {
+          columnNames: [fromColName, toColName],
+          filter: filter,
+          showTitle: false,
+        });
+        pcPlot.root.classList.add('mmpa-pc-plot');
+        pcPlot.root.prepend(ui.divText(title, 'mmpa-pc-plot-title'));
+        this.pcPlotContextPanelDiv.append(pcPlot.root);
+        //need to pass this true parameter since current row might still be -1
+        //because it updates a bit later after onCellClick
+        this.showContextPanel(true);
+      }
+    }));
 
     //Filter masks
 
@@ -91,6 +126,9 @@ export class MmpPairedGrids {
 
     //scatter plot activity filters (molecule pairs df) on Cliffs tab
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
+
+    this.contextPanelDiv.append(this.moleculePairsContextPanelDiv);
+    this.contextPanelDiv.append(this.pcPlotContextPanelDiv);
 
     // Subscribe to parent table filter changes
     subs.push(DG.debounce(this.parentTable.onFilterChanged, 300).subscribe(() => {
@@ -235,9 +273,12 @@ export class MmpPairedGrids {
       if (this.mmpGridTrans.table.currentRowIdx !== -1) {
         this.pinMatchedPair(this.mmpGridTrans.table.currentRowIdx, this.mmpGridTrans);
         setTimeout(() => {
-          grok.shell.windows.showContextPanel = true;
-          grok.shell.o = fillPairInfo(this.mmpa!, this.mmpGridTrans.table.currentRowIdx,
+          const pairInfo = fillPairInfo(this.mmpa!, this.mmpGridTrans.table.currentRowIdx,
             this.mmpGridTrans.table, this.parentTable!, this.rdkit, this.molColName);
+          this.moleculePairsContextPanelDiv.classList.remove('mmpa-hide-context-panel');
+          ui.empty(this.moleculePairsContextPanelDiv);
+          this.moleculePairsContextPanelDiv.append(pairInfo);
+          this.showContextPanel();
         }, 500);
       }
     });
@@ -255,6 +296,27 @@ export class MmpPairedGrids {
 
     this.mmpMaskTrans.setAll(true);
     this.mmpMaskFrag.setAll(true);
+  }
+
+  showContextPanel(show?: boolean) {
+    const updateContextPanel = () => {
+      if ((this.fpGrid.dataFrame.currentRowIdx === -1 && !show) || this.currentTab !== MMP_NAMES.TAB_TRANSFORMATIONS)
+        this.pcPlotContextPanelDiv.classList.add('mmpa-hide-context-panel');
+      if (this.mmpGridTrans.dataFrame.currentRowIdx === -1)
+        this.moleculePairsContextPanelDiv.classList.add('mmpa-hide-context-panel');
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = this.contextPanelDiv;
+    };
+    if (!grok.shell.windows.showContextPanel)
+      updateContextPanel();
+    else {
+      try {
+        if (!(grok.shell.o as HTMLElement).getElementsByClassName('mmpa-substitutions-context-panel').length)
+          updateContextPanel();
+      } catch (e: any) {
+        updateContextPanel();
+      }
+    }
   }
 
   createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}) {
@@ -288,11 +350,12 @@ export class MmpPairedGrids {
   }
 
   /**
-  * Prepares all the entities to show for selected pair.
+  * Prepares all the entities to show for selected pair of fragments.
   */
   async refreshMatchedPair() : Promise<void> {
     this.mmpMaskTrans.setAll(false);
 
+    //idxPairs  index of the pair with molecule from parent dataframe in it
     const [idxPairs] = this.findSpecificRule(this.fragsShowAllMode);
 
     if (idxPairs >= 0) {
@@ -455,7 +518,7 @@ export class MmpPairedGrids {
     const parentFilter = this.parentTable.filter;
 
     this.parentPairsFilter.setAll(true);
-    const [fromIndices, toIndices] = this.mmpa.rulesBased.moleculePairIndices;
+    const [fromIndices, toIndices] = this.mmpa.rulesBased.moleculePairParentIndices;
 
     for (let i = 0; i < fromIndices.length; i++) {
       this.parentPairsFilter.set(i,
@@ -466,7 +529,8 @@ export class MmpPairedGrids {
 }
 
 
-function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid {
+function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA, activityColors: PaletteCodes,
+  subs: Subscription[]) : DG.Grid {
   const fromCol = createColWithDescription('string', MMP_NAMES.FROM,
     mmpa.rulesBased.fromFrag, FRAGMENTS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE);
   const toCol = createColWithDescription('string', MMP_NAMES.TO,
@@ -493,6 +557,25 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
   fpDf.name = MMP_NAMES.FRAGMENTS_GRID;
   const fpGrid = fpDf.plot.grid({allowColumnMenu: true});
   fpGrid.col(MMP_NAMES.COLOR)!.visible = false;
+
+  const renderers: WeakMap<DG.Column, MmmpaActivityRenderer> = new WeakMap();
+  for (let i = 0; i < activityMeanNames.length; i++) {
+    const col = fpGrid.dataFrame.col(activityMeanNames[i]);
+    if (col) {
+      const color = activityColors!.hex[i];
+      renderers.set(col, new MmmpaActivityRenderer(mmpa, i, color));
+      fpGrid.col(activityMeanNames[i])!.width = MEAN_ACTIVITY_COL_WIDTH;
+    }
+  }
+
+  subs.push(fpGrid.onCellRender.subscribe((e) => {
+    if (e && e.bounds && e.cell && e.cell.cell?.column && !e.cell.isColHeader &&
+      !e.cell.isRowHeader && renderers.has(e.cell.cell?.column)) {
+      e.preventDefault();
+      renderers.get(e.cell.cell?.column)?.render(e.g, e.bounds.x, e.bounds.y, e.bounds.width, e.bounds.height, e.cell);
+    }
+  }));
+
   return fpGrid;
 }
 

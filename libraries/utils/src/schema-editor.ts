@@ -4,14 +4,20 @@ import * as ui from 'datagrok-api/ui';
 import {merge, Observable, Subject} from "rxjs";
 import {IProperty, ValueMatcher} from "datagrok-api/dg";
 
+function isNumeric(type: string) {
+  return type == DG.TYPE.INT || type == DG.TYPE.FLOAT || type == DG.TYPE.BIG_INT || type == DG.TYPE.QNUM;
+}
+
 export class SchemaEditor extends DG.Widget {
-  table: PropertyTable;
+  table: PropertyTable<DG.IProperty>;
   allowedTypes: string[] = [DG.TYPE.STRING, DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATE_TIME];
   properties: DG.IProperty[] = [];
+  extraPropertiesDiv: HTMLDivElement;
 
-  constructor(options: {properties: DG.IProperty[]}) {
+  constructor(options: {properties: DG.IProperty[], extraPropertiesDiv?: HTMLDivElement}) {
     super(ui.div([]));
     this.properties = options.properties;
+    this.extraPropertiesDiv = options.extraPropertiesDiv ?? ui.div([]);
 
     const typeProp: IProperty = {
       ...DG.Property.propertyOptions['type'],
@@ -23,6 +29,21 @@ export class SchemaEditor extends DG.Widget {
       mainProperties: [DG.Property.propertyOptions['name']!, typeProp],
       allowAdd: true,
       allowRemove: true
+    });
+
+    this.table.onSelected.subscribe((item) => {
+      ui.empty(this.extraPropertiesDiv);
+      const propKeys = Object.keys(DG.Property.propertyOptions).filter(k => k !== 'type' && k !== 'name');
+      const extraProperties = propKeys
+        .map(k => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
+        .filter(p => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))
+        .map(p => DG.Property.fromOptions(p));
+      const form = ui.input.form(item, extraProperties);
+      
+      this.extraPropertiesDiv.appendChild(ui.divV([
+        ui.h2(item.name!),
+        form
+      ]));
     });
 
     this.root.appendChild(this.table.root);
@@ -62,7 +83,7 @@ export class PropertyTable<T = any> extends DG.Widget {
         .map((p) => {
           const input = DG.InputBase.forProperty(DG.Property.fromOptions(p), item);
           for (const v of p.validators ?? [])
-            input.addValidator(ValueMatcher.forType(p.type!, v).validate);
+            input.addValidator((s) => ValueMatcher.forType(p.type!, v).validate(s));
           input.onChanged.subscribe(() => this.onItemChanged.next(item));
           input.input.onclick = () => this.onSelected.next(item);
           return input.input;

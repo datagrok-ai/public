@@ -872,6 +872,11 @@ export class ToolboxPage {
   static getOpenDialogs(): Dialog[] {
     return api.grok_Dialog_GetOpenDialogs();
   }
+
+  /** Initializes the dialog properties from local storage. */
+  initFromLocalStorage(): void {
+    api.grok_Dialog_InitFromLocalStorage(this.dart);
+  }
 }
 
 
@@ -1397,6 +1402,7 @@ export class InputForm extends DartWrapper {
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
+    inputs = inputs.filter((input) => input != null);
     return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
   }
 

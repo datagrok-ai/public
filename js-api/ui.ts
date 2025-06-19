@@ -850,7 +850,10 @@ export namespace input {
 
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source, options)));
+    const propInputs = props
+      .map((p) => forProperty(p, source, options))
+      .filter((input) => input !== null);
+    return inputs(propInputs);
   }
 
   function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
@@ -2105,6 +2108,10 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
  */
 export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
+}
+
+export function time(time: dayjs.Dayjs): HTMLSpanElement {
+  return api.grok_UI_Time(toDart(time));
 }
 
 export namespace tools {

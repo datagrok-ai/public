@@ -14,13 +14,13 @@ type PropInput = DG.InputBase & { prop: PlateProperty };
 function getSearchForm(properties: PlateProperty[], getUniqueValues: (prop: any) => string[]): DG.InputForm {
   const inputs: PropInput[] = [];
   for (const prop of properties) {
-    if (prop.value_type == DG.TYPE.STRING) {
+    if (prop.type == DG.TYPE.STRING) {
       const items = getUniqueValues(prop);
       const input = ui.input.multiChoice(prop.name, { items: items}) as PropInput;
       input.prop = prop;
       inputs.push(input);
     }
-    else if (prop.value_type == DG.TYPE.FLOAT) {
+    else if (prop.type == DG.TYPE.FLOAT) {
       const input = ui.input.string(prop.name) as PropInput;
       input.prop = prop;
       input.addValidator(s => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
@@ -108,7 +108,7 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onR
   const searchHost = ui.divV([
     plateTemplateSelector.root,
     ui.divH([
-      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}), 
+      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
     ], {style: {height: '100%', width: '100%'}}),
   ], {classes: 'ui-panel'});

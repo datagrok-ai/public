@@ -33,7 +33,7 @@ export async function openDescriptorsDialogDocker() {
 export function addDescriptorsColsToDf(table: DG.DataFrame, colsArr: DG.Column[]) {
   for (const col of colsArr) {
     if (!col)
-      continue; 
+      continue;
     const unusedName = table.columns.getUnusedName(col.name);
     col.name = unusedName;
     table.columns.add(col);
@@ -195,6 +195,9 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
 
   const keys = Object.keys(descriptors);
   for (const groupName of keys) {
+    //in case there are no descriptors in the group - do not create tree group
+    if (!descriptors[groupName] || !descriptors[groupName]['descriptors'])
+      continue;
     const group = tree.group(groupName, null, false);
     group.enableCheckBox();
     groups[groupName] = group;
@@ -220,8 +223,6 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
           selectedDescriptors[item.text] = groupName;
       };
     }
-
-    checkAll(false);
   }
 
   const saveInputHistory = (): any => {
@@ -272,9 +273,7 @@ async function getSelected() : Promise<any> {
     descriptors = await getDescriptorsTree();
   const str = grok.userSettings.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
-  if (selected.length === 0) {
-    //selected =
-    //  (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
+  if (selected.length === 0 && descriptors['Lipinski'] && descriptors['Lipinski']['descriptors']) {
     selected = descriptors['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
     grok.userSettings.add(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }

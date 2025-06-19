@@ -921,8 +921,22 @@
   padding-right: 5px;
 }
 
-.chem-mmp-hide-pc-plot{
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-bottom: 8px;
+.mmpa-substitutions-context-panel {
+  height: 100%;
+}
+
+.mmpa-pc-plot {
+  height: 100%!important;
+  width: 100%!important;
+}
+
+.mmpa-hide-context-panel {
+  display: none;
+}
+
+.mmpa-pc-plot-title {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  text-align: center;
 }

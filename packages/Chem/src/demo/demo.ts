@@ -228,7 +228,9 @@ export async function _demoMMPA(): Promise<void> {
       }, '', 20000);
     } catch (e) {};
     mmpViewer!.defaultFragmentsFiltersStates = filterStates;
-    mmpViewer!.filterStatesUpdatedCondition = () => mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 2797;
+    mmpViewer!.filterStatesUpdatedCondition = () => {
+      return mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 483;
+    };
     mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
       grok.shell.windows.showHelp = true;
