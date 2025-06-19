@@ -225,7 +225,7 @@ export class AddNewColumnDialog {
       );
       this.prepareForSeleniumTests();
     } else {
-      const editButton = ui.button('Edit', () => {
+      const editButton = ui.button('Edit in dialog', () => {
         this.call.setParamValue('expression', this.codeMirror!.state.doc.toString());
         this.applyFormulaButton!.disabled = true;
         editButton.disabled = true;
