@@ -535,6 +535,14 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA, activityC
     fpCols.push(createColWithDescription('', activityMeanNames[i],
       mmpa.rulesBased.meanDiffs[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, true));
   }
+
+  //columns should be added in a certain order, so first add delta columns and pair count columns after them
+  for (let i = 0; i < activityMeanNames.length; i++) {
+    fpCols.push(createColWithDescription('', `${activityMeanNames[i]} count`,
+      mmpa.allCasesBased.pairsPerActivity[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'int32', undefined, undefined,
+      `Number of pairs with ${activityMeanNames[i]}`));
+  }
+
   fpCols.push(occasionsCol);
 
   const colorsPal = new Int32Array(fromCol.length);

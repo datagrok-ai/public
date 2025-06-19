@@ -55,14 +55,18 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 
 export function createColWithDescription(colType: any, colName: string, list: any,
   descriptions: {[key: string]: string}, type: string,
-  semType?: DG.SemType, mean?: boolean): DG.Column {
+  semType?: DG.SemType, mean?: boolean, description?: string): DG.Column {
   const col = type === 'int32' ? DG.Column.fromInt32Array(colName, list) : type === 'float32' ?
     DG.Column.fromFloat32Array(colName, list) : DG.Column.fromList(colType, colName, list);
   if (!semType) {
     if (descriptions[colName])
       col.setTag('description', descriptions[colName]);
-    else if (colName.includes('\u0394'))
-      col.setTag('description', colName.replace('\u0394', mean ? 'Mean difference in' : 'Difference in'));
+    else {
+      if (description)
+        col.setTag('description', description);
+      else if (colName.includes('\u0394'))
+        col.setTag('description', colName.replace('\u0394', mean ? 'Mean difference in' : 'Difference in'));
+    }
   } else
     col.semType = semType;
   return col;

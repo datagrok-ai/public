@@ -2,7 +2,7 @@
 export enum MMP_NAMES {
   FROM = 'From',
   TO = 'To',
-  PAIRS_COUNT = 'Count',
+  PAIRS_COUNT = 'Total count',
   PAIRNUM = '~PairNum',
   PAIR_SORT = '~PairSort',
   PAIRNUM_FROM = '~PairNumFrom',
@@ -42,7 +42,7 @@ export enum SHOW_FRAGS_MODE {
 export const FRAGMENTS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
-  [MMP_NAMES.PAIRS_COUNT]: 'Number of substitutions identified in a dataset',
+  [MMP_NAMES.PAIRS_COUNT]: 'Total number of pairs for substitution identified in a dataset',
 };
 
 export const PAIRS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
