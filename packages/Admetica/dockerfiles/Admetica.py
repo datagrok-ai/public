@@ -199,5 +199,4 @@ def predict(data: str, models: str, add_probability: bool, batch_size=1000):
 def run_admetica(self, csv: str, models: str, raiseException: bool=False) -> pd.DataFrame:
   global raise_ex_flag
   raise_ex_flag = raiseException
-  self.update_state(meta={"description": "Testing vla vla"})
   return predict(csv, models, False)
