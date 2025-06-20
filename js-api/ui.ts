@@ -2114,6 +2114,10 @@ export function time(time: dayjs.Dayjs): HTMLSpanElement {
   return api.grok_UI_Time(toDart(time));
 }
 
+export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
+  return api.grok_UI_ShortTimestamp(toDart(time));
+}
+
 export namespace tools {
   export function click<T extends HTMLElement>(e: T, handler: () => void): T {
     e.addEventListener('click', handler);
