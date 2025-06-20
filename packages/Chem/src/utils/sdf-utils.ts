@@ -94,8 +94,8 @@ export function getSdfString(
       _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
     result += `${mol}\n`;
 
-    const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ?
-      grok.shell.tv.grid : grok.shell.getTableView(table.name)?.grid;
+    const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ? grok.shell.tv.grid :
+      table.name && grok.shell.getTableView(table.name) ? grok.shell.getTableView(table.name).grid : null;
     const selectedCols = Array.from(exportOptions.selectedColumnsOnly ? table.columns.selected : table.columns);
     const visibleCols = exportOptions.visibleColumnsOnly && grid != null ? selectedCols.filter((col) => {
       const gridCol = grid.columns.byName(col.name);

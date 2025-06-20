@@ -126,6 +126,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   spCorrDiv = ui.divV([]);
   showFragmentsChoice: DG.InputBase | null = null;
+  followCurrentRowInFragGrid: DG.InputBase | null = null;
   lastCurrentRowOnCliffsTab = - 1;
   lastOpenedHint: HTMLDivElement | null = null;
   showHints = true;
@@ -294,15 +295,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getTransformationsTab(): HTMLElement {
-    const followCurrentRowInFragGrid = ui.input.bool('Follow current row', {
+    this.followCurrentRowInFragGrid = ui.input.bool('Follow current row', {
       value: false,
       onValueChanged: () => {
-        this.pairedGrids!.followCurrentRowInFragmentsGrid = followCurrentRowInFragGrid.value;
+        this.pairedGrids!.followCurrentRowInFragmentsGrid = this.followCurrentRowInFragGrid!.value;
         this.pairedGrids!.refreshFragmentsAndPairs(false);
       },
     });
 
-    ui.tooltip.bind(followCurrentRowInFragGrid.captionLabel,
+    ui.tooltip.bind(this.followCurrentRowInFragGrid.captionLabel,
       'If true, then \'Molecule pairs\' dataset below will be filtered according to current fragment pair');
 
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
@@ -334,11 +335,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       `Select whether to show all fragments pairs or only pairs for current molecule in the initial dataset`);
 
 
-    followCurrentRowInFragGrid.classList.add('chem-mmp-fragments-grid-follow-current-row');
+    this.followCurrentRowInFragGrid.classList.add('chem-mmp-fragments-grid-follow-current-row');
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage,
-      ui.divH([this.showFragmentsChoice.root, followCurrentRowInFragGrid.root]));
+      ui.divH([this.showFragmentsChoice.root, this.followCurrentRowInFragGrid.root]));
     fpGrid.prepend(
       ui.divText('No substitutions found. Try to change filters or select another molecule if you are in \'Current\' mode.',
         'chem-mmpa-no-fragments-error'));
@@ -378,7 +379,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         class: 'chem-mmp-active-hint-element-horz',
       },
       {
-        element: followCurrentRowInFragGrid.root,
+        element: this.followCurrentRowInFragGrid.root,
         text: `Change to true and click any row in 'Fragments' grid to filter molecule pairs with corresponding substitution in 'Molecule pairs' grid`,
         position: ui.hints.POSITION.RIGHT,
         class: 'chem-mmp-active-hint-element-horz',
