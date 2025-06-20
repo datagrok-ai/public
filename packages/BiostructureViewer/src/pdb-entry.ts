@@ -45,15 +45,14 @@ export class PdbEntry {
     this.useGraphQL = useGraphQL;
   }
 
-  /** 
+  /**
    * Fetches all pieces of data using the preferred method (GraphQL or REST).
    */
   async fetchInfo(): Promise<void> {
-    if (this.useGraphQL) {
+    if (this.useGraphQL)
       await this.fetchInfoGraphQL();
-    } else {
+    else
       await this.fetchInfoREST();
-    }
   }
 
   /**
@@ -124,7 +123,7 @@ export class PdbEntry {
 
     for (const [entityId, data] of Object.entries(polymerData)) {
       const chains: Chain[] = [];
-      
+
       // For each chain, create a Chain object
       // Note: GraphQL doesn't provide secondary structure info, so tracks will be empty
       // You could extend this to make additional GraphQL queries for secondary structure if needed
@@ -239,11 +238,10 @@ export class PdbEntry {
   /** Tertiary structure as a string. */
   get body(): string {
     if (this.pdbBody.length == 0) {
-      if (this.useGraphQL) {
+      if (this.useGraphQL)
         throw new Error('Structure file not loaded. Call fetchInfoREST() or _getPDBAsText() to load structure file.');
-      } else {
+      else
         throw new Error('Call fetchInfo() before getting file body.');
-      }
     }
 
     return this.pdbBody;
@@ -260,9 +258,9 @@ export class PdbEntry {
   /** Get sequences only (lightweight access). */
   get sequences(): {[entityId: string]: string} {
     const result: {[entityId: string]: string} = {};
-    for (const entity of this.entities) {
+    for (const entity of this.entities)
       result[entity.id] = entity.sequence;
-    }
+
     return result;
   }
 
