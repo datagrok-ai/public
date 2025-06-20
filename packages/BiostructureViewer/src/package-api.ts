@@ -230,8 +230,7 @@ export namespace funcs {
     return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequenceColumnsToDataFrame', {});
   }
 
-  //Extract protein sequences using GraphQL (fast method)
-  export async function extractSequences(): Promise<any> {
-    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequences', {});
+  export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbId: DG.Column): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:FetchSequencesFromPdb', { table, pdbId });
   }
 }
