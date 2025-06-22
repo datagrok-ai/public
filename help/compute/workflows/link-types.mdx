@@ -6,8 +6,8 @@ sidebar_position: 2
 This section provides a description of different link types. Links
 should be defined in workflows `links` field, and actions should in
 workflows/scripts `actions` field. The main difference between them is
-that action handlers need to be triggered separately (for example,
-user click a button), links handlers will be triggered if any of its
+that action handlers need to be triggered separately
+(for example, user clicks a button); links handlers will be triggered if any of its
 input is changed.
 
 Links and actions runtime creation is based on matching [Link Query
@@ -17,7 +17,7 @@ current workflow break link matching rules, the link is destroyed.
 
 ### Common options
 
-These options are avaliable for all links and actions types.
+These options are available for all links and actions types.
 
 #### `id`
 
@@ -66,8 +66,8 @@ handler](#default-handler) might be used if non is provided.
 
 _Optional_
 
-Could be either a [LQL](./link-spec)string or an array of 0 or more
-[LQL](./link-spec) strings. If all [LQL](./link-spec) queries match
+Could be either a [LQL](./link-spec) string or an array of 0 or more
+[LQL](./link-spec) strings. If all [LQL](./link-spec) queries match,
 the link will not be created. Queries are targeting script nodes or
 workflows.
 
@@ -86,7 +86,7 @@ _Optional_
 By default internal script io mutations will not trigger links,
 however for DataFrames it is possible to configure such behavior. If
 `true` is set all link DataFrame inputs mutations will trigger the
-link handler. Also it is possible to narrow down by matched input LQL
+link handler. Also, it is possible to narrow down by matching input LQL
 names using an array of names.
 
 #### `nodePriority`
@@ -95,13 +95,14 @@ _Optional_
 
 Used to specify link running order if multiple links has the same link
 output script node targets, links with a higher priority will run
-before those with a lower one. This is primary used to order data
-links between script own inputs, since they doesn't have a well
+before those with a lower one.
+This is primarily used to order data
+links between script own inputs, since they don't have a well
 defined order in the workflow.
 
 ### Common controller methods
 
-These options are avaliable for all controller types.
+These options are available for all controller types.
 
 #### `getAll`
 
@@ -109,7 +110,7 @@ These options are avaliable for all controller types.
 getAll<T = any>(name: string): T[] | undefined;
 ```
 
-Receives an input query name. Returns an array of 1 or more matched
+Receives an input query name. Returns an array of one or more matched
 items or undefined.
 
 #### `getFirst`
@@ -168,19 +169,19 @@ Where to show action. Possible values are
 
 _Optional_
 
-UI friendly action name
+User-friendly action name to show on UI.
 
 #### `description`
 
 _Optional_
 
-Action description is show as a hover on ui.
+Action description to show as a hover on UI.
 
 #### `menuCategory`
 
 _Optional_
 
-Creates a separate menu with menuCategory name, if multiple actions
+Creates a separate menu with `menuCategory` name, if multiple actions
 has the same menuCategory, they will be grouped together. Applicable
 only for actions with position `menu`.
 
@@ -196,7 +197,7 @@ action.
 
 _Optional_
 
-Font awesome 5 icon to be shown as a part of UI action button.
+Font awesome icon to be shown as a part of the UI action button.
 
 
 ### Data links
@@ -213,7 +214,7 @@ methods:
 setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
 ```
 
-Receives an output query name, state and an optional restriction. Sets
+Receives an output query name, state, and an optional restriction. Sets
 all matched outputs to the specified state with the restriction. For
 more details about restriction see [Consistency](#consistency).
 
@@ -236,7 +237,7 @@ the default restriction could be set as `*` key.
 
 For [data links](#data-links) a consistency mechanism is used. There
 are several restriction types restricting a user's ability to edit
-script inputs that were set by data link.
+script inputs that were set by the data link.
 
 - `disabled` user is not allowed to edit input, consistency is tracked
 - `restricted` user is allowed to edit an input, however changes will
@@ -253,9 +254,9 @@ Consistency is also applicable to changes propagated via data
 links. If a script was never run in the current workflow instance,
 data links just set data directly to scripts io. However, if a script
 was run, links will not overwrite script io data, but rather only
-trigger consistency changes. User has either to manual review, apply
-changes and rerun scripts. Or do it via "rerun with consistent" on a
-scope of workflow, nested workflow or a scipt.
+trigger consistency changes. User has either to manually review, apply
+changes and rerun scripts, or do it via **rerun with consistent** on a
+scope of workflow, nested workflow, or a script.
 
 __TODO__ ui consistency examples gifs
 
@@ -268,7 +269,7 @@ results will be merged. There are several validation severity levels,
 also it is possible to show user executable actions alongside text
 messages.
 
-Validators has the following additional configuration options:
+Validators have the following additional configuration options:
 
 #### `actions`
 
@@ -291,13 +292,13 @@ setValidation(name: string, validation?: ValidationResult | undefined): void;
 ```
 
 Sets validation data to an output query with the specified name. There
-are several validations result type in `ValidationResult`:
+are several validations result types in `ValidationResult`:
 
 - `errors` blocking running a script
 - `warnings` non-blocking warnings
 - `notifications` non-blocking suggestions
 
-Each of those field could have an array of `ValidationItem` items with
+Each of those fields could have an array of `ValidationItem` items with
 the following type:
 
 ```
@@ -438,5 +439,5 @@ provide `initialValues` and `inputRestrictions`.
 
 It is using `onInit` field instead of links and is triggered only once
 when a workflow created. Usually is used to populate static
-[states](./configuration#states). Otherwise the same as [data
+[states](./configuration#states). Otherwise, the same as [data
 links](#data-links).

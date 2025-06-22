@@ -12,10 +12,13 @@ Before starting to work with workflows, we need to define several terms:
 * **Node** - any Datagrok script.
   * Node input: data that the step consumes
   * Node output: data that the step produces
-* **Link** - connects steps. Links can pass data directly from input of one step to output of another step, or apply some transformations.
+* **Link** - connects steps.
+  Links can pass data directly from the input of one step
+  to the output of another step or apply some transformations.
   * Link source: where to take data from
   * Link target: where to put data
-  * Link handler: a TypeScript function performing data transformation. Using handlers, the user can apply small non-interactive transformation to data between steps.
+  * Link handler: a TypeScript function performing data transformation.
+    Using handlers, the user can apply small non-interactive transformation to data between steps.
 * **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links
 * **Workflow provider**: A javaScript function, that returns Workflow configuration object
   TBD: Cover in the description:
@@ -27,9 +30,9 @@ Before starting to work with workflows, we need to define several terms:
 
 As described in the [scripting](../scripting) section, scripts are just
 functions with a set of inputs and outputs (usually abbreviated to IO
-in workflows documentation).
+in workflow documentation).
 Changes of inputs and outputs are tracked
-in a real time and are used to trigger links.
+in real time and are used to trigger links.
 Also, a user can save the current workflow state and load it later.
 
 ### Links
@@ -37,7 +40,7 @@ Also, a user can save the current workflow state and load it later.
 **Links** are connections that are either pass data directly from a source
 script IO to target or do some transformations via a TypeScript function
 called link handler.
-There are multiple types of links,
+There are multiple types of links;
 some of them use source scripts inputs/outputs to pass data to a virtual target,
 which is not stored in a script io.
 This way it is possible to have a derived state, for example a validation state.
@@ -49,7 +52,7 @@ Each link type has its own controller type with slightly different methods
 to get and set inputs/outputs.
 
 Link Handlers is a good way to apply some fast none-interactive
-transformation to the data, when makind a separate script step is and overkill.
+transformation to the data, when making a separate script step is and overkill.
 
 Note that inputs/outputs of links are different from inputs/outputs of scripts.
 A script output is usually connected to a link input,

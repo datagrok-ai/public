@@ -7,7 +7,7 @@ In this section the configuration object is described in depth.
 
 ### Workflow providers
 
-There is a example of a minimal workflow package setup
+There is an example of a minimal workflow package setup
 [here](examples#development-setup-and-test). To register a workflow, a package
 function (called a provider), with at least these annotations is needed:
 ```
@@ -17,7 +17,7 @@ function (called a provider), with at least these annotations is needed:
 //output: object result
 ```
 
-`editor` tag is a system tag that is used by the platform to launch a
+`editor` tag is a system tag used by the platform to launch a
 workflow. Tag `model` means that it will be added to ModelHub
 (__TODO__ Docs and link). Output of the function should be of type
 `PipelineConfiguration`, and input will be an object with `version`
@@ -29,7 +29,7 @@ define a set of steps and workflow options. Where step is either
 another [workflow](#workflow-providers), a [workflow
 reference](#reusing-workflows) or a [script
 node](#script-nodes). Depending on a workflow [type](#type), steps are
-configured slightly different.
+configured slightly differently.
 
 ### General conventions
 
@@ -40,8 +40,8 @@ Configuration is a tree of JavaScript objects and arrays of type
   object `id` should be unique inside an array, for reference arrays
   `id` might be repeated.
 - If a field could have configuration objects of different types,
-  field `type` is used to specify the type. Typescript will figure out
-  type of the object and its fields by `type` field.
+  field `type` is used to specify the type. TypeScript will figure out
+  the type of the object and its fields by `type` field.
 - If an item has a corresponding UI element, usually a field
   `friendlyName` could be used to customize it.
 
@@ -72,11 +72,11 @@ workflows](#dynamic-workflows). The difference between them is mostly
 conventional, sequential workflow, as the name suggest, is a mutable
 sequence of steps. Parallel workflow is a mutable set of steps, where
 steps should not depend on each other. Both are using
-[stepTypes](#steptypes) field to define steps.
+the [stepTypes](#steptypes) field to define steps.
 
 References are used to [reuse](#reusing-workflows) configurations
-returned by providers. References have a different set of fields,
-however they are effectively replaced by a workflow configuration.
+returned by providers. References have a different set of fields;
+however, they are effectively replaced by a workflow configuration.
 
 #### `nqName`
 
@@ -95,7 +95,7 @@ input. Not used for nested workflows that are not
 
 _Optional_
 
-A user friendly name of a workflow, will be shown in UI.
+A user-friendly name of a workflow, will be shown in UI.
 
 #### `links`
 
@@ -129,7 +129,7 @@ used in links the same way as scripts inputs/outputs.
 _Optional_
 
 A list of strings. The primary use case if for annotating that a
-step/workflow has a certain structural invariants, like interfaces
+step/workflow has a certain structural invariant, like the interface
 concept in programming. Could be matched in
 [links](./link-spec#tag-selectors).
 
@@ -231,7 +231,7 @@ Could be omitted, but the only other possible value is `step`.
 
 _Optional_
 
-A user friendly name of a script, will be shown in UI.
+A user-friendly name of a script to show in UI.
 
 #### `actions`
 
@@ -268,7 +268,7 @@ _Optional_
 
 Is a JavaScript function that is used to tweak options of `DG.Viewer`,
 potentially based on metadata state. More information about metadata
-links is available [here](./link-types). Here is the Typescript
+links is available [here](./link-types). Here is the TypeScript
 signature of viewersHook:
 
 ```
@@ -317,7 +317,7 @@ user to launch different workflow versions directly, the following
 __TODO ui gif example__
 
 __Note__ that all versions must not be removed or altered in a
-non-compatible way, regardless of the meta annotation, otherwise
+non-compatible way, regardless of the meta-annotation, otherwise
 user's saved state of such workflows could not be
 loaded. Non-compatible here means that is not possible to get the same
 results with the same steps and inputs.
