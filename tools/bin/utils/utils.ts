@@ -95,8 +95,8 @@ export const replacers: Indexable = {
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
     `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
-  TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g,
-    params.map((p) => `${p.name}: ${p.type}`).join(', ')),
+  TYPED_PARAMS: (s: string, params: { name?: string; type?: string ; isOptional?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
+    params.map((p) => `${p.name}${p.isOptional? '?' : ''}: ${p.type}`).join(', ')),
 };
 
 
@@ -199,10 +199,10 @@ export const headerTags = [
 ];
  
 export const fileParamRegex = {
-  py: new RegExp(`^\#\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  ts: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  js: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
-  sql: new RegExp(`^--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
+  py: new RegExp(`^\#\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  ts: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  js: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
+  sql: new RegExp(`^--\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
 }
 
 export const nameAnnRegex = /\s*(name[^:]*): ([^\n\r\[\{]+)/;
@@ -219,12 +219,13 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
-  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)`, 'g');
+  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
   const inputs = [];
   for (const match of script.matchAll(regex)) {
-    const type = dgToTsTypeMap[match[1]] || 'any';
+    const isOptional = /isOptional\s*:\s*true/.test(match[0]);
+    const type = dgToTsTypeMap[match[1]]|| 'any';
     const name = match[2];
-    inputs.push({ type, name });
+    inputs.push({ type, name, isOptional });
   }
   return inputs;
 };

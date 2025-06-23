@@ -1,5 +1,13 @@
 # Datagrok-tools changelog
 
+## 4.14.19 (2025-06-23)
+
+### Features
+
+* Grok Check added header tag validation
+* Grok Api added optional parameters
+
+
 ## 4.14.14 (2025-06-16)
 
 ### Features
