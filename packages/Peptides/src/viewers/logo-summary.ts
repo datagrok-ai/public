@@ -56,7 +56,7 @@ export const enum LST_PROPERTIES {
   ACTIVITY_SCALING = 'activityScaling',
   ACTIVITY = 'activity',
 
-  WEB_LOGO_AGGREGATION_COLUMN = 'webLogoAggregationColumn',
+  WEB_LOGO_AGGREGATION_COLUMN_NAME = 'webLogoAggregationColumnName',
   WEB_LOGO_AGGREGATION_TYPE = 'webLogoAggregationType',
 }
 
@@ -89,7 +89,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   activityScaling: SCALING_METHODS;
   _scaledActivityColumn: DG.Column | null = null;
 
-  webLogoAggregationColumn: string | null;
+  webLogoAggregationColumnName: string | null;
   webLogoAggregationType: DG.AggregationType;
 
   private _webLogoCacheGeneration: number = 0;
@@ -140,7 +140,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     }) as DG.AggregationType;
 
 
-    this.webLogoAggregationColumn = this.column(LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN, {
+    this.webLogoAggregationColumnName = this.column(LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME, {
       defaultValue: null,
       category: LST_CATEGORIES.STYLE,
       nullable: true,
@@ -323,7 +323,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
       this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
         ?.set(this, activityColName);
-      this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN}`)?.set(this, activityColName);
+      this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}`)?.set(this, activityColName);
 
       this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
         ?.set(this, wu(this.dataFrame.columns.categorical).next().value.name);
@@ -404,9 +404,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       doRender = true;
       break;
     case `${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`:
-      this.webLogoAggregationColumn = this.activityColumnName;
+      this.webLogoAggregationColumnName = this.activityColumnName;
     case LST_PROPERTIES.ACTIVITY_SCALING:
-    case `${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN}${COLUMN_NAME}`:
+    case `${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}${COLUMN_NAME}`:
     case LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE:
       this._webLogoCacheGeneration++; // Increment to invalidate cache
       this._scaledActivityColumn = null;
@@ -471,8 +471,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const neededCols = [this.clustersColumnName, this.sequenceColumnName, this.activityColumnName,
       ...(this.getTotalViewerAggColumns() ?? []).map(([cn, _]) => cn),
       ...(this.getStringAggregatedColumns() ?? []).map((cn) => cn.substring(5, cn.length - 1))];
-    if (this.webLogoAggregationColumn)
-      neededCols.push(this.webLogoAggregationColumn);
+    if (this.webLogoAggregationColumnName)
+      neededCols.push(this.webLogoAggregationColumnName);
 
 
     const colsSet = Array.from(new Set(neededCols)).filter((colName) => this.dataFrame.columns.contains(colName));
@@ -689,8 +689,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
           CR.renderLogoSummaryCell(canvasContext, gridCell.cell.value, this.clusterSelection, bound);
           gridCellArgs.preventDefault();
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
-          const cacheKey = `${currentRowIdx}_${this.webLogoAggregationColumn || 'count'}_${this.webLogoAggregationType}_${this._webLogoCacheGeneration}`;
+          const cacheKey = `${currentRowIdx}_${this.webLogoAggregationColumnName || 'count'}_${this.webLogoAggregationType}_${this._webLogoCacheGeneration}`;
           const viewer = webLogoCache.get(cacheKey);
+
           // if current weblogo is being created, prevent the creation of another one
 
           if (webLogoPromiseCache.get(cacheKey) === true) {
@@ -717,8 +718,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             gridCellArgs.preventDefault();
           } else {
             const columnsToInclude = [pepCol];
-            if (this.webLogoAggregationType !== DG.AGG.TOTAL_COUNT && this.webLogoAggregationColumn) {
-              const aggCol = this.dataFrame.columns.byName(this.webLogoAggregationColumn);
+            if (this.webLogoAggregationType !== DG.AGG.TOTAL_COUNT && this.webLogoAggregationColumnName) {
+              const aggCol = this.dataFrame.columns.byName(this.webLogoAggregationColumnName);
               if (aggCol)
                 columnsToInclude.push(aggCol);
             }
@@ -728,7 +729,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             webLogoPromiseCache.set(cacheKey, true);
             webLogoTable.plot
               .fromType('WebLogo', {
-                valueColumnName: this.webLogoAggregationColumn,
+                valueColumnName: this.webLogoAggregationColumnName,
                 valueAggrType: this.webLogoAggregationType,
                 positionHeight: this.webLogoMode,
                 horizontalAlignment: HorizontalAlignments.LEFT,
