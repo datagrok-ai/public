@@ -257,6 +257,12 @@ export class Tags {
   /// Boolean flag that allows not to show property panel for the cell/column
   static ShowPropPanels = '.show-prop-panels';
 
+  /// Indicates whether the column should be excluded from the filter selection dialog
+  static ExcludeFromFilterColumnSelect = '.exclude-from-filter-column-select';
+
+  /// Specifies if the color picker control should appear in the legend to allow color selection
+  static AllowColorPicking = '.allow-color-picking';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -269,6 +275,8 @@ export class FuncOptions {
   static Toolbox = 'toolbox';
 
   static AutostartImmediate = 'autostartImmediate';
+
+  static OmitFromCreationScript = 'omitFromCreationScript';
 
   /// Applies to [FuncTypes.CellRenderer].
   /// Comma-separated list of key-value pairs that represent
@@ -353,6 +361,9 @@ export class FuncOptions {
   /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
   /// Defaults to language.
   static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
+
+  /// Allows to add this function results as a column from the context menu
+  static AllowAddAsColumn = 'allowAddAsColumn';
 
 }
 export class FuncParamOptions {
