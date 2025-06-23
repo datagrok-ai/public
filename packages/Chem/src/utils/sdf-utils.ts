@@ -108,7 +108,7 @@ export function getSdfString(
     // properties
     for (const col of visibleCols) {
       if (col !== structureColumn) {
-        let cellValue = col.get(rowIdx);
+        let cellValue = col.isNone(rowIdx) ? '' : col.get(rowIdx);
         // convert to SMILES if necessary
         if (col.semType === DG.SEMTYPE.MOLECULE) {
           cellValue = _convertMolNotation(cellValue, DG.chem.Notation.Unknown,
