@@ -87,6 +87,7 @@ export class TreeViewer extends EChartViewer {
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   viewerFilter: DG.BitSet | null = null;
   capturedFilterState: DG.BitSet | null = null;
+  initialDfFilter: DG.BitSet | null = null;
   constructor() {
     super();
 
@@ -148,9 +149,6 @@ export class TreeViewer extends EChartViewer {
 
   applySelectionFilter(bitset: DG.BitSet, path: string[], event: any): DG.BitSet {
     bitset.handleClick((index: number) => {
-      if (!this.filter.get(index) && this.rowSource !== 'Selected')
-        return false;
-
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
         return (columnValue !== null && columnValue.toString() === segment) || (columnValue == null && segment === ' ');
@@ -175,11 +173,13 @@ export class TreeViewer extends EChartViewer {
       }
 
       if (this.onClick === 'Filter') {
-        const filterClone = this.viewerFilter ?? this.dataFrame.filter.clone();
-        const viewerFilter = this.applySelectionFilter(filterClone, path, event.event);
-
+        const filterClone = this.initialDfFilter!.clone();
+        const viewerFilter = this.applySelectionFilter(isMultiSelect ? this.viewerFilter! : filterClone, path, event.event);
         if (this.viewerFilter === null)
           this.viewerFilter = viewerFilter.clone();
+        else
+          this.viewerFilter = viewerFilter;
+
 
         if (this.capturedFilterState) {
           this.dataFrame.filter.copyFrom(this.capturedFilterState);
@@ -597,34 +597,54 @@ export class TreeViewer extends EChartViewer {
       this.applySelectionFilterChange(this.filteredPaths, this.dataFrame.filter, false, true);
     }));
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
-      this.capturedFilterState = this.dataFrame.filter.clone();
       if (this.viewerFilter)
         this.dataFrame.filter.and(this.viewerFilter);
+      this.capturedFilterState = this.dataFrame.filter;
     }));
   }
 
   applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false, isFilter: boolean = false): void {
     this.setChartOption();
 
-    if (paths && !changedProp)
-      this.cleanTree(paths);
-
     const { filter, rowCount } = this.dataFrame;
     const hasActiveFilter = filter.trueCount !== rowCount;
-    const treeData = hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
-
-    const pathKeys = Object.keys(treeData);
-    const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
-
+    const treeData = !isFilter || hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
+    const newPaths = Object.keys(treeData);
     const dict = this.addParentPaths(treeData);
 
-    if (isFilter)
-      this.filteredPaths = pathKeys;
-    else
-      this.selectedPaths = pathKeys;
+    const prevPaths = isFilter ? this.filteredPaths : this.selectedPaths;
+    const otherPaths = isFilter ? this.selectedPaths : this.filteredPaths;
+    const color = isFilter ? this.filteredRowsColor : this.selectedRowsColor;
+    const otherColor = isFilter ? this.selectedRowsColor : this.filteredRowsColor;
 
-    this.paintBranchByPath(pathKeys, color, dict);
+    if (isFilter)
+      this.filteredPaths = newPaths;
+    else
+      this.selectedPaths = newPaths;
+
+    const prevSet = new Set(prevPaths ?? []);
+    const newSet = new Set(newPaths);
+    const otherSet = new Set(otherPaths ?? []);
+
+    for (const path of prevSet) {
+      if (!newSet.has(path) && !otherSet.has(path))
+        this.cleanTree([path]);
+    }
+
+    for (const path of newSet) {
+      const inOther = otherSet.has(path);
+      const shouldPaintWithThisColor = isFilter || !inOther;
+
+      if (shouldPaintWithThisColor)
+        this.paintBranchByPath([path], color, dict);
+    }
+
+    for (const path of otherSet) {
+      if (!newSet.has(path))
+        this.paintBranchByPath([path], otherColor);
+    }
   }
+
 
   getSelectionFilterData(bitset: DG.BitSet): SelectionData {
     const rowMask = bitset.clone();
@@ -655,6 +675,7 @@ export class TreeViewer extends EChartViewer {
     this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
     this.sizeColumnName = '';
     this.colorColumnName = '';
+    this.initialDfFilter = this.dataFrame.filter.clone();
 
     super.onTableAttached();
     this.addSubs();
