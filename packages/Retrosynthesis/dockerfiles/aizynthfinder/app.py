@@ -41,8 +41,8 @@ def run_aizynthfind(self, molecule: str, config: str, expansion: str, filter: st
     else:
         self.update_state(meta={"description": "Config synchronization in progress..."})
         config_path = _sync_user_config(config, kwargs.get("USER_API_KEY", None))
-        self.update_state(meta={"description": "Calculating retrosynthesis paths..."})
 
+    self.update_state(meta={"description": "Calculating retrosynthesis paths..."})
     finder = None
     try:    
         finder = AiZynthFinder(configfile=config_path)

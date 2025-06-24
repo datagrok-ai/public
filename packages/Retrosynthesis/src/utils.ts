@@ -67,7 +67,7 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
       currentFuncCallId = fc.id;
       activeFuncCalls[currentFuncCallId] = fc;
       console.log(`Running function: ${fc.id}`);
-      await fc.call();
+      await fc.call(true);
       const res = fc.getOutputParamValue();
       paths = JSON.parse(res);
       if (!activeFuncCalls[funcId])
