@@ -2744,4 +2744,7 @@ export class ColumnMetaHelper {
    * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
   get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
   set multiValueSeparator(x) { this.setNonNullTag(Tags.MultiValueSeparator, x); }
+
+  get allowColorPicking(): boolean { return this.column.getTag(Tags.AllowColorPicking) != 'false'; }
+  set allowColorPicking(x) { this.column.setTag(Tags.AllowColorPicking, x.toString()); }
 }
