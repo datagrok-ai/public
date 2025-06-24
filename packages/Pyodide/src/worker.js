@@ -17,26 +17,26 @@ async function init() {
     pyodide.setDebug(false);
     pyodide.registerJsModule('dg', {
         async execFuncCall(nqName, args) {
-	    const jsArgs = {};
-	    const typings = {};
-	    const argsObject = valueToJS(args);
-	    for (const [key, val] of Object.entries(argsObject)) {
-		let jsVal = valueToJS(val);
-		if (jsVal?.to_csv) {
-		    jsVal = jsVal.to_csv.callKwargs({index: false});
-		    jsVal = jsVal.trim();
-		    typings[key] = 'dataframe';
-		} else if (jsVal?.isoformat) {
-		    jsVal = jsVal.isoformat();
-		    typings[key] = 'datetime';
-		}
-		jsArgs[key] = jsVal;
-	    }
-	    const { promise, resolve, reject } = Promise.withResolvers();
-	    const id = uuidv4();
-	    currentCallsExecutions[id] = { resolve, reject };
-	    postMessage({ id, type: 'startFuncCall', nqName, args: jsArgs, typings });
-	    return promise;
+            const jsArgs = {};
+            const typings = {};
+            const argsObject = valueToJS(args);
+            for (const [key, val] of Object.entries(argsObject)) {
+                let jsVal = valueToJS(val);
+                if (jsVal?.to_csv) {
+                    jsVal = jsVal.to_csv.callKwargs({index: false});
+                    jsVal = jsVal.trim();
+                    typings[key] = 'dataframe';
+                } else if (jsVal?.isoformat) {
+                    jsVal = jsVal.isoformat();
+                    typings[key] = 'datetime';
+                }
+                jsArgs[key] = jsVal;
+            }
+            const { promise, resolve, reject } = Promise.withResolvers();
+            const id = uuidv4();
+            currentCallsExecutions[id] = { resolve, reject };
+            postMessage({ id, type: 'startFuncCall', nqName, args: jsArgs, typings });
+            return promise;
         },
     });
 }
@@ -46,36 +46,47 @@ let initCompleted = init();
 const loadedItems = new Set();
 
 async function handleWorkerScript(event) {
-    const { id, script, namespace, outputs, dependencies } = event.data;
+    const { id, script, scriptName, headerLinesCount, namespace, outputs, dependencies } = event.data;
     let scriptNamespace;
     let formatError;
     let reformatExceptionFunc;
     pyodide.setStdout({ batched: (msg) => postMessage({ id, type: 'stdoutMessage', message: msg }) });
     try {
-	if (dependencies?.length) {
-	    await pyodide.loadPackage('micropip');
-	    const micropip = pyodide.pyimport("micropip");
-	    for (const dep of dependencies) {
-		if (loadedItems.has(dep))
-		    continue;
-		await micropip.install(dep);
-		loadedItems.add(dep);
-	    }
-	}
+        if (dependencies?.length) {
+            await pyodide.loadPackage('micropip');
+            const micropip = pyodide.pyimport("micropip");
+            for (const dep of dependencies) {
+                if (loadedItems.has(dep))
+                    continue;
+                await micropip.install(dep);
+                loadedItems.add(dep);
+            }
+        }
         await pyodide.loadPackagesFromImports(script);
         scriptNamespace = pyodide.toPy(namespace);
         await pyodide.runPythonAsync(script, { globals: scriptNamespace });
         const result = {};
         for (const output of outputs) {
-	    let value = scriptNamespace.get(output);
-	    result[output] = valueToJS(value);
+            let value = scriptNamespace.get(output);
+            result[output] = valueToJS(value);
         }
         postMessage({ id, type: 'scriptResults', result });
     } catch (error) {
         reformatExceptionFunc = scriptNamespace?.get('reformat_exception');
-        formatError = reformatExceptionFunc ? reformatExceptionFunc() : [error?.message, error?.stack];
+        formatError = reformatExceptionFunc ? reformatExceptionFunc() : [error?.message, error?.stack, null];
         error.message = formatError[0]?.trim();
         error.stack = formatError[1]?.trim();
+        if (formatError[2] != null) {
+            const strNum = formatError[2];
+            const lines = script.split('\n').slice(Math.max(strNum - 2, 0), strNum + 3);
+            lines[2] = '> ' + lines[2];
+            const text = [
+                `Pyodide Error: ${error.message}` ,
+                `Script ${scriptName}, Line ${strNum - headerLinesCount}`,
+                ...lines
+            ].join('\n');
+            console.error(text);
+        }
         postMessage({ id, type: 'scriptResults', error });
     } finally {
         scriptNamespace?.destroy?.();
@@ -100,29 +111,29 @@ async function handleFuncCallResults(event) {
     const data = event.data;
     const cbs = currentCallsExecutions[data.id];
     if (!cbs) {
-	console.warn(`Pyodide worker unknown FuncCallResults id ${data.id}`);
-	return;
+        console.warn(`Pyodide worker unknown FuncCallResults id ${data.id}`);
+        return;
     }
     delete currentCallsExecutions[data.id];
     if (data.error) {
         console.error(data.error);
-	const pyError = pyodide.toPy(data.error);
-	cbs.reject(pyError);
+        const pyError = pyodide.toPy(data.error);
+        cbs.reject(pyError);
     } else {
-	const {results} = data;
-	// TODO: investigate do we need to destroy PyProxy here, since
-	// it goes back pyhton
-	for (const [name, typing] of Object.entries(data.typings ?? {})) {
-	    if (typing === 'datetime') {
-		const arg = data.results?.[name];
-		results[name] = await runPyConvert(arg, convertDateScriptText);
-	    } else if (typing === 'dataframe') {
-	        const arg = data.results?.[name];
-		results[name] = await runPyConvert(arg, convertDFScriptText);
-	    }
-	}
-	const pyResults = pyodide.toPy(results);
-	cbs.resolve(pyResults);
+        const {results} = data;
+        // TODO: investigate do we need to destroy PyProxy here, since
+        // it goes back pyhton
+        for (const [name, typing] of Object.entries(data.typings ?? {})) {
+            if (typing === 'datetime') {
+                const arg = data.results?.[name];
+                results[name] = await runPyConvert(arg, convertDateScriptText);
+            } else if (typing === 'dataframe') {
+                const arg = data.results?.[name];
+                results[name] = await runPyConvert(arg, convertDFScriptText);
+            }
+        }
+        const pyResults = pyodide.toPy(results);
+        cbs.resolve(pyResults);
     }
 }
 
@@ -138,8 +149,8 @@ onmessage = async (event) => {
     // console.log(event);
     switch (event.data.type) {
     case 'startWorkerScript':
-	return await handleWorkerScript(event);
+        return await handleWorkerScript(event);
     case 'funcCallResults':
-	return await handleFuncCallResults(event);
+        return await handleFuncCallResults(event);
     }
 }

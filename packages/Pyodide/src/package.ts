@@ -22,6 +22,8 @@ interface StartWorkerScript {
   id: string;
   type: 'startWorkerScript';
   script: string;
+  scriptName: string;
+  headerLinesCount: number;
   namespace: {[key: string]: any};
   dependencies?: string[];
   outputs: string[];
@@ -139,9 +141,9 @@ async function handleStartFuncCall(data: StartFuncCall) {
 
 function makeCodeHeader(scriptCall: DG.FuncCall): string {
   let code: string = `def reformat_exception():
-\tfrom traceback import format_exception_only, format_exception
+\tfrom traceback import format_exception_only, format_exception, extract_tb
 \timport sys
-\treturn ["".join(format_exception_only(sys.last_value)), "".join(format_exception(sys.last_value))]\n`;
+\treturn ["".join(format_exception_only(sys.last_value)), "".join(format_exception(sys.last_value)), extract_tb(sys.last_value.__traceback__)[-1].lineno]\n`;
   const inputParamsTypes: string[] = (Object.values(scriptCall.inputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   const outputParamsTypes: string[] = (Object.values(scriptCall.outputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   if (inputParamsTypes.some((type) => type === DG.TYPE.DATA_FRAME)
@@ -267,16 +269,18 @@ finally:
 
 async function prepareRequest(scriptCall: DG.FuncCall): Promise<StartWorkerScript> {
   let code = makeCodeHeader(scriptCall);
+  const func = (scriptCall.func as DG.Script);
+  const scriptName = func.nqName;
   const namespace: { [key: string]: any } = {};
   code += await prepareInputs(scriptCall, namespace);
-  code += (scriptCall.func as DG.Script).clientCode;
+  const headerLinesCount = Math.max(0, code.split('\n').length - 1);
+  code += func.clientCode;
   const outputs: string[] = [];
   code += prepareOutputs(scriptCall, outputs);
   let dependencies;
   if (scriptCall.func.options['dependencies'])
     dependencies = JSON.parse(scriptCall.func.options['dependencies']);
-  // console.log(code);
-  return {id: uuidv4(), type: 'startWorkerScript', script: code, namespace, dependencies, outputs};
+  return {id: uuidv4(), type: 'startWorkerScript', script: code, headerLinesCount, scriptName, namespace, dependencies, outputs};
 }
 
 async function sendRequest(req: StartWorkerScript): Promise<Record<string, any>> {
