@@ -1,5 +1,6 @@
 import {genRange} from '@datagrok-libraries/utils/src/vector-operations';
 import {RcsbGraphQLAdapter} from './utils/rcsb-gql-adapter';
+import * as DG from 'datagrok-api/dg';
 
 type Tracks = {[kind: string]: number[]};
 type _Tracks = {[kind: string]: Set<number>};
@@ -81,9 +82,10 @@ export class PdbEntry {
   /**
    * Create a DataFrame with sequence data using GraphQL.
    */
-  async createSequenceDataFrame(): Promise<any> { // Using 'any' to avoid DG import in this context
+  async createSequenceDataFrame(): Promise<DG.DataFrame> {
     return await RcsbGraphQLAdapter.createSequenceDataFrame(this.pdbID);
   }
+
 
   /**
    * Enhanced fetchInfo using GraphQL for polymer data and REST for structure file.

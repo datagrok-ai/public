@@ -83,7 +83,7 @@ export class RcsbGraphQLAdapter {
    */
   private static async executeQuery<T>(query: string, variables: Record<string, any>): Promise<T> {
     try {
-      const response = await fetch(this.GRAPHQL_ENDPOINT, {
+      const response = await grok.dapi.fetchProxy(this.GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

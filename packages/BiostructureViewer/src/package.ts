@@ -41,6 +41,7 @@ import {viewMolstarUI} from './viewers/molstar-viewer/utils';
 import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
 import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
 import {defaultErrorHandler} from './utils/err-info';
+import {extractSequenceColumns} from './utils/sequence-handler';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -757,145 +758,12 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   return widget;
 }
 
-//name: extractSequenceColumnsToDataFrame
-//description: Extract protein sequences from all PDB IDs and add as columns to current dataframe (GraphQL-powered)
-export async function extractSequenceColumnsToDataFrame(pdbId?: DG.Column): Promise<void> {
-  const tableView = grok.shell.tv;
-  if (!tableView) {
-    grok.shell.error('No active table view found');
-    return;
-  }
 
-  const dataFrame = tableView.dataFrame;
-  if (!dataFrame) {
-    grok.shell.error('No dataframe found in active table view');
-    return;
-  }
-
-  const pdbIdColumn = pdbId ?? dataFrame.columns.bySemType('PDB_ID');
-  if (pdbIdColumn == null) {
-    grok.shell.warning('No valid column with PDB_ID semtype in the dataframe');
-    return;
-  }
-
-  const pi = DG.TaskBarProgressIndicator.create('Extracting protein sequences via GraphQL...');
-
-  try {
-    // Collect all unique PDB IDs (same as before)
-    const allPdbIds = new Set<string>();
-
-    // for (const col of pdbIdColumns) {
-    for (let i = 0; i < pdbIdColumn.length; i++) {
-      const pdbId = pdbIdColumn.get(i);
-      if (pdbId && typeof pdbId === 'string' && pdbId.trim().length >= 4)
-        allPdbIds.add(pdbId.trim().toUpperCase());
-
-      // }
-    }
-
-    const uniquePdbIds = Array.from(allPdbIds);
-    if (uniquePdbIds.length === 0) {
-      grok.shell.warning('No valid PDB IDs found in the dataframe');
-      return;
-    }
-
-    grok.shell.info(`Processing ${uniquePdbIds.length} unique PDB ID(s) with GraphQL batch extraction`);
-
-    const allSequenceData = await RcsbGraphQLAdapter.batchGetProteinSequences(
-      uniquePdbIds,
-      10,
-      (completed: any, total: any, currentPdbId: any) => {
-        const progress = (completed / total) * 90;
-        pi.update(progress, `GraphQL extracting: ${currentPdbId} (${completed}/${total})`);
-      }
-    );
-
-    let maxChainCount = 0;
-    let successCount = 0;
-    let failedCount = 0;
-
-    for (const [pdbId, sequences] of Object.entries(allSequenceData)) {
-      if (sequences && Object.keys(sequences).length > 0) {
-        maxChainCount = Math.max(maxChainCount, Object.keys(sequences).length);
-        successCount++;
-
-        const chainSummary = Object.entries(sequences)
-          .map(([chain, seq]) => `${chain}:${seq.length}`)
-          .join(', ');
-        console.log(`✓ ${pdbId} (GraphQL): ${Object.keys(sequences).length} chains (${chainSummary})`);
-      } else {
-        console.log(`⚠ ${pdbId} (GraphQL): No protein sequences found`);
-        failedCount++;
-      }
-    }
-
-    if (maxChainCount === 0) {
-      grok.shell.warning('No protein sequences could be extracted from any PDB structure');
-      return;
-    }
-    // Create sequence columns (same logic as before)
-    const sequenceColumns: DG.Column<string>[] = [];
-    for (let chainIndex = 1; chainIndex <= maxChainCount; chainIndex++) {
-      let columnName = `Chain_${chainIndex}`;
-
-      let counter = 1;
-      while (dataFrame.columns.contains(columnName)) {
-        columnName = `Chain_${chainIndex}_${counter}`;
-        counter++;
-      }
-      const column = DG.Column.string(columnName, dataFrame.rowCount);
-      sequenceColumns.push(column);
-    }
-
-    // Populate sequence columns (same logic as before)
-    for (let rowIndex = 0; rowIndex < dataFrame.rowCount; rowIndex++) {
-      // Find PDB ID for this row from any PDB_ID column
-      let pdbIdForRow: string | null = null;
-      const pdbId = pdbIdColumn.get(rowIndex);
-      if (pdbId && typeof pdbId === 'string' && pdbId.trim().length >= 4)
-        pdbIdForRow = pdbId.trim().toUpperCase();
-
-
-      if (pdbIdForRow && allSequenceData[pdbIdForRow]) {
-        const sequences = allSequenceData[pdbIdForRow];
-        const chainIds = Object.keys(sequences);
-
-        // Assign sequences to columns (Chain_1, Chain_2, etc.)
-        for (let chainIndex = 0; chainIndex < Math.min(chainIds.length, maxChainCount); chainIndex++) {
-          const chainId = chainIds[chainIndex];
-          const sequence = sequences[chainId];
-          sequenceColumns[chainIndex].set(rowIndex, sequence);
-        }
-      }
-      // Leave empty for rows without valid PDB IDs or failed extractions
-    }
-
-    // Add columns to dataframe with appropriate semantic types (same as before)
-    for (const column of sequenceColumns) {
-      column.semType = 'Macromolecule';
-      column.setTag('alphabet', 'PT'); // Protein
-      column.setTag('units', 'fasta');
-      column.setTag('aligned', 'SEQ');
-      column.setTag('cell.renderer', 'sequence');
-
-      dataFrame.columns.add(column);
-    }
-
-
-    if (failedCount > 0)
-      grok.shell.warning(`${failedCount} PDB structure(s) failed to process - check console for details`);
-  } catch (error: any) {
-    console.error('GraphQL sequence extraction failed:', error);
-    grok.shell.error(`GraphQL sequence extraction failed: ${error.message}`);
-  } finally {
-    pi.close();
-  }
-}
-
-//top-menu: Bio | Transform | Fetch Sequences from PDB...
+//name: Fetch PDB Sequences
+//description: For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
+//top-menu: Bio | Transform | Fetch PDB Sequences...
 //input: dataframe table
-//input: column pdbId { semType: PDB_ID }
-//name: fetchSequencesFromPdb
-export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbId: DG.Column): Promise<void> {
-  await extractSequenceColumnsToDataFrame(pdbId);
+//input: column pdbColumn { semType: PDB_ID }
+export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbColumn: DG.Column): Promise<void> {
+  await extractSequenceColumns(pdbColumn);
 }
