@@ -5,16 +5,16 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   export async function getCompounds(): Promise<DG.DataFrame> {
-    return await grok.data.query('molTrack:GetCompounds', {});
+    return await grok.data.query('MolTrack:GetCompounds', {});
   }
 }
 
 export namespace funcs {
   export async function molTrackApp(): Promise<any> {
-    return await grok.functions.call('molTrack:MolTrackApp', {});
+    return await grok.functions.call('MolTrack:MolTrackApp', {});
   }
 
   export async function cddVaultAppTreeBrowser(treeNode: any, browseView: DG.View): Promise<any> {
-    return await grok.functions.call('molTrack:CddVaultAppTreeBrowser', { treeNode, browseView });
+    return await grok.functions.call('MolTrack:CddVaultAppTreeBrowser', { treeNode, browseView });
   }
 }

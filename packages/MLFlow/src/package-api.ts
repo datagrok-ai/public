@@ -5,6 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function info(): Promise<any> {
-    return await grok.functions.call('@datagrok/mlflow:Info', {});
+    return await grok.functions.call('MLflow:Info', {});
   }
 }

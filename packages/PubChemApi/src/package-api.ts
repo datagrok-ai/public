@@ -5,26 +5,26 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function pubChemSubstructureSearchPanel(molString: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:PubChemSubstructureSearchPanel', { molString });
+    return await grok.functions.call('PubChem:PubChemSubstructureSearchPanel', { molString });
   }
 
   export async function pubChemSimilaritySearchPanel(molString: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:PubChemSimilaritySearchPanel', { molString });
+    return await grok.functions.call('PubChem:PubChemSimilaritySearchPanel', { molString });
   }
 
   export async function pubChemIdentitySearch(molString: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:PubChemIdentitySearch', { molString });
+    return await grok.functions.call('PubChem:PubChemIdentitySearch', { molString });
   }
 
   export async function pubChemToSmiles(id: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:PubChemToSmiles', { id });
+    return await grok.functions.call('PubChem:PubChemToSmiles', { id });
   }
 
   export async function inchiKeysToSmiles(id: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:InchiKeysToSmiles', { id });
+    return await grok.functions.call('PubChem:InchiKeysToSmiles', { id });
   }
 
   export async function getIupacName(smiles: string): Promise<any> {
-    return await grok.functions.call('@datagrok/pubchem-api:GetIupacName', { smiles });
+    return await grok.functions.call('PubChem:GetIupacName', { smiles });
   }
 }

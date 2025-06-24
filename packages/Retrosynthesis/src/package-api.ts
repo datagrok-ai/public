@@ -5,15 +5,15 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function retroSynthesisPath(smiles: string): Promise<any> {
-    return await grok.functions.call('@datagrok/retrosynthesis:RetroSynthesisPath', { smiles });
+    return await grok.functions.call(':RetroSynthesisPath', { smiles });
   }
 
   export async function retrosynthesisTopMenu(): Promise<any> {
-    return await grok.functions.call('@datagrok/retrosynthesis:RetrosynthesisTopMenu', {});
+    return await grok.functions.call(':RetrosynthesisTopMenu', {});
   }
 
   //Generate retrosynthesis paths
   export async function retrosynthesisDemo(): Promise<any> {
-    return await grok.functions.call('@datagrok/retrosynthesis:RetrosynthesisDemo', {});
+    return await grok.functions.call(':RetrosynthesisDemo', {});
   }
 }
