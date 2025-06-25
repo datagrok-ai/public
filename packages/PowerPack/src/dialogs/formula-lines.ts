@@ -249,12 +249,16 @@ class Table {
 
 interface AxisNames {
   y?: string,
-  x?: string
+  x?: string,
+  yMap?: string,
+  xMap?: string,
 }
 
 interface AxisColumns {
   y: DG.Column,
-  x: DG.Column
+  x: DG.Column,
+  yMap?: string,
+  xMap?: string,
 }
 
 export interface EditorOptions {
@@ -287,18 +291,33 @@ class Preview {
     }
     else
       yColName = (this.viewer.props as DG.IScatterPlotSettings).yColumnName;
+
+    const xMap = this.viewer.type === DG.VIEWER.LINE_CHART
+      ? (this.viewer.props as DG.ILineChartSettings).xMap
+      : (this.viewer.props as DG.IScatterPlotSettings).xMap;
+    
+    const yMap = this.viewer.type === DG.VIEWER.LINE_CHART
+      ? undefined
+      : (this.viewer.props as DG.IScatterPlotSettings).yMap;
+
     return {
       y: this.dataFrame.getCol(yColName!),
       x: this.dataFrame.getCol(this.viewer.props.xColumnName),
+      yMap,
+      xMap,
     };
   }
 
   /** Sets the current axes of the preview Scatter Plot by column names */
   set _axes(names: AxisNames) {
     if (names && names.y && this.dataFrame.getCol(names.y))
-      this.viewer.setOptions(this.viewer.type === DG.VIEWER.LINE_CHART ? {yColumnNames: [names.y]}: {y: names.y});
-    if (names && names.x && this.dataFrame.getCol(names.x))
-      this.viewer.setOptions({x: names.x});
+      this.viewer.setOptions(this.viewer.type === DG.VIEWER.LINE_CHART
+      ? {yColumnNames: [names.y]}
+      : {y: names.y, yMap: names.yMap});
+    
+    const xColName = this.viewer.type === DG.VIEWER.LINE_CHART && names.xMap ? `${names.x} ${names.xMap}` : names.x ?? '';
+    if (names && names.x && this.dataFrame.getCol(xColName))
+      this.viewer.setOptions({xMap: names.xMap, x: xColName});
   }
 
   /**
@@ -307,21 +326,27 @@ class Preview {
    */
   _getItemAxes(item: DG.FormulaLine): AxisNames {
     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    let [previewY, previewX] = item.orientation === ITEM_ORIENTATION.VERTICAL ?
-      [itemMeta.argName, itemMeta.funcName] : [itemMeta.funcName, itemMeta.argName];
+    const result: AxisNames = {
+      y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
+      x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
+    };
 
     /** If the source axes exist, then we try to set similar axes */
     if (this._srcAxes) {
-      [previewY, previewX] = [previewY ?? this._srcAxes.y, previewX ?? this._srcAxes.x];
+      result.y ??= this._srcAxes.y;
+      result.x ??= this._srcAxes.x;
 
-      if (previewX === this._srcAxes.y || previewY === this._srcAxes.x)
-        [previewY, previewX] = [previewX, previewY];
+      if (result.x === this._srcAxes.y || result.y === this._srcAxes.x) {
+        const tmp = result.x;
+        result.x = result.y;
+        result.y = tmp;
+      }
 
-      if (previewX === previewY)
-        previewY = this._srcAxes.y;
+      if (result.x === result.y)
+        result.y = this._srcAxes.y;
     }
 
-    return {y: previewY, x: previewX};
+    return result;
   }
 
   constructor(items: DG.FormulaLine[], src: DG.DataFrame | DG.Viewer, onContextMenu: Function) {
@@ -335,14 +360,14 @@ class Preview {
         const yCols: string[] = src.props.yColumnNames;
         const yCol = this.dataFrame.columns.toList()
           .find((col) => col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
-        this._srcAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
+        this._srcAxes = {x: src.props.xColumnName, xMap: src.props.xMap, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
-        this._srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName']};
+        this._srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName'], yMap: innerLook['yMap'], xMap: innerLook['xMap']};
       } else {
         this.dataFrame = src.dataFrame!;
-        this._srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName};
+        this._srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
       }
     } else
       throw 'Host is not DataFrame or Viewer.';
@@ -873,6 +898,7 @@ class CreationControl {
         }
 
         item.type ??= getItemTypeByCaption(itemCaption);
+        
         item = DG.FormulaLinesHelper.setDefaults(item);
 
         this._justCreatedItems.unshift(item);
