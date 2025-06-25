@@ -93,21 +93,16 @@ export async function initPlates(force: boolean = false) {
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
   }
 
-  plateTemplates = (await api.queries.getPlateTemplates() as DG.DataFrame).toJson();
-  plateProperties = (await api.queries.getPlateLevelProperties() as DG.DataFrame).toJson();
-  wellProperties = (await api.queries.getWellLevelProperties() as DG.DataFrame).toJson();
-  plateTypes = (await api.queries.getPlateTypes() as DG.DataFrame).toJson();
+  plateTemplates = (await api.queries.getPlateTemplates()).toJson();
+  plateProperties = (await api.queries.getPlateLevelProperties()).toJson();
+  wellProperties = (await api.queries.getWellLevelProperties()).toJson();
+  plateTypes = (await api.queries.getPlateTypes()).toJson();
 
+  plateUniquePropertyValues = await api.queries.getUniquePlatePropertyValues();
+  wellUniquePropertyValues = await api.queries.getUniqueWellPropertyValues();
 
-  plateUniquePropertyValues = await grok.functions.call('Curves:getUniquePlatePropertyValues');
-  wellUniquePropertyValues = await grok.functions.call('Curves:getUniqueWellPropertyValues');
-
-  //TODO qdd id as argument
-  // plateUniquePropertyValues = await api.queries.getUniquePlatePropertyValues(1);
-  // wellUniquePropertyValues = await api.queries.getUniqueWellPropertyValues(1);
-
-  const templateWellProperties = (await api.queries.getTemplateWellProperties() as DG.DataFrame).toJson();
-  const templatePlateProperties = (await api.queries.getTemplatePlateProperties() as DG.DataFrame).toJson();
+  const templateWellProperties = (await api.queries.getTemplateWellProperties()).toJson();
+  const templatePlateProperties = (await api.queries.getTemplatePlateProperties()).toJson();
   for (const template of plateTemplates) {
     template.wellProperties = templateWellProperties.filter(p => p.template_id == template.id).map(p => findProp(wellProperties, p.property_id));
     template.plateProperties = templatePlateProperties.filter(p => p.template_id == template.id).map(p => findProp(plateProperties, p.property_id));
@@ -369,7 +364,7 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
 }
 
 export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
-  prop.id = await api.queries.createProperty(prop.name!, prop.type!); 
+  prop.id = await api.queries.createProperty(prop.name!, prop.type!);
   events.next({ on: 'after', eventType: 'created', objectType: TYPE.PROPERTY, object: prop });
   return prop as PlateProperty;
 }

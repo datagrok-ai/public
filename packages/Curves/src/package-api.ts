@@ -46,12 +46,12 @@ export namespace queries {
     return await grok.data.query('Curves:GetAllowedValues', { propertyName });
   }
 
-  export async function getUniquePlatePropertyValues(propertyId: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetUniquePlatePropertyValues', { propertyId });
+  export async function getUniquePlatePropertyValues(): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetUniquePlatePropertyValues', {});
   }
 
-  export async function getUniqueWellPropertyValues(propertyId: number): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetUniqueWellPropertyValues', { propertyId });
+  export async function getUniqueWellPropertyValues(): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetUniqueWellPropertyValues', {});
   }
 
   export async function createProperty(propertyName: string, valueType: string): Promise<number> {
@@ -107,8 +107,8 @@ export namespace funcs {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
 
-  export async function platesFolderPreview(folder: DG.FileInfo): Promise<any> {
-    return await grok.functions.call('Curves:PlatesFolderPreview', { folder });
+  export async function platesFolderPreview(folder: DG.FileInfo, files: any): Promise<any> {
+    return await grok.functions.call('Curves:PlatesFolderPreview', { folder, files });
   }
 
   export async function previewPlate(file: DG.FileInfo): Promise<any> {

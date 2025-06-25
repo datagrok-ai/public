@@ -97,7 +97,6 @@ WHERE p.name = @propertyName;
 
 -- name: getUniquePlatePropertyValues
 -- connection: Admin:Plates
--- input: int propertyId propertyName { choices: getPropertyNames() }
 SELECT DISTINCT p.name, pd.value_string
 FROM plates.plate_details pd
 JOIN plates.properties p ON pd.property_id = p.id
@@ -107,7 +106,6 @@ WHERE p.type = 'string';
 
 -- name: getUniqueWellPropertyValues
 -- connection: Admin:Plates
--- input: int propertyId propertyName { choices: getPropertyNames() }
 SELECT DISTINCT p.name, pwv.value_string
 FROM plates.plate_well_values pwv
 JOIN plates.properties p ON pwv.property_id = p.id
