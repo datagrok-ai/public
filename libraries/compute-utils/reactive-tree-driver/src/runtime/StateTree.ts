@@ -180,7 +180,10 @@ export class StateTree {
   public init() {
     return this.mutateTree(() => {
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
-    }, false).pipe(mapTo(this));
+    }, false).pipe(
+      concatMap(() => this.linksState.waitForLinks()),
+      mapTo(this)
+    );
   }
 
   // for testing only
