@@ -92,7 +92,7 @@ export class MmpPairedGrids {
         }].contains(\${${MMP_NAMES.PAIRNUM}})`;
         const fromColName = `${mmpa.initData.activitiesNames[actIndex]}_from`;
         const toColName = `${mmpa.initData.activitiesNames[actIndex]}_to`;
-        const title = `${activityMeanNames[actIndex]} for substitution #${gc.cell?.rowIndex}`;
+        const title = `${activityMeanNames[actIndex]} for substitution #${gc.cell?.rowIndex + 1}`;
         const pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.mmpGridTrans.dataFrame, {
           columnNames: [fromColName, toColName],
           filter: filter,
