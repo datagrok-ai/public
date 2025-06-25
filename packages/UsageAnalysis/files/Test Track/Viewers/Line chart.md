@@ -84,6 +84,12 @@
 1. Set Split to `Series` and `Scaffold Names`
 1. Switch X axis to `Chemist 521`
 1. Hover over the viewer - check, no errors occure
+
+#### 11. Context Panel
+1. Close All
+1. Open SPGI
+1. Add a line chart
+1. Right-click the viewer and review all items in the context menu
 ---  
 {
   "order": 5,
