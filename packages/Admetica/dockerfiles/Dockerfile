@@ -47,8 +47,10 @@ RUN set -ex ; \
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
-SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
-
 EXPOSE 8000
 
-ENTRYPOINT ["micromamba", "run", "-n", "myenv", "gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "3000", "Admetica:app"]
+ENTRYPOINT micromamba run -n myenv celery -A Admetica worker \
+    --loglevel=info \
+    --hostname=$CELERY_HOSTNAME \
+    --concurrency=1 \
+    -Q $TASK_QUEUE_NAME

@@ -244,7 +244,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
 //output: filter result
 //meta.semType: Molecule
 //meta.primaryFilter: true
-//meta.allowMultiplePerColumn: false
+//meta.allowMultipleFiltersForColumn: false
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
 }

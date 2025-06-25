@@ -26,6 +26,7 @@ import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import wu from 'wu';
 import { PlateTemplateHandler } from './plates/objects/plate-template-handler';
+import * as api from './package-api';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -225,7 +226,7 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
-    const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesByBarcode', {barcode: barcode});
+    const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
     return Plate.fromDbDataFrame(df);
   }
 

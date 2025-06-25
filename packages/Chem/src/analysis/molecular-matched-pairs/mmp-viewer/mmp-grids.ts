@@ -92,7 +92,7 @@ export class MmpPairedGrids {
         }].contains(\${${MMP_NAMES.PAIRNUM}})`;
         const fromColName = `${mmpa.initData.activitiesNames[actIndex]}_from`;
         const toColName = `${mmpa.initData.activitiesNames[actIndex]}_to`;
-        const title = `${activityMeanNames[actIndex]} for substitution #${gc.cell?.rowIndex}`;
+        const title = `${activityMeanNames[actIndex]} for substitution #${gc.cell?.rowIndex + 1}`;
         const pcPlot = DG.Viewer.fromType(DG.VIEWER.PC_PLOT, this.mmpGridTrans.dataFrame, {
           columnNames: [fromColName, toColName],
           filter: filter,
@@ -174,14 +174,6 @@ export class MmpPairedGrids {
     });
   }
 
-  disableFiltersGroup() {
-    this.filters?.setActive(false);
-  }
-
-  enableFiltersGroup() {
-    this.filters?.setActive(true);
-  }
-
   switchToSubstitutionsTab() {
     /* if current row was changed while we were on tab other than 'Substitution',
      re-calculate pairs (in case we are not in show all mode) */
@@ -195,7 +187,6 @@ export class MmpPairedGrids {
 
   switchToFragmentsTab() {
     this.unPinMatchedPair();
-    this.enableFiltersGroup(); //this will call requestFilter for fragments df and update its filters
     this.mmpGridTrans.dataFrame.rows.requestFilter();
   }
 
@@ -544,6 +535,14 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA, activityC
     fpCols.push(createColWithDescription('', activityMeanNames[i],
       mmpa.rulesBased.meanDiffs[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'float32', undefined, true));
   }
+
+  //columns should be added in a certain order, so first add delta columns and pair count columns after them
+  for (let i = 0; i < activityMeanNames.length; i++) {
+    fpCols.push(createColWithDescription('', `${activityMeanNames[i]} count`,
+      mmpa.allCasesBased.pairsPerActivity[i], FRAGMENTS_GRID_HEADER_DESCRIPTIONS, 'int32', undefined, undefined,
+      `Number of pairs with ${activityMeanNames[i]}`));
+  }
+
   fpCols.push(occasionsCol);
 
   const colorsPal = new Int32Array(fromCol.length);

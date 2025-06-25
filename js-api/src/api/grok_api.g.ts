@@ -728,6 +728,7 @@ export interface IDartApi {
   grok_UI_PatternsInput(colors: any): any;
   grok_UI_SchemeInput(gradient: any): any;
   grok_UI_Time(x: any): any;
+  grok_UI_ShortTimestamp(x: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;

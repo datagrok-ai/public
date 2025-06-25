@@ -83,7 +83,7 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
   'Transformations_Fragments': {
     'From': {idxs: [1, 29, 37], values: ["CC(Br)[*:1]", "C[*:1]", "O[*:1]"]},
     'To': {idxs: [5, 9, 37], values: ["CC(C)C[*:1]", "CC(C)[*:1]", "O[*:1]"]},
-    'Count': {idxs: [0, 28, 39], values: [1, 2, 3]},
+    'Total count': {idxs: [0, 28, 39], values: [1, 2, 3]},
     '\u0394 Activity':
       {idxs: [0, 11, 30], values: [-12.23, -4.64, 6.85]},
     '\u0394 Permeability':
@@ -188,16 +188,17 @@ category('mmpa', () => {
     //check Fragments Grid
     await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7, 'Incorrect fragments grid', 3000);
+    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 10, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
     await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13, 'Incorrect pairs grid', 3000);
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 19, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
+    mmp.followCurrentRowInFragGrid!.value = true;
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
     await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
       'Pairs haven\'t been changed after fragment change', 3000);
@@ -206,9 +207,8 @@ category('mmpa', () => {
     //changing target molecule
     tv.dataFrame.currentRowIdx = 4;
     await awaitCheck(() => fragsDf.filter.trueCount === 3 &&
-        fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7) &&
-        pairsDf.filter.trueCount === 2 && pairsDf.filter.get(8) && pairsDf.filter.get(9),
-    'Pairs haven\'t been changed after fragment change', 3000);
+        fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7),
+    'Fragments haven\'t been changed after target change', 3000);
   });
 
   test('cliffsTab', async () => {

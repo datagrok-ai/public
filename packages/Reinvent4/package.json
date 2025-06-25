@@ -7,7 +7,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "description": "",
+  "description": "Integrates Datagrok with REINVENT4 for advanced small molecule design and optimization",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
@@ -16,7 +16,7 @@
     "jszip": "3.10.1"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.18",
+    "datagrok-tools": "^4.14.19",
     "ts-loader": "^9.5.1",
     "typescript": "5.6.3",
     "webpack": "^5.95.0",

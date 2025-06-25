@@ -2,10 +2,19 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary, AdmeticaResponse } from './constants';
-import { FormStateGenerator } from './admetica-form';
-import { CellRenderViewer } from '../viewers/cell-render-viewer';
-import { _package } from '../package-test';
+import {
+  colorsDictionary,
+  DEFAULT_LOWER_VALUE,
+  DEFAULT_TABLE_NAME,
+  DEFAULT_UPPER_VALUE,
+  ERROR_MESSAGES,
+  Model,
+  ModelColoring,
+  Subgroup,
+  TEMPLATES_FOLDER
+} from './constants';
+import {FormStateGenerator} from './admetica-form';
+import {CellRenderViewer} from '../viewers/cell-render-viewer';
 
 import '../css/admetica.css';
 
@@ -13,64 +22,26 @@ export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
 let piechartIndex = 0;
 
-async function getAdmeticaContainer() {
-  const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-  return admeticaContainer;
+
+export async function runAdmeticaFunc(csv: string, models: string, raiseException: boolean): Promise<DG.DataFrame> {
+  let df: DG.DataFrame = await grok.functions.call('Admetica:run_admetica', {'csv': csv, 'models': models, 'raiseException': raiseException});
+  df = await convertLD50(df);
+  return df;
 }
 
-async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<AdmeticaResponse | null> {
-  try {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
-    return await response.json();
-  } catch (error) {
-    //grok.log.error(error);
-    return null;
-  }
-}
-
-export async function runAdmeticaFunc(csvString: string, queryParams: string, raiseException: boolean): Promise<string | null> {
-  let admeticaContainer = await getAdmeticaContainer();
-
-  const path = `/predict?models=${queryParams}&raiseException=${raiseException}`;
-  const params: RequestInit = {
-    method: 'POST',
-    headers: { 'Content-type': 'text/csv' },
-    body: csvString
-  };
-
-  const response: AdmeticaResponse | null = await sendRequestToContainer(admeticaContainer.id, path, params);
-
-  admeticaContainer = await grok.dapi.docker.dockerContainers.find(admeticaContainer.id);
-  const started = admeticaContainer.status.startsWith('started') || admeticaContainer.status.startsWith('checking');
-
-  if (!response || !started)
-    throwError('Container failed to start.');
-
-  if (!response?.success)
-    throwError(raiseException ? response?.error! : 'Prediction attempt failed.');
-
-  return response.result ? await convertLD50(response.result, DG.DataFrame.fromCsv(csvString)) : null;
-}
-
-function throwError(message: string): never {
-  grok.shell.error(message);
-  throw new Error(message);
-}
-
-export async function convertLD50(response: string, df: DG.DataFrame): Promise<string> {
+export async function convertLD50(df: DG.DataFrame): Promise<DG.DataFrame> {
   const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (!df.columns.names().includes('LD50')) return response;
+  if (!df.columns.names().includes('LD50')) return df;
 
   const ldCol = df.getCol('LD50');
   const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', { molecules: smilesCol, property: "MW" });
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
-    const mgPerKg = molPerKg * molWeights.get(i) * 1000;
-    return mgPerKg;
+    return molPerKg * molWeights.get(i) * 1000;
   });
 
-  return df.toCsv();
+  return df;
 }
 
 export async function setProperties() {
@@ -97,9 +68,8 @@ export async function performChemicalPropertyPredictions(
   try {
     const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
     progressIndicator.update(10, 'Predicting...');
-    const admeticaResults = await grok.functions.call('Admetica:runAdmetica', { csvString, queryParams: models, raiseException });
+    const table = await runAdmeticaFunc(csvString, models, raiseException);
     progressIndicator.update(80, 'Results are ready');
-    const table = DG.DataFrame.fromCsv(admeticaResults);
     const molColIdx = viewTable.columns.names().findIndex(name => name === molColumn.name);
     if (table) {
       addResultColumns(table, viewTable, addPiechart, addForm, molColIdx ?? -1, update);
@@ -418,10 +388,8 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const csvString = await grok.functions.call('Admetica:runAdmetica', { csvString: `smiles\n${smiles}`, queryParams: queryParams.join(','), raiseException: false });
+      const table = await runAdmeticaFunc(`smiles\n${smiles}`, queryParams.join(','), false);
       ui.empty(result);
-
-      const table = DG.DataFrame.fromCsv(csvString!);
       table.name = DEFAULT_TABLE_NAME;
       addColorCoding(table, queryParams, true, props);
 
@@ -496,10 +464,9 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
   const query = `smiles\n${parsedValue}`;
-  const result = await grok.functions.call('Admetica:runAdmetica', { csvString: query, queryParams: params, raiseException: false });
-
+  const result: DG.DataFrame = await runAdmeticaFunc(query, params, false);
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
-  pieSettings.sectors.values = result!;
+  pieSettings.sectors.values = result.toCsv()!;
   gridCol!.settings = pieSettings;
 
   const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');

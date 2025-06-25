@@ -9,7 +9,7 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo);
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
-    ruleNum, diffs, activityPairsIdxs, coreNums, pairedActivities] =
+    ruleNum, diffs, activityPairsIdxs, coreNums, pairedActivities, pairsPerActivity] =
     calculateActivityDiffs(initData.molecules, initData.activities, initData.diffTypes,
       rules, frags, allCasesNumber, occasions);
 
@@ -66,6 +66,7 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
     activityPairsIdxs,
     coreNums,
     pairedActivities,
+    pairsPerActivity,
   };
 
   return [rulesBased, allCasesBased];
@@ -115,15 +116,19 @@ function calculateActivityDiffs(
     activityPairsIdxs: BitArray[],
     coreNums: Int32Array,
     pairedActivities: Array<[Float32Array, Float32Array]>,
+    pairsPerActivity: Uint32Array[]
  ] {
   const variates = activities.length;
   const maxActs = new Array<number>(variates).fill(0);
   const allSize = mmpr.rules.length;
 
   const meanDiffs = new Array<Float32Array>(variates);
+  const pairsPerActivity = new Array<Uint32Array>(variates);
   const pairedActivities = new Array<[Float32Array, Float32Array]>(variates);
-  for (let i = 0; i < variates; i++)
+  for (let i = 0; i < variates; i++) {
     meanDiffs[i] = new Float32Array(allSize);
+    pairsPerActivity[i] = new Uint32Array(allSize).fill(0);
+  }
 
   const molFrom = new Array<string>(allCasesNumber);
   const molTo = new Array<string>(allCasesNumber);
@@ -191,10 +196,12 @@ function calculateActivityDiffs(
       pairIdx++;
     }
 
-    for (let k = 0; k < variates; k++)
-      meanDiffs[k][i] = validCounts[k] > 0 ?mean[k] / validCounts[k] : DG.FLOAT_NULL;
+    for (let k = 0; k < variates; k++) {
+      meanDiffs[k][i] = validCounts[k] > 0 ? mean[k] / validCounts[k] : DG.FLOAT_NULL;
+      pairsPerActivity[k][i] = validCounts[k];
+    }
   }
 
   return [maxActs, meanDiffs, molFrom, molTo, pairNum, molNumFrom, molNumTo, pairsFromSmiles,
-    pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums, pairedActivities];
+    pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums, pairedActivities, pairsPerActivity];
 }

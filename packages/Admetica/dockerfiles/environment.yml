@@ -12,15 +12,16 @@ dependencies:
   - scikit-learn
   - scipy
   - boto3
-  - gunicorn
-  - Flask
   - chemprop=2.0.4
   - mkl
-  - flask_cors
   - cuda-version=11.8
   - cudatoolkit=11.8
-  - cuDNN
-  - pytorch==2.5.0=*_cu*
-  - torchvision==0.20.0=*_cu*
-  - torchaudio==2.5.0=*_cu*
+  - cudnn
+  - pytorch==2.5.0=*cu*
+  - torchvision==0.20.0=*cu*
+  - torchaudio==2.5.0=*cu*
   - pytorch-cuda=11.8
+  - pip
+  - pip:
+      - datagrok-celery-task
+      - celery

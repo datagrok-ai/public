@@ -163,7 +163,7 @@ export function isFormulaColumn(col: DG.Column): boolean {
   return !!col.getTag(DG.Tags.Formula);
 }
 
-//name: Formula Widget
+//name: Formula
 //tags: panel
 //input: column col
 //output: widget result

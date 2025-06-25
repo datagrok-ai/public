@@ -64,7 +64,8 @@ export type MmpAllCasesBasedData = {
     diffs: Float32Array[];
     activityPairsIdxs: BitArray[];
     coreNums: Int32Array;
-    pairedActivities: Array<[Float32Array, Float32Array]>
+    pairedActivities: Array<[Float32Array, Float32Array]>;
+    pairsPerActivity: Uint32Array[];
 };
 
 export type MmpGeneration = {

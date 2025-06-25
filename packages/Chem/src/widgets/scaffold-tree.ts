@@ -1550,6 +1550,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.fragmentsColumn) {
       this.fragmentsColumn = this.dataFrame.columns.addNewString(`~${columnName}`);
       this.fragmentsColumn.name = columnName;
+      this.fragmentsColumn.meta.allowColorPicking = false;
       this.fragmentsColumn.setTag(DG.TAGS.DESCRIPTION, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
       this.fragmentsColumn.setTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT, 'true');
     }
