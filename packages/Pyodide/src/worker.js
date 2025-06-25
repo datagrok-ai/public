@@ -6,9 +6,18 @@ importScripts("https://cdnjs.cloudflare.com/ajax/libs/uuid/8.2.0/uuidv4.min.js")
 let pyodide;
 let currentCallsExecutions = {};
 
+function eager_converter(item, fn) {
+    const isInt64 = item?.type === 'numpy.int64';
+    const res = fn(item);
+    if (isInt64 && res.length === 1) {
+        return Number(res[0]);
+    }
+    return res;
+}
+
 function valueToJS(value) {
     if (value instanceof pyodide.ffi.PyProxy)
-        return value.toJs({dict_converter : Object.fromEntries, create_proxies : false});
+        return value.toJs({dict_converter : Object.fromEntries, create_proxies : false, eager_converter});
     return value;
 }
 
@@ -21,7 +30,7 @@ async function init() {
             const typings = {};
             const argsObject = valueToJS(args);
             for (const [key, val] of Object.entries(argsObject)) {
-                let jsVal = valueToJS(val);
+                let jsVal = val;
                 if (jsVal?.to_csv) {
                     jsVal = jsVal.to_csv.callKwargs({index: false});
                     jsVal = jsVal.trim();
@@ -78,12 +87,15 @@ async function handleWorkerScript(event) {
         error.stack = formatError[1]?.trim();
         if (formatError[2] != null) {
             const strNum = formatError[2];
-            const lines = script.split('\n').slice(Math.max(strNum - 2, 0), strNum + 3);
-            lines[2] = '> ' + lines[2];
+            const strIdx = strNum - 1;
+            const sourceStrNum = strNum - headerLinesCount;
+            const linesArray = script.split('\n');
+            linesArray[strIdx] =  '> ' + linesArray[strIdx];
+            const shownLines = linesArray.slice(Math.max(strIdx - 2, 0), strIdx + 3);
             const text = [
                 `Pyodide Error: ${error.message}` ,
-                `Script ${scriptName}, Line ${strNum - headerLinesCount}`,
-                ...lines
+                `Script ${scriptName}, Line ${sourceStrNum}`,
+                ...shownLines
             ].join('\n');
             console.error(text);
         }
@@ -121,8 +133,6 @@ async function handleFuncCallResults(event) {
         cbs.reject(pyError);
     } else {
         const {results} = data;
-        // TODO: investigate do we need to destroy PyProxy here, since
-        // it goes back pyhton
         for (const [name, typing] of Object.entries(data.typings ?? {})) {
             if (typing === 'datetime') {
                 const arg = data.results?.[name];
