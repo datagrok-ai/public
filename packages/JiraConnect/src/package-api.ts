@@ -24,8 +24,8 @@ export namespace funcs {
     return await grok.functions.call('JiraConnect:IssueData', { issueKey });
   }
 
-  export async function getJiraField(field: string): Promise<any> {
-    return await grok.functions.call('JiraConnect:GetJiraField', { field });
+  export async function getJiraField(ticketColumn: DG.Column, field: string): Promise<any> {
+    return await grok.functions.call('JiraConnect:GetJiraField', { ticketColumn, field });
   }
 
   export async function getJiraTicketsByFilter(filter: any): Promise<any> {

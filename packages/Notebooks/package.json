@@ -39,7 +39,7 @@
     "@typescript-eslint/parser": "^5.32.0",
     "clean-webpack-plugin": "^3.0.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.19",
+    "datagrok-tools": "^4.14.20",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "~5.0.2",
