@@ -219,7 +219,7 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
-  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
+  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
   const inputs = [];
   for (const match of script.matchAll(regex)) {
     const isOptional = /isOptional\s*:\s*true/.test(match[0]);
