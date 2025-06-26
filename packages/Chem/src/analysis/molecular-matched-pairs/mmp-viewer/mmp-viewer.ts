@@ -498,6 +498,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.tp.root,
     ], {style: {width: '100%', height: '100%'}});
 
+    if (!this.pairedGrids!.parentFragmentsFilter.anyFalse)
+      this.updateTrellisFiltersWithDefaultValues(tpDiv);
+
     this.tp.onEvent('d4-viewer-rendered').subscribe(() => {
       this.createSortIcon(trellisSortState, TrellisAxis.From, this.tp!, 'chem-mmpa-fragments-sort-icon-x-axis');
       this.createSortIcon(trellisSortState, TrellisAxis.To, this.tp!, 'chem-mmpa-fragments-sort-icon-y-axis');
