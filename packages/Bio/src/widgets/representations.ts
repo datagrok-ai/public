@@ -10,7 +10,7 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {_package} from '../package';
-
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /**
  * @export
@@ -109,15 +109,9 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const shouldShowMultilineToggle = (): boolean => {
     const units = col.meta.units;
-    const aligned = col.getTag('aligned');
-
-    //  Never show for any sequence that is MSA-aligned, regardless of alphabet.
-    //    The multiline layout is not compatible with the row-to-row alignment of MSA for now.
-    if (aligned?.includes('MSA'))
-      return false;
 
     // Don't show for formats that have their own complex renderers (like Helm).
-    if (units === 'helm' || units === 'custom')
+    if (units === NOTATION.HELM || units === NOTATION.CUSTOM)
       return false;
 
     // For all other cases, including 'UN' (non-canonical), 'fasta', and 'separator' show the multiline toggle.
