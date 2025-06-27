@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest, EMPTY} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, catchError} from 'rxjs/operators';
+import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -18,6 +18,11 @@ import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 
 const MAX_CONCURENT_SAVES = 5;
+
+export interface TreeUpdateData {
+  isMutation: boolean;
+  details?: TreeUpdateMutationPayload[],
+}
 
 export class LockError extends Error {}
 
@@ -188,7 +193,7 @@ export class StateTree {
 
   // for testing only
   public runMutateTree() {
-    return this.mutateTree(() => of([{mutationRootPath: []}] as const));
+    return this.mutateTree(() => of([{isMutation: true}]));
   }
 
   public save(uuid?: string, metaData?: ItemMetadata) {
@@ -228,12 +233,12 @@ export class StateTree {
       this.nodeTree.removeBrunch(path);
       const [ppath, oldIdx] = this.getMutationSlice(path);
       this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: newIdx,
         removeIdx: oldIdx,
-      };
-      return of([mutationData]);
+      }];
+      return of([{isMutation: true, details}]);
     });
   }
 
@@ -245,11 +250,11 @@ export class StateTree {
       const [, path] = data;
       this.nodeTree.removeBrunch(path);
       const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath,
         removeIdx,
-      };
-      return of([mutationData]);
+      }];
+      return of([{isMutation: true, details}]);
     });
   }
 
@@ -272,11 +277,11 @@ export class StateTree {
           mockMode: this.mockMode,
         });
       }
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: pos,
-      };
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([mutationData]));
+      }];
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
     });
   }
 
@@ -302,11 +307,11 @@ export class StateTree {
           this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] =[ {
         mutationRootPath: ppath,
         addIdx: pos,
-      };
-      return tree.pipe(mapTo([mutationData]));
+      }];
+      return tree.pipe(mapTo([{isMutation: true, details}]));
     });
   }
 
@@ -389,9 +394,11 @@ export class StateTree {
                 mutationRootPath: ppath,
                 addIdx: last.idx,
               } : {mutationRootPath: []};
-              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo([mutationData] as const));
+              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
             })),
           ),
+          toArray(),
+          map((details) => [{isMutation: true, details}]),
         );
       });
     } else if (action.spec.type === 'funccall') {
@@ -428,10 +435,14 @@ export class StateTree {
       const adapter = new FuncCallAdapter(call, false);
       item.changeAdapter(adapter);
       item.instancesWrapper.isOutputOutdated$.next(false);
-      return of([{
+      const details = [{
         mutationRootPath: ppath,
         addIdx: idx,
-      }] as const);
+      }];
+      return of([{
+        isMutation: true,
+        details
+      }]);
     });
   }
 
@@ -741,7 +752,7 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateMutationPayload?, R?]>, waitForLinks = true) {
+  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
@@ -754,11 +765,11 @@ export class StateTree {
       tap(() => this.updateNodesMap()),
       concatMap((data) => {
         const [mutationData, res] = data ?? [];
-        if (this.logger)
-          this.logger.logMutations(mutationData);
-        const isMutation = (mutationData?.mutationRootPath && mutationData?.mutationRootPath.length > 0) ||
-          mutationData?.addIdx != null ||
-          mutationData?.removeIdx != null;
+        if (this.logger && mutationData?.details?.length) {
+          for (const item of mutationData?.details)
+            this.logger.logMutations(item);
+        }
+        const isMutation = mutationData?.isMutation ?? false;
         return this.linksState.update(this.nodeTree, isMutation).pipe(mapTo(res));
       }),
       tap(() => {
