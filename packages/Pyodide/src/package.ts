@@ -143,7 +143,7 @@ function makeCodeHeader(scriptCall: DG.FuncCall): string {
   let code: string = `def reformat_exception():
 \tfrom traceback import format_exception_only, format_exception, extract_tb
 \timport sys
-\treturn ["".join(format_exception_only(sys.last_value)), "".join(format_exception(sys.last_value)), extract_tb(sys.last_value.__traceback__)[-1].lineno]\n`;
+\treturn ["".join(format_exception_only(sys.last_value)), "".join(format_exception(sys.last_value)), extract_tb(sys.last_value.__traceback__)]\n`;
   const inputParamsTypes: string[] = (Object.values(scriptCall.inputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   const outputParamsTypes: string[] = (Object.values(scriptCall.outputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   if (inputParamsTypes.some((type) => type === DG.TYPE.DATA_FRAME)

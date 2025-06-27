@@ -86,18 +86,29 @@ async function handleWorkerScript(event) {
         error.message = formatError[0]?.trim();
         error.stack = formatError[1]?.trim();
         if (formatError[2] != null) {
-            const strNum = formatError[2];
-            const strIdx = strNum - 1;
-            const sourceStrNum = strNum - headerLinesCount;
-            const linesArray = script.split('\n');
-            linesArray[strIdx] =  '> ' + linesArray[strIdx];
-            const shownLines = linesArray.slice(Math.max(strIdx - 2, 0), strIdx + 3);
-            const text = [
-                `Pyodide Error: ${error.message}` ,
-                `Script ${scriptName}, Line ${sourceStrNum}`,
-                ...shownLines
-            ].join('\n');
-            console.error(text);
+            const trace = valueToJS(formatError[2]).map(frameSummaryProxy => {
+                const item = { filename: frameSummaryProxy.filename, lineno: frameSummaryProxy.lineno };
+                frameSummaryProxy.destroy();
+                return item;
+            });
+            const traceStart = trace.findIndex(item => item.filename === '<exec>');
+            if (traceStart >= 0) {
+                const actualTrace = trace.slice(traceStart);
+                const strNum = actualTrace[0].lineno;
+                const traceTail = actualTrace.slice(1);
+                const strIdx = strNum - 1;
+                const sourceStrNum = strNum - headerLinesCount;
+                const linesArray = script.split('\n');
+                linesArray[strIdx] = '> ' + linesArray[strIdx];
+                const shownLines = linesArray.slice(Math.max(strIdx - 2, 0), strIdx + 3);
+                const text = [
+                    `Pyodide Error: ${error.message}`,
+                    `Script ${scriptName}, Line ${sourceStrNum}`,
+                    ...traceTail.map(({ filename, lineno }) => `File ${filename}, Line ${lineno}`),
+                    ...shownLines
+                ].join('\n');
+                console.error(text);
+            }
         }
         postMessage({ id, type: 'scriptResults', error });
     } finally {
