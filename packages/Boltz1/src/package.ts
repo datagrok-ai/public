@@ -41,7 +41,7 @@ export async function folding(df: DG.DataFrame, sequences: DG.Column): Promise<D
 //name: Docking
 //input: dataframe df
 //input: column molecules {semType: Molecule}
-//input: string config {choices: Docking: getBoltzConfigFolders} [Folder with config files for docking]
+//input: string config {choices: Boltz1: getBoltzConfigFolders} [Folder with config files for docking]
 //output: dataframe result
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
   return await BoltzService.docking(df, molecules, config);
