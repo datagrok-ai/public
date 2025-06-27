@@ -273,6 +273,10 @@ export interface EditorOptions {
 class Preview {
   viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartSettings>;
   dataFrame: DG.DataFrame;
+  
+  /** Original data frame (used for line chart to validate columns).*/
+  originalDataFrame?: DG.DataFrame;
+
   items: DG.FormulaLine[];
 
   /** Source Scatter Plot axes */
@@ -315,7 +319,11 @@ class Preview {
       ? {yColumnNames: [names.y]}
       : {y: names.y, yMap: names.yMap});
     
-    const xColName = this.viewer.type === DG.VIEWER.LINE_CHART && names.xMap ? `${names.x} ${names.xMap}` : names.x ?? '';
+    const xColName = this.viewer.type === DG.VIEWER.LINE_CHART && names.xMap && names.x
+      && this.originalDataFrame?.col(names.x)?.type === DG.TYPE.DATE_TIME
+        ? `${names.x} ${names.xMap}`
+        : names.x ?? '';
+
     if (names && names.x && this.dataFrame.getCol(xColName))
       this.viewer.setOptions({xMap: names.xMap, x: xColName});
   }
@@ -356,10 +364,12 @@ class Preview {
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
       if (src.getOptions()['type'] === DG.VIEWER.LINE_CHART) {
-        this.dataFrame = new DG.DataFrame(new DG.LineChartViewer(src.dart).activeFrame!);
+        const viewer = new DG.LineChartViewer(src.dart);
+        this.dataFrame = new DG.DataFrame(viewer.activeFrame!);
+        this.originalDataFrame = src.dataFrame;
         const yCols: string[] = src.props.yColumnNames;
         const yCol = this.dataFrame.columns.toList()
-          .find((col) => col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
+          .find((col) => col.isNumerical && col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
         this._srcAxes = {x: src.props.xColumnName, xMap: src.props.xMap, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
