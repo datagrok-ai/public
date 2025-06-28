@@ -2,7 +2,8 @@
   "name": "chatgpt",
   "friendlyName": "ChatGPT",
   "version": "0.0.2",
-  "description": "",
+  "description": "ChatGPT integration",
+  "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "latest",
