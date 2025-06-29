@@ -82,7 +82,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
 
-  static getViewerTypes(): ViewerType[] {
+  /** Gets all available viewer types
+   * Core means the viewer is already loaded and all methods and properties are available synchronously.
+   * */
+  static getViewerTypes(options?: {core?: boolean}): ViewerType[] {
+    if (options?.core)
+      return Viewer.CORE_VIEWER_TYPES;
     return api.grok_Viewer_GetViewerTypes();
   }
 
@@ -300,6 +305,17 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
+
+  static CORE_VIEWER_TYPES: string[] = [
+    VIEWER.HISTOGRAM, VIEWER.BAR_CHART, VIEWER.BOX_PLOT, VIEWER.CALENDAR,
+    VIEWER.CORR_PLOT, VIEWER.DENSITY_PLOT, VIEWER.FILTERS, VIEWER.FORM,
+    VIEWER.GLOBE, VIEWER.GRID, VIEWER.GOOGLE_MAP, VIEWER.HEAT_MAP,
+    VIEWER.LINE_CHART, VIEWER.SHAPE_MAP, VIEWER.MARKUP, VIEWER.MATRIX_PLOT,
+    VIEWER.NETWORK_DIAGRAM, VIEWER.PC_PLOT, VIEWER.PIE_CHART, VIEWER.SCATTER_PLOT,
+    VIEWER.SCATTER_PLOT_3D, VIEWER.STATISTICS, VIEWER.TILE_VIEWER, VIEWER.TREE_MAP,
+    VIEWER.TRELLIS_PLOT, VIEWER.WORD_CLOUD, VIEWER.TIMELINES, VIEWER.RADAR_VIEWER,
+    VIEWER.SURFACE_PLOT, VIEWER.SCAFFOLD_TREE, VIEWER.PIVOT_TABLE, VIEWER.CONFUSION_MATRIX,
+  ];
 }
 
 
