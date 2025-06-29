@@ -1,7 +1,7 @@
 {
   "name": "chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.3",
+  "version": "0.0.31",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
