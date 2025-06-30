@@ -395,7 +395,7 @@ export class RadarViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    if (!this._testColumns()) {
+    if (!this._testColumns() || this.valuesColumnNames.length === 0) {
       MessageHandler._showMessage(this.root, 'The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
