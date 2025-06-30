@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.10.3 (2025-06-30)
+
+Activity cliffs: Fixed activities choice in the function editor
+
 ## 6.10.1 (2025-05-07)
 
 Activity cliffs: Fixed bug with re-applying cliffs filter on re-drawing scatter plot
