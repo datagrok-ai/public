@@ -1168,7 +1168,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
-  if (table.rowCount > 1000)
+  if (table.rowCount > 5000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
@@ -1178,7 +1178,7 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
   if (resultDf) {
     for (const resultCol of resultDf.columns) {
       resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
-      table.columns.add(resultCol);
+      table.columns.add(resultCol.clone());
     }
   }
   return table;
