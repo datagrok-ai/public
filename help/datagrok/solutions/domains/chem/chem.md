@@ -141,15 +141,25 @@ You can also explore the vault data directly in the **Context Panel** (**Databas
 <br/>
 ![Molecules tab](img/cdd_molecules.png)
 </TabItem>
-<TabItem value="search" label="Search">
-Provides basic vault search functionality with similarity and diversity searches
+<TabItem value="protocols" label="Protocols">
+* Shows all protocols available in the selected vault. Click any protocol to show corresponding molecules
 <br/>
-![Search tab](img/cdd_search.png)
+![Protocols tab](img/cdd_protocols.png)
 </TabItem>
 <TabItem value="saved-searches" label="Saved searches">
 Lists all saved searches in your vault. Click any search in the list to view its results
 <br/>
 ![Saved search](img/cdd_saved_search.png)
+</TabItem>
+<TabItem value="collections" label="Collections">
+Lists all collections available in the selected vault. Click any collection to show corresponding molecules
+<br/>
+![Collections](img/cdd_collections.png)
+</TabItem>
+<TabItem value="search" label="Search">
+Provides basic vault search functionality with similarity and diversity searches
+<br/>
+![Search tab](img/cdd_search.png)
 </TabItem>
 <TabItem value="context-panel" label="Context Panel">
 Shows vault data for the current molecule
