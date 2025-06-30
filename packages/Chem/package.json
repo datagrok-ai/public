@@ -40,7 +40,7 @@
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.9",
     "@datagrok-libraries/math": "^1.2.5",
-    "@datagrok-libraries/ml": "^6.10.1",
+    "@datagrok-libraries/ml": "^6.10.3",
     "@datagrok-libraries/statistics": "../../libraries/statistics",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.5.7",
