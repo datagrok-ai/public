@@ -133,6 +133,7 @@ async function prepareInputs(scriptCall: DG.FuncCall, namespace: { [key: string]
 function prepareOutputs(scriptCall: DG.FuncCall, outputs: string[]): string {
   let code: string = '';
   for (const paramName of Object.keys(scriptCall.outputParams)) {
+    code += '\n';
     const type: string = scriptCall.outputParams[paramName].property.propertyType;
     switch (type) {
       case DG.TYPE.DATA_FRAME:
@@ -265,3 +266,5 @@ export async function pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<v
     throw response.error;
   await setOutputs(scriptCall, response);
 }
+
+export * from './package.g';

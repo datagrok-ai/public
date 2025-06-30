@@ -80,9 +80,10 @@ export function randomizeTableId() {
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  id?: number;           // database id
-  plateTypeId?: number;  // database plate type id
-  barcode?: string;      // database barcode
+  id?: number;              // database id
+  plateTemplateId?: number; // database plate template id
+  plateTypeId?: number;     // database plate type id
+  barcode?: string;         // database barcode
 
   data: DG.DataFrame;    // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
   details: {[index: string]: any} = {};  // dynamic plate properties, stored in db: plates.plate_details
@@ -247,9 +248,9 @@ export class Plate {
       const start = propBlock * plate.rows * plate.cols;
       const pid = pidCol?.get(start);
       const property = wellProperties.find(p => p.id == pid)!;
-      const valueColumn = df.col(plateDbColumn[property.value_type])!;
+      const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
-      plate.data.columns.addNew(property.name, property.value_type)
+      plate.data.columns.addNew(property.name, property.type)
         .init(i => valueColumn.get(start + i));
     }
 
@@ -307,7 +308,7 @@ export class Plate {
     return result;
   }
 
-  static async fromExcelFileInfo(fi: DG.FileInfo): Promise<Plate> {
+  static async fromExcelFile(fi: DG.FileInfo): Promise<Plate> {
     return fi.data && fi.data.length ? await Plate.fromExcel(fi.data, fi.friendlyName) : await Plate.fromExcelPath(fi.fullPath, fi.friendlyName);
   }
 

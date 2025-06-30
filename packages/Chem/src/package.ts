@@ -85,6 +85,9 @@ import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
 import {_mpoDialog} from './analysis/mpo';
+import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
+import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
+import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -241,6 +244,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
 //output: filter result
 //meta.semType: Molecule
 //meta.primaryFilter: true
+//meta.allowMultipleFiltersForColumn: false
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
 }
@@ -427,12 +431,10 @@ export async function searchSubstructure(
 }
 
 //name: saveAsSdf
-//description: As SDF
+//description: As SDF...
 //tags: fileExporter
 export async function saveAsSdf(): Promise<void> {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
   saveAsSdfDialog();
-  progressIndicator.close();
 }
 
 //#region Top menu
@@ -570,7 +572,7 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 }
 
 //name: clusterMCSTopMenu
-//FriendlyName: Cluster MCS
+//friendlyName: Cluster MCS
 //top-menu: Chem | Calculate | Cluster MCS...
 //description: Calculates most common substructures for each cluster
 //input: dataframe table
@@ -708,6 +710,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 
   if (plotEmbeddings) {
     res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+    const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
+    res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
     //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
     if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
       if (res.props['labelColumnNames'].constructor.name == 'Array')
@@ -985,6 +989,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 
     const view = grok.shell.getTableView(table.name);
 
+    const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: axesNames[0],
       yColumnName: axesNames[1],
@@ -997,6 +1002,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       markerMaxSize: 25,
       title: 'Activity cliffs',
       initializationFunction: 'activityCliffsInitFunction',
+      description: description,
+      descriptionVisibilityMode: 'Never',
     }) as DG.ScatterPlotViewer;
   };
 
@@ -1840,15 +1847,34 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
   return new MatchedMolecularPairsViewer();
 }
 
+//name: MMPEditor
+//tags: editor
+//input: funccall call
+export function MMPEditor(call: DG.FuncCall): void {
+  const funcEditor = new MmmpFunctionEditor();
+  const editor = funcEditor.getEditor();
+  const dialog = ui.dialog({title: 'Matched Molecular Pairs'})
+    .add(editor)
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      return call.func.prepare(params).call();
+    });
+ // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
+}
+
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
-//name:  Matched Molecular Pairs
-//input: dataframe table [Input data table]
+//name: Matched Molecular Pairs
+//input: dataframe table
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
+//input: string_list diffTypes
+//input: string_list scalings
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
+//editor: Chem:MMPEditor
 //output: viewer result
-export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
+  activities: DG.Column[], diffTypes: MmpDiffTypes[], scalings: SCALING_METHODS[], fragmentCutoff: number = 0.4, demo = false): Promise<void> {
   let view: DG.TableView;
 
   if (activities.length < 1) {
@@ -1867,8 +1893,22 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   else
     view = grok.shell.getTableView(table.name) as DG.TableView;
 
+  const activityColsNames = [];
+  for (let i = 0; i < scalings.length; i++) {
+    if (scalings[i] === SCALING_METHODS.NONE)
+      activityColsNames.push(activities[i].name);
+    else {
+      const scaledCol = scaleActivity(activities[i], scalings[i]);
+      const name = grok.shell.tv.dataFrame.columns.getUnusedName(scaledCol.name);
+      scaledCol.name = name;
+      grok.shell.tv.dataFrame.columns.add(scaledCol);
+      activityColsNames.push(name);
+    }
+  }
+
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
-  viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
+  viewer.setOptions({molecules: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
+    scalings: scalings, fragmentCutoff});
   viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
 }
 

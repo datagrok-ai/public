@@ -1,5 +1,13 @@
 # Pyodide package changelog
 
+## 1.2.1 (2025-06-19)
+
+* Fixed bug that happened during code generation for dataframes
+
+## 1.2.0 (2025-03-29)
+
+* Dependency: datagarok-api >= 1.25.0*
+
 ## 1.1.0 (2025-02-18)
 
 * Dependency: datagarok-api >= 1.24.0*

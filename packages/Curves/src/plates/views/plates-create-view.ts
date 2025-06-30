@@ -10,24 +10,11 @@ import {
   PlateType,
   plateTypes,
   savePlate,
-  savePlateAsTemplate
+  savePlateAsTemplate,
+  createNewPlateForTemplate
 } from '../plates-crud';
 import {PlateWidget} from '../../plate/plate-widget';
 
-/** Creates a new plate for a user to edit. Does not add it to the database. */
-async function createNewPlateForTemplate(plateType: PlateType, plateTemplate: PlateTemplate){
-  if (!plateTemplate.plate_layout_id) {
-    const plate = new Plate(plateType.rows, plateType.cols);
-    for (const property of plateTemplate.wellProperties) {
-      plate.data.columns.addNew(property.name!, property.value_type! as DG.ColumnType);
-    }
-    return plate;
-  }
-
-  const p = await getPlateById(plateTemplate.plate_layout_id);
-  p.id = undefined;
-  return p;
-}
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -45,7 +32,7 @@ export function createPlatesView(): DG.View {
   const setTemplate = (template: PlateTemplate) => {
     plateTemplate = template;
     plateTemplateValues = {};
-    const form = ui.input.form(plateTemplateValues, template.plateProperties.map(p => DG.Property.js(p.name!, p.value_type! as DG.TYPE)));
+    const form = ui.input.form(plateTemplateValues, template.plateProperties.map(p => DG.Property.js(p.name!, p.type! as DG.TYPE)));
     ui.empty(platePropertiesHost);
     platePropertiesHost.appendChild(form);
     updatePlate().then(_ => {});
@@ -66,6 +53,28 @@ export function createPlatesView(): DG.View {
     onValueChanged: (v) => setTemplate(plateTemplates.find(pt => pt.name === v)!)
   });
 
+  const fileInput = ui.input.file('Import from Excel', {
+    nullable: true,
+    onValueChanged: async (file) => {
+      const plate = await Plate.fromExcel(await file.readAsBytes());
+      if (plate.rows !== plateType.rows || plate.cols !== plateType.cols) {
+        grok.shell.error(`Plate dimensions do not match the template: ${plate.rows}x${plate.cols} vs ${plateType.rows}x${plateType.cols}`);
+        return;
+      }
+
+      for (const layer of plate.getLayerNames().filter(l => plateTemplate.wellProperties.find(p => p.name?.toLowerCase() === l.toLowerCase()))) {
+        const excelCol = plate.data.col(layer)!;
+        plateWidget.plate.data.col(layer)!.init(i => excelCol.get(i));
+      }
+
+      const missingLayers = plateTemplate.wellProperties.filter(p => !plate.getLayerNames().includes(p.name!));
+      if (missingLayers.length > 0) 
+        grok.shell.warning(`Plate is missing the following layers: ${missingLayers.map(p => p.name!).join(', ')}`);
+
+      plateWidget.refresh();
+    }
+  });
+
   // Create plate viewer
   let plate = new Plate(plateType.rows, plateType.cols);
   const plateWidget = PlateWidget.fromPlate(plate);
@@ -77,7 +86,8 @@ export function createPlatesView(): DG.View {
   view.root.appendChild(ui.divV([
       ui.form([
         plateTypeSelector,
-        plateTemplateSelector
+        plateTemplateSelector,
+        fileInput
       ]),
       platePropertiesHost,
       plateWidget.root

@@ -222,10 +222,10 @@ export function reportsWidget(): DG.Widget {
 }
 
 //name: packageUsageWidget
-//input: object package
+//input: object pckg
 //output: widget result
-export function packageUsageWidget(pack: DG.Package): DG.Widget {
-  return new PackageUsageWidget(pack);
+export function packageUsageWidget(pckg: DG.Package): DG.Widget {
+  return new PackageUsageWidget(pckg);
 }
 
 //name: testDashboardsViewer

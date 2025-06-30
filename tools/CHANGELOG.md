@@ -1,5 +1,20 @@
 # Datagrok-tools changelog
 
+## 4.14.19 (2025-06-23)
+
+### Features
+
+* Grok Check added header tag validation
+* Grok Api added optional parameters
+
+
+## 4.14.14 (2025-06-16)
+
+### Features
+
+* Grok Link added ability to link packages from root directory
+* Grok Link added repo-only option
+
 ## 4.14.10 (2025-06-08)
 
 ### Features

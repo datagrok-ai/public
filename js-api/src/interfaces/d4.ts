@@ -150,7 +150,7 @@ export interface IPieChartSettings {
   category: string;
   categoryColumnName: string;
 
-  categoryFunction: string;
+  categoryMap: string;
 
   pieSortType: string;
 
@@ -348,9 +348,15 @@ export interface IScatterPlotSettings {
   x: string;
   xColumnName: string;
 
+  /// X axis category map function (applicable to dates only).
+  xMap: string;
+
   /// A column to use on the Y axis. Could be numerical or categorical.
   y: string;
   yColumnName: string;
+
+  /// Y axis category map function (applicable to dates only).
+  yMap: string;
 
   xAxisType: keyof typeof AxisType;
 
@@ -413,6 +419,9 @@ export interface IScatterPlotSettings {
   color: string;
   colorColumnName: string;
 
+  /// Categorical coloring map function (applicable to dates only).
+  colorMap: string;
+
   showColorSelector: boolean;
 
   colorAxisType: keyof typeof AxisType;
@@ -433,6 +442,9 @@ export interface IScatterPlotSettings {
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
+
+  /// Marker category map function (applicable to dates only).
+  markersMap: string;
 
   markerType: string;
 
@@ -717,10 +729,22 @@ export interface IBoxPlotSettings {
   markerColor: string;
   markerColorColumnName: string;
 
+  /// Categorical coloring map function (applicable to dates only).
+  markerColorMap: string;
+
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   markers: string;
   markersColumnName: string;
+
+  /// Marker category map function (applicable to dates only).
+  markersMap: string;
 
   markerMinSize: number;
 
@@ -2435,8 +2459,8 @@ export interface IBarChartSettings {
   split: string;
   splitColumnName: string;
 
-  /// Aggregation function (applicable to dates only).
-  splitFunction: string;
+  /// Map function (applicable to dates only).
+  splitMap: string;
 
   showCategoryValues: boolean;
 
@@ -2448,6 +2472,9 @@ export interface IBarChartSettings {
   /// Each category would become a part of the bar resulting from *Split*.
   stack: string;
   stackColumnName: string;
+
+  /// Stack map function (applicable to dates only).
+  stackMap: string;
 
   showStackSelector: boolean;
 
@@ -2661,6 +2688,9 @@ export interface ILineChartSettings {
   /// Column to be used on the X axis
   x: string;
   xColumnName: string;
+
+  /// X axis category map function (applicable to dates only).
+  xMap: string;
 
   xAxisType: keyof typeof AxisType;
 
@@ -3212,9 +3242,18 @@ export interface IPcPlotSettings {
   color: string;
   colorColumnName: string;
 
+  /// Categorical coloring map function (applicable to dates only).
+  colorMap: string;
+
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   /// Determines the way a value is mapped to the vertical scale.
   /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
@@ -3295,6 +3334,8 @@ export interface IPcPlotSettings {
   whiskerLineWidth: number;
 
   interquartileLineWidth: number;
+
+  bins: number;
 
   legendVisibility: keyof typeof VisibilityMode;
 

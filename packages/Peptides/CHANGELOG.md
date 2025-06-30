@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.23.14 (2025-06-17)
+
+* Default selection grid for Peptides analysis
+
 ## 1.23.11 (2025-05-26)
 
 * Fix model loading with empty cluster selection

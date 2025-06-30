@@ -11,26 +11,26 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.20",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "css-loader": "^7.1.2"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "debug-cruddydemo": "webpack && grok publish",
     "release-cruddydemo": "webpack && grok publish --release",
     "build-cruddydemo": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-cruddydemo-dev": "webpack && grok publish dev",
     "release-cruddydemo-dev": "webpack && grok publish dev --release",
     "debug-cruddydemo-public": "webpack && grok publish public",

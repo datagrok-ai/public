@@ -156,7 +156,7 @@ export async function loadCampaigns<T extends AppName>(
       console.error(e);
     }
     return null;
-  })
+  });
   await Promise.all(campaignPromises);
   return campaignNamesMap;
 }
@@ -413,9 +413,8 @@ export function getReorderedFunctionTabArgs(args: {[key: string]: HTMLElement}) 
       orderedArgs[key] = args[key];
   }
   for (const key in args) {
-    if (!orderedArgs[key] && !ordering.hidden.includes(key)) {
+    if (!orderedArgs[key] && !ordering.hidden.includes(key))
       orderedArgs[key] = args[key];
-    }
   }
   return orderedArgs;
 }
@@ -452,7 +451,7 @@ export function getReorderingInput(functions: string[], onOk: (ordering: Functio
       if (child instanceof HTMLLabelElement)
         child.style.display = 'none';
     });
-  },200);
+  }, 200);
   columnsEditor.root.style.justifyContent = 'end';
   columnsEditor.root.style.width = '40px';
   columnsEditor.root.style.height = '0px';
@@ -472,4 +471,12 @@ export function getReorderingInput(functions: string[], onOk: (ordering: Functio
   });
   editIcon.style.fontSize = '16px';
   return columnsEditor.root;
+}
+
+export function getFuncPackageNameSafe(func: DG.Func): string | undefined {
+  try {
+    return func.package?.name;
+  } catch (e) {
+    return undefined;
+  }
 }

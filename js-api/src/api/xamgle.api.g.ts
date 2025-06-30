@@ -104,6 +104,8 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
+  enableIndexedDBTablesCache: boolean;
+
   /// Displays Index Files check box in connection edit dialog. If it is disabled then check
   /// box will not be shown to the user and indexing of files will not be configurable.
   enableConnectionIndexFiles: boolean;

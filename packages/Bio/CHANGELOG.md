@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.22.2 (2025-06-11)
+
+* Harmonized options for Similarity/Diversity viewers
+* Force detection of macromolecules for arbitrary columns
+
 ## 2.22.0 (2025-06-03)
 
 * MSA header tracks (Conseration and WebLogo)

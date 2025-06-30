@@ -1,9 +1,29 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {Plate} from "../plate/plate";
-import {Utils} from "datagrok-api/dg";
-import {NumericMatcher, Matcher} from "./numeric_matcher";
+import { Plate } from "../plate/plate";
+import { NumericMatcher, Matcher } from "./numeric_matcher";
+import { Subject } from 'rxjs';
+import * as api from '../package-api';
 
+export const events: Subject<CrudEvent> = new Subject();
+
+/** Events emitted by the plates CRUD layer. */
+export type CrudEvent = {
+  on: 'before' | 'after';
+  eventType: 'created' | 'read' | 'updated' | 'deleted';
+  objectType: TYPE;
+  object: Partial<PlateTemplate> | Partial<Plate> | Partial<PlateProperty>;
+  cancel?: boolean;   // when set by the listener at the 'before' event, the operation is cancelled
+}
+
+export enum TYPE {
+  PLATE = 'Plate',
+  WELL = 'PlateWell',
+  TEMPLATE = 'PlateTemplate',
+  PROPERTY = 'PlateProperty',
+}
+
+export const entityTypes: string[] = [TYPE.PLATE, TYPE.WELL, TYPE.TEMPLATE, TYPE.PROPERTY];
 
 export type PlateType = {
   id: number;
@@ -13,11 +33,10 @@ export type PlateType = {
   maxVolume?: number;
 }
 
-export type PlateProperty = {
+export interface PlateProperty extends DG.IProperty {
   id: number;
   name: string;
-  unit?: string;
-  value_type: string; //DG.COLUMN_TYPE;
+  type: string; //DG.COLUMN_TYPE;
 }
 
 export type PropertyCondition = {
@@ -40,10 +59,10 @@ export type PlateTemplate = {
 }
 
 export let wellProperties: PlateProperty[] = [
-  {id: 1000, name: 'Volume', value_type: DG.COLUMN_TYPE.FLOAT},
-  {id: 1001, name: 'Concentration', value_type: DG.COLUMN_TYPE.FLOAT},
-  {id: 1002, name: 'Sample', value_type: DG.COLUMN_TYPE.STRING},
-  {id: 1003, name: 'Well Role', value_type: DG.COLUMN_TYPE.STRING}
+  {id: 1000, name: 'Volume', type: DG.COLUMN_TYPE.FLOAT},
+  {id: 1001, name: 'Concentration', type: DG.COLUMN_TYPE.FLOAT},
+  {id: 1002, name: 'Sample', type: DG.COLUMN_TYPE.STRING},
+  {id: 1003, name: 'Well Role', type: DG.COLUMN_TYPE.STRING}
 ]
 
 export let plateProperties: PlateProperty[] = [];
@@ -66,18 +85,24 @@ export const plateDbColumn: {[key: string]: string} = {
 };
 
 let _initialized = false;
-export async function initPlates() {
-  if (_initialized)
+export async function initPlates(force: boolean = false) {
+  if (_initialized && !force)
     return;
-  plateTemplates = (await grok.functions.call('Curves:getPlateTemplates') as DG.DataFrame).toJson();
-  plateProperties = (await grok.functions.call('Curves:getPlateLevelProperties') as DG.DataFrame).toJson();
-  wellProperties = (await grok.functions.call('Curves:getWellLevelProperties') as DG.DataFrame).toJson();
-  plateTypes = (await grok.functions.call('Curves:getPlateTypes') as DG.DataFrame).toJson();
-  plateUniquePropertyValues = await grok.functions.call('Curves:getUniquePlatePropertyValues');
-  wellUniquePropertyValues = await grok.functions.call('Curves:getUniqueWellPropertyValues');
 
-  const templateWellProperties = (await grok.functions.call('Curves:getTemplateWellProperties') as DG.DataFrame).toJson();
-  const templatePlateProperties = (await grok.functions.call('Curves:getTemplatePlateProperties') as DG.DataFrame).toJson();
+  if (!_initialized) {
+    events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
+  }
+
+  plateTemplates = (await api.queries.getPlateTemplates()).toJson();
+  plateProperties = (await api.queries.getPlateLevelProperties()).toJson();
+  wellProperties = (await api.queries.getWellLevelProperties()).toJson();
+  plateTypes = (await api.queries.getPlateTypes()).toJson();
+
+  plateUniquePropertyValues = await api.queries.getUniquePlatePropertyValues();
+  wellUniquePropertyValues = await api.queries.getUniqueWellPropertyValues();
+
+  const templateWellProperties = (await api.queries.getTemplateWellProperties()).toJson();
+  const templatePlateProperties = (await api.queries.getTemplatePlateProperties()).toJson();
   for (const template of plateTemplates) {
     template.wellProperties = templateWellProperties.filter(p => p.template_id == template.id).map(p => findProp(wellProperties, p.property_id));
     template.plateProperties = templatePlateProperties.filter(p => p.template_id == template.id).map(p => findProp(plateProperties, p.property_id));
@@ -85,6 +110,23 @@ export async function initPlates() {
 
   _initialized = true;
 }
+
+
+/** Creates a new plate for a user to edit. Does not add it to the database. */
+export async function createNewPlateForTemplate(plateType: PlateType, plateTemplate: PlateTemplate): Promise<Plate> {
+  if (!plateTemplate.plate_layout_id) {
+    const plate = new Plate(plateType.rows, plateType.cols);
+    for (const property of plateTemplate.wellProperties) {
+      plate.data.columns.addNew(property.name!, property.type! as DG.ColumnType);
+    }
+    return plate;
+  }
+
+  const p = await getPlateById(plateTemplate.plate_layout_id);
+  p.id = undefined;
+  return p;
+}
+
 
 export function findProp(props: PlateProperty[], id: number | string): PlateProperty {
   if (typeof id === 'number')
@@ -123,7 +165,7 @@ function getValueType(x: any): string {
 }
 
 
-function sqlStr(s?: string | number) {
+function sqlStr(s?: string | number): string {
   if (!s)
     return 'null';
   if (typeof s == 'string')
@@ -133,9 +175,11 @@ function sqlStr(s?: string | number) {
 }
 
 
-export async function getPlateById(id: number)  {
-  const df: DG.DataFrame = await grok.functions.call('Curves:getWellValuesById', {id: id});
-  return Plate.fromDbDataFrame(df);
+export async function getPlateById(id: number): Promise<Plate> {
+  const df: DG.DataFrame = await api.queries.getWellValuesById(id);
+  const plate = Plate.fromDbDataFrame(df)
+  events.next({on: 'after', eventType: 'read', objectType: TYPE.PLATE, object: plate});
+  return plate;
 }
 
 
@@ -160,7 +204,7 @@ function getPlateSearchSql(query: PlateQuery): string {
 
   // Handle plate-level property conditions
   for (const condition of query.plateMatchers) {
-    const dbColumn = plateDbColumn[condition.property.value_type];
+    const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
       EXISTS (
         SELECT 1
@@ -173,7 +217,7 @@ function getPlateSearchSql(query: PlateQuery): string {
 
   // Handle well-level property conditions
   for (const condition of query.wellMatchers) {
-    const dbColumn = plateDbColumn[condition.property.value_type];
+    const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
       EXISTS (
         SELECT 1
@@ -240,7 +284,7 @@ function getWellSearchSql(query: PlateQuery): string {
 
   // Handle plate-level property conditions (using EXISTS for parent plate)
   for (const condition of query.plateMatchers) {
-    const dbColumn = plateDbColumn[condition.property.value_type];
+    const dbColumn = plateDbColumn[condition.property.type];
     whereClauses.push(`
       EXISTS (
         SELECT 1
@@ -253,7 +297,7 @@ function getWellSearchSql(query: PlateQuery): string {
 
   // Handle well-level property conditions (direct filter on wells)
   for (const condition of query.wellMatchers) {
-    const dbColumn = plateDbColumn[condition.property.value_type];
+    const dbColumn = plateDbColumn[condition.property.type];
     whereClauses.push(`
       EXISTS (
         SELECT 1
@@ -296,8 +340,8 @@ SELECT
   ) AS properties
 FROM filtered_wells fw
 JOIN plates.plates p ON p.id = fw.plate_id
-JOIN plates.plate_well_values pwv ON pwv.plate_id = fw.plate_id 
-                                   AND pwv.row = fw.row 
+JOIN plates.plate_well_values pwv ON pwv.plate_id = fw.plate_id
+                                   AND pwv.row = fw.row
                                    AND pwv.col = fw.col
 JOIN plates.properties pr ON pr.id = pwv.property_id
 GROUP BY fw.plate_id, p.barcode, p.description, fw.row, fw.col
@@ -307,25 +351,31 @@ ORDER BY fw.plate_id, fw.row, fw.col;
 
 export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
   const df = await grok.data.db.query('Admin:Plates', getWellSearchSql(query));
-  Utils.jsonToColumns(df.col('properties')!);
+  DG.Utils.jsonToColumns(df.col('properties')!);
   df.col('properties')!.name = '~properties';
   return df;
 }
 
 export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
   const df = await grok.data.db.query('Admin:Plates', getPlateSearchSql(query));
-  Utils.jsonToColumns(df.col('properties')!);
+  DG.Utils.jsonToColumns(df.col('properties')!);
   df.col('properties')!.name = '~properties';
   return df;
 }
 
 export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
-  prop.id = await grok.functions.call('Curves:createProperty', {propertyName: prop.name, valueType: prop.value_type})!;
+  prop.id = await api.queries.createProperty(prop.name!, prop.type!);
+  events.next({ on: 'after', eventType: 'created', objectType: TYPE.PROPERTY, object: prop });
   return prop as PlateProperty;
 }
 
-/** Saves the plate to the database. */
-export async function savePlate(plate: Plate){
+/**
+ * Saves the plate to the database.
+ * When a property is not found in the plateProperties array, it is created automatically
+ * if autoCreateProperties is true; otherwise, an error is thrown.
+*/
+export async function savePlate(plate: Plate, options?: { autoCreateProperties?: boolean }) {
+  const autoCreateProperties = options?.autoCreateProperties ?? true;
   await initPlates();
 
   const plateSql =
@@ -335,22 +385,31 @@ export async function savePlate(plate: Plate){
   plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);
 
   // register new plate level properties
-  for (const layer of Object.keys(plate.details))
-    if (!plateProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())) {
+  for (const layer of Object.keys(plate.details)) {
+    const prop = findProp(plateProperties, layer);
+    if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
-      plateProperties.push(await createProperty({name: layer, value_type: valueType}));
+      plateProperties.push(await createProperty({ name: layer, type: valueType }));
       grok.shell.info('Plate layer created: ' + layer);
     }
+    else if (!prop)
+      throw new Error(`Property ${layer} not found in plateProperties`);
+  }
 
   // register new well level properties
-  for (const layer of plate.getLayerNames())
-    if (!wellProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())) {
+  for (const layer of plate.getLayerNames()) {
+    const prop = findProp(wellProperties, layer);
+    if (autoCreateProperties && !prop) {
       const col = plate.data.col(layer);
-      wellProperties.push(await createProperty({name: layer, value_type: col!.type}));
+      wellProperties.push(await createProperty({ name: layer, type: col!.type }));
       grok.shell.info('Well layer created: ' + layer);
     }
+    else if (!prop)
+      throw new Error(`Property ${layer} not found in wellProperties`);
+  }
 
   await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
+  events.next({ on: 'after', eventType: 'created', objectType: TYPE.PLATE, object: plate });
   grok.shell.info('Plate saved');
 }
 
@@ -363,12 +422,12 @@ export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate)
 
 function getPlateInsertSql(plate: Plate): string {
   let sql = 'insert into plates.plate_wells(plate_id, row, col) values '
-  + plate.wells.map(pw => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';'
+    + plate.wells.map(pw => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';'
 
   // plate data
   for (const layer of Object.keys(plate.details)) {
     const property = plateProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())!;
-    const dbCol = plateDbColumn[property.value_type];
+    const dbCol = plateDbColumn[property.type];
 
     sql += `\n insert into plates.plate_details(plate_id, property_id, ${dbCol}) values `
       + `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
@@ -377,7 +436,7 @@ function getPlateInsertSql(plate: Plate): string {
   // well data
   for (const layer of plate.getLayerNames()) {
     const property = wellProperties.find(p => p.name.toLowerCase() == layer.toLowerCase())!;
-    const dbCol = plateDbColumn[property.value_type];
+    const dbCol = plateDbColumn[property.type];
     sql += `\n\n insert into plates.plate_well_values(plate_id, row, col, property_id, ${dbCol}) values\n`
       + plate.wells.map(pw => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`).toArray().join(',\n') + ';'
   }
@@ -385,22 +444,58 @@ function getPlateInsertSql(plate: Plate): string {
   return sql;
 }
 
-
 export async function createPlateTemplate(template: Partial<PlateTemplate>): Promise<PlateTemplate> {
-  template.id = await grok.functions.call('Curves:createTemplate', {name: template.name, description: template.description})!;
+  template.id = await api.queries.createTemplate(template.name!, template.description!);
   let sql = '';
 
   for (let property of template.plateProperties ?? []) {
     property = await createProperty(property);
+    plateProperties.push(property as PlateProperty);
     sql += `insert into plates.template_plate_properties(template_id, property_id) values (${template.id}, ${property.id});\n`;
   }
 
   for (let property of template.wellProperties ?? []) {
     property = await createProperty(property);
+    wellProperties.push(property as PlateProperty);
     sql += `insert into plates.template_well_properties(template_id, property_id) values (${template.id}, ${property.id});\n`;
   }
 
   await grok.data.db.query('Admin:Plates', sql);
   plateTemplates.push(template as PlateTemplate);
+
+  events.next({ on: 'after', eventType: 'created', objectType: TYPE.TEMPLATE, object: template });
   return template as PlateTemplate;
+}
+
+/** Checks if a plate template's properties are being used in any plates */
+export async function plateTemplatePropertiesUsed(template: PlateTemplate): Promise<boolean> {
+  // Check if any plates are using this template's properties
+  const sql = `
+    SELECT EXISTS (
+      SELECT 1 FROM plates.plates p
+      JOIN plates.plate_details pd ON p.id = pd.plate_id
+      JOIN plates.template_plate_properties tpp ON pd.property_id = tpp.property_id
+      WHERE tpp.template_id = ${template.id}
+      UNION
+      SELECT 1 FROM plates.plates p
+      JOIN plates.plate_well_values pwv ON p.id = pwv.plate_id
+      JOIN plates.template_well_properties twp ON pwv.property_id = twp.property_id
+      WHERE twp.template_id = ${template.id}
+    ) as is_used`;
+
+  const result = await grok.data.db.query('Admin:Plates', sql);
+  return result.get('is_used', 0);
+}
+
+/** Deletes a plate template and its associated properties */
+export async function deletePlateTemplate(template: PlateTemplate): Promise<void> {
+  // First delete the template's property associations
+  const deletePropsSql = `
+    DELETE FROM plates.template_plate_properties WHERE template_id = ${template.id};
+    DELETE FROM plates.template_well_properties WHERE template_id = ${template.id};
+    DELETE FROM plates.templates WHERE id = ${template.id};`;
+
+  await grok.data.db.query('Admin:Plates', deletePropsSql);
+  events.next({ on: 'after', eventType: 'deleted', objectType: TYPE.TEMPLATE, object: template });
+  await initPlates(true); // Refresh the templates cache
 }

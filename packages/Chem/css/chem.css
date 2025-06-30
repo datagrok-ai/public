@@ -799,18 +799,19 @@
 }
 
 .chem-mmp-trellis-filters-div {
-  height: 100%;
-  width: 100%;
+    max-height: 600px;
+    overflow-y: scroll;
 }
 
-.chem-mmp-trellis-filters-div.filters-closed {
-  display: none!important;
+
+.chem-mmp-trellis-filters-div .d4-filter-group-wrapper {
+  flex-direction: column;
 }
 
-/* .chem-mmp-trellis-filters-div.filters-opened {
-  display: flex !important;
-  width: 100% !important;
-} */
+.chem-mmp-trellis-filters-div .d4-filter-group {
+  width: 100%!important;
+  height: 100%!important;
+}
 
 .mmp-trellis-summary-col-dlg select {
   display: none;
@@ -913,4 +914,43 @@
 
 .chem-mmp-active-hint-adjust-vert-5px {
   padding-top: 5px;
+}
+
+.chem-mmp-fragments-grid-follow-current-row {
+  padding-left: 10px;
+  padding-bottom: 8px;
+  padding-right: 5px;
+}
+
+.mmpa-substitutions-context-panel {
+  height: 100%;
+}
+
+.mmpa-pc-plot {
+  height: 100%!important;
+  width: 100%!important;
+}
+
+.mmpa-hide-context-panel {
+  display: none;
+}
+
+.mmpa-pc-plot-title {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  text-align: center;
+}
+
+.mmpa-trellis-legend-item {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100px;
+  padding-top: 4px;
+}
+
+.mmpa-trellis-legend {
+  padding-left: 20px;
+  gap: 10px;
 }

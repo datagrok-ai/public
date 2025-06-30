@@ -299,8 +299,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
           col.temp[SCAFFOLD_COL] = rColName;
-        } else
-          rColName = rGroupPrefixIdx ? `${resCol.name}_${rGroupPrefixIdx}` : resCol.name;
+        } else {
+          rColName = rGroupPrefixIdx ? `${resCol.name.replace('R', params.rGroupName)}_${rGroupPrefixIdx}` :
+            resCol.name.replace('R', params.rGroupName);
+        }
         resCol.name = rColName;
         const rCol = DG.Column.fromStrings(rColName, molsArray);
         rCol.semType = DG.SEMTYPE.MOLECULE;

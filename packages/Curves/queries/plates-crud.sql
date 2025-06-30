@@ -7,13 +7,13 @@ SELECT * FROM plates.plates;
 -- name: getWellLevelProperties
 -- description: Get all well level properties (either used in a well or specified in a template)
 -- connection: Admin:Plates
-SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+SELECT DISTINCT p.*
 FROM plates.properties p
 JOIN plates.plate_well_values pd ON p.id = pd.property_id
 
 UNION
 
-SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+SELECT DISTINCT p.*
 FROM plates.properties p
 JOIN plates.template_well_properties twp ON p.id = twp.property_id
 
@@ -24,13 +24,13 @@ ORDER BY name;
 -- name: getPlateLevelProperties
 -- description: Get all plate level properties (either used in a plate or specified in a template)
 -- connection: Admin:Plates
-SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+SELECT DISTINCT p.*
 FROM plates.properties p
 JOIN plates.plate_details pd ON p.id = pd.property_id
 
 UNION
 
-SELECT DISTINCT p.id, p.name, p.value_type, p.unit
+SELECT DISTINCT p.*
 FROM plates.properties p
 JOIN plates.template_plate_properties twp ON p.id = twp.property_id
 
@@ -97,21 +97,19 @@ WHERE p.name = @propertyName;
 
 -- name: getUniquePlatePropertyValues
 -- connection: Admin:Plates
--- input: int propertyId propertyName { choices: getPropertyNames() }
 SELECT DISTINCT p.name, pd.value_string
 FROM plates.plate_details pd
 JOIN plates.properties p ON pd.property_id = p.id
-WHERE p.value_type = 'string';
+WHERE p.type = 'string';
 -- end
 
 
 -- name: getUniqueWellPropertyValues
 -- connection: Admin:Plates
--- input: int propertyId propertyName { choices: getPropertyNames() }
 SELECT DISTINCT p.name, pwv.value_string
 FROM plates.plate_well_values pwv
 JOIN plates.properties p ON pwv.property_id = p.id
-WHERE p.value_type = 'string';
+WHERE p.type = 'string';
 -- end
 
 
@@ -120,7 +118,7 @@ WHERE p.value_type = 'string';
 -- input: string propertyName
 -- input: string valueType
 -- output: int propertyId
-INSERT INTO plates.properties(name, value_type)
+INSERT INTO plates.properties(name, type)
 VALUES(@propertyName, @valueType)
 RETURNING id;
 -- end

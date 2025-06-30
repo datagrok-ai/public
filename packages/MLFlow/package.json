@@ -8,28 +8,28 @@
     "email": "kamelichev@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "datagrok-api": "^1.25.0",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.20",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",
     "debug-mlflow": "webpack && grok publish",
     "release-mlflow": "webpack && grok publish --release",
     "build-mlflow": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-mlflow-dev": "webpack && grok publish dev",
     "release-mlflow-dev": "webpack && grok publish dev --release",
     "debug-mlflow-local": "webpack && grok publish local",

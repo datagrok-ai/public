@@ -8,14 +8,13 @@ import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
 import { error } from 'console';
 
+
 const warns = ['Latest package version', 'Datagrok API version should contain'];
 const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1; 
-  if (args['_'].length !== 1 || nOptions > 2)
-    return false;
+  const nOptions = Object.keys(args).length - 1;
   const curDir = process.cwd();
 
   if (args.recursive)
@@ -30,7 +29,7 @@ export function check(args: CheckArgs): boolean {
 }
 
 function runChecks(packagePath: string, soft: boolean = false): boolean {
-  const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
+  const files = (walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] })).filter(e => !e.includes('node_modules'));
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
@@ -288,7 +287,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
 
-    for (const f of functions) {
+    for (const f of functions.meta) {
       const paramsCheck = checkFunctions.params(f);
       if (!paramsCheck.value)
         warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
@@ -322,9 +321,13 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
         if (!utils.isValidCron(f.invalidateOn))
           errors.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
     }
+
+    functions.warnings.forEach(e => {
+      warnings.push(`${e} In the file: ${file}.`)
+    });
   }
-  for(const [name, files] of namesInFiles){
-    if(files.length > 1)
+  for (const [name, files] of namesInFiles) {
+    if (files.length > 1)
       errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
   }
 
@@ -502,7 +505,7 @@ export function checkSourceMap(packagePath: string): string[] {
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
-  if (path.join(...[packagePath, '.npmignore'])) {
+  if (fs.existsSync(path.join(...[packagePath, '.npmignore']))) {
     const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
     for (const row of npmIgnoreContent.split('\n')) {
       if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
@@ -560,8 +563,9 @@ function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
 
-function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] {
+function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMetadata[], warnings: string[] } {
   const funcData: FuncMetadata[] = [];
+  const warnings: string[] = [];
   let isHeader = false;
   let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
 
@@ -574,6 +578,11 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
       if (!isHeader)
         isHeader = true;
       const param = match[1];
+
+      if (!utils.headerTags.includes(param) && !param.includes('meta.')) {
+        warnings.push(`Unknown header tag: ${param},`);
+        continue;
+      }
       if (param === 'name')
         data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
       else if (param === 'description')
@@ -608,7 +617,7 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
     }
   }
 
-  return funcData;
+  return { meta: funcData, warnings };
 }
 
 interface CheckArgs {

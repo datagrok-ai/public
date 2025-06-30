@@ -1,7 +1,7 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
-import {Property, PropertyOptions} from "./entities";
+import {Property, IProperty} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
@@ -82,7 +82,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
 
-  static getViewerTypes(): ViewerType[] {
+  /** Gets all available viewer types
+   * Core means the viewer is already loaded and all methods and properties are available synchronously.
+   * */
+  static getViewerTypes(options?: {core?: boolean}): ViewerType[] {
+    if (options?.core)
+      return Viewer.CORE_VIEWER_TYPES;
     return api.grok_Viewer_GetViewerTypes();
   }
 
@@ -300,6 +305,17 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
+
+  static CORE_VIEWER_TYPES: string[] = [
+    VIEWER.HISTOGRAM, VIEWER.BAR_CHART, VIEWER.BOX_PLOT, VIEWER.CALENDAR,
+    VIEWER.CORR_PLOT, VIEWER.DENSITY_PLOT, VIEWER.FILTERS, VIEWER.FORM,
+    VIEWER.GRID, VIEWER.GOOGLE_MAP, VIEWER.HEAT_MAP,
+    VIEWER.LINE_CHART, VIEWER.SHAPE_MAP, VIEWER.MARKUP, VIEWER.MATRIX_PLOT,
+    VIEWER.NETWORK_DIAGRAM, VIEWER.PC_PLOT, VIEWER.PIE_CHART, VIEWER.SCATTER_PLOT,
+    VIEWER.SCATTER_PLOT_3D, VIEWER.STATISTICS, VIEWER.TILE_VIEWER, VIEWER.TREE_MAP,
+    VIEWER.TRELLIS_PLOT, VIEWER.WORD_CLOUD,
+    VIEWER.PIVOT_TABLE
+  ];
 }
 
 
@@ -384,41 +400,41 @@ export class JsViewer extends Viewer {
 
   /** Returns the column bound to the specified data property.
    *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
-  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
-  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, DG.TYPE.COLUMN_LIST, defaultValue, options);
   }
 
   /** Registers an integer property with the specified name and defaultValue */
-  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
   /** Registers a floating point property with the specified name and defaultValue */
-  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
   /** Registers a string property with the specified name and defaultValue */
-  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue */
-  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
   /** Registers a boolean property with the specified name and defaultValue */
-  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & PropertyOptions | null = null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & IProperty | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
   /** Registers a datetime property with the specified name and defaultValue */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & PropertyOptions | null = null): dayjs.Dayjs {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & IProperty | null = null): dayjs.Dayjs {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }

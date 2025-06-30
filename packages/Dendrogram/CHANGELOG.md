@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.4.1 (2025-06-16)
+
+* Fix loading with empty table, add default options for molecules and sequences
+
 ## 1.2.33 (2024-09-02)
 
 Fix for dependency math lib version update

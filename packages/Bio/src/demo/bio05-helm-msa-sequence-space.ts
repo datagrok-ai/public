@@ -77,7 +77,7 @@ export async function demoBio05UI(): Promise<void> {
           const method: string = pepseaMethods[0];
           const gapOpen: number = 1.53;
           const gapExtend: number = 0;
-          msaHelmCol = (await runPepsea(helmCol, msaHelmColName, method, gapOpen, gapExtend, undefined))!;
+          msaHelmCol = (await runPepsea(df, helmCol, msaHelmColName, method, gapOpen, gapExtend, undefined))!;
           if (!msaHelmCol)
             throw new Error(`Empty MSA result.`);
           df.columns.add(msaHelmCol);

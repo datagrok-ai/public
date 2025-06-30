@@ -47,7 +47,7 @@ function generateQueryWrappers(): void {
       const tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
-        .replace('PACKAGE_NAMESPACE', _package?.name ?? '');
+        .replace('PACKAGE_NAMESPACE', _package?.friendlyName ?? '');
 
       const description = utils.getScriptDescription(q, utils.commentMap[utils.queryExtension]);
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
@@ -74,11 +74,12 @@ function generateScriptWrappers(): void {
   const wrappers = [];
 
   for (let dir of [scriptsDir, pythonDir]) {
+    if (!fs.existsSync(dir))
+      continue;
     const files = walk.sync({
       path: dir,
       ignoreFiles: ['.npmignore', '.gitignore'],
     });
-    console.log(files);
     for (const file of files) {
       let extension: string;
       if (!utils.scriptExtensions.some((ext) => (extension = ext, file.endsWith(ext)))) continue;
@@ -86,8 +87,6 @@ function generateScriptWrappers(): void {
       const filepath = path.join(dir, file);
       const script = fs.readFileSync(filepath, 'utf8');
       if (!script) continue;
-      console.log(filepath);
-      console.log(script);
 
       const name = utils.getScriptName(script, utils.commentMap[extension!]);
       if (!name) continue;
@@ -98,7 +97,7 @@ function generateScriptWrappers(): void {
       const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
-        .replace('PACKAGE_NAMESPACE', _package.name);
+        .replace('PACKAGE_NAMESPACE', _package?.friendlyName ?? '');
 
       const inputs = utils.getScriptInputs(script);
       const outputType = utils.getScriptOutputType(script);
@@ -149,7 +148,7 @@ function generateFunctionWrappers(): void {
       const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
         .replace('FUNC_NAME', name)
         .replace('FUNC_NAME_LOWERCASE', name)
-        .replace('PACKAGE_NAMESPACE', _package?.name ?? '')
+        .replace('PACKAGE_NAMESPACE', _package?.friendlyName ?? '')
         .replace('PARAMS_OBJECT', annotationInputs)
         .replace('FUNC_DESCRIPTION', description)
         .replace('TYPED_PARAMS', annotationInputs)
@@ -188,6 +187,8 @@ function checkNameColision(name: string) {
 
 export function api(args: { _: string[] }): boolean {
   _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+  if (_package.friendlyName)
+    _package.friendlyName = _package.friendlyName.replaceAll(' ', '')
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 0) return false;
   if (!utils.isPackageDir(process.cwd())) {
