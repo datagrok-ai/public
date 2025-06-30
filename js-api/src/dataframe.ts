@@ -1198,15 +1198,14 @@ export class ObjectColumn extends Column<any> {
   }
 }
 
-
+/** Column of type [DataFrame]. */
 export class DataFrameColumn extends Column<DataFrame> {
-  /**
-   * Gets [i]-th value.
-   */
+  /**  Gets [i]-th value. */
   get(row: number): DataFrame | null {
     return toJs(api.grok_Column_GetValue(this.dart, row));
   }
 
+  /** Returns all values as an array. */
   toList(): Array<DataFrame> {
     return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
   }
@@ -1271,33 +1270,37 @@ export class ColumnList {
         return col;
   }
 
+  /** Returns all columns. */
+  get all(): WuIterable<Column> {
+    return wu(_toIterable(this.dart));
+  }
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
-  get categorical(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Categorical(this.dart));
+  get categorical(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_Categorical(this.dart)));
   }
 
   /** Finds numerical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
-  get numerical(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Numerical(this.dart));
+  get numerical(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_Numerical(this.dart)));
   }
 
-  get dateTime(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_DateTime(this.dart));
+  get dateTime(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_DateTime(this.dart)));
   }
 
-  get numericalNoDateTime(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
+  get numericalNoDateTime(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart)));
   }
 
-  get boolean(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Boolean(this.dart));
+  get boolean(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_Boolean(this.dart)));
   }
 
-  get selected(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Selected(this.dart));
+  get selected(): WuIterable<Column> {
+    return wu(_toIterable(api.grok_ColumnList_Selected(this.dart)));
   }
 
   /** Array containing column names. */

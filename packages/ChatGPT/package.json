@@ -1,8 +1,9 @@
 {
   "name": "chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.2",
-  "description": "",
+  "version": "0.0.31",
+  "description": "ChatGPT integration",
+  "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "latest",
@@ -10,7 +11,7 @@
     "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.19",
+    "datagrok-tools": "^4.14.20",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

@@ -74,7 +74,7 @@ import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manage
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
+import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -657,6 +657,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) {
 //output: widget result
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
   return toAtomicLevelWidget(sequence);
+}
+
+//name: Molecular 3D Structure
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export async function sequence3dStructureWidget(sequence: DG.SemanticValue): Promise<DG.Widget> {
+  return molecular3DStructureWidget(sequence);
 }
 
 //top-menu: Bio | Analyze | MSA...

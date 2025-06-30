@@ -351,6 +351,17 @@ export class Widget<TSettings = any> {
   // }
 }
 
+/**
+ * Base class for widgets or views that serve as editors for `FuncCall`. Extend it and use it in editor functions.
+ * Editor functions should return an implementation of this class for the platform to handle validation correctly.
+ * An editor function can be attached to another function using the `editor` tag: `editor: Plugin:EditorFuncName`.
+ */
+export abstract class FuncCallEditor extends Widget {
+  abstract get isValid(): boolean;
+  abstract get onInputChanged(): Observable<any>;
+
+  inputFor?(propertyName: string): InputBase;
+}
 
 /** Base class for DataFrame-bound filtering controls.
  * Supports collaborative filtering by efficiently working together with
@@ -1380,6 +1391,10 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+
+  validate(): boolean {
+    return api.grok_InputBase_Validate(this.dart);
+  }
 }
 
 

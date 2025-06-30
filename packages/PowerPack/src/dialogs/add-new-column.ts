@@ -1153,6 +1153,12 @@ export class AddNewColumnDialog {
 
     await this.getPreviewResults(colName, type, expression, potentialColIds);
 
+    //do not validate column type in case function returns multiple columns
+    if (potentialColIds.length > 1)
+      this.error = '';
+
+    this.updateError();
+
     //do not need to create preview grid in case of widget, so return
     if (this.widget)
       return;
@@ -1187,7 +1193,6 @@ export class AddNewColumnDialog {
        args.columns[0].type !== colType && !mappedTypes.includes(args.columns[0].type) ?
         `Result column type (${args.columns[0].type}) doesn't match with current column type (${colType}).
           Change column type ${this.widget ? 'using \'Edit in dialog\'' : ''} or modify formula.` : '';
-      this.updateError();
     });
     await call.call(false, undefined, {processed: true, report: false});
     /*    await this.previwDf!.columns.addNewCalculated(

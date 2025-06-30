@@ -45,6 +45,7 @@ export function propertySchemaView(template: PlateTemplate): DG.View {
         ui.h2('Well properties'),
         wellPropEditor,
       ]),
+      ui.div([], {style: {width: '20px'}}),
       extraPropertiesDiv
     ]),
   ]));

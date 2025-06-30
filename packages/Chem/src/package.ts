@@ -710,6 +710,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 
   if (plotEmbeddings) {
     res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+    const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
+    res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
     //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
     if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
       if (res.props['labelColumnNames'].constructor.name == 'Array')
@@ -987,6 +989,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 
     const view = grok.shell.getTableView(table.name);
 
+    const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: axesNames[0],
       yColumnName: axesNames[1],
@@ -999,6 +1002,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       markerMaxSize: 25,
       title: 'Activity cliffs',
       initializationFunction: 'activityCliffsInitFunction',
+      description: description,
+      descriptionVisibilityMode: 'Never',
     }) as DG.ScatterPlotViewer;
   };
 

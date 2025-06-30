@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -302,6 +303,33 @@ function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], ca
     terminalNodes: [],
     rNodes: [],
   };
+
+
+  // R1 and R2 are required, but we might have cases where one of those is absent,
+  // e.g. in starting monomers or ending monomers. in those cases,
+  // mark the missing r-node as the furthest atom from non-missing one
+  if (capGroups && capGroupIdxMap && [1, 2].some((i) => !Array.from(capGroupIdxMap.values()).find((j) => j == i))) {
+    const missingRGroup = [1, 2].find((i) => !Array.from(capGroupIdxMap.values()).find((j) => j == i))!;
+    const existingRgroup = [1, 2].find((i) => Array.from(capGroupIdxMap.values()).find((j) => j == i))!;
+    const existingRgroupIdx = Array.from(capGroupIdxMap.keys()).find((i) => capGroupIdxMap.get(i) === existingRgroup)! - 1; // -1 because molfile indexing starts from 1
+    const existingRgroupX = atoms.x[existingRgroupIdx];
+    const existingRgroupY = atoms.y[existingRgroupIdx];
+    const furthestAtomIdx = atoms.x.reduce((furthestIdx, x, idx) => {
+      if (idx === existingRgroupIdx) return furthestIdx; // skip existing r-group
+      const y = atoms.y[idx];
+      const dist = Math.sqrt((x - existingRgroupX) ** 2 + (y - existingRgroupY) ** 2);
+      return dist > Math.sqrt((atoms.x[furthestIdx] - existingRgroupX) ** 2 +
+        (atoms.y[furthestIdx] - existingRgroupY) ** 2) ? idx : furthestIdx;
+    }, 0);
+    capGroupIdxMap.set(furthestAtomIdx + 1, missingRGroup); // +1 because molfile indexing starts from 1
+    // finaly splice the capGroups array in correct place
+    if (missingRGroup === 1)
+      capGroups.unshift(atoms.atomTypes[furthestAtomIdx]); // add to the beginning
+    else if (missingRGroup === 2)
+      capGroups.splice(1, 0, atoms.atomTypes[furthestAtomIdx]); // add to the second position
+    else
+      throw new Error(`Unexpected missing R-group: ${missingRGroup}`);
+  }
 
   substituteCapGroups(atoms, capGroups!, capGroupIdxMap!);
   setRNodes(capGroupIdxMap!, meta);

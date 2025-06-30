@@ -551,6 +551,7 @@ export interface IDartApi {
   grok_InputBase_Load(input: any, v: String): any;
   grok_InputBase_Init(input: any): any;
   grok_InputBase_FireChanged(input: any): any;
+  grok_InputBase_Validate(input: any): any;
   grok_InputBase_FireInput(input: any): any;
   grok_InputBase_AddCaption(input: any, caption: String): any;
   grok_InputBase_AddPostfix(input: any, postfix: String): any;
@@ -656,6 +657,7 @@ export interface IDartApi {
   grok_FuncCallParam_ProcessOutput(p: any): any;
   grok_FuncCall_Get_Param_Value(call: any, name: String): any;
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
+  grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;

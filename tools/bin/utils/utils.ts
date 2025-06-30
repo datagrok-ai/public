@@ -95,8 +95,8 @@ export const replacers: Indexable = {
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
     `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
-  TYPED_PARAMS: (s: string, params: { name?: string; type?: string ; isOptional?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
-    params.map((p) => `${p.name}${p.isOptional? '?' : ''}: ${p.type}`).join(', ')),
+  TYPED_PARAMS: (s: string, params: { name?: string; type?: string; isOptional?: boolean; nullable?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
+    params.map((p) => `${p.name}${p.isOptional ? '?' : ''}: ${p.type} ${p.nullable ? '| null' : ''}`).join(', ')),
 };
 
 
@@ -166,9 +166,9 @@ export function getParam(name: string, script: string, comment: string = '#'): s
   return match ? match[1]?.trim() : null;
 };
 
-export const cacheValues = ['all', 'server' , 'client', 'true'];
+export const cacheValues = ['all', 'server', 'client', 'true'];
 
-export function isValidCron(cronExpression: string) : boolean {
+export function isValidCron(cronExpression: string): boolean {
   const cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/;
   return cronRegex.test(cronExpression);
 }
@@ -197,11 +197,11 @@ export const headerTags = [
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
   'reference', 'editor', 'meta', 'connection', 'friendlyName'
 ];
- 
+
 export const fileParamRegex = {
   py: new RegExp(`^\#\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
   ts: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  js: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
+  js: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
   sql: new RegExp(`^--\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
 }
 
@@ -219,13 +219,14 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
-  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
+  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
   const inputs = [];
   for (const match of script.matchAll(regex)) {
-    const isOptional = /isOptional\s*:\s*true/.test(match[0]);
-    const type = dgToTsTypeMap[match[1]]|| 'any';
+    const isOptional = /isOptional\s*:\s*true/.test(match[0]) || /optional\s*:\s*true/.test(match[0]);
+    const nullable = /nullable\s*:\s*true/.test(match[0]);
+    const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({ type, name, isOptional });
+    inputs.push({ type, name, isOptional, nullable });
   }
   return inputs;
 };
@@ -265,7 +266,7 @@ export async function runScript(script: string, path: string, verbose: boolean =
   try {
     const { stdout, stderr } = await execAsync(script, { cwd: path });
     if (stderr && verbose) {
-      console.error(`Warning/Error: ${stderr}`); 
+      console.error(`Warning/Error: ${stderr}`);
     }
     if (stdout && verbose) {
       console.log(`Output: ${stdout}`);
