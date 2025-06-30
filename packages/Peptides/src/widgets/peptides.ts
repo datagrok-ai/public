@@ -46,12 +46,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
     }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE, nullable: false});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
-  } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
-    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
-    return {
-      host: ui.label('Peptides analysis only works with aligned sequences'),
-      callback: async (): Promise<boolean> => false,
-    };
   }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
