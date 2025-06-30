@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  //export async function init() 
   export async function init(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:Init', {});
   }
@@ -140,10 +141,12 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:GetPdbHelper', {});
   }
 
+  //export async function dockingDemo() 
   export async function dockingDemo(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:DockingDemo', {});
   }
 
+  //export async function inGridDemo() 
   export async function inGridDemo(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:InGridDemo', {});
   }
@@ -220,5 +223,14 @@ export namespace funcs {
 
   export async function structure3D(molecule: any): Promise<any> {
     return await grok.functions.call('BiostructureViewer:Structure3D', { molecule });
+  }
+
+  //Extract protein sequences from all PDB IDs and add as columns to current dataframe (GraphQL-powered)
+  export async function extractSequenceColumnsToDataFrame(): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:ExtractSequenceColumnsToDataFrame', {});
+  }
+
+  export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbId: DG.Column): Promise<any> {
+    return await grok.functions.call('@datagrok/biostructure-viewer:FetchSequencesFromPdb', { table, pdbId });
   }
 }
