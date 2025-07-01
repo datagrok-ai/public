@@ -23,6 +23,8 @@
     "css-loader": "^7.1.2",
     "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
+    "katex": "^0.16.22",
+    "latex.js": "^0.12.6",
     "style-loader": "^3.3.4"
   },
   "devDependencies": {

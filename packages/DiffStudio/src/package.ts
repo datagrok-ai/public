@@ -16,6 +16,7 @@ import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
 import {Model} from './model';
+import {testLatex} from './latex';
 
 export const _package = new DG.Package();
 
