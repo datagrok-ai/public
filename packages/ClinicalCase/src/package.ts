@@ -33,6 +33,7 @@ import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
+import * as api from './package-api';
 
 export const _package = new DG.Package();
 
@@ -428,7 +429,7 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
             grok.shell.addTableView(df);
           }
         }));
-        grok.functions.call('Clinicalcase:clinicalCaseApp');
+        api.funcs.clinicalCaseApp();
       }),
     ]));
   }

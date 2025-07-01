@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {registerChemblIdHandler} from './handlers';
 import {_demoDatabasesChembl} from './demo';
+import * as api from './package-api';
 
 export const _package = new DG.Package();
 
@@ -143,7 +144,7 @@ export async function chemblSimilaritySearchPanel(mol: string): Promise<DG.Widge
 //input: string organism = "Shigella" [Organism name]
 //output: dataframe compounds
 export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number, organism: string): Promise<DG.DataFrame> {
-  const df = await grok.data.query('Chembl:StructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
+  const df = await api.queries.structuresByOrganism(maxNumberOfMolecules, organism);
   return df;
 }
 
@@ -152,7 +153,7 @@ export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number,
 //input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
 //output: dataframe compounds
 export async function getChemblCompounds(maxNumberOfMolecules: number): Promise<DG.DataFrame> {
-  const df = await grok.data.query('Chembl:ChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
+  const df = await api.queries.chemblNumberOfStructures(maxNumberOfMolecules);
   return df;
 }
 
@@ -171,7 +172,7 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
       continue;
     }
     const canonical = grok.chem.convert(smile, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
-    const resDf: DG.DataFrame = await grok.data.query('Chembl:ChemblMolregNoBySmiles', {smiles: canonical});
+    const resDf: DG.DataFrame = await  api.queries.chemblMolregNoBySmiles(canonical);
     const res: number = resDf.getCol('molregno').toList()[0];
     table.set(name, i, res);
   }
@@ -186,7 +187,7 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
 export async function chemblIdToSmilesTs(id: string): Promise<string> {
   // this function won't be needed once we include queries to functions in the startupData
   // damn, it returns null instead of the actual molecule
-  return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
+  return await api.funcs.chemblIdToSmilesTs(id);
   //return 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12';
 }
 

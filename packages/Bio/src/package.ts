@@ -76,6 +76,8 @@ import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
+import * as api from './package-api';
+
 export const _package = new BioPackage(/*{debug: true}/**/);
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
@@ -414,9 +416,9 @@ export function vdRegionsViewer() {
 //name: getRegion
 //description: Gets a new column with sequences of the region between start and end
 //input: column sequence
-//input: string start  {optional: true}
-//input: string end    {optional: true}
-//input: string name   {optional: true} [Name of the column to be created]
+//input: string start {isOptional: true}
+//input: string end   {isOptional: true}
+//input: string name  {isOptional: true} [Name of the column to be created]
 //output: column result
 export function getRegion(
   sequence: DG.Column<string>, start: string | undefined, end: string | undefined, name: string | undefined
@@ -430,9 +432,9 @@ export function getRegion(
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table                           [Input data table]
 //input: column sequence  {semType: Macromolecule} [Sequence column]
-//input: string start     {optional: true}         [Region start position name]
-//input: string end       {optional: true}         [Region end position name]
-//input: string name      {optional: true}         [Region column name]
+//input: string start     {isOptional: true}         [Region start position name]
+//input: string end       {isOptional: true}         [Region end position name]
+//input: string name      {isOptional: true}         [Region column name]
 //editor: Bio:GetRegionEditor
 export async function getRegionTopMenu(
   table: DG.DataFrame, sequence: DG.Column,
@@ -453,8 +455,8 @@ export async function getRegionTopMenu(
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: func preprocessingFunction
-//input: object options {optional: true}
-//input: bool demo {optional: true}
+//input: object options {isOptional: true}
+//input: bool demo {isOptional: true}
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<string>, activities: DG.Column,
@@ -534,10 +536,10 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
-//input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
-//input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
+//input: double gapOpen = 1 {caption: Gap open penalty; default: 1; isOptional: true}
+//input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; isOptional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; optional: true}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; isOptional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
@@ -583,10 +585,10 @@ export async function helmPreprocessingFunction(
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: bool plotEmbeddings = true
-//input: func preprocessingFunction {optional: true}
-//input: object options {optional: true}
-//input: bool clusterEmbeddings = true { optional: true }
-//input: bool isDemo {optional: true}
+//input: func preprocessingFunction {isOptional: true}
+//input: object options {isOptional: true}
+//input: bool clusterEmbeddings = true { isOptional: true }
+//input: bool isDemo {isOptional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
@@ -691,7 +693,7 @@ export function multipleSequenceAlignmentDialog(): void {
 //tags: bio
 //input: column sequenceCol {semType: Macromolecule}
 //input: column clustersCol
-//input: object options = undefined { optional: true }
+//input: object options = undefined { isOptional: true }
 //output: column result
 export async function alignSequences(
   sequenceCol: DG.Column<string> | null = null, clustersCol: DG.Column | null = null, options?: any

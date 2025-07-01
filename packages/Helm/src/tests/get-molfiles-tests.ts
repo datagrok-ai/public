@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
+import * as api from '../package-api';
 import {after, before, category, delay, expect, test, expectArray, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {
@@ -47,7 +47,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$,9,8`;
     await awaitGrid(view.grid, 5000);
     _package.logger.debug('Helm/getMolfiles/linear1, grid awaited 1');
 
-    const resCol: DG.Column<string> = await grok.functions.call('Helm:getMolfiles', {col: helmCol});
+    const resCol: DG.Column<string> = await api.funcs.getMolfiles(helmCol);
     expect(resCol.length, helmCol.length);
     const resMolfileList: MolfileHandlerBase[] = resCol.toList().map((molfile) => MolfileHandler.getInstance(molfile));
     expectArray(resMolfileList.map((mf) => mf.atomCount), df.getCol('atoms').toList());

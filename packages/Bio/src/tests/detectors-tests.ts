@@ -3,6 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api'
 
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
@@ -327,7 +328,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
 
   async function _readFileFasta(file: string): Promise<DG.DataFrame> {
     const txt: string = await grok.dapi.files.readAsText(file);
-    const df: DG.DataFrame = (await grok.functions.call('Bio.importFasta', {fileContent: txt}))[0] as DG.DataFrame;
+    const df: DG.DataFrame = (await api.funcs.importFasta(txt))[0] as DG.DataFrame;
     return df;
   }
 

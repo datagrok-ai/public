@@ -88,6 +88,7 @@ import {_mpoDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import * as api from './package-api'
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {

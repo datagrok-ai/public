@@ -13,6 +13,7 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
+import * as api from '../package-api';
 
 type DataNodeDict = { [nodeName: string]: number };
 
@@ -474,9 +475,7 @@ export class TreeHelper implements ITreeHelper {
   }
 
   async hierarchicalClustering(data: DG.DataFrame, distance: string, linkage: string): Promise<NodeType> {
-    const newickStr: string = await grok.functions.call(
-      'Dendrogram:hierarchicalClusteringScript',
-      {data: data, distance_name: distance, linkage_name: linkage});
+    const newickStr: string = await api.scripts.hierarchicalClusteringScript(data, distance, linkage);
     const treeRoot: NodeType = parseNewick(newickStr);
     if (!treeRoot.branch_length) treeRoot.branch_length = 0;
     return treeRoot;
@@ -485,9 +484,7 @@ export class TreeHelper implements ITreeHelper {
   async hierarchicalClusteringByDistance(distance: DistanceMatrix, linkage: string): Promise<NodeType> {
     const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);
     const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
-    const newickStr: string = await grok.functions.call(
-      'Dendrogram:hierarchicalClusteringByDistanceScript',
-      {data: dataDf, size: distance.size, linkage_name: linkage});
+    const newickStr: string = await api.scripts.hierarchicalClusteringByDistanceScript(dataDf, distance.size, linkage);
     const treeRoot: NodeType = parseNewick(newickStr);
     if (!treeRoot.branch_length) treeRoot.branch_length = 0;
     return treeRoot;

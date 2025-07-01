@@ -3,10 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
-import {UaToolbox} from '../ua-toolbox';
-import {Filter, UaView} from './ua';
-import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {getTime} from '../utils';
+import { UaToolbox } from '../ua-toolbox';
+import { Filter, UaView } from './ua';
+import { UaFilterableQueryViewer } from '../viewers/ua-filterable-query-viewer';
+import { getTime } from '../utils';
+import * as api from '../package-api';
 
 export class FunctionsView extends UaView {
   functionsExecTime: HTMLElement = ui.panel();
@@ -42,10 +43,14 @@ export class FunctionsView extends UaView {
           const cp = DG.Accordion.create();
           df = t.clone(t.selection);
           const users: string[] = df.getCol('uid').categories;
-          const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
-            users: users, packages: packages, functions: functions};
-          cp.addPane('Time interval', () => ui.tableFromMap({'From': getTime(dateFrom),
-            'To': getTime(dateTo)}), true);
+          const filter: Filter = {
+            time_start: dateMin / 1000000, time_end: dateMax / 1000000,
+            users: users, packages: packages, functions: functions
+          };
+          cp.addPane('Time interval', () => ui.tableFromMap({
+            'From': getTime(dateFrom),
+            'To': getTime(dateTo)
+          }), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
           // cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
           this.getFunctionPane(cp, filter);
@@ -57,14 +62,18 @@ export class FunctionsView extends UaView {
           t.selection.setAll(false);
           const rowValues = Array.from(t.currentRow.cells).map((c) => c.value);
           const row = Object.fromEntries(t.columns.names().map((k, i) => [k, rowValues[i]]));
-          const filter: Filter = {time_start: row.time_start.valueOf() / 1000, time_end: row.time_end.valueOf() / 1000,
-            users: [row.uid], packages: [row.pid], functions: [row.function]};
+          const filter: Filter = {
+            time_start: row.time_start.valueOf() / 1000, time_end: row.time_end.valueOf() / 1000,
+            users: [row.uid], packages: [row.pid], functions: [row.function]
+          };
           const cp = DG.Accordion.create();
           cp.addPane('Details', () => {
-            return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
+            return ui.tableFromMap({
+              'User': ui.render(`#{x.${row.uid}}`),
               'Package': row.pid === this.systemId ? ui.label('Core') : ui.render(`#{x.${row.pid}}`),
               'From': row.time_start.format('DD/MM/YYYY HH:mm:ss'),
-              'To': row.time_end.format('DD/MM/YYYY HH:mm:ss')});
+              'To': row.time_end.format('DD/MM/YYYY HH:mm:ss')
+            });
           }, true);
           this.getFunctionPane(cp, filter, true);
           grok.shell.o = cp.root;
@@ -93,10 +102,10 @@ export class FunctionsView extends UaView {
     grid.root.style.maxWidth = '100%';
     grid.root.style.minWidth = '100%';
     const typeAhead = ui.typeAhead('Function name', {
-      source: {local: DG.Func.find().map((f) => f.name)},
+      source: { local: DG.Func.find().map((f) => f.name) },
       minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
       onSubmit: (_: any, value: any) => {
-        grok.functions.call('UsageAnalysis:FunctionsExecTime', {func: value?.label}).then((df: DG.DataFrame) => {
+        api.queries.functionsExecTime(value?.label).then((df: DG.DataFrame) => {
           if (df.rowCount === 0) {
             grid.dataFrame = DG.DataFrame.create(0);
             return;
@@ -116,7 +125,8 @@ export class FunctionsView extends UaView {
           order.unshift('time, s');
           grid.columns.setOrder(order);
         });
-    }, debounceRemote: 100});
+      }, debounceRemote: 100
+    });
 
     typeAhead.input.style.width = '300px';
     typeAhead.input.style.marginBottom = '15px';
@@ -129,8 +139,8 @@ export class FunctionsView extends UaView {
   }
 
   async getFunctionPane(cp: DG.Accordion, filter: Filter, single: boolean = false) {
-    const df = await grok.functions.call('UsageAnalysis:FunctionsContextPane', filter);
-    const data: {[key: string]: [string, any, string, string][]} = {};
+    const df = await api.queries.functionsContextPane(filter.time_start, filter.time_end);
+    const data: { [key: string]: [string, any, string, string][] } = {};
     for (const r of df.rows) {
       const key = r.pid + ':' + r.function;
       if (!data[key]) data[key] = [];
@@ -156,7 +166,7 @@ export class FunctionsView extends UaView {
       return;
     }
     const keysSorted = Object.keys(data).sort((a, b) => a[a.indexOf(':') + 1].localeCompare(b[b.indexOf(':') + 1]));
-    const packages: {[key: string]: DG.Accordion} = {};
+    const packages: { [key: string]: DG.Accordion } = {};
     for (const k of keysSorted) {
       const [p, n] = k.split(':', 2);
       if (!packages[p]) packages[p] = DG.Accordion.create();

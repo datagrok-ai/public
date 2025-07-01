@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from './package-api';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 
 export const _package = new DG.Package();
@@ -24,7 +25,7 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 
   return DG.View.fromRoot(ui.divV([
     appHeader,
-    ui.wait(async () => (await grok.functions.call('MolTrack:getCompounds') as DG.DataFrame).plot.grid().root)
+    ui.wait(async () => (await api.queries.getCompounds() as DG.DataFrame).plot.grid().root)
   ]));
 }
 

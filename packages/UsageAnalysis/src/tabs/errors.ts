@@ -1,15 +1,17 @@
-import {UaView} from "./ua";
-import {UaToolbox} from "../ua-toolbox";
+import { UaView } from "./ua";
+import { UaToolbox } from "../ua-toolbox";
 import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
-import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import { UaFilterableQueryViewer } from "../viewers/ua-filterable-query-viewer";
+import * as api from '../package-api';
+import dayjs from "dayjs";
 
 const filtersStyle = {
   columnNames: ['event_time', 'user', 'error_message', 'is_reported'],
 };
 
-const users: {[_: string]: any} = {};
+const users: { [_: string]: any } = {};
 
 export class ErrorsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
@@ -59,7 +61,7 @@ export class ErrorsView extends UaView {
         viewer.col('user')!.width = 30;
         viewer.col('id')!.visible = false;
 
-        viewer.onCellPrepare(async function(gc) {
+        viewer.onCellPrepare(async function (gc) {
           if (gc.gridColumn.name === 'event_time') {
             gc.style.textColor = 0xFFB8BAC0;
             gc.style.font = '13px Roboto';
@@ -96,7 +98,7 @@ export class ErrorsView extends UaView {
         name: 'Top Errors',
         queryName: 'TopErrors',
         createViewer: (t: DG.DataFrame) => {
-          const viewer =  DG.Viewer.barChart(t, {
+          const viewer = DG.Viewer.barChart(t, {
             'valueColumnName': 'count',
             'valueAggrType': 'sum',
             'barSortType': 'by value',
@@ -133,7 +135,7 @@ export class ErrorsView extends UaView {
         filters,
         errorViewer.root
       ]),
-      ui.box(topErrors.root, {style: {maxHeight: '250px'}})
+      ui.box(topErrors.root, { style: { maxHeight: '250px' } })
     ]));
   }
 
@@ -161,7 +163,7 @@ export class ErrorsView extends UaView {
       const detailsButton = ui.button('Details', async () => {
         const ev = this.uaToolbox.viewHandler.getView('Reports');
         const viewer = ev.viewers[0];
-        viewer.reloadViewer({'event_id': eventId});
+        viewer.reloadViewer({ 'event_id': eventId });
         if (!viewer.activated)
           viewer.activated = true;
         this.uaToolbox.viewHandler.changeTab('Reports');
@@ -169,8 +171,9 @@ export class ErrorsView extends UaView {
       });
       detailsButton.classList.add('ua-details-button');
       const promises: Promise<any>[] = [
-        grok.functions.call('UsageAnalysis:ReportsCount', {'event_id': eventId}),
-        grok.functions.call('UsageAnalysis:SameErrors', {'event_id': eventId}),
+        //To Ask @Pavlo
+        api.queries.reportsCount(dayjs().toString(), eventId),
+        api.queries.sameErrors(dayjs().toString(), eventId),
       ];
       const results = await Promise.all(promises);
       let div: HTMLDivElement;
@@ -187,7 +190,7 @@ export class ErrorsView extends UaView {
       // });
       div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : null]);
       div.style.alignItems = 'center';
-      const map = {'Reports': div, 'Same errors': results[1]};
+      const map = { 'Reports': div, 'Same errors': results[1] };
       return ui.tableFromMap(map);
     }));
     grok.shell.o = properties;

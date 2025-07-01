@@ -8,6 +8,7 @@ import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {PackagesView} from './packages';
 import {UaFilter} from '../filter';
+import * as api from '../package-api';
 
 export class OverviewView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
@@ -58,7 +59,7 @@ export class OverviewView extends UaView {
     let usersSelection: DG.BitSet;
 
     function query(filter: UaFilter) {
-      df = grok.functions.call('UsageAnalysis:PackagesUsageOverview', {...filter});
+      df = api.queries.packagesUsageOverview(filter.date ?? '');
       df.then((df) => {
         packagesSelection = DG.BitSet.create(df.rowCount, (_) => true);
         usersSelection = DG.BitSet.create(df.rowCount, (_) => true);

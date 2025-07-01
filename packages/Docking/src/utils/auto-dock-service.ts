@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
@@ -135,9 +136,7 @@ export class AutoDockService implements IAutoDockService {
       pose_count: poseCount,
     };
 
-    const dockingResult = await grok.functions.call('Docking:dockLigandCached', {
-      jsonForm: JSON.stringify(form), containerId: this.dc.id
-    });
+    const dockingResult = await api.funcs.dockLigandCached(JSON.stringify(form), this.dc.id);
 
     const adRes = (await JSON.parse(dockingResult)) as Forms.dockLigandRes;
     ensureNoDockingError(adRes);

@@ -16,16 +16,16 @@ export namespace funcs {
     return await grok.functions.call('Admetica:GetModels', { property });
   }
 
-  export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column): Promise<any> {
-    return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules });
+  export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, absorption: any, distribution: any, metabolism: any, excretion: any): Promise<any> {
+    return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion });
   }
 
   export async function admeticaEditor(call: any): Promise<any> {
     return await grok.functions.call('Admetica:AdmeticaEditor', { call });
   }
 
-  export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, addPiechart: boolean, addForm: boolean): Promise<any> {
-    return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, addPiechart, addForm });
+  export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: any, addPiechart: boolean, addForm: boolean): Promise<any> {
+    return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
   export async function admeProperty(molecule: string, prop: string): Promise<any> {

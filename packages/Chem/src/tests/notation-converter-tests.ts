@@ -8,6 +8,7 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 // import {_package} from '../package-test';
 import {loadFileAsText, readDataframe} from './utils';
+import * as api from '../package-api';
 
 category('converters', async () => {
   let molfileV2K: string;
@@ -29,7 +30,7 @@ category('converters', async () => {
       molblock: [molfileV2K],
       v3Kmolblock: [molfileV3K],
     };
-    rdkitModule = await grok.functions.call('Chem:getRdKitModule');
+    rdkitModule = await api.funcs.getRdKitModule();
   });
 
 

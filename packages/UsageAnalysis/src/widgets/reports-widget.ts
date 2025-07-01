@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as api from '../package-api';
 
 export class ReportsWidget extends DG.Widget {
   caption: string;
@@ -13,7 +14,7 @@ export class ReportsWidget extends DG.Widget {
     const link = ui.link('Open Reports', async () => {
       const progress = DG.TaskBarProgressIndicator.create('Opening Reports...');
       try {
-        grok.shell.addView(await grok.functions.eval('UsageAnalysis:reportsApp()'));
+        grok.shell.addView(await api.funcs.reportsApp());
       } catch (e) {
         console.error(e);
       } finally {

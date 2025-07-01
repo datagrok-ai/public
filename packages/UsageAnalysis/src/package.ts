@@ -16,6 +16,7 @@ import {ServiceLogsApp} from "./service_logs/service_logs";
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
+import * as api from './package-api';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -76,6 +77,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
   const testsListMapped = tests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
+//there is no any function with name like this
   const testRuns = await grok.functions.call('UsageAnalysis:getServerStartTestResults', { 'date': getDate(new Date(date)), 'testslist': DG.DataFrame.fromObjects(testsListMapped) });
   return testRuns;
 }
@@ -251,7 +253,7 @@ export function describeCurrentObj(): void {
       }));
       const UAlink = ui.link('', async () => {
         grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
-        grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
+        api.funcs.usageAnalysisApp();
       }, 'Open Usage Analysis');
       UAlink.style.marginLeft = '3px';
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;

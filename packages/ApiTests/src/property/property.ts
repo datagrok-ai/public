@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import {category, test, expect, expectExceptionAsync, expectArray, before} from '@datagrok-libraries/utils/src/test';
 
@@ -30,8 +31,8 @@ category('Property: General', () => {
 
   test('query params', async () => {
     // expect(await grok.data.query('ApiTests:dummyPackageQuery', {y: 0.5}), null, '{y: 0.5}');
-    expect((await grok.data.query('ApiTests:dummyPackageQuery', {x: 0.5})).get('res', 0), 0.5, '{x: 0.5}');
-    expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
+    expect((await api.queries.dummyPackageQuery(0.5)).get('res', 0), 0.5, '{x: 0.5}');
+    expect((await api.queries.dummyPackageQuery(0.5)).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
   });
 }, {owner: 'aparamonov@datagrok.ai'});

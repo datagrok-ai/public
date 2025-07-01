@@ -8,6 +8,7 @@ import { _package } from '../package';
 import { testViewer } from '@datagrok-libraries/utils/src/test';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
+import * as api from '../package-api';
 
 const NEW_TESTING = 'New Testing';
 const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
@@ -221,12 +222,9 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
-    const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
-      { uid: this.uid, version: this.version, start: this.start })) || NEW_TESTING;
+    const namePFromDb: string = (await api.queries.testingName(this.version, this.uid, this.start) || NEW_TESTING);
     const nameP: string = this.testingName || namePFromDb;
-    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
-      { batchName: `${nameP}` });
-
+    const history: DG.DataFrame = await  api.funcs.testTrackApp();
 
     for (const row of history.rows) {
       const path = (row.get('test') || '').replace('Unknown: ', '').replace('Test Track: ', '');
@@ -327,11 +325,11 @@ export class TestTrack extends DG.ViewBase {
     this.loadBtn.classList.add('tt-ribbon-button');
     let isReportGenerating = false;
     const report = ui.button(getIcon('tasks', { style: 'fas' }), async () => {
-      if(isReportGenerating)
+      if (isReportGenerating)
         return;
       isReportGenerating = true;
-      if(this.filesToLoad.size > 0){
-        for(let folder of this.folderNode){
+      if (this.filesToLoad.size > 0) {
+        for (let folder of this.folderNode) {
           await this.loadFilesByNode(folder);
         }
       }
@@ -352,7 +350,7 @@ export class TestTrack extends DG.ViewBase {
 
       if (this.currentNode !== this.tree && this.currentNode?.value?.path !== null)
         this.UpdateReportAccordingTestTrackSelection(this.currentNode);
-      
+
       isReportGenerating = false;
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
@@ -369,7 +367,7 @@ export class TestTrack extends DG.ViewBase {
     ec.classList.add('tt-ribbon-button');
     this.testingName = (await nameP) ?? NEW_TESTING;
 
-    let testDF = await grok.functions.call('UsageAnalysis:TestingNames');
+    let testDF = await api.queries.testingNames();
     for (const row of testDF.rows) {
       let batch = row['batchName'];
       if (batch !== '')
@@ -432,23 +430,23 @@ export class TestTrack extends DG.ViewBase {
     this.isInitializing = false;
   }
 
-  private async loadFilesByNode(node: DG.TreeViewGroup){
+  private async loadFilesByNode(node: DG.TreeViewGroup) {
     let nodePath = this.getNodePath(node).join('/');
-      if (this.filesToLoad.has(nodePath)) {
-        const p: Promise<void>[] = [];
-        this.loadingFiles = {};
-        for (let file of this.filesToLoad.get(nodePath)!)
-          p.push(this.processFile(file));
-        await Promise.all(p);
-        for (const key in  this.loadingFiles) {          
-          this.addTestCaseNode(this.loadingFiles[key] as TestCase, node);
-          let category = this.list.filter((e)=>e.filepath ===nodePath)[0] ?? undefined;
-          if(category)
-            category.children.push(this.loadingFiles[key] as TestCase);
-          node.value.children.push(this.loadingFiles[key]);
-        }
+    if (this.filesToLoad.has(nodePath)) {
+      const p: Promise<void>[] = [];
+      this.loadingFiles = {};
+      for (let file of this.filesToLoad.get(nodePath)!)
+        p.push(this.processFile(file));
+      await Promise.all(p);
+      for (const key in this.loadingFiles) {
+        this.addTestCaseNode(this.loadingFiles[key] as TestCase, node);
+        let category = this.list.filter((e) => e.filepath === nodePath)[0] ?? undefined;
+        if (category)
+          category.children.push(this.loadingFiles[key] as TestCase);
+        node.value.children.push(this.loadingFiles[key]);
       }
-      this.filesToLoad.delete(nodePath);
+    }
+    this.filesToLoad.delete(nodePath);
   }
 
   private addOnTestTrackCaseSubscription() {
@@ -490,7 +488,7 @@ export class TestTrack extends DG.ViewBase {
       node.value.history.style.display = 'flex';
       if (node.value.history.classList.contains('processed')) return;
       node.value.history.classList.add('processed');
-      grok.functions.call('UsageAnalysis:LastStatuses', { path: node.value.path, batchToExclude: this.testingName }).then(async (df: DG.DataFrame) => {
+      api.queries.lastStatuses(node.value.path, this.testingName).then(async (df: DG.DataFrame) => {
         if (!df.rowCount) return;
         const first = df.row(0);
         if (first.get('version') === this.version && first.get('uid') === this.uid && first.get('start') === this.start)
@@ -538,10 +536,10 @@ export class TestTrack extends DG.ViewBase {
   private UpdateReportAccordingTestTrackSelection(node: any) {
     if (this.tableViewReport !== null) {
       this.tableViewReport?.dataFrame?.selection?.setAll(false);
-      
+
       const categories = this.tableViewReport?.dataFrame?.col('category');
       const names = this.tableViewReport?.dataFrame?.col('names');
-      const foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row : number) => `${categories?.get(row)}: ${names?.get(row)}` === node.value.path) ?? []);
+      const foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: number) => `${categories?.get(row)}: ${names?.get(row)}` === node.value.path) ?? []);
 
       if (foundRows.length === 1)
         this.tableViewReport!.dataFrame.currentRowIdx = foundRows[0];
@@ -1066,7 +1064,7 @@ export class TestTrack extends DG.ViewBase {
     const dialog = ui.dialog('Select testing');
     const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
     const check = ui.input.bool('New testing:');
-    const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
+    const testingNames = (await api.queries.testingNames());
 
     const allTestingNames: string[] = [];
     const testingToOpen: string[] = [];
@@ -1253,7 +1251,7 @@ export class TestTrack extends DG.ViewBase {
   private async updateBatchData() {
     if (!this.testingName)
       return;
-    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `${this.testingName}` });
+    const history: DG.DataFrame = await api.funcs.testTrackApp();
 
     for (const row of history.rows) {
 
@@ -1293,7 +1291,7 @@ export class TestTrack extends DG.ViewBase {
       this.tableViewReport?.dataFrame?.selection?.setAll(false);
       const categories = this.tableViewReport?.dataFrame?.col('category');
       const names = this.tableViewReport?.dataFrame?.col('names');
-      const foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row : number) => `${categories?.get(row)}: ${names?.get(row)}` === node.value.path) ?? []);
+      const foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: number) => `${categories?.get(row)}: ${names?.get(row)}` === node.value.path) ?? []);
       if (foundRows.length === 1) {
         this.tableViewReport?.dataFrame?.set('status', foundRows[0], node.value.status ?? '')
         this.tableViewReport?.dataFrame?.set('reason', foundRows[0], node.value.fullReason ?? '')

@@ -22,6 +22,7 @@ import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import { identifiers } from '../package';
 import { getDescriptorsPy } from '../scripts-api';
+import * as api from '../package-api';
 
 const identifiersVals: {[key: string]: string} = {
   'Smiles': 'c1ccc2c(c1)CCNC2',
@@ -196,17 +197,17 @@ category('cell panel', async () => {
 
   test('gasteiger-partial-charges.smiles', async () => {
     const parameters = {mol: molStr, contours: 10};
-    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
+    await api.scripts.chemistryGasteigerPartialCharges(parameters.mol, parameters.contours);
   }, {stressTest: true});
 
   test('gasteiger-partial-charges.molV2000', async () => {
     const parameters = {mol: molV2000, contours: 10};
-    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
+    await api.scripts.chemistryGasteigerPartialCharges(parameters.mol, parameters.contours);
   }, {stressTest: true});
 
   test('gasteiger-partial-charges.molV3000', async () => {
     const parameters = {mol: molV3000, contours: 10};
-    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
+    await api.scripts.chemistryGasteigerPartialCharges(parameters.mol, parameters.contours);
   }, {stressTest: true});
 
   //TODO: Compare the calculated values
@@ -214,7 +215,7 @@ category('cell panel', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
     let jupyterRunning = false;
-    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
+    api.scripts.testPythonRunning(1,2).then(() => {
       console.log('*********** test python script completed');
       jupyterRunning = true; 
     });
@@ -241,6 +242,6 @@ category('cell panel', async () => {
 
     //check that widget doesn't throw errors
     for (const mol of molFormats)
-      await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
+      await api.funcs.descriptorsWidget(mol);
   }, {timeout: 60000 + utils.CONTAINER_TIMEOUT, stressTest: true});
 });

@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {ILineChartSettings} from "datagrok-api/dg";
+import * as api from '../package-api';
 
 export class UsageWidget extends DG.Widget {
   caption: string;
@@ -15,7 +16,7 @@ export class UsageWidget extends DG.Widget {
     const link = ui.link('Open Usage Analysis', async () => {
       const progress = DG.TaskBarProgressIndicator.create('Opening Usage Analysis...');
       try {
-        grok.shell.addView(await grok.functions.eval('UsageAnalysis:usageAnalysisApp()'));
+        grok.shell.addView(await api.funcs.usageAnalysisApp());
       } catch (e) {
         console.error(e);
       } finally {
@@ -29,7 +30,7 @@ export class UsageWidget extends DG.Widget {
     uniqueUsersDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Users'),
         {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.functions.call('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
+        await api.queries.uniqueUsersSummary(), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
     services.appendChild(ui.waitBox(async () => {
@@ -47,7 +48,7 @@ export class UsageWidget extends DG.Widget {
     userErrorsDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Errors'),
         {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.functions.call('UsageAnalysis:UsersErrorsSummary'), userErrorsChartStyle).root, {style: {paddingRight: '12px'}})]);
+        await api.queries.usersErrorsSummary(), userErrorsChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
     // properties

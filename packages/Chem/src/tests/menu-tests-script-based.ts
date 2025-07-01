@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
+import * as api from '../package-api';
 
 import {category, before, expect, test} from '@datagrok-libraries/utils/src/test';
 import {molV2000, molV3000, readDataframe} from './utils';
@@ -48,9 +49,15 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(df);
-    const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'smiles',
-      'kekulization': true, 'normalization': true, 'reionization': true,
-      'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+    const t: DG.DataFrame = await api.scripts.curate(
+      df, 
+      df.getCol('smiles'),
+      true,
+      true,
+      true,
+      true,
+      true,
+      true);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 16);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
@@ -59,9 +66,15 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   test('curate.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(df);
-    const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'canonical_smiles',
-      'kekulization': true, 'normalization': true, 'reionization': true,
-      'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+    const t: DG.DataFrame = await api.scripts.curate(
+      df, 
+      df.getCol('canonical_smiles'),
+      true,
+      true,
+      true,
+      true,
+      true,
+      true);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 43);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
@@ -90,9 +103,15 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
 
 async function curate(df: DG.DataFrame, col: string) {
-  const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': col,
-    'kekulization': true, 'normalization': true, 'reionization': true,
-    'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+  const t: DG.DataFrame = await api.scripts.curate(
+      df, 
+      df.getCol(col),
+      true,
+      true,
+      true,
+      true,
+      true,
+      true);
   const cm = df.getCol('curated_molecule');
   if (col !== 'smiles' || DG.Test.isInBenchmark) {
     for (let i = 0; i < t.rowCount; i++) expect(cm.get(i).includes('C'), true);
@@ -116,12 +135,11 @@ async function curate(df: DG.DataFrame, col: string) {
 
 async function mutate(molecule: string, expected?: number) {
   const mutations = DG.Test.isInBenchmark && molecule === 'CN1C(CC(O)C1=O)C1=CN=CC=C1' ? 1000 : 10;
-  const t: DG.DataFrame = await grok.functions.call('Chem:Mutate', {
-    'molecule': molecule,
-    'steps': 1,
-    'randomize': true,
-    'maxRandomResults': mutations,
-  });
+  const t: DG.DataFrame = await api.scripts.mutate(
+      molecule, 
+      1,
+      true,
+      mutations);
   expect(t.rowCount, expected ?? mutations);
   const col = t.getCol('mutations');
   for (let i = 0; i < t.rowCount; i++)

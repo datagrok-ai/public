@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {TableInfo} from "datagrok-api/dg";
 
@@ -27,13 +28,12 @@ category('Connections', () => {
   }, {stressTest: true});
 
   test('External Provider: grok.data.query no params', async () => {
-    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAll', null, true);
+    const result: DG.DataFrame = await api.queries.postgresqlPatternsAll();
     expect(result?.rowCount ?? 0, 30);
   });
 
   test('External Provider: grok.data.query with params', async () => {
-    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAllParams', {'first_name': 'starts with p', 'id': '>1', 'bool': false,
-      'email': 'contains com', 'some_number': '>20', 'country': 'in (Indonesia)', 'date': 'before 1/1/2022'});
+    const result: DG.DataFrame = await api.queries.postgresqlPatternsAllParams('starts with p', '>1', false, 'contains com', '>20', 'in (Indonesia)',  'before 1/1/2022');
     expect(result?.rowCount ?? 0, 1);
   });
 });

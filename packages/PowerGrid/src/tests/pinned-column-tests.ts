@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import $ from 'cash-dom';
 
@@ -16,13 +17,13 @@ category('pinned-column', () => {
   test('single-first', async () => {
     const view = await _openGrid(csv);
     const pinGCol = view.grid.columns.byIndex(0)!;
-    await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pinGCol});
+    await api.funcs.addPinnedColumn(pinGCol);
   });
 
   test('single-second', async () => {
     const view = await _openGrid(csv);
     const pinGCol = view.grid.columns.byIndex(1)!;
-    await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pinGCol});
+    await api.funcs.addPinnedColumn(pinGCol);
   });
 
 
@@ -30,8 +31,8 @@ category('pinned-column', () => {
     const view = await _openGrid(csv);
     const pin1GCol = view.grid.columns.byIndex(0)!;
     const pin2GCol = view.grid.columns.byIndex(1)!;
-    await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pin1GCol});
-    await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pin2GCol});
+    await api.funcs.addPinnedColumn(pin1GCol);
+    await api.funcs.addPinnedColumn(pin2GCol);
   });
 });
 

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
+import * as api from '../package-api';
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 
 import { getAutodockSingle, runDocking } from '../package';
@@ -21,7 +21,7 @@ export class DockingViewApp extends BaseViewApp {
   }
 
   protected async customInit(): Promise<void> {
-    const items = await grok.functions.call('Docking:getConfigFiles');
+    const items = await api.funcs.getConfigFiles();
     const helpIcon = ui.icons.help(() => {
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
