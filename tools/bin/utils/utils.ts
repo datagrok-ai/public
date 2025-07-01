@@ -220,7 +220,7 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
   let wasSecond = false;
   for (let match of matches) {
     if (resType === 'void') {
-      resType = dgToTsTypeMap[match[1]];
+      resType = dgToTsTypeMap[match[1]] ?? 'any';
       firstItemName = match[2];
     }
     else {
@@ -228,10 +228,10 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
         resType = `${firstItemName}: ${resType}`;
         wasSecond = true;
       }
-      resType = [resType, `${match[2]}: ${dgToTsTypeMap[match[1]]}`].join(', ');
+      resType = [resType, `${match[2]}: ${dgToTsTypeMap[match[1]] ?? 'any'}`].join(', ');
     }
   }
-  return wasSecond ? `{${resType}}` : resType ;
+  return wasSecond ? `{${resType}}` : resType;
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
