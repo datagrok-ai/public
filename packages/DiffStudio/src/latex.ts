@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {parse, HtmlGenerator} from 'latex.js';
-//import '../css/latex/css/katex.css';
-//import '../css/latex/css/article.css';
+import '../css/latex/css/katex.css';
+import '../css/latex/css/article.css';
 
 
 export function testLatex(): void {
@@ -59,3 +59,16 @@ export function testLatex(): void {
 //     .add(div)
 //     .show();
 }
+
+export async function texFilePreview(file: DG.FileInfo): Promise<DG.View> {
+  const latexText = await file.readAsString();
+  const generator = new HtmlGenerator({hyphenate: false});
+  const doc = parse(latexText, {generator: generator}).htmlDocument();
+  const div = ui.div([]);
+  const v = DG.View.create();
+  v.append(div);
+  v.name = file.fileName;
+  div.innerHTML = doc.documentElement.outerHTML;
+
+  return v;
+} // texFilePreview

@@ -16,7 +16,7 @@ import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
 import {Model} from './model';
-import {testLatex} from './latex';
+import {testLatex, texFilePreview} from './latex';
 
 export const _package = new DG.Package();
 
@@ -240,6 +240,20 @@ export class PackageFunctions {
 
     await diffStudioModel.run();
   }
+}
+
+//name: latex
+export function latex(): void {
+  testLatex();
+}
+
+//name: previewTex
+//tags: fileViewer
+//input: file file
+//output: view result
+//meta.fileViewer: tex
+export async function previewTex(file: DG.FileInfo) {
+  return await texFilePreview(file);
 }
 
 export * from './package.g';

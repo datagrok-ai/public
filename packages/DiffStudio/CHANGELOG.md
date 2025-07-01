@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.3.7 (2025-07-10)
+
+LaTex features
+
 ## 1.3.6 (2025-05-12)
 
 Sensitivity analysis in workers
