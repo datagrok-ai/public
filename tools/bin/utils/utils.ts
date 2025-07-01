@@ -212,10 +212,26 @@ export const nameRegex = /(?:|(?:static)(?:export )(?:async ))\s+function\s+([a-
 export const absUrlRegex = new RegExp('^(?:[a-z+]+:)?//', 'i');
 
 export function getScriptOutputType(script: string, comment: string = '#'): string {
-  const regex = new RegExp(`${comment}\\s*output:\\s?([a-z_]+)\\s*`);
-  const match = script.match(regex);
-  if (!match) return 'void';
-  return dgToTsTypeMap[match[1]] || 'any';
+  const regex = /\s*output:\s?([a-z_]+)\s*([^\s]*)/g;
+  const matches = script.matchAll(regex);
+  if (!matches) return 'void';
+  let resType = 'void';
+  let firstItemName = '';
+  let wasSecond = false;
+  for (let match of matches) {
+    if (resType === 'void') {
+      resType = dgToTsTypeMap[match[1]];
+      firstItemName = match[2];
+    }
+    else {
+      if (!wasSecond) {
+        resType = `${firstItemName}: ${resType}`;
+        wasSecond = true;
+      }
+      resType = [resType, `${match[2]}: ${dgToTsTypeMap[match[1]]}`].join(', ');
+    }
+  }
+  return wasSecond ? `{${resType}}` : resType ;
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
