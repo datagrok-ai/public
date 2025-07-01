@@ -53,6 +53,7 @@ async function init() {
 let initCompleted = init();
 
 const loadedItems = new Set();
+const execScriptName = '<exec>';
 
 async function handleWorkerScript(event) {
     const { id, script, scriptName, headerLinesCount, namespace, outputs, dependencies } = event.data;
@@ -91,7 +92,7 @@ async function handleWorkerScript(event) {
                 frameSummaryProxy.destroy();
                 return item;
             });
-            const traceStart = trace.findIndex(item => item.filename === '<exec>');
+            const traceStart = trace.findIndex(item => item.filename === execScriptName);
             if (traceStart >= 0) {
                 const actualTrace = trace.slice(traceStart);
                 const strNum = actualTrace[0].lineno;
@@ -104,7 +105,9 @@ async function handleWorkerScript(event) {
                 const text = [
                     `Pyodide Error: ${error.message}`,
                     `Script ${scriptName}, Line ${sourceStrNum}`,
-                    ...traceTail.map(({ filename, lineno }) => `File ${filename}, Line ${lineno}`),
+                    ...traceTail.map(({ filename, lineno }) => execScriptName === filename ?
+                       `Script ${scriptName}, Line ${lineno - headerLinesCount}` :
+                       `File ${filename}, Line ${lineno - (filename === '')}`),
                     ...shownLines
                 ].join('\n');
                 console.error(text);
