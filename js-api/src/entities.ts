@@ -260,6 +260,8 @@ export class Func extends Entity {
   /** Help URL. */
   get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
+  set helpUrl(url: string) { api.grok_Func_Set_HelpUrl(this.dart, url); }
+
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 

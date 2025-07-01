@@ -39,10 +39,10 @@ export class MmmpFunctionEditor {
   onTableInputChanged() {
     this.activitiesParams = {};
     ui.empty(this.activitiesInputRoot);
-    const numericalColumns = this.tableInput.value!.columns.numerical;
+    const numericalColumns = Array.from(this.tableInput.value!.columns.numerical);
     this.activitiesInput = ui.input.columns('Activities', {
       table: this.tableInput.value!,
-      filter: (col: DG.Column) => Array.from(numericalColumns).includes(col),
+      filter: (col: DG.Column) => numericalColumns.includes(col),
       onValueChanged: () => {
         ui.empty(this.activitiesParamsDiv);
         const df = this.tableInput.value!;

@@ -30,10 +30,15 @@ export async function multipleSequenceAlignmentUI(
     options.pepsea.gapExtend ??= msaDefaultOptions.pepsea.gapExtend;
 
     const table = options.col?.dataFrame ?? grok.shell.t;
+    if (!table) {
+      const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
+      reject(new MsaWarning(ui.divText(errMsg)));
+      return; // Prevents creating the MSA dialog
+    }
+
     const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
       const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
-      grok.shell.warning(errMsg);
       reject(new MsaWarning(ui.divText(errMsg)));
       return; // Prevents creating the MSA dialog
     }

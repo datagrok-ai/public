@@ -135,14 +135,7 @@ function generateFunctionWrappers(): void {
       const annotationOutputDir = utils.getScriptOutputType(annotation[0], utils.commentMap[utils.jsExtention]);
       let outputType = '';
 
-      for (let outputAnnotation of annotationOutputDir) {
-        if (outputType != '') {
-          outputType = 'any';
-          break;
-        }
-        outputType = utils.dgToTsTypeMap[outputAnnotation[1]] ?? 'any';
-      }
-
+      outputType = annotationOutputDir ?? 'any';
       checkNameColision(name);
 
       const tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)

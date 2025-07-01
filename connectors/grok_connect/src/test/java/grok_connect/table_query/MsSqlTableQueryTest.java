@@ -96,7 +96,7 @@ public class MsSqlTableQueryTest extends TableQueryTest {
                 "[event_types].[id] as [event_types_id],", "[event_types].[friendly_name] as [event_types_friendly_name],",
                 "[event_types].[name] as [event_types_name],", "[event_types].[description] as [event_types_description],",
                 "[event_types].[error_message] as [event_types_error_message],", "[event_types].[error_stack_trace] as [event_types_error_stack_trace]",
-                "FROM", "[public].[events]", "left join [event_types] on [events].[event_type_id] = [event_types].[id]"};
+                "FROM", "[public].[events]", "left join [public].[event_types] on [public].[events].[event_type_id] = [public].[event_types].[id]"};
     }
 
     @Override
@@ -109,7 +109,7 @@ public class MsSqlTableQueryTest extends TableQueryTest {
                 "[events_1].[session_id] as [events_1_session_id],", "[events_1].[status] as [events_1_status],",
                 "[events_1].[description] as [events_1_description],", "[events_1].[error_message] as [events_1_error_message],",
                 "[events_1].[error_stack_trace] as [events_1_error_stack_trace],", "[events_1].[event_type_id] as [events_1_event_type_id]",
-                "FROM", "[public].[events]", "left join [events] as [events_1] on [events].[event_type_id] = [events_1].[event_type_id]"};
+                "FROM", "[public].[events]", "left join [public].[events] as [events_1] on [public].[events].[event_type_id] = [events_1].[event_type_id]"};
     }
 
     @Override
@@ -123,9 +123,9 @@ public class MsSqlTableQueryTest extends TableQueryTest {
                 "[sessions].[id] as [sessions_id],", "[sessions].[user_id],", "[sessions].[started],", "[sessions].[ended],", "[sessions].[token],",
                 "[u].[id] as [u_id],", "[u].[email],", "[u].[first_name],", "[u].[last_name],", "[u].[status] as [u_status]",
                 "FROM", "[public].[events]",
-                "left join [event_types] on [events].[event_type_id] = [event_types].[id]",
-                "right join [users_sessions] as [sessions] on [events].[session_id] = [sessions].[id]",
-                "inner join [users] as [u] on [sessions].[user_id] = [u].[id]"
+                "left join [public].[event_types] on [public].[events].[event_type_id] = [public].[event_types].[id]",
+                "right join [public].[users_sessions] as [sessions] on [public].[events].[session_id] = [sessions].[id]",
+                "inner join [public].[users] as [u] on [public].[sessions].[user_id] = [u].[id]"
         };
     }
 
@@ -137,8 +137,8 @@ public class MsSqlTableQueryTest extends TableQueryTest {
                 "[t].[id] as [t_id],", "[t].[friendly_name] as [t_friendly_name],",
                 "[t].[name] as [t_name],", "[t].[description] as [t_description],",
                 "[t].[error_message] as [t_error_message],", "[t].[error_stack_trace] as [t_error_stack_trace]",
-                "FROM", "[public].[events]", "left join [event_types] as [t] on [events].[event_type_id] = [t].[id]",
-                " AND ", "[events].[name] = [t].[name]"
+                "FROM", "[public].[events]", "left join [public].[event_types] as [t] on [public].[events].[event_type_id] = [t].[id]",
+                " AND ", "[public].[events].[name] = [t].[name]"
         };
     }
 }

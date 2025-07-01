@@ -222,9 +222,9 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
     fillVisibleNodes(rootGroup.children[n] as TreeViewGroup, visibleNodes, includeExpanded);
 }
 
-function getVisibleNodes(thisViewer: ScaffoldTreeViewer): Array<TreeViewGroup> {
+function getVisibleNodes(thisViewer: ScaffoldTreeViewer, includeExpanded: boolean = false): Array<TreeViewGroup> {
   const visibleNodes: Array<TreeViewGroup> = [];
-  fillVisibleNodes(thisViewer.tree, visibleNodes);
+  fillVisibleNodes(thisViewer.tree, visibleNodes, includeExpanded);
 
   const {scrollTop, offsetHeight: viewerHeight, scrollHeight} = thisViewer.tree.root;
   const nodeHeight = thisViewer.sizesMap[thisViewer.size].height;
@@ -336,8 +336,8 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = (e) => ui.tooltip.hide();
 }
 
-export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer, updateBitset: boolean = false) {
-  const visibleNodes = getVisibleNodes(thisViewer);
+export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer, updateBitset: boolean = false, includeExpanded: boolean = false) {
+  const visibleNodes = getVisibleNodes(thisViewer, includeExpanded);
 
   for (const group of visibleNodes) {
     if (isOrphans(group)) continue; // Skip orphans
@@ -972,7 +972,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       // Perform heavy updates after the layout is applied
       await updateVisibleMols(thisViewer);
       this.updateUI();
-      await updateVisibleNodes(thisViewer);
+      await updateVisibleNodes(thisViewer, false, true);
       this.appendOrphanFolders(this.tree);
       this.updateFilters();
       this.updateTag();

@@ -1271,36 +1271,36 @@ export class ColumnList {
   }
 
   /** Returns all columns. */
-  get all(): WuIterable<Column> {
-    return wu(_toIterable(this.dart));
+  get all(): Iterable<Column> {
+    return _toIterable(this.dart);
   }
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
-  get categorical(): WuIterable<Column> {
-    return wu(_toIterable(api.grok_ColumnList_Categorical(this.dart)));
+  get categorical(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Categorical(this.dart));
   }
 
   /** Finds numerical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
-  get numerical(): WuIterable<Column> {
-    return wu(_toIterable(api.grok_ColumnList_Numerical(this.dart)));
+  get numerical(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
-  get dateTime(): WuIterable<Column> {
-    return wu(_toIterable(api.grok_ColumnList_DateTime(this.dart)));
+  get dateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_DateTime(this.dart));
   }
 
-  get numericalNoDateTime(): WuIterable<Column> {
-    return wu(_toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart)));
+  get numericalNoDateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
   }
 
-  get boolean(): WuIterable<Column> {
+  get boolean(): Iterable<Column> {
     return wu(_toIterable(api.grok_ColumnList_Boolean(this.dart)));
   }
 
-  get selected(): WuIterable<Column> {
-    return wu(_toIterable(api.grok_ColumnList_Selected(this.dart)));
+  get selected(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Selected(this.dart));
   }
 
   /** Array containing column names. */

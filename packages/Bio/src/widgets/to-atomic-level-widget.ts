@@ -120,7 +120,6 @@ export async function molecular3DStructureWidget(
       else
         console.warn('Failed to convert molv3 to molv2');
 
-
       //molBlock3D = grok.chem.convert(molBlock3D, grok.chem.Notation.Unknown, grok.chem.Notation.MolBlock);
     } catch (e) {
       console.warn(e);
