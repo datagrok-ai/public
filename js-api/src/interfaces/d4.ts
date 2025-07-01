@@ -386,27 +386,27 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
-  /// Point lower bound for x axis whiskers.
+  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
   xWhiskerMinColumnName: string;
 
-  /// Point upper bound for x axis whiskers.
+  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMax: string;
   xWhiskerMaxColumnName: string;
 
-  /// Point range for x axis whiskers.
+  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
   xWhiskerRange: string;
   xWhiskerRangeColumnName: string;
 
-  /// Point lower bound for y axis whiskers.
+  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMin: string;
   yWhiskerMinColumnName: string;
 
-  /// Point upper bound for y axis whiskers.
+  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMax: string;
   yWhiskerMaxColumnName: string;
 
-  /// Point range for y axis whiskers.
+  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
   yWhiskerRange: string;
   yWhiskerRangeColumnName: string;
 
