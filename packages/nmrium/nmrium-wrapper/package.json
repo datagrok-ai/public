@@ -12,16 +12,16 @@
     "node": "20.2.0"
   },
   "dependencies": {
-    "@blueprintjs/core": "^5.11.0",
-    "@blueprintjs/icons": "^5.11.0",
-    "@emotion/react": "^11.13.0",
-    "fifo-logger": "^1.0.0",
-    "filelist-utils": "^1.11.1",
-    "nmr-load-save": "^0.37.0",
-    "nmr-processing": "^12.12.0",
-    "nmrium": "^0.59.0",
-    "react-science": "^6.0.0",
-    "vite-plugin-pwa": "^0.20.1"
+    "@blueprintjs/core": "5.11.0",
+    "@blueprintjs/icons": "5.11.0",
+    "@emotion/react": "11.13.0",
+    "fifo-logger": "1.0.0",
+    "filelist-utils": "1.11.1",
+    "nmr-load-save": "0.37.0",
+    "nmr-processing": "12.12.0",
+    "nmrium": "0.59.0",
+    "react-science": "6.0.0",
+    "vite-plugin-pwa": "0.20.1"
   },
   "scripts": {
     "start": "vite --host localhost --port 3000  --open",
