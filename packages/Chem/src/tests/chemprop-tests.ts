@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 import {_package, applyModelChemprop, trainModelChemprop} from '../package';
-import {CONTAINER_TIMEOUT, readDataframe} from './utils';
+import {readDataframe} from './utils';
 import JSZip from 'jszip';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+
+const CONTAINER_TIMEOUT = 300000
 
 category('w_chemprop', () => {
   let binBlob: Uint8Array;
