@@ -7,7 +7,8 @@ import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
-import {RTFJS} from "rtf.js";
+import {RTFJS} from 'rtf.js';
+import {texFilePreview} from './latex';
 
 export const _package = new DG.Package();
 
@@ -128,9 +129,17 @@ export async function previewRtf(file: DG.FileInfo): Promise<DG.View> {
     const doc = new RTFJS.Document(bytes, {});
     doc.render().then((elements) => {
       view.root.append(...elements);
-    })
-
+    });
   });
 
   return view;
+}
+
+//name: previewTex
+//tags: fileViewer
+//input: file file
+//output: view v
+//meta.fileViewer: tex
+export async function previewTex(file: DG.FileInfo): Promise<DG.View> {
+  return await texFilePreview(file);
 }
