@@ -26,6 +26,7 @@ export interface DnaSequence {
 }
 
 import { mockDnaSequences, mockDnaSequence } from './dnaSequencesMock';
+import { dataFrameFromObjects } from './utils';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -70,17 +71,12 @@ export async function queryDNASequences(params: DNASequencesQueryParams = {}): P
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.dnaSequences ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.dnaSequences ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockDnaSequences.dnaSequences) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockDnaSequences.dnaSequences);
   return df;
 }
 
-export async function getDNASequenceById(dnaSequenceId: string): Promise<DG.DataFrame> {
-  const found = mockDnaSequences.dnaSequences.find((seq) => seq.id === dnaSequenceId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface DnaSequenceCreateRequest {
   name: string;

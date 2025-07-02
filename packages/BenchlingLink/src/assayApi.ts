@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { dataFrameFromObjects } from './utils';
 
 // Types for Assay Results and Assay Runs API
 export interface AssayResult {
@@ -81,17 +82,12 @@ export async function queryAssayResults(params: AssayResultsQueryParams = {}): P
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.assayResults ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.assayResults ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockAssayResults.assayResults) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAssayResults.assayResults);
   return df;
 }
 
-export async function getAssayResultById(assayResultId: string): Promise<DG.DataFrame> {
-  const found = mockAssayResults.assayResults.find((ar) => ar.id === assayResultId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise<DG.DataFrame> {
   // const token = 'YOUR_BENCHLING_API_TOKEN';
@@ -106,17 +102,12 @@ export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.assayRuns ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.assayRuns ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockAssayRuns.assayRuns) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAssayRuns.assayRuns);
   return df;
 }
 
-export async function getAssayRunById(assayRunId: string): Promise<DG.DataFrame> {
-  const found = mockAssayRuns.assayRuns.find((run) => run.id === assayRunId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface AssayResultCreateRequest {
   schemaId: string;

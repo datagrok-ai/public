@@ -46,6 +46,7 @@ import { mockAaSequences, mockAaSequence } from './aaSequencesMock';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { dataFrameFromObjects } from './utils';
 
 export async function getToken(): Promise<DG.DataFrame> {
   const response = await grok.dapi.fetchProxy('https://benchling.com/api/v2/token', {
@@ -108,25 +109,11 @@ export async function queryAASequences(params: AASequencesQueryParams = {}): Pro
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.aaSequences ?? []) ?? DG.DataFrame.create();
-  const df = DG.DataFrame.fromObjects(mockAaSequences.aaSequences) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.aaSequences ?? []) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAaSequences.aaSequences);
   return df;
 }
 
-export async function queryAASequenceById(aaSequenceId: string): Promise<DG.DataFrame> {
-  const token = 'YOUR_BENCHLING_API_TOKEN';
-  const response = await grok.dapi.fetchProxy(`https://benchling.com/api/v2/aa-sequences/${aaSequenceId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    },
-  });
-  if (!response.ok)
-    throw new Error(`Benchling API error: ${response.statusText}`);
-  const data = await response.json();
-  const df = DG.DataFrame.fromObjects([data]) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface AaSequenceCreateRequest {
   name: string;

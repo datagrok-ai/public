@@ -6,6 +6,7 @@ import { queryAASequences, postAASequence } from './aaSequencesApi';
 import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
 import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from './assayApi';
 import { queryMolecules, postMolecule } from './moleculesApi';
+import { dataFrameFromObjects } from './utils';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
@@ -393,7 +394,7 @@ export async function createAASequence(
   if (folderId) body.folderId = folderId;
   if (schemaId) body.schemaId = schemaId;
   const result = await postAASequence(body);
-  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
 
 //name: Create DNA Sequence
@@ -427,7 +428,7 @@ export async function createDNASequence(
   if (folderId) body.folderId = folderId;
   if (schemaId) body.schemaId = schemaId;
   const result = await postDNASequence(body);
-  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
 
 //name: Create Assay Result
@@ -456,7 +457,7 @@ export async function createAssayResult(
   if (authorIds) body.authorIds = JSON.parse(authorIds);
   if (customFields) body.customFields = JSON.parse(customFields);
   const result = await postAssayResult(body);
-  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
 
 //name: Create Assay Run
@@ -479,7 +480,7 @@ export async function createAssayRun(
   if (authorIds) body.authorIds = JSON.parse(authorIds);
   if (customFields) body.customFields = JSON.parse(customFields);
   const result = await postAssayRun(body);
-  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
 
 //name: Get Molecules
@@ -561,5 +562,5 @@ export async function createMolecule(
   const body: any = { name, smiles };
   if (formula) body.formula = formula;
   const result = await postMolecule(body);
-  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }

@@ -1,7 +1,7 @@
 // Types for Molecules API
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as fs from 'fs';
+import { dataFrameFromObjects } from './utils';
 import { _package } from './package';
 
 export interface Molecule {
@@ -118,9 +118,9 @@ export async function queryMolecules(params: MoleculesQueryParams = {}): Promise
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.molecules ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.molecules ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects((await getMockMolecules()).molecules) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(await getMockMolecules().then(m => m.molecules));
   return df;
 }
 
