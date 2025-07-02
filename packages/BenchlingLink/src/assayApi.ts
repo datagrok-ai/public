@@ -1,3 +1,6 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+
 // Types for Assay Results and Assay Runs API
 export interface AssayResult {
   archiveRecord?: any;
@@ -15,30 +18,6 @@ export interface AssayResult {
   validationStatus?: string;
 }
 
-export const mockAssayResults: { assayResults: AssayResult[]; nextToken?: string } = {
-  assayResults: [
-    {
-      id: 'ar_001',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      isReviewed: true,
-      fields: { result: 42, unit: 'ng/mL' },
-      schema: { id: 'schema_1', name: 'ResultSchema1' },
-    },
-    {
-      id: 'ar_002',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      isReviewed: false,
-      fields: { result: 17, unit: 'ng/mL' },
-      schema: { id: 'schema_2', name: 'ResultSchema2' },
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockAssayResult: AssayResult = mockAssayResults.assayResults[0];
-
 export interface AssayRun {
   apiURL?: string;
   archiveRecord?: any;
@@ -55,32 +34,7 @@ export interface AssayRun {
   validationStatus?: string;
 }
 
-export const mockAssayRuns: { assayRuns: AssayRun[]; nextToken?: string } = {
-  assayRuns: [
-    {
-      id: 'run_001',
-      createdAt: '2023-01-01T12:00:00Z',
-      isReviewed: true,
-      fields: { runValue: 100, status: 'complete' },
-      schema: { id: 'schema_1', name: 'RunSchema1' },
-      apiURL: 'https://benchling.com/api/v2/assay-runs/run_001',
-    },
-    {
-      id: 'run_002',
-      createdAt: '2023-02-01T12:00:00Z',
-      isReviewed: false,
-      fields: { runValue: 200, status: 'pending' },
-      schema: { id: 'schema_2', name: 'RunSchema2' },
-      apiURL: 'https://benchling.com/api/v2/assay-runs/run_002',
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockAssayRun: AssayRun = mockAssayRuns.assayRuns[0];
-
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import { mockAssayResults, mockAssayResult, mockAssayRuns, mockAssayRun } from './assayMock';
 
 export interface AssayResultsQueryParams {
   schemaId?: string;

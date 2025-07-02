@@ -42,59 +42,7 @@ export interface AaSequencesPaginatedList {
   nextToken?: string;
 }
 
-// Mock data for /aa-sequences
-export const mockAaSequences: AaSequencesPaginatedList = {
-  aaSequences: [
-    {
-      id: 'prtn_ObbdtGhC',
-      name: 'Example Protein 1',
-      aminoAcids: 'IKTATARRELAETSWTGDRLWGFSDNWAPALRRPSPSALGK',
-      length: 40,
-      aliases: ['Prot1', 'Sample1'],
-      annotations: [
-        {
-          id: 'prtnann_o7zMPG0P',
-          name: 'Active Site',
-          type: 'Site',
-          start: 5,
-          end: 10,
-          color: '#FF0000',
-          notes: 'Important for activity',
-        },
-      ],
-      apiURL: 'https://benchling.com/api/v2/aa-sequences/prtn_ObbdtGhC',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      creator: {
-        handle: 'lpasteur',
-        id: 'ent_a0SApq3z',
-        name: 'Louis Pasteur',
-      },
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/prtn_ObbdtGhC/edit',
-    },
-    {
-      id: 'prtn_XYZ123',
-      name: 'Example Protein 2',
-      aminoAcids: 'MKTIIALSYIFCLVFADYKDDDDK',
-      length: 23,
-      aliases: ['Prot2'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/aa-sequences/prtn_XYZ123',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      creator: {
-        handle: 'jdoe',
-        id: 'ent_b1BSpq4z',
-        name: 'John Doe',
-      },
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/prtn_XYZ123/edit',
-    },
-  ],
-  nextToken: undefined,
-};
-
-// Mock data for /aa-sequences/{aa_sequence_id}
-export const mockAaSequence: AaSequence = mockAaSequences.aaSequences[0];
+import { mockAaSequences, mockAaSequence } from './aaSequencesMock';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -113,7 +61,7 @@ export async function getToken(): Promise<DG.DataFrame> {
   return df;
 }
 
-function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, any>): string {
   const esc = encodeURIComponent;
   return Object.entries(params)
     .filter(([_, v]) => v !== undefined && v !== null && v !== '')

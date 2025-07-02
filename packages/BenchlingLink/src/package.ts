@@ -7,6 +7,7 @@ import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
 import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from './assayApi';
 
 export const _package = new DG.Package();
+const STORAGE_NAME = 'BenchlingLinkFuncEditor';
 
 //tags: app
 //name: Benchling Link
@@ -20,19 +21,98 @@ export async function benchlingLinkApp(): Promise<DG.ViewBase> {
 //input: dynamic treeNode
 //input: view browseView
 export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  function createFuncEditorView(funcName: string) {
+    let func = DG.Func.byName(funcName);
+    let editorDiv = ui.div();
+    let gridDiv = ui.div();
+    let root = ui.splitV([editorDiv, gridDiv], {style: {height: '100%', width: '100%'}});
+
+    // Restore state if exists
+    const saved = grok.userSettings.getValue(STORAGE_NAME, funcName);
+    const funcCall = func.prepare(saved ? JSON.parse(saved) : null);
+    renderEditorAndRun();
+
+    async function renderEditorAndRun() {
+      ui.empty(editorDiv);
+      let form = await DG.InputForm.forFuncCall(funcCall);
+      form.root.style.flexWrap = 'wrap';
+      form.root.style.height = '100%';
+      DG.debounce(form.onInputChanged, 1000).subscribe(() => {
+        runFunc();
+      })
+      editorDiv.appendChild(form.root);
+      runFunc();
+    }
+
+    async function runFunc() {
+      //save request settings
+      const params: {[key: string]: any} = {};
+      Object.keys(funcCall.inputParams).forEach((paramName) => {
+        if (funcCall.inputParams[paramName].value)
+          params[paramName] = funcCall.inputParams[paramName].value;
+      });    
+      grok.userSettings.add(STORAGE_NAME, funcName, JSON.stringify(params));
+
+      //run function
+      ui.empty(gridDiv);
+      try {
+        let result = (await funcCall.call()).getOutputParamValue();
+        let grid = result.plot.grid();
+        grid.root.style.width = '100%';
+        grid.root.style.height = '100%';
+        gridDiv.appendChild(grid.root);
+      } catch (e) {
+        gridDiv.appendChild(ui.divText('Error: ' + e));
+      }
+    }
+
+    return root;
+  }
+
+  const addBenchlingView = (viewName: string, funcName: string) => {
+    const v = DG.View.create(viewName);
+    v.root.appendChild(createFuncEditorView(funcName));
+    grok.shell.addView(v);
+  }
+
   try {
+    // Rebuild the tree from scratch
+    treeNode.items.length = 0;
+    const aaSequenceNode = treeNode.group('AA Sequences');
+    aaSequenceNode.onSelected.subscribe(async () => {
+      addBenchlingView('AA Sequences', 'BenchlingLink:getAASequences');
+    });
+    const createAaSeqNode = aaSequenceNode.item('Create AA Sequence');
+    createAaSeqNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create AA Sequence', 'BenchlingLink:createAASequence');
+    });
 
-    const aaSequenceNode = treeNode.group('AA Sequences', DG.toDart(DG.Func.byName('BenchlingLink:getAASequences')));
-    aaSequenceNode.item('Create AA Sequence', DG.toDart(DG.Func.byName('BenchlingLink:createAASequence')));
+    const dnaSequencesNode = treeNode.group('DNA Sequences');
+    dnaSequencesNode.onSelected.subscribe(async () => {
+      addBenchlingView('DNA Sequences', 'BenchlingLink:getDNASequences');
+    });
+    const createDnaSeqNode = dnaSequencesNode.item('Create DNA Sequence');
+    createDnaSeqNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create DNA Sequence', 'BenchlingLink:createDNASequence');
+    });
 
-    const dnaSequencesNode = treeNode.group('DNA Sequences', DG.toDart(DG.Func.byName('BenchlingLink:getDNASequences')));
-    dnaSequencesNode.item('Create DNA Sequence', DG.toDart(DG.Func.byName('BenchlingLink:createDNASequence')));
+    const assayResultsNode = treeNode.group('Assay Results');
+    assayResultsNode.onSelected.subscribe(async () => {
+      addBenchlingView('Assay Results', 'BenchlingLink:getAssayResults');
+    });
+    const createAssayResultNode = assayResultsNode.item('Create Assay Result');
+    createAssayResultNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create Assay Result', 'BenchlingLink:createAssayResult');
+    });
 
-    const assayResultsNode = treeNode.group('Assay Results', DG.toDart(DG.Func.byName('BenchlingLink:getAssayResults')));
-    assayResultsNode.item('Create Assay Result', DG.toDart(DG.Func.byName('BenchlingLink:createAssayResult')));
-
-    const assayRunsNode = treeNode.group('Assay Runs', DG.toDart(DG.Func.byName('BenchlingLink:getAssayRuns')));
-    assayRunsNode.item('Create Assay Run', DG.toDart(DG.Func.byName('BenchlingLink:createAssayRun')));
+    const assayRunsNode = treeNode.group('Assay Runs');
+    assayRunsNode.onSelected.subscribe(async () => {
+      addBenchlingView('Assay Runs', 'BenchlingLink:getAssayRuns');
+    });
+    const createAssayRunNode = assayRunsNode.item('Create Assay Run');
+    createAssayRunNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create Assay Run', 'BenchlingLink:createAssayRun');
+    });
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }

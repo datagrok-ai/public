@@ -25,39 +25,7 @@ export interface DnaSequence {
   webURL?: string;
 }
 
-export const mockDnaSequences: { dnaSequences: DnaSequence[]; nextToken?: string } = {
-  dnaSequences: [
-    {
-      id: 'seq_ABC123',
-      name: 'Example DNA 1',
-      bases: 'ATGCGTACGTAGCTAGCTAGCTAGCTAGCTA',
-      isCircular: false,
-      length: 30,
-      aliases: ['DNA1'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/dna-sequences/seq_ABC123',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/seq_ABC123/edit',
-    },
-    {
-      id: 'seq_DEF456',
-      name: 'Example DNA 2',
-      bases: 'CGTAGCTAGCTAGCTAGCTAGCTAGCTAGCT',
-      isCircular: true,
-      length: 31,
-      aliases: ['DNA2'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/dna-sequences/seq_DEF456',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/seq_DEF456/edit',
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockDnaSequence: DnaSequence = mockDnaSequences.dnaSequences[0];
+import { mockDnaSequences, mockDnaSequence } from './dnaSequencesMock';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
