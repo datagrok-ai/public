@@ -5,12 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import { queryAASequences, postAASequence } from './aaSequencesApi';
 import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
 import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from './assayApi';
+import { queryMolecules, postMolecule } from './moleculesApi';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
 
 //tags: app
-//name: Benchling Link
+//name: Benchling
 //output: view v
 //meta.browsePath: Chem
 export async function benchlingLinkApp(): Promise<DG.ViewBase> {
@@ -113,6 +114,16 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     createAssayRunNode.onSelected.subscribe(async () => {
       addBenchlingView('Create Assay Run', 'BenchlingLink:createAssayRun');
     });
+
+    // Add molecules group and item to the tree view
+    const moleculesNode = treeNode.group('Molecules');
+    moleculesNode.onSelected.subscribe(async () => {
+      addBenchlingView('Molecules', 'BenchlingLink:getMolecules');
+    });
+    const createMoleculeNode = moleculesNode.item('Create Molecule');
+    createMoleculeNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create Molecule', 'BenchlingLink:createMolecule');
+    });
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }
@@ -208,6 +219,11 @@ export async function getAASequences(
 //input: string mentions {nullable:true}
 //input: string ids {nullable:true}
 //input: string entityRegistryIds_anyOf {nullable:true}
+//input: string names_anyOf {nullable:true}
+//input: string names_anyOf_caseSensitive {nullable:true}
+//input: string creatorIds {nullable:true}
+//input: string authorIds_anyOf {nullable:true}
+//input: string returning {nullable:true}
 //output: dataframe df
 export async function getDNASequences(
   sort?: string,
@@ -225,7 +241,12 @@ export async function getDNASequences(
   archiveReason?: string,
   mentions?: string,
   ids?: string,
-  entityRegistryIds_anyOf?: string
+  entityRegistryIds_anyOf?: string,
+  names_anyOf?: string,
+  names_anyOf_caseSensitive?: string,
+  creatorIds?: string,
+  authorIds_anyOf?: string,
+  returning?: string
 ): Promise<DG.DataFrame> {
   const params = {
     sort,
@@ -244,6 +265,11 @@ export async function getDNASequences(
     mentions,
     ids,
     entityRegistryIds_anyOf,
+    names_anyOf,
+    names_anyOf_caseSensitive,
+    creatorIds,
+    authorIds_anyOf,
+    returning,
   };
   const dnaSequences = await queryDNASequences(params);
   return dnaSequences;
@@ -453,5 +479,87 @@ export async function createAssayRun(
   if (authorIds) body.authorIds = JSON.parse(authorIds);
   if (customFields) body.customFields = JSON.parse(customFields);
   const result = await postAssayRun(body);
+  return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
+}
+
+//name: Get Molecules
+//input: string sort {nullable:true}
+//input: string createdAt {nullable:true}
+//input: string modifiedAt {nullable:true}
+//input: string name {nullable:true}
+//input: string nameIncludes {nullable:true}
+//input: string folderId {nullable:true}
+//input: string mentionedIn {nullable:true}
+//input: string projectId {nullable:true}
+//input: string registryId {nullable:true}
+//input: string schemaId {nullable:true}
+//input: string schemaFields {nullable:true}
+//input: string archiveReason {nullable:true}
+//input: string mentions {nullable:true}
+//input: string ids {nullable:true}
+//input: string entityRegistryIds_anyOf {nullable:true}
+//input: string names_anyOf {nullable:true}
+//input: string authorIds_anyOf {nullable:true}
+//input: string chemicalSubstructure_mol {nullable:true}
+//input: string chemicalSubstructure_smiles {nullable:true}
+//output: dataframe df
+export async function getMolecules(
+  sort?: string,
+  createdAt?: string,
+  modifiedAt?: string,
+  name?: string,
+  nameIncludes?: string,
+  folderId?: string,
+  mentionedIn?: string,
+  projectId?: string,
+  registryId?: string,
+  schemaId?: string,
+  schemaFields?: string,
+  archiveReason?: string,
+  mentions?: string,
+  ids?: string,
+  entityRegistryIds_anyOf?: string,
+  names_anyOf?: string,
+  authorIds_anyOf?: string,
+  chemicalSubstructure_mol?: string,
+  chemicalSubstructure_smiles?: string,
+): Promise<DG.DataFrame> {
+  const params = {
+    sort,
+    createdAt,
+    modifiedAt,
+    name,
+    nameIncludes,
+    folderId,
+    mentionedIn,
+    projectId,
+    registryId,
+    schemaId,
+    schemaFields,
+    archiveReason,
+    mentions,
+    ids,
+    entityRegistryIds_anyOf,
+    names_anyOf,
+    authorIds_anyOf,
+    chemicalSubstructure_mol,
+    chemicalSubstructure_smiles,
+  };
+  return await queryMolecules(params);
+}
+
+//name: Create Molecule
+//input: string name
+//input: string smiles
+//input: string formula {nullable:true}
+//output: dataframe df
+export async function createMolecule(
+  name: string,
+  smiles: string,
+  formula?: string,
+): Promise<DG.DataFrame> {
+  const body: any = { name, smiles };
+  if (formula) body.formula = formula;
+  const result = await postMolecule(body);
   return DG.DataFrame.fromObjects([result]) ?? DG.DataFrame.create();
 }

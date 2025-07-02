@@ -50,6 +50,11 @@ export interface DNASequencesQueryParams {
   mentions?: string;
   ids?: string;
   entityRegistryIds_anyOf?: string;
+  names_anyOf?: string;
+  names_anyOf_caseSensitive?: string;
+  creatorIds?: string;
+  authorIds_anyOf?: string;
+  returning?: string;
 }
 
 export async function queryDNASequences(params: DNASequencesQueryParams = {}): Promise<DG.DataFrame> {
