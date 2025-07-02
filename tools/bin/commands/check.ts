@@ -32,7 +32,7 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   if (packagePath.includes(`${path.sep}node_modules${path.sep}`))
     return true;
   const files = (walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] })).filter(e => !e.includes('node_modules'));
-  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
+  const jsTsFiles = files.filter((f) => (f.startsWith('src' + path.sep) || f.startsWith('queries' + path.sep) || f.startsWith('scripts' + path.sep)) && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
   // const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f)); 
@@ -286,6 +286,8 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
   const functionRoles = Object.keys(checkFunctions);
 
   for (const file of files) {
+    if (file.includes('.min.'))
+      continue;
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
 
@@ -609,6 +611,11 @@ function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMet
     }
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
+      if (data.name === '') {
+        data = { name: '', inputs: [], outputs: [] };
+        isHeader = false;
+        continue;
+      }
       if (nm)
         data.name = nm[1]?.toLocaleLowerCase();
       if (data.name && !match) {

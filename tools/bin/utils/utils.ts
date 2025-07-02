@@ -184,6 +184,7 @@ export const dgToTsTypeMap: Indexable = {
   column_list: 'string[]',
   file: 'DG.FileInfo',
   view: 'DG.View',
+  void: 'void',
 };
 
 export const propertyTypes = [

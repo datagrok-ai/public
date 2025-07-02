@@ -363,6 +363,12 @@ export class ShellHelpPanel {
 /** Represents context panel that shows properties for the current object
  and is toggleable by pressing F1 */
 export class ShellContextPanel {
+
+  /** Context panel node, if it is currently visible, or null otherwise. */
+  get root(): HTMLDivElement | null {
+    return document.body.querySelector('.grok-prop-panel');
+  }
+
   /** Controls whether the context panel shows context for the current object as it changes */
   get syncCurrentObject(): boolean { return api.grok_ContextPanel_Get_SyncCurrentObject(); }
   set syncCurrentObject(x: boolean) { api.grok_ContextPanel_Set_SyncCurrentObject(x); }

@@ -2692,9 +2692,13 @@ export class ColumnMetaHelper {
       this.column.setTag(key, value);
   }
 
-  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the name to be shown in the UI */
   get friendlyName(): string | null { return this.column.getTag(TAGS.FRIENDLY_NAME); }
   set friendlyName(x: string | null) { this.setNonNullTag(TAGS.FRIENDLY_NAME, x); }
+
+  /** Column description (usually shown in tooltips) */
+  get description(): string | null { return this.column.getTag(TAGS.DESCRIPTION); }
+  set description(x: string | null) { this.setNonNullTag(TAGS.DESCRIPTION, x); }
 
   /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null { return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart); }

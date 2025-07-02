@@ -1765,17 +1765,17 @@ export class TreeViewGroup extends TreeViewNode {
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, toDart(value), expanded, index));
   }
 
   /** Returns existing, or creates a new node group */
   getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, value, expanded));
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, toDart(value), expanded));
   }
 
   /** Adds new item to group */
   item(text: string | Element, value: object | null = null): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
+    return toJs(api.grok_TreeViewNode_Item(this.dart, text, toDart(value)));
   }
 
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
