@@ -924,6 +924,8 @@ export interface IDartApi {
   grok_Dapi_Notifications(): any;
   grok_Dapi_Notifications_ForCurrentUser(): any;
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
+  grok_Dapi_Activity(): any;
+  grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
