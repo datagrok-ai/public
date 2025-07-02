@@ -1272,3 +1272,65 @@ export function test1(): any {
   _package.logger.debug('Bio:test1() function');
   return {value: 'value1'};
 }
+
+//top-menu: Bio | Calculate | Isoelectric Point (pI)
+//name: calculatePi
+//description: Calculates isoelectric point (pI) for macromolecules.
+export async function calculatePi(): Promise<void> {
+  const table = grok.shell.tv?.dataFrame;
+  if (!table) {
+    grok.shell.warning('Please open a table first.');
+    return;
+  }
+
+  const applicableColumns = table.columns.toList().filter(
+    (c) => c.semType === DG.SEMTYPE.MOLECULE || c.semType === 'MolFile'
+  );
+
+  if (applicableColumns.length === 0) {
+    grok.shell.warning('No molecule columns (SMILES or MolFile) found in the table.');
+    return;
+  }
+
+  const colInput = ui.input.column('Molecules', {
+    table: table,
+    value: applicableColumns[0],
+    filter: (c: DG.Column) => applicableColumns.includes(c),
+  });
+
+  ui.dialog('Calculate pI')
+    .add(colInput)
+    .onOK(async () => {
+      const selectedColumn = colInput.value;
+      if (!selectedColumn) return;
+
+      const pi = DG.TaskBarProgressIndicator.create(`Calculating pI for ${selectedColumn.name}...`);
+      try {
+        let resultDf: DG.DataFrame | null = null;
+
+        if (selectedColumn.semType === DG.SEMTYPE.MOLECULE) {
+          resultDf = await grok.functions.call('Bio:calculatePiFromSmiles', {
+            table: table,
+            smiles_column_name: selectedColumn.name, // Pass name
+          });
+        } else if (selectedColumn.semType === 'MolFile') {
+          resultDf = await grok.functions.call('Bio:calculatePiFromMolblock', {
+            table: table,
+            molblock_column_name: selectedColumn.name, 
+          });
+        }
+
+        if (resultDf) {
+          for (const newCol of resultDf.columns) {
+            newCol.name = table.columns.getUnusedName(newCol.name);
+            table.columns.add(newCol);
+          }
+        }
+      } catch (e: any) {
+        grok.shell.error(e.toString());
+      } finally {
+        pi.close();
+      }
+    })
+    .show();
+}
