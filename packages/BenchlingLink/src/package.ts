@@ -9,6 +9,7 @@ import { queryMolecules, postMolecule } from './moleculesApi';
 import { dataFrameFromObjects } from './utils';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import { queryPlates, postPlate } from './platesApi';
+import { queryMixtures, postMixture } from './mixturesApi';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
@@ -148,6 +149,16 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const createPlateNode = platesNode.item('Create Plate');
     createPlateNode.onSelected.subscribe(async () => {
       addBenchlingView('Create Plate', 'BenchlingLink:createPlate');
+    });
+
+    // Add mixtures group and item to the tree view
+    const mixturesNode = treeNode.group('Mixtures');
+    mixturesNode.onSelected.subscribe(async () => {
+      addBenchlingView('Mixtures', 'BenchlingLink:getMixtures');
+    });
+    const createMixtureNode = mixturesNode.item('Create Mixture');
+    createMixtureNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create Mixture', 'BenchlingLink:createMixture');
     });
 
     // Add projects group and item to the tree view
@@ -735,5 +746,113 @@ export async function createPlate(
   if (projectId) body.projectId = projectId;
   if (wells) body.wells = JSON.parse(wells);
   const result = await postPlate(body);
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+}
+
+//name: Get Mixtures
+//input: string sort {nullable:true}
+//input: string createdAt {nullable:true}
+//input: string modifiedAt {nullable:true}
+//input: string name {nullable:true}
+//input: string nameIncludes {nullable:true}
+//input: string folderId {nullable:true}
+//input: string mentionedIn {nullable:true}
+//input: string projectId {nullable:true}
+//input: string registryId {nullable:true}
+//input: string schemaId {nullable:true}
+//input: string schemaFields {nullable:true}
+//input: string archiveReason {nullable:true}
+//input: string mentions {nullable:true}
+//input: string ids {nullable:true}
+//input: string names_anyOf {nullable:true}
+//input: string names_anyOf_caseSensitive {nullable:true}
+//input: string entityRegistryIds_anyOf {nullable:true}
+//input: string ingredientComponentEntityIds {nullable:true}
+//input: string ingredientComponentEntityIds_anyOf {nullable:true}
+//input: string authorIds_anyOf {nullable:true}
+//output: dataframe df
+export async function getMixtures(
+  sort?: string,
+  createdAt?: string,
+  modifiedAt?: string,
+  name?: string,
+  nameIncludes?: string,
+  folderId?: string,
+  mentionedIn?: string,
+  projectId?: string,
+  registryId?: string,
+  schemaId?: string,
+  schemaFields?: string,
+  archiveReason?: string,
+  mentions?: string,
+  ids?: string,
+  names_anyOf?: string,
+  names_anyOf_caseSensitive?: string,
+  entityRegistryIds_anyOf?: string,
+  ingredientComponentEntityIds?: string,
+  ingredientComponentEntityIds_anyOf?: string,
+  authorIds_anyOf?: string,
+): Promise<DG.DataFrame> {
+  const params = {
+    sort,
+    createdAt,
+    modifiedAt,
+    name,
+    nameIncludes,
+    folderId,
+    mentionedIn,
+    projectId,
+    registryId,
+    schemaId,
+    schemaFields,
+    archiveReason,
+    mentions,
+    ids,
+    names_anyOf,
+    names_anyOf_caseSensitive,
+    entityRegistryIds_anyOf,
+    ingredientComponentEntityIds,
+    ingredientComponentEntityIds_anyOf,
+    authorIds_anyOf,
+  };
+  return await queryMixtures(params);
+}
+
+//name: Create Mixture
+//input: string name
+//input: string ingredients
+//input: string schemaId
+//input: string units
+//input: string aliases {nullable:true}
+//input: string amount {nullable:true}
+//input: string authorIds {nullable:true}
+//input: string customFields {nullable:true}
+//input: string entityRegistryId {nullable:true}
+//input: string fields {nullable:true}
+//input: string folderId {nullable:true}
+//output: dataframe df
+export async function createMixture(
+  name: string,
+  ingredients: string,
+  schemaId: string,
+  units: string,
+  aliases?: string,
+  amount?: string,
+  authorIds?: string,
+  customFields?: string,
+  entityRegistryId?: string,
+  fields?: string,
+  folderId?: string,
+): Promise<DG.DataFrame> {
+  const body: any = { name, schemaId, units };
+  body.ingredients = JSON.parse(ingredients);
+  if (aliases) body.aliases = JSON.parse(aliases);
+  if (amount) body.amount = amount;
+  if (authorIds) body.authorIds = JSON.parse(authorIds);
+  if (customFields) body.customFields = JSON.parse(customFields);
+  if (entityRegistryId) body.entityRegistryId = entityRegistryId;
+  if (fields) body.fields = JSON.parse(fields);
+  if (folderId) body.folderId = folderId;
+  const result = await postMixture(body);
   return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }

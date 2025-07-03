@@ -7,17 +7,8 @@ function inferColumnType(value: any): DG.COLUMN_TYPE {
     if (Number.isInteger(value)) return DG.COLUMN_TYPE.INT;
     return DG.COLUMN_TYPE.FLOAT;
   }
-  if (typeof value === 'string') {
-    // Handle empty string first
-    if (value.trim() === '') return DG.COLUMN_TYPE.STRING;
-    
-    // Try to infer QNUM (quantitative number) if possible
-    if (!isNaN(Number(value))) {
-      if (value.includes('.')) return DG.COLUMN_TYPE.FLOAT;
-      return DG.COLUMN_TYPE.INT;
-    }
-    return DG.COLUMN_TYPE.STRING;
-  }
+  // All strings become STRING type, no number inference
+  if (typeof value === 'string') return DG.COLUMN_TYPE.STRING;
   return DG.COLUMN_TYPE.STRING;
 }
 
@@ -25,10 +16,27 @@ export function dataFrameFromObjects(objects: Record<string, any>[]): DG.DataFra
   if (!objects || objects.length === 0)
     return DG.DataFrame.create();
 
-  const keys = Object.keys(objects[0]);
-  const columns: DG.Column[] = [];
+  // Helper function to process array of objects - extract id or identifier filed and concatenate
+  const processObjectArray = (arr: any[]): string => {
+    if (!Array.isArray(arr)) return '';
+    
+    return arr.map(obj => {
+      if (typeof obj !== 'object' || obj === null) return String(obj);
+      
+      // Try to find identifier field
+      let identifier = obj.id;
+      if (identifier === undefined) {
+        const identifierKey = Object.keys(obj).find(key => 
+          key.toLowerCase().includes('identifier')
+        );
+        identifier = identifierKey ? obj[identifierKey] : undefined;
+      }
+      
+      return identifier !== undefined ? String(identifier) : '';
+    }).filter(Boolean).join(',');
+  };
 
-  // Helper function to flatten objects and convert arrays to strings
+  // Helper function to flatten objects recursively
   const flattenObject = (obj: Record<string, any>, prefix = ''): Record<string, any> => {
     const result: Record<string, any> = {};
     
@@ -37,11 +45,15 @@ export function dataFrameFromObjects(objects: Record<string, any>[]): DG.DataFra
         const value = obj[key];
         const newKey = prefix ? `${prefix}.${key}` : key;
         
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+          // Handle array of objects specially
+          result[newKey] = processObjectArray(value);
+        }
+        else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           // Recursively flatten nested objects
           Object.assign(result, flattenObject(value, newKey));
         } else {
-          // Convert arrays to comma-separated strings
+          // Convert regular arrays to comma-separated strings
           result[newKey] = Array.isArray(value) ? value.join(',') : value;
         }
       }
@@ -60,14 +72,15 @@ export function dataFrameFromObjects(objects: Record<string, any>[]): DG.DataFra
   }
 
   // Create columns for each key
+  const columns: DG.Column[] = [];
   for (const key of Array.from(allKeys)) {
     // Find first non-null, non-undefined value to infer type
     let firstValue = flattenedObjects.find(obj => obj[key] !== undefined && obj[key] !== null)?.[key];
     if (firstValue === undefined || firstValue === null) firstValue = '';
 
     const colType = inferColumnType(firstValue);
-    const arr = flattenedObjects.map(obj => obj[key] !== undefined && obj[key] !== null ? obj[key] : null);
-    columns.push(DG.Column.fromList(colType, key, arr));
+    columns.push(DG.Column.fromList(colType, key,
+      flattenedObjects.map(obj => obj[key] !== undefined && obj[key] !== null ? obj[key] : null)));
   }
 
   return DG.DataFrame.fromColumns(columns);
