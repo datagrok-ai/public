@@ -537,7 +537,7 @@ export class DiffStudio {
         this.tabControl.root,
         DG.DOCK_TYPE.LEFT,
         null,
-        undefined,
+        TITLE.CONTROLS,
         this.uiOpts.inputsTabDockRatio,
       );
 
