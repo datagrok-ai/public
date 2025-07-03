@@ -177,7 +177,7 @@ export class PackagesView extends UaView {
     const fPane = cp.addPane('Functions', () => {
       return ui.wait(async () => {
         // console.log('started query');
-        const df: DG.DataFrame = await api.queries.packagesContextPaneFunctions(filter.time_start, filter.time_end);
+        const df: DG.DataFrame = await api.queries.packagesContextPaneFunctions(filter.time_start, filter.time_end, filter.users, filter.packages);
         // console.log('ended query');
         const data: {[key: string]: number} = {};
         // console.log('started cycle');
@@ -229,7 +229,7 @@ export class PackagesView extends UaView {
     button.classList.add('ua-details-button');
     const lPane = cp.addPane('Log events summary', () => {
       return ui.wait(async () => {
-        const df = await api.queries.packagesContextPaneLogs(filter.time_start, filter.time_end);
+        const df = await api.queries.packagesContextPaneLogs(filter.time_start, filter.time_end, filter.users, filter.packages);
         const data: {[key: string]: number} = {};
         for (const r of df.rows)
           data[r.source] = r.count + (data[r.source] ?? 0);
@@ -245,7 +245,7 @@ export class PackagesView extends UaView {
   static async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const pane = cp.addPane('Audit summary', () => {
       return ui.wait(async () => {
-        const df = await api.queries.packagesContextPaneAudit(filter.time_start, filter.time_end);
+        const df = await api.queries.packagesContextPaneAudit(filter.time_start, filter.time_end, filter.users, filter.packages);
         const data: {[key: string]: number} = {};
         for (const r of df.rows) data[r.name] = r.count + (data[r.name] ?? 0);
         const info = pane.root.querySelector('#info') as HTMLElement;
