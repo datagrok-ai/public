@@ -689,7 +689,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.molColumns = currentDf?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
 
-    const defaultMolColName = this.molColumns[0]?.name ?? null;
+    const defaultMolColName = this.molColumns[0]?.name ?? '';
     this.moleculeColumnName = this.column('molecule', {
       defaultValue: defaultMolColName,
       category: 'Data',
@@ -1587,7 +1587,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateBitset(node: DG.TreeViewNode): boolean {
-    return node && this.dataFrame ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
+    if (node == null || this.dataFrame == null || value(node) == null)
+      return false;
+    return value(node).bitset?.length !== this.dataFrame.rowCount;
   }
 
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
