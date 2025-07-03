@@ -8,6 +8,7 @@ import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from
 import { queryMolecules, postMolecule } from './moleculesApi';
 import { dataFrameFromObjects } from './utils';
 import {u2} from "@datagrok-libraries/utils/src/u2";
+import { queryPlates, postPlate } from './platesApi';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
@@ -137,6 +138,16 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const createMoleculeNode = moleculesNode.item('Create Molecule');
     createMoleculeNode.onSelected.subscribe(async () => {
       addBenchlingView('Create Molecule', 'BenchlingLink:createMolecule');
+    });
+
+    // Add plates group and item to the tree view
+    const platesNode = treeNode.group('Plates');
+    platesNode.onSelected.subscribe(async () => {
+      addBenchlingView('Plates', 'BenchlingLink:getPlates');
+    });
+    const createPlateNode = platesNode.item('Create Plate');
+    createPlateNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create Plate', 'BenchlingLink:createPlate');
     });
 
     // Add projects group and item to the tree view
@@ -604,4 +615,125 @@ export async function getProjects(
   };
   const projects = await (await import('./projectsApi')).queryProjects(params);
   return projects;
+}
+
+//name: Get Plates
+//input: string sort {nullable:true}
+//input: string schemaId {nullable:true}
+//input: string schemaFields {nullable:true}
+//input: string createdAt {nullable:true}
+//input: string modifiedAt {nullable:true}
+//input: string name {nullable:true}
+//input: string nameIncludes {nullable:true}
+//input: int emptyPositions {nullable:true}
+//input: int emptyPositions_gte {nullable:true}
+//input: int emptyPositions_gt {nullable:true}
+//input: int emptyPositions_lte {nullable:true}
+//input: int emptyPositions_lt {nullable:true}
+//input: int emptyContainers {nullable:true}
+//input: int emptyContainers_gte {nullable:true}
+//input: int emptyContainers_gt {nullable:true}
+//input: int emptyContainers_lte {nullable:true}
+//input: int emptyContainers_lt {nullable:true}
+//input: string ancestorStorageId {nullable:true}
+//input: string storageContentsId {nullable:true}
+//input: string storageContentsIds {nullable:true}
+//input: string archiveReason {nullable:true}
+//input: string ids {nullable:true}
+//input: string barcodes {nullable:true}
+//input: string names_anyOf {nullable:true}
+//input: string names_anyOf_caseSensitive {nullable:true}
+//input: string returning {nullable:true}
+//input: string creatorIds {nullable:true}
+//output: dataframe df
+export async function getPlates(
+  sort?: string,
+  schemaId?: string,
+  schemaFields?: string,
+  createdAt?: string,
+  modifiedAt?: string,
+  name?: string,
+  nameIncludes?: string,
+  emptyPositions?: number,
+  emptyPositions_gte?: number,
+  emptyPositions_gt?: number,
+  emptyPositions_lte?: number,
+  emptyPositions_lt?: number,
+  emptyContainers?: number,
+  emptyContainers_gte?: number,
+  emptyContainers_gt?: number,
+  emptyContainers_lte?: number,
+  emptyContainers_lt?: number,
+  ancestorStorageId?: string,
+  storageContentsId?: string,
+  storageContentsIds?: string,
+  archiveReason?: string,
+  ids?: string,
+  barcodes?: string,
+  names_anyOf?: string,
+  names_anyOf_caseSensitive?: string,
+  returning?: string,
+  creatorIds?: string,
+): Promise<DG.DataFrame> {
+  const params = {
+    sort,
+    schemaId,
+    schemaFields,
+    createdAt,
+    modifiedAt,
+    name,
+    nameIncludes,
+    emptyPositions,
+    emptyPositions_gte,
+    emptyPositions_gt,
+    emptyPositions_lte,
+    emptyPositions_lt,
+    emptyContainers,
+    emptyContainers_gte,
+    emptyContainers_gt,
+    emptyContainers_lte,
+    emptyContainers_lt,
+    ancestorStorageId,
+    storageContentsId,
+    storageContentsIds,
+    archiveReason,
+    ids,
+    barcodes,
+    names_anyOf,
+    names_anyOf_caseSensitive,
+    returning,
+    creatorIds,
+  };
+  return await queryPlates(params);
+}
+
+//name: Create Plate
+//input: string name
+//input: string schemaId
+//input: string barcode {nullable:true}
+//input: string containerSchemaId {nullable:true}
+//input: string fields {nullable:true}
+//input: string parentStorageId {nullable:true}
+//input: string projectId {nullable:true}
+//input: string wells {nullable:true}
+//output: dataframe df
+export async function createPlate(
+  name: string,
+  schemaId: string,
+  barcode?: string,
+  containerSchemaId?: string,
+  fields?: string,
+  parentStorageId?: string,
+  projectId?: string,
+  wells?: string,
+): Promise<DG.DataFrame> {
+  const body: any = { name, schemaId };
+  if (barcode) body.barcode = barcode;
+  if (containerSchemaId) body.containerSchemaId = containerSchemaId;
+  if (fields) body.fields = JSON.parse(fields);
+  if (parentStorageId) body.parentStorageId = parentStorageId;
+  if (projectId) body.projectId = projectId;
+  if (wells) body.wells = JSON.parse(wells);
+  const result = await postPlate(body);
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
