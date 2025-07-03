@@ -380,7 +380,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
-                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                query = query.replaceAll("(?m)^\\s*" + commentStart + ".*\\n", "");
                 resultSet = executeQuery(query, queryRun, connection, timeout, fetchSize);
             }
             else {

@@ -37,7 +37,6 @@ public class GrokConnect {
     private static final int DEFAULT_PORT = 1234;
     private static final String VERSION = "version";
     private static final String NAME = "artifactId";
-    private static final String DEFAULT_URI = String.format("http://localhost:%s", DEFAULT_PORT);
     private static final String DEFAULT_LOG_EXCEPTION_MESSAGE = "An exception was thrown";
     private static final Logger PARENT_LOGGER = (Logger) LoggerFactory.getLogger(GrokConnect.class);
     private static final String LOG_LEVEL_PREFIX = "LogLevel";
