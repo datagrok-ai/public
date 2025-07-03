@@ -180,14 +180,11 @@ export class TreeViewer extends EChartViewer {
         else
           this.viewerFilter = viewerFilter;
 
+        if (this.viewerFilter.trueCount === 0)
+          this.viewerFilter.setAll(true);
 
-        if (this.capturedFilterState) {
-          this.dataFrame.filter.copyFrom(this.capturedFilterState);
-          if (this.viewerFilter.trueCount > 0)
-            this.dataFrame.filter.and(this.viewerFilter);
-        } else
-          this.dataFrame.filter.copyFrom(this.viewerFilter);
-      } else
+        this.dataFrame.filter.copyFrom(this.viewerFilter);
+      } else if (this.onClick === 'Select')
         this.applySelectionFilter(this.dataFrame.selection, path, event.event);
     };
 
@@ -599,7 +596,6 @@ export class TreeViewer extends EChartViewer {
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((args) => {
       if (this.viewerFilter)
         this.dataFrame.filter.and(this.viewerFilter);
-      this.capturedFilterState = this.dataFrame.filter;
     }));
   }
 
