@@ -7,6 +7,7 @@ import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
 import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from './assayApi';
 import { queryMolecules, postMolecule } from './moleculesApi';
 import { dataFrameFromObjects } from './utils';
+import {u2} from "@datagrok-libraries/utils/src/u2";
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
@@ -17,7 +18,19 @@ const STORAGE_NAME = 'BenchlingLinkFuncEditor';
 //meta.browsePath: Chem
 export async function benchlingLinkApp(): Promise<DG.ViewBase> {
 
-  return DG.View.fromRoot(ui.div('Pilot version of Benchling link application'));
+  const appHeader = u2.appHeader({
+    iconPath: _package.webRoot + '/images/benchling.png',
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/BenchlingLInk/README.md',
+    description: '- Integrate with your Benchling account.\n' +
+      '- Analyze assay data.\n' +
+      '- Find contextual information on molecules and sequences.\n' +
+      '- Create entities and post them to the registry.\n' +
+      '- Browse the tenant content.\n'
+  });
+
+  const view = DG.View.fromRoot(appHeader);
+  view.name = 'Benchling';
+  return view;
 }
 
 //input: dynamic treeNode
