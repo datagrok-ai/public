@@ -10,7 +10,7 @@ category('App', () => {
   let view: DG.MultiView;
 
   before(async () => {
-    view = await api.funcs.usageAnalysisApp();
+    view = await api.funcs.usageAnalysisApp() as any;
     grok.shell.addView(view);
   });
 

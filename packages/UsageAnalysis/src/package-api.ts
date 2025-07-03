@@ -96,7 +96,7 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
   }
 
-  export async function sameErrors(date: string , event_id: string  | null): Promise<number> {
+  export async function sameErrors(date: string , event_id: string | null): Promise<number> {
     return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
   }
 
@@ -360,7 +360,7 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ReportsMigration', {});
   }
 
-  export async function reportDataMigration(report_id: string , id: string , screenshot: string  | null, details: string  | null, client_settings: string  | null, server_settings: string  | null, errors: string  | null, client_log: string  | null, server_log: string  | null, console: string  | null, queries_log: string  | null, containers_log: string  | null, images_log: string  | null, services: string  | null): Promise<DG.DataFrame> {
+  export async function reportDataMigration(report_id: string , id: string , screenshot: string | null, details: string | null, client_settings: string | null, server_settings: string | null, errors: string | null, client_log: string | null, server_log: string | null, console: string | null, queries_log: string | null, containers_log: string | null, images_log: string | null, services: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ReportDataMigration', { report_id, id, screenshot, details, client_settings, server_settings, errors, client_log, server_log, console, queries_log, containers_log, images_log, services });
   }
 
@@ -376,8 +376,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:BenchmarksDashboard', { instanceFilter, lastBuildsNum, showNotRun, showBenchmarks, showNotCiCd });
   }
 
-  export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , packageFilter: string  | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean , versionFilter: string  | null): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, packageFilter, showNotRun, showBenchmarks, showNotCiCd, versionFilter });
+  export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , packageFilter: string | null, versionFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, packageFilter, versionFilter, showNotRun, showBenchmarks, showNotCiCd });
   }
 
   export async function manualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
@@ -400,7 +400,7 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:Benchmarks', {});
   }
 
-  export async function stressTests(batch_name: string  | null): Promise<DG.DataFrame> {
+  export async function stressTests(batch_name: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:StressTests', { batch_name });
   }
 
@@ -486,43 +486,43 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function initUA(): Promise<any> {
+  export async function initUA(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:InitUA', {});
   }
 
-  export async function testsList(): Promise<any> {
+  export async function testsList(): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestsList', {});
   }
 
-  export async function testsListJoined(): Promise<any> {
+  export async function testsListJoined(): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestsListJoined', {});
   }
 
-  export async function testAnalysisReportForCurrentDay(date: any ): Promise<any> {
+  export async function testAnalysisReportForCurrentDay(date: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
-  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string , params?: any ): Promise<any> {
+  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string , params?: any ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects, params });
   }
 
-  export async function testTrackApp(): Promise<any> {
+  export async function testTrackApp(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:TestTrackApp', {});
   }
 
-  export async function reportsApp(path?: string , params?: any ): Promise<any> {
+  export async function reportsApp(path?: string , params?: any ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:ReportsApp', { path, params });
   }
 
-  export async function serviceLogsApp(path?: string , params?: any , limit?: number ): Promise<any> {
+  export async function serviceLogsApp(path?: string , params?: any , limit?: number ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
-  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function reportsAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+  export async function reportsAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode, browseView });
   }
 
@@ -542,12 +542,12 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestDashboardsViewer', {});
   }
 
-  export async function describeCurrentObj(): Promise<any> {
+  export async function describeCurrentObj(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:DescribeCurrentObj', {});
   }
 
   //Creates JIRA ticket using current error log  
-  export async function createJiraTicket(): Promise<any> {
+  export async function createJiraTicket(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
   }
 }

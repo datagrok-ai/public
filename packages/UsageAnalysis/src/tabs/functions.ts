@@ -139,7 +139,7 @@ export class FunctionsView extends UaView {
   }
 
   async getFunctionPane(cp: DG.Accordion, filter: Filter, single: boolean = false) {
-    const df = await api.queries.functionsContextPane(filter.time_start, filter.time_end);
+    const df = await api.queries.functionsContextPane(filter.time_start, filter.time_end, filter.users,  filter.packages, filter.functions);
     const data: { [key: string]: [string, any, string, string][] } = {};
     for (const r of df.rows) {
       const key = r.pid + ':' + r.function;

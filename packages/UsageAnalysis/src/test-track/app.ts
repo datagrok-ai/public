@@ -224,7 +224,7 @@ export class TestTrack extends DG.ViewBase {
     const filesP = _package.files.list('Test Track', true);
     const namePFromDb: string = (await api.queries.testingName(this.version, this.uid, this.start) || NEW_TESTING);
     const nameP: string = this.testingName || namePFromDb;
-    const history: DG.DataFrame = await  api.funcs.testTrackApp();
+    const history: DG.DataFrame = await  api.queries.testTrack(`${nameP}`);
 
     for (const row of history.rows) {
       const path = (row.get('test') || '').replace('Unknown: ', '').replace('Test Track: ', '');
@@ -1251,7 +1251,7 @@ export class TestTrack extends DG.ViewBase {
   private async updateBatchData() {
     if (!this.testingName)
       return;
-    const history: DG.DataFrame = await api.funcs.testTrackApp();
+    const history: DG.DataFrame = await api.queries.testTrack(this.testingName);
 
     for (const row of history.rows) {
 

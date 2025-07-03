@@ -11,7 +11,7 @@ export class PackageUsageWidget extends DG.Widget {
   constructor(pack: DG.Package) {
     super(ui.box(null, {classes: 'ua-widget ua-package-widget'}));
     this.root.append(ui.waitBox(async () => {
-      const df: DG.DataFrame = await this.groupsP.then((groups) => api.queries.packagesUsage(this.date));
+      const df: DG.DataFrame = await this.groupsP.then((groups) => api.queries.packagesUsage( this.date, [groups[0].id], ['all'], ['any']));
       // groups: [groups[0].id], packages: ['all']}
       df.rows.removeWhere((r: DG.Row) => r.get('package') !== pack.name);
       const usersHistogram = df
