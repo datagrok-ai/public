@@ -9,12 +9,6 @@ export interface AaAnnotation {
   type: string;
 }
 
-export interface UserSummary {
-  handle: string;
-  id: string;
-  name: string;
-}
-
 export interface AaSequence {
   aliases?: string[];
   aminoAcids: string;
@@ -43,6 +37,7 @@ export interface AaSequencesPaginatedList {
 }
 
 import { mockAaSequences, mockAaSequence } from './aaSequencesMock';
+import { UserSummary } from './types';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';

@@ -138,6 +138,12 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     createMoleculeNode.onSelected.subscribe(async () => {
       addBenchlingView('Create Molecule', 'BenchlingLink:createMolecule');
     });
+
+    // Add projects group and item to the tree view
+    const projectsNode = treeNode.item('Projects');
+    projectsNode.onSelected.subscribe(async () => {
+      addBenchlingView('Projects', 'BenchlingLink:getProjects');
+    });
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }
@@ -576,4 +582,26 @@ export async function createMolecule(
   if (formula) body.formula = formula;
   const result = await postMolecule(body);
   return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+}
+
+//name: Get Projects
+//input: string sort {nullable:true}
+//input: string archiveReason {nullable:true}
+//input: string ids {nullable:true}
+//input: string name {nullable:true}
+//output: dataframe df
+export async function getProjects(
+  sort?: string,
+  archiveReason?: string,
+  ids?: string,
+  name?: string,
+): Promise<DG.DataFrame> {
+  const params = {
+    sort,
+    archiveReason,
+    ids,
+    name,
+  };
+  const projects = await (await import('./projectsApi')).queryProjects(params);
+  return projects;
 }

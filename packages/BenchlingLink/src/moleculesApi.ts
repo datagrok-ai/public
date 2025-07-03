@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { dataFrameFromObjects } from './utils';
 import { _package } from './package';
+import { UserSummary } from './types';
 
 export interface Molecule {
   aliases?: string[];
@@ -24,12 +25,6 @@ export interface Molecule {
   schema?: any;
   smiles: string;
   webURL?: string;
-}
-
-export interface UserSummary {
-  handle: string;
-  id: string;
-  name: string;
 }
 
 export interface MoleculesPaginatedList {
