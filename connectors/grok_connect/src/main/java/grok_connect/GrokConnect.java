@@ -58,10 +58,11 @@ public class GrokConnect {
         threadPool = Executors.newCachedThreadPool();
         PARENT_LOGGER.info(getStringLogMemory());
         providerManager = new ProviderManager();
-        port(DEFAULT_PORT);
+        int listenPort = getListenPort();
+        port(listenPort);
         connectorsModule();
         PARENT_LOGGER.info("grok_connect with Hikari pool");
-        PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
+        PARENT_LOGGER.info("grok_connect: Running on {}", listenPort);
         PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
@@ -357,6 +358,19 @@ public class GrokConnect {
         if (level.isPresent()) {
             String property = System.getProperty(level.get());
             PARENT_LOGGER.setLevel(Level.toLevel(property));
+        }
+    }
+
+    private static int getListenPort() {
+        String value = System.getenv("GROK_CONNECT_PORT");
+        if (value == null || value.isEmpty()) {
+            return DEFAULT_PORT;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            System.out.println("Incorrect value of GROK_CONNECT_PORT was passed: " + value + ". Using default port " + DEFAULT_PORT);
+            return DEFAULT_PORT;
         }
     }
 }
