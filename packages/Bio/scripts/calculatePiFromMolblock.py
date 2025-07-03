@@ -33,14 +33,16 @@ def _calculate_pi_single(smiles_string, mol_name='molecule'):
 
 def _calculate_pi_from_molblock_single(molblock_string, mol_name='molecule'):
     try:
-        mol = Chem.MolFromMolBlock(molblock_string, strictParsing=False, removeHs=True)
+        mol = None
+        try:
+            mol = Chem.MolFromMolBlock(molblock_string, strictParsing=False, removeHs=False)
+        except Exception as e:
+            print(f"Standard parsing failed: {e}")
         if mol is None:
             return {'pI_mean': None, 'pI_std': None, 'charge_at_pH7': None}
-        
         smiles = Chem.MolToSmiles(mol)
         return _calculate_pi_single(smiles, mol_name=mol_name)
     except Exception as e:
-        print(f"Error processing MolBlock: {str(e)}")
         return {'pI_mean': None, 'pI_std': None, 'charge_at_pH7': None}
 
 # Doing each row.. How the hell do i vectorize this? is it automatic?
@@ -49,10 +51,13 @@ molblock_column_data = table[molblock_column_name]
 
 for i in table.index:
     molblock = molblock_column_data[i]
+    
     if pd.isna(molblock) or molblock == '':
         mol_results_list.append({'pI_mean': None, 'pI_std': None, 'charge_at_pH7': None})
     else:
-        mol_results_list.append(_calculate_pi_from_molblock_single(str(molblock)))
+        molblock_str = str(molblock)
+        result = _calculate_pi_from_molblock_single(molblock_str)
+        mol_results_list.append(result)
 
 result = pd.DataFrame(mol_results_list)
 result.index = table.index
