@@ -2211,7 +2211,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
-    if (!detach)
+    const isEmpty = Object.values(parsedTag).every(
+      nested => Object.values(nested).every(arr => Array.isArray(arr) && arr.length === 0)
+    );
+    if (isEmpty)
+      this.fragmentsColumn?.init((i) => null);
+    if (!detach && !isEmpty)
       this.assignScaffoldColors();
   }
 
