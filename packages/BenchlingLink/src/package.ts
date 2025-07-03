@@ -10,6 +10,7 @@ import { dataFrameFromObjects } from './utils';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import { queryPlates, postPlate } from './platesApi';
 import { queryMixtures, postMixture } from './mixturesApi';
+import { queryDnaOligos, postDnaOligo } from './dnaOligosApi';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
@@ -22,7 +23,7 @@ export async function benchlingLinkApp(): Promise<DG.ViewBase> {
 
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/benchling.png',
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/BenchlingLInk/README.md',
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/BenchlingLink/README.md',
     description: '- Integrate with your Benchling account.\n' +
       '- Analyze assay data.\n' +
       '- Find contextual information on molecules and sequences.\n' +
@@ -38,11 +39,19 @@ export async function benchlingLinkApp(): Promise<DG.ViewBase> {
 //input: dynamic treeNode
 //input: view browseView
 export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-  function createFuncEditorView(funcName: string) {
+  function createFuncEditorView(funcName: string, v: DG.View) {
     let func = DG.Func.byName(funcName);
     let editorDiv = ui.div();
     let gridDiv = ui.div();
     let root = ui.splitV([editorDiv, gridDiv], {style: {height: '100%', width: '100%'}});
+    let df: DG.DataFrame | null;
+
+    const addToWorkspaceButton = ui.icons.add(() => {
+      if (df) {
+        grok.shell.addTablePreview(df);
+      }
+    }, 'Add results to workspace');
+    v.setRibbonPanels([[addToWorkspaceButton]]);
 
     // Restore state if exists
     const saved = grok.userSettings.getValue(STORAGE_NAME, funcName);
@@ -73,8 +82,8 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       //run function
       ui.empty(gridDiv);
       try {
-        let result = (await funcCall.call()).getOutputParamValue();
-        let grid = result.plot.grid();
+        df = (await funcCall.call()).getOutputParamValue();
+        let grid = df!.plot.grid();
         grid.root.style.width = '100%';
         grid.root.style.height = '100%';
         gridDiv.appendChild(grid.root);
@@ -88,12 +97,38 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
 
   const addBenchlingView = (viewName: string, funcName: string) => {
     const v = DG.View.create(viewName);
-    v.root.appendChild(createFuncEditorView(funcName));
-    grok.shell.addView(v);
+    v.root.appendChild(createFuncEditorView(funcName, v));
+    const path = ['Home', 'Benchling', viewName];
+    grok.shell.addPreview(v);
+    setBreadcrumbs(path, treeNode);
+  }
+
+  const setBreadcrumbs = (path: string[], tree: DG.TreeViewGroup) => {
+    const breadcrumbs = ui.breadcrumbs(path);
+    breadcrumbs.onPathClick.subscribe(async (value) => {
+      const actualItem = value[value.length - 1];
+      if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
+        return;
+      if (actualItem === 'Benchling')
+        tree.currentItem = tree;
+    });
+    if (grok.shell.v) {
+      if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
+        const homeIcon = ui.iconFA('home', () => {
+          grok.shell.v.close();
+          grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
+        });
+        breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
+      }
+      const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+      if (viewNameRoot) {
+        viewNameRoot.textContent = '';
+        viewNameRoot.appendChild(breadcrumbs.root);
+      }
+    }
   }
 
   try {
-    // Rebuild the tree from scratch
     treeNode.items.length = 0;
     const aaSequenceNode = treeNode.group('AA Sequences');
     aaSequenceNode.onSelected.subscribe(async () => {
@@ -159,6 +194,16 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const createMixtureNode = mixturesNode.item('Create Mixture');
     createMixtureNode.onSelected.subscribe(async () => {
       addBenchlingView('Create Mixture', 'BenchlingLink:createMixture');
+    });
+
+    // Add DNA Oligos group and item to the tree view
+    const dnaOligosNode = treeNode.group('DNA Oligos');
+    dnaOligosNode.onSelected.subscribe(async () => {
+      addBenchlingView('DNA Oligos', 'BenchlingLink:getDnaOligos');
+    });
+    const createDnaOligoNode = dnaOligosNode.item('Create DNA Oligo');
+    createDnaOligoNode.onSelected.subscribe(async () => {
+      addBenchlingView('Create DNA Oligo', 'BenchlingLink:createDnaOligo');
     });
 
     // Add projects group and item to the tree view
@@ -854,5 +899,117 @@ export async function createMixture(
   if (fields) body.fields = JSON.parse(fields);
   if (folderId) body.folderId = folderId;
   const result = await postMixture(body);
+  return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+}
+
+//name: Get DNA Oligos
+//input: string sort {nullable:true}
+//input: string createdAt {nullable:true}
+//input: string modifiedAt {nullable:true}
+//input: string name {nullable:true}
+//input: string nameIncludes {nullable:true}
+//input: string bases {nullable:true}
+//input: string folderId {nullable:true}
+//input: string mentionedIn {nullable:true}
+//input: string projectId {nullable:true}
+//input: string registryId {nullable:true}
+//input: string schemaId {nullable:true}
+//input: string schemaFields {nullable:true}
+//input: string archiveReason {nullable:true}
+//input: string mentions {nullable:true}
+//input: string ids {nullable:true}
+//input: string entityRegistryIds_anyOf {nullable:true}
+//input: string names_anyOf {nullable:true}
+//input: string names_anyOf_caseSensitive {nullable:true}
+//input: string creatorIds {nullable:true}
+//input: string authorIds_anyOf {nullable:true}
+//input: string returning {nullable:true}
+//input: string customNotationId {nullable:true}
+//output: dataframe df
+export async function getDnaOligos(
+  sort?: string,
+  createdAt?: string,
+  modifiedAt?: string,
+  name?: string,
+  nameIncludes?: string,
+  bases?: string,
+  folderId?: string,
+  mentionedIn?: string,
+  projectId?: string,
+  registryId?: string,
+  schemaId?: string,
+  schemaFields?: string,
+  archiveReason?: string,
+  mentions?: string,
+  ids?: string,
+  entityRegistryIds_anyOf?: string,
+  names_anyOf?: string,
+  names_anyOf_caseSensitive?: string,
+  creatorIds?: string,
+  authorIds_anyOf?: string,
+  returning?: string,
+  customNotationId?: string,
+): Promise<DG.DataFrame> {
+  const params = {
+    sort,
+    createdAt,
+    modifiedAt,
+    name,
+    nameIncludes,
+    bases,
+    folderId,
+    mentionedIn,
+    projectId,
+    registryId,
+    schemaId,
+    schemaFields,
+    archiveReason,
+    mentions,
+    ids,
+    entityRegistryIds_anyOf,
+    names_anyOf,
+    names_anyOf_caseSensitive,
+    creatorIds,
+    authorIds_anyOf,
+    returning,
+    customNotationId,
+  };
+  return await queryDnaOligos(params);
+}
+
+//name: Create DNA Oligo
+//input: string name
+//input: string bases
+//input: string aliases {nullable:true}
+//input: string annotations {nullable:true}
+//input: string authorIds {nullable:true}
+//input: string customFields {nullable:true}
+//input: string fields {nullable:true}
+//input: string folderId {nullable:true}
+//input: string schemaId {nullable:true}
+//input: string helm {nullable:true}
+//output: dataframe df
+export async function createDnaOligo(
+  name: string,
+  bases: string,
+  aliases?: string,
+  annotations?: string,
+  authorIds?: string,
+  customFields?: string,
+  fields?: string,
+  folderId?: string,
+  schemaId?: string,
+  helm?: string,
+): Promise<DG.DataFrame> {
+  const body: any = { name, bases };
+  if (aliases) body.aliases = JSON.parse(aliases);
+  if (annotations) body.annotations = JSON.parse(annotations);
+  if (authorIds) body.authorIds = JSON.parse(authorIds);
+  if (customFields) body.customFields = JSON.parse(customFields);
+  if (fields) body.fields = JSON.parse(fields);
+  if (folderId) body.folderId = folderId;
+  if (schemaId) body.schemaId = schemaId;
+  if (helm) body.helm = helm;
+  const result = await postDnaOligo(body);
   return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
 }
