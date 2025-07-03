@@ -43,7 +43,8 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     let func = DG.Func.byName(funcName);
     let editorDiv = ui.div();
     let gridDiv = ui.div();
-    let root = ui.splitV([editorDiv, gridDiv], {style: {height: '100%', width: '100%'}});
+    let root = ui.splitV([editorDiv, gridDiv], {style: {height: '100%', width: '100%'}}, true);
+    gridDiv.setAttribute('style', 'overflow:hidden !important');
     let df: DG.DataFrame | null;
 
     const addToWorkspaceButton = ui.icons.add(() => {
@@ -63,6 +64,7 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
       let form = await DG.InputForm.forFuncCall(funcCall);
       form.root.style.flexWrap = 'wrap';
       form.root.style.height = '100%';
+      form.root.style.maxWidth = 'unset';
       DG.debounce(form.onInputChanged, 1000).subscribe(() => {
         runFunc();
       })
@@ -85,7 +87,7 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
         df = (await funcCall.call()).getOutputParamValue();
         let grid = df!.plot.grid();
         grid.root.style.width = '100%';
-        grid.root.style.height = '100%';
+        grid.root.style.height = '95%';
         gridDiv.appendChild(grid.root);
       } catch (e) {
         gridDiv.appendChild(ui.divText('Error: ' + e));
