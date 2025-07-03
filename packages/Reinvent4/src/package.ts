@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from './package-api';
 import { ReinventBaseEditor, TARGET_PATH } from './utils/reinvent-editor';
 import { zipFolder } from './utils/utils';
 
@@ -70,10 +71,7 @@ export async function runReinvent(ligand: string, optimize: string): Promise<str
 export async function reinvent(
   ligand: string, optimize: string
 ): Promise<DG.DataFrame> {
-  const resultDfPromise = grok.functions.call('Reinvent4:runReinvent', {
-    ligand: ligand,
-    optimize: optimize
-  });
+  const resultDfPromise = api.funcs.runReinvent(ligand, optimize);
   const schemas = await grok.dapi.stickyMeta.getSchemas();
   const lineageSchema = schemas.find((s) => s.name === 'Lineage');
 

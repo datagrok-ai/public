@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function initHelm(): Promise<any> {
+  export async function initHelm(): Promise<void> {
     return await grok.functions.call('Helm:InitHelm', {});
   }
 
@@ -18,24 +18,24 @@ export namespace funcs {
   }
 
   //Macromolecule
-  export async function editMoleculeCell(cell: any): Promise<any> {
+  export async function editMoleculeCell(cell: any ): Promise<void> {
     return await grok.functions.call('Helm:EditMoleculeCell', { cell });
   }
 
   //Adds editor
-  export async function openEditor(mol: any): Promise<any> {
+  export async function openEditor(mol: any ): Promise<void> {
     return await grok.functions.call('Helm:OpenEditor', { mol });
   }
 
-  export async function propertiesWidget(sequence: any): Promise<any> {
+  export async function propertiesWidget(sequence: any ): Promise<any> {
     return await grok.functions.call('Helm:PropertiesWidget', { sequence });
   }
 
-  export async function getMolfiles(col: DG.Column): Promise<any> {
+  export async function getMolfiles(col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('Helm:GetMolfiles', { col });
   }
 
-  export async function helmInput(name: string, options: any): Promise<any> {
+  export async function helmInput(name?: string , options?: any ): Promise<any> {
     return await grok.functions.call('Helm:HelmInput', { name, options });
   }
 
@@ -43,11 +43,11 @@ export namespace funcs {
     return await grok.functions.call('Helm:GetHelmHelper', {});
   }
 
-  export async function measureCellRenderer(): Promise<any> {
+  export async function measureCellRenderer(): Promise<void> {
     return await grok.functions.call('Helm:MeasureCellRenderer', {});
   }
 
-  export async function highlightMonomers(): Promise<any> {
+  export async function highlightMonomers(): Promise<DG.View> {
     return await grok.functions.call('Helm:HighlightMonomers', {});
   }
 }

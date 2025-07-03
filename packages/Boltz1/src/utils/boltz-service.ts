@@ -6,6 +6,7 @@ import * as yaml from 'js-yaml';
 import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
 import { _package } from '../package';
 import { getFromPdbs, prop } from '../utils/utils';
+import * as api from '../package-api';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -85,7 +86,7 @@ export class BoltzService {
       });
   
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
+      const result = DG.DataFrame.fromCsv(await api.funcs.runBoltz(yamlString, ''));
       resultDf.append(result, true);
     }
   
@@ -128,9 +129,8 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
+      const result = DG.DataFrame.fromCsv(await api.funcs.runBoltz(updatedConfig, msaFile));
       resultDf.append(result, true);
-
       sequences.pop();
     }
 

@@ -15,6 +15,7 @@ import { SeachEditor } from './search-function-editor';
 import { addNodeWithEmptyResults, CDDVaultStats, createCDDContextPanel, createCDDTableView, createCDDTableViewWithPreview, createInitialSatistics, createLinks,
   createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
   getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
+import * as api from './package-api';
 
 export const _package = new DG.Package();
 
@@ -58,7 +59,7 @@ export async function cddVaultApp(path: string, filter: string): Promise<DG.View
 //input: view browseView
 export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   try {
-    const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+    const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
 
     for (const vault of vaults) {
       //vault node
@@ -144,7 +145,7 @@ export async function cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
 export function molColumnPropertyPanel(molecule: string): DG.Widget {
   return DG.Widget.fromRoot(ui.wait(async () => {
     try {
-      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
       //looking for molecule in the first vault
       const vaultId = vaults[0].id;
       const cddMols = await queryMolecules(vaultId, { structure: molecule, structure_search_type: "exact"});
@@ -164,7 +165,7 @@ export function molColumnPropertyPanel(molecule: string): DG.Widget {
 //input: funccall call
 export async function CDDVaultSearchEditor(call: DG.FuncCall): Promise<void> { //is not used at the moment
   try {
-    const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+    const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
     const vaultId = vaults[0].id;
     const funcEditor = new SeachEditor(vaultId);
     const dialog = ui.dialog({title: 'CDD search'})

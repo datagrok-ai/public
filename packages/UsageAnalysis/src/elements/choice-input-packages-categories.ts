@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/choice_input.css';
 import Choices from 'choices.js';
 import {ChoiceInputBase} from "./choice-input-base";
+import * as api from "../package-api";
 
 
 export class ChoiceInputPackagesCategories extends ChoiceInputBase {
@@ -23,7 +24,7 @@ export class ChoiceInputPackagesCategories extends ChoiceInputBase {
         });
         field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
-        const categories: string[] = ((await grok.functions.call('UsageAnalysis:PackagesCategories')) as DG.DataFrame).getCol('category').toList();
+        const categories: string[] = ((await api.queries.packagesCategories()) as DG.DataFrame).getCol('category').toList();
 
         choices.setChoices(() => categories.map((p: string) => {
             return {value: p, label: p};

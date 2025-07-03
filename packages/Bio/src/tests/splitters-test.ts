@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
+import * as api from '../package-api';
 import wu from 'wu';
 
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
@@ -114,7 +114,7 @@ category('splitters', () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const newDf: DG.DataFrame = await grok.functions.call('Bio:splitToMonomersTopMenu', {table: df, sequence: seqCol});
+    const newDf: DG.DataFrame = await api.funcs.splitToMonomersTopMenu(df, seqCol);
     expect(newDf.columns.names().includes('17'), true);
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(newDf);
@@ -135,7 +135,7 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');
-    const res = await grok.functions.call('Bio:getHelmMonomers', {sequence: helmCol}) as string[];
+    const res = await api.funcs.getHelmMonomers(helmCol) as string[];
 
     const missed = expectedMonomerList.filter((m) => !res.includes(m));
     const unexpected = res.filter((m) => !expectedMonomerList.includes(m));

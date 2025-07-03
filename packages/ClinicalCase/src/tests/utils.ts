@@ -13,6 +13,7 @@ import {StudyVisit} from '../model/study-visit';
 import {PatientVisit} from '../model/patient-visit';
 import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
 import {LABORATORY_VIEW_NAME} from '../constants/view-names-constants';
+import * as api from '../package-api';
 
 export const allViews = [
   'Summary',
@@ -41,7 +42,7 @@ export async function requireText(name: string): Promise<string> {
 
 export async function _testOpenApp() {
   await createTableView('dm.csv');
-  await grok.functions.call('Clinicalcase:clinicalCaseApp');
+  await api.funcs.clinicalCaseApp();
 }
 
 export async function _testCumulativeEnrollment() {

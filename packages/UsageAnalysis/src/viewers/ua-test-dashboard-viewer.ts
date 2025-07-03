@@ -3,6 +3,7 @@ import { IndexPredicate } from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import { _properties } from '../package';
+import * as jiraApi from '@datagrok/jiraconnect/src/package-api';
 
 class Priority {
   static BLOCKER: string = 'BLOCKER';
@@ -380,30 +381,13 @@ export class TestDashboardWidget extends DG.JsViewer {
       });
     
       let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...tickets]);
-      let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'priority:name'
-      });
-      let statusCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'status:name'
-      });
-      let issueTypeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'issuetype:name'
-      });
-      let summaryCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'summary'
-      });
-      let assigneeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'assignee:displayName'
-      });
-      let fixVersionsCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'fixVersions:0:name'
-      });
+      let severityCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'priority:name');
+      let statusCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'status:name');
+      let issueTypeCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'issuetype:name');
+      let summaryCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'summary');
+      let assigneeCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'assignee:displayName');
+      let fixVersionsCol: DG.Column<string> = await jiraApi.funcs.getJiraField(jiraCol, 'fixVersions:0:name');
+
       for (var i = 0; i < jiraCol.length; i++) {
         let priority: string = Priority.INFO;
         if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')

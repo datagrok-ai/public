@@ -6,7 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
-
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import * as api from '../package-api';
 import {_package} from '../package';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 

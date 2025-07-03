@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import { before, after, category, test, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import * as api from '../package-api';
 
 
 category('App', () => {
@@ -9,7 +10,7 @@ category('App', () => {
   let view: DG.MultiView;
 
   before(async () => {
-    view = await grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
+    view = await api.funcs.usageAnalysisApp();
     grok.shell.addView(view);
   });
 
