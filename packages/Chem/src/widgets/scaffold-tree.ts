@@ -18,7 +18,7 @@ import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-ce
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 let attached = false;
-let scaffoldTreeId = 0;
+let scaffoldTreeId = 1;
 const SCAFFOLD_TREE_SKETCHER_ACTION = 'scaffold-tree-sketcher-action';
 
 export enum BitwiseOp {
@@ -666,7 +666,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   applyFilter: boolean = true;
   summary: string;
   title: string;
-  scaffoldTreeId: number = scaffoldTreeId;
+  scaffoldTreeId: number;
   fragmentsColumn: DG.Column | null = null;
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
   intersectionObserver: IntersectionObserver | undefined;
@@ -678,7 +678,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree = ui.tree();
     // this.tree.root.classList.add('d4-tree-view-lines');
 
-    this.title = this.string('title', 'Scaffold Tree');
+    this.title = this.string('title', `Scaffold Tree_${scaffoldTreeId}`);
     this.size = this.string('size', Object.keys(this.sizesMap)[2], {choices: Object.keys(this.sizesMap)});
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
@@ -727,6 +727,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toHtml);
     this.summary = this.string('summary', this.getFilterSum(), {userEditable: false});
+    this.scaffoldTreeId = this.int('scaffoldTreeId', scaffoldTreeId, {userEditable: false});
     this._initMenu();
   }
 
@@ -2165,7 +2166,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     updateVisibleMols(this);
     attached = true;
     scaffoldTreeId += 1;
-    this.title = `${this.title}_${scaffoldTreeId}`;
   }
 
   detach(): void {
