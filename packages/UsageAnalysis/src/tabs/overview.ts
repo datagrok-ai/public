@@ -59,7 +59,7 @@ export class OverviewView extends UaView {
     let usersSelection: DG.BitSet;
 
     function query(filter: UaFilter) {
-      df = api.queries.packagesUsageOverview(filter.date ?? '');
+      df = api.queries.packagesUsageOverview(filter.date ?? '', filter.groups, filter.packages);
       df.then((df) => {
         packagesSelection = DG.BitSet.create(df.rowCount, (_) => true);
         usersSelection = DG.BitSet.create(df.rowCount, (_) => true);

@@ -336,7 +336,7 @@ export class TestTrack extends DG.ViewBase {
       const list: { name: string, category: string, status: Status | null, reason: string }[] = [];
       Object.values(this.map).forEach((el) => {
         if (el && 'children' in el) return;
-        list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status ?? null, reason: el.fullReason || '' });
+        list.push({ name: el.name, category: ((el as any).path ?? '').replace(/:\s[^:]+$/, ''), status: el.status ?? null, reason: (el as any).fullReason ?? '' });
       });
       const df = DG.DataFrame.fromObjects(list)!;
       df.getCol('status').meta.colors.setCategorical(colors);
