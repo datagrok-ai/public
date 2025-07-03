@@ -1311,12 +1311,12 @@ export async function calculatePi(): Promise<void> {
         if (selectedColumn.semType === DG.SEMTYPE.MOLECULE) {
           resultDf = await grok.functions.call('Bio:calculatePiFromSmiles', {
             table: table,
-            smiles_column_name: selectedColumn.name, // Pass name
+            smiles_column_name: selectedColumn.name,
           });
         } else if (selectedColumn.semType === 'MolFile') {
           resultDf = await grok.functions.call('Bio:calculatePiFromMolblock', {
             table: table,
-            molblock_column_name: selectedColumn.name, 
+            molblock_column_name: selectedColumn.name,
           });
         }
 
