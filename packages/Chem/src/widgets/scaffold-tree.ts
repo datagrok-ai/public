@@ -689,7 +689,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.molColumns = currentDf?.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE) ?? [];
 
-    const defaultMolColName = this.molColumns[0]?.name ?? '';
+    const defaultMolColName = this.molColumns[0]?.name ?? null;
     this.moleculeColumnName = this.column('molecule', {
       defaultValue: defaultMolColName,
       category: 'Data',
@@ -1994,6 +1994,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.clear();
       this.summary = this.getFilterSum();
       this.molCol = this.dataFrame.columns.byName(this.moleculeColumnName);
+      (this._iconAdd! as any).inert = false;
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
         return;
@@ -2151,6 +2152,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }));
 
     this.render();
+    attached = true;
+    scaffoldTreeId += 1;
     const isMolDataset = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null;
 
     if (!isMolDataset) {
@@ -2164,8 +2167,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     updateVisibleMols(this);
-    attached = true;
-    scaffoldTreeId += 1;
   }
 
   detach(): void {
