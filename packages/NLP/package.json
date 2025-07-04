@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nlp",
   "fullName": "NLP",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/math": "1.2.6",
-    "@datagrok-libraries/ml": "^6.10.0",
+    "@datagrok-libraries/ml": "^6.10.3",
     "@datagrok-libraries/utils": "^4.5.7",
     "@webgpu/types": "^0.1.40",
     "@xenova/transformers": "^2.17.2",
@@ -37,7 +37,9 @@
     "ts-loader": "^9.4.1",
     "typescript": "^4.8.3",
     "webpack": "^5.0.0",
-    "webpack-cli": "^4.2.0"
+    "webpack-cli": "^4.2.0",
+    "worker-loader": "^3.0.8",
+    "source-map-loader": "^4.0.1"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

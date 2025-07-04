@@ -18,8 +18,16 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/, },
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
       { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
+      {
+        test: /\.worker\.ts$/,
+        loader: 'worker-loader',
+        options: {
+          inline: 'fallback', // this creates a separate file
+        },
+      },
     ],
   },
   devtool: 'source-map',
