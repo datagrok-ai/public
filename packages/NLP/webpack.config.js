@@ -5,14 +5,14 @@ module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: 'production',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts'
+    test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts',
   },
   resolve: {
     fallback: {
-      util: require.resolve("util/")
+      util: require.resolve('util/'),
     },
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
@@ -20,7 +20,7 @@ module.exports = {
     rules: [
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
-      { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
+      {test: /\.css$/i, use: ['style-loader', 'css-loader']},
       {
         test: /\.worker\.ts$/,
         loader: 'worker-loader',
@@ -48,5 +48,6 @@ module.exports = {
     library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
+
   },
 };
