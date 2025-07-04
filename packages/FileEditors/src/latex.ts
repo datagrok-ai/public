@@ -4,62 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 // @ts-ignore
 import {parse, HtmlGenerator} from 'latex.js';
-//import '../css/latex/css/katex.css';
-//import '../css/latex/css/article.css';
+import '../css/latex/css/katex.css';
+import '../css/latex/css/article.css';
 
-
-/*export function testLatex(): void {
-  //const {parse, HtmlGenerator} = require('latex.js');
-
-  //const latex = 'Hi, this is a line of text.';
-  //
-
-  const dlg = ui.dialog('Open a file');
-  const fileInp = document.createElement('input');
-  fileInp.type = 'file';
-  fileInp.onchange = () => {
-    //@ts-ignore
-    const [file] = document.querySelector('input[type=file]').files;
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      const latex = reader.result as string;
-
-      const generator = new HtmlGenerator({hyphenate: false});
-
-      const doc = parse(latex, {generator: generator}).htmlDocument();
-
-      console.log(doc.documentElement.outerHTML);
-
-      //const generator = new HtmlGenerator({hyphenate: false});
-
-      //const doc = parse(latex, {generator: generator}).htmlDocument();
-
-      console.log(doc);
-
-      console.log(doc.documentElement.outerHTML);
-
-      const div = ui.div([]);
-
-      const v = grok.shell.addView(DG.View.create());
-
-      v.append(div);
-
-      div.innerHTML = doc.documentElement.outerHTML;
-
-      dlg.close();
-    }, false);
-
-    if (file)
-      reader.readAsText(file);
-  };
-
-  dlg.add(fileInp);
-  fileInp.click();
-
-//   ui.dialog({title: 'LaTex'})
-//     .add(div)
-//     .show();
-}*/
+// import katex from './katex/katex.min.js';
+// import './katex/katex.min.css';
 
 export async function texFilePreview(file: DG.FileInfo): Promise<DG.View> {
   try {
@@ -83,4 +32,27 @@ export async function texFilePreview(file: DG.FileInfo): Promise<DG.View> {
 
     return v;
   }
+  // try {
+  //   const latexText = await file.readAsString();
+  //   const div = ui.div([]);
+
+  //   katex.render(latexText, div, {
+  //     throwOnError: false,
+  //   });
+
+  //   const v = DG.View.create();
+  //   v.append(div);
+  //   v.name = file.fileName;
+
+  //   return v;
+  // } catch (err) {
+  //   const v = DG.View.create();
+  //   v.append(ui.div([ui.h2('The file is corrupted and cannot be opened!')]));
+  //   v.name = file.fileName;
+
+  //   if (err instanceof Error)
+  //     grok.shell.error(err.message);
+
+  //   return v;
+  // }
 } // texFilePreview
