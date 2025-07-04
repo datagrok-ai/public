@@ -7,7 +7,6 @@ import {widgetHost} from '../utils';
 import {initTemplates, templatesSearch} from './templates-search';
 import {matchAndParseQuery, processPowerSearchTableView}
   from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
-
 // Power Search: community-curated, template-based, widget-driven search engine
 
 const widgetFunctions = DG.Func.find({returnType: 'widget'});
@@ -109,15 +108,53 @@ function jsEvalSearch(s: string, host: HTMLDivElement): boolean {
   return false;
 }
 
-/// Evaluates custom search functions
+function capitalizeFirstLetter(string: string): string {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
+let listSearchDockedView: DG.View | null = null;
+/// Evaluates custom search functions, specifically those that return a list of items
 function searchFunctionsSearch(s: string, host: HTMLDivElement): void {
+  const listsHost = ui.divH([], {style: {flexWrap: 'wrap', width: '100%'}});
+  host.appendChild(listsHost);
   for (const sf of searchFunctions) {
     sf.apply({s: s}).then((results: any[]) => {
       if (results.length > 0) {
-        host.appendChild(ui.divV([
-          ui.h3(sf.description ?? sf.name),
-          ui.list(results),
-        ]));
+        const header = ui.h3(sf.description ?? sf.name);
+        const viewName = sf.options['relatedViewName'];
+        if (viewName && DG.View.ALL_VIEW_TYPES.includes(viewName)) {
+          header.classList.add('power-pack-search-list-has-preview');
+          ui.tooltip.bind(header, `Click to open ${sf.options['relatedViewName']} view`);
+          header.addEventListener('click', () => {
+            if (listSearchDockedView) {
+              try {
+                grok.shell.dockManager.close(listSearchDockedView.root);
+              } catch (e) {
+                console.error('Error closing docked view:', e);
+              }
+              listSearchDockedView = null;
+            }
+            listSearchDockedView = DG.View.createByType(viewName);
+            listSearchDockedView.name = sf.name;
+            const node = grok.shell.dockManager.dock(listSearchDockedView.root, DG.DOCK_TYPE.DOWN, grok.shell.dockManager.findNode(grok.shell.v.root), capitalizeFirstLetter(viewName));
+            setTimeout(() => {
+              const inputElem: HTMLInputElement | null = node.container.containerElement.querySelector('input[type="text"]');
+              if (inputElem) {
+                inputElem.value = s;
+                inputElem.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+              }
+            }, 300);
+          });
+        }
+
+        header.classList.add('power-pack-search-list-header');
+        const list = ui.list(results);
+        list.classList.add('power-pack-search-list');
+
+        listsHost.appendChild(ui.divV([
+          header, list,
+        ], {style: {width: 'fit-content'}, classes: 'power-pack-search-list-container'}));
       }
     });
   }
@@ -210,7 +247,7 @@ export async function tableQueriesSearch() {
 }
 
 function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
-  if (!s.includes('(') && s.includes(')'))
+  if (!s.includes('(') || !s.includes(')'))
     return;
 
   grok.functions
