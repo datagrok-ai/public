@@ -73,7 +73,7 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   });
 
   test('Similarity', async () => {
-    const scoresCol = await api.funcs.sequenceIdentityScoring(table, seqCol, reference) as DG.Column<number>;
+    const scoresCol = await api.funcs.sequenceSimilarityScoring(table, seqCol, reference) as DG.Column<number>;
     for (let i = 0; i < scoresCol.length; i++) {
       const resScore = scoresCol.get(i)!;
       const tgtScore = table.get(expectedSimilarity, i);
