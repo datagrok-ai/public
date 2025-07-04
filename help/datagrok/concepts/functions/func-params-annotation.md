@@ -627,7 +627,6 @@ a molecule, a molecule sketcher pops up.
 
 </details>
 
-
 ## Search integrated functions
 
 Datagrok allows you to define a special patterns for calling any function or query with a human-readable sentence and visualize the resulting dashboard directly from the platform search.
@@ -689,6 +688,123 @@ Here, the `species` and `organism` parameters are inferred from the search patte
 </details>
 
 :::
+
+## Custom Function Editors
+
+Platform allows to define **custom editors** for functions. These editors replace the default UI in areas like:
+
+- Function preview
+- Property panel
+- "Run" dialog
+
+The main purpose of custom editors is to **improve the user experience** when configuring function inputs by providing more intuitive or domain-specific UI components than the default auto-generated form.
+
+For example, you can:
+- Pre-fill values based on context
+- Group related parameters together
+- Add live validation of input formats
+- Customize layout and interactivity
+
+Custom editors let you **control how a function's parameters are presented and edited**, without affecting how the function is run or how its results are handled.
+
+> ⚠️ **Important:** Editors are only responsible for editing parameters — not executing the function or displaying results.
+
+---
+
+### Defining an Editor
+
+A custom editor is a function that:
+- Accepts a `DG.FuncCall` object as input
+- Returns a `DG.Widget`
+- Is marked with `//tags: editor` and an `//output: widget <name>` annotation
+
+> **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
+
+#### Required Interface for the Returned Widget
+
+| Property        | Type                | Description |
+|----------------|---------------------|-------------|
+| `root`          | `HTMLElement`        | Root element of the widget |
+| `isValid`       | `boolean`            | Indicates whether the inputs are valid |
+| `onInputChanged`| `Observable<any>`    | Emits when user modifies inputs |
+| `inputFor?`     | `(name: string) => DG.InputBase<any>` | Optional method to retrieve the input for a parameter name |
+
+---
+
+### 🚫 What the Editor Should NOT Do
+
+- Do **not** execute the function
+- Do **not** show a **Run** button
+- Do **not** handle result display or side effects
+
+The purpose of the editor is solely to edit function parameters.
+
+---
+
+### Editor Example
+
+```ts
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import { InputBase } from 'datagrok-api/ui';
+
+// Optional: Extend DG.FuncCallEditor for convenience
+class MyDummyEditor extends DG.FuncCallEditor {
+  boolCheck: InputBase<boolean>;
+  numInput: InputBase<number | null>;
+
+  constructor(call: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+
+    this.boolCheck = ui.input.bool('Bool check', call.inputs['bool'] ?? false);
+    this.numInput = ui.input.int('Num', call.inputs['num'] ?? 0, {
+      onValueChanged: (value) => call.inputs['num'] = value,
+    });
+
+    this.boolCheck.onChanged.subscribe(() => call.inputs['bool'] = this.boolCheck.value);
+    
+    root.append(this.boolCheck.root, this.numInput.root);
+  }
+
+  get onInputChanged(): rx.Observable<any> {
+    return rx.merge(this.boolCheck.onChanged, this.numInput.onChanged);
+  }
+
+  get isValid(): boolean {
+    return this.numInput.validate() && this.boolCheck.validate();
+  }
+}
+
+//name: dummyEditor
+//tags: editor
+//input: funccall call
+//output: widget dialog
+export function dummyEditor(call: DG.FuncCall): DG.Widget {
+  return new MyDummyEditor(call);
+}
+```
+
+---
+
+### Using the Editor in a Function
+
+You can reference a custom editor from your function using the `//editor:` annotation:
+
+```ts
+//name: dummyScalar
+//input: int num
+//output: int res
+//editor: DevTools:dummyEditor
+export function dummyScalar(num: number): number {
+  return num * 102;
+}
+```
+
+This tells the platform to render `dummyEditor` from the `DevTools` package as the editor for this function.
+
+---
+
 
 ## Examples
 
@@ -757,6 +873,63 @@ select * from protein_classification;
 #input: string type = high {choices: ["high", "low"]} [type of filter]
 #output: dataframe result {action:join(t1)} [pca components]
 #output: graphics scatter [scatter plot]
+```
+
+</div>
+</details>
+
+<details>
+<summary> Editor Example </summary>
+<div>
+
+```ts
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import { InputBase } from 'datagrok-api/ui';
+
+// Optional: Extend DG.FuncCallEditor for convenience
+class MyDummyEditor extends DG.FuncCallEditor {
+  boolCheck: InputBase<boolean>;
+  numInput: InputBase<number | null>;
+
+  constructor(call: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+
+    this.boolCheck = ui.input.bool('Bool check', call.inputs['bool'] ?? false);
+    this.numInput = ui.input.int('Num', call.inputs['num'] ?? 0, {
+      onValueChanged: (value) => call.inputs['num'] = value,
+    });
+
+    this.boolCheck.onChanged.subscribe(() => call.inputs['bool'] = this.boolCheck.value);
+
+    root.append(this.boolCheck.root, this.numInput.root);
+  }
+
+  get onInputChanged(): rx.Observable<any> {
+    return rx.merge(this.boolCheck.onChanged, this.numInput.onChanged);
+  }
+
+  get isValid(): boolean {
+    return this.numInput.validate() && this.boolCheck.validate();
+  }
+}
+
+//name: dummyEditor
+//tags: editor
+//input: funccall call
+//output: widget dialog
+export function dummyEditor(call: DG.FuncCall): DG.Widget {
+  return new MyDummyEditor(call);
+}
+
+//name: dummyScalar
+//input: int num
+//output: int res
+//editor: DevTools:dummyEditor
+export function dummyScalar(num: number): number {
+  return num * 102;
+}
 ```
 
 </div>
