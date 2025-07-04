@@ -1,4 +1,9 @@
 // Types for AA Sequences API
+import { UserSummary } from './types';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import { dataFrameFromObjects } from './utils';
+
 export interface AaAnnotation {
   color?: string;
   end: number;
@@ -7,12 +12,6 @@ export interface AaAnnotation {
   notes?: string;
   start: number;
   type: string;
-}
-
-export interface UserSummary {
-  handle: string;
-  id: string;
-  name: string;
 }
 
 export interface AaSequence {
@@ -42,63 +41,6 @@ export interface AaSequencesPaginatedList {
   nextToken?: string;
 }
 
-// Mock data for /aa-sequences
-export const mockAaSequences: AaSequencesPaginatedList = {
-  aaSequences: [
-    {
-      id: 'prtn_ObbdtGhC',
-      name: 'Example Protein 1',
-      aminoAcids: 'IKTATARRELAETSWTGDRLWGFSDNWAPALRRPSPSALGK',
-      length: 40,
-      aliases: ['Prot1', 'Sample1'],
-      annotations: [
-        {
-          id: 'prtnann_o7zMPG0P',
-          name: 'Active Site',
-          type: 'Site',
-          start: 5,
-          end: 10,
-          color: '#FF0000',
-          notes: 'Important for activity',
-        },
-      ],
-      apiURL: 'https://benchling.com/api/v2/aa-sequences/prtn_ObbdtGhC',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      creator: {
-        handle: 'lpasteur',
-        id: 'ent_a0SApq3z',
-        name: 'Louis Pasteur',
-      },
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/prtn_ObbdtGhC/edit',
-    },
-    {
-      id: 'prtn_XYZ123',
-      name: 'Example Protein 2',
-      aminoAcids: 'MKTIIALSYIFCLVFADYKDDDDK',
-      length: 23,
-      aliases: ['Prot2'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/aa-sequences/prtn_XYZ123',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      creator: {
-        handle: 'jdoe',
-        id: 'ent_b1BSpq4z',
-        name: 'John Doe',
-      },
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/prtn_XYZ123/edit',
-    },
-  ],
-  nextToken: undefined,
-};
-
-// Mock data for /aa-sequences/{aa_sequence_id}
-export const mockAaSequence: AaSequence = mockAaSequences.aaSequences[0];
-
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-
 export async function getToken(): Promise<DG.DataFrame> {
   const response = await grok.dapi.fetchProxy('https://benchling.com/api/v2/token', {
     headers: {
@@ -113,7 +55,7 @@ export async function getToken(): Promise<DG.DataFrame> {
   return df;
 }
 
-function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, any>): string {
   const esc = encodeURIComponent;
   return Object.entries(params)
     .filter(([_, v]) => v !== undefined && v !== null && v !== '')
@@ -160,25 +102,11 @@ export async function queryAASequences(params: AASequencesQueryParams = {}): Pro
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.aaSequences ?? []) ?? DG.DataFrame.create();
-  const df = DG.DataFrame.fromObjects(mockAaSequences.aaSequences) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.aaSequences ?? []) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAaSequences.aaSequences);
   return df;
 }
 
-export async function queryAASequenceById(aaSequenceId: string): Promise<DG.DataFrame> {
-  const token = 'YOUR_BENCHLING_API_TOKEN';
-  const response = await grok.dapi.fetchProxy(`https://benchling.com/api/v2/aa-sequences/${aaSequenceId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    },
-  });
-  if (!response.ok)
-    throw new Error(`Benchling API error: ${response.statusText}`);
-  const data = await response.json();
-  const df = DG.DataFrame.fromObjects([data]) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface AaSequenceCreateRequest {
   name: string;
@@ -213,4 +141,38 @@ export async function postAASequence(body: AaSequenceCreateRequest): Promise<AaS
   // const data = await response.json();
   // return data as AaSequence;
   return mockAaSequences.aaSequences[0];
-} 
+}
+
+function randomAminoAcidSequence(length: number): string {
+  const aa = 'ACDEFGHIKLMNPQRSTVWY';
+  let seq = '';
+  for (let i = 0; i < length; i++)
+    seq += aa[Math.floor(Math.random() * aa.length)];
+  return seq;
+}
+
+export const mockAaSequences: AaSequencesPaginatedList = {
+  aaSequences: [
+    ...Array.from({length: 100}, (_, i) => {
+      const len = 20 + Math.floor(Math.random() * 81); // 20-100
+      return {
+        id: `prtn_${String(i+1).padStart(3, '0')}`,
+        name: `Example Protein ${i+1}`,
+        aminoAcids: randomAminoAcidSequence(len),
+        length: len,
+        aliases: [`Prot${i+1}`],
+        annotations: [],
+        apiURL: `https://benchling.com/api/v2/aa-sequences/prtn_${String(i+1).padStart(3, '0')}`,
+        createdAt: `2023-${String((i%12)+1).padStart(2, '0')}-01T12:00:00Z`,
+        modifiedAt: `2023-${String((i%12)+1).padStart(2, '0')}-02T12:00:00Z`,
+        creator: {
+          handle: `user${i+1}`,
+          id: `ent_${i+1}`,
+          name: `User ${i+1}`,
+        },
+        webURL: `https://benchling.com/benchling/f/lib_55UxcIps-registry/prtn_${String(i+1).padStart(3, '0')}/edit`,
+      };
+    })
+  ],
+  nextToken: undefined,
+};

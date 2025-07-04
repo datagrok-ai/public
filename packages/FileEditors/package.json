@@ -13,8 +13,7 @@
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.13",
     "docx-preview": "^0.1.18",
-    "latex.js": "^0.12.6",
-    "pdfjs-dist": "4.2.67",
+    "pdfjs-dist": "^2.16.105",
     "rtf.js": "^3.0.9"
   },
   "devDependencies": {
@@ -28,7 +27,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "worker-loader": "^3.0.8"
   },
   "scripts": {
     "link-all": "",

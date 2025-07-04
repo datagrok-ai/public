@@ -1139,8 +1139,8 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
     super(s);
   }
 
-  forCurrentUser(): HttpDataSource<UserNotification> {
-    return new HttpDataSource<UserNotification>(api.grok_Dapi_Notifications_ForCurrentUser());
+  forCurrentUser(): NotificationsDataSource {
+    return new NotificationsDataSource(api.grok_Dapi_Notifications_ForCurrentUser());
   }
 
   async countUnread(): Promise<number> {
@@ -1153,8 +1153,24 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
     super(s);
   }
 
+  /** Activity API endpoint
+   *  @type {ActivityDataSource} */
+  get activity(): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity());
+  }
+
   where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): LogDataSource {
-    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId, toDart(options?.start), toDart(options?.end)));
+    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end)));
+  }
+}
+
+export class ActivityDataSource extends HttpDataSource<LogEvent> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  where(options?: {userId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity_Where(this.dart, options?.userId ?? '', toDart(options?.start), toDart(options?.end)));
   }
 }
 

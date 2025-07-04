@@ -1133,7 +1133,7 @@ export class AddNewColumnDialog {
   /** Updates the Preview Grid. Executed every time the controls are changed. */
   async updatePreview(expression: string, changeName: boolean): Promise<void> {
     //get result column name
-    const colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName();
+    let colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName().colName;
 
     if (this.error && this.error !== SYNTAX_ERROR) {
       //clearing preview df in case of error (use only within dialog)
@@ -1147,6 +1147,16 @@ export class AddNewColumnDialog {
 
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
+      if (!this.error)
+        ui.empty(this.errorDiv);
+      //check if column with the same name already exists
+      if (this.sourceDf?.columns.names().includes(colName) && !this.error &&
+          !(this.edit && this.call.getParamValue('name') === colName)) {
+        const unusedColName = this.getResultColumnName().unusedName;
+        this.errorDiv.append(ui.divText(
+          `Column named ${colName} already exists. Column will be named ${unusedColName}`, 'cm-warning-div'));
+        colName = unusedColName;
+      }
       const gridPreviewCol = this.gridPreview!.dataFrame.col(this.currentCalculatedColName);
       if (gridPreviewCol) {
         gridPreviewCol.name = colName;
@@ -1325,14 +1335,12 @@ export class AddNewColumnDialog {
   }
 
   /** Creates new unique Column Name. */
-  getResultColumnName(): string {
+  getResultColumnName(): {colName: string, unusedName: string} {
     const input = this.inputName!.input as HTMLInputElement;
     let value: string = input.value;
     if ((value ?? '') == '')
       value = input.placeholder;
-    return this.edit ?
-      value :
-      this.sourceDf!.columns.getUnusedName(value);
+    return {colName: value, unusedName: this.sourceDf!.columns.getUnusedName(value)};
   }
 
   /** Detects selected item in the ChoiceBox. */
@@ -1397,7 +1405,7 @@ export class AddNewColumnDialog {
     } else {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
-      this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName());
+      this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName().unusedName);
       this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
       this.call.setParamValue('type', this.getSelectedType()[0]);
       this.call.setParamValue('treatAsString', this.getSelectedType()[1]);

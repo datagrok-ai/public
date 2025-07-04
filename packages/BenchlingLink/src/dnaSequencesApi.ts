@@ -1,4 +1,7 @@
 // Types for DNA Sequences API
+import { dataFrameFromObjects } from './utils';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 export interface DnaSequence {
   aliases?: string[];
   annotations?: any[];
@@ -24,45 +27,6 @@ export interface DnaSequence {
   translations?: any[];
   webURL?: string;
 }
-
-export const mockDnaSequences: { dnaSequences: DnaSequence[]; nextToken?: string } = {
-  dnaSequences: [
-    {
-      id: 'seq_ABC123',
-      name: 'Example DNA 1',
-      bases: 'ATGCGTACGTAGCTAGCTAGCTAGCTAGCTA',
-      isCircular: false,
-      length: 30,
-      aliases: ['DNA1'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/dna-sequences/seq_ABC123',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/seq_ABC123/edit',
-    },
-    {
-      id: 'seq_DEF456',
-      name: 'Example DNA 2',
-      bases: 'CGTAGCTAGCTAGCTAGCTAGCTAGCTAGCT',
-      isCircular: true,
-      length: 31,
-      aliases: ['DNA2'],
-      annotations: [],
-      apiURL: 'https://benchling.com/api/v2/dna-sequences/seq_DEF456',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      webURL: 'https://benchling.com/benchling/f/lib_55UxcIps-registry/seq_DEF456/edit',
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockDnaSequence: DnaSequence = mockDnaSequences.dnaSequences[0];
-
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-
-
 export interface DNASequencesQueryParams {
   pageSize?: number;
   nextToken?: string;
@@ -82,6 +46,11 @@ export interface DNASequencesQueryParams {
   mentions?: string;
   ids?: string;
   entityRegistryIds_anyOf?: string;
+  names_anyOf?: string;
+  names_anyOf_caseSensitive?: string;
+  creatorIds?: string;
+  authorIds_anyOf?: string;
+  returning?: string;
 }
 
 export async function queryDNASequences(params: DNASequencesQueryParams = {}): Promise<DG.DataFrame> {
@@ -97,17 +66,12 @@ export async function queryDNASequences(params: DNASequencesQueryParams = {}): P
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.dnaSequences ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.dnaSequences ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockDnaSequences.dnaSequences) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockDnaSequences.dnaSequences);
   return df;
 }
 
-export async function getDNASequenceById(dnaSequenceId: string): Promise<DG.DataFrame> {
-  const found = mockDnaSequences.dnaSequences.find((seq) => seq.id === dnaSequenceId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface DnaSequenceCreateRequest {
   name: string;
@@ -142,4 +106,34 @@ export async function postDNASequence(body: DnaSequenceCreateRequest): Promise<D
   // const data = await response.json();
   // return data;
   return mockDnaSequences.dnaSequences[0] as DnaSequence;
-} 
+}
+
+function randomDnaSequence(length: number): string {
+  const dna = 'ATGC';
+  let seq = '';
+  for (let i = 0; i < length; i++)
+    seq += dna[Math.floor(Math.random() * dna.length)];
+  return seq;
+}
+
+export const mockDnaSequences = {
+  dnaSequences: [
+    ...Array.from({length: 100}, (_, i) => {
+      const len = 20 + Math.floor(Math.random() * 81); // 20-100
+      return {
+        id: `seq_${String(i+1).padStart(3, '0')}`,
+        name: `Example DNA ${i+1}`,
+        bases: randomDnaSequence(len),
+        isCircular: i % 2 === 0,
+        length: len,
+        aliases: [`DNA${i+1}`],
+        annotations: [],
+        apiURL: `https://benchling.com/api/v2/dna-sequences/seq_${String(i+1).padStart(3, '0')}`,
+        createdAt: `2023-${String((i%12)+1).padStart(2, '0')}-01T12:00:00Z`,
+        modifiedAt: `2023-${String((i%12)+1).padStart(2, '0')}-02T12:00:00Z`,
+        webURL: `https://benchling.com/benchling/f/lib_55UxcIps-registry/seq_${String(i+1).padStart(3, '0')}/edit`,
+      };
+    })
+  ],
+  nextToken: undefined,
+};

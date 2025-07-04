@@ -1,3 +1,7 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import { dataFrameFromObjects } from './utils';
+
 // Types for Assay Results and Assay Runs API
 export interface AssayResult {
   archiveRecord?: any;
@@ -15,30 +19,6 @@ export interface AssayResult {
   validationStatus?: string;
 }
 
-export const mockAssayResults: { assayResults: AssayResult[]; nextToken?: string } = {
-  assayResults: [
-    {
-      id: 'ar_001',
-      createdAt: '2023-01-01T12:00:00Z',
-      modifiedAt: '2023-01-02T12:00:00Z',
-      isReviewed: true,
-      fields: { result: 42, unit: 'ng/mL' },
-      schema: { id: 'schema_1', name: 'ResultSchema1' },
-    },
-    {
-      id: 'ar_002',
-      createdAt: '2023-02-01T12:00:00Z',
-      modifiedAt: '2023-02-02T12:00:00Z',
-      isReviewed: false,
-      fields: { result: 17, unit: 'ng/mL' },
-      schema: { id: 'schema_2', name: 'ResultSchema2' },
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockAssayResult: AssayResult = mockAssayResults.assayResults[0];
-
 export interface AssayRun {
   apiURL?: string;
   archiveRecord?: any;
@@ -54,33 +34,6 @@ export interface AssayRun {
   validationComment?: string;
   validationStatus?: string;
 }
-
-export const mockAssayRuns: { assayRuns: AssayRun[]; nextToken?: string } = {
-  assayRuns: [
-    {
-      id: 'run_001',
-      createdAt: '2023-01-01T12:00:00Z',
-      isReviewed: true,
-      fields: { runValue: 100, status: 'complete' },
-      schema: { id: 'schema_1', name: 'RunSchema1' },
-      apiURL: 'https://benchling.com/api/v2/assay-runs/run_001',
-    },
-    {
-      id: 'run_002',
-      createdAt: '2023-02-01T12:00:00Z',
-      isReviewed: false,
-      fields: { runValue: 200, status: 'pending' },
-      schema: { id: 'schema_2', name: 'RunSchema2' },
-      apiURL: 'https://benchling.com/api/v2/assay-runs/run_002',
-    },
-  ],
-  nextToken: undefined,
-};
-
-export const mockAssayRun: AssayRun = mockAssayRuns.assayRuns[0];
-
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 
 export interface AssayResultsQueryParams {
   schemaId?: string;
@@ -127,17 +80,12 @@ export async function queryAssayResults(params: AssayResultsQueryParams = {}): P
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.assayResults ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.assayResults ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockAssayResults.assayResults) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAssayResults.assayResults);
   return df;
 }
 
-export async function getAssayResultById(assayResultId: string): Promise<DG.DataFrame> {
-  const found = mockAssayResults.assayResults.find((ar) => ar.id === assayResultId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise<DG.DataFrame> {
   // const token = 'YOUR_BENCHLING_API_TOKEN';
@@ -152,17 +100,12 @@ export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise
   // if (!response.ok)
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
-  // const df = DG.DataFrame.fromObjects(data.assayRuns ?? []) ?? DG.DataFrame.create();
+  // const df = dataFrameFromObjects(data.assayRuns ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = DG.DataFrame.fromObjects(mockAssayRuns.assayRuns) ?? DG.DataFrame.create();
+  const df = dataFrameFromObjects(mockAssayRuns.assayRuns);
   return df;
 }
 
-export async function getAssayRunById(assayRunId: string): Promise<DG.DataFrame> {
-  const found = mockAssayRuns.assayRuns.find((run) => run.id === assayRunId);
-  const df = DG.DataFrame.fromObjects(found ? [found] : []) ?? DG.DataFrame.create();
-  return df;
-}
 
 export interface AssayResultCreateRequest {
   schemaId: string;
@@ -216,4 +159,32 @@ export async function postAssayRun(body: AssayRunCreateRequest): Promise<AssayRu
   // const data = await response.json();
   // return data;
   return mockAssayRuns.assayRuns[0];
-} 
+}
+
+export const mockAssayResults = {
+  assayResults: [
+    ...Array.from({length: 100}, (_, i) => ({
+      id: `ar_${String(i+1).padStart(3, '0')}`,
+      createdAt: `2023-${String((i%12)+1).padStart(2, '0')}-01T12:00:00Z`,
+      modifiedAt: `2023-${String((i%12)+1).padStart(2, '0')}-02T12:00:00Z`,
+      isReviewed: i % 2 === 0,
+      fields: { result: 10 + i, unit: 'ng/mL' },
+      schema: { id: `schema_${i+1}`, name: `ResultSchema${i+1}` },
+    }))
+  ],
+  nextToken: undefined,
+};
+
+export const mockAssayRuns = {
+  assayRuns: [
+    ...Array.from({length: 100}, (_, i) => ({
+      id: `run_${String(i+1).padStart(3, '0')}`,
+      createdAt: `2023-${String((i%12)+1).padStart(2, '0')}-01T12:00:00Z`,
+      isReviewed: i % 2 === 0,
+      fields: { runValue: 100 + i, status: i % 2 === 0 ? 'complete' : 'pending' },
+      schema: { id: `schema_${i+1}`, name: `RunSchema${i+1}` },
+      apiURL: `https://benchling.com/api/v2/assay-runs/run_${String(i+1).padStart(3, '0')}`,
+    }))
+  ],
+  nextToken: undefined,
+};

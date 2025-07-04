@@ -91,6 +91,7 @@ export enum TITLE {
   MULTI_AXIS = 'Multiaxis',
   FACET = 'Facet',
   UPDATE = 'Update',
+  CONTROLS = 'Model controls',
 }; // TITLE
 
 /** Titles of template models */
