@@ -150,7 +150,7 @@ export interface IPieChartSettings {
   category: string;
   categoryColumnName: string;
 
-  /// Category Time unit map function (applicable to dates only).
+  /// Category coloring time unit map function (applicable to dates only).
   categoryMap: string;
 
   pieSortType: string;
@@ -349,14 +349,14 @@ export interface IScatterPlotSettings {
   x: string;
   xColumnName: string;
 
-  /// X axis category map function (applicable to dates only).
+  /// Time unit map function for x column (applicable to dates only).
   xMap: string;
 
   /// A column to use on the Y axis. Could be numerical or categorical.
   y: string;
   yColumnName: string;
 
-  /// Y axis category map function (applicable to dates only).
+  /// Time unit map function for y column (applicable to dates only).
   yMap: string;
 
   xAxisType: keyof typeof AxisType;
@@ -2691,7 +2691,7 @@ export interface ILineChartSettings {
   x: string;
   xColumnName: string;
 
-  /// Time unit map function for *X Column* (applicable to dates only).
+  /// Time unit map function for x column (applicable to dates only).
   xMap: string;
 
   xAxisType: keyof typeof AxisType;
