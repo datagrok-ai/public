@@ -1,22 +1,47 @@
 ---
-title: "Examples"
+title: "Low-code workflow example and tutorial"
 sidebar_position: 4
 ---
 
-### Development setup and test
+Let's make some multistep analysis using the low-code workflows.
+For example task we pick an **Air Quality Risk Analysis**.
+We'll make a workflow that can make the following:
+
+1. Load a public dataset with air pollution data (e.g. PM2.5, NO₂, O₃ levels),
+2. Edit data (e.g. filtering by city or time),
+3. Perform two separate calculations:
+    * Clustering to group cities by pollution profile,
+    * Linear regression to estimate health risk (e.g. respiratory disease rate) based on pollutants,
+4. Combine results into a risk dashboard (e.g. color-coded city map, bar charts).
+
+
+## Development setup and making the workflow
 
 Setup a dev environment as described
 [here](../develop/dev-process/set-up-environment).
 
-To create a demo package, run the following commands:
+To create a package for workflow, run the following commands:
 
 ```shell
-grok create myworkflowpackage
-cd myworkflowpackage
+grok create airqualityanalysis
+cd airqualityanalysis
 npm i @datagrok-libraries/compute-api
 ```
 
-Place the following code into `src/package.ts`
+Go to the package.json file and change package dependencies:
+
+```json
+"dependencies": {
+    "@datagrok-libraries/compute-api": "^0.6.3",
+    "@datagrok-libraries/utils": "^4.4.0",
+    "cash-dom": "^8.1.4",
+    "datagrok-api": "^1.21.3",
+    "dayjs": "=1.11.10"
+  },
+
+```
+
+Place the following code to the `src/package.ts` file:
 ```typescript
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
@@ -36,15 +61,15 @@ export const _package = new DG.Package();
 //editor: Compute2:TreeWizardEditor
 //input: object params
 //output: object result
-export async function MyWorkflow(params: any) {
+export async function AirQualityAnalysis(params: any) {
   const c: PipelineConfiguration = {
-    id: 'my_workflow',
-    nqName: 'myworkflowpackage:MyWorkflow',
+    id: 'airqualityanalysis_main',
+    nqName: 'airqualityanalysis:AirQualityAnalysis',
     version: '1.0',
     type: 'static',
     steps: [{
       id: 'step1',
-      nqName: 'myworkflowpackage:MyAddScript',
+      nqName: 'airqualityanalysis:MyAddScript',
     }]
   };
   return c;
@@ -56,14 +81,20 @@ export async function MyWorkflow(params: any) {
 export function MyAddScript(a: number, b: number) {
   return a + b;
 }
+
 ```
 
 The imports of `utc`, `timezone` and `daysjs` are required for the `TreeWizardEditor` to work.
 
-Tn the main part of scripts we define the `MyWorkflow` fucntion, that created and returns
+Tn the main part of scripts we define the `AirQualityAnalysis` function, that created and returns
 a big JSON with the `PipelineConfiguration` type, that defines our workflow.
-the `nqName: 'myworkflowpackage:MyAddScript'` part maps the workflow step 1
-to the custom function `MyAddScript`, defined after the main one.
+The `nqName:` key of the configuration should always contain the name of the main function and main script.
+In our case this is `airqualityanalysis:AirQualityAnalysis`
+
+The `steps` array defines steps of our workflow.
+For now, this is a mock step that adds two numbers.
+The `nqName: 'myworkflowpackage:MyAddScript'` key maps the workflow step 1
+to the custom function `MyAddScript`.
 
 After run the following from the package root directory (change local to
 the actual Datagrok instance if needed).
@@ -81,6 +112,3 @@ You will see the following interface:
 ![Minumal workflow example](pics/example-workflow.png)
 
 
-### Making workflow useful
-
-__TODO More real examples__
