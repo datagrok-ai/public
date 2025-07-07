@@ -139,7 +139,8 @@
         },
         "Calculate": {
           "Identity...": null,
-          "Similarity...": null
+          "Similarity...": null,
+        "Isoelectric Point (pI)...": null  
         },
         "Convert": {
           "Split to Monomerts...": null,
