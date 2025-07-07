@@ -7,6 +7,7 @@ import {widgetHost} from '../utils';
 import {initTemplates, templatesSearch} from './templates-search';
 import {matchAndParseQuery, processPowerSearchTableView}
   from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
+import {exactAppFuncSearch} from './entity-search';
 // Power Search: community-curated, template-based, widget-driven search engine
 
 const widgetFunctions = DG.Func.find({returnType: 'widget'});
@@ -35,6 +36,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   templatesSearch(s, host);
   widgetsSearch(s, host);
   specificWidgetsSearch(s, host);
+  exactAppViewSearch(s);
 }
 
 
@@ -224,6 +226,26 @@ function widgetsSearch(s: string, host: HTMLDivElement): void {
         if (result)
           host.appendChild(widgetHost(result));
       });
+  }
+}
+
+let _currentSearchAppView: DG.View | DG.ViewBase | null = null;
+function exactAppViewSearch(s: string) {
+  s = s.toLowerCase().trim();
+  const appFunc = exactAppFuncSearch(s);
+  if (appFunc) {
+    appFunc.apply({}).then((v) => {
+      if (v && (v instanceof DG.View || v instanceof DG.ViewBase)) {
+        try {
+          if (_currentSearchAppView && _currentSearchAppView.root && document.body.contains(_currentSearchAppView.root))
+            grok.shell.dockManager.close(_currentSearchAppView.root);
+        } catch (e) {
+          console.error(`Error closing previous app view: ${e}`);
+        }
+        _currentSearchAppView = v;
+        grok.shell.dockManager.dock(v.root, DG.DOCK_TYPE.DOWN, grok.shell.dockManager.findNode(grok.shell.v.root), v.name ?? capitalizeFirstLetter(v.type));
+      }
+    }).catch((e) => console.error(`Error opening app view for ${s}: ${e}`));
   }
 }
 

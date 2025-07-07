@@ -11,7 +11,7 @@ import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
 import {appSearch, connectionsSearch, denialSearch,
-  dockerSearch, functionSearch, groupsSearch, helpSearch, pdbSearch, pubChemSearch, querySearch,
+  dockerSearch, functionSearch, groupsSearch, helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
   scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
@@ -203,6 +203,14 @@ export function _functionSearch(s: string): Promise<any[]> {
 //output: list result
 export function _scriptsSearch(s: string): Promise<any[]> {
   return scriptsSearch(s);
+}
+
+//description: API Samples
+//tags: search
+//input: string s
+//output: list result
+export function _samplesSearch(s: string): Promise<any[]> {
+  return jsSamplesSearch(s);
 }
 
 //description: Queries

@@ -20,6 +20,15 @@ export async function appSearch(s: string): Promise<DG.Func[]> {
     val.description?.toLowerCase().includes(s) || val.friendlyName?.toLowerCase().includes(s));
 }
 
+export function exactAppFuncSearch(s: string): DG.Func | null {
+  s = s.toLowerCase().trim();
+  const apps = DG.Func.find({tags: ['app'], returnType: 'view'}).filter((val) => val.name?.toLowerCase() === s ||
+    val.friendlyName?.toLowerCase() === s);
+  if (apps.length > 0)
+    return apps[0];
+  return null;
+}
+
 export async function scriptsSearch(s: string): Promise<DG.Func[]> {
   s = s.toLowerCase().trim();
   return DG.Func.find()
@@ -32,6 +41,14 @@ export async function querySearch(s: string): Promise<DG.Func[]> {
   return DG.Func.find()
     .filter((value) => (value.name.toLowerCase().includes(s) || value.description?.toLowerCase()?.includes(s)) &&
     (value instanceof DG.DataQuery));
+}
+
+export async function jsSamplesSearch(s: string): Promise<DG.Func[]> {
+  const sParts = s.toLowerCase().trim().split(' ').filter((p) => p.length > 0);
+  // more comprehensive search through the samples
+  return DG.Func.find({package: 'apisamples'})
+    .filter((value) => value instanceof DG.Script && sParts
+      .some((part) => value.name.toLowerCase().includes(part) || value.description?.toLowerCase()?.includes(part)));
 }
 
 export async function connectionsSearch(s: string): Promise<DG.DataConnection[]> {
