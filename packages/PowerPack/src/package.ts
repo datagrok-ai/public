@@ -350,7 +350,7 @@ export async function powerPackInit() {
   initSearch();
 
   _properties = await _package.getProperties();
-  await registerDGUserHandler(_package);
+  registerDGUserHandler(_package); // lazy without await
 
   // saving and restoring the scrolls when changing views
   const maxDepth = 40;
