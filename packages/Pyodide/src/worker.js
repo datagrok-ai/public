@@ -53,7 +53,9 @@ async function init() {
 let initCompleted = init();
 
 const loadedItems = new Set();
+const seenScripts = new Set();
 const execScriptName = '<exec>';
+const pipName = 'micropip';
 
 async function handleWorkerScript(event) {
     const { id, script, scriptName, headerLinesCount, namespace, outputs, dependencies } = event.data;
@@ -62,17 +64,23 @@ async function handleWorkerScript(event) {
     let reformatExceptionFunc;
     pyodide.setStdout({ batched: (msg) => postMessage({ id, type: 'stdoutMessage', message: msg }) });
     try {
-        if (dependencies?.length) {
-            await pyodide.loadPackage('micropip');
-            const micropip = pyodide.pyimport("micropip");
-            for (const dep of dependencies) {
-                if (loadedItems.has(dep))
-                    continue;
-                await micropip.install(dep);
-                loadedItems.add(dep);
+        if (!seenScripts.has(scriptName)) {
+            seenScripts.add(scriptName);
+            if (dependencies?.length) {
+                if (!loadedItems.has(pipName)) {
+                    await pyodide.loadPackage(pipName);
+                    loadedItems.add(pipName);
+                }
+                const micropip = pyodide.pyimport("micropip");
+                for (const dep of dependencies) {
+                    if (loadedItems.has(dep))
+                        continue;
+                    await micropip.install(dep);
+                    loadedItems.add(dep);
+                }
             }
+            await pyodide.loadPackagesFromImports(script);
         }
-        await pyodide.loadPackagesFromImports(script);
         scriptNamespace = pyodide.toPy(namespace);
         await pyodide.runPythonAsync(script, { globals: scriptNamespace });
         const result = {};
