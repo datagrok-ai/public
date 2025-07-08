@@ -16,7 +16,8 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
+      { test: /\.tsx?$/, loader: 'ts-loader', options: { allowTsInNodeModules: true } },
+      { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
     ],
   },
   plugins: [

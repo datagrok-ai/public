@@ -22,6 +22,7 @@ export interface IDartApi {
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Get_BrowsePanel(): any;
+  grok_Get_Favorites(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
   grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
@@ -872,6 +873,8 @@ export interface IDartApi {
   grok_ColumnGrid_ColumnsToDataFrame(cg: any, columnsOrder: any, addServiceColumns: Bool, serviceColsTagName: String): any;
   grok_ColumnGrid_AddColumnProperty(cg: any, p: any): any;
   grok_Sticky_SetAllValues(schema: any, col: any, values: any): Promise<any>;
+  grok_Favorites_Add(x: any, group: any): Promise<any>;
+  grok_Favorites_Remove(x: any, group: any): Promise<any>;
 
   // Generated from ../grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;

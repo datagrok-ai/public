@@ -3,6 +3,10 @@
   "friendlyName": "Signals Link",
   "version": "0.0.2",
   "description": "",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",

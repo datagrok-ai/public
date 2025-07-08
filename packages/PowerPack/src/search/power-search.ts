@@ -7,7 +7,7 @@ import {widgetHost} from '../utils';
 import {initTemplates, templatesSearch} from './templates-search';
 import {matchAndParseQuery, processPowerSearchTableView}
   from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
-
+import {exactAppFuncSearch} from './entity-search';
 // Power Search: community-curated, template-based, widget-driven search engine
 
 const widgetFunctions = DG.Func.find({returnType: 'widget'});
@@ -36,6 +36,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   templatesSearch(s, host);
   widgetsSearch(s, host);
   specificWidgetsSearch(s, host);
+  exactAppViewSearch(s);
 }
 
 
@@ -109,15 +110,53 @@ function jsEvalSearch(s: string, host: HTMLDivElement): boolean {
   return false;
 }
 
-/// Evaluates custom search functions
+function capitalizeFirstLetter(string: string): string {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
+let listSearchDockedView: DG.View | null = null;
+/// Evaluates custom search functions, specifically those that return a list of items
 function searchFunctionsSearch(s: string, host: HTMLDivElement): void {
+  const listsHost = ui.divH([], {style: {flexWrap: 'wrap', width: '100%'}});
+  host.appendChild(listsHost);
   for (const sf of searchFunctions) {
     sf.apply({s: s}).then((results: any[]) => {
       if (results.length > 0) {
-        host.appendChild(ui.divV([
-          ui.h3(sf.description ?? sf.name),
-          ui.list(results),
-        ]));
+        const header = ui.h3(sf.description ?? sf.name);
+        const viewName = sf.options['relatedViewName'];
+        if (viewName && DG.View.ALL_VIEW_TYPES.includes(viewName)) {
+          header.classList.add('power-pack-search-list-has-preview');
+          ui.tooltip.bind(header, `Click to open ${sf.options['relatedViewName']} view`);
+          header.addEventListener('click', () => {
+            if (listSearchDockedView) {
+              try {
+                grok.shell.dockManager.close(listSearchDockedView.root);
+              } catch (e) {
+                console.error('Error closing docked view:', e);
+              }
+              listSearchDockedView = null;
+            }
+            listSearchDockedView = DG.View.createByType(viewName);
+            listSearchDockedView.name = sf.name;
+            const node = grok.shell.dockManager.dock(listSearchDockedView.root, DG.DOCK_TYPE.DOWN, grok.shell.dockManager.findNode(grok.shell.v.root), capitalizeFirstLetter(viewName));
+            setTimeout(() => {
+              const inputElem: HTMLInputElement | null = node.container.containerElement.querySelector('input[type="text"]');
+              if (inputElem) {
+                inputElem.value = s;
+                inputElem.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+              }
+            }, 300);
+          });
+        }
+
+        header.classList.add('power-pack-search-list-header');
+        const list = ui.list(results);
+        list.classList.add('power-pack-search-list');
+
+        listsHost.appendChild(ui.divV([
+          header, list,
+        ], {style: {width: 'fit-content'}, classes: 'power-pack-search-list-container'}));
       }
     });
   }
@@ -190,6 +229,26 @@ function widgetsSearch(s: string, host: HTMLDivElement): void {
   }
 }
 
+let _currentSearchAppView: DG.View | DG.ViewBase | null = null;
+function exactAppViewSearch(s: string) {
+  s = s.toLowerCase().trim();
+  const appFunc = exactAppFuncSearch(s);
+  if (appFunc) {
+    appFunc.apply({}).then((v) => {
+      if (v && (v instanceof DG.View || v instanceof DG.ViewBase)) {
+        try {
+          if (_currentSearchAppView && _currentSearchAppView.root && document.body.contains(_currentSearchAppView.root))
+            grok.shell.dockManager.close(_currentSearchAppView.root);
+        } catch (e) {
+          console.error(`Error closing previous app view: ${e}`);
+        }
+        _currentSearchAppView = v;
+        grok.shell.dockManager.dock(v.root, DG.DOCK_TYPE.DOWN, grok.shell.dockManager.findNode(grok.shell.v.root), v.name ?? capitalizeFirstLetter(v.type));
+      }
+    }).catch((e) => console.error(`Error opening app view for ${s}: ${e}`));
+  }
+}
+
 /// Explicitly spelled widgets
 /// Example: "kpiWidget"
 function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
@@ -210,7 +269,7 @@ export async function tableQueriesSearch() {
 }
 
 function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
-  if (!s.includes('(') && s.includes(')'))
+  if (!s.includes('(') || !s.includes(')'))
     return;
 
   grok.functions

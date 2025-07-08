@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, IProperty} from "./entities";
+import {Func, Property, IProperty, Entity, Group} from './entities';
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -2387,4 +2387,18 @@ export class FunctionsWidget extends DartWidget {
 
   get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
   get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
+}
+
+export class Favorites extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async add(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Add(entity.dart, group?.dart);
+  }
+
+  static async remove(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Remove(entity.dart, group?.dart);
+  }
 }
