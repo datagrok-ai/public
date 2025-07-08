@@ -1669,7 +1669,7 @@ export class TreeViewNode<T = any> {
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  set value(v: T) { toJs(api.grok_TreeViewNode_Set_Value(this.dart, v)); };
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
