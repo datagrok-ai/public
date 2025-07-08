@@ -150,7 +150,7 @@ export interface IPieChartSettings {
   category: string;
   categoryColumnName: string;
 
-  /// Category coloring time unit map function (applicable to dates only).
+  /// Category time unit map function (applicable to dates only).
   categoryMap: string;
 
   pieSortType: string;
@@ -420,7 +420,7 @@ export interface IScatterPlotSettings {
   color: string;
   colorColumnName: string;
 
-  /// Categorical coloring map function (applicable to dates only).
+  /// Categorical coloring time unit map function (applicable to dates only).
   colorMap: string;
 
   showColorSelector: boolean;
@@ -444,7 +444,7 @@ export interface IScatterPlotSettings {
   markers: string;
   markersColumnName: string;
 
-  /// Marker category map function (applicable to dates only).
+  /// Marker category time unit map function (applicable to dates only).
   markersMap: string;
 
   markerType: string;
