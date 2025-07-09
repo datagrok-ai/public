@@ -89,6 +89,7 @@ import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pai
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
+import {Mixfile, transformMixfile} from './utils/mixfile';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1869,7 +1870,7 @@ export function MMPEditor(call: DG.FuncCall): void {
       const params = funcEditor.getParams();
       return call.func.prepare(params).call();
     });
- // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
   dialog.show();
 }
 
@@ -2353,6 +2354,33 @@ export function checkJsonMpoProfile(content: string) {
 //tags: panel, chem, widgets
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-export function mixtureWidget(mixture: string): DG.Widget {
-  return new DG.Widget(ui.divText(mixture));
+export async function mixtureWidget(mixture: string): Promise<DG.Widget> {
+  const mixtureObj = JSON.parse(mixture) as Mixfile;
+
+  const mw = transformMixfile(mixtureObj);
+  let df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('structure', mw.structures),
+    DG.Column.fromStrings('name', mw.names),
+    DG.Column.fromStrings('quantity', mw.quantities),
+    DG.Column.fromStrings('units', mw.units),
+    DG.Column.fromStrings('ratio', mw.ratios),
+    DG.Column.fromList(DG.TYPE.INT, 'level', mw.levels),
+    DG.Column.fromStrings('parent mixture name', mw.mixturesIds),
+  ]);
+  if (!df)
+    df = DG.DataFrame.create();
+  else
+    await grok.data.detectSemanticTypes(df);
+  const grid = df.plot.grid();
+  grid.root.style.height = '300px';
+
+  const addToWorkspaceButton = ui.icons.add(async () => {
+    grok.shell.addTableView(df);
+  }, 'Add to workspace');
+  addToWorkspaceButton.classList.add('chem-mixture-widget-add-table-to-workspace');
+
+  return new DG.Widget(ui.divV([
+    addToWorkspaceButton,
+    grid.root,
+  ]));
 }
