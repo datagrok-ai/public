@@ -88,6 +88,7 @@ import {_mpoDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -304,6 +305,15 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 //output: grid_cell_renderer result
 export async function rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
   return new RDKitReactionRenderer(getRdKitModule());
+}
+
+//name: chemMixtureRenderer
+//tags: cellRenderer, cellRenderer-ChemicalMixture
+//meta.cellType: ChemicalMixture
+//meta-cell-renderer-sem-type: ChemicalMixture
+//output: grid_cell_renderer result
+export async function rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
+  return new MixtureCellRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
@@ -2337,4 +2347,12 @@ export function mpoProfileEditor(file: DG.FileInfo): DG.View {
 //output: bool result
 export function checkJsonMpoProfile(content: string) {
   return JSON.parse(content)['type'] === 'MPO Desirability Profile';
+}
+
+//name: Chemistry | Mixture
+//tags: panel, chem, widgets
+//input: string mixture { semType: ChemicalMixture }
+//output: widget result
+export function mixtureWidget(mixture: string): DG.Widget {
+  return new DG.Widget(ui.divText(mixture));
 }
