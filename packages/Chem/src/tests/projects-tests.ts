@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as api from '../package-api';
 
 import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import { createTableView } from './utils';
@@ -243,16 +244,7 @@ async function runNamesToSmiles(tv: DG.TableView): Promise<void> {
 }
 
 async function runCurate(tv: DG.TableView): Promise<void> {
-  const df = await grok.functions.call(`Chem:Curate`, {
-    data: tv.dataFrame,
-    molecules: tv.dataFrame.col('smiles'),
-    kekulization: true,
-    normalization: false,
-    reionization: false,
-    neutralization: false,
-    tautomerization: false,
-    mainFragment: false,
-  });
+  const df = await api.scripts.curate(tv.dataFrame, tv.dataFrame.col('smiles')!, true, false, false, false, false, false);
 }
 
 async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {

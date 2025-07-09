@@ -8,13 +8,14 @@ import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { convertMolNotation } from '../package';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
+import * as api from '../package-api';
 
 category('rendering', () => {
   
   let rdkitModule: any;
   
   before(async () => {
-    rdkitModule = await grok.functions.call('Chem:getRdKitModule');
+    rdkitModule = await api.funcs.getRdKitModule();
   });
 
   test('visual rendering', async () => {
@@ -116,7 +117,7 @@ category('rendering', () => {
   test('stereochemistry', async () => {
     const df = await readDataframe('tests/stereochemistry.csv');
     const smiles = df.getCol('smiles').toList();
-    const rdKitCellRenderer: RDKitCellRenderer = await grok.functions.call('Chem:rdKitCellRenderer');
+    const rdKitCellRenderer: RDKitCellRenderer = await api.funcs.rdKitCellRenderer();
     const res = smiles.map((s) => rdKitCellRenderer
       ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
     expectArray(res, new Array(5).fill(false));

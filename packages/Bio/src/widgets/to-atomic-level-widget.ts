@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package, getSeqHelper, toAtomicLevel} from '../package';
-
+import * as api from '../package-api';
 
 export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{mol: string, errorText: string}> {
   let errorText = '';
@@ -112,7 +112,7 @@ export async function molecular3DStructureWidget(
         return new DG.Widget(widgetHost);
       }
       const molBlock2D = result.mol;
-      molBlock3D = (await grok.functions.call('Bio:Embed', {molecule: molBlock2D})) as unknown as string;
+      molBlock3D = (await api.scripts.embed(molBlock2D)) as unknown as string;
       // rdfkit sometimes fails to convert molv3 to molv2, so we try to convert it via the OCL
       const OCLMol = OCL.Molecule.fromMolfile(molBlock3D);
       if (OCLMol)

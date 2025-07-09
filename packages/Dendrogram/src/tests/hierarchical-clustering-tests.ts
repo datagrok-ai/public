@@ -11,7 +11,7 @@ import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
-
+import * as api from '../package-api';
 import {_package} from '../package-test';
 
 /*
@@ -139,8 +139,8 @@ category('hierarchicalClustering', () => {
   async function _testDistanceScript(csv: string, tgtDist: number[], distM: number[][]): Promise<void> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const t1: number = window.performance.now();
-    const distDf: DG.DataFrame = await grok.functions.call('Dendrogram:distanceScript',
-      {data: df, distance_name: 'euclidean'});
+    const distDf: DG.DataFrame = await api.scripts.distanceScript(df, 'euclidean'); 
+
     const t2: number = window.performance.now();
     _package.logger.debug(`BsV: Tests: _testDistanceScript(), call Dendrogram:distanceScript ET: ${(t2 - t1)} ms`);
     const distCol: DG.Column = distDf.getCol('distance');

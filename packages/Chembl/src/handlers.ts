@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {SemanticValue, x} from 'datagrok-api/dg';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {moleculeRenderer} from '@datagrok-libraries/db-explorer/src/renderer';
+import * as api from './package-api';
 
 export class ChemblIdHandler extends DG.ObjectHandler {
   get type(): string {return 'CHEMBL_ID';}
@@ -17,7 +18,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
     return ui.divV([
       ui.h3(id),
       ui.wait(async () =>
-        ui.bind(x, grok.chem.drawMolecule(await grok.functions.call('Chembl:chemblIdToSmiles', {id: id})))),
+        ui.bind(x, grok.chem.drawMolecule(await api.funcs.chemblIdToSmilesTs(id)))),
     ], {style: {width: '220px', height: '150px'}});
   }
 

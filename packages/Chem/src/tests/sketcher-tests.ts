@@ -6,14 +6,14 @@ import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {malformedMolblock, molV2000, molV3000} from './utils';
-
+import * as api from '../package-api';
 
 category('sketcher testing', () => {
   let rdkitModule: any;
   let funcs: DG.Func[];
 
   before(async () => {
-    rdkitModule = await grok.functions.call('Chem:getRdKitModule');
+    rdkitModule = await api.funcs.getRdKitModule();
     funcs = DG.Func.find({tags: ['moleculeSketcher']});
     await sketchersWarmUp(funcs);
     grok.shell.closeAll();

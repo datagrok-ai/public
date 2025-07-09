@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import wu from 'wu';
 
@@ -50,8 +51,7 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   });
 
   test('Identity', async () => {
-    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
-      {table: table, macromolecule: seqCol, reference: reference}) as DG.Column<number>;
+    const scoresCol = await api.funcs.sequenceIdentityScoring(table, seqCol, reference) as DG.Column<number>;
     for (let i = 0; i < scoresCol.length; i++) {
       const resScore = scoresCol.get(i)!;
       const tgtScore = table.get(expectedIdentity, i);
@@ -61,22 +61,19 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   });
 
   test('Identity-shortReference', async () => {
-    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
-      {table: table, macromolecule: seqCol, reference: shortReference}) as DG.Column<number>;
+    const scoresCol = await api.funcs.sequenceIdentityScoring(table, seqCol, shortReference) as DG.Column<number>;
     expect(wu.count(0).take(scoresCol.length).map((rowI) => scoresCol.get(rowI))
       .every((v) => v != null && !isNaN(v)), true);
   });
 
   test('Identity-longReference', async () => {
-    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
-      {table: table, macromolecule: seqCol, reference: longReference}) as DG.Column<number>;
+    const scoresCol = await api.funcs.sequenceIdentityScoring(table, seqCol, longReference) as DG.Column<number>;
     expect(wu.count(0).take(scoresCol.length).map((rowI) => scoresCol.get(rowI))
       .every((v) => v != null && !isNaN(v)), true);
   });
 
   test('Similarity', async () => {
-    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
-      {table: table, macromolecule: seqCol, reference: reference}) as DG.Column<number>;
+    const scoresCol = await api.funcs.sequenceSimilarityScoring(table, seqCol, reference) as DG.Column<number>;
     for (let i = 0; i < scoresCol.length; i++) {
       const resScore = scoresCol.get(i)!;
       const tgtScore = table.get(expectedSimilarity, i);

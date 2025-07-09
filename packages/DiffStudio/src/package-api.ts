@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function info(): Promise<any> {
+  export async function info(): Promise<void> {
     return await grok.functions.call('DiffStudio:Info', {});
   }
 
@@ -12,11 +12,11 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Init', {});
   }
 
-  export async function solve(problem: any): Promise<any> {
+  export async function solve(problem: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:Solve', { problem });
   }
 
-  export async function solveEquations(problem: any, options: any): Promise<any> {
+  export async function solveEquations(problem: any , options: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveEquations', { problem, options });
   }
 
@@ -26,44 +26,44 @@ export namespace funcs {
   }
 
   //Interactive solver of ordinary differential equations (ODE)
-  export async function runDiffStudioDemo(): Promise<any> {
+  export async function runDiffStudioDemo(): Promise<void> {
     return await grok.functions.call('DiffStudio:RunDiffStudioDemo', {});
   }
 
-  export async function ivpFileHandler(content: string): Promise<any> {
+  export async function ivpFileHandler(content: string ): Promise<any> {
     return await grok.functions.call('DiffStudio:IvpFileHandler', { content });
   }
 
-  export async function previewIvp(file: DG.FileInfo): Promise<any> {
+  export async function previewIvp(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('DiffStudio:PreviewIvp', { file });
   }
 
-  export async function runDiffStudioTreeBrowser(treeNode: any, browsePanel: any): Promise<any> {
+  export async function runDiffStudioTreeBrowser(treeNode: any , browsePanel: any ): Promise<any> {
     return await grok.functions.call('DiffStudio:RunDiffStudioTreeBrowser', { treeNode, browsePanel });
   }
 
   //Ball flight simulation
-  export async function ballFlight(dB: number, roB: number, v: number, a: number): Promise<any> {
+  export async function ballFlight(dB: number , roB: number , v: number , a: number ): Promise<{maxDist: number, maxHeight: number, df: DG.DataFrame}> {
     return await grok.functions.call('DiffStudio:BallFlight', { dB, roB, v, a });
   }
 
   //Return serialized initial value problem for ordinary differential equations
-  export async function serializeEquations(problem: string): Promise<any> {
+  export async function serializeEquations(problem: string ): Promise<any> {
     return await grok.functions.call('DiffStudio:SerializeEquations', { problem });
   }
 
   //Perform ODEs serialization to JS-code
-  export async function odesToCode(serialization: any): Promise<any> {
+  export async function odesToCode(serialization: any ): Promise<string> {
     return await grok.functions.call('DiffStudio:OdesToCode', { serialization });
   }
 
   //Solve initial value problem for ordinary differential equations
-  export async function solveODE(problem: string): Promise<any> {
+  export async function solveODE(problem: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveODE', { problem });
   }
 
   //In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  export async function pkPdNew(): Promise<any> {
+  export async function pkPdNew(): Promise<void> {
     return await grok.functions.call('DiffStudio:PkPdNew', {});
   }
 
@@ -73,7 +73,7 @@ export namespace funcs {
   }
 
   //Controlled fab-arm exchange mechanism simulation
-  export async function bioreactor(): Promise<any> {
+  export async function bioreactor(): Promise<void> {
     return await grok.functions.call('DiffStudio:Bioreactor', {});
   }
 
@@ -83,7 +83,7 @@ export namespace funcs {
   }
 
   //Run model with Diff Studio UI
-  export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number): Promise<any> {
+  export async function runModel(model: string , inputsTabDockRatio: number , graphsDockRatio: number ): Promise<void> {
     return await grok.functions.call('DiffStudio:RunModel', { model, inputsTabDockRatio, graphsDockRatio });
   }
 }

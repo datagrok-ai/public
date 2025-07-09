@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -106,8 +107,7 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
         const semType: string | null = await grok.functions.call('Bio:detectMacromolecule', {col: srcSeqCol});
         if (semType) srcSeqCol.semType = semType;
 
-        const resSeqCol = await grok.functions.call('Bio:getRegion',
-          {sequence: srcSeqCol, start: testData.positionNames!.start, end: testData.positionNames!.end});
+        const resSeqCol = await api.funcs.getRegion(srcSeqCol, testData.positionNames!.start!, testData.positionNames!.end!);
 
         const tgtDf = DG.DataFrame.fromCsv(testData.tgtCsv);
         const tgtSeqCol = tgtDf.getCol('seq');

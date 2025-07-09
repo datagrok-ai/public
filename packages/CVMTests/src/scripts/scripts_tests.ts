@@ -10,6 +10,7 @@ import {
   after,
 } from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
+import * as api from '../package-api';
 
 const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
 const serverSideLanguages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave'];
@@ -147,19 +148,18 @@ for (const lang of languages) {
 
     if (lang === 'Python') {
       test('Environment string', async () => {
-        const result = await grok.functions.call('CVMTests:PythonAnchorsCount',
-          {'html': '  <ul>\n' +
-                            '      <li><a href="https://example.com">Website</a></li>\n' +
-                            '  <li><a href="mailto:m.bluth@example.com">Email</a></li>\n' +
-                            '  <li><a href="tel:+123456789">Phone</a></li>\n' +
-                            '  </ul>'});
+        const result = await api.scripts.pythonAnchorsCount(
+          '  <ul>\n' +
+          '      <li><a href="https://example.com">Website</a></li>\n' +
+          '  <li><a href="mailto:m.bluth@example.com">Email</a></li>\n' +
+          '  <li><a href="tel:+123456789">Phone</a></li>\n' +
+          '  </ul>');
         expect(result, 3);
       }, {timeout: 240000});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
-        const result = await grok.functions.call('CVMTests:ImagePixelCount',
-          {'fileInput': files[0]});
+        const result = await api.scripts.imagePixelCount(files[0]);
         expect(49090022, result);
       }, {timeout: 240000});
     }
@@ -201,7 +201,7 @@ for (const lang of languages) {
 
 category('Stdout', () => {
   test('Console printing', async () => {
-    await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
+    await api.scripts.octaveStdout(grok.data.demo.demog(1000));
   }, {timeout: 90000});
 });
 
@@ -217,30 +217,25 @@ category('Scripts: Client cache test', () => {
     const bool = double > 0.5;
     const str = `Datagrok${int}`;
     expect(await grok.functions.clientCache.getRecordCount(), 0);
-    const result1 = await grok.functions.call(`CVMTests:PythonSimpleCached`,
-      {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+    const result1 = await api.scripts.pythonSimpleCached(int, double, bool, str);
     expect(await grok.functions.clientCache.getRecordCount(), 1); //Added to cache
-    const result2 = await grok.functions.call(`CVMTests:PythonSimpleCached`,
-      {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+    const result2 = await api.scripts.pythonSimpleCached(int, double, bool, str);
     expectObject(result1, result2);
   });
 
   test('Dataframe, graphic output cache', async () => {
     await grok.functions.clientCache.clear();
     expect(await grok.functions.clientCache.getRecordCount(), 0);
-    const result1 = await grok.functions.call(`CVMTests:PythonDataframeGraphicsCached`,
-      {'df': TEST_DATAFRAME_2});
+    const result1 = await api.scripts.pythonDataframeGraphicsCached(TEST_DATAFRAME_2);
     expect(await grok.functions.clientCache.getRecordCount(), 1);
-    const result2 = await grok.functions.call(`CVMTests:PythonDataframeGraphicsCached`,
-      {'df': TEST_DATAFRAME_2});
+    const result2 = await api.scripts.pythonDataframeGraphicsCached(TEST_DATAFRAME_2);
     expectTable(result1['resultDf'], result2['resultDf']);
     expect(result1['scatter'], result2['scatter']);
   }, {timeout: 60000});
 
   test(`Dataframe performance test 15 consequently cached`, async () => {
     await grok.functions.clientCache.clear();
-    await grok.functions.call('CVMTests:PythonSingleDfCached',
-      {'df': TEST_DATAFRAME_1});// adds to cache
+    await api.scripts.pythonSingleDfCached(TEST_DATAFRAME_1);// adds to cache
     expect(await grok.functions.clientCache.getRecordCount(), 1);
     const results = [];
     for (let i = 0; i < 15; i++) {
@@ -255,8 +250,7 @@ category('Scripts: Client cache test', () => {
   test('Exceptions: shouldn\'t be cached', async () => {
     await grok.functions.clientCache.clear();
     try {
-      await grok.functions.call('CVMTests:PythonException',
-        {'df': TEST_DATAFRAME_1});
+      await api.scripts.pythonException(TEST_DATAFRAME_1);
     } catch (e) {}
     expect(await grok.functions.clientCache.getRecordCount(), 0);
   });

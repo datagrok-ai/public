@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import $ from 'cash-dom';
 import wu from 'wu';
@@ -24,7 +25,7 @@ category('MolstarViewer', () => {
         return {binary: true, ext: 'pdb', data: await _package.files.readAsBytes('samples/1bdq-wo-ligands.pdb')};
       })(),
     ]);
-    const df: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: sdfCnt}))[0];
+    const df: DG.DataFrame = (await  grok.functions.call('Chem:importSdf', {bytes: sdfCnt}))[0];
     const ligandCol = df.getCol('molecule');
 
     const view = grok.shell.addTableView(df);
@@ -75,8 +76,7 @@ category('MolstarViewer', () => {
         return {binary: true, ext: 'pdbqt', data: await _package.files.readAsBytes('docking/3SWZ.pdbqt')};
       })(),
     ]);
-    const df: DG.DataFrame = (await grok.functions.call('BiostructureViewer:importPdbqt',
-      {fileContent: pdbqtCnt, test: true}))[0];
+    const df: DG.DataFrame = (await api.funcs.importPdbqt(pdbqtCnt, true))[0];
     const ligandCol = df.getCol('molecule');
 
     const view = grok.shell.addTableView(df);

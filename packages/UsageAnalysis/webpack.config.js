@@ -15,7 +15,17 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' },
+      { test: /\.tsx$/, loader: 'ts-loader' },
+      {
+        test: /\.ts$/,
+        use: {
+          loader: 'ts-loader',
+          options: {
+            allowTsInNodeModules: true,
+          },
+        },
+        exclude: /node_modules\/(?!(?:@datagrok\/jiraconnect)\/).*/,
+      },
       { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
     ],
   },
