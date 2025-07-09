@@ -150,6 +150,7 @@ export interface IPieChartSettings {
   category: string;
   categoryColumnName: string;
 
+  /// Category time unit map function (applicable to dates only).
   categoryMap: string;
 
   pieSortType: string;
@@ -348,14 +349,14 @@ export interface IScatterPlotSettings {
   x: string;
   xColumnName: string;
 
-  /// X axis category map function (applicable to dates only).
+  /// Time unit map function for x column (applicable to dates only).
   xMap: string;
 
   /// A column to use on the Y axis. Could be numerical or categorical.
   y: string;
   yColumnName: string;
 
-  /// Y axis category map function (applicable to dates only).
+  /// Time unit map function for y column (applicable to dates only).
   yMap: string;
 
   xAxisType: keyof typeof AxisType;
@@ -386,27 +387,27 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
-  /// Point lower bound for x axis whiskers.
+  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
   xWhiskerMinColumnName: string;
 
-  /// Point upper bound for x axis whiskers.
+  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMax: string;
   xWhiskerMaxColumnName: string;
 
-  /// Point range for x axis whiskers.
+  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
   xWhiskerRange: string;
   xWhiskerRangeColumnName: string;
 
-  /// Point lower bound for y axis whiskers.
+  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMin: string;
   yWhiskerMinColumnName: string;
 
-  /// Point upper bound for y axis whiskers.
+  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMax: string;
   yWhiskerMaxColumnName: string;
 
-  /// Point range for y axis whiskers.
+  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
   yWhiskerRange: string;
   yWhiskerRangeColumnName: string;
 
@@ -419,7 +420,7 @@ export interface IScatterPlotSettings {
   color: string;
   colorColumnName: string;
 
-  /// Categorical coloring map function (applicable to dates only).
+  /// Categorical coloring time unit map function (applicable to dates only).
   colorMap: string;
 
   showColorSelector: boolean;
@@ -443,7 +444,7 @@ export interface IScatterPlotSettings {
   markers: string;
   markersColumnName: string;
 
-  /// Marker category map function (applicable to dates only).
+  /// Marker category time unit map function (applicable to dates only).
   markersMap: string;
 
   markerType: string;
@@ -677,12 +678,13 @@ export interface IBoxPlotSettings {
   category1: string;
   category1ColumnName: string;
 
-  /// Aggregation function for "Category Column Names" (applicable to dates only).
+  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
   category1Map: string;
 
   category2: string;
   category2ColumnName: string;
 
+  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
   category2Map: string;
 
   showStatistics: boolean;
@@ -729,7 +731,7 @@ export interface IBoxPlotSettings {
   markerColor: string;
   markerColorColumnName: string;
 
-  /// Categorical coloring map function (applicable to dates only).
+  /// Categorical coloring time unit map function (applicable to dates only).
   markerColorMap: string;
 
   colorAxisType: keyof typeof AxisType;
@@ -743,7 +745,7 @@ export interface IBoxPlotSettings {
   markers: string;
   markersColumnName: string;
 
-  /// Marker category map function (applicable to dates only).
+  /// Marker category time unit map function (applicable to dates only).
   markersMap: string;
 
   markerMinSize: number;
@@ -2459,7 +2461,7 @@ export interface IBarChartSettings {
   split: string;
   splitColumnName: string;
 
-  /// Map function (applicable to dates only).
+  /// Time unit map function for *Split* (applicable to dates only).
   splitMap: string;
 
   showCategoryValues: boolean;
@@ -2473,7 +2475,7 @@ export interface IBarChartSettings {
   stack: string;
   stackColumnName: string;
 
-  /// Stack map function (applicable to dates only).
+  /// Time unit map function for *Stack* (applicable to dates only).
   stackMap: string;
 
   showStackSelector: boolean;
@@ -2689,7 +2691,7 @@ export interface ILineChartSettings {
   x: string;
   xColumnName: string;
 
-  /// X axis category map function (applicable to dates only).
+  /// Time unit map function for x column (applicable to dates only).
   xMap: string;
 
   xAxisType: keyof typeof AxisType;
@@ -3242,7 +3244,7 @@ export interface IPcPlotSettings {
   color: string;
   colorColumnName: string;
 
-  /// Categorical coloring map function (applicable to dates only).
+  /// Categorical coloring time unit map function (applicable to dates only).
   colorMap: string;
 
   showColorSelector: boolean;

@@ -337,21 +337,31 @@ class Preview {
     const result: AxisNames = {
       y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
       x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
+      xMap: item.xMap,
+      yMap: item.yMap,
     };
 
     /** If the source axes exist, then we try to set similar axes */
     if (this._srcAxes) {
       result.y ??= this._srcAxes.y;
       result.x ??= this._srcAxes.x;
+      result.yMap ??= this._srcAxes.yMap;
+      result.xMap ??= this._srcAxes.xMap;
 
       if (result.x === this._srcAxes.y || result.y === this._srcAxes.x) {
         const tmp = result.x;
         result.x = result.y;
         result.y = tmp;
+        
+        const tmpMap = result.x;
+        result.xMap = result.yMap;
+        result.yMap = tmpMap;
       }
 
-      if (result.x === result.y)
+      if (result.x === result.y) {
         result.y = this._srcAxes.y;
+        result.yMap = this._srcAxes.yMap;
+      }
     }
 
     return result;

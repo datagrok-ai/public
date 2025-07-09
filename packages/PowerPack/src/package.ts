@@ -10,7 +10,9 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
-import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+import {appSearch, connectionsSearch, denialSearch,
+  dockerSearch, functionSearch, groupsSearch, helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
+  scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
@@ -18,6 +20,7 @@ import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
+import {HelpObjectHandler} from './search/help-entity';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -186,6 +189,7 @@ export function formulaWidget(col: DG.Column): DG.Widget {
 
 //description: Functions
 //tags: search
+//meta.relatedViewName: functions
 //input: string s
 //output: list result
 export function _functionSearch(s: string): Promise<any[]> {
@@ -194,18 +198,83 @@ export function _functionSearch(s: string): Promise<any[]> {
 
 //description: Scripts
 //tags: search
+//meta.relatedViewName: scripts
 //input: string s
 //output: list result
 export function _scriptsSearch(s: string): Promise<any[]> {
   return scriptsSearch(s);
 }
 
+//description: API Samples
+//tags: search
+//input: string s
+//output: list result
+export function _samplesSearch(s: string): Promise<any[]> {
+  return jsSamplesSearch(s);
+}
+
+//description: Queries
+//tags: search
+//meta.relatedViewName: queries
+//input: string s
+//output: list result
+export function _queriesSearch(s: string): Promise<any[]> {
+  return querySearch(s);
+}
+
 //description: Users
 //tags: search
+//meta.relatedViewName: users
 //input: string s
 //output: list result
 export function _usersSearch(s: string): Promise<any[]> {
   return usersSearch(s);
+}
+
+//description: Groups
+//tags: search
+//meta.relatedViewName: groups
+//input: string s
+//output: list result
+export function _groupsSearch(s: string): Promise<any[]> {
+  return groupsSearch(s);
+}
+
+//description: Dockers
+//tags: search
+//meta.relatedViewName: dockers
+//input: string s
+//output: list result
+export async function _dockerSearch(s: string): Promise<any[]> {
+  return dockerSearch(s);
+}
+
+//description: Help
+//tags: search
+//input: string s
+//output: list result
+export async function _helpSearch(s: string): Promise<any[]> {
+  return helpSearch(s);
+}
+
+//description: Apps
+//tags: search
+//meta.relatedViewName: apps
+//input: string s
+//output: list result
+export async function _appSearch(s: string): Promise<any[]> {
+  s = s.toLowerCase();
+  return appSearch(s);
+}
+
+//description: Connections
+//tags: search
+//meta.relatedViewName: connections
+//input: string s
+//output: list result
+export async function _connectionsSearch(s: string): Promise<any[]> {
+  s = s.toLowerCase();
+  return connectionsSearch(s);
 }
 
 //description: Protein Data Bank
@@ -240,6 +309,14 @@ export function newUsersSearchWidget(s: string) {
   return newUsersSearch(s);
 }
 
+//description: Denial Search
+//tags: search
+//input: string s
+//output: widget w
+export function _denialSearch(s: string): Promise<DG.Widget | null> {
+  return denialSearch(s);
+}
+
 //name: formulaLinesEditor
 //input: dataframe src {optional: grok.shell.o}
 //top-menu: Data | Formula Lines...
@@ -269,9 +346,11 @@ grok.events.onContextMenu.subscribe((args) => {
 
 //tags: init
 export async function powerPackInit() {
+  DG.ObjectHandler.register(new HelpObjectHandler());
   initSearch();
+
   _properties = await _package.getProperties();
-  await registerDGUserHandler(_package);
+  registerDGUserHandler(_package); // lazy without await
 
   // saving and restoring the scrolls when changing views
   const maxDepth = 40;
@@ -291,8 +370,9 @@ export async function powerPackInit() {
         elementMap.delete(node);
       }
     });
-  }
-  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging).subscribe((_) => getScrolledChild(document.body));
+  };
+  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging)
+    .subscribe((_) => getScrolledChild(document.body));
   DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
 }
 

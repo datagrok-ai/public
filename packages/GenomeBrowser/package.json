@@ -3,6 +3,10 @@
   "friendlyName": "GenomeBrowser",
   "version": "0.0.1",
   "description": "",
+  "author": {
+    "name": "Stanislav Savenko",
+    "email": "ssavenko@datagrok.ai"
+  },
   "overrides": {
     "@jbrowse/react-linear-genome-view": {
       "react": "^19.0.0",

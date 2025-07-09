@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, IProperty} from "./entities";
+import {Func, Property, IProperty, Entity, Group} from './entities';
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -1669,7 +1669,7 @@ export class TreeViewNode<T = any> {
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  set value(v: T) { toJs(api.grok_TreeViewNode_Set_Value(this.dart, v)); };
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
@@ -1765,17 +1765,17 @@ export class TreeViewGroup extends TreeViewNode {
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, toDart(value), expanded, index));
   }
 
   /** Returns existing, or creates a new node group */
   getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, value, expanded));
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, toDart(value), expanded));
   }
 
   /** Adds new item to group */
   item(text: string | Element, value: object | null = null): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
+    return toJs(api.grok_TreeViewNode_Item(this.dart, text, toDart(value)));
   }
 
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
@@ -2387,4 +2387,18 @@ export class FunctionsWidget extends DartWidget {
 
   get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
   get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
+}
+
+export class Favorites extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async add(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Add(entity.dart, group?.dart);
+  }
+
+  static async remove(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Remove(entity.dart, group?.dart);
+  }
 }
