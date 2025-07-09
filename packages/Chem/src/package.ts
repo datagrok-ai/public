@@ -89,7 +89,7 @@ import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pai
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
-import {Mixfile, transformMixfile} from './utils/mixfile';
+import {createMixtureWidget, Mixfile} from './utils/mixfile';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1416,6 +1416,50 @@ export function convertMolNotationAction(col: DG.Column) {
   func.prepare({data: col.dataFrame, molecules: col}).edit();
 }
 
+//name: Convert Mixture To Smiles...
+//meta.action: Convert Mixture To Smiles...
+//input: column col {semType: ChemicalMixture}
+export function convertMixtureToSmiles(col: DG.Column): void {
+  // Each cell is a Mixfile JSON string
+  const smilesArr: string[] = [];
+
+  function collectSmiles(component: any, smilesList: string[]) {
+    if (component.smiles)
+      smilesList.push(component.smiles);
+    else if (component.molfile) {
+      try {
+        const smiles = convertMolNotation(component.molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+        smilesList.push(smiles);
+      } catch {}
+    }
+    if (Array.isArray(component.contents)) {
+      for (const child of component.contents)
+        collectSmiles(child, smilesList);
+    }
+  }
+
+  for (let i = 0; i < col.length; ++i) {
+    let mixfile: Mixfile;
+    try {
+      mixfile = JSON.parse(col.get(i));
+    } catch {
+      smilesArr.push('');
+      continue;
+    }
+    const smilesList: string[] = [];
+    collectSmiles(mixfile, smilesList);
+    smilesArr.push(smilesList.join('.'));
+  }
+
+  if (col.dataFrame) {
+    const name = col.dataFrame.columns.getUnusedName(`${col.name}_smiles`);
+    const smilesCol = DG.Column.fromStrings(name, smilesArr);
+    smilesCol.meta.units = DG.UNITS.Molecule.SMILES;
+    smilesCol.semType = DG.SEMTYPE.MOLECULE;
+    col.dataFrame.columns.add(smilesCol);
+  }
+}
+
 //tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
@@ -2355,32 +2399,5 @@ export function checkJsonMpoProfile(content: string) {
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
 export async function mixtureWidget(mixture: string): Promise<DG.Widget> {
-  const mixtureObj = JSON.parse(mixture) as Mixfile;
-
-  const mw = transformMixfile(mixtureObj);
-  let df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('structure', mw.structures),
-    DG.Column.fromStrings('name', mw.names),
-    DG.Column.fromStrings('quantity', mw.quantities),
-    DG.Column.fromStrings('units', mw.units),
-    DG.Column.fromStrings('ratio', mw.ratios),
-    DG.Column.fromList(DG.TYPE.INT, 'level', mw.levels),
-    DG.Column.fromStrings('parent mixture name', mw.mixturesIds),
-  ]);
-  if (!df)
-    df = DG.DataFrame.create();
-  else
-    await grok.data.detectSemanticTypes(df);
-  const grid = df.plot.grid();
-  grid.root.style.height = '300px';
-
-  const addToWorkspaceButton = ui.icons.add(async () => {
-    grok.shell.addTableView(df);
-  }, 'Add to workspace');
-  addToWorkspaceButton.classList.add('chem-mixture-widget-add-table-to-workspace');
-
-  return new DG.Widget(ui.divV([
-    addToWorkspaceButton,
-    grid.root,
-  ]));
+  return await createMixtureWidget(mixture);
 }
