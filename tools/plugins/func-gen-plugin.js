@@ -253,7 +253,7 @@ class FuncGeneratorPlugin {
         let params =
           baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
         if (type !== "any" && params && params.length > 0)
-          type += `<${params.map((e) => e.typeName.name).join(",")}>`;
+          type += `<${params.map((e) => e.typeName?.name ?? 'any').join(",")}>`;
 
         return { name: name, type: type, options: options };
       }
