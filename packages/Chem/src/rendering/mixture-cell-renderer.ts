@@ -214,6 +214,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     let overComponent = false;
+    let isStructure = false;
     for (const box of boxes) {
       // Calculate center and 1/3 region
       const cx = box.x + box.w / 2;
@@ -224,6 +225,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       const hy = box.h / 3;
       if (dx <= wx && dy <= hy) {
         overComponent = true;
+        isStructure = !!(box.comp.molfile || box.comp.smiles);
         action(box.comp, e.clientX, e.clientY);
         break;
       }
@@ -235,15 +237,16 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     // Set pointer cursor if over a box, otherwise default
     const gridRoot = gridCell.grid.root as HTMLElement;
     if (gridRoot)
-      gridRoot.style.cursor = overComponent ? 'pointer' : '';
+      gridRoot.style.cursor = overComponent && isStructure ? 'pointer' : '';
   }
 
   createTooltip(comp: MixfileComponent, x: number, y: number) {
     const propsToView: {[key: string]: any} = {};
     Object.keys(comp).forEach((key) => {
-      if (key !== 'molfile')
+      if (key !== 'molfile' && key !== 'contents')
         propsToView[key] = (comp as any)[key];
     });
-    ui.tooltip.show(tableFromMap(propsToView), x, y);
+    if (Object.keys(propsToView).length)
+      ui.tooltip.show(tableFromMap(propsToView), x, y);
   }
 }
