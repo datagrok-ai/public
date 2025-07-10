@@ -344,8 +344,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:BenchmarksDashboard', { instanceFilter, lastBuildsNum, showNotRun, showBenchmarks, showNotCiCd });
   }
 
-  export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , packageFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean , versionFilter: string | null): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, packageFilter, showNotRun, showBenchmarks, showNotCiCd, versionFilter });
+  export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , versionFilter: string | null, packageFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, versionFilter, packageFilter, showNotRun, showBenchmarks, showNotCiCd });
   }
 
   export async function manualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
