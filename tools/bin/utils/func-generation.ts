@@ -104,7 +104,9 @@ export const typesToAnnotation: Record<string, string> = {
   'Dayjs': 'datetime',
   'graphics': 'graphics',
   'DG.View': 'view',
+  'DG.ViewBase': 'view',
   'View': 'view',
+  'ViewBase': 'view',
   'DG.Widget': 'widget',
   'Widget': 'widget',
   'DG.FuncCall': 'funccall',
@@ -401,7 +403,7 @@ export function generateFunc(annotation: string, funcName: string, sep: string =
   let funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] ? e.type : 'any')}`)).join(', ');
   let funcArguments = (inputs.map((e) => e.name)).join(', ');
 
-  return annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {
