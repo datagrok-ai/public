@@ -2414,7 +2414,9 @@ Resources:
 
             echo "ECS_CLUSTER=${CvmCluster}" >> /etc/ecs/ecs.config
 
-            echo "ECS_ENABLE_GPU_SUPPORT=true" >>/etc/ecs/ecs.config
+            echo "ECS_ENABLE_GPU_SUPPORT=true" >> /etc/ecs/ecs.config
+
+            echo "ECS_IMAGE_PULL_BEHAVIOR=once" >> /etc/ecs/ecs.config
 
             '
           - CvmCluster:
