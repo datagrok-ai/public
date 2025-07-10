@@ -5,6 +5,7 @@ import {RDKitCellRenderer} from './rdkit-cell-renderer';
 import {tableFromMap} from 'datagrok-api/ui';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {Mixfile, MixfileComponent} from '../utils/mixfile';
+import {trimText} from '@datagrok-libraries/gridext/src/utils/TextUtils';
 
 export interface Component {
   x: number;
@@ -74,16 +75,22 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     molH?: number,
   ): void {
     let annotation = '';
+    if (comp.relation)
+      annotation = `${comp.relation}`;
     if (comp.quantity && comp.units)
-      annotation = `${comp.quantity} ${comp.units}`;
+      annotation += (annotation ? ' ' : '') + `${comp.quantity} ${comp.units}`;
     if (comp.ratio && comp.ratio.length > 1)
       annotation += (annotation ? ', ' : '') + `ratio ${comp.ratio[0]}/${comp.ratio[1]}`;
+    if (comp.error)
+      annotation += (annotation ? ', ' : '') + `SE: ${comp.error}`;
     if (annotation) {
       g.save();
       g.font = '9px sans-serif';
       g.fillStyle = '#222';
       g.textAlign = 'center';
-      g.fillText(annotation, curX + compW / 2, minY + (molH ?? compH) + compH * annotationFrac * 0.7);
+      // Trim annotation to fit width
+      const trimmed = trimText(annotation, g, compW - 4);
+      g.fillText(trimmed, curX + compW / 2, minY + (molH ?? compH) + compH * annotationFrac * 0.7);
       g.restore();
     }
   }
@@ -118,7 +125,9 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       const text = comp.name || 'Component';
-      g.fillText(text, x + w / 2, y + molH / 2);
+      // Trim name to fit width
+      const trimmed = trimText(text, g, w - 4);
+      g.fillText(trimmed, x + w / 2, y + molH / 2);
       g.restore();
     }
   }
@@ -192,7 +201,9 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     this.hitTest((comp: MixfileComponent) => {
-      grok.shell.o = DG.SemanticValue.fromValueType(comp.molfile, DG.SEMTYPE.MOLECULE);
+      const struct = comp.molfile ?? comp.smiles;
+      if (struct)
+        grok.shell.o = DG.SemanticValue.fromValueType(struct, DG.SEMTYPE.MOLECULE);
     }, e, gridCell);
   }
 
