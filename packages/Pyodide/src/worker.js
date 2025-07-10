@@ -53,7 +53,6 @@ async function init() {
 let initCompleted = init();
 
 const loadedItems = new Set();
-const seenScripts = new Set();
 const execScriptName = '<exec>';
 const pipName = 'micropip';
 
@@ -64,23 +63,20 @@ async function handleWorkerScript(event) {
     let reformatExceptionFunc;
     pyodide.setStdout({ batched: (msg) => postMessage({ id, type: 'stdoutMessage', message: msg }) });
     try {
-        if (!seenScripts.has(scriptName)) {
-            seenScripts.add(scriptName);
-            if (dependencies?.length) {
-                if (!loadedItems.has(pipName)) {
-                    await pyodide.loadPackage(pipName);
-                    loadedItems.add(pipName);
-                }
-                const micropip = pyodide.pyimport("micropip");
-                for (const dep of dependencies) {
-                    if (loadedItems.has(dep))
-                        continue;
-                    await micropip.install(dep);
-                    loadedItems.add(dep);
-                }
+        if (dependencies?.length) {
+            if (!loadedItems.has(pipName)) {
+                await pyodide.loadPackage(pipName);
+                loadedItems.add(pipName);
             }
-            await pyodide.loadPackagesFromImports(script);
+            const micropip = pyodide.pyimport("micropip");
+            for (const dep of dependencies) {
+                if (loadedItems.has(dep))
+                    continue;
+                await micropip.install(dep);
+                loadedItems.add(dep);
+            }
         }
+        await pyodide.loadPackagesFromImports(script);
         scriptNamespace = pyodide.toPy(namespace);
         await pyodide.runPythonAsync(script, { globals: scriptNamespace });
         const result = {};
@@ -130,16 +126,17 @@ async function handleWorkerScript(event) {
     }
 }
 
-const convertDFScriptText = `
+const convertScripts = {
+    convertDFScriptText: `
 import pandas as pd
 from io import StringIO
 result = pd.read_csv(StringIO(arg), sep=",")
-`;
-
-const convertDateScriptText = `
+`,
+    convertDateScriptText: `
 from dateutil import parser
 result = parser.parse(arg)
-`;
+`
+}
 
 async function handleFuncCallResults(event) {
     const data = event.data;
@@ -158,10 +155,10 @@ async function handleFuncCallResults(event) {
         for (const [name, typing] of Object.entries(data.typings ?? {})) {
             if (typing === 'datetime') {
                 const arg = data.results?.[name];
-                results[name] = await runPyConvert(arg, convertDateScriptText);
+                results[name] = await runPyConvert(arg, 'convertDateScriptText');
             } else if (typing === 'dataframe') {
                 const arg = data.results?.[name];
-                results[name] = await runPyConvert(arg, convertDFScriptText);
+                results[name] = await runPyConvert(arg, 'convertDFScriptText');
             }
         }
         const pyResults = pyodide.toPy(results);
@@ -169,9 +166,15 @@ async function handleFuncCallResults(event) {
     }
 }
 
-async function runPyConvert(arg, script) {
+const loadedSystemScripts = new Set();
+
+async function runPyConvert(arg, id) {
     const globals = pyodide.toPy({arg});
-    await pyodide.loadPackagesFromImports(script);
+    const script = convertScripts[id];
+    if (!loadedSystemScripts.has(id)) {
+        await pyodide.loadPackagesFromImports(script);
+        loadedSystemScripts.add(id);
+    }
     await pyodide.runPythonAsync(script, { globals });
     return globals.get('result');
 }

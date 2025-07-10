@@ -62,7 +62,7 @@ export async function initPyodide() {
       case 'stdoutMessage':
         return handleStdoutMessage(event.data);
       case 'scriptResults':
-        return await handleScriptResuslts(event.data);
+        return await handleScriptResults(event.data);
       case 'startFuncCall':
         return await handleStartFuncCall(event.data);
     }
@@ -75,7 +75,7 @@ function handleStdoutMessage(result: StdoutMessage) {
   currentScriptCalls[result.id]?.debugLogger?.debug(result.message, {'IS_SERVICE_LOG': true});
 }
 
-async function handleScriptResuslts(result: ScriptResults) {
+async function handleScriptResults(result: ScriptResults) {
   const cbs = currentExecutions[result.id];
   delete currentExecutions[result.id];
   delete currentScriptCalls[result.id];
