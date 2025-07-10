@@ -502,8 +502,8 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 /** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
-export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
-  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
+export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void, maxRows?: number}): HTMLElement {
+  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart), options?.maxRows ?? 20);
   if (options?.processNode != null)
     for (const c of Array.from(host.children))
       options.processNode(c as HTMLElement);
