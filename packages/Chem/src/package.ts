@@ -89,7 +89,7 @@ import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pai
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
-import {createMixtureWidget, Mixfile} from './utils/mixfile';
+import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2400,4 +2400,21 @@ export function checkJsonMpoProfile(content: string) {
 //output: widget result
 export async function mixtureWidget(mixture: string): Promise<DG.Widget> {
   return await createMixtureWidget(mixture);
+}
+
+//name: Chemistry | MixtureTree
+//tags: panel, chem, widgets
+//input: string mixture { semType: ChemicalMixture }
+//output: widget result
+export async function mixtureTreeWidget(mixture: string): Promise<DG.Widget> {
+  const mixtureObj = JSON.parse(mixture) as Mixfile;
+  const resDiv = ui.divV([]);
+  resDiv.append(ui.divText(`mixfileVersion: ${mixtureObj.mixfileVersion}`));
+  if (mixtureObj.contents && mixtureObj.contents.length) {
+    const contentsAcc = ui.accordion('contents');
+    for (let i = 0; i < mixtureObj.contents.length; i++)
+      contentsAcc.addPane(`component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+    resDiv.append(contentsAcc.root);
+  }
+  return new DG.Widget(resDiv);
 }

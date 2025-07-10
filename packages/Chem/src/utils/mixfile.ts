@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {renderMolecule} from '../rendering/render-molecule';
 /* eslint-disable max-len */
 /* eslint-disable no-tabs */
 export const MIXFILE_VERSION = 1.00; // version number to use for newly created instances
@@ -66,6 +67,8 @@ export interface MixtureWidgetObj {
   quantities: string[];
   units: string[];
   ratios: string[];
+  relations: string[];
+  errors: (number | undefined)[];
   levels: number[];
   mixturesIds: string[];
 }
@@ -77,6 +80,8 @@ export function transformMixfile(mixfile: Mixfile): MixtureWidgetObj {
   const quantities: string[] = [];
   const units: string[] = [];
   const ratios: string[] = [];
+  const relations: string[] = [];
+  const errors: (number | undefined)[] = [];
   const levels: number[] = [];
   const mixturesIds: string[] = [];
 
@@ -98,6 +103,8 @@ export function transformMixfile(mixfile: Mixfile): MixtureWidgetObj {
         component.ratio && component.ratio.length >= 2 ?
           `${component.ratio[0]}/${component.ratio[1]}` : '',
       );
+      relations.push(component.relation || '');
+      errors.push(component.error);
       levels.push(depth);
       mixturesIds.push(parentMixtureName);
     }
@@ -113,7 +120,7 @@ export function transformMixfile(mixfile: Mixfile): MixtureWidgetObj {
     mixfile.contents.forEach((child) => traverse(child, 1, rootName));
   }
 
-  return {structures, names, quantities, units, ratios, levels, mixturesIds};
+  return {structures, names, quantities, units, ratios, relations, errors, levels, mixturesIds};
 }
 
 export async function createMixtureWidget(mixture: string): Promise<DG.Widget> {
@@ -123,9 +130,11 @@ export async function createMixtureWidget(mixture: string): Promise<DG.Widget> {
   let df = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('structure', mw.structures),
     DG.Column.fromStrings('name', mw.names),
+    DG.Column.fromStrings('relation', mw.relations),
     DG.Column.fromStrings('quantity', mw.quantities),
     DG.Column.fromStrings('units', mw.units),
     DG.Column.fromStrings('ratio', mw.ratios),
+    DG.Column.fromList(DG.TYPE.FLOAT, 'SE', mw.errors),
     DG.Column.fromList(DG.TYPE.INT, 'level', mw.levels),
     DG.Column.fromStrings('parent mixture name', mw.mixturesIds),
   ]);
@@ -145,4 +154,60 @@ export async function createMixtureWidget(mixture: string): Promise<DG.Widget> {
     addToWorkspaceButton,
     grid.root,
   ]));
+}
+
+
+export function createComponentPane(component: MixfileComponent): HTMLElement {
+  const fieldsForTableFromMap: {[key: string]: any} = {};
+  const keys = Object.keys(component);
+  const accordions = ui.divV([]);
+  const structure = component.molfile ?? component.smiles ?? '';
+  for (const key of keys) {
+    //exclude structure fields
+    if (key === 'molfile' || key === 'smiles')
+      continue;
+    //handling metadata separately, since it is an array of either scalar or array types
+    if (key === 'metadata') {
+      let str = '';
+      for (const val of (component as any)[key])
+        str += Array.isArray(val) ? val.join(',') : val;
+
+      fieldsForTableFromMap[key] = str;
+    } else if (Array.isArray((component as any)[key]) && (component as any)[key].length && //for array of scalar types () - join with comma
+        (typeof (component as any)[key][0] === 'string' || typeof (component as any)[key][0] === 'number'))
+      fieldsForTableFromMap[key] = (component as any)[key].join(',');
+    //dictionaries (identifiers, links)
+    else if (!Array.isArray((component as any)[key]) && typeof (component as any)[key] === 'object') {
+      const innerDictAcc = ui.accordion(key);
+      const obj = (component as any)[key];
+      innerDictAcc.addPane(key, () => {
+        const fields: {[key: string]: any} = {};
+        Object.keys(obj).forEach((k: string) => {
+          if (Array.isArray(obj[k]))
+            fields[k] = obj[k].join(',');
+          else
+            fields[k] = obj[k];
+        });
+        return ui.tableFromMap(fields);
+      });
+      accordions.append(innerDictAcc.root);
+    } else if (key === 'contents') {
+      const contentsAcc = ui.accordion(key);
+      contentsAcc.addPane(key, () => {
+        const innerContentsAcc = ui.accordion();
+        for (let i = 0; i < (component as any)[key].length; i++)
+          innerContentsAcc.addPane(`component ${i + 1}`, () => createComponentPane((component as any)[key][i]));
+
+        return innerContentsAcc.root;
+      });
+      accordions.append(contentsAcc.root);
+    } else //scalar types
+      fieldsForTableFromMap[key] = (component as any)[key];
+  }
+  const resDiv = ui.divV([]);
+  if (structure)
+    resDiv.append(renderMolecule(structure, {renderer: 'RDKit'}));
+  resDiv.append(ui.tableFromMap(fieldsForTableFromMap));
+  resDiv.append(accordions);
+  return resDiv;
 }
