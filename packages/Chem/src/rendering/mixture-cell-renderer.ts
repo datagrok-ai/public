@@ -17,6 +17,8 @@ export interface Component {
 
 export class MixtureCellRenderer extends RDKitCellRenderer {
   private _componentsCache: DG.LruCache<string, Component[]> = new DG.LruCache<string, Component[]>(100);
+  private hoveredRowIdx: number | undefined = undefined;
+  private hoveredCompIdx: number | undefined = undefined;
 
   get name() {return 'Mixture cell renderer';}
   get cellType() {return 'ChemicalMixture';}
@@ -112,6 +114,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     comp: MixfileComponent,
     cellStyle: DG.GridCellStyle,
     annotationFrac: number,
+    highlight?: boolean,
   ): void {
     const molH = h * (1 - annotationFrac);
     if (comp.molfile || comp.smiles) {
@@ -130,6 +133,13 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       g.fillText(trimmed, x + w / 2, y + molH / 2);
       g.restore();
     }
+    if (highlight === true) {
+      g.save();
+      g.strokeStyle = '#1976d2';
+      g.lineWidth = 0.5;
+      g.strokeRect(x + 3, y + 3, w - 10, molH - 10);
+      g.restore();
+    }
   }
 
   // Recursive mixture/component drawing, with equal width for all leaf components
@@ -143,6 +153,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     cellStyle: DG.GridCellStyle,
     boxes: Component[],
     leafWidth?: number,
+    hoveredIdx?: number,
   ): void {
     const margin = 4;
     const annotationFrac = 0.1; // 10% for annotation, 90% for molecule
@@ -157,21 +168,25 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
         const compLeaves = this.countLeafComponents(comp);
         const compW = (compLeaves / totalLeaves) * remainingW;
         if (comp && comp.contents && Array.isArray(comp.contents) && comp.contents.length > 0) {
-          this.drawMixture(g, curX, y + margin, compW, compH, comp, cellStyle, boxes, leafWidth);
+          this.drawMixture(g, curX, y + margin, compW, compH, comp, cellStyle, boxes, leafWidth, hoveredIdx);
           this.drawBrackets(g, curX, y + margin, compW, compH);
           this.createAnnotation(comp, g, curX, compW, compH, y + margin, annotationFrac);
           boxes.push({x: curX, y: y + margin, w: compW, h: compH, comp});
         } else {
-          // Single component (molecule or fallback)
-          this.drawComponent(g, curX, y + margin, compW, compH, comp, cellStyle, annotationFrac);
+          // Single component
+          const idx = boxes.length;
+          const isHighlighted = hoveredIdx !== undefined && hoveredIdx === idx;
+          this.drawComponent(g, curX, y + margin, compW, compH, comp, cellStyle, annotationFrac, isHighlighted);
           this.createAnnotation(comp, g, curX, compW, compH, y + margin, annotationFrac, compH * molFrac);
           boxes.push({x: curX, y: y + margin, w: compW, h: compH * molFrac, comp});
         }
         curX += compW;
       }
     } else {
-      // Single component (should not happen at root, but for safety)
-      this.drawComponent(g, x, y, w, h, mixture, cellStyle, annotationFrac);
+      // Single component
+      const idx = boxes.length;
+      const isHighlighted = hoveredIdx !== undefined && hoveredIdx === idx;
+      this.drawComponent(g, x, y, w, h, mixture, cellStyle, annotationFrac, isHighlighted);
       this.createAnnotation(mixture, g, x, w, h, y, annotationFrac, h * molFrac);
       boxes.push({x: x, y: y, w: w, h: h * molFrac, comp: mixture});
     }
@@ -184,19 +199,43 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     const mixture: Mixfile = typeof value === 'string' ? JSON.parse(value) : value;
     if (!mixture.contents || !Array.isArray(mixture.contents)) return;
     const boxes: Component[] = [];
-    this.drawMixture(g, x, y, w, h, mixture, cellStyle, boxes);
-    g.save();
-    g.lineWidth = 2.5;
-    g.strokeStyle = '#000';
-    this.drawBrackets(g, x, y, w, h);
-    g.restore();
+    this.drawMixture(g, x, y, w, h, mixture, cellStyle, boxes, undefined,
+      this.hoveredRowIdx === gridCell.tableRowIndex ? this.hoveredCompIdx : undefined);
     // Store in LRU cache
     this._componentsCache.set(this._cellKey(gridCell), boxes);
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    this.hitTest((comp: MixfileComponent, x: number, y: number) => this.createTooltip(comp, x, y),
-      e, gridCell, true);
+    this.hitTest((comp: MixfileComponent, x: number, y: number, idx: number) => {
+      this.createTooltip(comp, x, y);
+      const rowIdx = gridCell.tableRowIndex;
+      let changed = false;
+      if (rowIdx != null && rowIdx !== -1) {
+        if (this.hoveredRowIdx !== rowIdx || this.hoveredCompIdx !== idx) {
+          this.hoveredRowIdx = rowIdx;
+          this.hoveredCompIdx = idx;
+          changed = true;
+        }
+      } else {
+        if (this.hoveredRowIdx !== undefined || this.hoveredCompIdx !== undefined) {
+          this.hoveredRowIdx = undefined;
+          this.hoveredCompIdx = undefined;
+          changed = true;
+        }
+      }
+      //invalidate only in case hovered component has changed
+      if (changed)
+        gridCell.grid.invalidate();
+    }, e, gridCell, true);
+  }
+
+  onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent): void {
+    //invalidating only in case we were hovering over a component before leaving cell
+    if (this.hoveredRowIdx !== undefined || this.hoveredCompIdx !== undefined) {
+      this.hoveredRowIdx = undefined;
+      this.hoveredCompIdx = undefined;
+      gridCell.grid.invalidate();
+    }
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -215,7 +254,8 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     const y = e.clientY - rect.top;
     let overComponent = false;
     let isStructure = false;
-    for (const box of boxes) {
+    for (let i = 0; i < boxes.length; ++i) {
+      const box = boxes[i];
       // Calculate center and 1/3 region
       const cx = box.x + box.w / 2;
       const cy = box.y + box.h / 2;
@@ -226,14 +266,20 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       if (dx <= wx && dy <= hy) {
         overComponent = true;
         isStructure = !!(box.comp.molfile || box.comp.smiles);
-        action(box.comp, e.clientX, e.clientY);
+        action(box.comp, e.clientX, e.clientY, i);
         break;
       }
     }
     if (!mouseMove)
       return;
-    if (!overComponent)
-      ui.tooltip.hide();
+    if (!overComponent) {
+      if (this.hoveredRowIdx !== undefined || this.hoveredCompIdx !== undefined) {
+        this.hoveredRowIdx = undefined;
+        this.hoveredCompIdx = undefined;
+        ui.tooltip.hide();
+        gridCell.grid.invalidate();
+      }
+    }
     // Set pointer cursor if over a box, otherwise default
     const gridRoot = gridCell.grid.root as HTMLElement;
     if (gridRoot)
