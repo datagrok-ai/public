@@ -675,12 +675,14 @@ export enum AxisType {
 export interface IBoxPlotSettings {
   categoryColumnNames: Array<string>;
 
+  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
   category1: string;
   category1ColumnName: string;
 
   /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
   category1Map: string;
 
+  /// If defined, sets *Markers Color* the same as the currently selected column.
   category2: string;
   category2ColumnName: string;
 
@@ -727,7 +729,8 @@ export interface IBoxPlotSettings {
 
   showColorSelector: boolean;
 
-  /// Column to color-code markers.
+  /// Column to color-code markers. Changing *Category 1* or *Category 2*
+  /// sets the color scheme to categorical (same as selected category column).
   markerColor: string;
   markerColorColumnName: string;
 
