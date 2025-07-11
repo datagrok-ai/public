@@ -8,6 +8,8 @@ export const MIXFILE_VERSION = 1.00; // version number to use for newly created 
 
 export type MixfileMetadatum = string | (string | number)[];
 
+export const STRUCTURE_FIELDS = ['formula', 'molfile', 'inchi', 'inchiKey', 'smiles'];
+
 export interface Mixfile extends MixfileComponent
 {
 	mixfileVersion:number;
@@ -164,7 +166,7 @@ export function createComponentPane(component: MixfileComponent): HTMLElement {
   const structure = component.molfile ?? component.smiles ?? '';
   for (const key of keys) {
     //exclude structure fields
-    if (key === 'molfile' || key === 'smiles')
+    if (STRUCTURE_FIELDS.includes(key))
       continue;
     //handling metadata separately, since it is an array of either scalar or array types
     if (key === 'metadata') {
@@ -204,10 +206,24 @@ export function createComponentPane(component: MixfileComponent): HTMLElement {
     } else //scalar types
       fieldsForTableFromMap[key] = (component as any)[key];
   }
+  //handling structure fileds separately (show just one structure field in case molfile and smiles are missing)
+  addStructureFields(fieldsForTableFromMap, component);
   const resDiv = ui.divV([]);
   if (structure)
     resDiv.append(renderMolecule(structure, {renderer: 'RDKit'}));
   resDiv.append(ui.tableFromMap(fieldsForTableFromMap));
   resDiv.append(accordions);
   return resDiv;
+}
+
+export function addStructureFields(dict: {[key: string]: any}, comp: MixfileComponent) {
+  //use only one of the structure fields in case molfile and smiles are missing
+  if (!comp.molfile && !comp.smiles) {
+    if (comp.inchi)
+      dict['inchi'] = comp.inchi;
+    else if (comp.inchiKey)
+      dict['inchiKey'] = comp.inchiKey;
+    else if (comp.formula)
+      dict['formula'] = comp.formula;
+  }
 }

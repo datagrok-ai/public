@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from './rdkit-cell-renderer';
 import {tableFromMap} from 'datagrok-api/ui';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {Mixfile, MixfileComponent} from '../utils/mixfile';
+import {addStructureFields, Mixfile, MixfileComponent, STRUCTURE_FIELDS} from '../utils/mixfile';
 import {trimText} from '@datagrok-libraries/gridext/src/utils/TextUtils';
 
 export interface Component {
@@ -289,9 +289,10 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
   createTooltip(comp: MixfileComponent, x: number, y: number) {
     const propsToView: {[key: string]: any} = {};
     Object.keys(comp).forEach((key) => {
-      if (key !== 'molfile' && key !== 'contents')
+      if (!STRUCTURE_FIELDS.includes(key) && key !== 'contents')
         propsToView[key] = (comp as any)[key];
     });
+    addStructureFields(propsToView, comp);
     if (Object.keys(propsToView).length)
       ui.tooltip.show(tableFromMap(propsToView), x, y);
   }
