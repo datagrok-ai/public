@@ -460,7 +460,7 @@ class FuncGeneratorPlugin {
     } else
       fs.writeFileSync(
         this.options.outputPath,
-        `${baseImport}\n${importArray.join("")}`,
+        `${annotationForGeneratedFile}${baseImport}\n${importArray.join("")}`,
         "utf-8"
       );
   }
