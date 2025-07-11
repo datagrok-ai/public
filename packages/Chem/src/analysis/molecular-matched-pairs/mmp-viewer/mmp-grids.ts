@@ -264,6 +264,9 @@ export class MmpPairedGrids {
       if (this.mmpGridTrans.table.currentRowIdx !== -1) {
         this.pinMatchedPair(this.mmpGridTrans.table.currentRowIdx, this.mmpGridTrans);
         setTimeout(() => {
+          // need to check one more time if current row is not -1
+          if ((this.mmpGridTrans.table.currentRowIdx ?? -1) === -1)
+            return;
           const pairInfo = fillPairInfo(this.mmpa!, this.mmpGridTrans.table.currentRowIdx,
             this.mmpGridTrans.table, this.parentTable!, this.rdkit, this.molColName);
           this.moleculePairsContextPanelDiv.classList.remove('mmpa-hide-context-panel');
