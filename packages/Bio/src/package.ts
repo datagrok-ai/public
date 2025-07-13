@@ -1292,3 +1292,48 @@ export async function calculatePiMenu(table: DG.DataFrame, molecules: DG.Column)
     pi.close();
   }
 }
+
+//name: Custom Chemical Properties
+//top-menu: Bio | Calculate | Custom Properties...
+//description: Opens a dialog to select and run custom chemical property calculations.
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule} [Molecule column]
+export function customPropertiesDialog(table: DG.DataFrame, molecules: DG.Column): void {
+  // 1. Create the UI inputs for the dialog (checkboxes).
+  const lipinskiInput = ui.input.bool('Lipinski Rule of 5', {value: true});
+  ui.tooltip.bind(lipinskiInput.root, 'Checks for violations of the Rule of 5');
+
+  const qedInput = ui.input.bool('QED', {value: false});
+  ui.tooltip.bind(qedInput.root, 'Calculates the Quantitative Estimate of Drug-likeness');
+
+  const customScoreInput = ui.input.bool('Custom Score', {value: true});
+  ui.tooltip.bind(customScoreInput.root, 'Calculates a custom in-house score');
+
+  // 2. Create and show the dialog.
+  ui.dialog({title: 'Calculate Properties'})
+    .add(ui.div([
+      ui.span([`Calculate for column: `]),
+      ui.span([`${molecules.name}`], {style: {fontWeight: 'bold'}})
+    ]))
+    .add(ui.inputs([
+      lipinskiInput,
+      qedInput,
+      customScoreInput,
+    ]))
+    .onOK(() => {
+      // This block runs when the user clicks "OK".
+      const selectedProperties = [];
+      if (lipinskiInput.value) selectedProperties.push('Lipinski');
+      if (qedInput.value) selectedProperties.push('QED');
+      if (customScoreInput.value) selectedProperties.push('Custom Score');
+
+      if (selectedProperties.length > 0)
+        grok.shell.info(`Calculations started for: ${selectedProperties.join(', ')}`);
+        // Placeholder for your actual function calls
+        // Example: await calculateLipinski(table, molecules);
+      else
+        grok.shell.warning('No properties were selected.');
+    })
+    .show({width: 400});
+}
+
