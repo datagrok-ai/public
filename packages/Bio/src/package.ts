@@ -1293,47 +1293,86 @@ export async function calculatePiMenu(table: DG.DataFrame, molecules: DG.Column)
   }
 }
 
-//name: Custom Chemical Properties
-//top-menu: Bio | Calculate | Custom Properties...
-//description: Opens a dialog to select and run custom chemical property calculations.
+function createPropertyRow(name: string, defaultValue: boolean, onSourceClick: () => void):
+  {row: HTMLElement, checkbox: DG.InputBase<boolean>} {
+  const checkbox = ui.input.bool('', {value: defaultValue});
+
+  const sourceLink = ui.span(['source'], 'grok-link');
+  sourceLink.style.fontFamily = 'monospace';
+  sourceLink.style.fontSize = 'smaller';
+  sourceLink.style.marginLeft = '8px';
+  sourceLink.style.cursor = 'pointer'; // Explicitly set the pointer cursor
+  sourceLink.onclick = onSourceClick;
+
+  const label = ui.label(name);
+  label.appendChild(sourceLink);
+
+  const row = ui.divH([checkbox.root, label]);
+  row.style.alignItems = 'center';
+  row.style.marginBottom = '5px';
+
+  return {row, checkbox};
+}
+
+/**
+ * A helper function to create and show a small, focused information dialog.
+ * @param title The title for the info dialog.
+ * @param content An HTMLElement containing the details to display.
+ */
+function showInfoDialog(title: string, content: HTMLElement): void {
+  ui.dialog(title)
+    .add(content)
+    .show({width: 350, height: 220});
+}
+
+//name: Custom Biochemical Properties
+//top-menu: Bio | Calculate | Biochemical Properties...
+//description: Opens a dialog to select and run biochemical property calculations.
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule} [Molecule column]
-export function customPropertiesDialog(table: DG.DataFrame, molecules: DG.Column): void {
-  // 1. Create the UI inputs for the dialog (checkboxes).
-  const lipinskiInput = ui.input.bool('Lipinski Rule of 5', {value: true});
-  ui.tooltip.bind(lipinskiInput.root, 'Checks for violations of the Rule of 5');
+export function customBiochemicalPropertiesDialog(table: DG.DataFrame, molecules: DG.Column): void {
+  // Define the content and action for each property's info dialog
+  const piDetailsContent = ui.divV([
+    ui.divText('Calculates the isoelectric point of a molecule.'),
+    ui.tableFromMap({'Method': 'Henderson-Hasselbalch', 'Source': 'Bio-Tools Package', 'Availability': 'Free'})
+  ]);
 
-  const qedInput = ui.input.bool('QED', {value: false});
-  ui.tooltip.bind(qedInput.root, 'Calculates the Quantitative Estimate of Drug-likeness');
+  const pkaDetailsContent = ui.divV([
+    ui.divText('Predicts acid dissociation constant.'),
+    ui.tableFromMap({'Method': 'Fragment-based', 'Source': 'Chem-Proprietary Library', 'Availability': 'Proprietary'})
+  ]);
 
-  const customScoreInput = ui.input.bool('Custom Score', {value: true});
-  ui.tooltip.bind(customScoreInput.root, 'Calculates a custom in-house score');
+  const logSDetailsContent = ui.divV([
+    ui.divText('Estimates aqueous solubility via the ESOL method.'),
+    ui.divH([ui.span(['Reference: ']), ui.link('Delaney, J. S. (2004)', 'https://doi.org/10.1021/ci034243x')])
+  ]);
 
-  // 2. Create and show the dialog.
-  ui.dialog({title: 'Calculate Properties'})
-    .add(ui.div([
-      ui.span([`Calculate for column: `]),
-      ui.span([`${molecules.name}`], {style: {fontWeight: 'bold'}})
-    ]))
-    .add(ui.inputs([
-      lipinskiInput,
-      qedInput,
-      customScoreInput,
-    ]))
+  const logDDetailsContent = ui.divV([
+    ui.divText('Calculates the log of the distribution coefficient.'),
+    ui.tableFromMap({'Method': 'Hybrid (pKa/logP)', 'Source': 'In-house Algorithm', 'Availability': 'Proprietary'})
+  ]);
+
+  // Create property rows, each with a unique onclick handler that opens a specific dialog
+  const pi = createPropertyRow('pI (Isoelectric Point)', true, () => showInfoDialog('pI Details', piDetailsContent));
+  const pka = createPropertyRow('pKa', false, () => showInfoDialog('pKa Details', pkaDetailsContent));
+  const logS = createPropertyRow('logS', true, () => showInfoDialog('logS Details', logSDetailsContent));
+  const logD = createPropertyRow('logD', false, () => showInfoDialog('logD Details', logDDetailsContent));
+
+  // Assemble and show the main dialog
+  ui.dialog({title: 'Biochemical Properties'})
+    .add(ui.divText(`Calculate for column: <b>${molecules.name}</b>`, {style: {marginBottom: '10px'}}))
+    .add(ui.divV([pi.row, pka.row, logS.row, logD.row]))
     .onOK(() => {
-      // This block runs when the user clicks "OK".
-      const selectedProperties = [];
-      if (lipinskiInput.value) selectedProperties.push('Lipinski');
-      if (qedInput.value) selectedProperties.push('QED');
-      if (customScoreInput.value) selectedProperties.push('Custom Score');
+      const selectedProperties: string[] = [];
+      if (pi.checkbox.value) selectedProperties.push('pI');
+      if (pka.checkbox.value) selectedProperties.push('pKa');
+      if (logS.checkbox.value) selectedProperties.push('logS');
+      if (logD.checkbox.value) selectedProperties.push('logD');
 
       if (selectedProperties.length > 0)
         grok.shell.info(`Calculations started for: ${selectedProperties.join(', ')}`);
-        // Placeholder for your actual function calls
-        // Example: await calculateLipinski(table, molecules);
       else
         grok.shell.warning('No properties were selected.');
     })
-    .show({width: 400});
+    .show({width: 300});
 }
-
