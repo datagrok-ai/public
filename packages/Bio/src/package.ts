@@ -1293,32 +1293,31 @@ export async function calculatePiMenu(table: DG.DataFrame, molecules: DG.Column)
   }
 }
 
-function createPropertyRow(name: string, defaultValue: boolean, onSourceClick: () => void):
-  {row: HTMLElement, checkbox: DG.InputBase<boolean>} {
+function createPropertyTableRow(name: string, defaultValue: boolean, method: string | null, onSourceClick: () => void):
+  {row: HTMLTableRowElement, checkbox: DG.InputBase<boolean>} {
   const checkbox = ui.input.bool('', {value: defaultValue});
+  const nameLabel = ui.label(name);
 
-  const sourceLink = ui.span(['source'], 'grok-link');
-  sourceLink.style.fontFamily = 'monospace';
-  sourceLink.style.fontSize = 'smaller';
-  sourceLink.style.marginLeft = '8px';
-  sourceLink.style.cursor = 'pointer'; // Explicitly set the pointer cursor
-  sourceLink.onclick = onSourceClick;
+  const propertyCellContent = ui.divH([checkbox.root, nameLabel]);
+  propertyCellContent.style.alignItems = 'center';
 
-  const label = ui.label(name);
-  label.appendChild(sourceLink);
+  const methodLink = ui.span([method ?? 'source'], 'grok-link');
+  methodLink.style.cursor = 'pointer';
+  methodLink.onclick = onSourceClick;
 
-  const row = ui.divH([checkbox.root, label]);
-  row.style.alignItems = 'center';
-  row.style.marginBottom = '5px';
+  const tr = ui.element('tr');
+  const propertyTd = ui.element('td');
+  propertyTd.appendChild(propertyCellContent);
 
-  return {row, checkbox};
+  const methodTd = ui.element('td');
+  methodTd.style.textAlign = 'right';
+  methodTd.appendChild(methodLink);
+
+  ui.appendAll(tr, [propertyTd, methodTd]);
+
+  return {row: tr, checkbox};
 }
 
-/**
- * A helper function to create and show a small, focused information dialog.
- * @param title The title for the info dialog.
- * @param content An HTMLElement containing the details to display.
- */
 function showInfoDialog(title: string, content: HTMLElement): void {
   ui.dialog(title)
     .add(content)
@@ -1331,37 +1330,32 @@ function showInfoDialog(title: string, content: HTMLElement): void {
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule} [Molecule column]
 export function customBiochemicalPropertiesDialog(table: DG.DataFrame, molecules: DG.Column): void {
-  // Define the content and action for each property's info dialog
-  const piDetailsContent = ui.divV([
-    ui.divText('Calculates the isoelectric point of a molecule.'),
-    ui.tableFromMap({'Method': 'Henderson-Hasselbalch', 'Source': 'Bio-Tools Package', 'Availability': 'Free'})
-  ]);
+  const piDetails = ui.divV([ui.divText('Calculates the isoelectric point...'), ui.tableFromMap({'Source': 'Bio-Tools Package'})]);
+  const pkaDetails = ui.divV([ui.divText('Predicts acid dissociation constant...'), ui.tableFromMap({'Source': 'Chem-Proprietary'})]);
+  const logSDetails = ui.divV([ui.divText('Estimates aqueous solubility...'), ui.link('Delaney, J. S. (2004)', 'https://doi.org/10.1021/ci034243x')]);
+  const logDDetails = ui.divV([ui.divText('Calculates the log of the distribution coefficient...'), ui.tableFromMap({'Source': 'In-house'})]);
 
-  const pkaDetailsContent = ui.divV([
-    ui.divText('Predicts acid dissociation constant.'),
-    ui.tableFromMap({'Method': 'Fragment-based', 'Source': 'Chem-Proprietary Library', 'Availability': 'Proprietary'})
-  ]);
+  const propertiesTable = ui.element('table', 'ui-table');
+  const propertyTh = ui.element('th');
+  propertyTh.innerText = 'Property';
+  const methodTh = ui.element('th');
+  methodTh.innerText = 'Method';
+  const headerRow = ui.element('tr');
+  ui.appendAll(headerRow, [propertyTh, methodTh]);
+  const tableHeader = ui.element('thead');
+  tableHeader.appendChild(headerRow);
+  const tableBody = ui.element('tbody');
 
-  const logSDetailsContent = ui.divV([
-    ui.divText('Estimates aqueous solubility via the ESOL method.'),
-    ui.divH([ui.span(['Reference: ']), ui.link('Delaney, J. S. (2004)', 'https://doi.org/10.1021/ci034243x')])
-  ]);
+  const pi = createPropertyTableRow('pI (Isoelectric Point)', true, 'Henderson-Hasselbalch', () => showInfoDialog('pI Details', piDetails));
+  const pka = createPropertyTableRow('pKa', false, 'Fragment-based', () => showInfoDialog('pKa Details', pkaDetails));
+  const logS = createPropertyTableRow('logS', true, 'ESOL', () => showInfoDialog('logS Details', logSDetails));
+  const logD = createPropertyTableRow('logD', false, 'Hybrid (pKa/logP)', () => showInfoDialog('logD Details', logDDetails));
 
-  const logDDetailsContent = ui.divV([
-    ui.divText('Calculates the log of the distribution coefficient.'),
-    ui.tableFromMap({'Method': 'Hybrid (pKa/logP)', 'Source': 'In-house Algorithm', 'Availability': 'Proprietary'})
-  ]);
+  ui.appendAll(tableBody, [pi.row, pka.row, logS.row, logD.row]);
+  ui.appendAll(propertiesTable, [tableHeader, tableBody]);
 
-  // Create property rows, each with a unique onclick handler that opens a specific dialog
-  const pi = createPropertyRow('pI (Isoelectric Point)', true, () => showInfoDialog('pI Details', piDetailsContent));
-  const pka = createPropertyRow('pKa', false, () => showInfoDialog('pKa Details', pkaDetailsContent));
-  const logS = createPropertyRow('logS', true, () => showInfoDialog('logS Details', logSDetailsContent));
-  const logD = createPropertyRow('logD', false, () => showInfoDialog('logD Details', logDDetailsContent));
-
-  // Assemble and show the main dialog
-  ui.dialog({title: 'Biochemical Properties'})
-    .add(ui.divText(`Calculate for column: <b>${molecules.name}</b>`, {style: {marginBottom: '10px'}}))
-    .add(ui.divV([pi.row, pka.row, logS.row, logD.row]))
+  ui.dialog({title: `Biochemical Properties [${molecules.name}]`})
+    .add(propertiesTable)
     .onOK(() => {
       const selectedProperties: string[] = [];
       if (pi.checkbox.value) selectedProperties.push('pI');
@@ -1374,5 +1368,5 @@ export function customBiochemicalPropertiesDialog(table: DG.DataFrame, molecules
       else
         grok.shell.warning('No properties were selected.');
     })
-    .show({width: 300});
+    .show({width: 400});
 }
