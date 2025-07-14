@@ -477,13 +477,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //create trellis legend
     const trellisLegend = ui.divH([], 'mmpa-trellis-legend');
-    for (let i = 0; i < this.activityMeanNames.length; i++) {
-      const div = ui.divText(this.activityMeanNames[i], {style: {color: this.colorPalette!.hex[i]}});
-      div.classList.add('mmpa-trellis-legend-item');
-      //show tooltip only in case name is truncated
-      ui.tooltip.bind(div, () => div.scrollWidth > div.clientWidth ? this.activityMeanNames[i] : null);
-      trellisLegend.append(div);
-    }
+    this.updateTrellisLegend(trellisLegend, this.tp!.getOptions().look.innerViewerLook.columnNames);
 
     this.tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
@@ -502,6 +496,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.updateTrellisFiltersWithDefaultValues(tpDiv);
 
     this.tp.onEvent('d4-viewer-rendered').subscribe(() => {
+      this.updateTrellisLegend(trellisLegend, this.tp!.getOptions().look.innerViewerLook.columnNames);
       this.createSortIcon(trellisSortState, TrellisAxis.From, this.tp!, 'chem-mmpa-fragments-sort-icon-x-axis');
       this.createSortIcon(trellisSortState, TrellisAxis.To, this.tp!, 'chem-mmpa-fragments-sort-icon-y-axis');
       const tpButtons = Array.from(this.tp!.root.getElementsByTagName('button'));
@@ -560,6 +555,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       tpDiv,
       mmPairsRoot2,
     ], {style: {width: '100%', height: '100%'}}, true));
+  }
+
+  updateTrellisLegend(trellisLegend: HTMLDivElement, selectedActivities: string[]) {
+    ui.empty(trellisLegend);
+    for (let i = 0; i < selectedActivities.length; i++) {
+      const div = ui.divText(selectedActivities[i], {style: {color: this.colorPalette!.hex[i]}});
+      div.classList.add('mmpa-trellis-legend-item');
+      //show tooltip only in case name is truncated
+      ui.tooltip.bind(div, () => div.scrollWidth > div.clientWidth ? selectedActivities[i] : null);
+      trellisLegend.append(div);
+    }
   }
 
   updateTrellisFiltersWithDefaultValues(tpDiv: HTMLDivElement) {
