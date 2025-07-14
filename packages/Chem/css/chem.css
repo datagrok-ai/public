@@ -789,7 +789,11 @@
   display: none;
 }
 
-.chem-mmp-trellis-plot div[name="SummaryLook"] {
+.chem-mmp-trellis-plot i[name="icon-expand-arrows"] {
+  z-index: 1000;
+}
+
+.chem-mmp-trellis-plot [name="SummaryLook"] {
   display: none;
 }
 
