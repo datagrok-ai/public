@@ -1272,3 +1272,159 @@ export function test1(): any {
   _package.logger.debug('Bio:test1() function');
   return {value: 'value1'};
 }
+
+//top-menu: Bio | Calculate | Isoelectric Point (pI)...
+//name: calculatePiMenu
+//description: Calculates isoelectric point (pI) for molecules
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule} [Molecule column]
+export async function calculatePiMenu(table: DG.DataFrame, molecules: DG.Column): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create(`Calculating pI for ${molecules.name}...`);
+  try {
+    await grok.functions.call('Bio:calculatePi', {
+      table: table,
+      molecule_column_name: molecules.name,
+    });
+    grok.shell.info('pI calculation completed!');
+  } catch (e: any) {
+    grok.shell.error(`pI calculation failed: ${e.toString()}`);
+  } finally {
+    pi.close();
+  }
+}
+
+function createPropertyRow(name: string, method: string | null, onSourceClick: () => void):
+  { row: HTMLElement, checkbox: DG.InputBase<boolean> } {
+  const checkbox = ui.input.bool('', {value: true});
+  const nameLabel = ui.label(name);
+  const propertyCell = ui.divH([checkbox.root, nameLabel]);
+  propertyCell.style.alignItems = 'center';
+  propertyCell.style.flexGrow = '1';
+
+  const methodLink = ui.span([method ?? 'source'], 'grok-link');
+  methodLink.style.cursor = 'pointer';
+  methodLink.onclick = onSourceClick;
+  const methodCell = ui.div([methodLink], {style: {textAlign: 'right', minWidth: '150px'}});
+
+  const row = ui.divH([propertyCell, methodCell]);
+  row.style.width = '100%';
+  return {row, checkbox};
+}
+
+function createHierarchicalProperty(parentName: string, parentMethod: string | null, subProperties: string[], onParentSourceClick: () => void):
+  { container: HTMLElement, parentCheckbox: DG.InputBase<boolean>, childCheckboxes: DG.InputBase<boolean>[] } {
+  const parentRow = createPropertyRow(parentName, parentMethod, onParentSourceClick);
+  parentRow.checkbox.value = false;
+
+  const childCheckboxes: DG.InputBase<boolean>[] = [];
+
+  const subItemsContainer = ui.divV([], {style: {marginLeft: '20px', marginTop: '5px'}});
+
+  for (const subName of subProperties) {
+    const subCheckbox = ui.input.bool(subName, {value: false});
+    childCheckboxes.push(subCheckbox);
+    subItemsContainer.appendChild(subCheckbox.root);
+  }
+
+  parentRow.checkbox.onChanged.subscribe((value) => {
+    for (const child of childCheckboxes)
+      child.value = value;
+  });
+
+  for (const child of childCheckboxes) {
+    child.onChanged.subscribe(() => {
+      parentRow.checkbox.value = childCheckboxes.every((c) => c.value);
+    });
+  }
+
+  const container = ui.divV([parentRow.row, subItemsContainer]);
+  return {container, parentCheckbox: parentRow.checkbox, childCheckboxes};
+}
+
+function showInfoDialog(title: string, content: HTMLElement): void {
+  ui.dialog(title).add(content).show({width: 350, height: 220});
+}
+
+//name: Custom Biochemical Properties
+//top-menu: Bio | Calculate | Biochemical Properties...
+//description: Opens a dialog to select and run biochemical property calculations.
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule} [Molecule column]
+export function customBiochemicalPropertiesDialog(table: DG.DataFrame, molecules: DG.Column): void {
+  // Define details content for info dialogs
+  const piDetails = ui.divV([ui.divText('Calculates the isoelectric point...'), ui.tableFromMap({'Source': 'Bio-Tools Package'})]);
+  const pkaDetails = ui.divV([ui.divText('Predicts acid dissociation constant...'), ui.tableFromMap({'Source': 'Chem-Proprietary'})]);
+  const logSDetails = ui.divV([ui.divText('Estimates aqueous solubility...'), ui.link('Delaney, J. S. (2004)', 'https://doi.org/10.1021/ci034243x')]);
+  const logDDetails = ui.divV([ui.divText('Calculates the log of the distribution coefficient...'), ui.tableFromMap({'Source': 'In-house'})]);
+
+  const pi = createPropertyRow('pI (Isoelectric Point)', 'Henderson-Hasselbalch', () => showInfoDialog('pI Details', piDetails));
+  const logS = createPropertyRow('logS', 'ESOL', () => showInfoDialog('logS Details', logSDetails));
+  logS.checkbox.value = false;
+
+  const logD = createPropertyRow('logD', 'Hybrid (pKa/logP)', () => showInfoDialog('logD Details', logDDetails));
+  logD.checkbox.value = false;
+
+  const pkaMethods = ['IPC2_peptide', 'IPC_peptide', 'ProMoST', 'Gauci', 'Grimsley', 'Thurlkill', 'Lehninger', 'Toseland'];
+  const pka = createHierarchicalProperty('pKa', 'Fragment-based', pkaMethods, () => showInfoDialog('pKa Details', pkaDetails));
+
+  const headers = ui.divH([
+    ui.div(['Property'], {style: {fontWeight: 'bold', flexGrow: '1'}}),
+    ui.div(['Method'], {style: {fontWeight: 'bold', minWidth: '150px', textAlign: 'right'}})
+  ]);
+  headers.style.paddingBottom = '5px';
+  headers.style.borderBottom = '1px solid var(--grey-2)';
+
+  ui.dialog({title: `Biochemical Properties [${molecules.name}]`})
+    .add(ui.divV([
+      headers,
+      pi.row,
+      pka.container,
+      logS.row,
+      logD.row
+    ]))
+    .onOK(async () => {
+      const piCheckbox = pi.checkbox;
+      const logSCheckbox = logS.checkbox;
+      const logDCheckbox = logD.checkbox;
+      const pkaChildCheckboxes = pka.childCheckboxes;
+
+      const selectedPkaMethods = pkaChildCheckboxes
+        .filter((cb) => cb.value)
+        .map((cb) => cb.caption);
+
+      if (!piCheckbox.value && !logSCheckbox.value && !logDCheckbox.value && selectedPkaMethods.length === 0) {
+        grok.shell.warning('No properties were selected.');
+        return;
+      }
+
+      const params: {[key: string]: any} = {
+        TABLE: table,
+        MOLECULES_COLUMN_NAME: molecules.name,
+        CALCULATE_PI: pi.checkbox.value,
+        CALCULATE_LOGP: logS.checkbox.value,
+        CALCULATE_LOGD: logD.checkbox.value,
+      };
+
+      pka.childCheckboxes.forEach((cb) => {
+        const paramName = cb.caption.toUpperCase();
+        params[paramName] = cb.value;
+      });
+
+      const isAnyPkaSelected = pka.childCheckboxes.some((cb) => cb.value);
+      if (!params.CALCULATE_PI && !params.CALCULATE_LOGP && !params.CALCULATE_LOGD && !isAnyPkaSelected) {
+        grok.shell.warning('No properties were selected.');
+        return;
+      }
+
+      const progress = DG.TaskBarProgressIndicator.create('Calculating properties...');
+      try {
+        await grok.functions.call('Bio:calculateBiochemicalProperties', params);
+        grok.shell.info('Calculation complete. Columns added to the table.');
+      } catch (e: any) {
+        grok.shell.error(e.toString());
+      } finally {
+        progress.close();
+      }
+    })
+    .show({width: 450});
+}
