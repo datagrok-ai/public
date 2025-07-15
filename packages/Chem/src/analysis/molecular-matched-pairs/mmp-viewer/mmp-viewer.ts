@@ -486,7 +486,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           trellisHeader, filterIcon, summaryColsButton,
           this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP),
           trellisLegend,
-        ]),
+        ], {style: {width: '100%'}}),
         {style: {maxHeight: '30px'}},
       ),
       this.tp.root,
