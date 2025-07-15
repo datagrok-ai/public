@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, IProperty, Entity, Group} from './entities';
+import {Func, Property, IProperty, Entity, Group, ProgressIndicator} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -1499,49 +1499,6 @@ export class ChoiceInput<T> extends InputBase<T> {
 
   get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
-}
-
-
-export class ProgressIndicator {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static create() {
-    return toJs(api.grok_ProgressIndicator_Create());
-  }
-
-  get percent(): number {
-    return api.grok_ProgressIndicator_Get_Percent(this.dart);
-  }
-
-  /** Flag indicating whether the operation was canceled by the user. */
-  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
-
-  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
-  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
-
-  update(percent: number, description: string): void {
-    api.grok_ProgressIndicator_Update(this.dart, percent, description);
-  }
-
-  log(line: string): void {
-    api.grok_ProgressIndicator_Log(this.dart, line);
-  }
-
-  get onProgressUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Updated(this.dart));
-  }
-
-  get onLogUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Log_Updated(this.dart));
-  }
-
-  get onCanceled(): Observable<any> {
-    return observeStream(api.grok_Progress_Canceled(this.dart));
-  }
 }
 
 

@@ -24,6 +24,8 @@ import {DataSourceType} from "./api/grok_shared.api.g";
 import { Tags } from "./api/ddt.api.g";
 import {View} from "./views/view";
 import {InputType} from "./api/d4.api.g";
+import {Observable} from "rxjs";
+import {observeStream} from "./events";
 
 declare var grok: any;
 declare var DG: any;
@@ -1909,5 +1911,48 @@ export class ViewInfo extends Entity {
 
   toJson(): string {
     return api.grok_ViewInfo_ToJson(this.dart);
+  }
+}
+
+
+export class ProgressIndicator {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static create() {
+    return toJs(api.grok_ProgressIndicator_Create());
+  }
+
+  get percent(): number {
+    return api.grok_ProgressIndicator_Get_Percent(this.dart);
+  }
+
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
+
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
+
+  update(percent: number, description: string): void {
+    api.grok_ProgressIndicator_Update(this.dart, percent, description);
+  }
+
+  log(line: string): void {
+    api.grok_ProgressIndicator_Log(this.dart, line);
+  }
+
+  get onProgressUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Updated(this.dart));
+  }
+
+  get onLogUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Log_Updated(this.dart));
+  }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
   }
 }
