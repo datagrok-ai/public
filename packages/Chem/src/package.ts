@@ -1962,7 +1962,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
-  viewer.setOptions({molecules: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
+  viewer.setOptions({moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
     scalings: scalings, fragmentCutoff});
   viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
 }
