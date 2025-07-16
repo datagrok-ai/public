@@ -1,0 +1,16 @@
+.revvity-signals-search-required-field {
+    display: inline-flex!important;
+    flex-direction: row!important;
+    align-items: center;
+}
+
+.revvity-signals-search .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+    padding-top: 6px;
+}
+
+.revvity-signals-search .fa-plus {
+    color: #2083D5;
+    padding-left: 10px;
+}
