@@ -24,22 +24,39 @@ export function buildOperatorUI(
   // Logical operators
   if (opKey === '$and' || opKey === '$or' || opKey === '$not') {
     const group = opValue as QueryOperator[];
-    return ui.divV([
-      ui.label(opKey),
-      ...group.map((childOp, idx) =>
-        ui.divH([
-          buildOperatorUI(childOp, onValueChange, onStructureChange),
-          ui.icons.delete(() => {
-            group.splice(idx, 1);
-            onStructureChange();
-          }, 'Remove condition'),
-        ])
-      ),
-      ui.icons.add(() => {
-        group.push(createDefaultOperator());
-        onStructureChange();
-      }, 'Add condition'),
-    ], { style: { border: '1px solid #ccc', margin: '4px', padding: '4px' } });
+    // Show a dropdown for all operators
+    const operatorInput = ui.input.choice('Operator', {items: OPERATORS, value: opKey});
+    operatorInput.onChanged.subscribe(() => {
+      const newOp = operatorInput.value;
+      let newOperator: QueryOperator;
+      if (newOp === '$and' || newOp === '$or' || newOp === '$not') {
+        newOperator = { [String(newOp)]: group } as unknown as QueryOperator;
+      } else {
+        newOperator = { [String(newOp)]: { field: 'type', value: '' } } as unknown as QueryOperator;
+      }
+      Object.keys(operator).forEach((k) => delete (operator as any)[k]);
+      Object.assign(operator, newOperator);
+      onStructureChange();
+    });
+    // If the current operator is logical, show group UI, else show field-based UI
+    if (opKey === '$and' || opKey === '$or' || opKey === '$not') {
+      return ui.divV([
+        operatorInput.root,
+        ...group.map((childOp, idx) =>
+          ui.divH([
+            buildOperatorUI(childOp, onValueChange, onStructureChange),
+            ui.icons.delete(() => {
+              group.splice(idx, 1);
+              onStructureChange();
+            }, 'Remove condition'),
+          ])
+        ),
+        ui.icons.add(() => {
+          group.push(createDefaultOperator());
+          onStructureChange();
+        }, 'Add condition'),
+      ], { style: { border: '1px solid #ccc', margin: '4px', padding: '4px' } });
+    }
   }
 
   // Field-based operators
