@@ -1402,6 +1402,11 @@ export class ObjectHandler<T = any> {
 
   toString(): string { return this.name; }
 
+  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher) */
+  get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} | null {
+    return null;
+  }
+
   async getById(id: string): Promise<T | null> {
     return null;
   }
