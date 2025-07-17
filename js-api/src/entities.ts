@@ -1956,3 +1956,15 @@ export class ProgressIndicator {
     return observeStream(api.grok_Progress_Canceled(this.dart));
   }
 }
+
+export type ViewSpecificSearchProvider = {
+  isApplicable: (s: string) => boolean;
+  returnType?: string;
+  search: (s: string, view?: View) => Promise<{priority: number, results: any} | null>;
+  getSuggestions?: (s: string) => {priority: number, suggestionText: string, suggestionValue: string}[] | null;
+  onValueEnter?: (s: string, view?: View) => Promise<void>; 
+}
+
+export type SearchProvider = {
+  [view: string]: ViewSpecificSearchProvider;
+}
