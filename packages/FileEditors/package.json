@@ -3,10 +3,10 @@
   "friendlyName": "File Editors",
   "version": "1.2.1",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Viktor Makaichev",
+    "email": "vmakarichev@datagrok.ai"
   },
-  "description": "Support for previewing and opening text file formats (PDF, DOCX)",
+  "description": "Support for previewing and opening text file formats (PDF, DOCX, TEX)",
   "dependencies": {
     "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.5",
