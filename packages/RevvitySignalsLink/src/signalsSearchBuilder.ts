@@ -1,6 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SignalsSearchQuery, QueryOperator } from './signalsSearchQuery';
+import { SignalsSearchQuery, QueryOperator, SignalsSearchParams } from './signalsSearchQuery';
+import { getApiKey, getApiUrl } from './credentials-utils';
+import { RevvityApiResponse, searchEntities } from './revvityApi';
+import * as grok from 'datagrok-api/grok';
 
 export enum OPERATORS {
   MATCH = '$match',
@@ -18,6 +21,19 @@ export enum OPERATORS {
   AND = '$and',
   OR = '$or',
   NOT = '$not',
+}
+
+export enum SourceType {
+  SN = 'SN',
+  CONNECTED = 'CONNECTED',
+  IVT = 'IVT',
+  CHEMICALS = 'CHEMICALS',
+}
+
+export enum IncludeType {
+  CREATED_BY = 'createdBy',
+  EDITED_BY = 'editedBy',
+  OWNER = 'owner',
 }
 
 
@@ -198,12 +214,41 @@ export function buildOperatorUI(
   ], 'revvity-signals-search-query-operator');
 }
 
+
 // Main UI builder function
 export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => void): HTMLElement {
+  const requestParams: SignalsSearchParams = {};
   let rootQuery: SignalsSearchQuery = {
     query: createDefaultOperator(),
     options: { sort: { modifiedAt: 'desc' } },
   };
+
+  // Inputs for request parameters
+  const pageOffsetInput = ui.input.int('Page Offset', { value: requestParams['page[offset]'] ?? 0, 
+    onValueChanged: () => { requestParams['page[offset]'] = pageOffsetInput.value ?? 0; } });
+
+  const pageLimitInput = ui.input.int('Page Limit', { value: requestParams['page[limit]'] ?? 20, 
+    onValueChanged: () => { requestParams['page[limit]'] = pageLimitInput.value ?? 20; } });
+
+  const includeInput = ui.input.multiChoice('Include', {
+    items: Object.values(IncludeType),
+    value:  requestParams.include ?? [IncludeType.OWNER],
+    onValueChanged: () => {requestParams.include = includeInput.value ?? undefined;}});
+
+  const sortInput = ui.input.string('Sort', { value: requestParams.sort ?? '',
+    onValueChanged: () => { requestParams.sort = sortInput.value; } });
+
+  const sourceInput = ui.input.choice('Source', {
+    items: Object.values(SourceType),
+    value: requestParams.source ?? SourceType.SN,
+    onValueChanged: () => { requestParams.source = sourceInput.value ?? undefined; }
+  });
+
+  const fieldsEntityInput = ui.input.string('Fields[entity]', { value: requestParams['fields[entity]'] ?? '', 
+    onValueChanged: () => { requestParams['fields[entity]'] = fieldsEntityInput.value ?? undefined; } });
+
+  const stopAfterItemsInput = ui.input.int('Stop After Items', { value: requestParams.stopAfterItems ?? undefined, 
+    onValueChanged: () => { requestParams.stopAfterItems = stopAfterItemsInput.value ?? undefined; } });
 
   // Use a plain textarea for preview
   const jsonPreview = document.createElement('textarea');
@@ -241,13 +286,27 @@ export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => 
   });
 
   // Submit button
-  const submitBtn = ui.button('Submit Query', () => {
-    onSubmit(rootQuery);
+  const submitBtn = ui.button('Submit Query', async () => {
+    // Call fetchEntitiesSearch and handle response
+    const response = await searchEntities(rootQuery, requestParams);
+    if (response.errors) {
+      throw response.errors;
+    }
+    console.log(response.data);
   });
 
   return ui.divV([
     builderDiv,
     ui.divH([sortFieldInput.root, sortOrderInput.root]),
+    ui.divH([
+      pageOffsetInput.root,
+      pageLimitInput.root,
+      includeInput.root,
+      sortInput.root,
+      sourceInput.root,
+      fieldsEntityInput.root,
+      stopAfterItemsInput.root,
+    ]),
     ui.div([ui.label('Preview JSON'), jsonPreview]),
     submitBtn,
   ], 'revvity-signals-search');

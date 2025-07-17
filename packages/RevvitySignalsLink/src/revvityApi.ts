@@ -1,5 +1,9 @@
 // Revvity Signals REST API - Response Interfaces
 
+import { getApiKey, getApiUrl } from "./credentials-utils";
+import * as grok from 'datagrok-api/grok';
+import { SignalsSearchParams, SignalsSearchQuery } from "./signalsSearchQuery";
+
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
   links?: RevvityLinks;
@@ -41,4 +45,55 @@ export interface RevvityApiError {
   code: string;
   title: string;
   detail: string;
-} 
+}
+
+
+async function request<T>(
+  method: string,
+  path: string,
+  body?: any,
+  text?: boolean,
+): Promise<RevvityApiResponse<T>> {
+  const headers: any = {
+    'x-api-key': await getApiKey(),
+    'Accept': 'application/json',
+  };
+  if (method === 'POST')
+    headers['Content-Type'] = 'application/json';
+
+  const url = `${await getApiUrl()}${path}`;
+  const response = await grok.dapi.fetchProxy(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = text ? await response.bytes() : await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error ?? `HTTP error!: ${response.status}`, { cause: response.status });
+  }
+  return { data };
+}
+
+
+/** Search entities */
+export async function searchEntities(body: SignalsSearchQuery, queryParams: SignalsSearchParams): Promise<RevvityApiResponse> {
+  const paramsStr = paramsStringFromObj(queryParams);
+  return request('POST', `/entities/search${paramsStr}`, body);
+}
+
+
+export function paramsStringFromObj(params: any): string {
+  let paramsStr = '';
+  const paramNames = Object.keys(params);
+  for (let i = 0; i < paramNames.length; i++) {
+    let paramVal = params[paramNames[i]];
+    if (paramVal) {
+      if (Array.isArray(paramVal))
+        paramVal = paramVal.join(',')
+      paramsStr += paramsStr === '' ? `?${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
+    }
+  }
+  return paramsStr;
+}

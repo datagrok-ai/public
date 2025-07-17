@@ -108,3 +108,13 @@ export interface SignalsSearchQuery {
     // ...other options
   };
 } 
+
+export interface SignalsSearchParams {
+  'page[offset]'?: number;
+  'page[limit]'?: number;
+  include?: string[];
+  sort?: string;
+  source?: string;
+  'fields[entity]'?: string;
+  stopAfterItems?: number;
+} 
