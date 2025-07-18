@@ -79,8 +79,8 @@ async function request<T>(
 
 /** Search entities */
 export async function searchEntities(body: SignalsSearchQuery, queryParams: SignalsSearchParams): Promise<RevvityApiResponse> {
-  const paramsStr = paramsStringFromObj(queryParams);
-  return request('POST', `/entities/search${paramsStr}`, body);
+  const paramsStr = encodeURI(paramsStringFromObj(queryParams));
+  return request('POST', `/entities/search?${paramsStr}`, body);
 }
 
 
@@ -92,7 +92,7 @@ export function paramsStringFromObj(params: any): string {
     if (paramVal) {
       if (Array.isArray(paramVal))
         paramVal = paramVal.join(',')
-      paramsStr += paramsStr === '' ? `?${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
+      paramsStr += paramsStr === '' ? `${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
     }
   }
   return paramsStr;

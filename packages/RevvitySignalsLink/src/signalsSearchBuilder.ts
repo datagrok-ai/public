@@ -107,17 +107,6 @@ export function buildOperatorUI(
     ], 'revvity-signals-search-logical-operator');
   }
 
-  function appendAsterisk(input: DG.InputBase) {
-    const label = input.captionLabel;
-    if (label && !label.querySelector('.asterisk')) {
-      label.classList.add('revvity-signals-search-required-field');
-      const asterisk = ui.span(['*'], 'asterisk');
-      // asterisk.textContent = '*';
-      // asterisk.className = 'asterisk';
-      label.appendChild(asterisk);
-    }
-  }
-
   // Operator selector
   const operatorInput = ui.input.choice('Operator', {
     items: Object.keys(OPERATOR_DISPLAY_NAMES), value: Object.keys(OPERATOR_DISPLAY_NAMES).find(key => OPERATOR_DISPLAY_NAMES[key] === opKey),
@@ -144,37 +133,36 @@ export function buildOperatorUI(
     const values = opValue.values || [];
     const valuesInput = ui.input.string('Values (comma separated)', {
       value: values.join(','),
+      nullable: false,
       onValueChanged: () => {
         opValue.values = valuesInput.value.split(',').map((v: string) => v.trim());
         onValueChange();
       }
     });
-    appendAsterisk(valuesInput);
     return valuesInput;
   }
 
   const stringInput = (fieldName: string, required: boolean) => {
     const valueStringInput = ui.input.string(fieldName.charAt(0).toUpperCase() + fieldName.slice(1), {
       value: opValue[fieldName] ?? '',
+      nullable: !(!!required),
       onValueChanged: () => {
         opValue[fieldName] = valueStringInput.value;
         onValueChange();
       }
     });
-    if (required)
-      appendAsterisk(valueStringInput);
     return valueStringInput;
   }
 
   const floatValueInput = (fieldName: string) => {
     const valueFloatInput = ui.input.float(fieldName.charAt(0).toUpperCase() + fieldName.slice(1), {
       value: typeof opValue[fieldName] === 'number' ? opValue[fieldName] : undefined,
+      nullable: false,
       onValueChanged: () => {
         opValue[fieldName] = typeof valueFloatInput.value === 'number' ? valueFloatInput.value : undefined;
         onValueChange();
       }
     });
-    appendAsterisk(valueFloatInput);
     return valueFloatInput;
   }
 
@@ -182,12 +170,12 @@ export function buildOperatorUI(
     const minimum = typeof opValue.minimum === 'number' ? opValue.minimum : undefined;
     const minimumInput = ui.input.int('Minimum', {
       value: minimum,
+      nullable: false,
       onValueChanged: () => {
         opValue.minimum = typeof minimumInput.value === 'number' ? minimumInput.value : undefined;
         onValueChange();
       }
     });
-    appendAsterisk(minimumInput);
     return minimumInput;
   }
 
@@ -195,11 +183,11 @@ export function buildOperatorUI(
     const molecule = opValue.molecule || '';
     const moleculeInput = ui.input.molecule('Molecule', {
       value: molecule,
+      nullable: false,
       onValueChanged: () => {
         opValue.molecule = moleculeInput.value; onValueChange();
       }
     });
-    appendAsterisk(moleculeInput);
     return moleculeInput;
   }
 
