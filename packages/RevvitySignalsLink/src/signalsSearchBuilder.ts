@@ -23,6 +23,24 @@ export enum OPERATORS {
   NOT = '$not',
 }
 
+export const OPERATOR_DISPLAY_NAMES: Record<string, OPERATORS> = {
+  'MATCH': OPERATORS.MATCH,
+  'IN': OPERATORS.IN,
+  'GREATER THAN': OPERATORS.GT,
+  'LESS THAN': OPERATORS.LT,
+  'GREATER THAN OR EQUAL TO': OPERATORS.GTE,
+  'LESS THAN OR EQUAL TO': OPERATORS.LTE,
+  'RANGE': OPERATORS.RANGE,
+  'PREFIX': OPERATORS.PREFIX,
+  'EXISTS': OPERATORS.EXISTS,
+  'SIMPLE': OPERATORS.SIMPLE,
+  'INTERSECT': OPERATORS.INTERSECT,
+  'CHEMICAL SEARCH': OPERATORS.CHEMSEARCH,
+  'AND': OPERATORS.AND,
+  'OR': OPERATORS.OR,
+  'NOT': OPERATORS.NOT,
+};
+
 export enum SourceType {
   SN = 'SN',
   CONNECTED = 'CONNECTED',
@@ -57,9 +75,9 @@ export function buildOperatorUI(
     const group = opValue as QueryOperator[];
     // Show a dropdown for all operators
     const operatorInput = ui.input.choice('Operator', {
-      items: Object.values(OPERATORS), value: opKey,
+      items: Object.keys(OPERATOR_DISPLAY_NAMES), value: Object.keys(OPERATOR_DISPLAY_NAMES).find(key => OPERATOR_DISPLAY_NAMES[key] === opKey),
       onValueChanged: () => {
-        const newOp = operatorInput.value;
+        const newOp = OPERATOR_DISPLAY_NAMES[operatorInput.value!];
         let newOperator: QueryOperator;
         if (newOp === OPERATORS.AND || newOp === OPERATORS.OR || newOp === OPERATORS.NOT) {
           newOperator = { [String(newOp)]: group } as unknown as QueryOperator;
@@ -102,10 +120,10 @@ export function buildOperatorUI(
 
   // Operator selector
   const operatorInput = ui.input.choice('Operator', {
-    items: Object.values(OPERATORS), value: opKey,
+    items: Object.keys(OPERATOR_DISPLAY_NAMES), value: Object.keys(OPERATOR_DISPLAY_NAMES).find(key => OPERATOR_DISPLAY_NAMES[key] === opKey),
     onValueChanged: () => {
       // Replace operator type
-      const newOp = operatorInput.value;
+      const newOp = OPERATOR_DISPLAY_NAMES[operatorInput.value!];
       let newOperator: QueryOperator = createDefaultOperator();
       if (newOp === OPERATORS.AND)
         newOperator = { [OPERATORS.AND]: [createDefaultOperator()] };
@@ -295,19 +313,30 @@ export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => 
     console.log(response.data);
   });
 
-  return ui.divV([
-    builderDiv,
-    ui.divH([sortFieldInput.root, sortOrderInput.root]),
-    ui.divH([
-      pageOffsetInput.root,
-      pageLimitInput.root,
-      includeInput.root,
-      sortInput.root,
-      sourceInput.root,
-      fieldsEntityInput.root,
-      stopAfterItemsInput.root,
+  const acc = ui.accordion('Query builder');
+  acc.addPane('Condition', () =>
+    ui.divV([
+      builderDiv,
+      ui.divH([sortFieldInput.root, sortOrderInput.root])
+    ], {style: {width: '100%'}}), true
+  );
+  acc.addPane('Parameters', () =>
+    ui.form([
+      pageOffsetInput,
+      pageLimitInput,
+      includeInput,
+      sortInput,
+      sourceInput,
+      fieldsEntityInput,
+      stopAfterItemsInput,
     ]),
-    ui.div([ui.label('Preview JSON'), jsonPreview]),
+  );
+  acc.addPane('Query preview', () => ui.div([ui.label('Preview JSON'), jsonPreview], {style: {width: '100%'}}), true);
+
+  const div = ui.divV([
+    acc.root,
     submitBtn,
-  ], 'revvity-signals-search');
+  ],'revvity-signals-search');
+
+  return div;
 } 

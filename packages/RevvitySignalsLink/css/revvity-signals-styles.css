@@ -24,6 +24,7 @@
     border: 1px solid #ccc;
     margin: 4px;
     padding: 4px;
+    width: 100%;
 }
 
 .revvity-signals-search-query-operator {
@@ -35,4 +36,8 @@
 .revvity-signals-search-query-preview {
     height: 200px;
     width: 100%;
+}
+
+.revvity-signals-search-query-operator .ui-input-text {
+    width: 95%;
 }
