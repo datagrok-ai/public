@@ -127,10 +127,11 @@ export async function previewRtf(file: DG.FileInfo): Promise<DG.View> {
   file.readAsBytes().then((bytes) => {
     const doc = new RTFJS.Document(bytes, {});
     doc.render().then((elements) => {
-      view.root.append(...elements);
-    })
-
+      (elements as any[]).forEach((element) => {
+        element.style.minHeight = '';
+        view.root.append(element);
+      });
+    });
   });
-
   return view;
 }
