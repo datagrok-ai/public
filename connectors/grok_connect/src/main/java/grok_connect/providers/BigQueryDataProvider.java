@@ -177,8 +177,11 @@ public class BigQueryDataProvider extends JdbcDataProvider {
                 ds.setOAuthPvtKey(new String(Base64.getDecoder().decode(jsonSecretKey)));
             }
             else {
+                String token = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+                if (GrokConnectUtil.isEmpty(token))
+                    throw new GrokConnectException("Invalid OAuth token");
                 ds.setOAuthType(2);
-                ds.setOAuthAccessToken(conn.get(DbCredentials.ACCESS_KEY));
+                ds.setOAuthAccessToken(token);
             }
             return ds;
         } catch (Exception e) {
@@ -205,7 +208,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
                 privateKeyHash = getKeyHash(jsonSecretKey);
             }
             else
-                privateKeyHash = getKeyHash(conn.get(DbCredentials.ACCESS_KEY));
+                privateKeyHash = getKeyHash((String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
 
             rawKey.append("key=");
             rawKey.append(privateKeyHash);
