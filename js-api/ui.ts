@@ -2115,12 +2115,14 @@ export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShare
   return FilesWidget.create(params);
 }
 
-export function time(time: dayjs.Dayjs): HTMLSpanElement {
-  return api.grok_UI_Time(toDart(time));
-}
+export namespace time {
+  export function timeSpan(time: dayjs.Dayjs): HTMLSpanElement {
+    return api.grok_UI_Time(toDart(time));
+  }
 
-export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
-  return api.grok_UI_ShortTimestamp(toDart(time));
+  export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
+    return api.grok_UI_ShortTimestamp(toDart(time));
+  }
 }
 
 export namespace tools {
