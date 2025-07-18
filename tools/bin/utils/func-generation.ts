@@ -13,7 +13,8 @@ export enum pseudoParams {
 const nonMetaData = [
   'sidebar',
   'editor',
-];
+  'friendlyName',
+  'helpUrl'];
 
 const decoratorOptionToAnnotation = new Map<string, string>([
   ['initialValue', 'default'],

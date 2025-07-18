@@ -95,6 +95,8 @@ export namespace decorators {
     initialValue?: string;
     viewer?: string;
     units?: string;
+    type?: string;
+    "meta.url"?: boolean;
   }
 
   interface Input {
@@ -155,6 +157,7 @@ export namespace decorators {
 
   interface FunctionOptions {
     name?: string,
+    friendlyName?: string,
     tags?: string[],
     description?: string,
     meta?: Meta | Record<string, string>,
@@ -164,6 +167,8 @@ export namespace decorators {
     cache?: string;
     ['cache.invalidateOn']?: string;
     ['top-menu']?: string;
+    condition?: string;
+    helpUrl?: string;
   }
 
   interface AppOptions extends FunctionOptions {
