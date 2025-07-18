@@ -1175,6 +1175,10 @@ export class Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
   }
 
+  hide(): void {
+    api.grok_Menu_Hide(this.dart);
+  }
+
   /** Binds the menu to the specified {@link options.element} */
   bind(element: HTMLElement): Menu {
     element.oncontextmenu = (ev) => {
