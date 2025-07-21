@@ -5,6 +5,10 @@
     margin-right: 12px;
 }
 
+.power-pack-search-host .power-pack-search-list label {
+    max-width: 200px;
+}
+
 .power-pack-search-host .power-pack-search-list {
     max-height: 400px;
     flex-wrap: wrap;
