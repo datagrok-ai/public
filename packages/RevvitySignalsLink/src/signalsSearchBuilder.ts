@@ -315,14 +315,17 @@ export function signalsSearchBuilderUI(): HTMLElement {
     updatePreview();
   }
 
+  const t = Object.keys(rootQuery.options!.sort!)[0];
   // Sort options (now free text for field)
   const sortFieldInput = ui.input.string('Sort by', {
+    value: Object.keys(rootQuery.options!.sort!)[0],
     onValueChanged: () => {
       updateSorting();
     }
   });
   const sortOrderInput = ui.input.choice('Order', {
-    items: ['desc', 'asc'], value: 'desc',
+    items: ['desc', 'asc'],
+    value: Object.values(rootQuery.options!.sort!)[0],
     onValueChanged: () => {
       updateSorting();
     }
