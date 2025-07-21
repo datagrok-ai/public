@@ -1396,6 +1396,11 @@ export class InputBase<T = any> {
 
   get classList(): DOMTokenList { return this.root.classList; }
 
+  /**
+   * Performs immediate validation of the input and returns the result.
+   *
+   * @returns {boolean} True if the input is valid; otherwise, false.
+   */
   validate(): boolean {
     return api.grok_InputBase_Validate(this.dart);
   }
