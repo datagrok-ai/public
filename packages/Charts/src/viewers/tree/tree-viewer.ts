@@ -105,8 +105,7 @@ export class TreeViewer extends EChartViewer {
     this.mouseOverLineColor = this.int('mouseOverLineColor', 0x6C5E5E, {category: 'Style'});
     this.selectedRowsColor = this.int('selectedRowsColor', 0xFF8C00, {category: 'Style'});
     this.filteredRowsColor = this.int('filteredRowsColor', 0X96D794, {category: 'Style'});
-
-    this.showMouseOverLine = this.bool('showMouseOverLine', false, {category: 'Selection'});
+    this.showMouseOverLine = this.bool('showMouseOverLine', false, {category: 'Style'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
     this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Size' });
