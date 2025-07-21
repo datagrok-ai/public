@@ -35,6 +35,9 @@ interface InstanceData {
   isNew: boolean
 }
 
+export type IOName = string;
+export type HandlerId = string;
+
 export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, IRunnableWrapper {
   public instance$ = new BehaviorSubject<InstanceData | undefined>(undefined);
 
@@ -43,8 +46,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   public isOutputOutdated$ = new BehaviorSubject(true);
   public runError$ = new BehaviorSubject<string | undefined>(undefined);
 
-  public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResult | undefined>>>({});
-  public meta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
+  public validations$ = new BehaviorSubject<Record<HandlerId, Record<IOName, ValidationResult | undefined>>>({});
+
+  public metaStates$ = new BehaviorSubject<Record<IOName, BehaviorSubject<Record<HandlerId, Record<string, any>> | undefined>>>({});
+  public meta$ = new BehaviorSubject<Record<IOName, Observable<Record<string, any> | undefined>>>({});
 
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
   public inputRestrictionsUpdates$ = new Subject<[string, RestrictionState | undefined]>();
@@ -189,9 +194,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     });
   }
 
-  setMeta(id: string, meta: any | undefined) {
-    const allMeta = this.meta$.value;
-    allMeta[id].next(meta);
+  setMeta(id: string, handlerId: string, meta: any | undefined) {
+    const allMeta = this.metaStates$.value;
+    const currentMeta = allMeta[id].value ?? {};
+    allMeta[id].next({...currentMeta, [handlerId]: meta});
   }
 
   run(mockResults?: Record<string, any>, mockDelay?: number) {
@@ -252,6 +258,20 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     this.closed$.next(true);
   }
 
+  private convertMeta(
+    metaIn: Record<string, any> | undefined
+  ) {
+    if (!metaIn)
+      return undefined;
+    let meta: Record<string, any> = {};
+    for (const metaItem of Object.values(metaIn)) {
+      if (!metaItem)
+        continue;
+      meta = { ...meta, ...metaItem };
+    }
+    return meta;
+  }
+
   private setupStateWatcher() {
     this.instance$.pipe(
       switchMap((instance) => {
@@ -287,7 +307,18 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         return res;
       }),
       takeUntil(this.closed$),
-    ).subscribe(this.meta$);
+    ).subscribe(this.metaStates$);
+
+    this.metaStates$.pipe(
+      map((metaIn) => {
+        const metaOut: Record<string, Observable<Record<string, any> | undefined>> = {};
+        for (const [key, metaItem$] of Object.entries(metaIn)) {
+          metaOut[key] = metaItem$.pipe(map((item) => this.convertMeta(item)));
+        }
+        return metaOut;
+      }),
+      takeUntil(this.closed$),
+    ).subscribe(this.meta$)
   }
 
   private isRunnable(

@@ -600,6 +600,7 @@
   padding: 4px;
   font-size: 13px;
   margin-left: 10px;
+  min-width: 132px;
 }
 
 .chem-mmpa-add-to-workspace-button {
@@ -789,7 +790,11 @@
   display: none;
 }
 
-.chem-mmp-trellis-plot div[name="SummaryLook"] {
+.chem-mmp-trellis-plot i[name="icon-expand-arrows"] {
+  z-index: 1000;
+}
+
+.chem-mmp-trellis-plot [name="SummaryLook"] {
   display: none;
 }
 
@@ -953,4 +958,10 @@
 .mmpa-trellis-legend {
   padding-left: 20px;
   gap: 10px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.chem-mixture-widget-add-table-to-workspace {
+  color: #2083d5!important;
 }

@@ -235,11 +235,16 @@ export class AutoDockService implements IAutoDockService {
 }
 
 export function ensureNoDockingError(response: any) {
-  if ('datagrok-error' in response) {
-    const errVal = response['datagrok-error'];
-    const errMsg = errVal ? errVal.toString() : 'Unknown error';
-    throw new Error(errMsg);
+  let messageResponse: any;
+  if ('message' in response) {
+    try {
+      messageResponse = JSON.parse(response.message);
+    } catch (e) {}
   }
+
+  const datagrokError = response['datagrok-error'] ?? messageResponse?.['datagrok-error'];
+  if (datagrokError)
+    throw new Error(datagrokError);
 }
 
 

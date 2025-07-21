@@ -123,7 +123,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       const [,, link3] = tree.linksState.links.values();
 
       cold('-a').subscribe(() => {
-        (outNode.getItem() as FuncCallNode).instancesWrapper.setMeta('b', {key: 'val2'});
+        (outNode.getItem() as FuncCallNode).instancesWrapper.setMeta('b', '12345', {key: 'val2'});
         link3.trigger();
       });
       cold('5ms a').subscribe(() => {

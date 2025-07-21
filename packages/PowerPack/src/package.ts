@@ -309,14 +309,6 @@ export function newUsersSearchWidget(s: string) {
   return newUsersSearch(s);
 }
 
-//description: Denial Search
-//tags: search
-//input: string s
-//output: widget w
-export function _denialSearch(s: string): Promise<DG.Widget | null> {
-  return denialSearch(s);
-}
-
 //name: formulaLinesEditor
 //input: dataframe src {optional: grok.shell.o}
 //top-menu: Data | Formula Lines...

@@ -86,7 +86,7 @@ export namespace decorators {
     editor?: string;
     nullable?: boolean;
     separators?: string[];
-    choices?: string[];
+    choices?: string[] | string;
     format?: string;
     min?: string;
     max?: string;
@@ -95,6 +95,8 @@ export namespace decorators {
     initialValue?: string;
     viewer?: string;
     units?: string;
+    type?: string;
+    "meta.url"?: boolean;
   }
 
   interface Input {
@@ -155,6 +157,7 @@ export namespace decorators {
 
   interface FunctionOptions {
     name?: string,
+    friendlyName?: string,
     tags?: string[],
     description?: string,
     meta?: Meta | Record<string, string>,
@@ -163,41 +166,44 @@ export namespace decorators {
     editor?: string;
     cache?: string;
     ['cache.invalidateOn']?: string;
+    ['top-menu']?: string;
+    condition?: string;
+    helpUrl?: string;
   }
 
-  interface AppOptions extends FunctionOptions{
+  interface AppOptions extends FunctionOptions {
     browsePath?: string,
-    icon?: string, 
+    icon?: string,
     url?: string
   }
 
-  interface ModelOptions extends FunctionOptions{
+  interface ModelOptions extends FunctionOptions {
     icon?: string,
     features?: string,
     runOnInput?: string,
     runOnOpen?: string
   }
 
-  interface CellRendererOptions extends FunctionOptions{
+  interface CellRendererOptions extends FunctionOptions {
     cellType?: string,
     columnTags?: string
   }
 
-  interface DashboardOptions extends FunctionOptions{
+  interface DashboardOptions extends FunctionOptions {
     order?: string
   }
 
-  interface FileViewerOptions extends FunctionOptions{
+  interface FileViewerOptions extends FunctionOptions {
     fileViewer: string;
     fileViewerCheck?: string;
   }
-  
-  interface FileHandlerOptions extends FunctionOptions{
+
+  interface FileHandlerOptions extends FunctionOptions {
     ext: string;
     fileViewerCheck?: string;
   }
-  
-  interface DemoOptions extends FunctionOptions{
+
+  interface DemoOptions extends FunctionOptions {
     path?: string;
     demoPath?: string;
     demoSkip?: string;

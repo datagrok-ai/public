@@ -361,14 +361,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, int fetchSize) throws QueryCancelledByUser, SQLException {
-        Integer providerTimeout = getTimeout();
-        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+    public void configureAutoCommit(Connection connection) throws SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
         logger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
         if (supportsTransactions)
             connection.setAutoCommit(false);
+    }
+
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, int fetchSize) throws QueryCancelledByUser, SQLException {
+        Integer providerTimeout = getTimeout();
+        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+        configureAutoCommit(connection);
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;

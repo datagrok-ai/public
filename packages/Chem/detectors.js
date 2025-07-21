@@ -54,7 +54,7 @@ class ChemPackageDetectors extends DG.Package {
     let longest = '';
     try {
       longest = col.aggregate('longest') ?? '';
-    } catch(x) {}
+    } catch (x) {}
     if (!likelyMolName && longest.length < 5)
       return null;
 
@@ -71,7 +71,7 @@ class ChemPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  detectFit(col) {
+  detectMixture(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
       return s.includes(MIX_FILE_VERSION);
     }, 1)) {

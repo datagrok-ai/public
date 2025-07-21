@@ -191,6 +191,7 @@ export interface IDartApi {
   grok_Menu_Show(m: any, e: any, ev: any, x: Num, y: Num, nextToElement: Bool): any;
   grok_Menu_Find(m: any, id: String): any;
   grok_Menu_Clear(m: any): any;
+  grok_Menu_Hide(m: any): any;
   grok_Menu_Remove(m: any, id: String): any;
   grok_MenuItem_ToString(mi: any): any;
   grok_Menu_Get_CloseOnClick(m: any): any;
@@ -719,7 +720,7 @@ export interface IDartApi {
   grok_UI_BigButton(content: any, handler: any, tooltip: String): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
-  grok_UI_List(items: any): any;
+  grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
@@ -1647,6 +1648,8 @@ export interface IDartApi {
   grok_UserNotification_IsRead(notification: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
+  grok_GetLogger(params: any): any;
+  grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

@@ -152,7 +152,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
-        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa")));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa"), ".pem,.der"));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
         descriptor.nameBrackets = "\"";
