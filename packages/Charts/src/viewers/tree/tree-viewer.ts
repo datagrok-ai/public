@@ -458,6 +458,7 @@ export class TreeViewer extends EChartViewer {
       break;
 
     case 'onClick':
+    case 'rowSource':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
       break;
 
