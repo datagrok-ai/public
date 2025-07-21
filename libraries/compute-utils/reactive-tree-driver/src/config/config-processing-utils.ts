@@ -211,8 +211,11 @@ function processLink(io: LinkSpecString, ioType: IOType) {
 function checkUniqId(items: {id: string}[]) {
   const ids = new Set<string>();
   for (const item of items) {
-    if (ids.has(item.id))
-      grok.shell.error(`Id ${item.id} is not unique`);
+    if (ids.has(item.id)) {
+      const msg = `Id ${item.id} is not unique`;
+      console.error(msg);
+      grok.shell.error(msg);
+    }
     ids.add(item.id);
   }
 }

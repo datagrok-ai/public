@@ -132,7 +132,7 @@ export class StateTree {
       if (isFuncCallNode(item))
         return [...acc, [item.uuid, item.metaInfo$] as const];
       return acc;
-    }, [] as (readonly [string, BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>])[]);
+    }, [] as (readonly [string, BehaviorSubject<Record<string, Observable<any | undefined>>>])[]);
     return Object.fromEntries(entries);
   }
 
@@ -817,6 +817,7 @@ export class StateTree {
       }
 
       item.clearOldValidations(currentLinkIds);
+      item.clearOldMetas(currentLinkIds);
 
       const ioDeps = this.linksState.ioDependencies.get(item.uuid) ?? {};
       const ioNames = item.instancesWrapper.getStateNames();
@@ -825,8 +826,6 @@ export class StateTree {
         const deps = ioDeps[ioName];
         if (!deps?.data)
           item.clearIORestriction(ioName);
-        if (!deps?.meta)
-          item.clearIOMeta(ioName);
       }
 
       return acc;
