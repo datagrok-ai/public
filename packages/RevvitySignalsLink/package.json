@@ -3,7 +3,10 @@
   "friendlyName": "RevvitySignalsLink",
   "version": "0.0.1",
   "description": "Integration with RevvitySignals",
-  "author": "Maria Dolotova",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "dependencies": {
     "datagrok-api": "^1.21.3",
     "cash-dom": "^8.1.5",
