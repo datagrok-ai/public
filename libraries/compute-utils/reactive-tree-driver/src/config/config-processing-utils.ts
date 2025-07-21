@@ -201,9 +201,9 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
 
 function processLink(io: LinkSpecString, ioType: IOType) {
   if (Array.isArray(io))
-    return io.map((item) => parseLinkIO(item, ioType));
+    return io.flatMap((item) => parseLinkIO(item, ioType));
   else if (io)
-    return [parseLinkIO(io, ioType)];
+    return parseLinkIO(io, ioType);
   else
     return [];
 }

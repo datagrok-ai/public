@@ -195,8 +195,8 @@ export class LinksState {
           return;
         const spec: LinkSpec = {
           id: uuidv4(),
-          from: [parseLinkIO(`in:${io.id}`, io.direction)],
-          to: [parseLinkIO(`out:${io.id}`, io.direction)],
+          from: parseLinkIO(`in:${io.id}`, io.direction),
+          to: parseLinkIO(`out:${io.id}`, io.direction),
           type: 'validator',
           handler({controller}) {
             const val = controller.getFirst('in');
