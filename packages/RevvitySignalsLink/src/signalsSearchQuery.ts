@@ -36,10 +36,10 @@ export interface QueryRangeOperator {
 
 // $match, $prefix
 export interface QueryMatchOperator {
-  $match: { field: string; in?: 'tags'; value: string };
+  $match: { field: string; in?: 'tags'; value: string, mode?: string };
 }
 export interface QueryPrefixOperator {
-  $prefix: { field: string; in?: 'tags'; value: string };
+  $prefix: { field: string; in?: 'tags'; value: string, mode: string };
 }
 
 // $exists

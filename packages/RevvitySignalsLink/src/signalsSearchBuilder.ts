@@ -26,8 +26,8 @@ export const OPERATOR_DISPLAY_NAMES: Record<string, OPERATORS> = {
   'IN': OPERATORS.IN,
   'GREATER THAN': OPERATORS.GT,
   'LESS THAN': OPERATORS.LT,
-  'GREATER THAN OR EQUAL TO': OPERATORS.GTE,
-  'LESS THAN OR EQUAL TO': OPERATORS.LTE,
+  'GREATER THAN OR EQUAL': OPERATORS.GTE,
+  'LESS THAN OR EQUAL': OPERATORS.LTE,
   'RANGE': OPERATORS.RANGE,
   'PREFIX': OPERATORS.PREFIX,
   'EXISTS': OPERATORS.EXISTS,
@@ -126,6 +126,25 @@ export function buildOperatorUI(
     }
   });
 
+  const choiceInput = (fieldName: string, choices: string[], required?: boolean, updateOpValueOnCreate?: boolean) => {
+    const value = opValue[fieldName] ?? '';
+    const input = ui.input.choice(fieldName.charAt(0).toUpperCase() + fieldName.slice(1), {
+      items: choices,
+      value: value && choices.includes(value) ? value : required ? choices[0] : null,
+      nullable: !(!!required),
+      onValueChanged: () => {
+        if (input.value || required)
+          opValue[fieldName] = input.value;
+        else
+          delete opValue[fieldName];
+        onValueChange();
+      }
+    });
+    if (updateOpValueOnCreate)
+      input.fireChanged();
+    return input;
+  }
+
 
   const multiValuesInput = () => {
     const values = opValue.values || [];
@@ -150,6 +169,21 @@ export function buildOperatorUI(
       }
     });
     return valueStringInput;
+  }
+
+  const boolInInput = () => {
+    const valueBoolInput = ui.input.bool('Search in tags', {
+      value: opValue['in'] ?? false,
+      nullable: true,
+      onValueChanged: () => {
+        if (valueBoolInput.value)
+          opValue['in'] = 'tags';
+        else
+          delete opValue['in'];
+        onValueChange();
+      }
+    });
+    return valueBoolInput;
   }
 
   const floatValueInput = (fieldName: string) => {
@@ -192,17 +226,18 @@ export function buildOperatorUI(
 
   let inputs: DG.InputBase[] = [];
   if (opKey === OPERATORS.MATCH || opKey === OPERATORS.PREFIX)
-    inputs = [stringInput('field', true), stringInput('in', false), stringInput('value', true)];
+    inputs = [stringInput('field', true), boolInInput(), stringInput('value', true),
+      choiceInput('mode', opKey === OPERATORS.MATCH ? ['keyword'] : ['keyword'], opKey === OPERATORS.PREFIX, opKey === OPERATORS.PREFIX)];
   else if (opKey === OPERATORS.IN)
-    inputs = [stringInput('field', true), stringInput('in', false), multiValuesInput()];
+    inputs = [stringInput('field', true), boolInInput(), multiValuesInput()];
   else if (opKey === OPERATORS.INTERSECT)
-    inputs = [stringInput('field', true), stringInput('in', false), multiValuesInput(), minimumInput()];
+    inputs = [stringInput('field', true), boolInInput(), multiValuesInput(), minimumInput()];
   else if (opKey === OPERATORS.GT || opKey === OPERATORS.LT || opKey === OPERATORS.GTE || opKey === OPERATORS.LTE)
-    inputs = [stringInput('field', true), stringInput('in', false), floatValueInput('value')];
+    inputs = [stringInput('field', true), boolInInput(), floatValueInput('value')];
   else if (opKey === OPERATORS.RANGE)
-    inputs = [stringInput('field', true), stringInput('in', false), floatValueInput('from'), floatValueInput('to')];
+    inputs = [stringInput('field', true), boolInInput(), floatValueInput('from'), floatValueInput('to')];
   else if (opKey === OPERATORS.EXISTS)
-    inputs = [stringInput('field', true), stringInput('in', false)];
+    inputs = [stringInput('field', true), boolInInput()];
   else if (opKey === OPERATORS.SIMPLE)
     inputs = [stringInput('query', true)];
   else if (opKey === OPERATORS.CHEMSEARCH) {
