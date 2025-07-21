@@ -345,7 +345,7 @@ export class DiffStudio {
     this.toChangePath = true;
 
     /** Save change button */
-    const saveBtn = ui.button(TITLE.SAVE, async () => {
+    const saveBtn = ui.button(TITLE.UPDATE, async () => {
       const source = new DG.FileSource();
 
       try {
@@ -355,7 +355,7 @@ export class DiffStudio {
       }
 
       saveBtn.hidden = true;
-    }, HINT.SAVE);
+    }, HINT.UPDATE);
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
 
@@ -507,7 +507,7 @@ export class DiffStudio {
     browsing?: Browsing, dockOptions?: UiOptions) {
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView)
-      grok.shell.addPreview(this.solverView);
+      grok.shell.addView(this.solverView);
 
     this.uiOpts = dockOptions ?? {
       inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
@@ -537,7 +537,7 @@ export class DiffStudio {
         this.tabControl.root,
         DG.DOCK_TYPE.LEFT,
         null,
-        undefined,
+        TITLE.CONTROLS,
         this.uiOpts.inputsTabDockRatio,
       );
 
@@ -1242,7 +1242,7 @@ export class DiffStudio {
   private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.PropertyOptions = {
+      const options: DG.IProperty = {
         name: name,
         defaultValue: modelInput.value,
         type: DG.TYPE.FLOAT,
@@ -1322,10 +1322,10 @@ export class DiffStudio {
     this.topCategory = null;
     this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
-    let options: DG.PropertyOptions;
+    let options: DG.IProperty;
 
     /** Pull input to appropriate category & add tooltip */
-    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
+    const categorizeInput = (options: DG.IProperty, input: DG.InputBase) => {
       const category = options.category;
 
       if (category === undefined)
@@ -1704,7 +1704,7 @@ export class DiffStudio {
       const treeNodeY = panelRoot.scrollTop!;
 
       const solver = new DiffStudio(false);
-      grok.shell.addPreview( await solver.runSolverApp(
+      grok.shell.addView( await solver.runSolverApp(
         undefined,
         STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
       ) as DG.View, undefined, null, null);
@@ -1739,7 +1739,7 @@ export class DiffStudio {
 
         if (exist) {
           const solver = new DiffStudio(false, true, true);
-          grok.shell.addPreview(await solver.getFilePreview(file, path));
+          grok.shell.addView(await solver.getFilePreview(file, path));
           await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
@@ -1846,7 +1846,7 @@ export class DiffStudio {
     folder.onSelected.subscribe(() => {
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
-      grok.shell.addPreview(view, undefined, undefined, null);
+      grok.shell.addView(view, undefined, undefined, null);
       view.basePath = 'apps/DiffStudio/';
       view.path = `${title}`;
     });
@@ -1891,7 +1891,7 @@ export class DiffStudio {
           view.append(ui.h2('No recent models'));
 
         view.name = TITLE.RECENT;
-        grok.shell.addPreview(view, undefined, undefined, null);
+        grok.shell.addView(view, undefined, undefined, null);
         view.basePath = 'apps/DiffStudio/';
         view.path = TITLE.RECENT;
       } catch (err) {
@@ -1975,7 +1975,7 @@ export class DiffStudio {
       card.onclick = async () => {
         if (exist) {
           const solver = new DiffStudio(false, true, true);
-          grok.shell.addPreview(await solver.getFilePreview(file, path));
+          grok.shell.addView(await solver.getFilePreview(file, path));
 
           await this.saveModelToRecent(path, true);
         } else

@@ -83,7 +83,7 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
   'Transformations_Fragments': {
     'From': {idxs: [1, 29, 37], values: ["CC(Br)[*:1]", "C[*:1]", "O[*:1]"]},
     'To': {idxs: [5, 9, 37], values: ["CC(C)C[*:1]", "CC(C)[*:1]", "O[*:1]"]},
-    'Count': {idxs: [0, 28, 39], values: [1, 2, 3]},
+    'Total count': {idxs: [0, 28, 39], values: [1, 2, 3]},
     '\u0394 Activity':
       {idxs: [0, 11, 30], values: [-12.23, -4.64, 6.85]},
     '\u0394 Permeability':
@@ -109,19 +109,19 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
     '\u0394 Toxicity': {idxs: [0, 30, 50], values: [-3.19, 0.29, 1.68]},
   },
   'Generation': {
-    'Structure': {idxs: [0, 70, 113], values: [
+    'Structure': {idxs: [0, 70, 109], values: [
       'CCc1ccnc2cc(Cl)ccc12',
       'O=C1Oc2ccccc2C(O)C1Cc1ccc(O)cc1O',
       'OCc1ccnc2cc(Cl)ccc12',
     ]},
-    [MMP_NAMES.OBSERVED]: {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
+    [MMP_NAMES.OBSERVED]: {idxs: [0, 70, 109], values: [48.67, 5.89, -2.46]},
     [MMP_NAMES.PROPERTY_TYPE]: {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
-    [MMP_NAMES.CORE]: {idxs: [0, 70, 113],
+    [MMP_NAMES.CORE]: {idxs: [0, 70, 109],
       values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O', 'Clc1ccc2c(C[*:1])ccnc2c1']},
-    [MMP_NAMES.FROM]: {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
-    [MMP_NAMES.TO]: {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
-    [MMP_NAMES.PREDICTED]: {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
-    [MMP_NAMES.NEW_MOLECULE]: {idxs: [0, 70, 113],
+    [MMP_NAMES.FROM]: {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O[*:1]']},
+    [MMP_NAMES.TO]: {idxs: [0, 70, 109], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
+    [MMP_NAMES.PREDICTED]: {idxs: [0, 70, 109], values: [58.98, 13.53, 0.33]},
+    [MMP_NAMES.NEW_MOLECULE]: {idxs: [0, 70, 109],
       values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O', 'CCCc1ccnc2cc(Cl)ccc12']},
   },
 };
@@ -188,16 +188,17 @@ category('mmpa', () => {
     //check Fragments Grid
     await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7, 'Incorrect fragments grid', 3000);
+    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 10, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
     await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13, 'Incorrect pairs grid', 3000);
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 19, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
+    mmp.followCurrentRowInFragGrid!.value = true;
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
     await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
       'Pairs haven\'t been changed after fragment change', 3000);
@@ -206,9 +207,8 @@ category('mmpa', () => {
     //changing target molecule
     tv.dataFrame.currentRowIdx = 4;
     await awaitCheck(() => fragsDf.filter.trueCount === 3 &&
-        fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7) &&
-        pairsDf.filter.trueCount === 2 && pairsDf.filter.get(8) && pairsDf.filter.get(9),
-    'Pairs haven\'t been changed after fragment change', 3000);
+        fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7),
+    'Fragments haven\'t been changed after target change', 3000);
   });
 
   test('cliffsTab', async () => {
@@ -292,7 +292,7 @@ category('mmpa', () => {
     genTabHeader.click();
     await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 10000);
     const genDf = mmp.generationsGrid!.dataFrame;
-    await awaitCheck(() => genDf.rowCount === 114, 'Incorrect row count');
+    await awaitCheck(() => genDf.rowCount === 110, 'Incorrect row count');
     checkRandomValues(genDf, 'Generation');
     //check that 'Prediction' column has been calculated
     await awaitCheck(() =>
@@ -301,7 +301,7 @@ category('mmpa', () => {
     const isExpected = () => {
       const predicted = genDf.col('Prediction')!.toList().filter((it) => it).length;
       // we get different results on cpu and gpu for predictions
-      return predicted === 91 || (mmp.calculatedOnGPU && predicted === 92);
+      return predicted === 88 || (mmp.calculatedOnGPU && predicted === 89);
     };
     expect(isExpected(), true, 'Incorrect data in \'Prediction\' column');
   });

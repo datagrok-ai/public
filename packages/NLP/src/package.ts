@@ -251,8 +251,8 @@ export function computeEmbds(): void {
     return;
   }
   const colInput = ui.input.column('Text Column', {table: table, value: textCols[0], filter: (col) => col.semType === 'Text'});
-  const neiInput = ui.input.int('Neighbours', {value: 25, min: 1, max: 100, nullable: false});
-  const minDist = table.rowCount > 1000 ? 0.003 : 0.008;
+  const neiInput = ui.input.int('Neighbours', {value: table.rowCount > 1000 ? 10 : 4, min: 1, max: 100, nullable: false});
+  const minDist = table.rowCount > 1000 ? 0.002 : 0.004;
   const minDistInput = ui.input.float('Minimum Distance', {value: minDist, nullable: false});
   ui.dialog('Cluster Text').add(ui.inputs([colInput, neiInput, minDistInput])).onOK(async () => {
     await multiColReduceDimensionality(table as any, [colInput.value as any], DimReductionMethods.UMAP,
@@ -260,13 +260,13 @@ export function computeEmbds(): void {
       [1], [DG.Func.find({package: 'NLP', name: 'sentenceEmbeddingsPreprocessingFunction'})[0] as any],
       DistanceAggregationMethods.MANHATTAN,
       true, false, {
-        dbScanEpsilon: minDistInput.value ?? 0.008, dbScanMinPts: 4, learningRate: 1, minDist: 0.3, nEpochs: 0,
-        nNeighbors: neiInput.value ?? 25, preprocessingFuncArgs: [{}], randomSeed: '0', spread: 1.5, useWebGPU: true,
+        dbScanEpsilon: minDistInput.value ?? 0.004, dbScanMinPts: 3, learningRate: 1, minDist: 0.01, nEpochs: 0,
+        nNeighbors: neiInput.value ?? 4, preprocessingFuncArgs: [{}], randomSeed: '0', spread: 0.2, useWebGPU: true,
       }, {
         fastRowCount: 1000,
       }, DG.Func.find({package: 'Eda', name: 'dbscanPostProcessingFunction'})[0] as any, {
-        epsilon: minDistInput.value ?? 0.008,
-        minimumPoints: 4,
+        epsilon: minDistInput.value ?? 0.004,
+        minimumPoints: 3,
       }, VectorMetricsNames.Cosine);
   }).show();
 }

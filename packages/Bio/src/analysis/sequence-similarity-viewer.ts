@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+/* eslint-disable space-infix-ops */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -34,6 +36,12 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   analysisGrid?: DG.Grid;
   subInited: boolean = false;
 
+  // Track last parameters to avoid unnecessary recomputation
+  private lastDistanceMetric: string = '';
+  private lastFingerprint: string = '';
+  private lastGapOpen: number = 0;
+  private lastGapExtend: number = 0;
+
   constructor(
     private readonly seqHelper: ISeqHelper,
     demo?: boolean,
@@ -55,10 +63,16 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.targetColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx;
 
-        await this.computeByMM();
+      // Force recomputation if parameters changed
+      const parametersChanged =
+        this.lastDistanceMetric !== this.distanceMetric ||
+        this.lastFingerprint !== this.fingerprint ||
+        this.lastGapOpen !== this.gapOpen ||
+        this.lastGapExtend !== this.gapExtend;
+
+      if ((computeData && !this.gridSelect) || parametersChanged) {
+        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx; await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.targetColumn})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -106,14 +120,40 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   private async computeByMM() {
     const len = this.targetColumn!.length;
     const actualLimit = Math.min(this.limit, len - 1);
-    if (!this.knn || this.kPrevNeighbors !== actualLimit) {
-      const encodedSequences =
-        (await getEncodedSeqSpaceCol(this.targetColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
 
+    // Check if need to recalculate knn due to parameter changes
+    const needsRecalculation = !this.knn ||
+      this.kPrevNeighbors !== actualLimit ||
+      this.lastDistanceMetric !== this.distanceMetric ||
+      this.lastFingerprint !== this.fingerprint ||
+      this.lastGapOpen !== this.gapOpen ||
+      this.lastGapExtend !== this.gapExtend;
+
+    if (needsRecalculation) {
+      const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
+
+      // Call with individual parameters instead of params object
+      const encodedResult = await getEncodedSeqSpaceCol(
+        this.targetColumn!,
+        distanceFunction,
+        this.fingerprint,
+        this.gapOpen,
+        this.gapExtend
+      );
+      const encodedSequences = encodedResult.seqList;
+      const options = encodedResult.options;
+
+      // Store current parameters for next comparison
+      this.lastDistanceMetric = this.distanceMetric;
+      this.lastFingerprint = this.fingerprint;
+      this.lastGapOpen = this.gapOpen;
+      this.lastGapExtend = this.gapExtend;
       this.kPrevNeighbors = actualLimit;
+
       this.knn = await (new SparseMatrixService()
-        .getKNN(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN, Math.min(this.limit, len - 1)));
+        .getKNN(encodedSequences, distanceFunction, actualLimit, options));
     }
+
     const indexWScore = new Array(actualLimit).fill(0).map((_, i) => ({
       idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
       score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],

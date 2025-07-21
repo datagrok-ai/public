@@ -1,5 +1,19 @@
 # compute-utils changelog
 
+## 1.43.10 (2025-06-30)
+
+- Fix edge cases with pipeline edit action
+
+## 1.43.9 (2025-06-09)
+
+- Updated UI/UX in the Sensitivity Analysis view
+- Implemented the MOEA/D method for multi-objective optimization
+- Added the optimization view
+
+## 1.43.8 (2025-06-03)
+
+Compute2 help improvements
+
 ## 1.43.7 (2025-05-28)
 
 Compute help related fixes
@@ -113,21 +127,9 @@ Updated the Fitting feature:
 
 - Fixed DF input in the Fitting view
 
-## 1.38.0-rc.2 (2024-09-09)
-
-- Fixed DF input processing with no viewers
-
-## 1.38.0-rc (2024-09-06)
-
-- Preparing 1.21.1 release
-
 ## 1.37.0 (2024-09-05)
 
 - Release for 1.21.0
-
-## 1.37.0-rc (2024-09-04)
-
-- Preparing 1.21.0 release
 
 ## 1.36.7 (2024-08-05)
 

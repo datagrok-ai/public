@@ -46,7 +46,7 @@ category('plates', () => {
   test('fromExcel', async () => {
     const plate = await Plate.fromExcelPath('System:DemoFiles/hts/xlsx_plates/plate1.xlsx');
     ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate.data).root)
+      .add(PlateWidget.detailedView(plate).root)
       .show({width: 500, height: 500});
     await DG.delay(10000);
   });
@@ -73,7 +73,7 @@ category('plates', () => {
   test('render', async () => {
     const plate = getPlate();
     ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate.data).root)
+      .add(PlateWidget.detailedView(plate).root)
       .show({width: 500, height: 500});
     await DG.delay(10000);
   });

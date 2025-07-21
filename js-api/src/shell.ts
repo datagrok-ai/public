@@ -1,6 +1,6 @@
 import { DataFrame } from "./dataframe";
 import {BrowsePanel, TableView, View, ViewBase} from "./views/view";
-import { Project, User } from "./entities";
+import {Entity, Project, User} from './entities';
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
@@ -126,6 +126,10 @@ export class Shell {
 
   get browsePanel(): BrowsePanel {
     return api.grok_Get_BrowsePanel();
+  }
+
+  get favorites(): Entity[] {
+    return toJs(api.grok_Get_Favorites());
   }
 
   /** Shows information message (green background)
@@ -363,6 +367,12 @@ export class ShellHelpPanel {
 /** Represents context panel that shows properties for the current object
  and is toggleable by pressing F1 */
 export class ShellContextPanel {
+
+  /** Context panel node, if it is currently visible, or null otherwise. */
+  get root(): HTMLDivElement | null {
+    return document.body.querySelector('.grok-prop-panel');
+  }
+
   /** Controls whether the context panel shows context for the current object as it changes */
   get syncCurrentObject(): boolean { return api.grok_ContextPanel_Get_SyncCurrentObject(); }
   set syncCurrentObject(x: boolean) { api.grok_ContextPanel_Set_SyncCurrentObject(x); }

@@ -27,6 +27,8 @@ export interface FormulaLine {
   style?: string;
   // Specific to bands:
   column2?: string;
+  xMap?: string;
+  yMap?: string;
 }
 
 /**

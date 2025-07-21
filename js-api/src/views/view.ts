@@ -368,12 +368,13 @@ export class View extends ViewBase {
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
   static readonly BROWSE = 'browse';
+  static readonly DOCKERS = 'dockers';
 
   static readonly ALL_VIEW_TYPES = [View.APPS, View.SETTINGS, View.SKETCH,
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
     View.FILES, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
-    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE];
+    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE, View.DOCKERS];
 }
 
 

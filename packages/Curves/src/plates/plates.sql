@@ -13,10 +13,24 @@ CREATE TABLE plates.semantic_types (
 CREATE TABLE plates.properties (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    required BOOLEAN NOT NULL DEFAULT FALSE,   -- if true, used for validation of the submitted data
-    value_type TEXT CHECK (value_type IN ('int', 'double', 'bool', 'datetime', 'string')),
-    semantic_type_id INTEGER REFERENCES plates.semantic_types(id),
-    unit TEXT,
+    nullable BOOLEAN NOT NULL DEFAULT TRUE,   -- used for validation of the submitted data
+    type TEXT CHECK (type IN ('int', 'double', 'bool', 'datetime', 'string')),
+    semType TEXT,         -- Semantic type
+    userEditable BOOLEAN, -- Whether the property should be editable via the UI
+    units TEXT,           -- Units of measurement
+    min REAL,             -- Minimum value. Applicable to numerical properties only
+    max REAL,             -- Maximum value. Applicable to numerical properties only
+    step REAL,            -- Step to be used in a slider. Only applies to numerical properties
+    showSlider REAL,      -- Whether a slider appears next to the number input. Applies to numerical columns only
+    showPlusMinus REAL,   -- Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only
+    inputType TEXT,       -- Property input type (see DG.InputType)
+    category TEXT,        -- Corresponding category on the context panel
+    format TEXT,          -- Value format, such as '0.000'
+    choices TEXT,         -- JSON-encoded list of choices. Applicable to string properties only
+    validators TEXT,      -- JSON-encoded list of validators, such as '[">42"]'
+    friendlyName TEXT,    -- Custom field friendly name shown in [PropertyGrid]
+    options JSONB,        -- Additional options
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -81,6 +95,7 @@ CREATE TABLE plates.plate_details (
 -- See also template_plate_properties and template_well_properties.
 CREATE TABLE plates.templates (
     id SERIAL PRIMARY KEY,
+    plate_layout_id INTEGER REFERENCES plates.plates(id),
     name TEXT,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -132,10 +147,10 @@ INSERT INTO plates.semantic_types (name) values ('Solvent');
 INSERT INTO plates.semantic_types (name) values ('URL');
 INSERT INTO plates.semantic_types (name) values ('Image');
 
-INSERT INTO plates.properties (id, name, value_type, unit) values (1000, 'Volume', 'double', 'uL');
-INSERT INTO plates.properties (id, name, value_type, unit) values (1001, 'Concentration', 'double', 'uM');
-INSERT INTO plates.properties (id, name, value_type) values (1002, 'Sample', 'string');
-INSERT INTO plates.properties (id, name, value_type) values (1003, 'Well Role', 'string');
+INSERT INTO plates.properties (id, name, type, units) values (1000, 'Volume', 'double', 'uL');
+INSERT INTO plates.properties (id, name, type, units) values (1001, 'Concentration', 'double', 'uM');
+INSERT INTO plates.properties (id, name, type) values (1002, 'Sample', 'string');
+INSERT INTO plates.properties (id, name, type) values (1003, 'Well Role', 'string');
 
 INSERT INTO plates.plate_types (id, name, rows, cols) values (1, 'Generic 96 wells', 8, 12);
 INSERT INTO plates.plate_types (id, name, rows, cols) values (2, 'Generic 384 wells', 16, 24);

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -255,20 +256,11 @@ export async function previewNewick(file: DG.FileInfo) {
   const treeHelper = await getTreeHelper();
   const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
-  const preview = DG.View.create();
-  const host = ui.divH([
-    ui.button('Load dataframe', () => {
-      const view = grok.shell.addTableView(df);
-      const viewer = DG.Viewer.fromType('PhylocanvasGL', df);
-      view.addViewer(viewer);
-      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
-      return view;
-    }, 'View in a dataframe'),
-    DG.Viewer.fromType('Dendrogram', df).root,
-  ], 'd4-ngl-viewer');
+  const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
+  viewerRoot.style.setProperty('width', '100%', 'important');
+  viewerRoot.style.setProperty('height', '100%', 'important');
 
-  preview.append(host);
-  return preview;
+  return DG.View.fromRoot(viewerRoot);
 }
 
 // -- Top menu --
@@ -277,21 +269,21 @@ export async function previewNewick(file: DG.FileInfo) {
 //name: Hierarchical Clustering (Sequences)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringSequences(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE));
 }
 
 //top-menu: Chem | Analyze | Hierarchical Clustering...
 //name: Hierarchical Clustering (Molecules)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringMolecules(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MOLECULE));
 }
 
 //top-menu: ML | Cluster | Hierarchical Clustering...
 //name: Hierarchical Clustering (All)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering2(): Promise<void> {
-  hierarchicalClusteringDialog();
+  hierarchicalClusteringDialog((t) => t.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE));
 }
 
 // -- Demo --

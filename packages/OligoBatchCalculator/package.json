@@ -21,6 +21,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "datagrok-tools": "^4.14.20",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "path": "^0.12.7",
@@ -33,7 +34,7 @@
     "debug-oligobatchcalculator": "grok publish",
     "release-oligobatchcalculator": "grok publish --release",
     "build-oligobatchcalculator": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-oligobatchcalculator-public": "grok publish public",
     "release-oligobatchcalculator-public": "grok publish public --release",
     "debug-oligobatchcalculator-local": "grok publish local",

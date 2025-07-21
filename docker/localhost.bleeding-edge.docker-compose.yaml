@@ -53,14 +53,15 @@ services:
             "localFileSystemAccess":false,
             "sambaSpaceEscape":"none",
             "sambaVersion":"3.0"
-            },
+          },
           "dockerSettings": {
             "grokSpawnerApiKey": "test-x-api-key",
             "grokSpawnerHost": "grok_spawner",
             "grokSpawnerPort": 8000,
             "imageBuildTimeoutMinutes": 30,
+            "containerStatusTimeoutMinutes": 5,
             "proxyRequestTimeout": 60000
-           },
+          },
           "queueSettings": {
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
@@ -68,7 +69,7 @@ services:
             "amqpUser": "guest",
             "pipeHost": "grok_pipe",
             "pipeKey": "test-key"
-             }
+          }
         }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
@@ -92,6 +93,7 @@ services:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
     user: root
     environment:
+      GROK_SPAWNER_DATAGROK_API_URL: http://datagrok:8080/api
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
       GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-true}

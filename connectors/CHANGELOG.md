@@ -1,6 +1,13 @@
 # Grok Connect changelog
 
-# 2.3.30 (2025-03-125) WIP
+# 2.3.31 ()2025-07-03) WIP
+
+* Snowflake: RSA keys authentication
+* TableQuery: Add schema name to join
+* Possibility to set port using env variables
+* Minor bugs fixes
+
+# 2.3.30 (2025-03-125)
 
 * Memory leaks fixes
 

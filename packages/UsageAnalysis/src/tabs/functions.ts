@@ -96,7 +96,7 @@ export class FunctionsView extends UaView {
       source: {local: DG.Func.find().map((f) => f.name)},
       minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
       onSubmit: (_: any, value: any) => {
-        grok.functions.call('UsageAnalysis:FunctionsExecTime', {function: value?.label}).then((df: DG.DataFrame) => {
+        grok.functions.call('UsageAnalysis:FunctionsExecTime', {func: value?.label}).then((df: DG.DataFrame) => {
           if (df.rowCount === 0) {
             grid.dataFrame = DG.DataFrame.create(0);
             return;

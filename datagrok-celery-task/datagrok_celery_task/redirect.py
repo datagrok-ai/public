@@ -29,7 +29,7 @@ class BaseRedirect(ABC):
     def formatMessage(self, message: str) -> dict:
         body = {
             "level": "debug",
-            "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "time": int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000),
             "message": message,
             "flag": "MISC",
             "params": {self.service_log_key: True}
@@ -65,7 +65,7 @@ class WebSocketRedirect(BaseRedirect):
                 try:
                     log_entry = {
                         "level": "warning",
-                        "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        "time": int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000),
                         "message": "Stdout overflow. Possible printing in the loop?",
                         "params": {self.service_log_key: True}
                     }
@@ -99,7 +99,7 @@ class AmqpRedirect(BaseRedirect):
             if not self.notified_overflow:
                 try:
                     self.amqp_publisher.publish({"level": "warning", 
-                                                 "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                                                 "time": int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000),
                                                  "message": "Stdout overflow. Possible printing in the loop?",
                                                  "params": {self.service_log_key: True}}, self.call_id, DatagrokFanoutType.LOG)
                     self.notified_overflow = True

@@ -42,8 +42,8 @@ export function welcomeView(): DG.View | undefined {
 
       for (const f of widgetFunctions) {
         const canView: string[] = f.options['canView']?.split(',') ?? [];
-        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName))
-            || userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
+        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName)) ||
+            userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
           if (!settings[f.name] || !settings[f.name].ignored)
             widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
         }
@@ -58,14 +58,14 @@ export function welcomeView(): DG.View | undefined {
     const existingNames = Object.keys(settings).filter((name) => DG.Func.byName(name));
 
     grok.shell.o = ui.form(
-        existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
-          value: !settings[name].ignored,
-          onValueChanged: (value, input) => {
-            settings[name].ignored = !value;
-            refresh();
-            saveSettings();
-          }
-        }))
+      existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
+        value: !settings[name].ignored,
+        onValueChanged: (value, input) => {
+          settings[name].ignored = !value;
+          refresh();
+          saveSettings();
+        },
+      })),
     );
   }
 

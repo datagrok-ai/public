@@ -67,8 +67,8 @@ the functions of interest.
 
 ## Inputs and outputs
 
-Each input and output definition take one line that starts with the comment, followed 
-by type, name, optional default value, options, and optional description, just like here:
+Each input and output definition takes one line, starting with a comment, followed 
+by type, name, optional initial value used to pre-fill the UI, options, and optional description, just like here:
 
 ```
 #input: string country {choices: ["USA", "Canada"]} [Country to ship from]
@@ -627,7 +627,6 @@ a molecule, a molecule sketcher pops up.
 
 </details>
 
-
 ## Search integrated functions
 
 Datagrok allows you to define a special patterns for calling any function or query with a human-readable sentence and visualize the resulting dashboard directly from the platform search.
@@ -689,6 +688,129 @@ Here, the `species` and `organism` parameters are inferred from the search patte
 </details>
 
 :::
+
+## Custom Function Editors
+
+You can create custom editors for functions to replace the default UI in places such as:
+
+- Function preview
+- Property panel
+- "Run" dialog
+
+Custom editors enhance the user experience by allowing you to tailor how function inputs are handled. For example, you can:
+- Pre-fill values based on context
+- Group related parameters together
+- Add live validation of input formats
+- Customize layout and interactivity
+- Replace standard inputs with custom UI
+
+> ⚠️ **Important:** Custom editors let you control how a function's parameters are presented and edited,
+> and should be responsible only for editing parameters — not for executing the function or displaying its results.
+
+---
+
+### Defining an Editor
+
+A custom editor is a function that:
+- Accepts a `DG.FuncCall` object as input
+- Returns a `DG.Widget`
+- Is marked with `//tags: editor` and an `//output: widget <name>` annotation
+
+> **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
+
+#### Required Interface for the Returned Widget
+
+| Property        | Type                | Description |
+|----------------|---------------------|-------------|
+| `root`          | `HTMLElement`        | Root element of the widget |
+| `isValid`       | `boolean`            | Indicates whether the inputs are valid |
+| `onInputChanged`| `Observable<any>`    | Emits when user modifies inputs |
+| `inputFor?`     | `(name: string) => DG.InputBase<any>` | Optional method to retrieve the input for a parameter name |
+
+
+<details>
+<summary> Example Editor </summary>
+<div>
+
+```ts
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import { InputBase } from 'datagrok-api/ui';
+
+// Optional: Extend DG.FuncCallEditor for convenience
+class MyDummyEditor extends DG.FuncCallEditor {
+  boolCheck: InputBase<boolean>;
+  numInput: InputBase<number | null>;
+
+  constructor(call: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+
+    this.boolCheck = ui.input.bool('Bool check', call.inputs['bool'] ?? false);
+    this.numInput = ui.input.int('Num', call.inputs['num'] ?? 0, {
+      onValueChanged: (value) => call.inputs['num'] = value,
+    });
+
+    this.boolCheck.onChanged.subscribe(() => call.inputs['bool'] = this.boolCheck.value);
+
+    root.append(this.boolCheck.root, this.numInput.root);
+  }
+
+  get onInputChanged(): rx.Observable<any> {
+    return rx.merge(this.boolCheck.onChanged, this.numInput.onChanged);
+  }
+
+  get isValid(): boolean {
+    return this.numInput.validate() && this.boolCheck.validate();
+  }
+}
+
+//name: dummyEditor
+//tags: editor
+//input: funccall call
+//output: widget dialog
+export function dummyEditor(call: DG.FuncCall): DG.Widget {
+  return new MyDummyEditor(call);
+}
+
+```
+
+</div>
+</details>
+
+<details>
+<summary> Usage Example </summary>
+<div>
+
+```ts
+//name: dummyScalar
+//input: int num
+//output: int res
+//editor: DevTools:dummyEditor
+export function dummyScalar(num: number): number {
+  return num * 102;
+}
+```
+
+<p>
+This tells the platform to render dummyEditor from the DevTools package as the editor for this function.
+</p>
+
+</div>
+
+</details>
+
+---
+
+### 🚫 What the Editor Should NOT Do
+
+- Do **not** execute the function
+- Do **not** show a **Run** button
+- Do **not** handle result display or side effects
+
+The purpose of the editor is solely to edit function parameters.
+
+---
 
 ## Examples
 

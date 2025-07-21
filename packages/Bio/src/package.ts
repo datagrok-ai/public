@@ -74,7 +74,7 @@ import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manage
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
+import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -82,7 +82,7 @@ export const _package = new BioPackage(/*{debug: true}/**/);
 // let monomerLib: MonomerLib | null = null;
 
 //name: getMonomerLibHelper
-//description:
+//description: Returns an instance of the monomer library helper
 //output: object result
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return await MonomerLibManager.getInstance();
@@ -377,7 +377,6 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
-// eslint-disable-next-line max-len
 //input: string alignTable {choices: ['AUTO', 'NUCLEOTIDES', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62','BLOSUM80','BLOSUM90','PAM30','PAM70','PAM250','SCHNEIDER','TRANS']}
 //input: double gap
 //input: string seq1
@@ -464,7 +463,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
   options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
@@ -545,8 +544,9 @@ export async function macromoleculePreprocessingFunction(
   fingerprintType = 'Morgan'): Promise<PreprocessFunctionReturnType> {
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
     return {entries: col.toList(), options: {}};
-  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType);
-  return {entries: seqList, options: {...options, gapOpen, gapExtend}};
+
+  const {seqList, options} = await getEncodedSeqSpaceCol(col, metric, fingerprintType, gapOpen, gapExtend);
+  return {entries: seqList, options};
 }
 
 //name: Helm Fingerprints
@@ -595,7 +595,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 ): Promise<DG.ScatterPlotViewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
   if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not an current table view`);
+    grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
   const tableView =
@@ -657,6 +657,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) {
 //output: widget result
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
   return toAtomicLevelWidget(sequence);
+}
+
+//name: Molecular 3D Structure
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export async function sequence3dStructureWidget(sequence: DG.SemanticValue): Promise<DG.Widget> {
+  return molecular3DStructureWidget(sequence);
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -975,19 +983,19 @@ export async function manageMonomersView() {
   await monomerManager.getViewRoot();
 }
 
-//name: Monomers
+//name: Manage Monomer Libraries
 //tags: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
 //output: view v
-export async function manageLibrariesApp(): Promise<DG.View> {
+export async function manageMonomerLibrariesView(): Promise<DG.View> {
   return await showManageLibrariesView(false);
 }
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode
 //input: dynamic browsePanel
-export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
+export async function manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
     const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
@@ -1101,7 +1109,7 @@ export function longSeqTableHelm(): void {
 
 // -- Handle context menu --
 
-///name: addCopyMenu
+//name: addCopyMenu
 //input: object cell
 //input: object menu
 export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {

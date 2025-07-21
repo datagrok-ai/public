@@ -1,5 +1,60 @@
 # Datagrok-tools changelog
 
+## 4.14.26 (2025-07-10)
+
+### Features
+
+* Grok Decorators added support for ViewBase type
+* Grok Decorators updated comments and line feeds
+* Grok Api updated comments and line feeds
+* Grok Api minor type update
+
+## 4.14.19 (2025-06-23)
+
+### Features
+
+* Grok Check added header tag validation
+* Grok Api added optional parameters
+
+
+## 4.14.14 (2025-06-16)
+
+### Features
+
+* Grok Link added ability to link packages from root directory
+* Grok Link added repo-only option
+
+## 4.14.10 (2025-06-08)
+
+### Features
+
+* Grok Check checks update
+
+
+## 4.14.9 (2025-06-06)
+
+### Features
+
+* Grok Check added soft mode 
+
+
+## 4.14.8 (2025-06-06)
+
+### Features
+
+* Grok Check added collision checks 
+* Grok Publish runs check before invocation 
+* Grok Api creates api for the scripts in the python directory.
+
+
+## 4.14.6 (2025-05-29)
+
+### Features
+
+* Decorators added ability to set hardcoded values
+* Decorators added ability to get outputs from multiple parameters 
+
+
 ## 4.14.2 (2025-05-16)
 
 ### Features

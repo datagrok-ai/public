@@ -141,15 +141,25 @@ You can also explore the vault data directly in the **Context Panel** (**Databas
 <br/>
 ![Molecules tab](img/cdd_molecules.png)
 </TabItem>
-<TabItem value="search" label="Search">
-Provides basic vault search functionality with similarity and diversity searches
+<TabItem value="protocols" label="Protocols">
+* Shows all protocols available in the selected vault. Click any protocol to show corresponding molecules
 <br/>
-![Search tab](img/cdd_search.png)
+![Protocols tab](img/cdd_protocols.png)
 </TabItem>
 <TabItem value="saved-searches" label="Saved searches">
 Lists all saved searches in your vault. Click any search in the list to view its results
 <br/>
 ![Saved search](img/cdd_saved_search.png)
+</TabItem>
+<TabItem value="collections" label="Collections">
+Lists all collections available in the selected vault. Click any collection to show corresponding molecules
+<br/>
+![Collections](img/cdd_collections.png)
+</TabItem>
+<TabItem value="search" label="Search">
+Provides basic vault search functionality with similarity and diversity searches
+<br/>
+![Search tab](img/cdd_search.png)
 </TabItem>
 <TabItem value="context-panel" label="Context Panel">
 Shows vault data for the current molecule
@@ -407,7 +417,7 @@ search, including:
 * ChEMBL
 * DrugBank
 * PubChem (supports identity search)
-* SureChEMBL (search patented molecules similar to your compounds)
+* [SureChEMBL](info-panels/surechembl.md) (search patented molecules similar to your compounds)
 * Chemspace (includes filters by shipping country and compound category)
 
 To see the full list, see [Plugins](../../../plugins.md#chem).
@@ -415,39 +425,6 @@ To see the full list, see [Plugins](../../../plugins.md#chem).
 To run a substructure or similarity search, either [sketch](#sketching) or click a molecule in your
 dataset and expand the **Databases** section of the **Context Panel** to view
 matches for your target molecule. You can also open the results in a separate [Table View](../../../navigation/views/table-view.md) by clicking the plus (**+**) icon within the relevant info pane.
-
-![surechembl search](img/surechembl_search_params.gif)
-
-<details>
-<summary>Example: Searching patents with SureChEMBL</summary>
-
-The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) 
-provides local access to the [SureChEMBL](https://www.surechembl.org) database. 
-
-You can: 
-* Search either by similarity or substructure
-* Set result limits and similarity thresholds
-* View associated patent information
-
-1. **Finding related molecules**:
-   1. In the dataset, click a cell containing your target molecule structure.
-   1. In the **Context Panel**, expand **Databases** > **SureChEMBL**. 
-   1. Expand the corresponding info panes:
-      * **Substructure Search**: For molecules containing your structure  
-      * **Similarity Search**: For structurally similar molecules (results display similarity scores above each molecule)
-2. **Adjusting search parameters**:
-   * **Molecules limit**: Change the number of results shown (default is 10)
-   * **Similarity cutoff**: Set the minimum similarity threshold for matches (for **Similarity Search** only)
-3. **Viewing patent information**:
-   * **Quick view**: Expand the patents pane beneath any molecule to see associated patents. A marker indicates the total number of patents found.
-   * **Detailed view** (opens a separate **Table View**): 
-     * To view all patents across all search molecules, click the plus (**+**) icon beneath the search settings.
-     * To view patents for a specific molecule, click the plus (**+**) icon next to a specific molecule's patent count
-   * **Direct access**: The patent information contains patent ID links. Click the link to see the original patent on the SureChEMBL website.
-
-![surechembl search results](img/surechembl_search_results.gif)
-
-</details>
 
 :::note Developers
 
@@ -631,9 +608,56 @@ dataset column and the scaffold tree.
 You can explore the most efficient synthetic pathways and commercially available
 starting materials for your target molecules. To view the results for your
 target, click or sketch a molecule, and expand the **Retrosynthesis** pane in
-the **Context Panel**.
+the **Context Panel**. Requires the [Retrosynthesis](https://github.com/datagrok-ai/public/blob/master/packages/Retrosynthesis/README.md) plugin.
 
 ![Retrosynthesis panel](img/retrosynthesis-panel.png)
+
+<details>
+<summary>How to use</summary>
+
+[Watch a video tutorial](https://youtu.be/FScZ4W_etEE) (~3 mins).
+
+To explore retrosynthesis pathways for a compound:
+1. **Select a target molecule**: Click on a molecule in your dataset or [sketch](#sketching) one
+1. In the **Context Panel**, open the **Retrosynthesis pane**
+1. **View routes**: Each tab shows a different pathway, ranked by score based on
+   stock availability, route length, and confidence. The best routes appear
+   first
+1. **Interact with the results**: 
+   * Click any precursor or intermediate to view its details in the **Context Panel**
+   * Hover over a pathway to reveal action icons, then click the **Add to
+     workspace** (**+**) icon to open the entire pathway in a separate [Table View](../../../navigation/views/table-view.md)
+ 
+You can use custom models, stock databases, and
+display parameters (e.g., route length). 
+
+To set up a custom configuration:
+1. **Create a configuration folder**: Go to **Browse** > **AppData** >
+   **Retrosynthesis** > **configs** and create a folder with your custom
+   configuration name
+1. **Add required files** to your configuration folder. The minimum required files are:
+   * Expansion model
+   * Templates file
+   * Stock file
+   * `config.yml` with file paths and parameters
+1. **Define file paths in `config.yml`**. Paths must follow this format: `/app/aizynthcli_data/configs/<your_custom_config_name>/<file_name>`
+  
+    **IMPORTANT**: Correct path naming is critical for the configuration to work properly.
+    
+    Example: 
+  
+   ```yaml
+    expansion:
+      full:
+        - /app/aizynthcli_data/configs/my_config/my_expansion_model.onnx
+        - /app/aizynthcli_data/configs/my_config/my_templates.csv.gz
+    stock:
+      my_stock: /app/aizynthcli_data/configs/my_config/my_stock.hdf5
+   ```
+1. **Apply your configuration**: Hover over any route and click the gear icon,
+   and select your custom configuration as the current one.
+
+</details>
 
 ### Elemental analysis
 

@@ -57,8 +57,8 @@ In addition to that, it might contain the following folders:
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
-  Examples: [EnamineStore](https://github.com/datagrok-ai/labs/tree/master/packages/EnamineStore)
-  , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
+  Examples: [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi), 
+  [Samples](https://github.com/datagrok-ai/public/tree/master/packages/Samples)
 * `connections` and `queries`: [connections](../access/access.md#data-connection)
   and [queries](../access/access.md#data-query) for data retrieval.
   Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)

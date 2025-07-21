@@ -1,4 +1,4 @@
---name: Orders
+--name: SQLite Orders
 --friendlyName: Orders
 --connection: SQLiteNorthwind
 

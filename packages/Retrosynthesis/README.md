@@ -19,15 +19,15 @@ You can add custom models, stocks and configurations to use them for paths gener
   - file with templates
   - stock file
   - config.yml with paths to your files (and other parameters if required). Paths to files should be recorded as follows:
- /app/aizynthcli_data/configs/<your_custom_config_name>/<file_name>. *Proper paths naming is very important!!!* 
+ /app/configs/<your_custom_config_name>/<file_name>. *Proper paths naming is very important!!!* 
  Below is the example of config.yml contents:
 
 expansion:
   full:
-    - /app/aizynthcli_data/configs/my_config/my_expansion_model.onnx
-    - /app/aizynthcli_data/configs/my_config/my_templates.csv.gz
+    - /app/configs/my_config/my_expansion_model.onnx
+    - /app/configs/my_config/my_templates.csv.gz
 stock:
-  my_stock: /app/aizynthcli_data/configs/my_config/my_stock.hdf5
+  my_stock: /app/configs/my_config/my_stock.hdf5
 
 ![](./img/custom_config_folder.png)
 

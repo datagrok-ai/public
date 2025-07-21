@@ -18,6 +18,9 @@ export interface SettingsInterface {
   /// Show hamburger link on docked viewers
   dockShowMenuLink: boolean;
 
+  /// Show full screen link on docked viewers
+  dockShowFullScreenLink: boolean;
+
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 
@@ -103,6 +106,8 @@ export interface SettingsInterface {
   allowWidgetsAsColumns: boolean;
 
   allowEventScripts: boolean;
+
+  enableIndexedDBTablesCache: boolean;
 
   /// Displays Index Files check box in connection edit dialog. If it is disabled then check
   /// box will not be shown to the user and indexing of files will not be configurable.

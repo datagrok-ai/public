@@ -16,9 +16,15 @@ import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
-import {NestedItemContext} from '../config/PipelineConfiguration';
 
 const MAX_CONCURENT_SAVES = 5;
+
+export interface TreeUpdateData {
+  isMutation: boolean;
+  details?: TreeUpdateMutationPayload[],
+}
+
+export class LockError extends Error {}
 
 export class StateTree {
   private closed$ = new Subject<true>();
@@ -30,6 +36,7 @@ export class StateTree {
   public makeStateRequests$ = new Subject<true>();
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
+  public result$ = new Subject<any>();
 
   constructor(
     item: StateTreeNode,
@@ -178,12 +185,15 @@ export class StateTree {
   public init() {
     return this.mutateTree(() => {
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
-    }, false).pipe(mapTo(this));
+    }, false).pipe(
+      concatMap(() => this.linksState.waitForLinks()),
+      mapTo(this)
+    );
   }
 
   // for testing only
   public runMutateTree() {
-    return this.mutateTree(() => of([{mutationRootPath: []}] as const));
+    return this.mutateTree(() => of([{isMutation: true}]));
   }
 
   public save(uuid?: string, metaData?: ItemMetadata) {
@@ -223,12 +233,12 @@ export class StateTree {
       this.nodeTree.removeBrunch(path);
       const [ppath, oldIdx] = this.getMutationSlice(path);
       this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: newIdx,
         removeIdx: oldIdx,
-      };
-      return of([mutationData]);
+      }];
+      return of([{isMutation: true, details}]);
     });
   }
 
@@ -240,11 +250,11 @@ export class StateTree {
       const [, path] = data;
       this.nodeTree.removeBrunch(path);
       const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath,
         removeIdx,
-      };
-      return of([mutationData]);
+      }];
+      return of([{isMutation: true, details}]);
     });
   }
 
@@ -267,11 +277,11 @@ export class StateTree {
           mockMode: this.mockMode,
         });
       }
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: pos,
-      };
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([mutationData]));
+      }];
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
     });
   }
 
@@ -297,11 +307,11 @@ export class StateTree {
           this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
-      const mutationData: TreeUpdateMutationPayload = {
+      const details: TreeUpdateMutationPayload[] =[ {
         mutationRootPath: ppath,
         addIdx: pos,
-      };
-      return tree.pipe(mapTo([mutationData]));
+      }];
+      return tree.pipe(mapTo([{isMutation: true, details}]));
     });
   }
 
@@ -384,9 +394,11 @@ export class StateTree {
                 mutationRootPath: ppath,
                 addIdx: last.idx,
               } : {mutationRootPath: []};
-              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo([mutationData] as const));
+              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
             })),
           ),
+          toArray(),
+          map((details) => [{isMutation: true, details}]),
         );
       });
     } else if (action.spec.type === 'funccall') {
@@ -397,6 +409,16 @@ export class StateTree {
       });
     } else
       return action.exec(additionalParams);
+  }
+
+  public returnResult() {
+    return this.withTreeLock(() => {
+      return this.linksState.runReturnResults(this.nodeTree).pipe(
+        tap((res) => {
+          this.result$.next(res);
+        }),
+      );
+    });
   }
 
   public updateFuncCall(uuid: string, call: DG.FuncCall) {
@@ -413,10 +435,14 @@ export class StateTree {
       const adapter = new FuncCallAdapter(call, false);
       item.changeAdapter(adapter);
       item.instancesWrapper.isOutputOutdated$.next(false);
-      return of([{
+      const details = [{
         mutationRootPath: ppath,
         addIdx: idx,
-      }] as const);
+      }];
+      return of([{
+        isMutation: true,
+        details
+      }]);
     });
   }
 
@@ -726,7 +752,7 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateMutationPayload?, R?]>, waitForLinks = true) {
+  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
@@ -739,11 +765,11 @@ export class StateTree {
       tap(() => this.updateNodesMap()),
       concatMap((data) => {
         const [mutationData, res] = data ?? [];
-        if (this.logger)
-          this.logger.logMutations(mutationData);
-        const isMutation = (mutationData?.mutationRootPath && mutationData?.mutationRootPath.length > 0) ||
-          mutationData?.addIdx != null ||
-          mutationData?.removeIdx != null;
+        if (this.logger && mutationData?.details?.length) {
+          for (const item of mutationData?.details)
+            this.logger.logMutations(item);
+        }
+        const isMutation = mutationData?.isMutation ?? false;
         return this.linksState.update(this.nodeTree, isMutation).pipe(mapTo(res));
       }),
       tap(() => {
@@ -834,14 +860,13 @@ export class StateTree {
 
   private treeLock() {
     if (this.globalROLocked$.value)
-      throw new Error(`Changes double lock`);
+      throw new LockError(`Changes double lock`);
     this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
-    if (!this.globalROLocked$.value)
-      throw new Error(`Changes double unlock`);
-    this.globalROLocked$.next(false);
+    if (this.globalROLocked$.value)
+      this.globalROLocked$.next(false);
   }
 
   private getMutationSlice(path: NodePath) {

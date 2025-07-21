@@ -230,6 +230,11 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   return i;
 }
 
+/** Same as iconFA but also blue. */
+export function iconFAB(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+  return _options(iconFA(name, handler, tooltipMsg), {classes: 'grok-icon-blue'});
+}
+
 export function iconImage(name: string, path: string,
                           handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
                           tooltipMsg: string | null = null,
@@ -497,8 +502,8 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 /** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
-export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
-  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
+export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void, maxRows?: number}): HTMLElement {
+  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart), options?.maxRows ?? 20);
   if (options?.processNode != null)
     for (const c of Array.from(host.children))
       options.processNode(c as HTMLElement);
@@ -736,7 +741,7 @@ export namespace input {
       return;
     const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
     if (!options.property)
-      options.property = Property.fromOptions({name: input.caption, inputType: inputType as string});
+      options.property = Property.fromOptions({name: input.caption, type: inputType as string});
     if (specificOptions.nullable !== undefined)
       optionsMap['nullable'](input, specificOptions.nullable);
     for (let key of Object.keys(specificOptions)) {
@@ -845,7 +850,10 @@ export namespace input {
 
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source, options)));
+    const propInputs = props
+      .map((p) => forProperty(p, source, options))
+      .filter((input) => input !== null);
+    return inputs(propInputs);
   }
 
   function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
@@ -1378,7 +1386,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  * TODO: search, destructuring to properties
  *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
-export class ObjectHandler {
+export class ObjectHandler<T = any> {
 
   /** Type of the object that this meta handles. */
   get type(): string {
@@ -1394,11 +1402,16 @@ export class ObjectHandler {
 
   toString(): string { return this.name; }
 
-  async getById(id: string): Promise<any> {
+  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher) */
+  get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} | null {
     return null;
   }
 
-  async refresh(x: any): Promise<any> {
+  async getById(id: string): Promise<T | null> {
+    return null;
+  }
+
+  async refresh(x: T): Promise<T> {
     return x;
   }
   /**
@@ -1412,7 +1425,7 @@ export class ObjectHandler {
   /** String representation of the [item], by default item.toString().
    * @param x - item
    * @returns {string} */
-  getCaption(x: any): string {
+  getCaption(x: T): string {
     return `${x}`;
   }
 
@@ -1427,42 +1440,42 @@ export class ObjectHandler {
   }
 
   /** Renders icon for the item. */
-  renderIcon(x: any, context: any = null): HTMLElement {
+  renderIcon(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders markup for the item. */
-  renderMarkup(x: any, context: any = null): HTMLElement {
+  renderMarkup(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders tooltip for the item. */
-  renderTooltip(x: any, context: any = null): HTMLElement {
+  renderTooltip(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders card div for the item. */
-  renderCard(x: any, context: any = null): HTMLElement {
+  renderCard(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders properties list for the item. */
-  renderProperties(x: any, context: any = null): HTMLElement {
+  renderProperties(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders preview list for the item. */
-  renderPreview(x: any, context: any = null): View {
+  renderPreview(x: T, context: any = null): View {
     return View.create();
   }
 
   /** Renders view for the item. */
-  renderView(x: any, context: any = null): HTMLElement {
+  renderView(x: T, context: any = null): HTMLElement {
     return this.renderProperties(x);
   }
 
   /** Converts object to its markup description */
-  toMarkup(x: any): string | null {
+  toMarkup(T: any): string | null {
     return null;
   }
 
@@ -1491,6 +1504,7 @@ export class ObjectHandler {
       });
   }
 
+  /** All registered handlers */
   static list(): ObjectHandler[] {
     return toJs(api.grok_Meta_List());
   }
@@ -2099,6 +2113,16 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
  */
 export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
+}
+
+export namespace time {
+  export function timeSpan(time: dayjs.Dayjs): HTMLSpanElement {
+    return api.grok_UI_Time(toDart(time));
+  }
+
+  export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
+    return api.grok_UI_ShortTimestamp(toDart(time));
+  }
 }
 
 export namespace tools {

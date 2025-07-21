@@ -77,14 +77,14 @@ SELECT * FROM mock_data WHERE some_number = @some_number
 --name: MSSQLStringTypePatternDoubleOpMore
 --connection: MSSQLDBTests
 --input: string some_number = ">975" {pattern: double}
---test: Dbtests:expectTable(MSSQLStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/mssql/data10,26.d42')) // cat: MSSQL
+--test: Dbtests:expectTable(MSSQLStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/mssql/data1026.d42')) // cat: MSSQL
 SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
 --name: MSSQLStringTypePatternDoubleOpMoreEq
 --connection: MSSQLDBTests
 --input: string some_number = ">=975" {pattern: double}
---test: Dbtests:expectTable(MSSQLStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/mssql/data10,26.d42')) // cat: MSSQL
+--test: Dbtests:expectTable(MSSQLStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/mssql/data1026.d42')) // cat: MSSQL
 SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
@@ -119,14 +119,14 @@ SELECT * FROM mock_data WHERE @first_name(first_name)
 --name: MSSQLStringTypePatternStringOpEndsWith
 --connection: MSSQLDBTests
 --input: string first_name = "ends with y" {pattern: string}
---test: Dbtests:expectTable(MSSQLStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/mssql/data6,23,25.d42')) // cat: MSSQL
+--test: Dbtests:expectTable(MSSQLStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/mssql/data62325.d42')) // cat: MSSQL
 SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: MSSQLStringTypePatternStringOpIn
 --connection: MSSQLDBTests
 --input: string country = "in (Poland, Brazil)" {pattern: string}
---test: Dbtests:expectTable(MSSQLStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/mssql/data2,5,20.d42')) // cat: MSSQL
+--test: Dbtests:expectTable(MSSQLStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/mssql/data2520.d42')) // cat: MSSQL
 SELECT * FROM mock_data WHERE @country(country)
 --end
 

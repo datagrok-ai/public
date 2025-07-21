@@ -22,6 +22,7 @@ export interface IDartApi {
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Get_BrowsePanel(): any;
+  grok_Get_Favorites(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
   grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
@@ -190,6 +191,7 @@ export interface IDartApi {
   grok_Menu_Show(m: any, e: any, ev: any, x: Num, y: Num, nextToElement: Bool): any;
   grok_Menu_Find(m: any, id: String): any;
   grok_Menu_Clear(m: any): any;
+  grok_Menu_Hide(m: any): any;
   grok_Menu_Remove(m: any, id: String): any;
   grok_MenuItem_ToString(mi: any): any;
   grok_Menu_Get_CloseOnClick(m: any): any;
@@ -220,6 +222,7 @@ export interface IDartApi {
   grok_Dialog_OnClose(d: any, handler: any): any;
   grok_Dialog_Clear(d: any): any;
   grok_Dialog_GetOpenDialogs(): any;
+  grok_Dialog_InitFromLocalStorage(d: any): any;
   grok_Tooltip_Hide(): any;
   grok_Tooltip_SetOn(e: any, x: any, position: String): any;
   grok_Tooltip_Show(content: any, x: Num, y: Num): any;
@@ -242,6 +245,7 @@ export interface IDartApi {
   grok_FilterGroup_SetEnabled(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_SetExpanded(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
+  grok_FilterGroup_SetActive(filterGroup: any, active: Bool, notify: Bool): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -549,6 +553,7 @@ export interface IDartApi {
   grok_InputBase_Load(input: any, v: String): any;
   grok_InputBase_Init(input: any): any;
   grok_InputBase_FireChanged(input: any): any;
+  grok_InputBase_Validate(input: any): any;
   grok_InputBase_FireInput(input: any): any;
   grok_InputBase_AddCaption(input: any, caption: String): any;
   grok_InputBase_AddPostfix(input: any, postfix: String): any;
@@ -654,6 +659,7 @@ export interface IDartApi {
   grok_FuncCallParam_ProcessOutput(p: any): any;
   grok_FuncCall_Get_Param_Value(call: any, name: String): any;
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
+  grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;
@@ -681,7 +687,7 @@ export interface IDartApi {
   grok_ShowHelp(x: any): any;
   grok_AddView(v: any, dockStyle: String, width: Num, preview: Bool): any;
   grok_CloseAll(): any;
-  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any): any;
+  grok_CompareTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, addToWorkspace: Bool): any;
   grok_OpenTable(id: String): Promise<any>;
   grok_DockElement(e: any, title: String, dockStyle: String, ratio: Num): any;
   grok_OnEvent(eventName: String, f: any): any;
@@ -714,7 +720,7 @@ export interface IDartApi {
   grok_UI_BigButton(content: any, handler: any, tooltip: String): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
-  grok_UI_List(items: any): any;
+  grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
@@ -725,6 +731,8 @@ export interface IDartApi {
   grok_UI_Star(id: String): any;
   grok_UI_PatternsInput(colors: any): any;
   grok_UI_SchemeInput(gradient: any): any;
+  grok_UI_Time(x: any): any;
+  grok_UI_ShortTimestamp(x: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;
@@ -866,6 +874,8 @@ export interface IDartApi {
   grok_ColumnGrid_ColumnsToDataFrame(cg: any, columnsOrder: any, addServiceColumns: Bool, serviceColsTagName: String): any;
   grok_ColumnGrid_AddColumnProperty(cg: any, p: any): any;
   grok_Sticky_SetAllValues(schema: any, col: any, values: any): Promise<any>;
+  grok_Favorites_Add(x: any, group: any): Promise<any>;
+  grok_Favorites_Remove(x: any, group: any): Promise<any>;
 
   // Generated from ../grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;
@@ -908,12 +918,18 @@ export interface IDartApi {
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
   grok_Dapi_Log(): any;
+  grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any): any;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
   grok_Dapi_User_Reports(): any;
   grok_Dapi_User_Reports_Rules(): any;
+  grok_Dapi_Notifications(): any;
+  grok_Dapi_Notifications_ForCurrentUser(): any;
+  grok_Dapi_Notifications_CountUnread(): Promise<any>;
+  grok_Dapi_Activity(): any;
+  grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -1183,6 +1199,7 @@ export interface IDartApi {
   grok_RowList_Highlight(rows: any, check: any): any;
   grok_RowList_MouseOverRowFunc(rows: any): any;
   grok_RowList_Where(rows: any, check: any): any;
+  grok_RowList_Indexes(rows: any, onlyFiltered: Bool, onlySelected: Bool): any;
   grok_RowMatcher_Select(m: any): any;
   grok_RowMatcher_Filter(m: any): any;
   grok_RowMatcher_Highlight(m: any): any;
@@ -1256,6 +1273,10 @@ export interface IDartApi {
   grok_Property_Set_Name(p: any, x: String): any;
   grok_Property_Get_Category(p: any): any;
   grok_Property_Set_Category(p: any, x: String): any;
+  grok_Property_Get_Units(p: any): any;
+  grok_Property_Set_Units(p: any, x: String): any;
+  grok_Property_Get_InputType(p: any): any;
+  grok_Property_Set_InputType(p: any, x: String): any;
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
   grok_Property_Get_PropertySubType(p: any): any;
@@ -1267,6 +1288,8 @@ export interface IDartApi {
   grok_Property_Set_Description(p: any, x: String): any;
   grok_Property_Get_Nullable(p: any): any;
   grok_Property_Set_Nullable(p: any, x: Bool): any;
+  grok_Property_Get_InitialValue(p: any): any;
+  grok_Property_Set_InitialValue(p: any, x: any): any;
   grok_Property_Get_DefaultValue(p: any): any;
   grok_Property_Set_DefaultValue(p: any, x: any): any;
   grok_Property_Get_Choices(p: any): any;
@@ -1285,6 +1308,8 @@ export interface IDartApi {
   grok_Property_Set_Max(p: any, x: any): any;
   grok_Property_Get_Step(p: any): any;
   grok_Property_Set_Step(p: any, x: any): any;
+  grok_Property_Get_Validators(p: any): any;
+  grok_Property_Set_Validators(p: any, x: any): any;
   grok_Property_Get_Options(p: any): any;
   grok_Property_Get(p: any, propertyName: String): any;
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
@@ -1505,6 +1530,7 @@ export interface IDartApi {
   grok_Func_Get_HelpUrl(func: any): any;
   grok_Func_Set_HelpUrl(func: any, x: String): any;
   grok_Func_Get_Package(func: any): any;
+  grok_Func_Get_IsVectorFunc(func: any): any;
   grok_Func_Get_Description(func: any): any;
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;
@@ -1520,6 +1546,7 @@ export interface IDartApi {
   grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
+  grok_Script_Get_IsVectorFunc(script: any): any;
   grok_Script_Get_Environment(script: any): any;
   grok_Script_Set_Environment(script: any, s: String): any;
   grok_Script_Get_Reference(script: any): any;
@@ -1580,6 +1607,7 @@ export interface IDartApi {
   grok_LogEvent_Get_Session(logEvent: any): any;
   grok_LogEvent_Get_Parameters(logEvent: any): any;
   grok_LogEvent_Get_Type(logEvent: any): any;
+  grok_LogEvent_Get_EventTime(logEvent: any): any;
   grok_LogEventParameter_Get_Name(p: any): any;
   grok_LogEventParameter_Get_Type(p: any): any;
   grok_LogEventParameterValue_Get_Event(v: any): any;
@@ -1609,8 +1637,19 @@ export interface IDartApi {
   grok_UserReport_Reporter(report: any): any;
   grok_UserReport_Description(report: any): any;
   grok_UserReport_CreatedOn(report: any): any;
+  grok_UserNotification_User(notification: any): any;
+  grok_UserNotification_Name(notification: any): any;
+  grok_UserNotification_FriendlyName(notification: any): any;
+  grok_UserNotification_Text(notification: any): any;
+  grok_UserNotification_Data(notification: any): any;
+  grok_UserNotification_Sender(notification: any): any;
+  grok_UserNotification_CreatedAt(notification: any): any;
+  grok_UserNotification_ReadAt(notification: any): any;
+  grok_UserNotification_IsRead(notification: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
+  grok_GetLogger(params: any): any;
+  grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

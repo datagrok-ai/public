@@ -8,8 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {getDefaultValue, getPropViewers} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
-import {getOutput} from './variance-based-analysis/sa-outputs-routine';
-import {getCalledFuncCalls} from './variance-based-analysis/utils';
+import {getHelpIcon} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
@@ -93,17 +92,21 @@ export class SensitivityAnalysisView {
             items: [ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS, ANALYSIS_TYPE.GRID_ANALYSIS],
             onValueChanged: (value) => {
               analysisInputs.analysisType.value.next(value);
-              this.updateRunWidgetsState();
+              this.updateApplicabilityState();
               this.setAnalysisInputTooltip();
               this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
             }}),
         value: new BehaviorSubject(ANALYSIS_TYPE.RANDOM_ANALYSIS),
       },
       samplesCount: {
-        input: ui.input.int('Samples', {value: 10, onValueChanged: (value) => {
-          analysisInputs.samplesCount.value = value;
-          this.updateRunWidgetsState();
-        }}),
+        input: ui.input.int('Samples', {
+          value: 10,
+          onValueChanged: (value) => {
+            analysisInputs.samplesCount.value = value;
+            this.updateApplicabilityState();
+          },
+          min: 1,
+        }),
         value: 10,
       },
     } as AnalysisProps;
@@ -153,12 +156,12 @@ export class SensitivityAnalysisView {
       case DG.TYPE.FLOAT:
         const isChangingInputMin = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
-          this.updateRunWidgetsState();
+          this.updateApplicabilityState();
         });
 
         const isChangingInputConst = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
-          this.updateRunWidgetsState();
+          this.updateApplicabilityState();
         });
 
         const temp = {
@@ -203,10 +206,14 @@ export class SensitivityAnalysisView {
             value: getInputValue(inputProp, 'max'),
           },
           lvl: {
-            input: ui.input.int('Samples', {value: 3, onValueChanged: (value) => {
-              (ref as SensitivityNumericStore).lvl.value = value;
-              this.updateRunWidgetsState();
-            }}),
+            input: ui.input.int('Samples', {
+              value: 3,
+              onValueChanged: (value) => {
+                (ref as SensitivityNumericStore).lvl.value = value;
+                this.updateApplicabilityState();
+              },
+              min: 1,
+            }),
             value: 3,
           },
           isChanging: new BehaviorSubject<boolean>(false),
@@ -255,7 +262,7 @@ export class SensitivityAnalysisView {
       case DG.TYPE.BOOL:
         const isChangingInputBoolConst = getSwitchElement(false, (v: boolean) => {
           boolRef.isChanging.next(v);
-          this.updateRunWidgetsState();
+          this.updateApplicabilityState();
         });
 
         const tempBool = {
@@ -355,7 +362,7 @@ export class SensitivityAnalysisView {
                   temp.analysisInputs.forEach((inp) => {
                     inp.root.hidden = (temp.value.returning !== DF_OPTIONS.BY_COL_VAL);
                   });
-                  this.updateRunWidgetsState();
+                  this.updateApplicabilityState();
 
                   if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
                     input.setTooltip(v ? this.getOutputTooltip(caption, DF_OPTIONS.LAST_ROW) : 'Dataframe');
@@ -420,9 +427,19 @@ export class SensitivityAnalysisView {
   };
 
   private openedViewers = [] as DG.Viewer[];
-  private runButton: HTMLButtonElement;
-  private runIcon: HTMLElement;
-  private helpIcon: HTMLElement;
+  private readyToRun = false;
+  private isRunning = false;
+  private runIcon = ui.iconFA('play', async () => {
+    if (!this.isRunning) {
+      this.isRunning = true;
+      this.updateApplicabilityState();
+      this.updateRunIconDisabledTooltip('In progress...');
+      await this.runAnalysis();
+      this.isRunning = false;
+      this.updateApplicabilityState();
+    }
+  });
+  private helpIcon = getHelpIcon();
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
 
@@ -485,19 +502,11 @@ export class SensitivityAnalysisView {
       diffGrok: undefined,
     },
   ) {
-    this.runButton = ui.bigButton('Run', async () => await this.runAnalysis());
-
-    this.runIcon = ui.iconFA('play', async () => await this.runAnalysis());
     this.runIcon.style.color = 'var(--green-2)';
     this.runIcon.classList.add('fas');
 
-    this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis', '_blank');
-    }, 'Open help in a new tab');
-
     this.buildFormWithBtn(options.inputsLookup).then((form) => {
-      this.runButton.disabled = !this.canEvaluationBeRun();
-      this.runIcon.hidden = this.runButton.disabled;
+      this.updateApplicabilityState();
       this.addTooltips();
       this.comparisonView = baseView;
 
@@ -510,10 +519,7 @@ export class SensitivityAnalysisView {
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-      const rbnPanels = this.comparisonView.getRibbonPanels();
-      rbnPanels.push([this.helpIcon, this.runIcon]);
-      this.comparisonView.setRibbonPanels(rbnPanels);
+      this.comparisonView.setRibbonPanels([[this.helpIcon, this.runIcon]]);
 
       this.comparisonView.helpUrl = '/help/function-analysis.md#sensitivity-analysis';
       this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
@@ -548,6 +554,29 @@ export class SensitivityAnalysisView {
       this.gridCellChangeSubscription = null;
     }
   } // closeOpenedViewers
+
+  /** Update run icon tooltip: disabled case */
+  private updateRunIconDisabledTooltip(msg: string): void {
+    ui.tooltip.bind(this.runIcon, () => {
+      const label = ui.label(msg);
+      label.style.color = '#FF0000';
+      return label;
+    });
+  } // updateRunIconDisabledTooltip
+
+  /** Check applicability of fitting */
+  private updateApplicabilityState(): void {
+    this.readyToRun = this.canEvaluationBeRun() && (!this.isRunning);
+    this.updateRunIconStyle();
+  } // updateApplicabilityState
+
+  private updateRunIconStyle(): void {
+    if (this.readyToRun) {
+      this.runIcon.style.color = 'var(--green-2)';
+      ui.tooltip.bind(this.runIcon, `Run sensitivity analysis: ${this.getFuncCallCountAsString()}`);
+    } else
+      this.runIcon.style.color = 'var(--grey-3)';
+  } // updateRunIconStyle
 
   private getFuncCallCount(analysisInputs: AnalysisProps, inputs: Record<string, SensitivityStore>): number {
     let variedInputsCount = 0;
@@ -597,23 +626,20 @@ export class SensitivityAnalysisView {
 
     const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);
 
+    if (funcCallCount === 1)
+      return 'a single evaluation of the model';
+
     if (funcCallCount < 1000)
-      return String(funcCallCount);
+      return String(funcCallCount) + ' evaluations of the model';
 
     if (funcCallCount < 1000000)
-      return String(Math.ceil(funcCallCount / 10) / 100) + 'k';
+      return String(Math.ceil(funcCallCount / 10) / 100) + 'K evaluations of the model';
 
     if (funcCallCount < 1000000000)
-      return String(Math.ceil(funcCallCount / 10000) / 100) + 'm';
+      return String(Math.ceil(funcCallCount / 10000) / 100) + 'M evaluations of the model';
 
-    return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
+    return String(Math.ceil(funcCallCount / 10000000) / 100) + 'B evaluations of the model';
   } // getFuncCallCountAsString
-
-  private updateRunWidgetsState(): void {
-    this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
-    this.runButton.disabled = !this.canEvaluationBeRun();
-    this.runIcon.hidden = this.runButton.disabled;
-  }
 
   private async getLookupElement(inputsLookup?: string) {
     if (inputsLookup === undefined)
@@ -738,13 +764,7 @@ export class SensitivityAnalysisView {
       // firstOutput.isInterest.input.value = true;
     }
 
-    this.updateRunWidgetsState();
-
-    const buttons = ui.buttonsInput([this.runButton]);
-
-    form.appendChild(
-      buttons,
-    );
+    this.updateApplicabilityState();
 
     $(form).css({
       'padding-left': '12px',
@@ -806,16 +826,6 @@ export class SensitivityAnalysisView {
     // type of analysis
     this.setAnalysisInputTooltip();
 
-    // run button
-    ui.tooltip.bind(this.runButton, () =>
-      `Run sensitivity analysis: the function is evaluated ${this.getFuncCallCount(this.store.analysisInputs, this.store.inputs)} times`,
-    );
-
-    // run icon
-    ui.tooltip.bind(this.runIcon, () =>
-      `Run sensitivity analysis: the function is evaluated ${this.getFuncCallCount(this.store.analysisInputs, this.store.inputs)} times`,
-    );
-
     // samples count
     this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
 
@@ -850,8 +860,32 @@ export class SensitivityAnalysisView {
     return false;
   }
 
+  private isRunsCountValid(): boolean {
+    const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);
+
+    if (funcCallCount < 1)
+      return false;
+
+    return true;
+  }
+
   private canEvaluationBeRun(): boolean {
-    return this.isAnyInputSelected() && this.isAnyOutputSelected();
+    if (!this.isRunsCountValid()) {
+      this.updateRunIconDisabledTooltip('Invalid number of the model evaluations');
+      return false;
+    }
+
+    if (!this.isAnyInputSelected()) {
+      this.updateRunIconDisabledTooltip('No inputs selected');
+      return false;
+    }
+
+    if (!this.isAnyOutputSelected()) {
+      this.updateRunIconDisabledTooltip('No outputs selected');
+      return false;
+    }
+
+    return true;
   }
 
   private async runAnalysis(): Promise<void> {

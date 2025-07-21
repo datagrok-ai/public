@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 /* eslint-disable max-lines */
 'use strict';
@@ -172,7 +173,7 @@ class BioPackageDetectors extends DG.Package {
         this.sample(col, SEQ_SAMPLE_LIMIT))
         .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
         .filter((seq) => seq.length !== 0/* skip empty values for detector */),
-      )];
+      )].map((s) => s?.trim());
       last.categoriesSample = categoriesSample;
 
       // To collect alphabet freq three strategies can be used:
@@ -624,6 +625,60 @@ class BioPackageDetectors extends DG.Package {
         event.preventDefault();
         return true;
       }
+
+      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column &&
+        event.args.item.column.type === DG.TYPE.STRING && !event.args.item.column.semType) {
+        const contextMenu = event.args.menu;
+        const column = event.args.item.column;
+        try {
+          this.addForceDetectionDialog(column, contextMenu);
+        } catch (err) {
+          console.error(err);
+        }
+        event.preventDefault();
+        return true;
+      }
+    });
+  }
+
+  addForceDetectionDialog(column, menu) {
+    const menuGroup = menu.group('Bio');
+    const notations = ['separator', 'fasta'];
+    const separators = ['-', '/', '.'];
+
+    menuGroup.item('Set As Macromolecule', () => {
+      const sampleCategories = column.categories.slice(0, 40).filter((c) => !!c);
+      // detect if the column is potentially a custom notation
+      //const isCustom = sampleCategories.filter((c) => /\(\d\)/.test(c)).length > sampleCategories.length / 2;
+
+      const detectedSeparator = separators
+        .map((sep) => ({sep, minCount: sampleCategories.map((c) => c.split(sep).length).reduce((a, b) => Math.min(a, b), Infinity)}))
+        .reduce((a, b) => (((b.minCount > a.minCount && b.minCount != Infinity) || a.minCount == Infinity) ? b : a), {sep: '', minCount: 0});
+      const defaultAlphabet = 'UN'; // no way that canonical alphabet is not detected, this will only be used for times when MM is not detected
+
+      const defaultSeparator = ((detectedSeparator.sep && detectedSeparator.minCount !== Infinity && detectedSeparator.minCount > 2) ? detectedSeparator.sep : undefined);
+      const defaultNotation = defaultSeparator ? 'separator' : 'fasta';
+      const notationInput = ui.input.choice('Notation', {value: defaultNotation, items: notations, nullable: false});
+      const separatorInput = ui.input.choice('Separator', {value: defaultSeparator, items: separators, nullable: true});
+      ui.dialog('Set Column As Macromolecule')
+        .add(notationInput)
+        .add(separatorInput)
+        .show()
+        .onOK(() => {
+          const splitSamples = sampleCategories.map((s) => s.split(separatorInput.value ?? ''));
+          const splitLengths = splitSamples.map((s) => s.length).filter((l) => l > 0);
+          const isMultichar = splitSamples.some((s) => s.some((ss) => ss.length > 1)); // if any of the split samples has a length more than 1, then it is multichar
+          //const medianLength = splitSamples[Math.floor(splitSamples.length / 2)];
+          const averageLength = splitLengths.reduce((a, b) => a + b, 0) / splitSamples.length;
+          const std = Math.sqrt(splitLengths.map((x) => Math.pow(x - averageLength, 2)).reduce((a, b) => a + b, 0) / splitSamples.length);
+          const isPotentiallyMSA = averageLength > 1 && std < 2; // if the average length is more than 1 and the std is less than 0.5, then it is potentially MSA
+          column.setTag('units', notationInput.value);
+          separatorInput.value && column.setTag('separator', separatorInput.value);
+          column.setTag('aligned', isPotentiallyMSA ? 'SEQ.MSA' : 'SEQ');
+          column.setTag('alphabet', defaultAlphabet);
+          isMultichar && column.setTag('.alphabetIsMultichar', 'true');
+          column.semType = 'Macromolecule';
+        });
     });
   }
 }

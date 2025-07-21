@@ -60,7 +60,9 @@ export async function initComputeApi() {
     await initFunc.prepare().call();
 }
 
-export async function startWorkflow(nqName: string, version: string, instanceConfig: PipelineInstanceConfig) {
+export async function startWorkflow<T=any>(nqName: string, version: string, instanceConfig: PipelineInstanceConfig): Promise<T> {
   const startFunc = DG.Func.find({package: 'Compute2', name: 'StartWorkflow'})[0];
-  await startFunc.prepare({nqName, version, instanceConfig}).call();
+  const call = startFunc.prepare({nqName, version, instanceConfig});
+  await call.call();
+  return call.getOutputParamValue();
 }

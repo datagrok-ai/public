@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {RcsbGraphQLAdapter} from './utils/rcsb-gql-adapter';
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 
 import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
@@ -40,6 +41,7 @@ import {viewMolstarUI} from './viewers/molstar-viewer/utils';
 import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
 import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
 import {defaultErrorHandler} from './utils/err-info';
+import {extractSequenceColumns} from './utils/sequence-handler';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -754,4 +756,14 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
     }
   });
   return widget;
+}
+
+
+//name: Fetch PDB Sequences
+//description: For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
+//top-menu: Bio | Transform | Fetch PDB Sequences...
+//input: dataframe table
+//input: column pdbColumn { semType: PDB_ID }
+export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbColumn: DG.Column): Promise<void> {
+  await extractSequenceColumns(pdbColumn);
 }

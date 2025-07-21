@@ -22,6 +22,7 @@ class Settings:
     log_level: int
     broker_url: str
     pipe_url: str
+    api_url: Optional[str]
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -53,6 +54,7 @@ class Settings:
         self.amqp_password = amqp_password or os.getenv("DATAGROK_AMPQ_PASSWORD", "guest")
         self.amqp_port = amqp_port if amqp_port is not None else self._get_int_env("DATAGROK_AMPQ_PORT", 5672)
         self.tls = amqp_tls if amqp_tls is not None else self._get_bool_env("DATAGROK_AMPQ_TLS", False)
+        self.api_url = os.getenv("DATAGROK_API_URL")
 
         self.pipe_host = pipe_host or os.getenv("DATAGROK_PIPE_HOST", "localhost")
         self.pipe_key = pipe_key or os.getenv("DATAGROK_PIPE_KEY")

@@ -171,7 +171,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
       });
-      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('ab 8ms (ba)', {
+      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('ab 8ms a', {
         a: {
           'a': {
             'errors': [],

@@ -9,7 +9,7 @@ import {
   jstatStatistics,
   JSTATStatistics,
   numToExcel,
-  parseExcelPosition, toExcelPosition, toStandardSize
+  parseExcelPosition, standardPlateSizes, toExcelPosition, toStandardSize
 } from "./utils";
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
@@ -80,9 +80,10 @@ export function randomizeTableId() {
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  id?: number;           // database id
-  plateTypeId?: number;  // database plate type id
-  barcode?: string;      // database barcode
+  id?: number;              // database id
+  plateTemplateId?: number; // database plate template id
+  plateTypeId?: number;     // database plate type id
+  barcode?: string;         // database barcode
 
   data: DG.DataFrame;    // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
   details: {[index: string]: any} = {};  // dynamic plate properties, stored in db: plates.plate_details
@@ -104,15 +105,19 @@ export class Plate {
     return new Plate(rows, cols);
   }
 
+  /** Returns the internal index of the DataFrame row that stores information
+   * for the grid cell with 0-based (row, col) coordinates. */
   _idx(row: number, col: number): number {
     return row * this.cols + col;
   }
 
   /** Converts a row index in the internal dataframe to 0-based row/col position. */
   rowIndexToExcel(dataFrameRow: number): [row: number, col: number] {
-    const row = Math.floor(dataFrameRow / this.cols);
-    const col = dataFrameRow % this.cols;
-    return [row, col];
+    return Plate._idxToPos(dataFrameRow, this.cols);
+  }
+
+  static _idxToPos(dataFrameRow: number, cols: number): [row: number, col: number] {
+    return [Math.floor(dataFrameRow / cols), dataFrameRow % cols];
   }
 
   //well(row: number, col: number): PlateWell { return new PlateWell(); }
@@ -186,24 +191,46 @@ export class Plate {
 
 
   /** Constructs a plate from a dataframe where each row corresponds to a well.
-   * Automatically detects position column (has to be in Excel notation). */
-  static fromTableByRow(table: DG.DataFrame): Plate {
-    const posCol = wu(table.columns)
-      .find((c) => c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
-    if (!posCol)
-      throw 'Column with well positions not found';
+   * Automatically detects position column (either one column in Excel notation, or two integer "row" and "col" columns).
+   * If positions columns are not provided, assumes the data is sorted by [row, col] asc. */
+  static fromTableByRow(
+    table: DG.DataFrame, options?: {
+      posColName?: string,
+      rowColName?: string,
+      colColName?: string
+    }): Plate
+  {
+    const posCol = wu(table.columns).find((c) =>
+      (!options?.posColName || c.name.toLowerCase() == options.posColName) &&
+      c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
 
-    const [rows, cols] = toStandardSize(getMaxPosition(wu(posCol.values()).map(parseExcelPosition)));
+    const rowColName = options?.rowColName ?? 'row';
+    const colColName = options?.colColName ?? 'col';
+    const rowCol = table.col(rowColName)?.type === DG.TYPE.INT ? table.col(rowColName) : null;
+    const colCol = table.col(colColName)?.type === DG.TYPE.INT ? table.col(colColName) : null;
+
+    const rowToPos: ((i: number) => [row: number, col: number]) | null = posCol
+      ? (i => parseExcelPosition(posCol!.get(i)))
+      : rowCol && colCol ? (i => [rowCol!.get(i), colCol?.get(i)])
+      : standardPlateSizes[table.rowCount] ? (i => Plate._idxToPos(i, standardPlateSizes[table.rowCount][1]))
+      : null;
+
+    if (rowToPos == null)
+      throw 'Columns with well positions not identified';
+
+    const positions = DG.range(table.rowCount).map(rowToPos);
+    const [rows, cols] = toStandardSize(getMaxPosition(positions));
+
     const plate = new Plate(rows, cols);
 
     for (const col of table.columns) {
-      if (col.isEmpty || col == posCol)
+      if (col.isEmpty || col == posCol || col == rowCol || col == colCol)
         continue;
 
       const plateCol = plate.data.columns.addNew(col.name, col.type);
       for (let r = 0; r < col.length; r++) {
-        const [wellRow, wellCol] = parseExcelPosition(posCol.get(r));
-        plateCol.set(wellRow * cols + wellCol, col.get(r), false);
+        const [wellRow, wellCol] = rowToPos!(r);
+        plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
     }
 
@@ -221,9 +248,9 @@ export class Plate {
       const start = propBlock * plate.rows * plate.cols;
       const pid = pidCol?.get(start);
       const property = wellProperties.find(p => p.id == pid)!;
-      const valueColumn = df.col(plateDbColumn[property.value_type])!;
+      const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
-      plate.data.columns.addNew(property.name, property.value_type)
+      plate.data.columns.addNew(property.name, property.type)
         .init(i => valueColumn.get(start + i));
     }
 
@@ -281,7 +308,7 @@ export class Plate {
     return result;
   }
 
-  static async fromExcelFileInfo(fi: DG.FileInfo): Promise<Plate> {
+  static async fromExcelFile(fi: DG.FileInfo): Promise<Plate> {
     return fi.data && fi.data.length ? await Plate.fromExcel(fi.data, fi.friendlyName) : await Plate.fromExcelPath(fi.fullPath, fi.friendlyName);
   }
 
@@ -514,7 +541,7 @@ export class Plate {
     const result = new Map<string, string[]>();
     for (const validator of validators) {
       for (let row = 0; row < this.rows; row++) {
-        for (let col = 0; col < this.cols; col++) { 
+        for (let col = 0; col < this.cols; col++) {
           const error = validator.validate(this, row, col);
           if (error) {
             const errors = result.get(`${numToExcel(row)}${col}`) ?? [];

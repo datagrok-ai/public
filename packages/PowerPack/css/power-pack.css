@@ -1,6 +1,25 @@
 .power-pack-welcome-view {
 }
 
+.power-pack-search-host .power-pack-search-list > span {
+    margin-right: 12px;
+}
+
+.power-pack-search-host .power-pack-search-list {
+    max-height: 400px;
+    flex-wrap: wrap;
+}
+
+.power-pack-search-host .power-pack-search-list-header {
+    margin-left: 4px;
+    margin-right: 12px;
+}
+
+.power-pack-search-host .power-pack-search-list-container:hover .power-pack-search-list-header.power-pack-search-list-has-preview {
+    cursor: pointer;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+}
+
 .power-pack-widget-host > .d4-dialog-header > i {
     visibility: hidden;
 }
@@ -444,6 +463,10 @@ body.dartium .power-pack-widgets-host.ui-div {
     color: red;
 }
 
+.cm-warning-div {
+    color: rgb(255, 153, 0);
+}
+
 .cm-hint-div {
     padding-top: 2px;
     min-height: 33px;
@@ -458,4 +481,12 @@ body.dartium .power-pack-widgets-host.ui-div {
     box-shadow: 0 0 5px #E4E6CE;
     font-size: 0.9rem;
     backdrop-filter: blur(5px);
+}
+
+.add-new-column-dialog-cm-div {
+    height: 140px;
+}
+
+.add-new-column-widget-cm-div {
+    height: 100px;
 }

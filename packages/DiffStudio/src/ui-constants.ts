@@ -41,6 +41,7 @@ export enum HINT {
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
   NO_MODELS = 'No models found',
   EDIT = 'Edit',
+  UPDATE = 'Apply all changes to the current file',
 }; // HINT
 
 /** UI titles */
@@ -89,6 +90,8 @@ export enum TITLE {
   NO_MODELS = 'None',
   MULTI_AXIS = 'Multiaxis',
   FACET = 'Facet',
+  UPDATE = 'Update',
+  CONTROLS = 'Model controls',
 }; // TITLE
 
 /** Titles of template models */

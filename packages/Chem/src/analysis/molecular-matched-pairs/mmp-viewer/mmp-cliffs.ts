@@ -34,7 +34,7 @@ export function getMmpScatterPlot(
     markerDefaultSize: 4,
     displayLabels: 'Auto',
     markerType: 'circle',
-    jitterSize: 5,
+    jitterSize: 15,
   });
   //temporary fix (to save backward compatibility) since labels
   //option type has been changed from string to array in 1.23 platform version

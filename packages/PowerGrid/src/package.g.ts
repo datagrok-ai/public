@@ -1,11 +1,11 @@
-import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
-import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
-import {ImageCellRenderer} from './cell-types/image-cell-renderer';
-import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
-import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
-import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-
+import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
+import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
+import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
+import {ImageCellRenderer} from './cell-types/image-cell-renderer';
+import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
+import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
+import * as DG from 'datagrok-api/dg';
 //name: binaryImageCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer

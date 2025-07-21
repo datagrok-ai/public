@@ -3,7 +3,7 @@ import archiver from 'archiver-promise';
 import fs from 'fs';
 // @ts-ignore
 import fetch from 'node-fetch';
-import os from 'os';
+import os, { hostname } from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
@@ -13,6 +13,7 @@ import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
 import { loadPackages } from "../utils/test-utils";
 import * as color from '../utils/color-utils';
+import { check } from './check'
 
 const { exec } = require('child_process');
 
@@ -26,7 +27,7 @@ const packageFiles = [
   'src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
-let config : utils.Config;
+let config: utils.Config;
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
   // Get the server timestamps
   let timestamps: Indexable = {};
@@ -75,7 +76,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
   }
 
-  let contentValidationLog = '';
+  // let contentValidationLog = '';
   console.log('Starting package checks...');
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
@@ -85,20 +86,20 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   if (isWebpack) {
     const webpackConfigPath = path.join(curDir, 'webpack.config.js');
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-    const externals = extractExternals(content);
-    if (externals) {
-      const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
-      contentValidationLog += importWarnings.join('\n') + (importWarnings.length ? '\n' : '');
-    }
+    // const externals = extractExternals(content);
+    // if (externals) {
+    //   const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
+    //   contentValidationLog += importWarnings.join('\n') + (importWarnings.length ? '\n' : '');
+    // }
   }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-  const funcWarnings = checkFuncSignatures(curDir, funcFiles);
-  contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
-  const packageWarnings = checkPackageFile(curDir, json);
-  contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
-  const changelogWarnings = checkChangelog(curDir, json);
-  contentValidationLog += changelogWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
+  // const funcWarnings = checkFuncSignatures(curDir, funcFiles);
+  // contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
+  // const packageWarnings = checkPackageFile(curDir, json);
+  // contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
+  // const changelogWarnings = checkChangelog(curDir, json);
+  // contentValidationLog += changelogWarnings.join('\n') + '';
   console.log(`Checks finished in ${Date.now() - checkStart} ms`);
   const reg = new RegExp(/\${(\w*)}/g);
   const errs: string[] = [];
@@ -123,10 +124,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return;
     if (relativePath === 'zip')
       return;
-    if (!utils.checkScriptLocation(canonicalRelativePath)) {
-      contentValidationLog += `Warning: file \`${canonicalRelativePath}\`` +
-        ` should be in directory \`${path.basename(curDir)}/scripts/\`\n`;
-    }
+    // if (!utils.checkScriptLocation(canonicalRelativePath)) {
+    //   contentValidationLog += `Warning: file \`${canonicalRelativePath}\`` +
+    //     ` should be in directory \`${path.basename(curDir)}/scripts/\`\n`;
+    // }
     const t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
@@ -192,7 +193,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return 1;
     } else {
       console.log(log);
-      color.warn(contentValidationLog);
+      // color.warn(contentValidationLog);
     }
   } catch (error) {
     console.error(error);
@@ -202,12 +203,13 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 }
 
 export async function publish(args: PublishArgs) {
-
+  console.log('publish');
+  if (!args['skip-check'] && !args['all'])
+    check({ _: ['check'] });
   config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
-  if (args.refresh || args.all) {
+  if (args.refresh) {
     if (path.basename(curDir) !== 'packages')
       curDir = path.dirname(curDir);
-
     let host = config.default;
     if (args['_'].length === 2)
       host = args['_'][1];
@@ -217,25 +219,25 @@ export async function publish(args: PublishArgs) {
     let url: string = process.env.HOST ?? '';
     const cfg = getDevKey(url);
     url = cfg.url;
-  
+
     const key = cfg.key;
     const token = await getToken(url, key);
 
     url = `${baseUrl}/packages/published/current`;
 
-    let packagesToLoad =['all']
+    let packagesToLoad = ['all']
     if (args.refresh)
       packagesToLoad = (await (await fetch(url, {
         method: 'GET',
         headers: {
-            'Authorization': token // Attach cookies here
+          'Authorization': token // Attach cookies here
         }
-    })).json()).map((item : any) => item.name);
+      })).json()).map((item: any) => item.name);
     console.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   }
   else {
-    if (args.link){
+    if (args.link) {
       await utils.runScript(`npm install`, curDir);
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
@@ -253,6 +255,8 @@ async function publishPackage(args: PublishArgs) {
     'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
 
   if (args.build && args.rebuild) {
+    utils.runScript('npm install', curDir, false)
+    utils.runScript('npm run build', curDir, false)
     color.error('Incompatible options: --build and --rebuild');
     return false;
   }
@@ -327,6 +331,7 @@ async function publishPackage(args: PublishArgs) {
 interface PublishArgs {
   _: string[],
   build?: boolean,
+  ['skip-check']?: boolean,
   rebuild?: boolean,
   debug?: boolean,
   release?: boolean,
@@ -334,5 +339,5 @@ interface PublishArgs {
   suffix?: string,
   all?: boolean,
   refresh?: boolean,
-  link?:boolean
+  link?: boolean
 }
