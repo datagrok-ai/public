@@ -21,12 +21,8 @@ export function getFuncallDefaults(func: DG.Func) {
   const defaultValues: Record<string, any> = {};
   for (const prop of func.inputs) {
     const name = prop.name;
-    if (prop.options.default) {
-      if (prop.propertyType === DG.TYPE.INT || prop.propertyType === DG.TYPE.FLOAT || prop.propertyType === DG.TYPE.BOOL)
-        defaultValues[name] = JSON.parse(prop.options.default);
-      else
-        defaultValues[name] = prop.options.default;
-    }
+    if (prop.options.default)
+      defaultValues[name] = JSON.parse(prop.options.default);
   }
   return defaultValues;
 }
