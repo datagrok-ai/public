@@ -22,7 +22,7 @@ import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
 import { Tags } from "./api/ddt.api.g";
-import {View} from "./views/view";
+import {View, ViewBase} from "./views/view";
 import {InputType} from "./api/d4.api.g";
 import {Observable} from "rxjs";
 import {observeStream} from "./events";
@@ -1958,13 +1958,17 @@ export class ProgressIndicator {
 }
 
 export type ViewSpecificSearchProvider = {
-  isApplicable: (s: string) => boolean;
+  isApplicable?: (s: string) => boolean;
   returnType?: string;
-  search: (s: string, view?: View) => Promise<{priority: number, results: any} | null>;
-  getSuggestions?: (s: string) => {priority: number, suggestionText: string, suggestionValue: string}[] | null;
-  onValueEnter?: (s: string, view?: View) => Promise<void>; 
+  search: (s: string, view?: ViewBase) => Promise<{priority?: number, results: any} | null>;
+  getSuggestions?: (s: string) => {priority?: number, suggestionText: string, suggestionValue?: string}[] | null;
+  onValueEnter?: (s: string, view?: ViewBase) => Promise<void>;
+  name: string;
+  description?: string;
+  options?: {relatedViewName?: string, widgetHeight?: number, [key: string]: any}
 }
 
+/** the home view should be under the name home and rest should match the views that they are applicable to */
 export type SearchProvider = {
-  [view: string]: ViewSpecificSearchProvider;
+  [view: string]: ViewSpecificSearchProvider | ViewSpecificSearchProvider[];
 }

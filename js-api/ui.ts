@@ -1402,7 +1402,11 @@ export class ObjectHandler<T = any> {
 
   toString(): string { return this.name; }
 
-  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher) */
+  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher)
+   * For something like CHEMBL object handler, it should return:
+   * regexpMarkup: 'CHEMBL[0-9]+', example: 'CHEMBL1234', nonVariablePart: 'CHEMBL'
+   * 
+  */
   get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} | null {
     return null;
   }
