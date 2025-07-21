@@ -5,6 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
 import '../css/revvity-signals-styles.css';
+import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
+import { queryEntities } from './revvityApi';
+import { dataFrameFromObjects } from './utils';
 
 
 export const _package = new DG.Package();
@@ -37,10 +40,26 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   const search = treeNode.item('Search');
   search.onSelected.subscribe(() => {
     const v = DG.View.create('Search');
-    const queryBuilder = signalsSearchBuilderUI(() => {
-      console.log('**********on change');
-    });
+    const queryBuilder = signalsSearchBuilderUI();
     v.append(queryBuilder);
     grok.shell.addPreview(v);
-  })
+  });
+}
+
+//name: Search Entities
+//input: string query
+//input: string params
+//output: dataframe df
+export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
+  let df = DG.DataFrame.create();
+  try {
+    const queryJson: SignalsSearchQuery = JSON.parse(query);
+    const paramsJson: SignalsSearchParams = JSON.parse(params);
+    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+    df = dataFrameFromObjects(data);
+  } catch (e: any) {
+    grok.shell.error(e?.message ?? e);
+  }
+  return df;
 }

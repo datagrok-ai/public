@@ -1,8 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { SignalsSearchQuery, QueryOperator, SignalsSearchParams } from './signalsSearchQuery';
-import { getApiKey, getApiUrl } from './credentials-utils';
-import { RevvityApiResponse, searchEntities } from './revvityApi';
 import * as grok from 'datagrok-api/grok';
 
 export enum OPERATORS {
@@ -222,7 +220,7 @@ export function buildOperatorUI(
 
 
 // Main UI builder function
-export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => void): HTMLElement {
+export function signalsSearchBuilderUI(): HTMLElement {
   const requestParams: SignalsSearchParams = {};
   let rootQuery: SignalsSearchQuery = {
     query: createDefaultOperator(),
@@ -291,14 +289,16 @@ export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => 
     }
   });
 
-  // Submit button
   const submitBtn = ui.button('Submit Query', async () => {
-    // Call fetchEntitiesSearch and handle response
-    const response = await searchEntities(rootQuery, requestParams);
-    if (response.errors) {
-      throw response.errors;
-    }
-    console.log(response.data);
+    ui.empty(reGridDiv);
+    const df = await grok.functions.call('RevvitySignalsLink:searchEntities', {
+      query: JSON.stringify(rootQuery),
+      params: JSON.stringify(requestParams)
+    });
+    //const df = await searchEntities(JSON.stringify(rootQuery), JSON.stringify(requestParams));
+    const grid = df.plot.grid();
+    grid.root.classList.add('revvity-signals-search-res-grid');
+    reGridDiv.append(grid.root);
   });
 
   const acc = ui.accordion('Query builder');
@@ -321,10 +321,18 @@ export function signalsSearchBuilderUI(onSubmit: (query: SignalsSearchQuery) => 
   );
   acc.addPane('Query preview', () => ui.div([ui.label('Preview JSON'), jsonPreview], {style: {width: '100%'}}), true);
 
-  const div = ui.divV([
+
+  const builderWithSubmitDiv = ui.divV([
     acc.root,
     submitBtn,
   ],'revvity-signals-search');
 
-  return div;
+  const reGridDiv = ui.div();
+
+  const builderWithResults = ui.splitV([
+    builderWithSubmitDiv,
+    reGridDiv
+  ], {style: {width: '100%'}}, true)
+
+  return builderWithResults;
 } 

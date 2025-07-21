@@ -41,3 +41,8 @@
 .revvity-signals-search-query-operator .ui-input-text {
     width: 95%;
 }
+
+.revvity-signals-search-res-grid {
+    width: 100%!important;
+    height: 100%!important;
+}

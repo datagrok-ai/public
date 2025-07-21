@@ -7,7 +7,7 @@ import { SignalsSearchParams, SignalsSearchQuery } from "./signalsSearchQuery";
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
   links?: RevvityLinks;
-  data?: RevvityData<T>;
+  data?: RevvityData<T> | RevvityData<T>[];
   included?: RevvityIncluded<I>[];
   errors?: RevvityApiError[];
 }
@@ -68,18 +68,20 @@ async function request<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = text ? await response.bytes() : await response.json();
+  const res: RevvityApiResponse<T> = text ? await response.bytes() : await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.error ?? `HTTP error!: ${response.status}`, { cause: response.status });
+  if (!response.ok || res.errors) {
+    if (res.errors)
+      throw res.errors;
+    throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
   }
-  return { data };
+  return res;
 }
 
 
 /** Search entities */
-export async function searchEntities(body: SignalsSearchQuery, queryParams: SignalsSearchParams): Promise<RevvityApiResponse> {
-  const paramsStr = encodeURI(paramsStringFromObj(queryParams));
+export async function queryEntities(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
+  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
   return request('POST', `/entities/search?${paramsStr}`, body);
 }
 
