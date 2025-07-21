@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { SignalsSearchQuery, QueryOperator, SignalsSearchParams } from './signalsSearchQuery';
 import * as grok from 'datagrok-api/grok';
+import { loadRevvitySearchQueryAndParams, PARAMS_KEY, QUERY_KEY, STORAGE_NAME } from './utils';
 
 export enum OPERATORS {
   MATCH = '$match',
@@ -256,8 +257,11 @@ export function buildOperatorUI(
 
 // Main UI builder function
 export function signalsSearchBuilderUI(): HTMLElement {
-  const requestParams: SignalsSearchParams = {};
-  let rootQuery: SignalsSearchQuery = {
+
+  const {loadedQuery, loadedParams} = loadRevvitySearchQueryAndParams();
+  // Use loaded or default values
+  const requestParams: SignalsSearchParams = loadedParams ?? {};
+  let rootQuery: SignalsSearchQuery = loadedQuery ?? {
     query: createDefaultOperator(),
     options: { sort: { modifiedAt: 'desc' } },
   };
@@ -325,6 +329,13 @@ export function signalsSearchBuilderUI(): HTMLElement {
   });
 
   const submitBtn = ui.button('Submit Query', async () => {
+    // Save query and params to userSettings
+    try {
+      grok.userSettings.add(STORAGE_NAME, QUERY_KEY, JSON.stringify(rootQuery));
+      grok.userSettings.add(STORAGE_NAME, PARAMS_KEY, JSON.stringify(requestParams));
+    } catch (e) {
+      grok.shell.error('Failed to save search settings: ' + ((e as any)?.message ?? e));
+    }
     ui.empty(reGridDiv);
     const df = await grok.functions.call('RevvitySignalsLink:searchEntities', {
       query: JSON.stringify(rootQuery),
@@ -367,7 +378,10 @@ export function signalsSearchBuilderUI(): HTMLElement {
   const builderWithResults = ui.splitV([
     builderWithSubmitDiv,
     reGridDiv
-  ], {style: {width: '100%'}}, true)
+  ], {style: {width: '100%'}}, true);
+
+  if (loadedQuery)
+    updatePreview();
 
   return builderWithResults;
 } 

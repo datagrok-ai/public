@@ -1,4 +1,32 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
+
+export const STORAGE_NAME = 'RevvitySignalsSearch';
+export const QUERY_KEY = 'query';
+export const PARAMS_KEY = 'params';
+
+export function loadRevvitySearchQueryAndParams(): { loadedQuery: SignalsSearchQuery | null, loadedParams: SignalsSearchParams | null } {
+  // Try to load saved query and params
+  let loadedQuery: SignalsSearchQuery | null = null;
+  let loadedParams: SignalsSearchParams | null = null;
+  try {
+    const savedQuery = grok.userSettings.getValue(STORAGE_NAME, QUERY_KEY);
+    if (savedQuery)
+      loadedQuery = JSON.parse(savedQuery);
+  } catch (e) {
+    loadedQuery = null;
+  }
+  try {
+    const savedParams = grok.userSettings.getValue(STORAGE_NAME, PARAMS_KEY);
+    if (savedParams)
+      loadedParams = JSON.parse(savedParams);
+  } catch (e) {
+    loadedParams = null;
+  }
+  return { loadedQuery, loadedParams }
+}
+
 
 function inferColumnType(value: any): DG.COLUMN_TYPE {
   if (typeof value === 'boolean') return DG.COLUMN_TYPE.BOOL;

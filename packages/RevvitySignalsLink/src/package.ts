@@ -11,7 +11,6 @@ import { dataFrameFromObjects } from './utils';
 
 
 export const _package = new DG.Package();
-const STORAGE_NAME = 'Revvity';
 let openedView: DG.View | null = null;
 
 //tags: app
