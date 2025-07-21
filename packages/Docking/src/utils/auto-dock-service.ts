@@ -139,9 +139,7 @@ export class AutoDockService implements IAutoDockService {
       jsonForm: JSON.stringify(form), containerId: this.dc.id
     });
 
-    const adRes = (await JSON.parse(dockingResult)) as Forms.dockLigandRes;
-    ensureNoDockingError(adRes);
-
+    const adRes = dockingResult as Forms.dockLigandRes;
     const result = adRes as unknown as Forms.LigandResults;
     const poses = result.poses;
 
