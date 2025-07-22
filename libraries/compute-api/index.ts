@@ -16,13 +16,6 @@ declare global {
 
 export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
-import {
-  CustomFunctionView, createCFV
-} from './src/views';
-export {
-  createCFV
-};
-
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
   if (initFunc)
@@ -35,3 +28,13 @@ export async function startWorkflow<T=any>(nqName: string, version: string, inst
   await call.call();
   return call.getOutputParamValue();
 }
+
+import type {
+  CustomFunctionView,
+} from '@datagrok-libraries/compute-utils';
+
+export function createCFV(
+  ...args: ConstructorParameters<typeof CustomFunctionView>
+): CustomFunctionView {
+  return new window.compute.CFV(...args);
+};
