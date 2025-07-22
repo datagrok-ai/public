@@ -1398,7 +1398,8 @@ export class AddNewColumnDialog {
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
         await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
-        colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
+        if (name !== colToUpdate.name)
+          colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
         grok.shell.o = colToUpdate;
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
