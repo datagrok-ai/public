@@ -132,7 +132,7 @@ export class StateTree {
       if (isFuncCallNode(item))
         return [...acc, [item.uuid, item.metaInfo$] as const];
       return acc;
-    }, [] as (readonly [string, BehaviorSubject<Record<string, Observable<any | undefined>>>])[]);
+    }, [] as (readonly [string, BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>])[]);
     return Object.fromEntries(entries);
   }
 
@@ -187,7 +187,7 @@ export class StateTree {
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
     }, false).pipe(
       concatMap(() => this.linksState.waitForLinks()),
-      mapTo(this)
+      mapTo(this),
     );
   }
 
@@ -307,7 +307,7 @@ export class StateTree {
           this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
-      const details: TreeUpdateMutationPayload[] =[ {
+      const details: TreeUpdateMutationPayload[] =[{
         mutationRootPath: ppath,
         addIdx: pos,
       }];
@@ -441,7 +441,7 @@ export class StateTree {
       }];
       return of([{
         isMutation: true,
-        details
+        details,
       }]);
     });
   }

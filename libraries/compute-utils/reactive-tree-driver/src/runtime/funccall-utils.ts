@@ -22,7 +22,12 @@ export function getFuncallDefaults(func: DG.Func) {
   for (const prop of func.inputs) {
     const name = prop.name;
     if (prop.options.default)
-      defaultValues[name] = JSON.parse(prop.options.default);
+      // sometimes it is parsable, sometimes not
+      try {
+        defaultValues[name] = JSON.parse(prop.options.default);
+      } catch {
+        defaultValues[name] = prop.options.default;
+      }
   }
   return defaultValues;
 }

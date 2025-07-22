@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
-import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
+import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap, pairwise} from 'rxjs/operators';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
@@ -49,7 +49,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   public validations$ = new BehaviorSubject<Record<HandlerId, Record<IOName, ValidationResult | undefined>>>({});
 
   public metaStates$ = new BehaviorSubject<Record<IOName, BehaviorSubject<Record<HandlerId, Record<string, any>> | undefined>>>({});
-  public meta$ = new BehaviorSubject<Record<IOName, Observable<Record<string, any> | undefined>>>({});
+  public meta$ = new BehaviorSubject<Record<IOName, BehaviorSubject<Record<string, any> | undefined>>>({});
 
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
   public inputRestrictionsUpdates$ = new Subject<[string, RestrictionState | undefined]>();
@@ -259,7 +259,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   }
 
   private convertMeta(
-    metaIn: Record<string, any> | undefined
+    metaIn: Record<string, any> | undefined,
   ) {
     if (!metaIn)
       return undefined;
@@ -267,7 +267,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     for (const metaItem of Object.values(metaIn)) {
       if (!metaItem)
         continue;
-      meta = { ...meta, ...metaItem };
+      meta = {...meta, ...metaItem};
     }
     return meta;
   }
@@ -310,15 +310,30 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     ).subscribe(this.metaStates$);
 
     this.metaStates$.pipe(
+      pairwise(),
+      map(([_current, previous]) => {
+        if (previous) {
+          for (const val$ of Object.values(previous))
+            val$.complete();
+        }
+      }),
+      takeUntil(this.closed$),
+    ).subscribe();
+
+    this.metaStates$.pipe(
       map((metaIn) => {
-        const metaOut: Record<string, Observable<Record<string, any> | undefined>> = {};
+        const metaOut: Record<string, BehaviorSubject<Record<string, any> | undefined>> = {};
         for (const [key, metaItem$] of Object.entries(metaIn)) {
-          metaOut[key] = metaItem$.pipe(map((item) => this.convertMeta(item)));
+          const convertedMeta$ = metaItem$.pipe(map((item) => this.convertMeta(item)));
+          const subject$ = new BehaviorSubject<Record<string, any> | undefined>(undefined);
+          // unsub on metaStates$ items complete
+          convertedMeta$.subscribe(subject$);
+          metaOut[key] = subject$;
         }
         return metaOut;
       }),
       takeUntil(this.closed$),
-    ).subscribe(this.meta$)
+    ).subscribe(this.meta$);
   }
 
   private isRunnable(

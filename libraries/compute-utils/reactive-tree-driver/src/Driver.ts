@@ -22,7 +22,7 @@ export class Driver {
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
-  public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, Observable<any>>>>>({});
+  public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
   public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);

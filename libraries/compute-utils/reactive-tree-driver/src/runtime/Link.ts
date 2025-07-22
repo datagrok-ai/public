@@ -78,7 +78,7 @@ export class Link {
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
         if (minfos.length > 1) {
-          const msg = `Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`
+          const msg = `Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`;
           console.error(msg);
           grok.shell.error(msg);
         }

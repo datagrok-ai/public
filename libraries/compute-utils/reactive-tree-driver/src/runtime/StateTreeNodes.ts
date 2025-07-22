@@ -70,7 +70,7 @@ export class FuncCallNode implements IStoreProvider {
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
   public validationInfo$ = new BehaviorSubject<Record<string, ValidationResult>>({});
-  public metaInfo$ = new BehaviorSubject<Record<string, Observable<Record<string,any> | undefined>>>({});
+  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, any> | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
   public pendingDependencies$ = new BehaviorSubject<string[]>([]);
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
@@ -199,9 +199,8 @@ export class FuncCallNode implements IStoreProvider {
           needsUpdate = true;
         }
       }
-      if (needsUpdate) {
+      if (needsUpdate)
         meta$.next(Object.keys(meta$.value).length === 0 ? undefined : meta$.value);
-      }
     }
   }
 
