@@ -1539,7 +1539,7 @@ export interface IDartApi {
   grok_Func_Prepare(func: any, parameters: any): any;
   grok_Func_Find(packageName: String, functionName: String, tags: any, meta: any, resultType: String, resultSemType: String): any;
   grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
-  grok_FuncCall_Cancel(call: any): Promise<any>;
+  grok_FuncCall_Cancel(call: any): any;
   grok_FuncCall_Call_Sync(call: any, processed: Bool, report: Bool): any;
   grok_Script_Create(script: String): any;
   grok_Script_GetScript(script: any): any;

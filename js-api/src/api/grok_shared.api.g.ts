@@ -73,6 +73,8 @@ export class DataSourceType {
 
   static S3 = 'S3';
 
+  static EFS = 'Amazon EFS';
+
   static SharePoint = 'SharePoint';
 
   static Http = 'HTTP';
@@ -85,7 +87,7 @@ export class DataSourceType {
 
   static CoreWeave = 'CoreWeave';
 
-  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint'];
+  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint', 'Amazon EFS'];
 
   static systemDataSources = ['AWS', 'PostgresDart'];
 
