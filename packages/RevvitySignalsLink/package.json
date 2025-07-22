@@ -52,5 +52,18 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
+  },
+    "meta": {
+    "semanticTypes": [
+      {
+        "semType": "RevvitySignalsId",
+        "description": "Entity id in Revvity Signals tenant",
+        "parsers": [
+          {
+            "regexp": "^(experiment|request|task|journal|chemicalDrawing|grid|materialsTable|acronym|text|pdf|viewonly|presentation|excel|imageResource|uploadedResource|spotfiredxp|sample|assetType|asset|batch|paraexp|parasubexp|sampleContainer|worksheet):[0-9a-fA-F]+(-[0-9a-fA-F]+)*$"
+          }
+        ]
+      }
+    ]
   }
 }

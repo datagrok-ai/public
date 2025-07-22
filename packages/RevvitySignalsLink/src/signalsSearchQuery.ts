@@ -239,4 +239,8 @@ export enum SignalsEntityType {
   ASSET_TYPE = 'assetType',
   ASSET = 'asset',
   BATCH = 'batch',
+  PARAEXP = 'paraexp',
+  PARASUBEXP = 'parasubexp',
+  SAMPLE_CONTAINER = 'sampleContainer',
+  WORKSHEET = 'worksheet',
 } 

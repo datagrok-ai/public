@@ -80,6 +80,7 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
     const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
     df = dataFrameFromObjects(data);
+    await grok.data.detectSemanticTypes(df);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }
