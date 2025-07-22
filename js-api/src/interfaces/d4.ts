@@ -32,6 +32,9 @@ export interface IMapViewerSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -228,6 +231,9 @@ export interface IPieChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -294,6 +300,9 @@ export interface IStatsViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -627,6 +636,9 @@ export interface IScatterPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -859,6 +871,9 @@ export interface IBoxPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -932,6 +947,9 @@ export interface IConfusionMatrixSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -989,6 +1007,9 @@ export interface ITileViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1128,6 +1149,9 @@ export interface IPivotViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1278,6 +1302,9 @@ export interface ITrellisPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1332,6 +1359,9 @@ export interface IRocCurveSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1520,6 +1550,9 @@ export interface IHistogramSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   title: string;
@@ -1577,6 +1610,9 @@ export interface ICorrelationPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1941,6 +1977,9 @@ export interface IGridSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -2386,6 +2425,9 @@ export interface ITreeMapSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2567,6 +2609,9 @@ export interface IBarChartSettings {
 
   legendPosition: keyof typeof FlexAutoPosition;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2632,6 +2677,9 @@ export interface ICalendarSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -2915,6 +2963,9 @@ export interface ILineChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3030,6 +3081,9 @@ export interface IDensityPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3137,6 +3191,9 @@ export interface IScatterPlot3dSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3199,6 +3256,9 @@ export interface IMatrixPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -3355,6 +3415,9 @@ export interface IPcPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
