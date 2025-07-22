@@ -35,8 +35,7 @@ type FuncInfo = {
 
 type UpdatePreviewParams = {
   expression: string,
-  changeName: boolean,
-  error?: boolean
+  changeName: boolean
 }
 
 type ColumnNamesAndSelections = {
@@ -157,6 +156,7 @@ export class AddNewColumnDialog {
   autocompleteEnter = false;
   selectedColumn: DG.Column | null = null;
   error = '';
+  multipleColsOutput = false;
   mutationObserver: MutationObserver | null = null;
   mouseDownOnCm = false;
   updatePreviewEvent = new Subject<UpdatePreviewParams>();
@@ -171,7 +171,7 @@ export class AddNewColumnDialog {
     const table = call.getParamValue('table');
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
-      await this.updatePreview(params.expression, params.changeName, params.error);
+      await this.updatePreview(params.expression, params.changeName);
     });
 
     if (table) {
@@ -280,8 +280,12 @@ export class AddNewColumnDialog {
     //set initial focus on code mirror
     ui.tools.waitForElementInDom(this.codeMirrorDiv).then(() => setTimeout(() => this.codeMirror?.focus(), 50));
 
-    if (!this.call.getParamValue('expression'))
+    if (!this.call.getParamValue('expression')) {
+      const columnsAndSelections = this.getColumnNamesAndSelections(this.codeMirror!.state.doc.toString());
+      this.error = this.validateFormula(this.codeMirror!.state.doc.toString(), columnsAndSelections.columnNames,
+        columnsAndSelections.isSingleCol);
       await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
+    }
     this.prepareFunctionsListForAutocomplete();
   }
 
@@ -620,7 +624,7 @@ export class AddNewColumnDialog {
             this.updateError();
             //in case of syntax error we try to run expression to save string interpolation functionality
             this.updatePreviewEvent
-              .next({expression: cmValue, changeName: false, error: !!this.error && this.error !== SYNTAX_ERROR});
+              .next({expression: cmValue, changeName: false});
           }),
         ],
       }),
@@ -788,9 +792,12 @@ export class AddNewColumnDialog {
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
+      if (funcCall.func.outputs.length && (funcCall.func.outputs[0] as DG.Property).type === DG.TYPE.DATA_FRAME)
+        this.multipleColsOutput = true;
       const error = this.validateFuncCallTypes(funcCall);
       return this.getErrorMessage(error);
     } catch (e: any) {
+      this.multipleColsOutput = false;
       return this.getErrorMessage(e.message ?? e);
     }
   }
@@ -832,6 +839,9 @@ export class AddNewColumnDialog {
       }
     }
 
+    const mappingMatch = (type: string, actualType: string) => VALIDATION_TYPES_MAPPING[type] &&
+      VALIDATION_TYPES_MAPPING[type].includes(actualType);
+
     //validate types for current function
     for (const property of funcCall.func.inputs) {
       //skip validation of dataframe parameter for vector functions
@@ -868,7 +878,8 @@ export class AddNewColumnDialog {
         }
       }
       //dynamic allows any type
-      if (property.propertyType === DG.TYPE.DYNAMIC || actualInputType === DG.TYPE.DYNAMIC)
+      if (property.propertyType === DG.TYPE.DYNAMIC || (actualInputType === DG.TYPE.DYNAMIC &&
+        property.propertyType !== DG.TYPE.COLUMN && property.propertyType !== DG.TYPE.LIST))
         continue;
       //check for optional parameter
       if (property.nullable && actualInputType === 'undefined')
@@ -877,13 +888,23 @@ export class AddNewColumnDialog {
       if (property.semType && actualSemType && property.semType !== actualSemType)
         // eslint-disable-next-line max-len
         return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`;
-      //check for column and list types
-      if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
+      //check column type
+      if (property.propertyType === DG.TYPE.COLUMN) {
+        if (funcCall.inputs[property.name].func?.name !== COLUMN_FUNCTION_NAME)
+          return `Function ${funcCall.func.name} '${property.name}' param should be column type`;
         if (property.propertySubType && property.propertySubType !== actualInputType &&
-          (property.propertyType === DG.TYPE.LIST && funcCall.inputs[property.name]?.length !== 0))
+          !mappingMatch(property.propertySubType, actualInputType))
           // eslint-disable-next-line max-len
-          return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`;
-      //check for typed lists
+          return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} column`;
+        //check list type
+      } else if (property.propertyType === DG.TYPE.LIST) {
+        if (!Array.isArray(funcCall.inputs[property.name]))
+          return `Function ${funcCall.func.name} '${property.name}' param should be array type`;
+        if (property.propertySubType && property.propertySubType !== actualInputType &&
+          !mappingMatch(property.propertySubType, actualInputType))
+          // eslint-disable-next-line max-len
+          return `Function ${funcCall.func.name} '${property.name}' param should be array of ${property.propertySubType}`;
+        //check for typed lists
       } else if (TYPED_LISTS[property.propertyType]) {
         if (!TYPED_LISTS[property.propertyType].includes(actualInputType))
           // eslint-disable-next-line max-len
@@ -892,9 +913,7 @@ export class AddNewColumnDialog {
         //check for type match
         if (property.propertyType !== actualInputType) {
           //check for type match in mapping
-          const mappingMatch = VALIDATION_TYPES_MAPPING[property.propertyType] &&
-            VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType);
-          if (!mappingMatch)
+          if (!mappingMatch(property.propertyType, actualInputType))
             // eslint-disable-next-line max-len
             return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`;
         }
@@ -1112,11 +1131,11 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(expression: string, changeName: boolean, error?: boolean): Promise<void> {
+  async updatePreview(expression: string, changeName: boolean): Promise<void> {
     //get result column name
-    const colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName();
+    let colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName().colName;
 
-    if (error) {
+    if (this.error && this.error !== SYNTAX_ERROR) {
       //clearing preview df in case of error (use only within dialog)
       if (!this.widget) {
         const rowCount = this.gridPreview!.dataFrame.rowCount;
@@ -1128,6 +1147,16 @@ export class AddNewColumnDialog {
 
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
+      if (!this.error)
+        ui.empty(this.errorDiv);
+      //check if column with the same name already exists
+      if (this.sourceDf?.columns.names().some((name) => name.toLowerCase() === colName.toLowerCase()) && !this.error &&
+        !(this.edit && this.call.getParamValue('name')?.toLowerCase() === colName.toLowerCase())) {
+        const unusedColName = this.getResultColumnName().unusedName;
+        this.errorDiv.append(ui.divText(
+          `Column named ${colName} already exists. Column will be named ${unusedColName}`, 'cm-warning-div'));
+        colName = unusedColName;
+      }
       const gridPreviewCol = this.gridPreview!.dataFrame.col(this.currentCalculatedColName);
       if (gridPreviewCol) {
         gridPreviewCol.name = colName;
@@ -1154,7 +1183,7 @@ export class AddNewColumnDialog {
     await this.getPreviewResults(colName, type, expression, potentialColIds);
 
     //do not validate column type in case function returns multiple columns
-    if (potentialColIds.length > 1)
+    if (this.multipleColsOutput)
       this.error = '';
 
     this.updateError();
@@ -1306,14 +1335,12 @@ export class AddNewColumnDialog {
   }
 
   /** Creates new unique Column Name. */
-  getResultColumnName(): string {
+  getResultColumnName(): {colName: string, unusedName: string} {
     const input = this.inputName!.input as HTMLInputElement;
     let value: string = input.value;
     if ((value ?? '') == '')
       value = input.placeholder;
-    return this.edit ?
-      value :
-      this.sourceDf!.columns.getUnusedName(value);
+    return {colName: value, unusedName: this.sourceDf!.columns.getUnusedName(value)};
   }
 
   /** Detects selected item in the ChoiceBox. */
@@ -1371,14 +1398,15 @@ export class AddNewColumnDialog {
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
         await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
-        colToUpdate.name = name;
+        if (name !== colToUpdate.name)
+          colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
         grok.shell.o = colToUpdate;
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
     } else {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
-      this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName());
+      this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName().unusedName);
       this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
       this.call.setParamValue('type', this.getSelectedType()[0]);
       this.call.setParamValue('treatAsString', this.getSelectedType()[1]);

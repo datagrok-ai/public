@@ -88,6 +88,8 @@ import {_mpoDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
+import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -304,6 +306,15 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 //output: grid_cell_renderer result
 export async function rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
   return new RDKitReactionRenderer(getRdKitModule());
+}
+
+//name: chemMixtureRenderer
+//tags: cellRenderer, cellRenderer-ChemicalMixture
+//meta.cellType: ChemicalMixture
+//meta-cell-renderer-sem-type: ChemicalMixture
+//output: grid_cell_renderer result
+export async function rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
+  return new MixtureCellRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
@@ -1168,7 +1179,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
-  if (table.rowCount > 1000)
+  if (table.rowCount > 5000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
@@ -1178,7 +1189,7 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
   if (resultDf) {
     for (const resultCol of resultDf.columns) {
       resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
-      table.columns.add(resultCol);
+      table.columns.add(resultCol.clone());
     }
   }
   return table;
@@ -1403,6 +1414,50 @@ export function convertMolNotationAction(col: DG.Column) {
   if (!func || !col?.dataFrame)
     return;
   func.prepare({data: col.dataFrame, molecules: col}).edit();
+}
+
+//name: Convert Mixture To Smiles...
+//meta.action: Convert mixture to smiles...
+//input: column col {semType: ChemicalMixture}
+export function convertMixtureToSmiles(col: DG.Column): void {
+  // Each cell is a Mixfile JSON string
+  const smilesArr: string[] = [];
+
+  function collectSmiles(component: any, smilesList: string[]) {
+    if (component.smiles)
+      smilesList.push(component.smiles);
+    else if (component.molfile) {
+      try {
+        const smiles = convertMolNotation(component.molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+        smilesList.push(smiles);
+      } catch {}
+    }
+    if (Array.isArray(component.contents)) {
+      for (const child of component.contents)
+        collectSmiles(child, smilesList);
+    }
+  }
+
+  for (let i = 0; i < col.length; ++i) {
+    let mixfile: Mixfile;
+    try {
+      mixfile = JSON.parse(col.get(i));
+    } catch {
+      smilesArr.push('');
+      continue;
+    }
+    const smilesList: string[] = [];
+    collectSmiles(mixfile, smilesList);
+    smilesArr.push(smilesList.join('.'));
+  }
+
+  if (col.dataFrame) {
+    const name = col.dataFrame.columns.getUnusedName(`${col.name}_smiles`);
+    const smilesCol = DG.Column.fromStrings(name, smilesArr);
+    smilesCol.meta.units = DG.UNITS.Molecule.SMILES;
+    smilesCol.semType = DG.SEMTYPE.MOLECULE;
+    col.dataFrame.columns.add(smilesCol);
+  }
 }
 
 //tags: cellEditor
@@ -1859,7 +1914,7 @@ export function MMPEditor(call: DG.FuncCall): void {
       const params = funcEditor.getParams();
       return call.func.prepare(params).call();
     });
- // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  // dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
   dialog.show();
 }
 
@@ -1907,7 +1962,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
-  viewer.setOptions({molecules: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
+  viewer.setOptions({moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
     scalings: scalings, fragmentCutoff});
   viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
 }
@@ -2337,4 +2392,29 @@ export function mpoProfileEditor(file: DG.FileInfo): DG.View {
 //output: bool result
 export function checkJsonMpoProfile(content: string) {
   return JSON.parse(content)['type'] === 'MPO Desirability Profile';
+}
+
+//name: Chemistry | Mixture
+//tags: panel, chem, widgets
+//input: string mixture { semType: ChemicalMixture }
+//output: widget result
+export async function mixtureWidget(mixture: string): Promise<DG.Widget> {
+  return await createMixtureWidget(mixture);
+}
+
+//name: Chemistry | MixtureTree
+//tags: panel, chem, widgets
+//input: string mixture { semType: ChemicalMixture }
+//output: widget result
+export async function mixtureTreeWidget(mixture: string): Promise<DG.Widget> {
+  const mixtureObj = JSON.parse(mixture) as Mixfile;
+  const resDiv = ui.divV([]);
+  resDiv.append(ui.divText(`mixfileVersion: ${mixtureObj.mixfileVersion}`));
+  if (mixtureObj.contents && mixtureObj.contents.length) {
+    const contentsAcc = ui.accordion('contents');
+    for (let i = 0; i < mixtureObj.contents.length; i++)
+      contentsAcc.addPane(`component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+    resDiv.append(contentsAcc.root);
+  }
+  return new DG.Widget(resDiv);
 }

@@ -171,7 +171,7 @@ export class NameSelectorController extends ControllerBase<any | undefined> impl
   }
 }
 
-export class RuntimeReturnController  extends ControllerBase<any | undefined> implements IRuntimeReturnController {
+export class RuntimeReturnController extends ControllerBase<any | undefined> implements IRuntimeReturnController {
   public result: any;
 
   constructor(
@@ -191,7 +191,6 @@ export class RuntimeReturnController  extends ControllerBase<any | undefined> im
 }
 
 export class FuncallActionController extends ControllerBase<any | undefined> implements IFuncallActionController {
-
   constructor(
     public inputs: Record<string, any[]>,
     public inputsSet: Set<string>,

@@ -143,7 +143,7 @@ export class DBExplorer {
   public static async initFromConfig(config: DBExplorerConfig) {
     const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
-      await exp.addEntryPoint(semType, entry.table, entry.column);
+      await exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
     if (config.joinOptions)
       exp.addJoinOptions(config.joinOptions);
     if (config.headerNames)

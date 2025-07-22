@@ -7,7 +7,6 @@ import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
-import {RTFJS} from "rtf.js";
 
 export const _package = new DG.Package();
 
@@ -122,15 +121,18 @@ export async function viewDocx(bytes: Uint8Array): Promise<DG.DataFrame[]> {
 //input: file file
 //output: view v
 export async function previewRtf(file: DG.FileInfo): Promise<DG.View> {
+  await DG.Utils.loadJsCss([`${_package.webRoot}/dist/package-rtf.js`]);
   const view = DG.View.create();
 
   file.readAsBytes().then((bytes) => {
-    const doc = new RTFJS.Document(bytes, {});
-    doc.render().then((elements) => {
-      view.root.append(...elements);
-    })
-
+    //@ts-ignore
+    const doc = new ((window.fileeditors_rtf.RTFJS) as any).Document(bytes, {});
+    doc.render().then((elements : any) => {
+      (elements as any[]).forEach((element) => {
+        element.style.minHeight = '';
+        view.root.append(element);
+      });
+    });
   });
-
   return view;
 }

@@ -201,9 +201,9 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
 
 function processLink(io: LinkSpecString, ioType: IOType) {
   if (Array.isArray(io))
-    return io.map((item) => parseLinkIO(item, ioType));
+    return io.flatMap((item) => parseLinkIO(item, ioType));
   else if (io)
-    return [parseLinkIO(io, ioType)];
+    return parseLinkIO(io, ioType);
   else
     return [];
 }
@@ -211,8 +211,11 @@ function processLink(io: LinkSpecString, ioType: IOType) {
 function checkUniqId(items: {id: string}[]) {
   const ids = new Set<string>();
   for (const item of items) {
-    if (ids.has(item.id))
-      grok.shell.error(`Id ${item.id} is not unique`);
+    if (ids.has(item.id)) {
+      const msg = `Id ${item.id} is not unique`;
+      console.error(msg);
+      grok.shell.error(msg);
+    }
     ids.add(item.id);
   }
 }

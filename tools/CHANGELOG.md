@@ -1,5 +1,14 @@
 # Datagrok-tools changelog
 
+## 4.14.26 (2025-07-10)
+
+### Features
+
+* Grok Decorators added support for ViewBase type
+* Grok Decorators updated comments and line feeds
+* Grok Api updated comments and line feeds
+* Grok Api minor type update
+
 ## 4.14.19 (2025-06-23)
 
 ### Features

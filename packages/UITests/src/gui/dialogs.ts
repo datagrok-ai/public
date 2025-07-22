@@ -37,9 +37,9 @@ category('GUI: Dialogs', () => {
       v = grok.shell.addTableView(demog);
       await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
       grok.shell.topMenu.find('Data').find('Aggregate Rows...').click();
-      await awaitCheck(() => document.querySelector('.grok-pivot') !== null);
-      const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
-        .find((el) => el.textContent === 'OK') as HTMLElement;
+      await awaitCheck(() => document.querySelector('.grok-pivot-root') !== null);
+      const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok.add-workspace-btn'))
+        .find((el) => el.textContent === 'ADD') as HTMLElement;
       okButton.click();
       await awaitCheck(() => grok.shell.v.name.toLowerCase() === 'result', 'Aggregation table was not created', 5000);
       grok.shell.v.close();

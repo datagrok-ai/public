@@ -16,7 +16,7 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
-import {_package} from '../package';
+import {_package, } from '../package';
 import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {
@@ -161,7 +161,6 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
   imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
@@ -179,43 +178,55 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     const renderedOnGrid = gridCell.gridColumn && gridCell.grid?.canvas === g.canvas;
     const cellValue = (renderedOnGrid ? gridCell.cell.valueString : (gridCell.cell?.value ?? '').toString()).toLowerCase();
 
-    if (h < 40 || cellValue.length < 4 || w < 40)
+    if (h < 40 || cellValue.length < 4 || w < 40) {
+      // Small cell - render text only
       DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
-    else {
-      const pdb = cellValue;
-      const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
-      const cache = this.imageCache;
+    } else {
+      // Large cell - render image with text header
+      this.renderLargeCell(g, x, y, w, h, gridCell, cellStyle, cellValue, renderedOnGrid);
+    }
+  }
 
-      if (this.imageCache.has(url)) {
-        const img = this.imageCache.get(url);
-        if (img) {
-          const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
-          g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
-          DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
-        }
-      } else {
+  private renderLargeCell(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, cellValue: string, renderedOnGrid: boolean
+  ): void {
+    const pdb = cellValue;
+    const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
+    const cache = this.imageCache;
+
+    if (this.imageCache.has(url)) {
+      const img = this.imageCache.get(url);
+      if (img) {
+        const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
+        g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
+        
+        // Render text in header
         DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
-
-        fetch(url).then(async (response) => {
-          if (!response.ok) {
-            g.fillStyle = 'red';
-            g.fillRect(x + w - 5, y, 5, 5);
-            return;
-          }
-
-          const blob = await response.blob();
-          const img = new Image();
-          img.src = URL.createObjectURL(blob);
-          img.onload = () => {
-            cache.set(url, img);
-            if (renderedOnGrid)
-              gridCell.render();
-            else
-              this.render(g, x, y + this.pdbIdHeight, w, h - this.pdbIdHeight, gridCell, cellStyle);
-            URL.revokeObjectURL(img.src);
-          };
-        }).catch((_) => { });
       }
+    } else {
+      // Render text in header while loading
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
+
+      fetch(url).then(async (response) => {
+        if (!response.ok) {
+          g.fillStyle = 'red';
+          g.fillRect(x + w - 5, y, 5, 5);
+          return;
+        }
+
+        const blob = await response.blob();
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+        img.onload = () => {
+          cache.set(url, img);
+          if (renderedOnGrid)
+            gridCell.render();
+          else
+            this.render(g, x, y + this.pdbIdHeight, w, h - this.pdbIdHeight, gridCell, cellStyle);
+          URL.revokeObjectURL(img.src);
+        };
+      }).catch((_) => { });
     }
   }
 }

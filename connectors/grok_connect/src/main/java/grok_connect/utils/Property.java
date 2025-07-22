@@ -15,6 +15,7 @@ public class Property {
     public String propertySubType;
     public String description;
     public String category;
+    public String format;
     public List<String> choices;
     public Prop info;
 
@@ -55,5 +56,14 @@ public class Property {
         this.description = description;
         this.category = category;
         this.info = info;
+    }
+
+    public Property(String propertyType, String name, String description, String category, Prop info, String format) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+        this.category = category;
+        this.info = info;
+        this.format = format;
     }
 }

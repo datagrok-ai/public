@@ -8,7 +8,7 @@ import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-servic
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
-import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
+import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
@@ -106,7 +106,9 @@ export async function dockLigandCached(jsonForm: string, containerId: string): P
   
   const path = `/autodock/dock_ligand`;
   const dockingResult = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
-  return await dockingResult.text();
+  const dockingResultText = await dockingResult.json();
+  ensureNoDockingError(dockingResultText);
+  return dockingResultText;
 }
 
 //top-menu: Chem | Docking | AutoDock...

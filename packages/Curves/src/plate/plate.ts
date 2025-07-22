@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -10,15 +11,15 @@ import {
   JSTATStatistics,
   numToExcel,
   parseExcelPosition, standardPlateSizes, toExcelPosition, toStandardSize
-} from "./utils";
+} from './utils';
 import type ExcelJS from 'exceljs';
-import {findPlatePositions, getPlateFromSheet} from "./excel-plates";
+import {findPlatePositions, getPlateFromSheet} from './excel-plates';
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {AnalysisOptions, PlateWidget} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
-import {plateDbColumn, wellProperties, plateTypes} from "../plates/plates-crud";
-import { PlateDrcAnalysis } from './plate-drc-analysis';
-import { IPlateWellValidator } from './plate-well-validators';
+import {plateDbColumn, wellProperties, plateTypes} from '../plates/plates-crud';
+import {PlateDrcAnalysis} from './plate-drc-analysis';
+import {IPlateWellValidator} from './plate-well-validators';
 
 
 /** Represents a well in the experimental plate */
@@ -37,7 +38,7 @@ interface IPlateCsvImportOptions {
   positionColumn?: string;
   volumeColumn?: string;
   concentrationColumn?: string;
-  field?: string;   // used as a field name when a 12x8 table is passed; if not passed, defaults to 'value'
+  field?: string; // used as a field name when a 12x8 table is passed; if not passed, defaults to 'value'
 }
 
 
@@ -80,13 +81,13 @@ export function randomizeTableId() {
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  id?: number;              // database id
+  id?: number; // database id
   plateTemplateId?: number; // database plate template id
-  plateTypeId?: number;     // database plate type id
-  barcode?: string;         // database barcode
+  plateTypeId?: number; // database plate type id
+  barcode?: string; // database barcode
 
-  data: DG.DataFrame;    // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
-  details: {[index: string]: any} = {};  // dynamic plate properties, stored in db: plates.plate_details
+  data: DG.DataFrame; // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
+  details: {[index: string]: any} = {}; // dynamic plate properties, stored in db: plates.plate_details
   //layers: PlateLayer[];
   rows: number = 8;
   cols: number = 12;
@@ -95,7 +96,7 @@ export class Plate {
     this.data = DG.DataFrame.create(rows * cols);
     this.rows = rows;
     this.cols = cols;
-    this.plateTypeId = plateTypes.find(pt => pt.rows == this.rows && pt.cols == this.cols)?.id;
+    this.plateTypeId = plateTypes.find((pt) => pt.rows == this.rows && pt.cols == this.cols)?.id;
     this.barcode = Math.round(Math.random() * 10000).toString().padStart(10, '0');
   }
 
@@ -141,9 +142,9 @@ export class Plate {
 
   markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter) {
     this.values([field], filter).forEach((v) => {
-      if(valueFunc(v[field]))
+      if (valueFunc(v[field]))
         this._markOutlier(v.innerDfRow, true);
-    })
+    });
   }
 
   /** Constructs a plate from a table of size 8x12, 16x24 or 32x48
@@ -162,16 +163,18 @@ export class Plate {
 
     const nonEmptyCols = dataColumns.filter((c) => c.stats.missingValueCount != rows);
     const toString = (nonEmptyCols.length > 0 && nonEmptyCols.findIndex((c) => c.type != nonEmptyCols[0].type) != -1);
-    const type = toString
-      ? DG.TYPE.STRING
-      : firstWhere(dataColumns, c => c.stats.missingValueCount != rows)?.type ?? DG.TYPE.STRING;
+    const type = toString ?
+      DG.TYPE.STRING :
+      firstWhere(dataColumns, (c) => c.stats.missingValueCount != rows)?.type ?? DG.TYPE.STRING;
 
     const dataColumn = plate.data.columns.addNew(table.name ?? field, type);
 
-    for (let colIdx = 0; colIdx < dataColumns.length; colIdx ++)
-      if (dataColumns[colIdx].stats.missingValueCount != rows)
+    for (let colIdx = 0; colIdx < dataColumns.length; colIdx ++) {
+      if (dataColumns[colIdx].stats.missingValueCount != rows) {
         for (let i = 0; i < rows; i++)
           dataColumn.set(plate._idx(i, colIdx), type != DG.TYPE.STRING ? dataColumns[colIdx].get(i) : dataColumns[colIdx].getString(i), false);
+      }
+    }
 
     return plate;
   }
@@ -182,9 +185,8 @@ export class Plate {
     const df = DG.DataFrame.create(this.rows, layer);
     const col = this.data.columns.byName(layer);
 
-    for (let i = 0; i < this.cols; i++) {
-      df.columns.addNew(`${i + 1}`, col.type).init(r => col.get(this._idx(r, i)));
-    }
+    for (let i = 0; i < this.cols; i++)
+      df.columns.addNew(`${i + 1}`, col.type).init((r) => col.get(this._idx(r, i)));
 
     return df;
   }
@@ -198,8 +200,7 @@ export class Plate {
       posColName?: string,
       rowColName?: string,
       colColName?: string
-    }): Plate
-  {
+    }): Plate {
     const posCol = wu(table.columns).find((c) =>
       (!options?.posColName || c.name.toLowerCase() == options.posColName) &&
       c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
@@ -209,14 +210,14 @@ export class Plate {
     const rowCol = table.col(rowColName)?.type === DG.TYPE.INT ? table.col(rowColName) : null;
     const colCol = table.col(colColName)?.type === DG.TYPE.INT ? table.col(colColName) : null;
 
-    const rowToPos: ((i: number) => [row: number, col: number]) | null = posCol
-      ? (i => parseExcelPosition(posCol!.get(i)))
-      : rowCol && colCol ? (i => [rowCol!.get(i), colCol?.get(i)])
-      : standardPlateSizes[table.rowCount] ? (i => Plate._idxToPos(i, standardPlateSizes[table.rowCount][1]))
-      : null;
+    const rowToPos: ((i: number) => [row: number, col: number]) | null = posCol ?
+      ((i) => parseExcelPosition(posCol!.get(i))) :
+      rowCol && colCol ? ((i) => [rowCol!.get(i), colCol?.get(i)]) :
+        standardPlateSizes[table.rowCount] ? ((i) => Plate._idxToPos(i, standardPlateSizes[table.rowCount][1])) :
+          null;
 
     if (rowToPos == null)
-      throw 'Columns with well positions not identified';
+      throw new Error('Columns with well positions not identified');
 
     const positions = DG.range(table.rowCount).map(rowToPos);
     const [rows, cols] = toStandardSize(getMaxPosition(positions));
@@ -247,11 +248,11 @@ export class Plate {
     for (let propBlock = 0; propBlock < df.rowCount / (plate.rows * plate.cols); propBlock++) {
       const start = propBlock * plate.rows * plate.cols;
       const pid = pidCol?.get(start);
-      const property = wellProperties.find(p => p.id == pid)!;
+      const property = wellProperties.find((p) => p.id == pid)!;
       const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
       plate.data.columns.addNew(property.name, property.type)
-        .init(i => valueColumn.get(start + i));
+        .init((i) => valueColumn.get(start + i));
     }
 
     return plate;
@@ -300,7 +301,7 @@ export class Plate {
   /** Merges the attributes from {@link plates} into one plate. */
   static fromPlates(plates: Plate[], name?: string) {
     assure(plates.length > 0, 'Array is empty.');
-    assure(plates.every(p => p.rows == plates[0].rows && p.cols == plates[0].cols), 'Plate dimensions differ.');
+    assure(plates.every((p) => p.rows == plates[0].rows && p.cols == plates[0].cols), 'Plate dimensions differ.');
 
     const result = plates.reduce((p1, p2) => p1 ? p1.merge(p2) : p2.clone());
     if (name != null)
@@ -329,12 +330,12 @@ export class Plate {
     const wb= await workbook.xlsx.load(excelBytes);
 
     const platePositions = findPlatePositions(wb);
-    if (platePositions.length == 0) throw 'Plates not found in "${excelPath}"';
+    if (platePositions.length == 0) throw new Error('Plates not found in "${excelPath}"');
     const p0 = platePositions[0];
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
-      throw `Plate sizes differ in "${name}"`;
+      throw new Error(`Plate sizes differ in "${name}"`);
 
-    return Plate.fromPlates(platePositions.map(p => getPlateFromSheet(p)), name);
+    return Plate.fromPlates(platePositions.map((p) => getPlateFromSheet(p)), name);
   }
 
   static demo(): Plate {
@@ -354,9 +355,8 @@ export class Plate {
             col: col,
           };
           for (const field of self.data.columns) {
-            if (field.name.toLowerCase() != 'row' && field.name.toLowerCase() != 'col' && !field.isNone(self._idx(row, col))) {
+            if (field.name.toLowerCase() != 'row' && field.name.toLowerCase() != 'col' && !field.isNone(self._idx(row, col)))
               well[field.name] = field.get(self._idx(row, col));
-            }
           }
           yield well;
         }
@@ -372,7 +372,7 @@ export class Plate {
   get(field: string, rowIdxOrPos: number | string, colIdx?: number): any {
     assure(this.data.columns.byName(field) != null, `Field does not exist: ${field}`);
     if (typeof rowIdxOrPos === 'number' && colIdx == null)
-      throw 'Column not defined';
+      throw new Error('Column not defined');
 
     const [row, col] = (typeof rowIdxOrPos === 'string') ? parseExcelPosition(rowIdxOrPos) : [rowIdxOrPos, colIdx!];
     return this.data.columns.byName(field).get(this._idx(row, col));
@@ -389,11 +389,11 @@ export class Plate {
   matches(i: number, filter: IPlateWellFilter): boolean {
     const cols = this.data.columns;
     // we allow both any and array of any things in matches object, so we need to convert it to array to have one api
-    const arMatches = filter.match ? Object.entries(filter.match).reduce((acc, [key, value]) => {acc[key] = Array.isArray(value) ? value : [value]; return acc;}, {} as Record<string, any[]>) : null;
-    const arExclude = filter.exclude ? Object.entries(filter.exclude).reduce((acc, [key, value]) => {acc[key] = Array.isArray(value) ? value : [value]; return acc;}, {} as Record<string, any[]>) : null;
+    const arMatches = filter.match ? Object.entries(filter.match).reduce((acc, [key, value]) => { acc[key] = Array.isArray(value) ? value : [value]; return acc; }, {} as Record<string, any[]>) : null;
+    const arExclude = filter.exclude ? Object.entries(filter.exclude).reduce((acc, [key, value]) => { acc[key] = Array.isArray(value) ? value : [value]; return acc; }, {} as Record<string, any[]>) : null;
     return !filter || (!arMatches && !arExclude) ||
         (
-        Object.keys(arMatches ?? {}).filter((m) => cols.contains(m)).every((key) => arMatches![key].some((m) => this.data.columns.byName(key).get(i) === m)) &&
+          Object.keys(arMatches ?? {}).filter((m) => cols.contains(m)).every((key) => arMatches![key].some((m) => this.data.columns.byName(key).get(i) === m)) &&
         Object.keys(arExclude ?? {}).filter((m) => cols.contains(m)).every((key) => arExclude![key].every((e) => this.data.columns.byName(key).get(i) !== e)));
   }
 
@@ -401,9 +401,10 @@ export class Plate {
     if (!filter)
       return this.rows * this.cols;
     let c = 0;
-    for (let i = 0; i < this.rows * this.cols; i++)
+    for (let i = 0; i < this.rows * this.cols; i++) {
       if (this.matches(i, filter))
         c++;
+    }
     return c;
   }
 
@@ -414,7 +415,7 @@ export class Plate {
     const colsObj: Record<string, DG.Column> = {};
     for (let i = 0; i < fields.length; i++)
       colsObj[fields[i]] = cols[i];
-    const result: (Record<string, any> & {innerDfRow: number}) []  = [];
+    const result: (Record<string, any> & {innerDfRow: number}) [] = [];
     for (let i = 0; i < this.rows * this.cols; i++) {
       if (((filter?.includeEmpty ?? false) || cols.every((col) => !col.isNone(i))) && (!filter || this.matches(i, filter))) {
         const res = fields.reduce((acc, f) => { acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc; }, {} as Record<string, any> & {innerDfRow: number});
@@ -429,9 +430,9 @@ export class Plate {
   getStatistics<T extends JSTATStatistics[]>(field: string, statistics: T, filter?: IPlateWellFilter): Record<T[number], number> {
     const values = this.fieldValues(field, filter);
     const result: Record<JSTATStatistics, number> = {} as Record<JSTATStatistics, number>;
-    for (const stat of statistics) {
+    for (const stat of statistics)
       result[stat] = jstatStatistics[stat](values);
-    }
+
     return result;
   }
 
@@ -474,7 +475,7 @@ export class Plate {
   }
 
   doseResponseSeries(options?: IPlateWellFilter & { concentration?: string; value?: string, groupBy?: string}): Record<string, FitSeries> {
-    const valueOptions = {includeEmpty: options?.includeEmpty ?? false, exclude: options?.exclude ?? {'role': ['High Control', 'Low Control']}}
+    const valueOptions = {includeEmpty: options?.includeEmpty ?? false, exclude: options?.exclude ?? {'role': ['High Control', 'Low Control']}};
     const concKey = options?.concentration ?? 'concentration';
     const valueKey = options?.value ?? 'value';
     const values = this.values([concKey, valueKey, ...(options?.groupBy ? [options.groupBy] : [])], valueOptions);
@@ -498,8 +499,8 @@ export class Plate {
 
   getAnalysisDialog(options: AnalysisOptions) {
     ui.dialog('Plate Analysis')
-    .add(PlateDrcAnalysis.analysisView(this, options))
-    .showModal(true);
+      .add(PlateDrcAnalysis.analysisView(this, options))
+      .showModal(true);
   }
 
   getAnalysisView(options: AnalysisOptions) {
@@ -510,9 +511,9 @@ export class Plate {
 
   /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
   merge(plate: Plate) {
-    for (const col of plate.data.columns) {
+    for (const col of plate.data.columns)
       this.data.columns.add(col.clone());
-    }
+
     return this;
   }
 

@@ -10,7 +10,10 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
-import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+import {appSearch, connectionsSearch,
+  dockerSearch, filesSearch, functionSearch, groupsSearch,
+  helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
+  scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
@@ -18,6 +21,7 @@ import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
+import {HelpObjectHandler} from './search/help-entity';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -184,60 +188,79 @@ export function formulaWidget(col: DG.Column): DG.Widget {
   return widget;
 }
 
-//description: Functions
-//tags: search
-//input: string s
-//output: list result
-export function _functionSearch(s: string): Promise<any[]> {
-  return functionSearch(s);
-}
+//name: powerPackSearchProvider
+//tags: searchProvider
+//output: dynamic result
+export function powerPackSearchProvider(): DG.SearchProvider {
+  const providers: DG.SearchProvider = {
+    'home': [{
+      name: 'Files', description: 'Files Search', options: {relatedViewName: 'files'},
+      isApplicable: (s: string) => s.length > 2,
+      search: (s: string) => filesSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Functions', description: 'Functions Search', options: {relatedViewName: 'functions'},
+      search: (s: string) => functionSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Scripts', description: 'Scripts Search', options: {relatedViewName: 'scripts'},
+      search: (s: string) => scriptsSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Samples', description: 'API Samples Search',
+      search: (s: string) => jsSamplesSearch(s).then((r) => ({priority: 9, results: r})),
+    }, {
+      name: 'Queries', description: 'Queries Search', options: {relatedViewName: 'queries'},
+      search: (s: string) => querySearch(s).then((r) => ({priority: 8, results: r})),
+    }, {
+      name: 'Users', description: 'Users Search', options: {relatedViewName: 'users'},
+      search: (s: string) => usersSearch(s).then((r) => ({priority: 11, results: r})),
+    }, {
+      name: 'Groups', description: 'Groups Search', options: {relatedViewName: 'groups'},
+      search: (s: string) => groupsSearch(s).then((r) => ({priority: 12, results: r})),
+    }, {
+      name: 'Dockers', description: 'Dockers Search', options: {relatedViewName: 'dockers'},
+      search: (s: string) => dockerSearch(s).then((r) => ({priority: 13, results: r})),
+    }, {
+      name: 'Help', description: 'Help Search',
+      search: (s: string) => helpSearch(s).then((r) => ({priority: 7, results: r})),
+    }, {
+      name: 'PDB', description: 'Protein Data Bank Search',
+      getSuggestions: (s) => s?.length < 4 && s?.trim().length > 1 && s.toUpperCase() === s ?
+        [{priority: 5, suggestionText: 'PDB ID, e.g. 4AKZ', suggestionValue: '4AKZ'}] : null,
+      search: (s: string) => pdbSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'PubChem', description: 'PubChem Search', options: {widgetHeight: 500},
+      getSuggestions: (s) => s.length > 1 && 'aspirin'.includes(s) ?
+        [{priority: 5, suggestionText: 'Aspirin', suggestionValue: 'aspirin'}] : null,
+      search: (s: string) => pubChemSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Wiki', description: 'Wikipedia Search', options: {widgetHeight: 500},
+      getSuggestions: (s) => s.length > 4 && !s.startsWith('wiki:') ? [{
+        suggestionValue: `wiki:${s}`,
+        suggestionText: `Search in Wikipedia`,
+        priority: 999,
+      }] : null,
+      search: (s: string) => wikiSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Apps', description: 'Apps Search', options: {relatedViewName: 'apps'},
+      search: (s) => appSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'Connections', description: 'Connections Search', options: {relatedViewName: 'connections'},
+      search:
+        (s) => connectionsSearch(s).then((r) => ({priority: 10, results: r})),
+    }, {
+      name: 'New Users', description: 'New Users Search',
+      getSuggestions: (s) => s?.toLowerCase().startsWith('new') && !s?.toLowerCase()?.startsWith('new users ') ?
+        [{suggestionText: 'New Users Today', priority: 19},
+          {suggestionText: 'New users This Month', priority: 20},
+          {suggestionText: 'New users This Year', priority: 21},
+          {suggestionText: 'New users last 3 months', priority: 22},
+          {suggestionText: 'New users yesterday', priority: 24},
+          {suggestionText: 'New user last 7 days', priority: 23}] : null,
+      search: (s: string) => newUsersSearch(s).then((r) => ({priority: 10, results: r})),
+    },
 
-//description: Scripts
-//tags: search
-//input: string s
-//output: list result
-export function _scriptsSearch(s: string): Promise<any[]> {
-  return scriptsSearch(s);
-}
-
-//description: Users
-//tags: search
-//input: string s
-//output: list result
-export function _usersSearch(s: string): Promise<any[]> {
-  return usersSearch(s);
-}
-
-//description: Protein Data Bank
-//tags: search
-//input: string s
-//output: widget w
-export function _pdbSearch(s: string): Promise<any> {
-  return pdbSearch(s);
-}
-
-//description: PubChem
-//tags: search
-//input: string s
-//output: widget w
-export function _pubChemSearch(s: string): Promise<any> {
-  return pubChemSearch(s);
-}
-
-//description: PubChem
-//tags: search
-//input: string s
-//output: widget w
-export function _wikiSearch(s: string): Promise<any> {
-  return wikiSearch(s);
-}
-
-//name: newUsersSearchWidget
-//tags: search
-//input: string s
-//output: widget w
-export function newUsersSearchWidget(s: string) {
-  return newUsersSearch(s);
+    ],
+  };
+  return providers;
 }
 
 //name: formulaLinesEditor
@@ -269,9 +292,11 @@ grok.events.onContextMenu.subscribe((args) => {
 
 //tags: init
 export async function powerPackInit() {
+  DG.ObjectHandler.register(new HelpObjectHandler());
   initSearch();
+
   _properties = await _package.getProperties();
-  await registerDGUserHandler(_package);
+  registerDGUserHandler(_package); // lazy without await
 
   // saving and restoring the scrolls when changing views
   const maxDepth = 40;
@@ -291,8 +316,9 @@ export async function powerPackInit() {
         elementMap.delete(node);
       }
     });
-  }
-  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging).subscribe((_) => getScrolledChild(document.body));
+  };
+  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging)
+    .subscribe((_) => getScrolledChild(document.body));
   DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
 }
 

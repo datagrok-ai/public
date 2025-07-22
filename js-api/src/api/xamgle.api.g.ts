@@ -18,6 +18,9 @@ export interface SettingsInterface {
   /// Show hamburger link on docked viewers
   dockShowMenuLink: boolean;
 
+  /// Show full screen link on docked viewers
+  dockShowFullScreenLink: boolean;
+
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 

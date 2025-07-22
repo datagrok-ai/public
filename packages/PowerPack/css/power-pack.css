@@ -1,6 +1,29 @@
 .power-pack-welcome-view {
 }
 
+.power-pack-search-host .power-pack-search-list > span {
+    margin-right: 12px;
+}
+
+.power-pack-search-host .power-pack-search-list label {
+    max-width: 200px;
+}
+
+.power-pack-search-host .power-pack-search-list {
+    max-height: 400px;
+    flex-wrap: wrap;
+}
+
+.power-pack-search-host .power-pack-search-list-header {
+    margin-left: 4px;
+    margin-right: 12px;
+}
+
+.power-pack-search-host .power-pack-search-list-container:hover .power-pack-search-list-header.power-pack-search-list-has-preview {
+    cursor: pointer;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+}
+
 .power-pack-widget-host > .d4-dialog-header > i {
     visibility: hidden;
 }
@@ -442,6 +465,10 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .cm-error-div {
     color: red;
+}
+
+.cm-warning-div {
+    color: rgb(255, 153, 0);
 }
 
 .cm-hint-div {

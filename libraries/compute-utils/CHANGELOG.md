@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.43.11 (2025-07-22)
+
+- Template links syntax
+- Allow multiple meta handlers targiting the same io
+- Improve string pasing
+
 ## 1.43.10 (2025-06-30)
 
 - Fix edge cases with pipeline edit action

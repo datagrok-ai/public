@@ -31,6 +31,12 @@ public class TableQuery extends DataQuery {
     public TableQuery() {
     }
 
+    private String getFullTableName(String tableName, JdbcDataProvider provider) {
+        tableName = provider.addBrackets(tableName);
+        return schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks")
+                ? provider.addBrackets(schema) + "." + tableName : tableName;
+    }
+
     public String toSql() {
         JdbcDataProvider provider = GrokConnect.providerManager.getByName(connection.dataSource);
         StringBuilder sql = new StringBuilder();
@@ -41,9 +47,7 @@ public class TableQuery extends DataQuery {
             schema = table.substring(0, idx);
             table = table.substring(idx + 1);
         }
-        table = provider.addBrackets(table);
-        table = schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks")
-                ? provider.addBrackets(schema) + "." + table : table;
+        table = getFullTableName(table, provider);
         sql.append("SELECT");
         sql.append(System.lineSeparator());
         if (limit != null && !provider.descriptor.limitAtEnd) {
@@ -60,7 +64,7 @@ public class TableQuery extends DataQuery {
             for (TableJoin joinTable: joins) {
                 sql.append(joinTable.joinType)
                         .append(" join ")
-                        .append(provider.addBrackets(joinTable.rightTableName));
+                        .append(getFullTableName(joinTable.rightTableName, provider));
                 if (GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias))
                     sql.append(" as ")
                             .append(provider.addBrackets(joinTable.rightTableAlias));
@@ -70,11 +74,11 @@ public class TableQuery extends DataQuery {
                         sql.append(" AND ");
                         sql.append(System.lineSeparator());
                     }
-                    sql.append(provider.addBrackets(joinTable.leftTableName))
+                    sql.append(getFullTableName(joinTable.leftTableName, provider))
                             .append('.')
                             .append(provider.addBrackets(joinTable.leftTableKeys.get(i)))
                             .append(" = ")
-                            .append(provider.addBrackets(GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias) ? joinTable.rightTableAlias : joinTable.rightTableName))
+                            .append(GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias) ? provider.addBrackets(joinTable.rightTableAlias) : getFullTableName(joinTable.rightTableName, provider))
                             .append(".")
                             .append(provider.addBrackets(joinTable.rightTableKeys.get(i)))
                             .append(System.lineSeparator());

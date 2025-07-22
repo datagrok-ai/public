@@ -100,5 +100,5 @@ export function getBallFlightSim(v: number, a: number, dB: number, roB: number):
   const result = DG.DataFrame.fromColumns([dist, height]);
   result.name = 'Ball flight';
 
-  return result;
+  return result.clone();
 }

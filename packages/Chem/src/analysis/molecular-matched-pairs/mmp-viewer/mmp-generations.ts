@@ -17,18 +17,34 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 
   const genRes = await mmpa.calculateGenerations(rulesFrom, rulesTo, rulesFromCats, rulesToCats);
 
+  //excluding those molecules for which we could not generate molecule with better activity
+  const idxsToExclude: number[] = [];
+  for (let i = 0; i < genRes.cores.length; i++) {
+    if (!genRes.cores[i])
+      idxsToExclude.push(i);
+  }
+
   const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
   const cols = [];
-  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', MMP_NAMES.PROPERTY_TYPE, genRes.activityName, GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
-  cols.push(createColWithDescription('double', MMP_NAMES.OBSERVED, Array.from(genRes.allInitActivities), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
-  cols.push(createColWithDescription('double', MMP_NAMES.PREDICTED, Array.from(genRes.prediction), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures,
+    GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, GENERATIONS_GRID_HEADER_DESCRIPTIONS,
+    '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, GENERATIONS_GRID_HEADER_DESCRIPTIONS,
+    '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, GENERATIONS_GRID_HEADER_DESCRIPTIONS,
+    '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, GENERATIONS_GRID_HEADER_DESCRIPTIONS,
+    '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('string', MMP_NAMES.PROPERTY_TYPE, genRes.activityName,
+    GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', undefined, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('double', MMP_NAMES.OBSERVED, Array.from(genRes.allInitActivities),
+    GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', undefined, undefined, undefined, idxsToExclude));
+  cols.push(createColWithDescription('double', MMP_NAMES.PREDICTED, Array.from(genRes.prediction),
+    GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', undefined, undefined, undefined, idxsToExclude));
   cols.push(createColWithDescription('double', MMP_NAMES.DELTA_ACTIVITY,
-    Array.from(genRes.prediction).map((val: number, idx: number) => val - genRes.allInitActivities[idx]), GENERATIONS_GRID_HEADER_DESCRIPTIONS, ''));
+    Array.from(genRes.prediction).map((val: number, idx: number) => val - genRes.allInitActivities[idx]),
+    GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', undefined, undefined, undefined, idxsToExclude));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
 
   grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
@@ -46,7 +62,7 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
     resizeGridColsSize(grid, [MMP_NAMES.STRUCTURE, MMP_NAMES.CORE, MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
     gridSub.unsubscribe();
   });
-  createMolExistsCol(mmpa.initData.molecules, generation, grid);
+  createMolExistsCol(mmpa.initData.molecules, generation, grid, generation.length - idxsToExclude.length);
 
   const gridCorr = getCorGrid(mmpa);
 
@@ -54,10 +70,15 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 }
 
 export function createColWithDescription(colType: any, colName: string, list: any,
-  descriptions: {[key: string]: string}, type: string,
-  semType?: DG.SemType, mean?: boolean, description?: string): DG.Column {
-  const col = type === 'int32' ? DG.Column.fromInt32Array(colName, list) : type === 'float32' ?
-    DG.Column.fromFloat32Array(colName, list) : DG.Column.fromList(colType, colName, list);
+  descriptions: { [key: string]: string }, type: string,
+  semType?: DG.SemType, mean?: boolean, description?: string, rowsToExclude?: number[]): DG.Column {
+  let col: DG.Column | null = null;
+  if (rowsToExclude)
+    col = createColumnsWithExcludedValues(colType, colName, list, rowsToExclude);
+  else {
+    col = type === 'int32' ? DG.Column.fromInt32Array(colName, list) : type === 'float32' ?
+      DG.Column.fromFloat32Array(colName, list) : DG.Column.fromList(colType, colName, list);
+  }
   if (!semType) {
     if (descriptions[colName])
       col.setTag('description', descriptions[colName]);
@@ -72,9 +93,27 @@ export function createColWithDescription(colType: any, colName: string, list: an
   return col;
 }
 
-export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
+function createColumnsWithExcludedValues(colType: any, colName: string, list: any,
+  rowsToExclude: number[]): DG.Column {
+  const len = list.length - rowsToExclude.length;
+  let counter = 0;
+  let idxsToExcludeCounter = 0;
+  const col = DG.Column.fromType(colType, colName, len).init((i) => {
+    while (rowsToExclude[idxsToExcludeCounter] === counter) {
+      counter++;
+      idxsToExcludeCounter++;
+    }
+    const val = list[counter];
+    counter++;
+    return val;
+  });
+  return col;
+}
+
+export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid,
+  length: number): Promise<void> {
   const moleculesSet = new Set(molecules);
-  const boolCol = DG.Column.bool(MMP_NAMES.PREDICTION, generation.length).init((i) => !moleculesSet.has(generation[i]));
+  const boolCol = DG.Column.bool(MMP_NAMES.PREDICTION, length).init((i) => !moleculesSet.has(generation[i]));
   boolCol.setTag('description', GENERATIONS_GRID_HEADER_DESCRIPTIONS[MMP_NAMES.PREDICTION]);
   grid.dataFrame.columns.add(boolCol);
   grid.col(boolCol.name)!.editable = false;

@@ -22,6 +22,7 @@ export interface IDartApi {
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Get_BrowsePanel(): any;
+  grok_Get_Favorites(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
   grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
@@ -190,6 +191,7 @@ export interface IDartApi {
   grok_Menu_Show(m: any, e: any, ev: any, x: Num, y: Num, nextToElement: Bool): any;
   grok_Menu_Find(m: any, id: String): any;
   grok_Menu_Clear(m: any): any;
+  grok_Menu_Hide(m: any): any;
   grok_Menu_Remove(m: any, id: String): any;
   grok_MenuItem_ToString(mi: any): any;
   grok_Menu_Get_CloseOnClick(m: any): any;
@@ -299,6 +301,7 @@ export interface IDartApi {
   grok_Viewer_Props_SetDefaultProperty(viewerType: String, propertyName: String, propertyValue: any): any;
   grok_Viewer_Props_SetDefault(v: any, data: Bool, style: Bool): any;
   grok_Viewer_Props_ResetDefault(v: any): any;
+  grok_Viewer_CanVisualize(viewerType: String, df: any): any;
   grok_ScatterPlotViewer_HitTest(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_InvalidateCanvas(s: any): any;
   grok_ScatterPlotViewer_Zoom(s: any, x1: Num, y1: Num, x2: Num, y2: Num): any;
@@ -718,7 +721,7 @@ export interface IDartApi {
   grok_UI_BigButton(content: any, handler: any, tooltip: String): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
-  grok_UI_List(items: any): any;
+  grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
@@ -872,6 +875,8 @@ export interface IDartApi {
   grok_ColumnGrid_ColumnsToDataFrame(cg: any, columnsOrder: any, addServiceColumns: Bool, serviceColsTagName: String): any;
   grok_ColumnGrid_AddColumnProperty(cg: any, p: any): any;
   grok_Sticky_SetAllValues(schema: any, col: any, values: any): Promise<any>;
+  grok_Favorites_Add(x: any, group: any): Promise<any>;
+  grok_Favorites_Remove(x: any, group: any): Promise<any>;
 
   // Generated from ../grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;
@@ -924,6 +929,8 @@ export interface IDartApi {
   grok_Dapi_Notifications(): any;
   grok_Dapi_Notifications_ForCurrentUser(): any;
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
+  grok_Dapi_Activity(): any;
+  grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -1642,6 +1649,8 @@ export interface IDartApi {
   grok_UserNotification_IsRead(notification: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
+  grok_GetLogger(params: any): any;
+  grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

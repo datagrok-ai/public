@@ -995,7 +995,7 @@ export async function manageMonomerLibrariesView(): Promise<DG.View> {
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode
 //input: dynamic browsePanel
-export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
+export async function manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
   const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
   libraries.forEach((libName) => {
     const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
