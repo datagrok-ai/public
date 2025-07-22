@@ -11,6 +11,7 @@ export type SchemaInfo = { references: ReferenceObject; referencedBy: Referenced
 export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];
+  regexpExample?: (typeof DG.ObjectHandler.prototype.regexpExample)
 };
 export type QueryJoinOptions = {
   fromTable: string;
@@ -28,6 +29,7 @@ export type DBExplorerConfig = {
     entryPoints: {[semtype: string]: {
         table: string;
         column: string;
+        regexpExample?: EntryPointOptions['regexpExample'];
     }}
     joinOptions?: QueryJoinOptions[];
     headerNames?: {[tableName: string]: string};

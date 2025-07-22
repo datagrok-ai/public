@@ -46,12 +46,6 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
     }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE, nullable: false});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
-  } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
-    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
-    return {
-      host: ui.label('Peptides analysis only works with aligned sequences'),
-      callback: async (): Promise<boolean> => false,
-    };
   }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
@@ -355,6 +349,15 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
   }
 
+  const selectionGrid = model.df.plot.grid({
+    rowSource: DG.RowSet.Selected,
+    selectedRowsColor: DG.Color.fromHtml('#ffffff'),
+    title: 'Selection',
+  });
+
+  const logoViewerNode = (model?.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE));
+  if (logoViewerNode)
+    model.analysisView.dockManager.dock(selectionGrid, DG.DOCK_TYPE.DOWN, logoViewerNode, 'Selection', 0.4);
 
   progress.close();
   return model;

@@ -1,29 +1,33 @@
 {
-  "name": "molTrack",
+  "name": "@datagrok/moltrack",
   "friendlyName": "Mol Track",
   "version": "0.0.2",
   "description": "",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "datagrok-api": "^1.25.0",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "latest",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.20",
     "style-loader": "^4.0.0",
-    "typescript": "latest"
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "grok link",
     "debug-molTrack": "webpack && grok publish",
     "release-molTrack": "webpack && grok publish --release",
     "build-molTrack": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-molTrack-dev": "webpack && grok publish dev",
     "release-molTrack-dev": "webpack && grok publish dev --release",
     "debug-molTrack-public": "webpack && grok publish public",

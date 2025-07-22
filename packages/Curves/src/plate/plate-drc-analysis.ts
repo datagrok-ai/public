@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { AnalysisOptions } from "./plate-widget";
+import {AnalysisOptions} from './plate-widget';
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -7,11 +7,11 @@ import * as grok from 'datagrok-api/grok';
 import {mapFromRow} from './utils';
 import {IPlateWellFilter, Plate, randomizeTableId} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import { FitConstants } from '../fit/const';
+import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
-import { _package } from '../package';
-import {savePlate} from "../plates/plates-crud";
-import { PlateWidget } from './plate-widget';
+import {_package} from '../package';
+import {savePlate} from '../plates/plates-crud';
+import {PlateWidget} from './plate-widget';
 
 
 export class PlateDrcAnalysis {
@@ -35,14 +35,14 @@ export class PlateDrcAnalysis {
       valueName: ['response', 'value', 'signal', 'raw data', 'raw signal', 'raw', 'response', 'values'],
       roleName: ['role', 'plate layout', 'plate positions', 'group', 'compound', 'well']
     };
-    Object.entries(aliases).forEach(([key , value]) => {
+    Object.entries(aliases).forEach(([key, value]) => {
       const colName = defaultOptions[key as keyof typeof defaultOptions] as string;
       if (plate.data.columns.contains(colName))
         return;
       const alias = value.find((v) => plate.data.columns.contains(v));
       if (alias)
         (defaultOptions[key as keyof typeof defaultOptions] as string) = alias;
-    })
+    });
 
     // find control columns
     if (plate.data.columns.contains(defaultOptions.roleName) && !defaultOptions.controlColumns.every((cc) => plate.data.col(defaultOptions.roleName)!.categories.includes(cc))) {
@@ -59,7 +59,7 @@ export class PlateDrcAnalysis {
       'slope': ['slope', 'hill', 'steepness', 'hill slope'],
       'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
       'top': ['top', 'max', 'maximum', 'maxy', 'max y'],
-      'interceptX': ['interceptx', 'intercept x','ic50', 'ic 50', 'ic-50', 'ic_50', 'ic 50 value', 'ic50 value', 'ic50value', 'ec50', 'ec 50', 'ec-50', 'ec_50', 'ec 50 value', 'ec50 value', 'ec50value'],
+      'interceptX': ['interceptx', 'intercept x', 'ic50', 'ic 50', 'ic-50', 'ic_50', 'ic 50 value', 'ic50 value', 'ic50value', 'ec50', 'ec 50', 'ec-50', 'ec_50', 'ec 50 value', 'ec50 value', 'ec50value'],
       'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
     };
 
@@ -75,7 +75,7 @@ export class PlateDrcAnalysis {
       return pw;
     // place them horizontally
     const container = ui.divH([gridRoot, detailsRoot]);
-    pw.root.appendChild(container);
+    pw.tabsContainer.appendChild(container);
     detailsRoot.style.flex = '0 0 min(250px, 25%)';
     gridRoot.style.flexGrow = '1';
     gridRoot.style.removeProperty('width');
@@ -83,15 +83,14 @@ export class PlateDrcAnalysis {
     const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
     let normed = false;
     if (actOptions.normalize && actOptions.controlColumns.length === 2) {
-
       const [lStats, hStats] = actOptions.controlColumns.map((colName) => {
         return plate.getStatistics(actOptions.valueName, ['mean', 'std'], {match: {[actOptions.roleName]: colName}});
-      }).sort((a,b) => a.mean - b.mean);
+      }).sort((a, b) => a.mean - b.mean);
 
       defaultOptions.plateStatistics = {
         'Z Prime': (_plate) => 1 - (3 * (hStats.std + lStats.std) / Math.abs(hStats.mean - lStats.mean)),
         'Signal to background': (_plate) => hStats.mean / lStats.mean,
-      }
+      };
       if (!actOptions.plateStatistics)
         actOptions.plateStatistics = defaultOptions.plateStatistics;
       actOptions.normalizedColName = plate.normalize(actOptions.valueName, (v) => (hStats.mean - v) / (hStats.mean - lStats.mean) * 100).name;
@@ -105,30 +104,29 @@ export class PlateDrcAnalysis {
       pw.plateDetailsDiv!.appendChild(statTable);
       // mark outliers that go outside the bounds
 
-      if (actOptions.autoFilterOutliers) {
+      if (actOptions.autoFilterOutliers)
         plate.markOutliersWhere(actOptions.normalizedColName!, (v) => v > 106 || v < -6, drFilterOptions);
-      }
     }
 
-    const series = plate.doseResponseSeries({...drFilterOptions, value: normed ? actOptions.normalizedColName! : actOptions.valueName , concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
+    const series = plate.doseResponseSeries({...drFilterOptions, value: normed ? actOptions.normalizedColName! : actOptions.valueName, concentration: actOptions.concentrationName, groupBy: actOptions.roleName});
     const seriesVals = Object.entries(series);
     const minMax = normed ? {minY: -10, maxY: 110} : 0;
     const roleCol = DG.Column.string(actOptions.roleName, seriesVals.length);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
     curveCol.init((i) => JSON.stringify(
       {
-                  "chartOptions": {
-                    "xAxisName": actOptions.concentrationName,
-                    "yAxisName": normed ? `norm(${actOptions.valueName})` : actOptions.valueName,
-                    "logX": true,
-                    "title": `${seriesVals[i][0]}`,
-                    ...minMax
-                  },
-                  // TODO: change to 4PL regression once fixed for normed data
-                series: [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: seriesVals[i][0]}]
+        'chartOptions': {
+          'xAxisName': actOptions.concentrationName,
+          'yAxisName': normed ? `norm(${actOptions.valueName})` : actOptions.valueName,
+          'logX': true,
+          'title': `${seriesVals[i][0]}`,
+          ...minMax
+        },
+        // TODO: change to 4PL regression once fixed for normed data
+        'series': [{...seriesVals[i][1], fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: seriesVals[i][0]}]
       }
 
-      ));
+    ));
     roleCol.init((i) => seriesVals[i][0]);
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
@@ -151,7 +149,7 @@ export class PlateDrcAnalysis {
 
     const criteriaCol = df.columns.addNewString(df.columns.getUnusedName('Criteria'));
     criteriaCol.applyFormula(`if(${actOptions.categorizeFormula}, "Qualified", "Fails Criteria")`, DG.COLUMN_TYPE.STRING);
-    criteriaCol.meta.colors.setCategorical({ "Fails Criteria":4294922560, "Qualified":4283477800 });
+    criteriaCol.meta.colors.setCategorical({'Fails Criteria': 4294922560, 'Qualified': 4283477800});
 
     curvesGrid.root.style.width = '100%';
     pw.root.style.display = 'flex';
@@ -167,15 +165,15 @@ export class PlateDrcAnalysis {
     pw.mapFromRowFunc = (row) => mapFromRow(row, (rowIdx, checkBoxState) => {
       plate._markOutlier(rowIdx, checkBoxState);
       if (prevSelection && prevSelection.curvesGridCell)
-      setOutlier(prevSelection.curvesGridCell, {x: 0, y: 0, outlier: !checkBoxState}, 0, prevSelection.pointIndex);
+        setOutlier(prevSelection.curvesGridCell, {x: 0, y: 0, outlier: !checkBoxState}, 0, prevSelection.pointIndex);
       pw.grid.invalidate();
     });
 
     function clearPreviousSelection() {
       try {
-        if (!prevSelection || (prevSelection.seriesIndex ?? -1) < 0) {
+        if (!prevSelection || (prevSelection.seriesIndex ?? -1) < 0)
           return;
-        }
+
         const series = curveCol.get(prevSelection.seriesIndex);
         if (!series)
           return;
@@ -216,7 +214,7 @@ export class PlateDrcAnalysis {
         return;
 
       prevSelection = {seriesIndex, pointIndex: pointInSeriesIndex, markerType: seriesVals[seriesIndex][1].points[pointInSeriesIndex].marker ?? DG.MARKER_TYPE.CIRCLE,
-         markerSize: seriesVals[seriesIndex][1].points[pointInSeriesIndex].size ?? FitConstants.POINT_PX_SIZE, markerColor: seriesVals[seriesIndex][1].points[pointInSeriesIndex].color ?? DG.Color.toHtml(DG.Color.getCategoricalColor(0))};
+        markerSize: seriesVals[seriesIndex][1].points[pointInSeriesIndex].size ?? FitConstants.POINT_PX_SIZE, markerColor: seriesVals[seriesIndex][1].points[pointInSeriesIndex].color ?? DG.Color.toHtml(DG.Color.getCategoricalColor(0))};
 
       const curveJSON = JSON.parse(curveCol.get(seriesIndex)!);
       const points: IFitPoint[] = curveJSON.series[0]?.points;
@@ -261,5 +259,4 @@ export class PlateDrcAnalysis {
     }
     return pw;
   }
-
 }

@@ -193,7 +193,7 @@ export const PipelineView = Vue.defineComponent({
             >
               { state.value.stepTypes
                 .filter((item) => !item.disableUIAdding)
-                .map((stepType, idx) => {
+                .map((stepType) => {
                   const func = stepType.nqName ? Vue.markRaw(DG.Func.byName(stepType.nqName)): undefined;
                   const language = func instanceof DG.Script ? func.language: 'javascript';
                   const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
@@ -232,7 +232,7 @@ export const PipelineView = Vue.defineComponent({
                               onClick={() => {
                                 const data = state.value as PipelineWithAdd;
                                 emit('addNode', {
-                                  itemId: data.stepTypes[idx].configId,
+                                  itemId: stepType.configId,
                                   position: data.steps.length,
                                 });
                               }}

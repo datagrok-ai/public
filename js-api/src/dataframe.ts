@@ -1198,15 +1198,14 @@ export class ObjectColumn extends Column<any> {
   }
 }
 
-
+/** Column of type [DataFrame]. */
 export class DataFrameColumn extends Column<DataFrame> {
-  /**
-   * Gets [i]-th value.
-   */
+  /**  Gets [i]-th value. */
   get(row: number): DataFrame | null {
     return toJs(api.grok_Column_GetValue(this.dart, row));
   }
 
+  /** Returns all values as an array. */
   toList(): Array<DataFrame> {
     return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
   }
@@ -1271,6 +1270,10 @@ export class ColumnList {
         return col;
   }
 
+  /** Returns all columns. */
+  get all(): Iterable<Column> {
+    return _toIterable(this.dart);
+  }
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
@@ -1293,7 +1296,7 @@ export class ColumnList {
   }
 
   get boolean(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Boolean(this.dart));
+    return wu(_toIterable(api.grok_ColumnList_Boolean(this.dart)));
   }
 
   get selected(): Iterable<Column> {
@@ -1484,12 +1487,33 @@ export class RowMatcher {
  * See usage example: {@link https://public.datagrok.ai/js/samples/data-frame/value-matching/value-matcher}
  * */
 export class ValueMatcher {
+  static supportedTypes: string[] = [TYPE.FLOAT, TYPE.INT, TYPE.BIG_INT, TYPE.STRING, TYPE.BOOL, TYPE.DATE_TIME];
+
   private readonly dart: any;
 
   constructor(dart: any) { this.dart = dart; }
 
-  static forColumn(column: Column, pattern: string) {
+  /** Creates a matcher for the specified column. */
+  static forColumn(column: Column, pattern: string): ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
+  }
+
+  /** Creates a matcher for the specified data type. */
+  static forType(type: TYPE | string, pattern: string): ValueMatcher {
+    switch (type) {
+      case TYPE.FLOAT:
+      case TYPE.INT:
+      case TYPE.BIG_INT:
+        return ValueMatcher.numerical(pattern);
+      case TYPE.STRING:
+        return ValueMatcher.string(pattern);
+      case TYPE.BOOL:
+        return ValueMatcher.bool(pattern);
+      case TYPE.DATE_TIME:
+        return ValueMatcher.dateTime(pattern);
+      default:
+        throw `Value matching not supported for type '${type}'`;
+    }
   }
 
   static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
@@ -1497,11 +1521,18 @@ export class ValueMatcher {
   static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
   static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
-  get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
-  get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+  /** Expression as entered by user (such as '>42') */
+  get pattern(): string { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
 
-  match(value: any) { return api.grok_ValueMatcher_Match(this.dart, value); }
-  validate(value: any) { return api.grok_ValueMatcher_Validate(this.dart, value); }
+  /** Operation (such as '<', 'EQUALS', 'BEFORE', etc). */
+  get operator(): string { return api.grok_ValueMatcher_Get_Operator(this.dart); }
+
+  /** Whether [x] passes the filter specified by the [expression].
+   * See also {@link validate} for the explanation. */
+  match(value: any): boolean { return api.grok_ValueMatcher_Match(this.dart, value); }
+
+  /** Validates the specified conditions. Returns null, if valid, error string otherwise */
+  validate(value: any): string | null { return api.grok_ValueMatcher_Validate(this.dart, value); }
 }
 
 /**
@@ -1532,6 +1563,10 @@ export class RowList {
 
   where(indexPredicate: IndexPredicate): WuIterable<number> {
     return wu(_toIterable(api.grok_RowList_Where(this.dart, indexPredicate)));
+  }
+
+  indexes(options?: {onlyFiltered?: boolean, onlySelected?: boolean}): WuIterable<number> {
+    return wu(_toIterable(api.grok_RowList_Indexes(this.dart, options?.onlyFiltered ?? false, options?.onlySelected ?? false)));
   }
 
   /** Removes specified rows
@@ -2657,9 +2692,13 @@ export class ColumnMetaHelper {
       this.column.setTag(key, value);
   }
 
-  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the name to be shown in the UI */
   get friendlyName(): string | null { return this.column.getTag(TAGS.FRIENDLY_NAME); }
   set friendlyName(x: string | null) { this.setNonNullTag(TAGS.FRIENDLY_NAME, x); }
+
+  /** Column description (usually shown in tooltips) */
+  get description(): string | null { return this.column.getTag(TAGS.DESCRIPTION); }
+  set description(x: string | null) { this.setNonNullTag(TAGS.DESCRIPTION, x); }
 
   /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null { return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart); }
@@ -2712,4 +2751,7 @@ export class ColumnMetaHelper {
    * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
   get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
   set multiValueSeparator(x) { this.setNonNullTag(Tags.MultiValueSeparator, x); }
+
+  get allowColorPicking(): boolean { return this.column.getTag(Tags.AllowColorPicking) != 'false'; }
+  set allowColorPicking(x) { this.column.setTag(Tags.AllowColorPicking, x.toString()); }
 }

@@ -18,7 +18,7 @@ import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-import {names, SparklineType, sparklineTypes} from './sparklines/shared';
+import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
@@ -213,6 +213,60 @@ export async function _autoPowerGrid() {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
+  // handling column remove/rename in sparkline columns
+  const viewersAdded: DG.Grid[] = [];
+  grok.events.onViewerAdded.subscribe((args) => {
+    if (args.args.viewer.type !== DG.VIEWER.GRID)
+      return;
+    const grid = args.args.viewer as DG.Grid;
+    viewersAdded[viewersAdded.length] = grid;
+    const dataFrame = grid.dataFrame;
+    const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
+    const findSummaryCols = (columnNames: string[]) => {
+      const summaryCols: DG.GridColumn[] = [];
+      for (let i = 1; i < grid.columns.length; i++) {
+        const gridCol = grid.columns.byIndex(i)!;
+        const sparklineSettings = getSparklineSettings(gridCol);
+        if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+          columnNames.some((name) => sparklineSettings.columnNames.includes(name)))
+          summaryCols[summaryCols.length] = gridCol;
+      }
+      return summaryCols;
+    };
+
+    const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
+      const columnNames = args.columns.map((col) => col.name);
+      const summaryCols = findSummaryCols(columnNames);
+      for (const colName of columnNames) {
+        for (const summaryCol of summaryCols) {
+          const sparklineSettings = getSparklineSettings(summaryCol);
+          if (sparklineSettings.columnNames.includes(colName))
+            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== colName);
+        }
+      }
+    });
+    const colsRenamedSub = dataFrame.onColumnNameChanged.subscribe((args: DG.EventData) => {
+      const renamedArgs: {newName: string, oldName: string} = args.args;
+      const summaryCols = findSummaryCols([renamedArgs.oldName]);
+      for (const summaryCol of summaryCols) {
+        const sparklineSettings = getSparklineSettings(summaryCol);
+        sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
+      }
+    });
+    grid.sub(colsRemovedSub);
+    grid.sub(colsRenamedSub);
+  });
+
+  grok.events.onViewerClosed.subscribe((args) => {
+    if (args.args.viewer.type !== DG.VIEWER.GRID)
+      return;
+    const grid = args.args.viewer as DG.Grid;
+    if (viewersAdded.includes(grid)) {
+      grid.detach();
+      viewersAdded.splice(viewersAdded.indexOf(grid), 1);
+    }
+  });
+
   if (navigator.gpu)
     gpuDevice = await getGPUDevice();
 }
@@ -265,7 +319,7 @@ export async function _scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     await scWebGPURender(sc, show);
   } catch (error) {
     gpuErrorCounter++;
-  }  
+  }
 }
 
 //tags: scWebGPUPointHitTest
@@ -275,12 +329,12 @@ export async function _scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
 export async function _scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) {
   let result = -1;
   try {
-    result = await scWebGPUPointHitTest(sc, pt);  
+    result = await scWebGPUPointHitTest(sc, pt);
   } catch (error) {
     gpuErrorCounter++;
     throw error;
   }
-  
+
   return result;
 }
 
@@ -294,7 +348,7 @@ export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
 //input: dynamic sc
 //output: bool result
 export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
-  return sc.props.zoomAndFilter != 'pack and zoom by filter' 
+  return sc.props.zoomAndFilter != 'pack and zoom by filter'
     && !sc.props.markersColumnName;
 }
 

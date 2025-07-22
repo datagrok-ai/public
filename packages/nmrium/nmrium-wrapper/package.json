@@ -26,7 +26,7 @@
   "scripts": {
     "start": "vite --host localhost --port 3000  --open",
     "serve": "vite --host",
-    "build": "cross-env NODE_OPTIONS=--max_old_space_size=4096 vite build --outDir build",
+    "build": "grok api && grok check --soft && cross-env NODE_OPTIONS=--max_old_space_size=4096 vite build --outDir build",
     "build-no-minify": "cross-env NO_MINIFY=true npm run build",
     "test": "jest --coverage",
     "eslint": "eslint . --cache",

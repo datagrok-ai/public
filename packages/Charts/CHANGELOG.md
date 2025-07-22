@@ -1,4 +1,9 @@
 # Charts changelog
+## 1.5.5 (2025-07-03)
+
+### Bug Fixes
+
+* [3397: ](https://github.com/datagrok-ai/public/issues/3397)Tree viewer: selection and clicking issues
 
 ## 1.5.4 (2025-05-29)
 

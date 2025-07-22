@@ -32,6 +32,9 @@ export interface IMapViewerSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -150,7 +153,8 @@ export interface IPieChartSettings {
   category: string;
   categoryColumnName: string;
 
-  categoryFunction: string;
+  /// Category time unit map function (applicable to dates only).
+  categoryMap: string;
 
   pieSortType: string;
 
@@ -227,6 +231,9 @@ export interface IPieChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -294,6 +301,9 @@ export interface IStatsViewerSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -348,9 +358,15 @@ export interface IScatterPlotSettings {
   x: string;
   xColumnName: string;
 
+  /// Time unit map function for x column (applicable to dates only).
+  xMap: string;
+
   /// A column to use on the Y axis. Could be numerical or categorical.
   y: string;
   yColumnName: string;
+
+  /// Time unit map function for y column (applicable to dates only).
+  yMap: string;
 
   xAxisType: keyof typeof AxisType;
 
@@ -380,27 +396,27 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
-  /// Point lower bound for x axis whiskers.
+  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
   xWhiskerMinColumnName: string;
 
-  /// Point upper bound for x axis whiskers.
+  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMax: string;
   xWhiskerMaxColumnName: string;
 
-  /// Point range for x axis whiskers.
+  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
   xWhiskerRange: string;
   xWhiskerRangeColumnName: string;
 
-  /// Point lower bound for y axis whiskers.
+  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMin: string;
   yWhiskerMinColumnName: string;
 
-  /// Point upper bound for y axis whiskers.
+  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
   yWhiskerMax: string;
   yWhiskerMaxColumnName: string;
 
-  /// Point range for y axis whiskers.
+  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
   yWhiskerRange: string;
   yWhiskerRangeColumnName: string;
 
@@ -412,6 +428,9 @@ export interface IScatterPlotSettings {
   /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
   color: string;
   colorColumnName: string;
+
+  /// Categorical coloring time unit map function (applicable to dates only).
+  colorMap: string;
 
   showColorSelector: boolean;
 
@@ -433,6 +452,9 @@ export interface IScatterPlotSettings {
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
 
   markerType: string;
 
@@ -614,6 +636,9 @@ export interface IScatterPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -662,15 +687,18 @@ export enum AxisType {
 export interface IBoxPlotSettings {
   categoryColumnNames: Array<string>;
 
+  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
   category1: string;
   category1ColumnName: string;
 
-  /// Aggregation function for "Category Column Names" (applicable to dates only).
+  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
   category1Map: string;
 
+  /// If defined, sets *Markers Color* the same as the currently selected column.
   category2: string;
   category2ColumnName: string;
 
+  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
   category2Map: string;
 
   showStatistics: boolean;
@@ -713,14 +741,27 @@ export interface IBoxPlotSettings {
 
   showColorSelector: boolean;
 
-  /// Column to color-code markers.
+  /// Column to color-code markers. Changing *Category 1* or *Category 2*
+  /// sets the color scheme to categorical (same as selected category column).
   markerColor: string;
   markerColorColumnName: string;
 
+  /// Categorical coloring time unit map function (applicable to dates only).
+  markerColorMap: string;
+
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   markers: string;
   markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
 
   markerMinSize: number;
 
@@ -830,6 +871,9 @@ export interface IBoxPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -903,6 +947,9 @@ export interface IConfusionMatrixSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -960,6 +1007,9 @@ export interface ITileViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1099,6 +1149,9 @@ export interface IPivotViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1249,6 +1302,9 @@ export interface ITrellisPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1303,6 +1359,9 @@ export interface IRocCurveSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1406,6 +1465,8 @@ export interface IHistogramSettings {
 
   invertColorScheme: boolean;
 
+  linearColorScheme: Array<number>;
+
   /// Indicates current row as a dot on the horizontal axis
   showCurrentRow: boolean;
 
@@ -1491,6 +1552,9 @@ export interface IHistogramSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   title: string;
@@ -1548,6 +1612,9 @@ export interface ICorrelationPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1912,6 +1979,9 @@ export interface IGridSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -2357,6 +2427,9 @@ export interface ITreeMapSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2435,8 +2508,8 @@ export interface IBarChartSettings {
   split: string;
   splitColumnName: string;
 
-  /// Aggregation function (applicable to dates only).
-  splitFunction: string;
+  /// Time unit map function for *Split* (applicable to dates only).
+  splitMap: string;
 
   showCategoryValues: boolean;
 
@@ -2448,6 +2521,9 @@ export interface IBarChartSettings {
   /// Each category would become a part of the bar resulting from *Split*.
   stack: string;
   stackColumnName: string;
+
+  /// Time unit map function for *Stack* (applicable to dates only).
+  stackMap: string;
 
   showStackSelector: boolean;
 
@@ -2535,6 +2611,9 @@ export interface IBarChartSettings {
 
   legendPosition: keyof typeof FlexAutoPosition;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2601,6 +2680,9 @@ export interface ICalendarSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2661,6 +2743,9 @@ export interface ILineChartSettings {
   /// Column to be used on the X axis
   x: string;
   xColumnName: string;
+
+  /// Time unit map function for x column (applicable to dates only).
+  xMap: string;
 
   xAxisType: keyof typeof AxisType;
 
@@ -2880,6 +2965,9 @@ export interface ILineChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2995,6 +3083,9 @@ export interface IDensityPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3102,6 +3193,9 @@ export interface IScatterPlot3dSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3165,6 +3259,9 @@ export interface IMatrixPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -3212,9 +3309,18 @@ export interface IPcPlotSettings {
   color: string;
   colorColumnName: string;
 
+  /// Categorical coloring time unit map function (applicable to dates only).
+  colorMap: string;
+
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   /// Determines the way a value is mapped to the vertical scale.
   /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
@@ -3296,6 +3402,8 @@ export interface IPcPlotSettings {
 
   interquartileLineWidth: number;
 
+  bins: number;
+
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
@@ -3309,6 +3417,9 @@ export interface IPcPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 

@@ -314,7 +314,7 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
-    if (this.column !== null && !this.column.temp[PRE_CALCULATED_FP]) {
+    if (this.column !== null && this.column.temp[PRE_CALCULATED_FP] == null) {
       _package.logger.debug(`********pre-calculating fp, filter: ${this.filterId}`);
       this.column!.temp[PRE_CALCULATED_FP] = this.filterId;
       this.currentSearches.add('');

@@ -9,32 +9,33 @@
   },
   "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
   "dependencies": {
-    "datagrok-api": "^1.25.0",
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "jszip": "^3.10.1",
     "ol": "^6.15.1",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/topojson-specification": "^1.0.5",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.20",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@types/d3": "^7.4.3",
-    "@types/topojson-specification": "^1.0.5"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",
     "debug-gis": "webpack && grok publish ",
     "release-gis": "webpack && grok publish --release",
     "build-gis": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-gis-public": "grok publish public",
     "release-gis-public": "grok publish public --release",
     "debug-gis-local": "grok publish local",

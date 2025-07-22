@@ -98,7 +98,7 @@ where res.pid = any(@packages)
 
 
 --name: FunctionsExecTime
---input: string function
+--input: string func
 --connection: System:Datagrok
 with res as (
     select EXTRACT(EPOCH FROM (fc.ended - fc.started)) AS time,
@@ -107,7 +107,7 @@ with res as (
     join funcs f on f.id = fc.func_id
     left join func_params fp on fp.func_id = f.id
     right join func_call_values fcv on fcv.func_param_id = fp.id and fcv.func_call_id = fc.id
-    where f.name = @function
+    where f.name = @func
     )
 select res.time, json_object_agg(res.input, res.value)::text as input
 from res

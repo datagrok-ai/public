@@ -45,16 +45,16 @@ export class StringListSeqSplitted implements ISeqSplitted {
   }
 
   getCanonicalRegion(start: number, end: number): string[] {
-    const actStart = Math.max(0, start);
-    const actEnd = Math.min(this.length, end);
+    const actStart = Math.min(Math.max(0, start), this.length);
+    const actEnd = Math.max(Math.min(this.length, end), 0);
     const len = actEnd - actStart;
     const gap = this.gapOriginalMonomer;
     return new Array(len).fill(null).map((_, i) => { const om = this.mList[i + actStart]; return om === gap ? GAP_SYMBOL : om; });
   }
 
   getOriginalRegion(start: number, end: number): string[] {
-    const actStart = Math.max(0, start);
-    const actEnd = Math.min(this.length, end);
+    const actStart = Math.min(Math.max(0, start), this.length);
+    const actEnd = Math.max(Math.min(this.length, end), 0);
     const len = actEnd - actStart;
     return new Array(len).fill(null).map((_, i) => this.mList[i + actStart]);
   }

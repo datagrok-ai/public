@@ -86,8 +86,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   detach(): void {
     super.detach();
-    this.viewer.clearFilters();
-    this.viewer.setScaffoldTag(this.viewer.molCol!, [], true);
+    this.viewer.detach();
   }
 
   createViewer(dataFrame: DG.DataFrame) {

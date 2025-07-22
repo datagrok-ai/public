@@ -77,14 +77,14 @@ SELECT * FROM mock_data WHERE some_number = @some_number
 --name: OracleStringTypePatternDoubleOpMore
 --connection: OracleDBTests
 --input: string some_number = ">975" {pattern: double}
---test: Dbtests:expectTable(OracleStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/oracle/data10,26.d42')) // cat: Oracle
+--test: Dbtests:expectTable(OracleStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/oracle/data1026.d42')) // cat: Oracle
 SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
 --name: OracleStringTypePatternDoubleOpMoreEq
 --connection: OracleDBTests
 --input: string some_number = ">=975" {pattern: double}
---test: Dbtests:expectTable(OracleStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/oracle/data10,26.d42')) // cat: Oracle
+--test: Dbtests:expectTable(OracleStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/oracle/data1026.d42')) // cat: Oracle
 SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
@@ -119,14 +119,14 @@ SELECT * FROM mock_data WHERE @first_name(first_name)
 --name: OracleStringTypePatternStringOpEndsWith
 --connection: OracleDBTests
 --input: string first_name = "ends with y" {pattern: string}
---test: Dbtests:expectTable(OracleStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/oracle/data6,23,25.d42')) // cat: Oracle
+--test: Dbtests:expectTable(OracleStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/oracle/data62325.d42')) // cat: Oracle
 SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: OracleStringTypePatternStringOpIn
 --connection: OracleDBTests
 --input: string country = "in (Poland, Brazil)" {pattern: string}
---test: Dbtests:expectTable(OracleStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/oracle/data2,5,20.d42')) // cat: Oracle
+--test: Dbtests:expectTable(OracleStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/oracle/data2520.d42')) // cat: Oracle
 SELECT * FROM mock_data WHERE @country(country)
 --end
 

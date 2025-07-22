@@ -20,14 +20,15 @@
     "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@datagrok/api-tests": "^1.9.0",
+    "@datagrok/dendrogram": "^1.2.33",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "datagrok-tools": "^4.14.20",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@datagrok/api-tests": "^1.9.0",
-    "@datagrok/dendrogram": "^1.2.33"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -36,7 +37,7 @@
     "debug-demo": "grok publish public --release",
     "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-demo-dev": "grok publish dev",
     "release-demo-dev": "grok publish dev --release",
     "debug-demo-public": "grok publish public",

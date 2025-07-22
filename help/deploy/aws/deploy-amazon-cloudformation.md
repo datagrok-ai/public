@@ -78,19 +78,17 @@ We prepared specific template for every need of our customers, answer simple que
 
     ##### Requirements
 
-    1. Come up with two endpoints: `DATAGROK_DNS`, `CVM_DNS`. Datagrok requires two endpoints: `DATAGROK_DNS` and `CVM_DNS`.
-       Users will use `DATAGROK_DNS` to access Datagrok Web UI, and requests `CVM_DNS` will be sent automatically by
-       Datagrok Client.
+    1. Datagrok requires an endpoint: `DATAGROK_DNS`.
+       Users will use it to access Datagrok Web UI.
 
-    2. Create RSA SSL certificate for `DATAGROK_DNS` and `CVM_DNS`.
+    2. Create RSA SSL certificate for `DATAGROK_DNS`.
     
         * If you use AWS ACM service for SSL certificates
             1. [Generate ACM certificate in AWS](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
-               which will be valid for both endpoints: `DATAGROK_DNS`, `CVM_DNS`.
+               which will be valid for endpoint `DATAGROK_DNS`.
             2. Copy AWS ARN for the created certificate. It should look like
                this: `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
-        * If you do not use AWS ACM service for SSL certificates, you can create a certificate for `DATAGROK_DNS`
-          , `CVM_DNS` endpoints any way you are already using. Wildcard certificate also suffices.
+        * If you do not use AWS ACM service for SSL certificates, you can create a certificate for `DATAGROK_DNS` endpoint any way you are already using. Wildcard certificate also suffices.
             1. [Upload certificate to AWS ACM](https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html)
             2. Copy AWS ARN for the created certificate(s). It should look like
                this: `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
@@ -103,7 +101,7 @@ We prepared specific template for every need of our customers, answer simple que
         1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html). 
            To meet AWS naming requirements, name must be shorter than _10 symbols_ and correspond [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
            We use 'datagrok' by default, but you may prefer to also specify env in the stack name.
-        2. `DatagrokArnSSLCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` and `CVM_DNS` from the 2nd prerequisites step.
+        2. `DatagrokArnSSLCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` from the 2nd prerequisites step.
 
     2. Wait until AWS completes the deployment. The stack status will be 'CREATE_COMPLETE.' 
        The script created datagrok stand with all required infrastructure from scratch using external DNS service and existing AWS ACM certificate. 
@@ -111,13 +109,12 @@ We prepared specific template for every need of our customers, answer simple que
 
        If you see one of the following statuses then something went wrong: CREATE_FAILED, ROLLBACK_IN_PROGRESS, ROLLBACK_COMPLETE, ROLLBACK_FAILED. [Check the stack events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide) for more information about error.
 
-    3. As you chose the fulfillment option with external DNS, you need to create CNAME DNS records for CVM and Datagrok Load Balancers.
+    3. As you chose the fulfillment option with external DNS, you need to create CNAME DNS records for Datagrok Load Balancer.
        To get the Load Balancer endpoints for DNS record:
 
-        1. Go to stack Outputs. Copy values for _DatagrokLoadBalancerDNSName_ and _CvmLoadBalancerDNSName_.
-        2. Use copied DNS names to create CNAME DNS records, for example
+        1. Go to stack Outputs. Copy value for _DatagrokLoadBalancerDNSName_ .
+        2. Use copied DNS namesto create CNAME DNS record, for example
             * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_
-            * Host: `CVM_DNS`, Target: _CvmLoadBalancerDNSName_
     
     4. Enter the platform `DATAGROK_DNS` using `admin` user. To get the password:
         1. Go to stack Outputs. Find _DatagrokAdminPassword_ and click on the link to open AWS Secret Manager.
@@ -173,19 +170,16 @@ We prepared specific template for every need of our customers, answer simple que
 
     ##### Requirements
 
-    1. Come up with two endpoints: `DATAGROK_DNS`, `CVM_DNS`. Datagrok requires two endpoints: `DATAGROK_DNS` and `CVM_DNS`.
-       Users will use `DATAGROK_DNS` to access Datagrok Web UI, and requests `CVM_DNS` will be sent automatically by
-       Datagrok Client.
+    1. Come up with an endpoint: `DATAGROK_DNS`. Users will use `DATAGROK_DNS` to access Datagrok Web UI.
 
-    2. Create RSA SSL certificate for `DATAGROK_DNS` and `CVM_DNS`.
+    2. Create RSA SSL certificate for `DATAGROK_DNS`.
     
         * If you use AWS ACM service for SSL certificates
             1. [Generate ACM certificate in AWS](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
-               which will be valid for both endpoints: `DATAGROK_DNS`, `CVM_DNS`.
+               which will be valid for both endpoints: `DATAGROK_DNS`.
             2. Copy AWS ARN for the created certificate. It should look like
                this: `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
-        * If you do not use AWS ACM service for SSL certificates, you can create a certificate for `DATAGROK_DNS`
-          , `CVM_DNS` endpoints any way you are already using. Wildcard certificate also suffices.
+        * If you do not use AWS ACM service for SSL certificates, you can create a certificate for `DATAGROK_DNS` endpoint any way you are already using. Wildcard certificate also suffices.
             1. [Upload certificate to AWS ACM](https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html)
             2. Copy AWS ARN for the created certificate(s). It should look like
                this: `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
@@ -198,7 +192,7 @@ We prepared specific template for every need of our customers, answer simple que
         1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html). 
            To meet AWS naming requirements, name must be shorter than _10 symbols_ and correspond [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
            We use 'datagrok' by default, but you may prefer to also specify env in the stack name.
-        2. `DatagrokArnSSLCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` and `CVM_DNS` from the 2nd prerequisites step.
+        2. `DatagrokArnSSLCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` from the 2nd prerequisites step.
 
     2. Wait until AWS completes the deployment. The stack status will be 'CREATE_COMPLETE.' 
        The script created datagrok stand with all required infrastructure from scratch using external DNS service and existing AWS ACM certificate. 
@@ -206,13 +200,12 @@ We prepared specific template for every need of our customers, answer simple que
 
        If you see one of the following statuses then something went wrong: CREATE_FAILED, ROLLBACK_IN_PROGRESS, ROLLBACK_COMPLETE, ROLLBACK_FAILED. [Check the stack events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide) for more information about error.
 
-    3. As you chose the fulfillment option with external DNS, you need to create CNAME DNS records for CVM and Datagrok Load Balancers.
+    3. As you chose the fulfillment option with external DNS, you need to create CNAME DNS records for Datagrok Load Balancer.
        To get the Load Balancer endpoints for DNS record:
 
-        1. Go to stack Outputs. Copy values for _DatagrokLoadBalancerDNSName_ and _CvmLoadBalancerDNSName_.
+        1. Go to stack Outputs. Copy value for _DatagrokLoadBalancerDNSName_.
         2. Use copied DNS names to create CNAME DNS records, for example
             * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_
-            * Host: `CVM_DNS`, Target: _CvmLoadBalancerDNSName_
     
     4. Enter the platform `DATAGROK_DNS` using the `admin` user. To get the password:
         1. Go to stack Outputs. Find _DatagrokAdminPassword_ and click on the link to open AWS Secret Manager.

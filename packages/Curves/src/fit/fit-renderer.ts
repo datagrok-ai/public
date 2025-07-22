@@ -190,7 +190,7 @@ export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number,
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
   const column = tableCell?.column;
   return (useCache && column && tableCell) ?
-    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex}`, () => {
+    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${seriesIdx}`, () => {
       return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
     }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
 }

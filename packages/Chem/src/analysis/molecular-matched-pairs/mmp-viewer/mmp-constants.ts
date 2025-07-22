@@ -2,7 +2,7 @@
 export enum MMP_NAMES {
   FROM = 'From',
   TO = 'To',
-  PAIRS_COUNT = 'Count',
+  PAIRS_COUNT = 'Total count',
   PAIRNUM = '~PairNum',
   PAIR_SORT = '~PairSort',
   PAIRNUM_FROM = '~PairNumFrom',
@@ -42,7 +42,7 @@ export enum SHOW_FRAGS_MODE {
 export const FRAGMENTS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
-  [MMP_NAMES.PAIRS_COUNT]: 'Number of substitutions identified in a dataset',
+  [MMP_NAMES.PAIRS_COUNT]: 'Total number of pairs for substitution identified in a dataset',
 };
 
 export const PAIRS_GRID_HEADER_DESCRIPTIONS: {[key: string]: string} = {
@@ -67,9 +67,8 @@ export enum TrellisAxis {From = 'From', To = 'To'};
 export enum TrellisSortByProp {Frequency = 'Frequency', MW = 'MW', None = 'None'};
 export enum TrellisSortType {Asc = 'Asc', Desc = 'Desc'};
 
-export const FRAGMENTS_GRID_TOOLTIP = `'Fragment Pairs' grid contains all fragment substitutions found in the dataset. Change current row in 'Fragment Pairs' grid to search for molecule pairs with corresponding substitution.`;
-export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS = `'Matched Molecular Pairs' grid shows all pairs of molecules associated with the
-  substitution from the upper table. Click any row to pin corresponding molecules on top of initial dataset.`;
+export const FRAGMENTS_GRID_TOOLTIP = `'Fragment Pairs' grid contains all fragment substitutions found in the dataset.`;
+export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS = `'Molecular Pairs' grid shows pairs of molecules with found substitutions. Click any row to pin corresponding molecules on top of initial dataset.`;
 export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS = `Click a non-empty cell in the trellis plot above to filter molecule pairs with corresponding fragment substitution.`;
 export const MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS = `Click any row to zoom to corresponding pair on scatter plot`;
 export const FRAGMENTS_TAB_TOOLTIP = `Charts in trellis plot cells show mean difference for corresponding activities. Click any non-empty cell on trellis plot to filter molecule pairs with corresponding fragment substitution in 'Matched Molecular Pairs' grid below.`;
@@ -80,3 +79,9 @@ export const MMP_CONTEXT_PANE_CLASS = 'mmp-context-pane';
 
 export const MOL_CANVAS_WIDTH = 170;
 export const MOL_CANVAS_HEIGHT = 75;
+
+export enum SCALING_METHODS {
+  NONE = 'none',
+  LG = 'lg',
+  MINUS_LG = '-lg',
+}

@@ -63,6 +63,10 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     });
   }
 
+    public get submitParams() {
+      return this.campaign?.template?.submit ?? this.template?.submit;
+    }
+
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: HitTriageTemplateIngest) {
     this._pickView?.dataFrame && grok.shell.closeTable(this._pickView?.dataFrame);

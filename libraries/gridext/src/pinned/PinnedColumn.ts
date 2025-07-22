@@ -363,7 +363,7 @@ export class PinnedColumn {
     );
 
     this.m_handlerMouseOverRow = DG.debounce(dframe.onMouseOverRowChanged, 50).subscribe(() => {
-      clearTimeout(this._mouseOverRowsTimer!);  
+      clearTimeout(this._mouseOverRowsTimer!);
       this._mouseOverRowsTimer = window.setTimeout(() => {
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
@@ -408,8 +408,10 @@ export class PinnedColumn {
           if(headerThis.m_colGrid === null)
             return;
           for(let nC=0; nC<e.columns.length; ++nC) {
-            if(e.columns[nC].name === headerThis.m_colGrid.name)
+            if(e.columns[nC].name === headerThis.m_colGrid.name) {
               headerThis.close();
+              break;
+            }
           }
         }
     );

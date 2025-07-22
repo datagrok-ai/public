@@ -29,4 +29,10 @@
     <logger name="com.wisecoders.dbschema" level="warn" />
     <logger name="org.neo4j" level="warn" />
     <logger name="org.mariadb.jdbc" level="warn" />
+    <logger name="io.grpc.netty.shaded" level="warn" />
+    <logger name="io.grpc.netty" level="warn" />
+    <logger name="io.netty" level="warn" />
+    <logger name="com.simba" level="WARN" />
+    <logger name="com.google.api.client" level="WARN" />
+    <logger name="com.google.auth" level="WARN" />
 </configuration>

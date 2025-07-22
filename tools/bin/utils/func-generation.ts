@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable valid-jsdoc */
-import { FuncMetadata, FuncParam } from './interfaces';
+import {FuncMetadata, FuncParam} from './interfaces';
 
 export const headerParams = ['name', 'description', 'tags', 'inputs', 'outputs'];
 
@@ -12,60 +12,61 @@ export enum pseudoParams {
 
 const nonMetaData = [
   'sidebar',
-  'editor'
-];
+  'editor',
+  'friendlyName',
+  'helpUrl'];
 
 const decoratorOptionToAnnotation = new Map<string, string>([
-  ['initialValue', 'default']
+  ['initialValue', 'default'],
 ]);
 
 export const dgAnnotationTypes: Record<string, string> = {
-  INT: "int",
-  BIG_INT: "bigint",
-  FLOAT: "double",
-  NUM: "num",
-  QNUM: "qnum",
-  BOOL: "bool",
-  STRING: "string",
-  STRING_LIST: "string_list",
-  DATE_TIME: "datetime",
-  OBJECT: "object",
-  BYTE_ARRAY: "byte_array",
-  DATA_FRAME: "dataframe",
-  DATA_FRAME_LIST: "dataframe_list",
-  CELL: "cell",
-  COLUMN: "column",
-  COLUMN_LIST: "column_list",
-  GRAPHICS: "graphics",
-  FILE: "file",
-  BLOB: "blob",
-  ROW_FILTER: "tablerowfiltercall",
-  COLUMN_FILTER: "colfiltercall",
-  BIT_SET: "bitset",
-  MAP: "map",
-  DYNAMIC: "dynamic",
-  VIEWER: "viewer",
-  LIST: "list",
-  SEM_VALUE: "semantic_value",
-  FUNC: "func",
-  FUNC_CALL: "funccall",
-  PROPERTY: "property",
-  CATEGORICAL: "categorical",
-  NUMERICAL: "numerical",
-  GRID_CELL_RENDER_ARGS: "GridCellRenderArgs",
-  ELEMENT: "element",
-  VIEW: "view",
-  TABLE_VIEW: "TableView",
-  USER: "User",
-  MENU: "Menu",
-  PROJECT: "Project",
-  SEMANTIC_VALUE: "semantic_value",
-  EVENT_DATA: "event_data",
-  PROGRESS_INDICATOR: "progressindicator",
-  CREDENTIALS: "Credentials",
-  SCRIPT_ENVIRONMENT: "ScriptEnvironment",
-  NOTEBOOK: "Notebook"
-}
+  INT: 'int',
+  BIG_INT: 'bigint',
+  FLOAT: 'double',
+  NUM: 'num',
+  QNUM: 'qnum',
+  BOOL: 'bool',
+  STRING: 'string',
+  STRING_LIST: 'string_list',
+  DATE_TIME: 'datetime',
+  OBJECT: 'object',
+  BYTE_ARRAY: 'byte_array',
+  DATA_FRAME: 'dataframe',
+  DATA_FRAME_LIST: 'dataframe_list',
+  CELL: 'cell',
+  COLUMN: 'column',
+  COLUMN_LIST: 'column_list',
+  GRAPHICS: 'graphics',
+  FILE: 'file',
+  BLOB: 'blob',
+  ROW_FILTER: 'tablerowfiltercall',
+  COLUMN_FILTER: 'colfiltercall',
+  BIT_SET: 'bitset',
+  MAP: 'map',
+  DYNAMIC: 'dynamic',
+  VIEWER: 'viewer',
+  LIST: 'list',
+  SEM_VALUE: 'semantic_value',
+  FUNC: 'func',
+  FUNC_CALL: 'funccall',
+  PROPERTY: 'property',
+  CATEGORICAL: 'categorical',
+  NUMERICAL: 'numerical',
+  GRID_CELL_RENDER_ARGS: 'GridCellRenderArgs',
+  ELEMENT: 'element',
+  VIEW: 'view',
+  TABLE_VIEW: 'TableView',
+  USER: 'User',
+  MENU: 'Menu',
+  PROJECT: 'Project',
+  SEMANTIC_VALUE: 'semantic_value',
+  EVENT_DATA: 'event_data',
+  PROGRESS_INDICATOR: 'progressindicator',
+  CREDENTIALS: 'Credentials',
+  SCRIPT_ENVIRONMENT: 'ScriptEnvironment',
+  NOTEBOOK: 'Notebook',
+};
 
 export enum FUNC_TYPES {
   APP = 'app',
@@ -104,7 +105,9 @@ export const typesToAnnotation: Record<string, string> = {
   'Dayjs': 'datetime',
   'graphics': 'graphics',
   'DG.View': 'view',
+  'DG.ViewBase': 'view',
   'View': 'view',
+  'ViewBase': 'view',
   'DG.Widget': 'widget',
   'Widget': 'widget',
   'DG.FuncCall': 'funccall',
@@ -113,8 +116,13 @@ export const typesToAnnotation: Record<string, string> = {
   'SemanticValue': 'semantic_value',
   'any': 'dynamic',
   'void': 'void',
-  'string': 'string'
-}
+  'string': 'string',
+};
+
+export const typesToAny: string[] = [
+  'dayjs.Dayjs',
+  'Dayjs',
+];
 
 /** Generates an annotation header for a function based on provided metadata. */
 export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', sep: string = '\n'): string {
@@ -133,7 +141,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       data.tags.join(', ')}${sep}`;
   }
 
-  for (let input of data.inputs ?? []) {
+  for (const input of data.inputs ?? []) {
     if (!input)
       continue;
     let type = input?.type;
@@ -150,21 +158,21 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
         type = `list<${annotationType}>`;
       else
         type = annotationType;
-    }
-    else
+    } else
       type = 'dynamic';
     const options = ((input?.options as any)?.options ? buildStringOfOptions((input.options as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
   }
   if (data.outputs) {
-    for (const output of data.outputs)
+    for (const output of data.outputs) {
       if (output.type !== 'void')
         s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
+    }
   }
 
   if (data.meta) {
-    for (let entry of Object.entries(data.meta))
+    for (const entry of Object.entries(data.meta))
       s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
   }
 
@@ -184,7 +192,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   }
 
   if (data.test) {
-    for (let entry of Object.entries(data.test)) {
+    for (const entry of Object.entries(data.test)) {
       if (entry[0] === 'test' || entry[0] === 'wait')
         s += `${comment}`;
       else
@@ -197,7 +205,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
 }
 
 function buildStringOfOptions(options: any) {
-  let optionsInString: string[] = [];
+  const optionsInString: string[] = [];
   for (const [key, value] of Object.entries(options ?? {})) {
     let val = value;
     let option = key;
@@ -215,7 +223,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.VIEWER],
       inputs: [],
-      outputs: [{ name: 'result', type: 'viewer' }],
+      outputs: [{name: 'result', type: 'viewer'}],
     },
     genFunc: generateClassFunc,
   },
@@ -223,7 +231,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.FILTER],
       inputs: [],
-      outputs: [{ name: 'result', type: 'filter' }],
+      outputs: [{name: 'result', type: 'filter'}],
     },
     genFunc: generateClassFunc,
   },
@@ -231,7 +239,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.CELL_RENDERER],
       inputs: [],
-      outputs: [{ name: 'renderer', type: 'grid_cell_renderer' }],
+      outputs: [{name: 'renderer', type: 'grid_cell_renderer'}],
     },
     genFunc: generateClassFunc,
   },
@@ -246,16 +254,16 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
   fileHandler: {
     metadata: {
       tags: [FUNC_TYPES.FILE_HANDLER],
-      inputs: [{ name: 'content', type: 'string' }],
-      outputs: [{ name: 'tables', type: 'list' }],
+      inputs: [{name: 'content', type: 'string'}],
+      outputs: [{name: 'tables', type: 'list'}],
     },
     genFunc: generateFunc,
   },
   fileViewer: {
     metadata: {
       tags: [FUNC_TYPES.FILE_VIEWER],
-      inputs: [{ name: 'f', type: 'file' }],
-      outputs: [{ name: 'v', type: 'view' }],
+      inputs: [{name: 'f', type: 'file'}],
+      outputs: [{name: 'v', type: 'view'}],
     },
     genFunc: generateFunc,
   },
@@ -263,7 +271,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.SETTINGS_EDITOR],
       inputs: [],
-      outputs: [{ name: 'result', type: 'widget' }],
+      outputs: [{name: 'result', type: 'widget'}],
     },
     genFunc: generateFunc,
   },
@@ -271,7 +279,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [],
       inputs: [],
-      outputs: [{ name: 'result', type: 'dynamic' }],
+      outputs: [{name: 'result', type: 'dynamic'}],
     },
     genFunc: generateFunc,
   },
@@ -279,7 +287,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.APP],
       inputs: [],
-      outputs: [{ name: 'result', type: 'view' }],
+      outputs: [{name: 'result', type: 'view'}],
     },
     genFunc: generateFunc,
   },
@@ -302,7 +310,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
   editor: {
     metadata: {
       tags: [FUNC_TYPES.EDITOR],
-      inputs: [{ name: 'call', type: 'funccall' }],
+      inputs: [{name: 'call', type: 'funccall'}],
       outputs: [],
     },
     genFunc: generateFunc,
@@ -311,23 +319,23 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.PANEL],
       inputs: [],
-      outputs: [{ name: 'result', type: 'widget' }],
+      outputs: [{name: 'result', type: 'widget'}],
     },
     genFunc: generateFunc,
   },
   folderViewer: {
     metadata: {
       tags: [FUNC_TYPES.FOLDER_VIEWER],
-      inputs: [{ name: 'folder', type: 'file' }, { name: 'files', type: 'list<file>' }],
-      outputs: [{ name: 'result', type: 'widget' }],
+      inputs: [{name: 'folder', type: 'file'}, {name: 'files', type: 'list<file>'}],
+      outputs: [{name: 'result', type: 'widget'}],
     },
     genFunc: generateFunc,
   },
   semTypeDetector: {
     metadata: {
       tags: [FUNC_TYPES.SEM_TYPE_DETECTOR],
-      inputs: [{ name: 'col', type: 'column' }],
-      outputs: [{ name: 'result', type: 'string' }],
+      inputs: [{name: 'col', type: 'column'}],
+      outputs: [{name: 'result', type: 'string'}],
     },
     genFunc: generateFunc,
   },
@@ -335,7 +343,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.DASHBOARD],
       inputs: [],
-      outputs: [{ name: 'result', type: 'widget' }],
+      outputs: [{name: 'result', type: 'widget'}],
     },
     genFunc: generateFunc,
   },
@@ -343,15 +351,15 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
     metadata: {
       tags: [FUNC_TYPES.FUNCTION_ANALYSIS],
       inputs: [],
-      outputs: [{ name: 'result', type: 'view' }],
+      outputs: [{name: 'result', type: 'view'}],
     },
     genFunc: generateFunc,
   },
   converter: {
     metadata: {
       tags: [FUNC_TYPES.CONVERTER],
-      inputs: [{ name: 'value', type: 'dynamic' }],
-      outputs: [{ name: 'result', type: 'dynamic' }],
+      inputs: [{name: 'value', type: 'dynamic'}],
+      outputs: [{name: 'result', type: 'dynamic'}],
     },
     genFunc: generateFunc,
   },
@@ -366,7 +374,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
   treeBrowser: {
     metadata: {
       tags: [],
-      inputs: [{ name: 'treeNode', type: 'dynamic' }, { name: 'browseView', type: 'view' }],
+      inputs: [{name: 'treeNode', type: 'dynamic'}, {name: 'browseView', type: 'view'}],
       outputs: [],
     },
     genFunc: generateFunc,
@@ -378,7 +386,7 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
       outputs: [],
     },
     genFunc: generateFunc,
-  }
+  },
 
 };
 
@@ -398,10 +406,10 @@ const primitives = new Set([
 
 /** Generates a DG function. */
 export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string {
-  let funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] ? e.type : 'any')}`)).join(', ');
-  let funcArguments = (inputs.map((e) => e.name)).join(', ');
+  const funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
+  const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
-  return annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep.repeat(2)}`;
+  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {

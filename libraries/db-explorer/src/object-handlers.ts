@@ -94,6 +94,11 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     return this.semanticType;
   }
 
+  private _rgExample: (typeof DG.ObjectHandler.prototype.regexpExample) | null = null;
+
+  override get regexpExample() {
+    return this._rgExample;
+  }
   isApplicable(x: any): boolean {
     return x instanceof DG.SemanticValue && x.semType == this.semanticType;
   }
@@ -108,6 +113,8 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     schemaName: string
   ) {
     super(options, schemaInfo, connection, schemaName);
+    if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
+      this._rgExample = options.regexpExample;
   }
 
   renderCard(x: any, context?: any): HTMLElement {

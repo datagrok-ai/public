@@ -1,7 +1,7 @@
 ### External Provider
 
 #### Navigate to PostgreSQL Connection:
-1. Browse > Databases > Postgress.
+1. Browse > Databases > Postgres
 2. Click on **Add connection...**. 
 3. Fill out the "Add new connection" form with the following details:
 * Data Source: Postgres
@@ -13,7 +13,7 @@
 * Password: *** (obtain from QA or DevOps)
 
 #### Create and Run Queries:
-4. For the created connection, add and run four queries sequentially. 
+4. For the created connection, add and run four queries sequentially
 
 * **TestCreateTable**. Save and run the query:
 
@@ -31,7 +31,7 @@ UPDATE tmp_table_test SET name = 'test' WHERE id = 1;
 
 DROP TABLE tmp_table_test;
 
-5. Delete PostgreSQLDBTests2 connection.
+5. Delete PostgreSQLDBTests2 connection
 
 #### Expectes results: 
 * The connection should be created and deleted successfully.

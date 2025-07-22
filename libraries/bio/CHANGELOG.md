@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.54.1 (2025-06-25)
+
+* To Atomic Level: Handling of terminal monomers with 1 R group, wrongly configured r-groups, and incorrect notations.
+
 ## 5.53.3 (2025-06-02)
 
 * MSA header tracks

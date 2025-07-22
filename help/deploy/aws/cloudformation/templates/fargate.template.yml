@@ -11,6 +11,12 @@ Metadata:
           - InternetSubnetAllow
           - InternetSubnetAllow2
           - InternetSubnetAllow3
+      - Label:
+          default: "GPU configuration"
+        Parameters:
+          - GpuRequired
+          - GpuAMI
+          - GpuInstanceType
     ParameterLabels:
       InternetSubnetAllow:
         default: "InternetSubnetAllow: Allow connect from CIDR"
@@ -18,6 +24,12 @@ Metadata:
         default: "InternetSubnetAllow2: Allow connect from additional CIDR (Optional)"
       InternetSubnetAllow3:
         default: "InternetSubnetAllow3: Allow connect from additional CIDR (Optional)"
+      GpuRequired:
+        default: "GPU required"
+      GpuAMI:
+        default: "GPU AMI"
+      GpuInstanceType:
+        default: "GPU Instance Type"
 Parameters:
   InternetSubnetAllow:
     Type: String
@@ -36,6 +48,61 @@ Parameters:
   Postfix:
     Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
+  GpuRequired:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: "Set to true if you want to run GPU workloads."
+  GpuAMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/gpu/amzn2-ami-ecs-gpu-hvm-2.0.20241017-x86_64-ebs/image_id'
+    Description: "The AMI ID for the GPU instance. Check https://docs.aws.amazon.com/AmazonECS/latest/developerguide/retrieve-ecs-optimized_AMI.html for options"
+  GpuInstanceType:
+    Type: String
+    Default: 'g4dn.xlarge'
+    Description: "The instance type for the GPU instance."
+    AllowedValues: 
+      - 'p3.2xlarge'
+      - 'p3.8xlarge'
+      - 'p3.16xlarge'
+      - 'p3dn.24xlarge'
+      - 'p5.48xlarge'
+      - 'g3s.xlarge'
+      - 'g3.4xlarge'
+      - 'g3.8xlarge'
+      - 'g3.16xlarge'
+      - 'g4dn.xlarge'
+      - 'g4dn.2xlarge'
+      - 'g4dn.4xlarge'
+      - 'g4dn.8xlarge'
+      - 'g4dn.12xlarge'
+      - 'g4dn.16xlarge'
+      - 'g5.xlarge'
+      - 'g5.2xlarge'
+      - 'g5.4xlarge'
+      - 'g5.8xlarge'
+      - 'g5.16xlarge'
+      - 'g5.12xlarge'
+      - 'g5.24xlarge'
+      - 'g5.48xlarge'
+      - 'g6.xlarge'
+      - 'g6.2xlarge'
+      - 'g6.4xlarge'
+      - 'g6.8xlarge'
+      - 'g6.16xlarge'
+      - 'g6.12xlarge'
+      - 'g6.24xlarge'
+      - 'g6.48xlarge'
+      - 'g6.metal'
+      - 'gr6.4xlarge'
+      - 'g6e.xlarge'
+      - 'g6e.2xlarge'
+      - 'g6e.4xlarge'
+      - 'g6e.8xlarge'
+      - 'g6e.16xlarge'
+      - 'g6e.12xlarge'
 Conditions:
   AccessFromNatGW:
     Fn::And:
@@ -51,6 +118,10 @@ Conditions:
       - Fn::Equals:
           - Ref: InternetSubnetAllow3
           - ''
+  GpuRequired:
+    Fn::Equals:
+      - Ref: GpuRequired
+      - 'true'
 Rules:
   InternetSubnetAllow:
     RuleCondition:
@@ -2812,6 +2883,55 @@ Resources:
         HttpCode: 200
       UnhealthyThresholdCount: 5
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  GpuInstanceRole:
+    Condition: GpuRequired
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Condition: { }
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+  GpuInstanceProfile:
+    Condition: GpuRequired
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        -  Ref: GpuInstanceRole
+  GpuInstance:
+    Condition: GpuRequired
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile:
+        Ref: GpuInstanceProfile
+      ImageId: 
+        Ref: GpuAMI
+      InstanceType:
+        Ref: GpuInstanceType
+      SecurityGroupIds:
+        - Ref: CvmSecurityGroup
+      SubnetId:
+        Ref: DatagrokPrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}-gpu-instance"
+      UserData:
+        Fn::Base64:
+          Fn::Sub: 
+            - |
+              #!/bin/bash -xe
+              echo "ECS_CLUSTER=${CvmCluster}" >> /etc/ecs/ecs.config
+              echo "ECS_ENABLE_GPU_SUPPORT=true" >> /etc/ecs/ecs.config
+              echo "ECS_IMAGE_PULL_BEHAVIOR=once" >> /etc/ecs/ecs.config
+            - CvmCluster:
+                Ref: CvmCluster
 Outputs:
   DatagrokAdminPassword:
     Description: Admin password for first login

@@ -176,7 +176,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 | `.geojson`         | File format       | Geospatial data encoded in JSON                      | [GIS]            |
 | `.topojson`        | File format       | Compressed topological geospatial data         | [GIS]            |
 
-## Images
+## Images and diagrams
 
 | Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------|------------------|
@@ -184,6 +184,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 | `.png`         | File format       | Screenshot, icon, UI graphic|             |
 | `.svg`         | File format       | Logo, diagram, UI asset     |             |
 | `.bmp`         | File format       | Raw pixel data                 |             |
+| `.excalidraw`  | Drawing format    | JSON-based vector drawings     |       [Excalidraw]    |
 
 
 
@@ -202,3 +203,4 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 [Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme
 [Curves]: https://github.com/datagrok-ai/public/tree/master/packages/Curves#readme
 [Clinical Case]: https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#readme
+[Excalidraw]: https://github.com/datagrok-ai/public/tree/master/packages/Excalidraw#readme

@@ -49,7 +49,7 @@ public class SessionHandler {
             // guess it won't work because there is no memory left!
             GrokConnect.needToReboot = true;
         }
-        if (err.getClass().equals(GrokConnectException.class))
+        if (err.getClass().equals(GrokConnectException.class) && err.getCause() != null)
             err = err.getCause();
         String message = err.getMessage();
         String stackTrace = Arrays.stream(err.getStackTrace()).map(StackTraceElement::toString)

@@ -2,7 +2,7 @@ import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 import {PackageFunctions} from './package';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
-
+import * as DG from 'datagrok-api/dg';
 //name: Fit
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
@@ -51,7 +51,7 @@ export function _initCurves() {
 //input: int seriesNumber 
 //output: column result
 //meta.vectorFunc: true
-export function addStatisticsColumn(table: any, colName: string, propName: string, seriesNumber: number) {
+export function addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, seriesNumber: number) {
   return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
@@ -63,7 +63,7 @@ export function addStatisticsColumn(table: any, colName: string, propName: strin
 //input: string aggrType 
 //output: column result
 //meta.vectorFunc: true
-export function addAggrStatisticsColumn(table: any, colName: string, propName: string, aggrType: string) {
+export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
 
@@ -71,8 +71,8 @@ export function addAggrStatisticsColumn(table: any, colName: string, propName: s
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
-//output: widget result
-export async function platesFolderPreview(folder: any, files: any) {
+//output: dynamic result
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
   return PackageFunctions.platesFolderPreview(folder, files);
 }
 
@@ -82,14 +82,14 @@ export async function platesFolderPreview(folder: any, files: any) {
 //output: view result
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
-export function previewPlate(file: any) {
+export function previewPlate(file: DG.FileInfo) {
   return PackageFunctions.previewPlate(file);
 }
 
 //name: importPlate
 //tags: file-handler
 //input: string fileContent 
-//output: list<dataframe> result
+//output: list result
 //meta.ext: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
 export async function importPlate(fileContent: string) {
@@ -101,7 +101,7 @@ export async function importPlate(fileContent: string) {
 //input: blob fileContent 
 //meta.ext: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function importPlateXlsx(fileContent: any) {
+export async function importPlateXlsx(fileContent: Uint8Array) {
   return PackageFunctions.importPlateXlsx(fileContent);
 }
 
@@ -111,14 +111,14 @@ export async function importPlateXlsx(fileContent: any) {
 //output: view result
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function previewPlateXlsx(file: any) {
+export async function previewPlateXlsx(file: DG.FileInfo) {
   return PackageFunctions.previewPlateXlsx(file);
 }
 
 //name: checkExcelIsPlate
 //input: blob content 
 //output: bool result
-export async function checkExcelIsPlate(content: any) {
+export async function checkExcelIsPlate(content: Uint8Array) {
   return PackageFunctions.checkExcelIsPlate(content);
 }
 

@@ -90,6 +90,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     this.saveCampaign(false);
   }
 
+  public get submitParams() {
+    return this.campaign?.template?.submit ?? this.template?.submit;
+  }
+
   private updateAllVids() {
     const molCol = this.dataFrame!.col(this.molColName);
     const vidCol = this.dataFrame!.col(ViDColName);
@@ -134,9 +138,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
             this._infoView.init();
             sub.unsubscribe();
           });
-        } else if (grok.shell.v === this.mainView) {
+        } else if (grok.shell.v === this.mainView)
           this.setBaseUrl();
-        }
       } catch (e) {
         console.error(e);
       }
@@ -503,19 +506,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         });
 
         const submitButton = ui.bigButton('Submit...', () => {
-          const dialogContent = this._submitView?.render();
-          if (dialogContent) {
-            const dlg = ui.dialog('Submit');
-            dlg.add(dialogContent);
-            dlg.addButton('Save', () => {
-              this._campaign!.status = this._submitView!.getStatus();
-              this.saveCampaign();
-              dlg.close();
-            });
-            if (this.template?.submit?.fName && this.template?.submit?.package && DG.Func.find({name: this.template.submit.fName, package: this.template.submit.package})?.length > 0)
-              dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
-            dlg.show();
-          }
+          this._submitView?.render();
         });
 
         const designerFuncs = DG.Func.find({tags: [HitDesignerFunctionTag]}).filter((f) => f.outputs.length === 1 && f.outputs[0].propertyType === DG.TYPE.DATA_FRAME);

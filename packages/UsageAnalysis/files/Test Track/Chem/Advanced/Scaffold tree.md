@@ -1,6 +1,6 @@
 Open linked dataset
 
-Scaffold tree highlighting issue
+#### Scaffold tree highlighting issue
 
 1. Add a scaffold with coloring
 2. Add a SF (Structure Filter) with a substructure that intersects with the scaffold
@@ -61,17 +61,19 @@ Scaffold tree highlighting issue
   - Assign a different color to each.
   - Ensure the checkboxes next to the selected scaffolds are checked.
 3. Add Scatterplot viewer: 
-  - As Color set 'Scaffold Tree_1' column
+  - As Color set 'Scaffold Tree_1_canonical_smiles_colors' column
   - Expected result: Scatterplot should inherit colors form Scaffold Tree.
 4. Save you data as new project and new layout.
   - Reopen your saved project and layout. 
   - Expected result: Coloring in Scatterplot remains the same; it should not reset or change.
-5. Change name for 'Scaffold Tree_1' column. (e.g., to 'MyScaffoldTree')
-  - Column name changes. 
-  - The Scaffold Tree viewer name updates accordingly.Scaffold Tree`s name should be updated. 
+5. Change Scaffold`s name in Description > Title for 'Scaffold Tree_1'. (e.g., to 'MyScaffoldTree')
+  - Column name prefix changes, the ending is always **_canonical_smiles_colors** . 
+  - The Scaffold Tree viewer name updates accordingly. Scaffold Tree`s name should be updated. 
   - The Color setting in the Scatterplot viewer also updates to reflect the new column name.
+6. Open filter panel, Add filter > Scaffold tree filter. Select column dialog opens. **Only** canonical_smiles column is available to choose.
 
-### Modifying scaffold structure
+
+#### Modifying scaffold structure
 
 1. Open the file **SPGI.csv**.
 2. Navigate to **Chem > Analyze > Scaffold Tree**.  
@@ -87,7 +89,7 @@ Scaffold tree highlighting issue
    - The scaffold node is updated.  
    - The dataframe is now filtered to **332 rows**, reflecting the **332 hits** for the new structure.
 
-### Handling empty scaffold values
+#### Handling empty scaffold values
 
 1. Hover over any existing scaffold node and click **Edit scaffold** from the floating toolbar.  
 2. In the sketcher, **delete the structure**, then click **Save**.  
@@ -100,6 +102,15 @@ Scaffold tree highlighting issue
    - A new scaffold node is added to the tree.  
    - The scaffold has **0 hits**.  
    - The dataframe remains filtered to **0 rows**.
+
+#### Other tests
+
+1. Check that Magic wand icon is disabled for Scaffold tree on non-molecular data (for example, demog dataset).
+2. Check that additional color columns will be added only after first Scaffold tree coloring and be removed when deleting a tree or closing the viewer.
+3. Check the limit of 500 structure categories for Scaffold tree generation (you can use any molecule data, just remove extra rows, but do not use test datasets from top panel > Tools > Dev > Open test dataset):
+  - if we have less than 500 categories - we generate a tree;
+  - is we have 500 and more categories - magic wand icon is disabled.
+
 
 ---
 {

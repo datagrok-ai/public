@@ -17,7 +17,7 @@ export type MmpRules = {
   rules: {
     sr1: number,
     sr2: number,
-    pairs: {fs: number, ss: number, core: number}[]
+    pairs: {fs: number, ss: number, core: number, id?: number}[]
   } [],
   smilesFrags: number[]
 };
@@ -36,6 +36,7 @@ export type MmpInitData = {
     activities: Float32Array [];
     activitiesNames: string[];
     activitiesCount: number;
+    diffTypes: string[]
 };
 
 export type MmpRulesBasedData = {
@@ -43,8 +44,11 @@ export type MmpRulesBasedData = {
     toFrag: string[];
     occasions: Int32Array;
     meanDiffs: Float32Array[];
-    fragmentParentIndices: Uint32Array[]; // Array of parent molecule indices for each fragment pair
-    moleculePairIndices: [Uint32Array, Uint32Array]; // [from indices, to indices] for molecule pairs
+    // Array of parent molecule indices for each fragment pair
+    fragmentParentIndices: Uint32Array[];
+    // [from indices, to indices] indexes of molecules in pairs (in parent dataset)
+    moleculePairParentIndices: [Uint32Array, Uint32Array];
+    moleculePairIndices: Uint32Array[];
   };
 
 export type MmpAllCasesBasedData = {
@@ -60,6 +64,8 @@ export type MmpAllCasesBasedData = {
     diffs: Float32Array[];
     activityPairsIdxs: BitArray[];
     coreNums: Int32Array;
+    pairedActivities: Array<[Float32Array, Float32Array]>;
+    pairsPerActivity: Uint32Array[];
 };
 
 export type MmpGeneration = {

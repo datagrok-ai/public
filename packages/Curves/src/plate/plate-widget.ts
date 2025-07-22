@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -43,6 +44,7 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create();
+  tabsContainer: HTMLElement = ui.divH([], 'curves-plate-tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
@@ -58,12 +60,15 @@ export class PlateWidget extends DG.Widget {
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
 
-    this.tabs.root.style.width = '100%';
-    this.tabs.root.style.height = '100%';
-    this.tabs.addPane('Summary', () => this.grid.root);
-    this.root.appendChild(this.tabs.root);
+    this.tabs.root.style.flexGrow = '1';
+    // this.tabs.root.style.height = '100%';
+    //this.tabs.addPane('Summary', () => this.grid.root);
+
+    this.tabsContainer.appendChild(this.tabs.root);
+    this.root.appendChild(this.tabsContainer);
 
     this.grid.props.showHeatmapScrollbars = false;
+    this.grid.props.colHeaderHeight = 30;
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
     this.grid.onCellRendered.subscribe((args) => {
       const cell = args.cell;
@@ -96,14 +101,14 @@ export class PlateWidget extends DG.Widget {
     pw.detailsDiv = ui.divV([]);
     pw.wellDetailsDiv = div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
-    pw.grid.onCurrentCellChanged.pipe(filter(gc => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
+    pw.grid.onCurrentCellChanged.pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
       ui.empty(pw.wellDetailsDiv!);
-      const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)))
+      const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
       pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
     });
 
     pw.root.prepend(pw.colorSelector.root);
-    pw.root.append(pw.detailsDiv);
+    pw.tabsContainer.appendChild(pw.detailsDiv);
     return pw;
   }
 
@@ -116,6 +121,7 @@ export class PlateWidget extends DG.Widget {
     grid.props.showRowGridlines = true;
     grid.props.showColumnGridlines = true;
     grid.props.heatmapColors = false;
+    grid.props.colHeaderHeight = 25;
 
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
@@ -134,12 +140,13 @@ export class PlateWidget extends DG.Widget {
       this.tabs.addPane(layer, () => {
         const df = this.plate.toGridDataFrame(layer);
         const grid = DG.Viewer.heatMap(df);
-        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});   // to show row numbers in Excel format - will be done in initPlateGrid
+        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1}); // to show row numbers in Excel format - will be done in initPlateGrid
         df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
           const p = this.plate;
-          for (let i = 0; i < df.rowCount; i++)
+          for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
               p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+          }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });
         this.initPlateGrid(grid, false);
@@ -147,16 +154,18 @@ export class PlateWidget extends DG.Widget {
         return grid.root;
       });
     }
-    this.tabs.currentPane = this.tabs.getPane('Summary');
+    ui.tools.waitForElementInDom(this.tabs.root).then(() => {
+      this.tabs.currentPane = this.tabs.getPane('Summary');
+    });
 
     this.syncGrids();
 
     const t = this.plate.data;
-    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
-      ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
-      ?? (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
+    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT) ??
+      t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
+      t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
+      t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
+      (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
 
     // row header + all columns
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
@@ -172,23 +181,27 @@ export class PlateWidget extends DG.Widget {
     args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
     args.g.strokeStyle = 'grey';
     args.g.lineWidth = 1;
-    let g = args.g;
-    let x = args.bounds.x, y = args.bounds.y, w = args.bounds.width, h = args.bounds.height;
+    const g = args.g;
+    const x = args.bounds.x; const y = args.bounds.y; const w = args.bounds.width; const h = args.bounds.height;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
     const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
 
     // column header
-    if (gc.isColHeader && gc.gridColumn.idx > 0)
-      g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
-    // row header
-    else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow >= 0) {
+    const hasRowHeader = gc.grid.columns.byIndex(0)?.cellType === 'row header';
+    if (gc.isColHeader && gc.gridColumn.idx > (hasRowHeader ? 1 : 0)) {
+      g.fillText('' + (gc.gridColumn.idx - (hasRowHeader ? 1 : 0)), x + w / 2, y + h / 2);
+      args.preventDefault();
+    } else if (gc.isColHeader) {
+      args.preventDefault();
+      return;
+    } else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow >= 0) {
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
-    }
-    else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
-      const dataRow  = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
+      args.preventDefault();
+    } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
+      const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
 
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
@@ -196,17 +209,17 @@ export class PlateWidget extends DG.Widget {
       if (this._colorColumn) {
         if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
           this._colorColumn.meta.colors.setCategorical();
-        const color = this._colorColumn.isNone(dataRow) ? DG.Color.white : this._colorColumn.isNumerical
-          ? this.getColor(dataRow, isColoredByConc)
-          : this._colorColumn.meta.colors.getColor(dataRow);
+        const color = this._colorColumn.isNone(dataRow) ? DG.Color.white : this._colorColumn.isNumerical ?
+          this.getColor(dataRow, isColoredByConc) :
+          this._colorColumn.meta.colors.getColor(dataRow);
         g.fillStyle = DG.Color.toHtml(color);
         g.fill();
-        const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
-        if (outlierCol?.get(dataRow))
-          DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + w / 2, DG.Color.red, r);
       }
 
       g.stroke();
+      const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
+      if (outlierCol?.get(dataRow))
+        DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + h / 2, DG.Color.red, r * 2);
     }
 
     if (summary)

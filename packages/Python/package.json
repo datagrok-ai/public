@@ -4,24 +4,24 @@
   "version": "0.0.3",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "datagrok-api": "^1.25.0",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
+    "datagrok-tools": "^4.14.20",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "grok link",
     "debug-python": "webpack && grok publish",
     "release-python": "webpack && grok publish --release",
     "build-python": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-python-dev": "webpack && grok publish dev",
     "release-python-dev": "webpack && grok publish dev --release",
     "debug-python-public": "webpack && grok publish public",

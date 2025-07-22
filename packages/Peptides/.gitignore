@@ -33,3 +33,4 @@ src/**/*.js
 !src/wasm/kalign.js
 test-report.html
 test-console-output.log
+

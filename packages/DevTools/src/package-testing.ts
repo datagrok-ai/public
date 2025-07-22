@@ -513,7 +513,7 @@ export class TestManager extends DG.ViewBase {
       }
     }
     catch (e) {
-      grok.shell.error(`${t.test.name} imvocation error`);
+      grok.shell.error(`${t.test.name} invocation error`);
       console.error(e?.message ?? e);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);

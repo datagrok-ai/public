@@ -1,5 +1,5 @@
 import {PackageFunctions} from './package';
-
+import * as DG from 'datagrok-api/dg';
 //name: init
 //tags: init
 //output: dynamic result
@@ -25,7 +25,7 @@ export function solveEquations(problem: any, options: any) {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-//output: view result
+//output: dynamic result
 //meta.browsePath: Compute
 export async function runDiffStudio() {
   return PackageFunctions.runDiffStudio();
@@ -53,7 +53,7 @@ export async function ivpFileHandler(content: string) {
 //input: file file 
 //output: view result
 //meta.fileViewer: ivp
-export async function previewIvp(file: any) {
+export async function previewIvp(file: DG.FileInfo) {
   return PackageFunctions.previewIvp(file);
 }
 
@@ -119,6 +119,7 @@ export async function pkPdNew() {
 
 //name: PK-PD Simulation Demo
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
+//output: dynamic result
 //meta.demoPath: Compute | PK-PD Modeling
 //test: demoSimPKPD() //wait: 100 
 export async function demoSimPKPD() {
@@ -135,6 +136,7 @@ export async function Bioreactor() {
 
 //name: Bioreactor Demo
 //description: In-browser simulation of controlled fab-arm exchange mechanism
+//output: dynamic result
 //meta.demoPath: Compute | Bioreactor
 //test: demoBioreactor() //wait: 100 
 export async function demoBioreactor() {

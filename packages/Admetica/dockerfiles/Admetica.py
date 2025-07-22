@@ -11,47 +11,48 @@ import numpy as np
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 from lightning import pytorch as pl
 from lightning.pytorch.accelerators import find_usable_cuda_devices
 from io import StringIO
+from celery import Celery
+from datagrok_celery_task import DatagrokTask, Settings
 
 from constants import mean_vectors
 from chemprop import data, featurizers, models
 
 
-app = Flask(__name__)
-CORS(app)
-
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
+
+settings = Settings(log_level=logging_level)
+app = Celery(settings.celery_name, broker=settings.broker_url)
 
 # Global flag to control whether exceptions should be raised or logged
 raise_ex_flag = False  # Default is to log exceptions, not raise them
 
+
 def is_malformed(smiles):
-  with tempfile.NamedTemporaryFile(mode='w+', delete=True) as tmp_file:
-    stderr_fileno = sys.stderr.fileno()
-    stderr_backup = os.dup(stderr_fileno)
+    with tempfile.NamedTemporaryFile(mode='w+', delete=True) as tmp_file:
+        stderr_fd = 2  # file descriptor for stderr
+        stderr_backup = os.dup(stderr_fd)
 
-    try:
-      os.dup2(tmp_file.fileno(), stderr_fileno)
-      mol = Chem.MolFromSmiles(smiles)
-      os.dup2(stderr_backup, stderr_fileno)
-    finally:
-      os.close(stderr_backup)
-    
-    tmp_file.seek(0)
-    warning_msg = tmp_file.read().strip()
+        try:
+            os.dup2(tmp_file.fileno(), stderr_fd)
+            mol = Chem.MolFromSmiles(smiles)
+        finally:
+            os.dup2(stderr_backup, stderr_fd)
+            os.close(stderr_backup)
 
-  if mol is None or warning_msg:
-    print(f"Invalid SMILES detected: {smiles}. Warning: {warning_msg}")
-    if raise_ex_flag:
-      raise ValueError(f"Invalid SMILES string: {smiles}. Warning: {warning_msg}")
-    return True
+        tmp_file.seek(0)
+        warning_msg = tmp_file.read().strip()
 
-  return False
+    if mol is None or warning_msg:
+        print(f"Invalid SMILES detected: {smiles}. Warning: {warning_msg}")
+        if raise_ex_flag:
+            raise ValueError(f"Invalid SMILES string: {smiles}. Warning: {warning_msg}")
+        return True
+
+    return False
 
 def convert_to_smiles(molecule):
   if "M  END" in molecule:
@@ -161,12 +162,12 @@ def predict_for_model(model, df_test, add_probability):
     df[f'Y_{model}_probability'] = probabilities
   return df
 
-def predict(data, models, add_probability, batch_size=1000):
+def predict(data: str, models: str, add_probability: bool, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
 
   df_test = pd.read_csv(
-    StringIO(data.decode('utf-8')),
+    StringIO(data),
     skip_blank_lines=False,
     keep_default_na=False,
     na_values=['']
@@ -184,44 +185,18 @@ def predict(data, models, add_probability, batch_size=1000):
     result_dfs.append(model_result_df)
 
   final_df = pd.concat(result_dfs, axis=1).loc[:, ~pd.concat(result_dfs, axis=1).columns.duplicated()]
-  return final_df.to_csv(index=False)
+  return final_df
 
-@app.errorhandler(Exception)
-def handle_exception(e):
-  logging.error(f"Unhandled Exception: {str(e)}")
-  response = {
-    "success": False,
-    "error": str(e),
-    "result": None
-  }
-  return jsonify(response), 500
 
-@app.route('/predict', methods=['POST'])
-def admetica_predict():
+#name: runAdmetica
+#meta.cache: all
+#meta.cache.invalidateOn: 0 0 1 * *
+#input: string csv
+#input: string models
+#input: bool raiseException = false
+#output: dataframe result
+@app.task(name='run_admetica', bind=True, base=DatagrokTask)
+def run_admetica(self, csv: str, models: str, raiseException: bool=False) -> pd.DataFrame:
   global raise_ex_flag
-  
-  try:
-    raise_ex_flag = request.args.get('raiseException', 'false').lower() == 'true'
-    raw_data = request.data
-    models = request.args.get('models')
-    add_probability = False
-    start = time()
-    response_data = predict(raw_data, models, add_probability)
-    logging.debug(f'Time required: {time() - start}')
-    
-    return jsonify({
-      "success": True,
-      "error": None,
-      "result": response_data
-    }), 200
-
-  except Exception as e:
-    logging.error(f"Error in prediction: {str(e)}")
-    return jsonify({
-      "success": False,
-      "error": str(e),
-      "result": None
-    }), 500
-
-if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8000, debug=False)
+  raise_ex_flag = raiseException
+  return predict(csv, models, False)

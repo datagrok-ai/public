@@ -3,11 +3,11 @@
 --connection: System:Datagrok
 --input: string instanceFilter = '' {choices: ['', 'dev', 'release', 'public']}
 --input: int lastBuildsNum = 5
+--input: string versionFilter {nullable: true}
 --input: string packageFilter {nullable: true}
 --input: bool showNotRun = false {optional: true}
 --input: bool showBenchmarks = false {optional: true}
 --input: bool showNotCiCd = false {optional: true}
---input: string versionFilter {nullable: true}
 
 WITH last_builds AS (
     select name, build_date, commit

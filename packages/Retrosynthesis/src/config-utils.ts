@@ -19,13 +19,12 @@ export interface UserRetrosynthesisConfig {
 }
 
 export interface RetrosynthesisPolicies {
-  expansion: string[],
-  filter: string[],
-  stock: string[],
+  expansion: {[key: string]: any},
+  filter: {[key: string]: any},
+  stock: {[key: string]: any},
 }
 
-export let currentUserConfig: UserRetrosynthesisConfig =
-  {configName: DEFAULT_CONFIG_NAME, expansion: '', filter: '', stock: ''};
+export let currentUserConfig: UserRetrosynthesisConfig | null = null;
 
 export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElement {
   const settings = ui.icons.settings(async () => {
@@ -44,48 +43,58 @@ export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElem
           //expansion policy
           if (Object.keys(configJson.expansion).length) {
             const expansionChoice = ui.input.choice('expansion', {
-              value: first ? currentUserConfig.expansion : '',
+              value: first ? currentUserConfig!.expansion : '',
               items: [''].concat(Object.keys(configJson.expansion)),
               onValueChanged: () => {
                 newConfig.expansion = expansionChoice.value!;
               },
             });
+            if (!first)
+              newConfig.expansion = '';
             paramsDiv.append(expansionChoice.root);
           }
 
           //stock
           if (Object.keys(configJson.stock).length) {
             const stockChoice = ui.input.choice('stock', {
-              value: first ? currentUserConfig.stock : '',
+              value: first ? currentUserConfig!.stock : '',
               items: [''].concat(Object.keys(configJson.stock)),
               onValueChanged: () => {
                 newConfig.stock = stockChoice.value!;
               },
             });
+            if (!first)
+              newConfig.stock = '';
             paramsDiv.append(stockChoice.root);
           }
 
           //filter policy
           if (Object.keys(configJson.filter).length) {
             const filterChoice = ui.input.choice('filter', {
-              value: first ? currentUserConfig.filter : '',
+              value: first ? currentUserConfig!.filter : '',
               items: [''].concat(Object.keys(configJson.filter)),
               onValueChanged: () => {
                 newConfig.filter = filterChoice.value!;
               },
             });
+            if (!first)
+              newConfig.filter = '';
             paramsDiv.append(filterChoice.root);
           }
         }
+      } else {
+        newConfig.expansion = '';
+        newConfig.stock = '';
+        newConfig.filter = '';
       }
       policiesDiv.append(paramsDiv);
     };
 
     const configFolderInput = ui.input.choice('Config', {
-      value: currentUserConfig.configName,
+      value: currentUserConfig!.configName,
       items: configChoices,
       onValueChanged: async () => {
-        currentUserConfig.configName = configFolderInput.value!;
+        newConfig!.configName = configFolderInput.value!;
         updateAdditionalParams();
       },
     });
@@ -94,7 +103,9 @@ export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElem
     const dlg = ui.dialog('Settings')
       .add(ui.divV([configFolderInput.root, policiesDiv]))
       .onOK(() => {
-        if (Object.keys(currentUserConfig).some((key) => (currentUserConfig as any)[key] !== (newConfig as any)[key])) {
+        if (Object.keys(currentUserConfig!)
+          .some((key) => (currentUserConfig as any)[key] !== (newConfig as any)[key])) {
+          currentUserConfig = newConfig;
           grok.userSettings.add(STORAGE_NAME, KEY, JSON.stringify(newConfig));
           grok.shell.info(`Current config updated`);
           updateRetrosynthesisWidget(currentMolecule, widget);
@@ -142,6 +153,12 @@ export async function updateConfigConsideringConfigYml(storedConfig: UserRetrosy
   availableConfigs: string[]): Promise<{config: UserRetrosynthesisConfig, error: string}> {
   const updatedConfig: UserRetrosynthesisConfig =
     {configName: DEFAULT_CONFIG_NAME, expansion: '', filter: '', stock: ''};
+  if (storedConfig.configName === DEFAULT_CONFIG_NAME) {
+    return {
+      config: updatedConfig,
+      error: '',
+    };
+  }
   if (!availableConfigs.includes(storedConfig.configName)) {
     return {
       config: updatedConfig,
@@ -153,17 +170,17 @@ export async function updateConfigConsideringConfigYml(storedConfig: UserRetrosy
   try {
     let error = '';
     const configJson = await getCustomConfigJson(storedConfig.configName);
-    if (storedConfig.expansion && !configJson?.expansion.includes(storedConfig.expansion))
+    if (storedConfig.expansion && !Object.keys(configJson!.expansion).includes(storedConfig.expansion))
       error = `Expansion policy ${storedConfig.expansion} not found in config.yml`;
     else
       updatedConfig.expansion = storedConfig.expansion;
 
-    if (storedConfig.stock && !configJson?.stock.includes(storedConfig.stock))
+    if (storedConfig.stock && !Object.keys(configJson!.stock).includes(storedConfig.stock))
       error = `Stock ${storedConfig.stock} not found in config.yml`;
     else
       updatedConfig.stock = storedConfig.stock;
 
-    if (storedConfig.filter && !configJson?.filter.includes(storedConfig.filter))
+    if (storedConfig.filter && !Object.keys(configJson!.filter).includes(storedConfig.filter))
       error = `Filter policy ${storedConfig.filter} not found in config.yml`;
     else
       updatedConfig.filter = storedConfig.filter;
@@ -180,7 +197,7 @@ export async function updateConfigConsideringConfigYml(storedConfig: UserRetrosy
   }
 }
 
-export async function getCustomConfigJson(configName: string): Promise< RetrosynthesisPolicies| null> {
+export async function getCustomConfigJson(configName: string): Promise<RetrosynthesisPolicies| null> {
   let res = null;
   try {
     const fileContent = await grok.dapi.files

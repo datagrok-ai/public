@@ -1,0 +1,52 @@
+{
+  "name": "benchlinglink",
+  "friendlyName": "BenchlingLink",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "^1.21.3",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "^4.14.20",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "style-loader": "^4.0.0",
+    "css-loader": "^7.1.2"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-benchlinglink": "webpack && grok publish",
+    "release-benchlinglink": "webpack && grok publish --release",
+    "build-benchlinglink": "webpack",
+    "build": "grok api && grok check && webpack",
+    "debug-benchlinglink-dev": "webpack && grok publish dev",
+    "release-benchlinglink-dev": "webpack && grok publish dev --release",
+    "debug-benchlinglink-public": "webpack && grok publish public",
+    "release-benchlinglink-public": "webpack && grok publish public --release",
+    "debug-benchlinglink-test": "webpack && grok publish test",
+    "release-benchlinglink-test": "webpack && grok publish test --release",
+    "debug-benchlinglink-sandbox": "webpack && grok publish sandbox",
+    "release-benchlinglink-sandbox": "webpack && grok publish sandbox --release",
+    "debug-benchlinglink-release": "webpack && grok publish release",
+    "release-benchlinglink-release": "webpack && grok publish release --release",
+    "debug-benchlinglink-release2": "webpack && grok publish release2",
+    "release-benchlinglink-release2": "webpack && grok publish release2 --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/BenchlingLink"
+  }
+}

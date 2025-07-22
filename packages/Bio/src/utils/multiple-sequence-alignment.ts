@@ -1,3 +1,5 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -44,8 +46,8 @@ function _stringsToFasta(sequences: string[]): string {
  * @param {number | undefined} terminalGap Terminal gap penalty.
  * @return {Promise<DG.Column>} Aligned sequences.
  */
-export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
-  clustersCol: DG.Column | null = null, gapOpen?: number, gapExtend?: number, terminalGap?: number,
+export async function runKalign(table: DG.DataFrame, srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
+  clustersCol: DG.Column | null = null, gapOpen?: number, gapExtend?: number, terminalGap?: number, onlySelected?: boolean
 ): Promise<DG.Column> {
   let sequences: string[] = srcCol.toList();
 
@@ -63,10 +65,21 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   const clustersColData = clustersCol.getRawData();
   const fastaSequences: string[][] = new Array(clustersColCategories.length);
   const clusterIndexes: number[][] = new Array(clustersColCategories.length);
-  for (let rowIdx = 0; rowIdx < sequencesLength; ++rowIdx) {
-    const clusterCategoryIdx = clustersColData[rowIdx];
-    (fastaSequences[clusterCategoryIdx] ??= []).push(sequences[rowIdx]);
-    (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIdx);
+  if (!onlySelected) {
+    for (let rowIdx = 0; rowIdx < sequencesLength; ++rowIdx) {
+      const clusterCategoryIdx = clustersColData[rowIdx];
+      (fastaSequences[clusterCategoryIdx] ??= []).push(sequences[rowIdx]);
+      (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIdx);
+    }
+  } else {
+    const selection = table.selection;
+    if (selection.length === 0)
+      throw new Error('No selected rows in the table.');
+    for (let rowIdx = -1; (rowIdx = selection.findNext(rowIdx, true)) !== -1;) {
+      const clusterCategoryIdx = clustersColData[rowIdx];
+      (fastaSequences[clusterCategoryIdx] ??= []).push(sequences[rowIdx]);
+      (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIdx);
+    }
   }
   checkForSingleSeqClusters(clusterIndexes, clustersColCategories);
 
@@ -78,6 +91,8 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
 
   for (let clusterIdx = 0; clusterIdx < clustersColCategories.length; ++clusterIdx) {
     const clusterSequences = fastaSequences[clusterIdx];
+    if (!clusterSequences || clusterSequences.length === 0)
+      continue; // skip empty clusters
     const fasta = _stringsToFasta(clusterSequences);
 
     await CLI.fs.writeFile(fastaInputFilename, fasta);
@@ -122,7 +137,7 @@ export async function testMSAEnoughMemory(col: DG.Column<string>): Promise<void>
 
   for (let i = delta; i < sequencesCount; i += delta) {
     try {
-      await runKalign(DG.Column.fromStrings(col.name, col.toList().slice(0, Math.round(i))));
+      await runKalign(col.dataFrame, DG.Column.fromStrings(col.name, col.toList().slice(0, Math.round(i))));
       console.log(`runKalign succeeded on ${i}`);
     } catch (error) {
       console.log(`runKalign failed on ${i} with '${error}'`);

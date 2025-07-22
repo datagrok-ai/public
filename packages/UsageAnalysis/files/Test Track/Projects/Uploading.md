@@ -2,6 +2,7 @@
     - Query results (with and without data sync)
     - The result of the Get Top 100 query  (with and without data sync)
     - Tables from App Data (with and without data sync)
+    - Tables from Spaces (with and without data sync)
     - CSV files from the storage larger than 20MB (with and without data sync)
     - Tables from the local host
 2. On the Menu Ribbon, click **Save**. A dialog opens.

@@ -8,7 +8,7 @@ import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree,
 import '../../../css/hit-triage.css';
 import {funcTypeNames, HTQueryPrefix, HTScriptPrefix} from '../consts';
 import {HitAppBase} from '../hit-app-base';
-import { FunctionOrdering, getReorderingInput, getSavedFunctionOrdering } from '../utils';
+import {FunctionOrdering, getFuncPackageNameSafe, getReorderingInput, getSavedFunctionOrdering} from '../utils';
 
 export async function chemFunctionsDialog(app: HitAppBase<any>,
   onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
@@ -48,35 +48,35 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   const descriptorsGroupHost = ui.wait(async () => {
     try {
       // tree groups
-        const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
-        descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
-    
-        function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
-          const res = treeNode.group(name, null, false);
-          res.enableCheckBox(false);
-          return res;
-        };
-    
-        // const descriptorsGroup = createTreeGroup('Descriptors', tree);
-        const keys = Object.keys(descriptorsTree);
-        const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
-        for (const groupName of keys) {
-          const group = createTreeGroup(groupName, descriptorsGroup);
-    
-          for (const descriptor of descriptorsTree[groupName].descriptors) {
-            const item = group.item(descriptor.name, descriptor);
-            descriptorItems.push(item);
-            item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
-          }
-        };
-        return descriptorsGroup.root;
-      } catch (e) {
-        console.error(e);
-      }
-      return ui.divText('Failed to load descriptors');
-  })
+      const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
+      descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
+
+      function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
+        const res = treeNode.group(name, null, false);
+        res.enableCheckBox(false);
+        return res;
+      };
+
+      // const descriptorsGroup = createTreeGroup('Descriptors', tree);
+      const keys = Object.keys(descriptorsTree);
+      const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
+      for (const groupName of keys) {
+        const group = createTreeGroup(groupName, descriptorsGroup);
+
+        for (const descriptor of descriptorsTree[groupName].descriptors) {
+          const item = group.item(descriptor.name, descriptor);
+          descriptorItems.push(item);
+          item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
+        }
+      };
+      return descriptorsGroup.root;
+    } catch (e) {
+      console.error(e);
+    }
+    return ui.divText('Failed to load descriptors');
+  });
   descriptorsGroupHost.classList.add('oy-scroll');
-  
+
   const descriptorsName = 'Descriptors';
   const funcNamesMap: {[key: string]: string} = {[descriptorsName]: descriptorsName};
   // if compute is in dialog form, we need to show all the functions
@@ -119,7 +119,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = (template?.compute?.functions?.some(
         (f) => func.func.type === funcTypeNames.function &&
-        f.name === func.func.name && f.package === func.func.package?.name) ||
+        f.name === func.func.name && f.package === getFuncPackageNameSafe(func.func)) ||
           template?.compute?.scripts?.some((s) => s.id === f.id) ||
           template?.compute?.queries?.some((s) => s.id === f.id)) ?? false;
     } catch (e) {
@@ -135,7 +135,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   tc.root.style.minWidth = '350px';
   host.appendChild(tc.root);
   // add checkboxes to each hader
-  function addCheckboxesToPaneHeaders () {
+  function addCheckboxesToPaneHeaders() {
     tc.panes.forEach((pane)=> {
       const functionCheck =
         ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
@@ -156,16 +156,15 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     let actOrder = order.order ?? Object.keys(tabControlArgs);
     if (actOrder.length === 0)
       actOrder = Object.keys(tabControlArgs);
-    
+
     actOrder.forEach((n) => {
       if (tabControlArgs[n])
         tc.addPane(n, () => tabControlArgs[n]);
     });
     // after adding ordered panes, we also need to add new functions, not included in the order
     Object.keys(tabControlArgs).forEach((n) => {
-      if (!actOrder.includes(n) && tabControlArgs[n] && !(order.hidden ?? []).includes(n)) {
+      if (!actOrder.includes(n) && tabControlArgs[n] && !(order.hidden ?? []).includes(n))
         tc.addPane(n, () => tabControlArgs[n]);
-      }
     });
     // make sure that hidden functions are not checked;
     (order.hidden ?? []).forEach((n) => {

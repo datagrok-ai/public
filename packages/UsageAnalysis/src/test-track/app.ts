@@ -485,7 +485,7 @@ export class TestTrack extends DG.ViewBase {
       this.UpdateReportAccordingTestTrackSelection(node);
       this.addOnReportSubscription()
 
-      this.testCaseDiv.append(node.value.text);
+      this.testCaseDiv.append(node.value.text.cloneNode(true));
       this.edit!.disabled = false;
       node.value.history.style.display = 'flex';
       if (node.value.history.classList.contains('processed')) return;

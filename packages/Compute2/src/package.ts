@@ -129,7 +129,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   if (instanceConfig)
     instanceConfig = Vue.markRaw(instanceConfig);
 
-  const { resolve } = call.aux;
+  const {resolve} = call.aux;
 
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
   view.root.classList.remove('ui-panel');
@@ -161,7 +161,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
 export async function StartWorkflow(nqName: string, version: string, instanceConfig?: PipelineInstanceConfig) {
   const func = DG.Func.byName(nqName);
   // @ts-ignore-next-line
-  const { promise, resolve } = Promise.withResolvers();
+  const {promise, resolve} = Promise.withResolvers();
   const call = func.prepare({version});
   call.options.instanceConfig = serialize(instanceConfig);
   call.aux.resolve = resolve;

@@ -7,10 +7,11 @@
 7. Click the count number (not the checkbox) in the filter - **Corresponding rows are selected in the grid**
 7. Apply the combined filter
 9. Apply other filters (categorical, numerical)
+12. Save/apply the layout
 10. Remove all filters
 11. Close the **Filter Panel**
 12. Open the **Filter Panel** - the Combined Boolean filter should be added automatically
-12. Save/apply the layout
+
 
 ---
 {

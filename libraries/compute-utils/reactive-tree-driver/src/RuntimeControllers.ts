@@ -24,7 +24,7 @@ export interface IRuntimeValidatorController extends IControllerBase {
 }
 
 export interface IRuntimeMetaController extends IControllerBase {
-  setViewMeta(name: string, meta: any): void;
+  setViewMeta(name: string, meta: Record<string, any>): void;
 }
 
 export interface INameSelectorController extends IControllerBase {

@@ -537,7 +537,7 @@ export class DiffStudio {
         this.tabControl.root,
         DG.DOCK_TYPE.LEFT,
         null,
-        undefined,
+        TITLE.CONTROLS,
         this.uiOpts.inputsTabDockRatio,
       );
 
@@ -1242,7 +1242,7 @@ export class DiffStudio {
   private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.PropertyOptions = {
+      const options: DG.IProperty = {
         name: name,
         defaultValue: modelInput.value,
         type: DG.TYPE.FLOAT,
@@ -1322,10 +1322,10 @@ export class DiffStudio {
     this.topCategory = null;
     this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
-    let options: DG.PropertyOptions;
+    let options: DG.IProperty;
 
     /** Pull input to appropriate category & add tooltip */
-    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
+    const categorizeInput = (options: DG.IProperty, input: DG.InputBase) => {
       const category = options.category;
 
       if (category === undefined)

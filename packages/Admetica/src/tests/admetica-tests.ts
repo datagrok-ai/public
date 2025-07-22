@@ -6,8 +6,13 @@ import * as DG from 'datagrok-api/dg';
 import {awaitCheck, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 
-import { runAdmeticaFunc, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {
+  performChemicalPropertyPredictions,
+  getQueryParams,
+  properties,
+  setProperties,
+  runAdmeticaFunc
+} from '../utils/admetica-utils';
 
 export const CONTAINER_TIMEOUT = 900000;
 
@@ -30,7 +35,7 @@ category('Admetica', () => {
     await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionResults = await fetchWrapper(() => runAdmeticaFunc(smiles, 'PPBR,VDss', false));
+    const distributionResults = await runAdmeticaFunc(smiles, 'PPBR,VDss', false);
     expect(distributionResults != null, true);
   }, {timeout: CONTAINER_TIMEOUT + 25000});
 
@@ -134,7 +139,7 @@ category('Admetica', () => {
   }, {timeout: CONTAINER_TIMEOUT + 1000000, benchmark: true});
 });
 
-async function runOnce(func: (...args: any[]) => Promise<string | null>, ...args: any[]) {
+async function runOnce(func: (...args: any[]) => Promise<DG.DataFrame | null>, ...args: any[]) {
   return await func(...args);
 }
 

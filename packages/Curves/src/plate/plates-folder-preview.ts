@@ -40,7 +40,7 @@ export async function getPlatesFolderPreview(files: DG.FileInfo[]): Promise<DG.W
 
   for (const xlsxFile of xlsxFiles) {
     try {
-      const plate = await Plate.fromExcelFileInfo(xlsxFile);
+      const plate = await Plate.fromExcelFile(xlsxFile);
       const pw = PlateDrcAnalysis.analysisView(plate, {submitAction: () => {grok.shell.info('Plate Submitted')}});
       const v = DG.View.fromRoot(pw.root);
       v.name = xlsxFile.name.substring(0, xlsxFile.name.length - 5);

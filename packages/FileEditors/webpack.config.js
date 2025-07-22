@@ -7,16 +7,21 @@ module.exports = {
   },
   mode: 'development',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts'
+    test: {filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts'},
+    rtf: {filename: 'package-rtf.js',
+      library: {type: 'var', name: `${packageName}_rtf`},
+      import: './vendor/package-rtf.ts'},
+    package: './src/package.ts',
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' },
-      { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
+      {test: /\.tsx?$/, loader: 'ts-loader'},
+      {test: /\.css$/i, use: ['style-loader', 'css-loader']},
     ],
   },
   devtool: 'source-map',
@@ -32,6 +37,7 @@ module.exports = {
     'wu': 'wu',
     'exceljs': 'ExcelJS',
     'html2canvas': 'html2canvas',
+    'package-rtf.js': 'RTFJS',
   },
   output: {
     filename: '[name].js',

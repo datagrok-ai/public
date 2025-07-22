@@ -5,9 +5,28 @@ import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
 import {DEMO_MOLECULE} from './const';
 import {updateRetrosynthesisWidget} from './utils';
+import {Subject} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 export const _package = new DG.Package();
 
+const moleculeStream$ = new Subject<string>();
+let currentWidget: DG.Widget | null = null;
+
+moleculeStream$.pipe(
+  debounceTime(2000),
+).subscribe({
+  next: (molecule: string) => {
+    if (currentWidget)
+      updateRetrosynthesisWidget(molecule, currentWidget);
+  },
+  error: (error: any) => {
+    if (currentWidget) {
+      ui.empty(currentWidget.root);
+      currentWidget.root.append(ui.divText(error?.message ?? 'An error occurred'));
+    }
+  },
+});
 
 //name: Chemistry | Retrosynthesis
 //tags: panel, chem, widgets
@@ -16,11 +35,13 @@ export const _package = new DG.Package();
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function retroSynthesisPath(molecule: string): DG.Widget {
-  const w = new DG.Widget(ui.div('', 'retrosynthesis-widget-div'));
-  updateRetrosynthesisWidget(molecule, w);
-  return w;
+  if (!currentWidget)
+    currentWidget = new DG.Widget(ui.div('', 'retrosynthesis-widget-div'));
+  ui.setUpdateIndicator(currentWidget.root, true, 'Calculating paths...');
+  // Emit the new molecule value to the stream
+  moleculeStream$.next(molecule);
+  return currentWidget;
 }
-
 
 //name: retrosynthesisTopMenu
 export function retrosynthesisTopMenu(): void {
@@ -36,7 +57,7 @@ export async function retrosynthesisDemo(): Promise<void> {
   view.name = 'Retrosynthesis Demo';
 
   const sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
-  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5')
+  sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5');
   const retrosynthesisDiv = ui.div('', 'retrosynthesis-demo');
 
   const container = ui.divH([

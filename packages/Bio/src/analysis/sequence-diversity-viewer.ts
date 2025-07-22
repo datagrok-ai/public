@@ -13,12 +13,16 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
+const MAX_SAMPLE_SIZE = 10000;
+
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
-  diverseColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
+  diverseColumnLabel: string | null;
 
   renderMolIds: number[] | null = null;
   columnNames = [];
   computeCompleted = new Subject<boolean>();
+
+  private sampledIndices: number[] | null = null;
 
   constructor(
     private readonly seqHelper: ISeqHelper,
@@ -57,17 +61,88 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByMM() {
-    const encodedSequences =
-      (await getEncodedSeqSpaceCol(this.targetColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
+    const totalLength = this.targetColumn!.length;
+    let workingIndices: number[];
+
+    // Determine if we need to sample the data
+    if (this.requiresSampling && totalLength > MAX_SAMPLE_SIZE) {
+      workingIndices = this.createRandomSample(totalLength, MAX_SAMPLE_SIZE);
+      this.sampledIndices = workingIndices;
+    } else {
+      workingIndices = Array.from({length: totalLength}, (_, i) => i);
+      this.sampledIndices = null;
+    }
+
+    const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
+
+    // Call with individual parameters instead of params object
+    const encodedResult = await getEncodedSeqSpaceCol(
+      this.targetColumn!,
+      distanceFunction,
+      this.fingerprint,
+      this.gapOpen,
+      this.gapExtend
+    );
+    const fullEncodedSequences = encodedResult.seqList;
+    const options = encodedResult.options;
+
+    // Extract only the sequences we need for the working set
+    const workingEncodedSequences = workingIndices.map((idx) => fullEncodedSequences[idx]);
+
     const distanceMatrixService = new DistanceMatrixService(true, false);
-    const distanceMatrixData = await distanceMatrixService.calc(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN);
+    const distanceMatrixData = await distanceMatrixService.calc(
+      workingEncodedSequences,
+      distanceFunction,
+      true, // normalize
+      options
+    );
     distanceMatrixService.terminate();
-    const len = this.targetColumn!.length;
-    const linearizeFunc = dmLinearIndex(len);
-    this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),
+
+    const workingLength = workingIndices.length;
+    const linearizeFunc = dmLinearIndex(workingLength);
+
+    const diverseIndicesInWorkingSet = getDiverseSubset(
+      workingLength,
+      Math.min(workingLength, this.limit),
       (i1: number, i2: number) => {
-        return this.targetColumn!.isNone(i1) || this.targetColumn!.isNone(i2) ? 0 :
-          distanceMatrixData[linearizeFunc(i1, i2)];
-      });
+        return distanceMatrixData[linearizeFunc(i1, i2)];
+      }
+    );
+
+    // Map back to original indices
+    this.renderMolIds = diverseIndicesInWorkingSet.map((workingIndex) => workingIndices[workingIndex]);
   }
+
+  private createRandomSample(totalLength: number, sampleSize: number): number[] {
+    const validIndices: number[] = [];
+    for (let i = 0; i < totalLength; i++) {
+      if (!this.targetColumn!.isNone(i))
+        validIndices.push(i);
+    }
+
+    if (validIndices.length <= sampleSize)
+      return validIndices;
+
+    for (let i = validIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = validIndices[i];
+      validIndices[i] = validIndices[j];
+      validIndices[j] = temp;
+    }
+
+    return validIndices.slice(0, sampleSize);
+  }
+
+  // // Helper method to get information about sampling (useful for debugging/info)
+  // getSamplingInfo(): {isSampled: boolean, originalSize?: number, sampleSize?: number, sampledIndices?: number[]} {
+  //   if (this.sampledIndices) {
+  //     return {
+  //       isSampled: true,
+  //       originalSize: this.targetColumn?.length,
+  //       sampleSize: this.sampledIndices.length,
+  //       sampledIndices: this.sampledIndices
+  //     };
+  //   }
+  //   return {isSampled: false};
+  // }
 }

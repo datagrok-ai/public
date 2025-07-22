@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
 import {category, expect, test, timeout} from '@datagrok-libraries/utils/src/test';
+import {IVP, getIVP, getScriptLines, getScriptParams} from '../scripting-tools';
 
 import * as DSL from '@datagrok/diff-grok';
 
@@ -66,10 +67,10 @@ const testPipelineTemplate = (modelName: string, problem: string) => {
 
     try {
       // Apply computations via the package funcs
-      ivp = DSL.getIVP(problem);
-      code = DSL.getScriptLines(ivp).join('\n');
+      ivp = getIVP(problem);
+      code = getScriptLines(ivp).join('\n');
       script = DG.Script.create(code);
-      params = DSL.getScriptParams(ivp);
+      params = getScriptParams(ivp);
       call = script.prepare(params);
       await call.call();
       solutionDf = call.outputs[DF_NAME];

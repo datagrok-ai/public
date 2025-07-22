@@ -42,7 +42,7 @@ export const TreeWizardApp = Vue.defineComponent({
         resolve.value(data);
       if (currentView.value)
         currentView.value.close();
-    }
+    };
     return () => (
       <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} showReturn={!!resolve.value} onReturn={onReturn}/>
     );

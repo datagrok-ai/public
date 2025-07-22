@@ -13,29 +13,30 @@
     "directory": "packages/DrugBank"
   },
   "dependencies": {
-    "datagrok-api": "^1.25.0",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
-    "openchemlib": "^8.15.0",
-    "@datagrok-libraries/utils": "^4.5.7"
+    "openchemlib": "^8.15.0"
   },
   "devDependencies": {
+    "@datagrok/chem": "^1.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.20",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "@datagrok/chem": "^1.13.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "install-dependencies": "npm install",
     "debug-drugbank": "grok publish",
     "release-drugbank": "grok publish --release",
     "build-drugbank": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-drugbank-dev": "grok publish dev",
     "release-drugbank-dev": "grok publish dev --release",
     "debug-drugbank-local": "grok publish local",

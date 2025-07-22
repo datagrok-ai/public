@@ -496,6 +496,16 @@
           },
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "value": {
+            "payload": "meta from link6"
+          },
+          "hasValue": true
+        }
       }
     ]
   },

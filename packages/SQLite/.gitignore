@@ -33,3 +33,4 @@ src/**/*.js
 !src/sql-wasm.js
 test-report.html
 test-console-output.log
+

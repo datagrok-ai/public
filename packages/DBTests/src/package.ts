@@ -11,7 +11,7 @@ export function info() {
 }
 
 //name: expectTable
-//shortName: expectTable
+//name: expectTable
 //input: dataframe actual
 //input: dataframe expected
 //output: bool result

@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, PropertyOptions} from "./entities";
+import {Func, Property, IProperty, Entity, Group, ProgressIndicator} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -314,7 +314,7 @@ export class Widget<TSettings = any> {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & IProperty | null = null): any {
     const fieldName = options?.fieldName ?? propertyName;
 
     let obj = this;
@@ -351,6 +351,17 @@ export class Widget<TSettings = any> {
   // }
 }
 
+/**
+ * Base class for widgets or views that serve as editors for `FuncCall`. Extend it and use it in editor functions.
+ * Editor functions should return an implementation of this class for the platform to handle validation correctly.
+ * An editor function can be attached to another function using the `editor` tag: `editor: Plugin:EditorFuncName`.
+ */
+export abstract class FuncCallEditor extends Widget {
+  abstract get isValid(): boolean;
+  abstract get onInputChanged(): Observable<any>;
+
+  inputFor?(propertyName: string): InputBase;
+}
 
 /** Base class for DataFrame-bound filtering controls.
  * Supports collaborative filtering by efficiently working together with
@@ -872,6 +883,11 @@ export class ToolboxPage {
   static getOpenDialogs(): Dialog[] {
     return api.grok_Dialog_GetOpenDialogs();
   }
+
+  /** Initializes the dialog properties from local storage. */
+  initFromLocalStorage(): void {
+    api.grok_Dialog_InitFromLocalStorage(this.dart);
+  }
 }
 
 
@@ -1159,6 +1175,10 @@ export class Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
   }
 
+  hide(): void {
+    api.grok_Menu_Hide(this.dart);
+  }
+
   /** Binds the menu to the specified {@link options.element} */
   bind(element: HTMLElement): Menu {
     element.oncontextmenu = (ev) => {
@@ -1375,6 +1395,15 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+
+  /**
+   * Performs immediate validation of the input and returns the result.
+   *
+   * @returns {boolean} True if the input is valid; otherwise, false.
+   */
+  validate(): boolean {
+    return api.grok_InputBase_Validate(this.dart);
+  }
 }
 
 
@@ -1397,6 +1426,7 @@ export class InputForm extends DartWrapper {
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
+    inputs = inputs.filter((input) => input != null);
     return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
   }
 
@@ -1478,49 +1508,6 @@ export class ChoiceInput<T> extends InputBase<T> {
 
   get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
-}
-
-
-export class ProgressIndicator {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static create() {
-    return toJs(api.grok_ProgressIndicator_Create());
-  }
-
-  get percent(): number {
-    return api.grok_ProgressIndicator_Get_Percent(this.dart);
-  }
-
-  /** Flag indicating whether the operation was canceled by the user. */
-  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
-
-  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
-  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
-
-  update(percent: number, description: string): void {
-    api.grok_ProgressIndicator_Update(this.dart, percent, description);
-  }
-
-  log(line: string): void {
-    api.grok_ProgressIndicator_Log(this.dart, line);
-  }
-
-  get onProgressUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Updated(this.dart));
-  }
-
-  get onLogUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Log_Updated(this.dart));
-  }
-
-  get onCanceled(): Observable<any> {
-    return observeStream(api.grok_Progress_Canceled(this.dart));
-  }
 }
 
 
@@ -1648,7 +1635,7 @@ export class TreeViewNode<T = any> {
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v)};
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
@@ -1717,6 +1704,18 @@ export class TreeViewGroup extends TreeViewNode {
   /** Gets the node's children */
   get children(): TreeViewNode[] {
     return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
+  }
+
+  /** Removes all children (going down recursively) that satisfy the predicate */
+  removeChildrenWhere(predicate: (node: TreeViewNode) => boolean): void {
+    for (const child of this.children) {
+      if (predicate(child)) {
+        child.remove();
+      }
+      else if (child instanceof TreeViewGroup) {
+        child.removeChildrenWhere(predicate);
+      }
+    }
   }
 
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
@@ -1831,8 +1830,7 @@ export class HtmlTable extends DartWidget {
     super(dart);
   }
 
-  /** Creates a visual table based on [items], [renderer], and [columnNames]
-   * @returns {HtmlTable} */
+  /** Creates a visual table based on [items], [renderer], and [columnNames] */
   static create(items: any, renderer: any, columnNames: any = null): HtmlTable {
     return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames));
   }
@@ -2355,4 +2353,18 @@ export class FunctionsWidget extends DartWidget {
 
   get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
   get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
+}
+
+export class Favorites extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async add(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Add(entity.dart, group?.dart);
+  }
+
+  static async remove(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Remove(entity.dart, group?.dart);
+  }
 }

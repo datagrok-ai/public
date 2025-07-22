@@ -10,7 +10,7 @@
      - `SEX` `equals` `F`
      - `RACE` `contains` `an`
    - **Datetime columns:**
-     - `STARTED` `after` `2005-01-01`
+     - `STARTED` `after` `01/01/1991`
 3. Switch between **AND/OR** mode
 4. Right-click the filter value and select **Remove Query** for some filters
 5. Click the **Free text** icon ( _I_ ).

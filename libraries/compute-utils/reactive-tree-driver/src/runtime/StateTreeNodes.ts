@@ -70,7 +70,7 @@ export class FuncCallNode implements IStoreProvider {
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
   public validationInfo$ = new BehaviorSubject<Record<string, ValidationResult>>({});
-  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
+  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, any> | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
   public pendingDependencies$ = new BehaviorSubject<string[]>([]);
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
@@ -188,10 +188,20 @@ export class FuncCallNode implements IStoreProvider {
     return res;
   }
 
-  clearIOMeta(name: string) {
-    const s = this.metaInfo$.value?.[name];
-    if (s?.value != null)
-      s.next(undefined);
+  clearOldMetas(currentIds: Set<string>) {
+    for (const meta$ of Object.values(this.instancesWrapper.metaStates$?.value ?? {})) {
+      if (!meta$?.value)
+        continue;
+      let needsUpdate = false;
+      for (const handlerId of Object.keys(meta$.value)) {
+        if (!currentIds.has(handlerId)) {
+          delete meta$.value[handlerId];
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate)
+        meta$.next(Object.keys(meta$.value).length === 0 ? undefined : meta$.value);
+    }
   }
 
   clearIORestriction(name: string) {

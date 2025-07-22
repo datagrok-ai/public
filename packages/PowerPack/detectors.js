@@ -5,6 +5,7 @@
  * The class name consists of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
+/// <reference path="../../globals.d.ts" />
 class PowerPackPackageDetectors extends DG.Package {
   /* @param s {String} - string to check
    * @returns {boolean} */

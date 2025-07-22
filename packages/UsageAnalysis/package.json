@@ -19,15 +19,15 @@
     "choices.js": "^10.1.0",
     "color-hash": "^2.0.2",
     "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13",
     "moment": "^2.29.1",
-    "rxjs": "^6.5.5",
-    "dayjs": "^1.11.13"
+    "rxjs": "^6.5.5"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "debug-usageanalysis": "webpack && grok publish",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "release-usageanalysis": "webpack && grok publish --release",
     "debug-usageanalysis-dev": "webpack && grok publish dev",
     "release-usageanalysis-dev": "webpack && grok publish dev --release",
@@ -46,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^6.4.0",
+    "datagrok-tools": "^4.14.19",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.0",

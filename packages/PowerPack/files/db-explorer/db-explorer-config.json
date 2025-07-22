@@ -1,11 +1,16 @@
 {
-  "connectionName": "Datagrok",
+  "connectionName": "Datagrok Admin",
   "schemaName": "public",
-  "dataSourceName": "postgres",
+  "dataSourceName": "postgresDart",
   "entryPoints": {
     "DG_USER_LOGIN": {
       "table": "users",
-      "column": "login"
+      "column": "login",
+      "regexpExample": {
+        "example": "DGUSER-{User Login}",
+        "nonVariablePart": "DGUSER-",
+        "regexpMarkup": "DGUSER-{User Login}"
+      }
     }
   },
   "customSelectedColumns": {

@@ -28,7 +28,7 @@ export class ScriptingTutorial extends Tutorial {
 
     this.title('Run a script');
 
-    const providerRoot = $('div[name="tree-Functions---Scripts"]').get(0);
+    const providerRoot = $('div[name="tree-Platform---Functions---Scripts"]').get(0);
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
       'sample dataset (press <b>F1</b> to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';

@@ -624,7 +624,7 @@ export const TreeWizard = Vue.defineComponent({
             />
           }
         </DockManager>
-      </div>, [[ifOverlapping, isGlobalLocked.value]])
+      </div>, [[ifOverlapping, isGlobalLocked.value || !treeState.value]])
     );
   },
 });

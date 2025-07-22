@@ -48,17 +48,17 @@ async function _testSimilaritySearchViewer() {
 
   /* eslint-disable max-len */
   const str0: string = 'D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me';
-  const str1: string = 'Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/Chg/N/D-Orn/D-aThr//Phe_4Me';
+  const str1: string = '/D-Tyr_Et/meQ/dV/E/N/dV///Phe_4Me';
   const simStr1: string = 'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me';
   /* eslint-enable max-len */
 
   expect(similaritySearchViewer.fingerprint, 'Morgan');
-  expect(similaritySearchViewer.distanceMetric, 'Tanimoto');
+  expect(similaritySearchViewer.distanceMetric, 'Hamming');
   expect(similaritySearchViewer.scores!.get(0), DG.FLOAT_NULL);
   expect(similaritySearchViewer.idxs!.get(0), 0);
   expect(similaritySearchViewer.molCol!.get(0), str0);
-  expect((similaritySearchViewer.scores!.get(1) as number).toFixed(2), '0.73');
-  expect(similaritySearchViewer.idxs!.get(1), 4);
+  expect((similaritySearchViewer.scores!.get(1) as number).toFixed(2), '0.10');
+  expect(similaritySearchViewer.idxs!.get(1), 7);
   expect(similaritySearchViewer.molCol!.get(1), str1);
   moleculesView.dataFrame.currentRowIdx = 1;
   await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1,
@@ -98,7 +98,7 @@ async function _testDiversitySearchViewer() {
     'Sequence Diversity Search viewer grid has not been created', 100);
 
   expect(diversitySearchViewer.fingerprint, 'Morgan');
-  expect(diversitySearchViewer.distanceMetric, 'Tanimoto');
+  expect(diversitySearchViewer.distanceMetric, 'Hamming');
   expect(diversitySearchViewer.initialized, true);
   expect(diversitySearchViewer.renderMolIds!.length > 0, true);
 }

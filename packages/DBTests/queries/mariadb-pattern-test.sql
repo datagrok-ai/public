@@ -78,14 +78,14 @@ SELECT * FROM mock_data WHERE some_number = @some_number;
 -- name: MariaDbStringTypePatternDoubleOpMore
 -- connection: MariaDbDBTests
 -- input: string some_number = ">975" {pattern: double}
--- test: Dbtests:expectTable(MariaDbStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MariaDb
+-- test: Dbtests:expectTable(MariaDbStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data1026.d42')) // cat: MariaDb
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: MariaDbStringTypePatternDoubleOpMoreEq
 -- connection: MariaDbDBTests
 -- input: string some_number = ">=975" {pattern: double}
--- test: Dbtests:expectTable(MariaDbStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MariaDb
+-- test: Dbtests:expectTable(MariaDbStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data1026.d42')) // cat: MariaDb
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
@@ -120,14 +120,14 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 -- name: MariaDbStringTypePatternStringOpEndsWith
 -- connection: MariaDbDBTests
 -- input: string first_name = "ends with y" {pattern: string}
--- test: Dbtests:expectTable(MariaDbStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/common/data6,23,25.d42')) // cat: MariaDb
+-- test: Dbtests:expectTable(MariaDbStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/common/data62325.d42')) // cat: MariaDb
 SELECT * FROM mock_data WHERE @first_name(first_name);
 -- end
 
 -- name: MariaDbStringTypePatternStringOpIn
 -- connection: MariaDbDBTests
 -- input: string country = "in (Poland, Brazil)" {pattern: string}
--- test: Dbtests:expectTable(MariaDbStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: MariaDb
+-- test: Dbtests:expectTable(MariaDbStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2520.d42')) // cat: MariaDb
 SELECT * FROM mock_data WHERE @country(country);
 -- end
 

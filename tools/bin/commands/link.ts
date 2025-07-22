@@ -3,20 +3,30 @@
 import fs from 'fs';
 import path from 'path';
 import { runScript } from '../utils/utils';
+import { glob } from 'glob';
 
-const repositoryDirNameRegex = new RegExp(path.join('1', '2')[1] + 'public$');
+const excludedPackages: string[] = ['@datagrok-misc/eslint-plugin-config', 'wiki-merge', 'datagrok-tools', ''];
+const versionDependencyRegex = /(?:\^)?\d+\.\d+\.\d+/;
+let packagesInRepo: Record<string, { path: string, version: string }>;
+let packagesOutOfRepo: Record<string, { path: string, version: string }>;
 
-const excludedPackages: string[] = ['@datagrok/diff-grok', ''];
 
 const curDir = process.cwd();
 let repositoryDir = curDir;
+let containerDir = curDir;
+let dirStep = path.dirname(curDir);
 let currentPackage: PackageData | undefined;
 let localPackageDependencies: PackageData[];
 let packagesToLink: Set<string>;
-while (path.dirname(repositoryDir) !== repositoryDir) {
-  if (repositoryDirNameRegex.test(repositoryDir))
+
+while (path.dirname(dirStep) !== dirStep) {
+  if (fs.existsSync(path.join(dirStep, '.git')) && repositoryDir === curDir)
+    repositoryDir = dirStep;
+  if (!fs.existsSync(path.join(dirStep, '.git')) && repositoryDir !== curDir && containerDir === curDir) {
+    containerDir = dirStep;
     break;
-  repositoryDir = path.dirname(repositoryDir);
+  }
+  dirStep = path.dirname(dirStep);
 }
 
 let verbose = false;
@@ -24,23 +34,18 @@ let pathMode = false;
 let devMode = false;
 let unlink = false;
 
-const apiDir = path.join(repositoryDir, 'js-api');
-const libDir = path.join(repositoryDir, 'libraries');
-const packageDir = path.join(repositoryDir, 'packages');
-
-const apiPackageName = 'datagrok-api';
-const libName = '@datagrok-libraries/';
-const packageName = '@datagrok/';
-
 export async function link(args: LinkArgs) {
   verbose = args.verbose ?? false;
   devMode = args.dev ?? false;
   pathMode = args.path ?? false;
-  unlink = args.unlink ?? false;
+  unlink = args.unlink ?? false; 
+
+  let collectedPackages = collectAvaliablePackages(args['repo-only']);
+  packagesInRepo = collectedPackages.packagesInRepo;
+  packagesOutOfRepo = collectedPackages.packagesOutOfRepo;
 
   localPackageDependencies = []
   packagesToLink = new Set<string>();
-  collectPackagesData(curDir);
   currentPackage = new PackageData(curDir);
 
   if (unlink) {
@@ -72,14 +77,12 @@ function collectPackagesData(packagePath: string = curDir): { dependencies: stri
 
 function collectPacakgeDataFromJsonObject(object: any): string[] {
   let result: string[] = [];
-  for (let dependencyName of Object.keys(object)) {
-    let nameSplitted = dependencyName.split('/');
-    if (dependencyName === apiPackageName)
-      result = result.concat(parsePackageDependencies(dependencyName, apiDir));
-    else if (dependencyName.includes(libName))
-      result = result.concat(parsePackageDependencies(dependencyName, path.join(libDir, nameSplitted[nameSplitted.length - 1])));
-    else if (dependencyName.includes(packageName))
-      result = result.concat(parsePackageDependencies(dependencyName, path.join(packageDir, toCamelCase(nameSplitted[nameSplitted.length - 1]))));
+  for (let dependencyName of Object.keys(object ?? {})) {
+    if (packagesInRepo[dependencyName])
+      result = result.concat(parsePackageDependencies(dependencyName, path.dirname(packagesInRepo[dependencyName].path)));
+    else if (packagesOutOfRepo[dependencyName])
+      result = result.concat(parsePackageDependencies(dependencyName, path.dirname(packagesOutOfRepo[dependencyName].path)));
+
   }
   return result;
 }
@@ -101,11 +104,46 @@ function parsePackageDependencies(dependencyName: string, pathToLink: string): s
   return result;
 }
 
+function collectAvaliablePackages(noOutLink: boolean = false): { packagesInRepo: Record<string, { path: string, version: string }>, packagesOutOfRepo: Record<string, { path: string, version: string }> } {
+  let repositoryPackages = collectAvaliablePackagesPathesFromDir(repositoryDir);
+  let commonPakcages = collectAvaliablePackagesPathesFromDir(containerDir, repositoryDir);
+
+  const packagesInRepoBaseInfo = parsePackages(repositoryPackages);
+  const packagesOutOfRepoBaseInfo = noOutLink? [] : parsePackages(commonPakcages);
+  const packagesInRepo = Object.fromEntries(packagesInRepoBaseInfo.map(({ name, ...rest }) => [name, rest]));
+  const packagesOutOfRepo = Object.fromEntries(packagesOutOfRepoBaseInfo.map(({ name, ...rest }) => [name, rest]));
+  return { packagesInRepo: packagesInRepo, packagesOutOfRepo: packagesOutOfRepo };
+}
+
+function collectAvaliablePackagesPathesFromDir(dir: string, dirToExclude: string = '') {
+  let res = glob.sync('./**/package.json', {
+    cwd: dir,
+    ignore: ['**/node_modules/**'],
+  }).map((e) => path.join(dir, e));
+  if (dirToExclude.length > 0)
+    res = res.filter((e) => !e.includes(dirToExclude))
+  return res;
+}
+
+function parsePackages(packagPathes: string[]) {
+  let res = packagPathes.map((e) => {
+    let packageData: any = {};
+    if (fs.existsSync(e)) {
+      packageData.path = e;
+      const packageJson = JSON.parse(fs.readFileSync(e, 'utf8'));
+      packageData.name = packageJson.name;
+      packageData.version = packageJson.version;
+    }
+    return packageData;
+  })
+  return res;
+}
+
 async function unlinkPackages() {
-  const packaegs = [...localPackageDependencies];
+  const packages = [...localPackageDependencies];
   if (currentPackage)
-    packaegs.push(currentPackage);
-  for (let packageData of packaegs) {
+    packages.push(currentPackage);
+  for (let packageData of packages) {
     if (excludedPackages.includes(packageData.name))
       continue;
 
@@ -127,12 +165,10 @@ function updateDependenciesToVersion(packageData: PackageData, dependecyNode: an
   for (let dependency of packageData.dependencies) {
     if (excludedPackages.includes(dependency))
       continue;
-    if (dependecyNode[dependency]) {
+    if (dependecyNode[dependency] && !versionDependencyRegex.test(dependecyNode[dependency])) {
       const packageToLink = (localPackageDependencies.filter((e) => e.name === dependency) ?? [])[0];
       if (packageToLink) {
-        const startIndex = packageToLink.packagePath.indexOf(`public${path.sep}`) + `public${path.sep}`.length;
-        if (startIndex !== -1)
-          dependecyNode[dependency] = `^${packageToLink.version}`;
+        dependecyNode[dependency] = `^${packagesInRepo[dependency]?.version ?? packagesOutOfRepo[dependency]?.version}`;
       }
     }
   }
@@ -201,8 +237,9 @@ async function linkPathMode(packageData: PackageData) {
 }
 
 function updateDependenciesToLocal(packageData: PackageData, dependecyNode: any) {
-  const dirNames = packageData.packagePath.split(path.sep);
-  const backRoute = `../`.repeat(dirNames.length - dirNames.indexOf('public') - 1);
+
+  const backRouteForCont = `../`.repeat(packageData.packagePath.replace(containerDir, '').split(path.sep).length - 1);
+  const backRouteForRepo = `../`.repeat(packageData.packagePath.replace(repositoryDir, '').split(path.sep).length - 1);
 
   for (let dependency of packageData.dependencies) {
     if (excludedPackages.includes(dependency))
@@ -210,9 +247,11 @@ function updateDependenciesToLocal(packageData: PackageData, dependecyNode: any)
     if (dependecyNode[dependency]) {
       const packageToLink = (localPackageDependencies.filter((e) => e.name === dependency) ?? [])[0];
       if (packageToLink) {
-        const startIndex = packageToLink.packagePath.indexOf(`public${path.sep}`) + `public${path.sep}`.length;
-        if (startIndex !== -1)
-          dependecyNode[dependency] = `${backRoute}${packageToLink.packagePath.substring(startIndex).replaceAll(path.sep, '/')}`;
+        if (packageToLink.packagePath.includes(repositoryDir) && packageData.packagePath.includes(repositoryDir))
+          dependecyNode[dependency] = `${backRouteForRepo}${packageToLink.packagePath.replace(repositoryDir, '').replaceAll(path.sep, '/').replace('/', '')}`;
+        else
+          dependecyNode[dependency] = `${backRouteForCont}${packageToLink.packagePath.replace(containerDir, '').replaceAll(path.sep, '/').replace('/', '')}`;
+
       }
     }
   }
@@ -237,6 +276,7 @@ class PackageData {
 interface LinkArgs {
   verbose?: boolean,
   unlink?: boolean,
+  'repo-only'?: boolean,
   path?: boolean,
   dev?: boolean,
 }

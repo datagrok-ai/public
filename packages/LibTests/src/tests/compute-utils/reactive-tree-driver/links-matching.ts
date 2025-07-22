@@ -240,6 +240,67 @@ category('ComputeUtils: Driver links matching', async () => {
     await snapshotCompare(matchInfos, 'Links matching multiple ids');
   });
 
+  test('Links templates matching', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'pipelinePar',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'stepAdd',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'stepMul',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'stepAdd',
+            },
+            {
+              id: 'stepMul',
+            },
+            {
+              id: 'stepMul',
+            },
+            {
+              id: 'stepAdd',
+            },
+          ],
+        },
+        {
+          id: 'step3',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/res',
+        to: ['out1(template):pipelinePar/all(stepAdd|stepMul)/a|b'],
+      }, {
+        id: 'link2',
+        from: ['in1(template):pipelinePar/all(stepAdd|stepMul)/a|b'],
+        to: 'out1:step3/a',
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
+    cleanMatchInfos(matchInfos);
+    await snapshotCompare(matchInfos, 'Links templates matching');
+  });
+
   test('Links expaning base path', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',

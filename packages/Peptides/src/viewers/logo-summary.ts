@@ -55,6 +55,9 @@ export const enum LST_PROPERTIES {
   AGGREGATION = 'aggregation',
   ACTIVITY_SCALING = 'activityScaling',
   ACTIVITY = 'activity',
+
+  WEB_LOGO_AGGREGATION_COLUMN_NAME = 'webLogoAggregationColumnName',
+  WEB_LOGO_AGGREGATION_TYPE = 'webLogoAggregationType',
 }
 
 enum LST_CATEGORIES {
@@ -85,6 +88,11 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   activityColumnName: string;
   activityScaling: SCALING_METHODS;
   _scaledActivityColumn: DG.Column | null = null;
+
+  webLogoAggregationColumnName: string | null;
+  webLogoAggregationType: DG.AggregationType;
+
+  private _webLogoCacheGeneration: number = 0;
 
   /** Creates LogoSummaryTable properties. */
   constructor() {
@@ -121,6 +129,25 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         max: 1.0,
         category: LST_CATEGORIES.STYLE,
       });
+
+    const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
+      DG.AGG.SELECTED_ROWS_COUNT];
+    const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
+    this.webLogoAggregationType = this.string(LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE, DG.AGG.TOTAL_COUNT, {
+      category: LST_CATEGORIES.STYLE,
+      choices: aggChoices,
+      description: 'Aggregation method for WebLogo position heights',
+    }) as DG.AggregationType;
+
+
+    this.webLogoAggregationColumnName = this.column(LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME, {
+      defaultValue: null,
+      category: LST_CATEGORIES.STYLE,
+      nullable: true,
+      columnTypeFilter: DG.TYPE.NUMERICAL,
+      description: `Column with values to aggregate for WebLogo position heights.
+    Used if aggregation type is not '${DG.AGG.TOTAL_COUNT}'.`,
+    });
 
     this.columns = this.columnList(LST_PROPERTIES.COLUMNS, [], {category: LST_CATEGORIES.AGGREGATION});
     this.aggregation = this.string(LST_PROPERTIES.AGGREGATION, DG.AGG.AVG,
@@ -251,9 +278,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    * @return - iterable over custom clusters columns.
    */
   get customClusters(): wu.WuIterable<DG.Column<boolean>> {
-    const query: {
-      [key: string]: string
-    } = {};
+    const query: {[key: string]: string} = {};
     query[C.TAGS.CUSTOM_CLUSTER] = '1';
     return wu(this.dataFrame.columns.byTags(query));
   }
@@ -293,10 +318,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   onTableAttached(): void {
     super.onTableAttached();
     if (isApplicableDataframe(this.dataFrame)) {
+      const activityColName = wu(this.dataFrame.columns.numerical).next().value.name;
       this.getProperty(`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
       this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
-        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+        ?.set(this, activityColName);
+      this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}`)?.set(this, activityColName);
+
       this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
         ?.set(this, wu(this.dataFrame.columns.categorical).next().value.name);
     } else {
@@ -376,7 +404,11 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       doRender = true;
       break;
     case `${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`:
+      this.webLogoAggregationColumnName = this.activityColumnName;
     case LST_PROPERTIES.ACTIVITY_SCALING:
+    case `${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}${COLUMN_NAME}`:
+    case LST_PROPERTIES.WEB_LOGO_AGGREGATION_TYPE:
+      this._webLogoCacheGeneration++; // Increment to invalidate cache
       this._scaledActivityColumn = null;
       this._viewerGrid = null;
       this._clusterStats = null;
@@ -402,9 +434,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    * @param options.notify - flag that indicates if bitset changed event should fire.
    * @return - cluster selection.
    */
-  initClusterSelection(options: {
-    notify?: boolean
-  } = {}): type.Selection {
+  initClusterSelection(options: {notify?: boolean} = {}): type.Selection {
     options.notify ??= true;
 
     const newClusterSelection = {} as type.Selection;
@@ -438,7 +468,13 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   getNeededDfClone(): DG.DataFrame {
     // gather all needed columns. for string columns we need to remove 'dist(' and ')' from the name
-    const neededCols = [this.clustersColumnName, this.sequenceColumnName, this.activityColumnName, ...(this.getTotalViewerAggColumns() ?? []).map(([cn, _]) => cn), ...(this.getStringAggregatedColumns() ?? []).map((cn) => cn.substring(5, cn.length - 1))];
+    const neededCols = [this.clustersColumnName, this.sequenceColumnName, this.activityColumnName,
+      ...(this.getTotalViewerAggColumns() ?? []).map(([cn, _]) => cn),
+      ...(this.getStringAggregatedColumns() ?? []).map((cn) => cn.substring(5, cn.length - 1))];
+    if (this.webLogoAggregationColumnName)
+      neededCols.push(this.webLogoAggregationColumnName);
+
+
     const colsSet = Array.from(new Set(neededCols)).filter((colName) => this.dataFrame.columns.contains(colName));
     return this.dataFrame.clone(this.dataFrame.filter, colsSet);
   }
@@ -459,9 +495,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const filteredDfClustColData = filteredDfClustCol.getRawData();
     const filteredDfClustColCat = filteredDfClustCol.categories;
 
-    const query: {
-      [key: string]: string
-    } = {};
+    const query: {[key: string]: string} = {};
     query[C.TAGS.CUSTOM_CLUSTER] = '1';
     const customClustColList: DG.Column<boolean>[] = wu(filteredDfCols.byTags(query))
       .filter((c) => c.max > 0).toArray();
@@ -614,8 +648,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     grid.columns.rowHeader!.visible = false;
     grid.props.rowHeight = 55;
 
-    const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
-    const webLogoPromiseCache = new Map<number, boolean>();// this map will keep the promises for weblogo creation
+    const webLogoCache = new DG.LruCache<string, DG.Viewer & IWebLogoViewer>();
+    const webLogoPromiseCache = new Map<string, boolean>(); // this map will keep promises for weblogo creation
 
     let invalidateTimeout: any = null;
 
@@ -655,14 +689,17 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
           CR.renderLogoSummaryCell(canvasContext, gridCell.cell.value, this.clusterSelection, bound);
           gridCellArgs.preventDefault();
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
+          const cacheKey = `${currentRowIdx}_${this.webLogoAggregationColumnName || 'count'}_${this.webLogoAggregationType}_${this._webLogoCacheGeneration}`;
+          const viewer = webLogoCache.get(cacheKey);
+
           // if current weblogo is being created, prevent the creation of another one
-          if (webLogoPromiseCache.get(currentRowIdx) === true) {
+
+          if (webLogoPromiseCache.get(cacheKey) === true) {
             gridCellArgs.preventDefault();
             return;
           }
           const positionWidth = Math.floor((gridCell.bounds.width - 2 - (4 * (maxSequenceLen - 1))) / maxSequenceLen);
 
-          const viewer = webLogoCache.get(currentRowIdx);
           if (viewer !== undefined) {
             const viewerProps = viewer.getProperties();
 
@@ -680,19 +717,30 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
             gridCell.element = viewer.root;
             gridCellArgs.preventDefault();
           } else {
-            const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
-            webLogoPromiseCache.set(currentRowIdx, true);
+            const columnsToInclude = [pepCol];
+            if (this.webLogoAggregationType !== DG.AGG.TOTAL_COUNT && this.webLogoAggregationColumnName) {
+              const aggCol = this.dataFrame.columns.byName(this.webLogoAggregationColumnName);
+              if (aggCol)
+                columnsToInclude.push(aggCol);
+            }
+            const webLogoTable = DG.DataFrame.fromColumns(columnsToInclude);
+            webLogoTable.filter.copyFrom(clusterBitSet);
+
+            webLogoPromiseCache.set(cacheKey, true);
             webLogoTable.plot
               .fromType('WebLogo', {
+                valueColumnName: this.webLogoAggregationColumnName,
+                valueAggrType: this.webLogoAggregationType,
                 positionHeight: this.webLogoMode,
                 horizontalAlignment: HorizontalAlignments.LEFT,
                 maxHeight: 1000,
                 minHeight: height,
                 positionWidth: positionWidth,
                 showPositionLabels: false,
-              }).then((v) => {
-                webLogoCache.set(currentRowIdx, v);
-                webLogoPromiseCache.delete(currentRowIdx);
+              })
+              .then((v) => {
+                webLogoCache.set(cacheKey, v);
+                webLogoPromiseCache.delete(cacheKey);
                 debouncedInvalidate();
               });
             gridCellArgs.preventDefault();
@@ -875,12 +923,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this.bitsets.push(currentSelection.clone());
 
     const newClusterName = this.dataFrame.columns.getUnusedName('New Cluster');
-    const aggregatedValues: {
-      [colName: string]: number
-    } = {};
-    const stringAggregatedValues: {
-      [colName: string]: string
-    } = {};
+    const aggregatedValues: {[colName: string]: number} = {};
+    const stringAggregatedValues: {[colName: string]: string} = {};
     const aggColsEntries = this.getTotalViewerAggColumns();
     const aggStringColNames = this.getStringAggregatedColumns();
     for (const [colName, aggFn] of aggColsEntries) {
@@ -1021,9 +1065,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         filterDf: true,
         mask: mask,
       });
-    const resultMap: {
-      [key: string]: any
-    } = {...tableMap, ...aggregatedColMap};
+    const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
     const tooltip = getDistributionPanel(hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
@@ -1032,10 +1074,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   }
 
   /**
-   * Creates a dataframe for WebLogo viewer.
    * @param pepCol - column with peptides.
    * @param mask - bitset to filter dataframe with.
-   * @return - dataframe for WebLogo viewer.
+   * @deprecated The logic is now handled directly in createLogoSummaryTableGrid
    */
   createWebLogoDf(pepCol: DG.Column<string>, mask: DG.BitSet): DG.DataFrame {
     const newDf = DG.DataFrame.fromColumns([pepCol]);

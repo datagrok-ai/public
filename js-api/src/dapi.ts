@@ -19,8 +19,8 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo
-} from "./entities";
+  FileInfo, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo, UserNotification,
+} from './entities';
 import { DockerImage } from "./api/grok_shared.api.g";
 import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils_convert";
@@ -28,6 +28,7 @@ import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
+import dayjs from 'dayjs';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -260,8 +261,8 @@ export class Dapi {
 
   /** Logging API endpoint
    *  @type {HttpDataSource<LogEvent>} */
-  get log(): HttpDataSource<LogEvent> {
-    return new HttpDataSource(api.grok_Dapi_Log());
+  get log(): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log());
   }
 
   /** Logging API endpoint
@@ -402,6 +403,12 @@ export class UsersDataSource extends HttpDataSource<User> {
   /** @constructs UsersDataSource*/
   constructor(s: any) {
     super(s);
+  }
+
+  /** Notifications API endpoint
+   *  @type {NotificationsDataSource} */
+  get notifications(): NotificationsDataSource {
+    return new NotificationsDataSource(api.grok_Dapi_Notifications());
   }
 
   /** Returns current user
@@ -1124,6 +1131,46 @@ export class UserReportsDataSource extends HttpDataSource<UserReport> {
 export class UserReportsRulesDataSource extends HttpDataSource<UserReportsRule> {
   constructor(s: any) {
     super(s);
+  }
+}
+
+export class NotificationsDataSource extends HttpDataSource<UserNotification> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  forCurrentUser(): NotificationsDataSource {
+    return new NotificationsDataSource(api.grok_Dapi_Notifications_ForCurrentUser());
+  }
+
+  async countUnread(): Promise<number> {
+    return api.grok_Dapi_Notifications_CountUnread();
+  }
+}
+
+export class LogDataSource extends HttpDataSource<LogEvent> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  /** Activity API endpoint
+   *  @type {ActivityDataSource} */
+  get activity(): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity());
+  }
+
+  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end)));
+  }
+}
+
+export class ActivityDataSource extends HttpDataSource<LogEvent> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  where(options?: {userId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity_Where(this.dart, options?.userId ?? '', toDart(options?.start), toDart(options?.end)));
   }
 }
 

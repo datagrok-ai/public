@@ -3,7 +3,7 @@ import archiver from 'archiver-promise';
 import fs from 'fs';
 // @ts-ignore
 import fetch from 'node-fetch';
-import os from 'os';
+import os, { hostname } from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
@@ -203,14 +203,13 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 }
 
 export async function publish(args: PublishArgs) {
-
-  if (!args['skip-check'])
+  console.log('publish');
+  if (!args['skip-check'] && !args['all'])
     check({ _: ['check'] });
   config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
-  if (args.refresh || args.all) {
+  if (args.refresh) {
     if (path.basename(curDir) !== 'packages')
       curDir = path.dirname(curDir);
-
     let host = config.default;
     if (args['_'].length === 2)
       host = args['_'][1];
@@ -256,6 +255,8 @@ async function publishPackage(args: PublishArgs) {
     'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
 
   if (args.build && args.rebuild) {
+    utils.runScript('npm install', curDir, false)
+    utils.runScript('npm run build', curDir, false)
     color.error('Incompatible options: --build and --rebuild');
     return false;
   }

@@ -47,7 +47,6 @@ export function getCell(table: DG.DataFrame, rowIndex: number, columnName: strin
 }
 
 //name: expectTable
-//shortName: expectTable
 //input: dataframe actual
 //input: dataframe expected
 //output: bool result
@@ -162,7 +161,6 @@ export function testOutputWithoutAction(data: DG.DataFrame, col: DG.Column<strin
 }
 
 //name: expectDate
-//shortName: expectDate
 //input: datetime actual
 //input: datetime expected
 export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {

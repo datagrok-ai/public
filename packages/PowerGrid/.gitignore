@@ -33,3 +33,4 @@ src/**/*.js
 src/**/*.js.map
 test-report.html
 test-console-output.log
+

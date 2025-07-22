@@ -40,7 +40,7 @@
 1. Go to **Context menu > General** and check all items
 1. Go to **Context menu > Tooltip** and check all items
 1. Open the Context Panel
-1. Go to **Context menu > Columns / Selection / Properties** and verify that changes are consistent between the Context Panel and the context menu
+1. Go to **Context menu > Columns** and verify that changes are consistent between the Context Panel and the context menu
 
 #### 5. Color coding and the legend
 
@@ -89,18 +89,14 @@
 1. Close All
 2. Open demog
 3. Add a PC plot
-4. Click on the **Gear icon** to open viewer`s **properties**.
+4. Open the Context Panel
 5. Check Box plot setting, in particular:
 - Circles
 - Box plot (and all it`s customizable setting)
 - Violin plot (and all it`s customizable setting)
 
 #### 10. Selection
-1. Close All
-2. Open demog
-3. Add a PC plot
-4. Click on the **Gear icon** to open viewer`s **properties**.
-5. Check **Selection** setting, in particular:
+1. On the Context Panel, check **Selection** setting, in particular:
 - Show current line
 - Show mouse over line
 - Show mouse over row group 

@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable max-params */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -27,10 +30,15 @@ export async function multipleSequenceAlignmentUI(
     options.pepsea.gapExtend ??= msaDefaultOptions.pepsea.gapExtend;
 
     const table = options.col?.dataFrame ?? grok.shell.t;
+    if (!table) {
+      const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
+      reject(new MsaWarning(ui.divText(errMsg)));
+      return; // Prevents creating the MSA dialog
+    }
+
     const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
       const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
-      grok.shell.warning(errMsg);
       reject(new MsaWarning(ui.divText(errMsg)));
       return; // Prevents creating the MSA dialog
     }
@@ -49,6 +57,8 @@ export async function multipleSequenceAlignmentUI(
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
     const gapExtendInput = ui.input.float('Gap extend', {value: options.pepsea.gapExtend});
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
+
+    const onlySelectedRowsInput = ui.input.bool('Selected Rows Only', {value: false});
 
     const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
     const msaParamsButton = ui.button('Alignment parameters', () => {
@@ -80,7 +90,7 @@ export async function multipleSequenceAlignmentUI(
           okBtn.disabled = false;
           performAlignment = await onColInputChange(
             colInput.value, table, seqHelper, pepseaInputRootStyles, kalignInputRootStyles,
-            methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
+            methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput, onlySelectedRowsInput
           );
         }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
       } as ColumnInputOptions
@@ -95,6 +105,7 @@ export async function multipleSequenceAlignmentUI(
       .add(methodInput)
       .add(msaParamsDiv)
       .add(msaParamsButton)
+      .add(onlySelectedRowsInput)
       .add(kalignVersionDiv)
       .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); });
     const okBtn = dlg.getButton('OK');
@@ -104,7 +115,7 @@ export async function multipleSequenceAlignmentUI(
     if (options.col) {
       performAlignment = await onColInputChange(
         options.col, table, seqHelper, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput, onlySelectedRowsInput
       );
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
       return; // Prevents show the dialog
@@ -150,7 +161,7 @@ async function onColInputChange(
   pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[],
   methodInput: DG.InputBase<string | null>, clustersColInput: DG.InputBase<DG.Column<any> | null>,
   gapOpenInput: DG.InputBase<number | null>, gapExtendInput: DG.InputBase<number | null>,
-  terminalGapInput: DG.InputBase<number | null>,
+  terminalGapInput: DG.InputBase<number | null>, selectedRowsOnlyInput: DG.InputBase<boolean>,
 ): Promise<(() => Promise<DG.Column<string> | null>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
@@ -167,7 +178,7 @@ async function onColInputChange(
       const potentialColSh = seqHelper.getSeqHandler(col);
       const performCol: DG.Column<string> = potentialColSh.isFasta() ? col :
         potentialColSh.convert(NOTATION.FASTA);
-      return async () => await runKalign(performCol, false, unusedName, clustersColInput.value);
+      return async () => await runKalign(table, performCol, false, unusedName, clustersColInput.value, undefined, undefined, undefined, selectedRowsOnlyInput.value);
     } else if (checkInputColumn(col, col.name, seqHelper, [NOTATION.HELM], [])[0]) {
       // PepSeA branch - Helm notation or separator notation with unknown alphabets
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
@@ -175,8 +186,8 @@ async function onColInputChange(
       gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
 
       return async () => {
-        return runPepsea(col, unusedName, methodInput.value!,
-          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+        return runPepsea(table, col, unusedName, methodInput.value!,
+          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value, undefined, selectedRowsOnlyInput.value);
       };
     } else if (checkInputColumn(col, col.name, seqHelper, [NOTATION.SEPARATOR], [ALPHABET.UN])[0]) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
@@ -188,8 +199,8 @@ async function onColInputChange(
       // convert to helm and assign alignment function to PepSea
 
       return async () => {
-        return runPepsea(helmCol, unusedName, methodInput.value!,
-          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+        return runPepsea(table, helmCol, unusedName, methodInput.value!,
+          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value, undefined, selectedRowsOnlyInput.value);
       };
     } else {
       gapOpenInput.value = null;
