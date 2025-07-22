@@ -187,7 +187,6 @@ class FuncGeneratorPlugin {
 
   _readDecoratorOptions(properties) {
     const resultMap = new Map();
-    console.log(properties);
 
     for (const prop of properties)
       resultMap.set(prop.key.name ?? prop.key.value, this._evalLiteral(prop.value));
