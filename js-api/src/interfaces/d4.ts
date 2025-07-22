@@ -1465,6 +1465,8 @@ export interface IHistogramSettings {
 
   invertColorScheme: boolean;
 
+  linearColorScheme: Array<number>;
+
   /// Indicates current row as a dot on the horizontal axis
   showCurrentRow: boolean;
 
