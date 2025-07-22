@@ -301,6 +301,7 @@ export interface IDartApi {
   grok_Viewer_Props_SetDefaultProperty(viewerType: String, propertyName: String, propertyValue: any): any;
   grok_Viewer_Props_SetDefault(v: any, data: Bool, style: Bool): any;
   grok_Viewer_Props_ResetDefault(v: any): any;
+  grok_Viewer_CanVisualize(viewerType: String, df: any): any;
   grok_ScatterPlotViewer_HitTest(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_InvalidateCanvas(s: any): any;
   grok_ScatterPlotViewer_Zoom(s: any, x1: Num, y1: Num, x2: Num, y2: Num): any;
