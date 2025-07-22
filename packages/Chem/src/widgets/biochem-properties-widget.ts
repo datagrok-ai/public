@@ -3,135 +3,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+interface FunctionState {
+  selected: boolean;
+  funcCall: DG.FuncCall;
+  editor: HTMLElement;
+  navItem: HTMLElement;
+  metaParams: string[];
+  paramValues: {[key: string]: any};
+  selectionCheckbox: DG.InputBase<boolean | null>;
+  paramInputs: {[key: string]: DG.InputBase};
+}
 
-  interface FunctionState {
-    selected: boolean;
-    funcCall: DG.FuncCall;
-    editor: HTMLElement;
-    navItem: HTMLElement;
-    metaParams: string[];
-    paramValues: {[key: string]: any};
-    selectionCheckbox: DG.InputBase<boolean | null>;
-    paramInputs: {[key: string]: DG.InputBase};
-  }
-
-  interface MethodInfo {
-    name: string;
-    package: string;
-    authors: string;
-    year: string;
-    description: string;
-    github?: string;
-    citation?: string;
-  }
-
-class HistoryManager {
-  private historyStack: string[] = [];
-  private historyPointer: number = -1;
-  public undoButton: HTMLElement;
-  public redoButton: HTMLElement;
-  public isRestoringState: boolean = false;
-
-  constructor(
-      private functionState: Map<string, FunctionState>,
-      private table: DG.DataFrame,
-  ) {
-    this.undoButton = ui.iconFA('undo', this.undo, 'Undo');
-    this.redoButton = ui.iconFA('redo', this.redo, 'Redo');
-    this.updateButtonState();
-  }
-
-  public get buttons(): HTMLElement[] {return [this.undoButton, this.redoButton];}
-
-  private sanitizeValue(value: any): any {
-    if (value instanceof DG.Column) return {_type: 'column', name: value.name};
-    if (value instanceof DG.DataFrame) return {_type: 'dataframe', name: value.name};
-    return value;
-  }
-
-  private desanitizeValue(value: any): any {
-    if (value && value._type) {
-      if (value._type === 'column') return this.table.col(value.name);
-      if (value._type === 'dataframe') return grok.shell.tableByName(value.name);
-    }
-    return value;
-  }
-
-  private serializeState = (): string => {
-    const stateToSave: {[key: string]: any} = {};
-    for (const [funcName, state] of this.functionState.entries()) {
-      const currentParamValues: {[key: string]: any} = {};
-      for (const [paramName, input] of Object.entries(state.paramInputs))
-        currentParamValues[paramName] = this.sanitizeValue(input.value);
-      stateToSave[funcName] = {
-        selected: state.selectionCheckbox.value,
-        params: currentParamValues,
-      };
-    }
-    return JSON.stringify(stateToSave);
-  };
-
-  private restoreState = (historyState: {widgetState: string}): void => {
-    this.isRestoringState = true;
-    try {
-      const stateToRestore = JSON.parse(historyState.widgetState);
-      for (const [funcName, savedState] of Object.entries(stateToRestore)) {
-        const state = this.functionState.get(funcName);
-        if (state && savedState) {
-          state.selectionCheckbox.value = (savedState as any).selected;
-          state.selected = (savedState as any).selected;
-          const savedParams = (savedState as any).params;
-          for (const [paramName, paramValue] of Object.entries(savedParams)) {
-            if (state.paramInputs[paramName]) {
-              const restoredValue = this.desanitizeValue(paramValue);
-              state.paramInputs[paramName].value = restoredValue;
-              state.paramValues[paramName] = restoredValue;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Failed to restore state from history:', e);
-    } finally {
-      this.isRestoringState = false;
-    }
-  };
-
-  public pushState = (): void => {
-    if (this.isRestoringState)
-      return;
-
-
-    if (this.historyPointer < this.historyStack.length - 1)
-      this.historyStack.splice(this.historyPointer + 1);
-
-    this.historyStack.push(this.serializeState());
-    this.historyPointer++;
-    this.updateButtonState();
-  };
-
-  public undo = (): void => {
-    if (this.historyPointer > 0) {
-      this.historyPointer--;
-      this.restoreState({widgetState: this.historyStack[this.historyPointer]});
-      this.updateButtonState();
-    }
-  };
-
-  public redo = (): void => {
-    if (this.historyPointer < this.historyStack.length - 1) {
-      this.historyPointer++;
-      this.restoreState({widgetState: this.historyStack[this.historyPointer]});
-      this.updateButtonState();
-    }
-  };
-
-  private updateButtonState = (): void => {
-    const undoIcon = this.undoButton.firstChild as HTMLElement;
-    const redoIcon = this.redoButton.firstChild as HTMLElement;
-    if (undoIcon) undoIcon.style.color = this.historyPointer > 0 ? '' : '#c0c0c0';
-    if (redoIcon) redoIcon.style.color = this.historyPointer < this.historyStack.length - 1 ? '' : '#c0c0c0';
-  };
+interface MethodInfo {
+  name: string;
+  package: string;
+  authors: string;
+  year: string;
+  description: string;
+  github?: string;
+  citation?: string;
 }
 
 const styles = `
@@ -155,10 +45,7 @@ const styles = `
     .biochem-calc-method-footer { padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d; }
     .biochem-calc-method-footer-grid { display: flex; gap: 20px; margin-bottom: 5px; }
     .biochem-calc-method-footer .font-weight-bold { font-weight: 600; color: #495057; }
-    .d4-dialog-header .d4-dialog-history-buttons { margin-left: auto; }
-    .d4-dialog-history-buttons i.grok-font-icon-undo, .d4-dialog-history-buttons i.grok-font-icon-redo { font-size: 14px; cursor: pointer; margin-left: 5px; }
   `;
-
 
 export async function biochemicalPropertiesDialog(): Promise<void> {
   const styleSheet = document.createElement('style');
@@ -188,18 +75,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   const inputSection = ui.div([topInputContainer], 'biochem-calc-input-section');
 
   const functionState = new Map<string, FunctionState>();
-  const historyManager = new HistoryManager(functionState, table);
-
-  let debounceTimer: NodeJS.Timeout;
-  const debouncedPushState = () => {
-    if (historyManager.isRestoringState)
-      return;
-
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      historyManager.pushState();
-    }, 50);
-  };
 
   const searchInput = ui.input.string('', {placeholder: 'Search...'});
   const searchIcon = ui.iconFA('search', null, 'Search');
@@ -211,6 +86,94 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   const methodFooter = ui.div([], 'biochem-calc-method-footer');
   const mainContent = ui.div([navPanel, editorPanel], 'biochem-calc-main-content');
   let firstFuncKey = '';
+
+  const sanitizeValue = (value: any): any => {
+    if (value instanceof DG.Column) return {_type: 'column', name: value.name};
+    if (value instanceof DG.DataFrame) return {_type: 'dataframe', name: value.name};
+    return value;
+  };
+
+  const desanitizeValue = (value: any): any => {
+    if (value && value._type) {
+      if (value._type === 'column' && table) return table.col(value.name);
+      if (value._type === 'dataframe') return grok.shell.tableByName(value.name);
+    }
+    return value;
+  };
+
+  const getStringInput = (): string => {
+    const stateToSave: {[key: string]: any} = {};
+
+    stateToSave.globalInputs = {
+      table: table?.name || null,
+      moleculesColumn: moleculesInput.value?.name || null,
+    };
+
+    stateToSave.functions = {};
+    for (const [funcName, state] of functionState.entries()) {
+      const currentParamValues: {[key: string]: any} = {};
+
+      for (const [paramName, input] of Object.entries(state.paramInputs))
+        currentParamValues[paramName] = sanitizeValue(input.value);
+
+
+      stateToSave.functions[funcName] = {
+        selected: state.selectionCheckbox.value,
+        params: currentParamValues,
+      };
+    }
+
+    return JSON.stringify(stateToSave);
+  };
+
+  const applyStringInput = (input: string): void => {
+    try {
+      const stateToRestore = JSON.parse(input);
+
+      if (stateToRestore.globalInputs) {
+        const globalInputs = stateToRestore.globalInputs;
+
+        if (globalInputs.table) {
+          const targetTable = grok.shell.tables.find((t) => t.name === globalInputs.table);
+          if (targetTable) {
+            tableInput.value = targetTable;
+            table = targetTable;
+            onTableChanged();
+          }
+        }
+
+        if (globalInputs.moleculesColumn && table) {
+          const targetColumn = table.col(globalInputs.moleculesColumn);
+          if (targetColumn)
+            moleculesInput.value = targetColumn;
+        }
+      }
+
+      if (stateToRestore.functions) {
+        for (const [funcName, savedState] of Object.entries(stateToRestore.functions)) {
+          const state = functionState.get(funcName);
+          if (state && savedState) {
+            const typedSavedState = savedState as any;
+
+            state.selectionCheckbox.value = typedSavedState.selected;
+            state.selected = typedSavedState.selected;
+
+            const savedParams = typedSavedState.params;
+            for (const [paramName, paramValue] of Object.entries(savedParams)) {
+              if (state.paramInputs[paramName]) {
+                const restoredValue = desanitizeValue(paramValue);
+                state.paramInputs[paramName].value = restoredValue;
+                state.paramValues[paramName] = restoredValue;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to restore state from history:', e);
+      grok.shell.error('Failed to restore state from history');
+    }
+  };
 
   const extractMetaParameters = (func: DG.Func): string[] => {
     const params: string[] = [];
@@ -245,7 +208,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
           const defaultValue = func.options[`param.${paramName}`] === 'true' || func.options[`param.${paramName}`] === true;
           paramValues[paramName] = defaultValue;
           const input = ui.input.bool(paramName, {value: defaultValue, onValueChanged: (v: boolean) => {paramValues[paramName] = v;}});
-          input.onChanged.subscribe(() => debouncedPushState());
           paramInputs[paramName] = input;
           editorContainer.appendChild(input.root);
         });
@@ -253,7 +215,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
         const inputs = await funcCall.buildEditor(editorContainer);
         inputs.forEach((input) => {
           paramInputs[input.property.name] = input;
-          input.onChanged.subscribe(() => debouncedPushState());
         });
         const tableInput = inputs.find((i) => i.property.name === 'table');
         if (tableInput) tableInput.root.style.display = 'none';
@@ -262,7 +223,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       }
 
       const checkbox = ui.input.bool('', {value: false});
-      checkbox.onChanged.subscribe((v) => {state.selected = v; debouncedPushState();});
+      checkbox.onChanged.subscribe((v) => {state.selected = v;});
       const navItem = ui.div([checkbox.root, ui.span([funcName])], 'biochem-calc-nav-item');
       const state: FunctionState = {
         selected: false, funcCall, editor: editorContainer, navItem, metaParams,
@@ -307,7 +268,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     }
   });
 
-
   dialog.add(ui.divV([inputSection, mainContent, methodFooter]));
   dialog.onOK(async () => {
     const selectedFunctions = Array.from(functionState.entries()).filter(([, state]) => state.selected);
@@ -316,13 +276,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     await executeSelectedFunctions(selectedFunctions, table!, moleculesInput.value);
   });
 
-  const historyButtons = ui.div(historyManager.buttons, 'd4-dialog-history-buttons');
-  const header = dialog.root.querySelector('.d4-dialog-header');
-  if (header)
-    header.appendChild(historyButtons);
-
-  historyManager.pushState();
-
+  dialog.history(() => ({editorSettings: getStringInput()}), (x: any) => applyStringInput(x['editorSettings']));
   dialog.show({width: 900, height: 680, resizable: true});
 
   async function executeSelectedFunctions(
