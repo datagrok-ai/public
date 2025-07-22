@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SignalsSearchQuery, QueryOperator, SignalsSearchParams, SignalsSearchField } from './signalsSearchQuery';
+import { SignalsSearchQuery, QueryOperator, SignalsSearchParams, SignalsSearchField, SignalsEntityType } from './signalsSearchQuery';
 import * as grok from 'datagrok-api/grok';
 import { loadRevvitySearchQueryAndParams, PARAMS_KEY, QUERY_KEY, STORAGE_NAME } from './utils';
 
@@ -226,9 +226,28 @@ export function buildOperatorUI(
 
 
   let inputs: DG.InputBase[] = [];
-  if (opKey === OPERATORS.MATCH || opKey === OPERATORS.PREFIX)
-    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), stringInput('value', true),
+  if (opKey === OPERATORS.MATCH || opKey === OPERATORS.PREFIX) {
+    // Field input
+    const fieldInput = choiceInput('field', Object.values(SignalsSearchField), true);
+    // Value input: if field is 'type', use enum choice, else string input
+    let valueInput: DG.InputBase;
+    if ((opValue['field'] ?? fieldInput.value) === SignalsSearchField.TYPE) {
+      valueInput = choiceInput('value', Object.values(SignalsEntityType), true);
+    } else {
+      valueInput = stringInput('value', true);
+    }
+    // When field changes, update value input accordingly
+    fieldInput.onChanged.subscribe(() => {
+      if (fieldInput.value === SignalsSearchField.TYPE) {
+        // Replace value input with enum choice
+        valueInput.root.replaceWith((valueInput = choiceInput('value', Object.values(SignalsEntityType), true)).root);
+      } else {
+        valueInput.root.replaceWith((valueInput = stringInput('value', true)).root);
+      }
+    });
+    inputs = [fieldInput, boolInInput(), valueInput,
       choiceInput('mode', opKey === OPERATORS.MATCH ? ['keyword'] : ['keyword'], opKey === OPERATORS.PREFIX, opKey === OPERATORS.PREFIX)];
+  }
   else if (opKey === OPERATORS.IN)
     inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), multiValuesInput()];
   else if (opKey === OPERATORS.INTERSECT)

@@ -196,3 +196,47 @@ export const SignalsSearchFieldDescriptions: Record<SignalsSearchField, string> 
   [SignalsSearchField.SIGNED_AT]: 'Experiment: Latest Signing Time',
   [SignalsSearchField.ASSET_TYPE_EID]: 'Material: Library Name',
 }; 
+
+// Entity type values for the 'type' field
+// experiment: Experiment
+// request: Request
+// task: Task
+// journal: Notebook
+// chemicalDrawing: Chemical Drawing
+// grid: Admin Defined Table
+// materialsTable: Materials Table
+// acronym: Chemical Acronym
+// text: Text
+// pdf: PDF Document
+// viewonly: Word Document
+// presentation: PowerPoint Document
+// excel: Excel Document
+// imageResource: Image
+// uploadedResource: Uploaded File
+// spotfiredxp: Spotfire DXP Document
+// sample: Sample
+// assetType: Material Library
+// asset: Material Asset
+// batch: Material Batch
+export enum SignalsEntityType {
+  EXPERIMENT = 'experiment',
+  REQUEST = 'request',
+  TASK = 'task',
+  JOURNAL = 'journal',
+  CHEMICAL_DRAWING = 'chemicalDrawing',
+  GRID = 'grid',
+  MATERIALS_TABLE = 'materialsTable',
+  ACRONYM = 'acronym',
+  TEXT = 'text',
+  PDF = 'pdf',
+  VIEWONLY = 'viewonly',
+  PRESENTATION = 'presentation',
+  EXCEL = 'excel',
+  IMAGE_RESOURCE = 'imageResource',
+  UPLOADED_RESOURCE = 'uploadedResource',
+  SPOTFIREDXP = 'spotfiredxp',
+  SAMPLE = 'sample',
+  ASSET_TYPE = 'assetType',
+  ASSET = 'asset',
+  BATCH = 'batch',
+} 
