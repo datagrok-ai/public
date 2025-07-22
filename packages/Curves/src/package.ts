@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 //@ts-ignore
 export * from './package.g';
 
@@ -21,11 +22,9 @@ import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
-import {dataToCurvesUI} from './fit/data-to-curves';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
-import wu from 'wu';
-import { PlateTemplateHandler } from './plates/objects/plate-template-handler';
+import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 
 export const _package = new DG.Package();
@@ -34,7 +33,7 @@ const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 
-class Sync {
+export class Sync {
   private static _currentPromise: Promise<any> = Promise.resolve();
   public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
     Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
@@ -123,8 +122,9 @@ export class PackageFunctions {
         const cell = df.cell(i, colName);
         if (!cell || !cell.value)
           return null;
-        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
+        const chartData =
+          cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+            convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&

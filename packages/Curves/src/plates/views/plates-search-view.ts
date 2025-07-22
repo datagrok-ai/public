@@ -1,11 +1,12 @@
-import { PlateQuery, PlateTemplate, PropertyCondition } from "../plates-crud";
+import {PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {debounceTime} from "rxjs/operators";
+import {debounceTime} from 'rxjs/operators';
 import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
-import {PlateProperty, plateProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, queryPlates, queryWells, wellProperties, plateTemplates} from "../plates-crud";
+import {PlateProperty, plateProperties, getPlateUniquePropertyValues,
+  getWellUniquePropertyValues, queryPlates, queryWells, wellProperties, plateTemplates} from '../plates-crud';
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
@@ -16,14 +17,13 @@ function getSearchForm(properties: PlateProperty[], getUniqueValues: (prop: any)
   for (const prop of properties) {
     if (prop.type == DG.TYPE.STRING) {
       const items = getUniqueValues(prop);
-      const input = ui.input.multiChoice(prop.name, { items: items}) as PropInput;
+      const input = ui.input.multiChoice(prop.name, {items: items}) as PropInput;
       input.prop = prop;
       inputs.push(input);
-    }
-    else if (prop.type == DG.TYPE.FLOAT) {
+    } else if (prop.type == DG.TYPE.FLOAT) {
       const input = ui.input.string(prop.name) as PropInput;
       input.prop = prop;
-      input.addValidator(s => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
+      input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
       inputs.push(input);
     }
   }
@@ -48,8 +48,7 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
         property: input.prop,
         matcher: new StringInListMatcher(input.value)
       });
-    }
-    else if (input.inputType == DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)) {
+    } else if (input.inputType == DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)) {
       matchers.push({
         property: input.prop,
         matcher: NumericMatcher.parse(input.value)!
@@ -60,7 +59,9 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   return matchers;
 }
 
-function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onResults: (grid: DG.Grid) => void): DG.View {
+function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>,
+  onResults: (grid: DG.Grid) => void
+): DG.View {
   const dummy = DG.DataFrame.create(5, 'Search plates');
   const view = DG.TableView.create(dummy);
   let platesForm = getPlatesSearchForm();
@@ -68,28 +69,32 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onR
   const platesFormHost = ui.div();
   const wellsFormHost = ui.div();
   let plateTemplate = plateTemplates[0];
+  if (!plateTemplate) {
+    grok.shell.warning('No plate templates found. Please create a template first.');
+    throw new Error('No plate templates found. Please create a template first.');
+  }
 
   const refreshUI = () => {
     ui.empty(platesFormHost);
     ui.empty(wellsFormHost);
-    platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map(p => p as PlateProperty));
-    wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map(p => p as PlateProperty));
+    platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map((p) => p as PlateProperty));
+    wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map((p) => p as PlateProperty));
     platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
     wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
     platesFormHost.appendChild(platesForm.root);
     wellsFormHost.appendChild(wellsForm.root);
-  }
+  };
 
   const setTemplate = (template: PlateTemplate) => {
     plateTemplate = template;
     refreshUI();
-  }
+  };
 
   const plateTemplateSelector = ui.input.choice('Template', {
     nullable: true,
-    items: plateTemplates.map(pt => pt.name),
+    items: plateTemplates.map((pt) => pt.name),
     value: plateTemplates[0].name,
-    onValueChanged: (v) => setTemplate(plateTemplates.find(pt => pt.name === v)!)
+    onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
   });
 
 
@@ -103,7 +108,7 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onR
       view.dataFrame = df;
       onResults(view.grid);
     });
-  }
+  };
 
   const searchHost = ui.divV([
     plateTemplateSelector.root,
@@ -123,7 +128,7 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>, onR
 export function searchPlatesView(): DG.View {
   return getSearchView(queryPlates, (grid) => {
     grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
-        .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`
+      .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
   });
 }
 
