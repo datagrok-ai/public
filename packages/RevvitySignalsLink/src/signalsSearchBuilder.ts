@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SignalsSearchQuery, QueryOperator, SignalsSearchParams } from './signalsSearchQuery';
+import { SignalsSearchQuery, QueryOperator, SignalsSearchParams, SignalsSearchField } from './signalsSearchQuery';
 import * as grok from 'datagrok-api/grok';
 import { loadRevvitySearchQueryAndParams, PARAMS_KEY, QUERY_KEY, STORAGE_NAME } from './utils';
 
@@ -227,18 +227,18 @@ export function buildOperatorUI(
 
   let inputs: DG.InputBase[] = [];
   if (opKey === OPERATORS.MATCH || opKey === OPERATORS.PREFIX)
-    inputs = [stringInput('field', true), boolInInput(), stringInput('value', true),
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), stringInput('value', true),
       choiceInput('mode', opKey === OPERATORS.MATCH ? ['keyword'] : ['keyword'], opKey === OPERATORS.PREFIX, opKey === OPERATORS.PREFIX)];
   else if (opKey === OPERATORS.IN)
-    inputs = [stringInput('field', true), boolInInput(), multiValuesInput()];
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), multiValuesInput()];
   else if (opKey === OPERATORS.INTERSECT)
-    inputs = [stringInput('field', true), boolInInput(), multiValuesInput(), minimumInput()];
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), multiValuesInput(), minimumInput()];
   else if (opKey === OPERATORS.GT || opKey === OPERATORS.LT || opKey === OPERATORS.GTE || opKey === OPERATORS.LTE)
-    inputs = [stringInput('field', true), boolInInput(), floatValueInput('value')];
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), floatValueInput('value')];
   else if (opKey === OPERATORS.RANGE)
-    inputs = [stringInput('field', true), boolInInput(), floatValueInput('from'), floatValueInput('to')];
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput(), floatValueInput('from'), floatValueInput('to')];
   else if (opKey === OPERATORS.EXISTS)
-    inputs = [stringInput('field', true), boolInInput()];
+    inputs = [choiceInput('field', Object.values(SignalsSearchField), true), boolInInput()];
   else if (opKey === OPERATORS.SIMPLE)
     inputs = [stringInput('query', true)];
   else if (opKey === OPERATORS.CHEMSEARCH) {

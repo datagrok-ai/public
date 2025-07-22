@@ -8,6 +8,7 @@ import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
 import { queryEntities } from './revvityApi';
 import { dataFrameFromObjects } from './utils';
+import { assetsQuery, batchesQuery } from './compounds';
 
 
 export const _package = new DG.Package();
@@ -42,6 +43,28 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     const queryBuilder = signalsSearchBuilderUI();
     v.append(queryBuilder);
     grok.shell.addPreview(v);
+  });
+
+  const createViewFromPreDefinedQuery = async (query: string, name: string) => {
+    //const v = DG.View.create(name);
+    const df = await grok.functions.call('RevvitySignalsLink:searchEntities', {
+      query: query,
+      params: '{}'
+    });
+    const tv = grok.shell.addTablePreview(df);
+    tv.name = name;
+  }
+
+  const compounds = treeNode.group('Compounds');
+
+  const assets = compounds.item('Assets');
+  assets.onSelected.subscribe(async () => {
+    await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets');
+  });
+
+  const batches = compounds.item('Batches');
+  batches.onSelected.subscribe(async () => {
+    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches');
   });
 }
 
