@@ -23,7 +23,12 @@ export class DBExplorer {
   }
 
   public get dbSchema(): Promise<SchemaInfo> {
-    return this._dbLoadPromise.then(() => ({references: this.references, referencedBy: this.referencedBy}));
+    return this._dbLoadPromise
+      .then(() => ({references: this.references, referencedBy: this.referencedBy}))
+      .catch((e) => {
+        console.error(e);
+        return {references: {}, referencedBy: {}};
+      });
   }
 
   private async loadDbSchema() {
@@ -69,8 +74,11 @@ export class DBExplorer {
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {
-    if (!this.schemasLoaded)
-      await this._dbLoadPromise;
+    if (!this.schemasLoaded) {
+      try {
+        await this._dbLoadPromise;
+      } catch (e) {}
+    }
     if (!this.references[tableName])
       this.references[tableName] = {};
     this.references[tableName][columnName] = {refTable, refColumn};
