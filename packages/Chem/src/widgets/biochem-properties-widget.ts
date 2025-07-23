@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import './../../css/biochem-functions-dialog-widget.css';
 
 interface FunctionState {
   selected: boolean;
@@ -22,34 +23,8 @@ interface MethodInfo {
   citation?: string;
 }
 
-const styles = `
-    .biochem-calc-dialog .d4-dialog-contents { padding: 15px !important; }
-    .biochem-calc-input-section { padding-bottom: 15px; }
-    .biochem-calc-top-inputs { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 15px; }
-    .biochem-calc-input-section .ui-input-root { margin: 0; }
-    .biochem-calc-main-content { display: flex; height: 460px; }
-    .biochem-calc-nav-panel { width: 220px; border-right: 1px solid #dee2e6; background: #fafbfc; display: flex; flex-direction: column; }
-    .biochem-calc-nav-header { padding: 8px 12px 12px 12px; display: flex; align-items: center; gap: 8px; }
-    .biochem-calc-search-icon { color: #808080; }
-    .biochem-calc-nav-header .ui-input-root { flex-grow: 1; }
-    .biochem-calc-nav-header input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 1px; font-size: 13px; }
-    .biochem-calc-nav-list { flex: 1; overflow-y: auto; padding: 5px; }
-    .biochem-calc-nav-item { padding: 1px 4px; margin: 1px 0; border-radius: 1px; cursor: pointer; display: flex; align-items: center; font-size: 12px; border: 1px solid transparent; }
-    .biochem-calc-nav-item:hover { background-color: #e3f2fd; border-color: #bbdefb; }
-    .biochem-calc-nav-item.active { background-color: #1976d2; color: white; border-color: #1565c0; font-weight: 500; }
-    .biochem-calc-nav-item .ui-input-root { margin-right: 8px; }
-    .biochem-calc-nav-item.active .ui-input-bool input[type="checkbox"] { accent-color: white; }
-    .biochem-calc-editor-panel { flex: 1; padding: 15px; overflow-y: auto; background: white; }
-    .biochem-calc-method-footer { padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d; }
-    .biochem-calc-method-footer-grid { display: flex; gap: 20px; margin-bottom: 5px; }
-    .biochem-calc-method-footer .font-weight-bold { font-weight: 600; color: #495057; }
-  `;
 
 export async function biochemicalPropertiesDialog(): Promise<void> {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
-
   const calculatorFuncs = await DG.Func.find({meta: {function_family: 'biochem-calculator'}});
 
   if (calculatorFuncs.length === 0) {
