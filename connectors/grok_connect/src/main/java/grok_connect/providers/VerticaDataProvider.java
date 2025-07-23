@@ -77,7 +77,7 @@ public class VerticaDataProvider extends JdbcDataProvider {
                 + "JOIN v_catalog.all_tables t ON t.table_name = c.table_name%s UNION ALL "
                 + "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, case t.table_type when 'VIEW' then 1 else 0 end as is_view "
-                + "FROM v_catalog.view_columns c JOIN v_catalog.all_tables t ON t.table_name = c.table_name%s;", schema == null && table == null ? "" : whereClause,
+                + "FROM v_catalog.view_columns c JOIN v_catalog.all_tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema%s;", schema == null && table == null ? "" : whereClause,
                 schema == null && table == null ? "" : whereClause);
     }
 
