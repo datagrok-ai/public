@@ -99,8 +99,9 @@ or workflow2, multiple links instances will be created. Each matched
 link instance will pass its own matched script1 output1 to the
 adjacent script2 input1. Reference selectors are using `@` base query
 name as the first argument, and id list as the second. It is possible
-to mix reference and plain selectors, in the exmaple above firtst
-selector is used in a shot form.
+to mix reference and plain selectors, in the exmaple above first
+selector is used in a short form. Note that base queries are targeted
+scirpts or workflows, not scirpt io.
 
 #### `same`
 
@@ -150,7 +151,7 @@ traversal.
 It is also possible to combine tag and id selector in the same query:
 
 ```
-#all(tag1&tag2)/last(script1|scirpt2)
+#all(tag1&tag2)/last(script1|scirpt2)/input1
 ```
 
 __TODO__ ui gif and state diagramm with base paths
@@ -161,3 +162,28 @@ script1 or script2.
 
 Note that is possible to match only nested items, tags that are higher
 in the tree than a link definition will not be matched.
+
+### Template queries
+
+If there is a need to pass many io items of one script to another,
+this could be done using templates. For exmaple, the following:
+
+```
+{
+  from: ["in_output1:myworkflow/subworkflow/script1/output1", "in_output2:myworkflow/subworkflow/script1/output2", "in_output3:myworkflow/subworkflow/script1/output3"]
+  to: ["out_input1:myworkflow/subworkflow/script2/input1", "out_input2:myworkflow/subworkflow/script2/input2", "out_input3:myworkflow/subworkflow/script2/input3"]
+}
+```
+
+Could be written as
+```
+{
+  from: "in_(template):myworkflow/subworkflow/script1/output1|output2|output3"
+  to: "out_(template):myworkflow/subworkflow/script2/input1|input2|input3",
+}
+```
+
+Template option basically creates multiple queries that only differ in
+script io part, and in templates it is possible to use `|` for script
+io. All other path parts could not use template expasion. The name of
+the query will be just a query template name and a script io name.

@@ -339,19 +339,19 @@ method described [here](./configuration#structurecheck).
 ### Metadata links
 
 Metadata links are used for [viewers
-hooks](./configuration#viewershook) and have a type `meta`. A script
-input should be a target of at most 1 data link output at the same
-time.
+hooks](./configuration#viewershook) and have a type `meta`.
 
 Meta controller has an additional method:
 
 #### `setViewMeta`
 
 ```
-setViewMeta(name: string, meta: any): void;
+setViewMeta(name: string, meta: Record<string,any>): void;
 ```
 
-Sets metadata to an output query with the specified name.
+Sets metadata to an output query with the specified name. Multiple
+links can have the same output target, provided they are using
+different keys.
 
 It is possible to hide script inputs setting the following meta:
 ```
@@ -440,4 +440,12 @@ provide `initialValues` and `inputRestrictions`.
 It is using `onInit` field instead of links and is triggered only once
 when a workflow created. Usually is used to populate static
 [states](./configuration#states). Otherwise, the same as [data
+links](#data-links).
+
+
+### Return hook
+
+It is using `onReturn` field instead of links and is triggered only
+once when a workflow is started [programmaticly](./code-usage) and
+exited via accept button. Otherwise, the same as [data
 links](#data-links).
