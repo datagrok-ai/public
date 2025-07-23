@@ -9,10 +9,10 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Calculates the distribution coefficient (logD) at pH 7.4 using pKa and logP.
+  Calculates the distribution coefficient (logD) at a specified pH using pKa and logP.
   */
-  export async function calculateLogD(table: DG.DataFrame , molecules_column_name: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculateLogD', { table, molecules_column_name });
+  export async function calculateLogD(table: DG.DataFrame , molecules_column_name: string , pH: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculateLogD', { table, molecules_column_name, pH });
   }
 
   /**
@@ -32,8 +32,8 @@ export namespace scripts {
   /**
   Calculates Isoelectric Point (pI) using various pKa datasets.
   */
-  export async function calculatePI(table: DG.DataFrame , molecules_column_name: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculatePI', { table, molecules_column_name });
+  export async function calculatePI(table: DG.DataFrame , molecules_column_name: string , pI_mean: boolean , pI_IPC2_peptide: boolean , pI_IPC_peptide: boolean , pI_ProMoST: boolean , pI_Gauci: boolean , pI_Grimsley: boolean , pI_Thurlkill: boolean , pI_Lehninger: boolean , pI_Toseland: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculatePI', { table, molecules_column_name, pI_mean, pI_IPC2_peptide, pI_IPC_peptide, pI_ProMoST, pI_Gauci, pI_Grimsley, pI_Thurlkill, pI_Lehninger, pI_Toseland });
   }
 
   /**

@@ -119,7 +119,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     }
     return JSON.stringify(stateToSave);
   };
-  ;
 
   const applyStringInput = (input: string): void => {
     try {
@@ -161,7 +160,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       console.error('Failed to restore state from history:', e);
       grok.shell.error('Failed to restore state from history');
     }
-  }; ;
+  };
 
 
   const getMethodInfoFromMeta = (func: DG.Func): MethodInfo => {
@@ -172,6 +171,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       description: func.description || '', github: opts['method_info.github'], citation: opts['method_info.citation'],
     };
   };
+
   const buildFunctionEditors = async () => {
     for (const func of calculatorFuncs) {
       const funcName = (func.friendlyName ?? func.name).replace(/^Calculate\s+/i, '');
@@ -207,7 +207,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
 
   await buildFunctionEditors();
 
-
   const setActiveFunction = (funcName: string) => {
     functionState.forEach((state, name) => state.navItem.classList.toggle('active', name === funcName));
     ui.empty(editorPanel);
@@ -219,6 +218,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   };
 
   if (firstFuncKey) setActiveFunction(firstFuncKey);
+
   const searchInFunctionMetadata = (func: DG.Func, searchTerm: string): boolean => {
     searchTerm = searchTerm.toLowerCase();
     if (func.name.toLowerCase().includes(searchTerm) || func.friendlyName?.toLowerCase().includes(searchTerm) || func.description?.toLowerCase().includes(searchTerm))
@@ -239,6 +239,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   });
 
   dialog.add(ui.divV([inputSection, mainContent, methodFooter]));
+
   dialog.onOK(async () => {
     const selectedFunctions = Array.from(functionState.entries()).filter(([, state]) => state.selected);
     if (selectedFunctions.length === 0) return grok.shell.warning('Please select at least one calculation.');
@@ -246,7 +247,21 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     await executeSelectedFunctions(selectedFunctions, table!, moleculesInput.value);
   });
 
-  dialog.history(() => ({editorSettings: getStringInput()}), (x: any) => applyStringInput(x['editorSettings']));
+  const getHistoryInput = () => {
+    const selectedFunctions = Array.from(functionState.entries())
+      .filter(([, state]) => state.selected)
+      .map(([funcName]) => funcName);
+
+    // Info string is just functions names for the ui tooltip to be informative and not just straigt "editorSettings"
+    const infoString = selectedFunctions.length > 0 ? selectedFunctions.join(', ') : 'No calculations';
+    return {
+      info: infoString,
+      editorSettings: getStringInput(),
+    };
+  };
+
+  dialog.history(getHistoryInput, (x: any) => applyStringInput(x['editorSettings']));
+
   dialog.show({width: 900, height: 680, resizable: true});
 
 
@@ -264,7 +279,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
         state.funcCall.inputs['molecules_column_name'] = molecules.name;
         state.funcCall.inputs['molecules'] = molecules.name;
         await state.funcCall.call();
-
         completedCount++;
       }
     } catch (error: unknown) {

@@ -1,22 +1,23 @@
 #name: Calculate pI
 #description: Calculates Isoelectric Point (pI) using various pKa datasets.
 #language: python
+#meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name
+#input: bool pI_mean = true
+#input: bool pI_IPC2_peptide = false
+#input: bool pI_IPC_peptide = false
+#input: bool pI_ProMoST = false
+#input: bool pI_Gauci = false
+#input: bool pI_Grimsley = false
+#input: bool pI_Thurlkill = false
+#input: bool pI_Lehninger = false
+#input: bool pI_Toseland = false
 #meta.method_info.author: Kozlova, L., Garbuzynskiy, S.O.
 #meta.method_info.year: 2023
 #meta.method_info.package: bio-pichemist-env
 #meta.method_info.github: https://github.com/AstraZeneca/peptide-tools
-#meta.param.pI_mean: true
-#meta.param.pI_IPC2_peptide: false
-#meta.param.pI_IPC_peptide: false
-#meta.param.pI_ProMoST: false
-#meta.param.pI_Gauci: false
-#meta.param.pI_Grimsley: false
-#meta.param.pI_Thurlkill: false
-#meta.param.pI_Lehninger: false
-#meta.param.pI_Toseland: false
 #output: dataframe result {action:join(table)}
 
 import pandas as pd
@@ -67,8 +68,9 @@ pi_calculation_map = {
     'pI_Thurlkill': 'Thurlkill', 'pI_Lehninger': 'Lehninger', 'pI_Toseland': 'Toseland'
 }
 
+# This logic works as-is because the #input flags are injected as global variables
 requested_calcs = {key: name for key, name in pi_calculation_map.items() if globals().get(key)}
-if not requested_calcs and globals().get('pI_mean'):
+if not requested_calcs and pI_mean:
     requested_calcs['pI_mean'] = pi_calculation_map['pI_mean']
 
 for key, name_in_lib in requested_calcs.items():
