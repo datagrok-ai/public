@@ -5,7 +5,7 @@
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name
-#input: double pH = 7.4
+#input: double pH = 7.4 {caption: pH}
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024
 #meta.method_info.package: https://github.com/datagrok-ai/public

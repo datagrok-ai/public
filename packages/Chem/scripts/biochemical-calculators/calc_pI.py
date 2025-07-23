@@ -5,15 +5,15 @@
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name
-#input: bool pI_mean = true
-#input: bool pI_IPC2_peptide = false
-#input: bool pI_IPC_peptide = false
-#input: bool pI_ProMoST = false
-#input: bool pI_Gauci = false
-#input: bool pI_Grimsley = false
-#input: bool pI_Thurlkill = false
-#input: bool pI_Lehninger = false
-#input: bool pI_Toseland = false
+#input: bool pI_mean = true {caption: Mean}
+#input: bool pI_IPC2_peptide = false {caption: IPC2 Peptide}
+#input: bool pI_IPC_peptide = false {caption: IPC Peptide}
+#input: bool pI_ProMoST = false {caption: ProMoST}
+#input: bool pI_Gauci = false {caption: Gauci}
+#input: bool pI_Grimsley = false {caption: Grimsley}
+#input: bool pI_Thurlkill = false {caption: Thurlkill}
+#input: bool pI_Lehninger = false {caption: Lehninger}
+#input: bool pI_Toseland = false {caption: Toseland}
 #meta.method_info.author: Kozlova, L., Garbuzynskiy, S.O.
 #meta.method_info.year: 2023
 #meta.method_info.package: bio-pichemist-env

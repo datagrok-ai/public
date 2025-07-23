@@ -32,9 +32,9 @@ const styles = `
     .biochem-calc-nav-header { padding: 8px 12px 12px 12px; display: flex; align-items: center; gap: 8px; }
     .biochem-calc-search-icon { color: #808080; }
     .biochem-calc-nav-header .ui-input-root { flex-grow: 1; }
-    .biochem-calc-nav-header input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 2px; font-size: 13px; }
+    .biochem-calc-nav-header input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 1px; font-size: 13px; }
     .biochem-calc-nav-list { flex: 1; overflow-y: auto; padding: 5px; }
-    .biochem-calc-nav-item { padding: 5px 12px; margin: 1px 0; border-radius: 2px; cursor: pointer; display: flex; align-items: center; font-size: 14px; border: 1px solid transparent; }
+    .biochem-calc-nav-item { padding: 1px 4px; margin: 1px 0; border-radius: 1px; cursor: pointer; display: flex; align-items: center; font-size: 12px; border: 1px solid transparent; }
     .biochem-calc-nav-item:hover { background-color: #e3f2fd; border-color: #bbdefb; }
     .biochem-calc-nav-item.active { background-color: #1976d2; color: white; border-color: #1565c0; font-weight: 500; }
     .biochem-calc-nav-item .ui-input-root { margin-right: 8px; }
@@ -65,6 +65,13 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   const moleculesInputDiv = ui.div();
   const onTableChanged = () => {
     moleculesInput = ui.input.column('Molecules', {table: table!, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+
+    if (!moleculesInput.value && table) {
+      const firstMoleculeCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (firstMoleculeCol)
+        moleculesInput.value = firstMoleculeCol;
+    }
+
     ui.empty(moleculesInputDiv);
     moleculesInputDiv.appendChild(moleculesInput.root);
   };
@@ -191,13 +198,22 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       if (moleculesInput) moleculesInput.root.style.display = 'none';
 
       const checkbox = ui.input.bool('', {value: false});
-      checkbox.onChanged.subscribe((v) => {state.selected = v;});
+
+      inputs.forEach((input) => {
+        input.onChanged.subscribe(() => {
+          if (checkbox.value === false)
+            checkbox.value = true;
+        });
+      });
+
       const navItem = ui.div([checkbox.root, ui.span([funcName])], 'biochem-calc-nav-item');
 
       const state: FunctionState = {
         selected: false, funcCall, editor: editorContainer, navItem,
         selectionCheckbox: checkbox, paramInputs,
       };
+
+      checkbox.onChanged.subscribe((v) => {state.selected = v;});
 
       functionState.set(funcName, state);
       navList.appendChild(navItem);
@@ -252,7 +268,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       .filter(([, state]) => state.selected)
       .map(([funcName]) => funcName);
 
-    // Info string is just functions names for the ui tooltip to be informative and not just straigt "editorSettings"
     const infoString = selectedFunctions.length > 0 ? selectedFunctions.join(', ') : 'No calculations';
     return {
       info: infoString,

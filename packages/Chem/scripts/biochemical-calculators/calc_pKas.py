@@ -5,15 +5,16 @@
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name
-#input: bool pKa_acidic_list = true
-#input: bool pKa_basic_list = true
-#input: bool pKa_strongest_acidic = false
-#input: bool pKa_strongest_basic = false
+#input: bool pKa_acidic_list = true {caption: Acidic List}
+#input: bool pKa_basic_list = true {caption: Basic List}
+#input: bool pKa_strongest_acidic = false {caption: Strongest Acidic}
+#input: bool pKa_strongest_basic = false {caption: Strongest Basic}
 #meta.method_info.author: Ghiandoni G.M, Frolov A.
 #meta.method_info.year: 2024
 #meta.method_info.package: bio-pichemist-env
 #meta.method_info.github: https://github.com/AstraZeneca/peptide-tools
 #output: dataframe result {action:join(table)}
+
 
 import pandas as pd
 from rdkit import Chem
