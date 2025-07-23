@@ -1,7 +1,6 @@
 #name: Calculate pI
 #description: Calculates Isoelectric Point (pI) using various pKa datasets.
 #language: python
-#tags: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name

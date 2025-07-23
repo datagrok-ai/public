@@ -8,8 +8,6 @@ interface FunctionState {
   funcCall: DG.FuncCall;
   editor: HTMLElement;
   navItem: HTMLElement;
-  metaParams: string[];
-  paramValues: {[key: string]: any};
   selectionCheckbox: DG.InputBase<boolean | null>;
   paramInputs: {[key: string]: DG.InputBase};
 }
@@ -52,7 +50,8 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   styleSheet.textContent = styles;
   document.head.appendChild(styleSheet);
 
-  const calculatorFuncs = await DG.Func.find({tags: ['biochem-calculator']});
+  const calculatorFuncs = await DG.Func.find({meta: {function_family: 'biochem-calculator'}});
+
   if (calculatorFuncs.length === 0) {
     grok.shell.warning('No biochemical calculators found.');
     return;
@@ -101,38 +100,32 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     return value;
   };
 
+
   const getStringInput = (): string => {
     const stateToSave: {[key: string]: any} = {};
-
     stateToSave.globalInputs = {
       table: table?.name || null,
       moleculesColumn: moleculesInput.value?.name || null,
     };
-
     stateToSave.functions = {};
     for (const [funcName, state] of functionState.entries()) {
       const currentParamValues: {[key: string]: any} = {};
-
       for (const [paramName, input] of Object.entries(state.paramInputs))
         currentParamValues[paramName] = sanitizeValue(input.value);
-
-
       stateToSave.functions[funcName] = {
         selected: state.selectionCheckbox.value,
         params: currentParamValues,
       };
     }
-
     return JSON.stringify(stateToSave);
   };
+  ;
 
   const applyStringInput = (input: string): void => {
     try {
       const stateToRestore = JSON.parse(input);
-
       if (stateToRestore.globalInputs) {
         const globalInputs = stateToRestore.globalInputs;
-
         if (globalInputs.table) {
           const targetTable = grok.shell.tables.find((t) => t.name === globalInputs.table);
           if (targetTable) {
@@ -141,29 +134,24 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
             onTableChanged();
           }
         }
-
         if (globalInputs.moleculesColumn && table) {
           const targetColumn = table.col(globalInputs.moleculesColumn);
           if (targetColumn)
             moleculesInput.value = targetColumn;
         }
       }
-
       if (stateToRestore.functions) {
         for (const [funcName, savedState] of Object.entries(stateToRestore.functions)) {
           const state = functionState.get(funcName);
           if (state && savedState) {
             const typedSavedState = savedState as any;
-
             state.selectionCheckbox.value = typedSavedState.selected;
             state.selected = typedSavedState.selected;
-
             const savedParams = typedSavedState.params;
             for (const [paramName, paramValue] of Object.entries(savedParams)) {
               if (state.paramInputs[paramName]) {
                 const restoredValue = desanitizeValue(paramValue);
                 state.paramInputs[paramName].value = restoredValue;
-                state.paramValues[paramName] = restoredValue;
               }
             }
           }
@@ -173,15 +161,8 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       console.error('Failed to restore state from history:', e);
       grok.shell.error('Failed to restore state from history');
     }
-  };
+  }; ;
 
-  const extractMetaParameters = (func: DG.Func): string[] => {
-    const params: string[] = [];
-    for (const key of Object.keys(func.options || {}))
-      if (key.startsWith('param.')) params.push(key.replace('param.', ''));
-
-    return params;
-  };
 
   const getMethodInfoFromMeta = (func: DG.Func): MethodInfo => {
     const opts = func.options || {};
@@ -191,44 +172,33 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       description: func.description || '', github: opts['method_info.github'], citation: opts['method_info.citation'],
     };
   };
-
   const buildFunctionEditors = async () => {
     for (const func of calculatorFuncs) {
       const funcName = (func.friendlyName ?? func.name).replace(/^Calculate\s+/i, '');
       if (!firstFuncKey) firstFuncKey = funcName;
       const funcCall = func.prepare({});
-      const metaParams = extractMetaParameters(func);
-      const paramValues: {[key: string]: any} = {};
       const paramInputs: {[key: string]: DG.InputBase} = {};
       const editorContainer = ui.divV([], 'ui-form');
       editorContainer.style.padding = '15px';
 
-      if (metaParams.length > 0) {
-        metaParams.forEach((paramName) => {
-          const defaultValue = func.options[`param.${paramName}`] === 'true' || func.options[`param.${paramName}`] === true;
-          paramValues[paramName] = defaultValue;
-          const input = ui.input.bool(paramName, {value: defaultValue, onValueChanged: (v: boolean) => {paramValues[paramName] = v;}});
-          paramInputs[paramName] = input;
-          editorContainer.appendChild(input.root);
-        });
-      } else {
-        const inputs = await funcCall.buildEditor(editorContainer);
-        inputs.forEach((input) => {
-          paramInputs[input.property.name] = input;
-        });
-        const tableInput = inputs.find((i) => i.property.name === 'table');
-        if (tableInput) tableInput.root.style.display = 'none';
-        const moleculesInput = inputs.find((i) => i.property.name === 'molecules_column_name' || i.property.name === 'molecules');
-        if (moleculesInput) moleculesInput.root.style.display = 'none';
-      }
+      const inputs = await funcCall.buildEditor(editorContainer);
+      inputs.forEach((input) => {
+        paramInputs[input.property.name] = input;
+      });
+      const tableInput = inputs.find((i) => i.property.name === 'table');
+      if (tableInput) tableInput.root.style.display = 'none';
+      const moleculesInput = inputs.find((i) => i.property.name === 'molecules_column_name' || i.property.name === 'molecules');
+      if (moleculesInput) moleculesInput.root.style.display = 'none';
 
       const checkbox = ui.input.bool('', {value: false});
       checkbox.onChanged.subscribe((v) => {state.selected = v;});
       const navItem = ui.div([checkbox.root, ui.span([funcName])], 'biochem-calc-nav-item');
+
       const state: FunctionState = {
-        selected: false, funcCall, editor: editorContainer, navItem, metaParams,
-        paramValues, selectionCheckbox: checkbox, paramInputs,
+        selected: false, funcCall, editor: editorContainer, navItem,
+        selectionCheckbox: checkbox, paramInputs,
       };
+
       functionState.set(funcName, state);
       navList.appendChild(navItem);
       navItem.addEventListener('click', (e) => {if (e.target !== checkbox.input) setActiveFunction(funcName);});
@@ -236,6 +206,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   };
 
   await buildFunctionEditors();
+
 
   const setActiveFunction = (funcName: string) => {
     functionState.forEach((state, name) => state.navItem.classList.toggle('active', name === funcName));
@@ -248,7 +219,6 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   };
 
   if (firstFuncKey) setActiveFunction(firstFuncKey);
-
   const searchInFunctionMetadata = (func: DG.Func, searchTerm: string): boolean => {
     searchTerm = searchTerm.toLowerCase();
     if (func.name.toLowerCase().includes(searchTerm) || func.friendlyName?.toLowerCase().includes(searchTerm) || func.description?.toLowerCase().includes(searchTerm))
@@ -279,6 +249,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   dialog.history(() => ({editorSettings: getStringInput()}), (x: any) => applyStringInput(x['editorSettings']));
   dialog.show({width: 900, height: 680, resizable: true});
 
+
   async function executeSelectedFunctions(
     selectedFunctions: [string, FunctionState][],
     table: DG.DataFrame,
@@ -292,22 +263,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
         state.funcCall.inputs['table'] = table;
         state.funcCall.inputs['molecules_column_name'] = molecules.name;
         state.funcCall.inputs['molecules'] = molecules.name;
-
-        if (state.metaParams.length > 0) {
-          const script = state.funcCall.func as DG.Script;
-          const originalScript = script.script;
-          const headerRegex = /^(#.*\n)*/;
-          const headerMatch = originalScript.match(headerRegex);
-          const headerPart = headerMatch ? headerMatch[0] : '';
-          const scriptPart = originalScript.substring(headerPart.length);
-          const paramAssignments = Object.entries(state.paramValues).map(([key, value]) => `${key} = ${value ? 'True' : 'False'}`).join('\n');
-          const modifiedScript = headerPart + paramAssignments + '\n\n' + scriptPart;
-          const tempScript = DG.Script.create(modifiedScript);
-          tempScript.language = script.language;
-          const tempFuncCall = tempScript.prepare({table: table, molecules_column_name: molecules.name});
-          await tempFuncCall.call();
-        } else
-          await state.funcCall.call();
+        await state.funcCall.call();
 
         completedCount++;
       }

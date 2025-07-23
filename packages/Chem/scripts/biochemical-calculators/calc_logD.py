@@ -1,7 +1,6 @@
 #name: Calculate logD
 #description: Calculates the distribution coefficient (logD) at pH 7.4 using pKa and logP.
 #language: python
-#tags: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
 #input: string molecules_column_name
