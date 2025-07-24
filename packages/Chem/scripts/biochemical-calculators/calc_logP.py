@@ -2,9 +2,8 @@
 #description: Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method.
 #language: python
 #meta.function_family: biochem-calculator
-#environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit]
 #input: dataframe table
-#input: string molecules_column_name
+#input: column molecules
 #meta.method_info.author: RDKit Team
 #meta.method_info.year: 2024
 #meta.method_info.package: rdkit-base
@@ -29,6 +28,6 @@ def calculate_logp(mol_str: str, index: int):
         print(f"ERROR on logP for row {index}: {e}")
         return None
 
-molecule_data = table[molecules_column_name]
+molecule_data = table[molecules]
 logp_values = [calculate_logp(m, i) for i, m in enumerate(molecule_data)]
 result = pd.DataFrame({'logP': logp_values}, index=table.index)

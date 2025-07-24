@@ -11,36 +11,36 @@ export namespace scripts {
   /**
   Calculates the distribution coefficient (logD) at a specified pH using pKa and logP.
   */
-  export async function calculateLogD(table: DG.DataFrame , molecules_column_name: string , pH: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculateLogD', { table, molecules_column_name, pH });
+  export async function calculateLogD(table: DG.DataFrame , molecules: DG.Column , pH: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculateLogD', { table, molecules, pH });
   }
 
   /**
   Calculates the octanol-water partition coefficient (logP) using RDKit's Crippen method.
   */
-  export async function calculateLogP(table: DG.DataFrame , molecules_column_name: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculateLogP', { table, molecules_column_name });
+  export async function calculateLogP(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculateLogP', { table, molecules });
   }
 
   /**
   Predicts aqueous solubility (logS) using the AqSolPred consensus model.
   */
-  export async function calculateLogS(table: DG.DataFrame , molecules_column_name: string ): Promise<void> {
-    return await grok.functions.call('Chem:CalculateLogS', { table, molecules_column_name });
+  export async function calculateLogS(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+    return await grok.functions.call('Chem:CalculateLogS', { table, molecules });
   }
 
   /**
   Calculates Isoelectric Point (pI) using various pKa datasets.
   */
-  export async function calculatePI(table: DG.DataFrame , molecules_column_name: string , pI_mean: boolean , pI_IPC2_peptide: boolean , pI_IPC_peptide: boolean , pI_ProMoST: boolean , pI_Gauci: boolean , pI_Grimsley: boolean , pI_Thurlkill: boolean , pI_Lehninger: boolean , pI_Toseland: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculatePI', { table, molecules_column_name, pI_mean, pI_IPC2_peptide, pI_IPC_peptide, pI_ProMoST, pI_Gauci, pI_Grimsley, pI_Thurlkill, pI_Lehninger, pI_Toseland });
+  export async function calculatePI(table: DG.DataFrame , molecules: DG.Column , pI_mean: boolean , pI_IPC2_peptide: boolean , pI_IPC_peptide: boolean , pI_ProMoST: boolean , pI_Gauci: boolean , pI_Grimsley: boolean , pI_Thurlkill: boolean , pI_Lehninger: boolean , pI_Toseland: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculatePI', { table, molecules, pI_mean, pI_IPC2_peptide, pI_IPC_peptide, pI_ProMoST, pI_Gauci, pI_Grimsley, pI_Thurlkill, pI_Lehninger, pI_Toseland });
   }
 
   /**
   Calculates acidic and basic pKa values, noting non-ionizable molecules.
   */
-  export async function calculatePKa(table: DG.DataFrame , molecules_column_name: string , pKa_acidic_list: boolean , pKa_basic_list: boolean , pKa_strongest_acidic: boolean , pKa_strongest_basic: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CalculatePKa', { table, molecules_column_name, pKa_acidic_list, pKa_basic_list, pKa_strongest_acidic, pKa_strongest_basic });
+  export async function calculatePKa(table: DG.DataFrame , molecules: DG.Column , pKa_acidic_list: boolean , pKa_basic_list: boolean , pKa_strongest_acidic: boolean , pKa_strongest_basic: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CalculatePKa', { table, molecules, pKa_acidic_list, pKa_basic_list, pKa_strongest_acidic, pKa_strongest_basic });
   }
 
   /**

@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: string molecules_column_name
+#input: column molecules
 #input: bool pKa_acidic_list = true {caption: Acidic List}
 #input: bool pKa_basic_list = true {caption: Basic List}
 #input: bool pKa_strongest_acidic = false {caption: Strongest Acidic}
@@ -43,9 +43,10 @@ def get_pka_values(mol_str: str, index: int) -> dict:
         print(f"ERROR on pKa for row {index}: {e}")
         return {}
 
-molecule_data = table[molecules_column_name]
+molecule_data = table[molecules]
 pka_results = [get_pka_values(m, i) for i, m in enumerate(molecule_data)]
 result_data = {}
+
 
 if pKa_acidic_list:
     result_data['acidic_fragment(s)'] = [

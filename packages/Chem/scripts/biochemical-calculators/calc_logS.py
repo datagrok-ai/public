@@ -3,7 +3,7 @@
 #language: python
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.8, scikit-learn=0.23.2, numpy=1.19.5, pandas=1.3.5, rdkit, {pip: [mordred, xgboost]}]
 #input: dataframe table
-#input: string molecules_column_name
+#input: column molecules {caption: Molecules column}
 #meta.method_info.author: Kjell Jorner, et al.
 #meta.method_info.year: 2021
 #meta.method_info.package: AqSolPred
@@ -106,9 +106,8 @@ class AqSolPred_Predictor:
 
 try:
     predictor = AqSolPred_Predictor()
-    molecule_data = table[molecules_column_name]
     logS_values = []
-    for i, smiles in enumerate(molecule_data):
+    for i, smiles in enumerate(molecules):
         try:
             logS = predictor.predict(smiles)
             logS_values.append(logS)

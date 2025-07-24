@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: string molecules_column_name
+#input: column molecules {caption: Molecules column}
 #input: double pH = 7.4 {caption: pH}
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024
@@ -54,6 +54,7 @@ def calculate_logd(mol_str: str, pH: float, index: int) -> float:
         print(f"ERROR on logD for row {index}: {e}")
         return None
 
-molecule_data = table[molecules_column_name]
+
+molecule_data = table[molecules]
 logd_values = [calculate_logd(m, pH, i) for i, m in enumerate(molecule_data)]
 result = pd.DataFrame({f'logD @ pH {pH}': logd_values}, index=table.index)

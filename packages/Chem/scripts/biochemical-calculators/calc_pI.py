@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: string molecules_column_name
+#input: column molecules
 #input: bool pI_mean = true {caption: Mean}
 #input: bool pI_IPC2_peptide = false {caption: IPC2 Peptide}
 #input: bool pI_IPC_peptide = false {caption: IPC Peptide}
@@ -58,8 +58,9 @@ def calculate_pi_for_molecule(mol_str: str, index: int) -> dict:
         traceback.print_exc()
         return {}
 
-molecule_data = table[molecules_column_name]
+molecule_data = table[molecules]
 pi_results = [calculate_pi_for_molecule(m, i) for i, m in enumerate(molecule_data)]
+
 
 result_data = {}
 pi_calculation_map = {
@@ -68,7 +69,6 @@ pi_calculation_map = {
     'pI_Thurlkill': 'Thurlkill', 'pI_Lehninger': 'Lehninger', 'pI_Toseland': 'Toseland'
 }
 
-# This logic works as-is because the #input flags are injected as global variables
 requested_calcs = {key: name for key, name in pi_calculation_map.items() if globals().get(key)}
 if not requested_calcs and pI_mean:
     requested_calcs['pI_mean'] = pi_calculation_map['pI_mean']

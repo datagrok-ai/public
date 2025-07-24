@@ -11,6 +11,8 @@ interface FunctionState {
   navItem: HTMLElement;
   selectionCheckbox: DG.InputBase<boolean | null>;
   paramInputs: {[key: string]: DG.InputBase};
+  tableInputName: string;
+  moleculesInputName: string;
 }
 
 interface MethodInfo {
@@ -87,7 +89,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     const stateToSave: {[key: string]: any} = {};
     stateToSave.globalInputs = {
       table: table?.name || null,
-      moleculesColumn: moleculesInput.value?.name || null,
+      moleculesColumn: moleculesInput?.value?.name || null,
     };
     stateToSave.functions = {};
     for (const [funcName, state] of functionState.entries()) {
@@ -156,6 +158,25 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
 
   const buildFunctionEditors = async () => {
     for (const func of calculatorFuncs) {
+      if (!func.inputs || func.inputs.length < 2) {
+        console.warn(`Biochem-Widget: Skipping function "${func.name}" because it has fewer than two inputs.`);
+        continue;
+      }
+      const tableInputDef = func.inputs[0];
+      const moleculesInputDef = func.inputs[1];
+
+      if (!tableInputDef || !moleculesInputDef) {
+        console.warn(`Biochem-Widget: Skipping function "${func.name}" because its first or second input is malformed (null).`);
+        continue;
+      }
+      if (tableInputDef.propertyType !== 'dataframe' || moleculesInputDef.propertyType !== 'column') {
+        console.warn(`Biochem-Widget: Skipping function "${func.name}" because its first two inputs are not a dataframe and a column.`);
+        continue;
+      }
+
+      const tableInputName = tableInputDef.name;
+      const moleculesInputName = moleculesInputDef.name;
+
       const funcName = (func.friendlyName ?? func.name).replace(/^Calculate\s+/i, '');
       if (!firstFuncKey) firstFuncKey = funcName;
       const funcCall = func.prepare({});
@@ -165,12 +186,12 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
 
       const inputs = await funcCall.buildEditor(editorContainer);
       inputs.forEach((input) => {
-        paramInputs[input.property.name] = input;
+        if (input.property)
+          paramInputs[input.property.name] = input;
       });
-      const tableInput = inputs.find((i) => i.property.name === 'table');
-      if (tableInput) tableInput.root.style.display = 'none';
-      const moleculesInput = inputs.find((i) => i.property.name === 'molecules_column_name' || i.property.name === 'molecules');
-      if (moleculesInput) moleculesInput.root.style.display = 'none';
+
+      if (inputs[0]) inputs[0].root.style.display = 'none';
+      if (inputs[1]) inputs[1].root.style.display = 'none';
 
       const checkbox = ui.input.bool('', {value: false});
 
@@ -186,15 +207,16 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       const state: FunctionState = {
         selected: false, funcCall, editor: editorContainer, navItem,
         selectionCheckbox: checkbox, paramInputs,
+        tableInputName: tableInputName,
+        moleculesInputName: moleculesInputName,
       };
 
       checkbox.onChanged.subscribe((v) => {state.selected = v;});
-
       functionState.set(funcName, state);
       navList.appendChild(navItem);
       navItem.addEventListener('click', (e) => {if (e.target !== checkbox.input) setActiveFunction(funcName);});
     }
-  };
+  }; ;
 
   await buildFunctionEditors();
 
@@ -265,9 +287,9 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
     try {
       for (const [funcName, state] of selectedFunctions) {
         progress.update((completedCount / selectedFunctions.length) * 100, `Calculating ${funcName}...`);
-        state.funcCall.inputs['table'] = table;
-        state.funcCall.inputs['molecules_column_name'] = molecules.name;
-        state.funcCall.inputs['molecules'] = molecules.name;
+        state.funcCall.inputs[state.tableInputName] = table;
+        state.funcCall.inputs[state.moleculesInputName] = molecules;
+
         await state.funcCall.call();
         completedCount++;
       }
