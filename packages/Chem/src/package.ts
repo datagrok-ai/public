@@ -1826,7 +1826,7 @@ export async function callChemDiversitySearch(
 //meta.function_family: biochem-calculator
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
-//meta.method_info.package: https://github.com/actelion/openchemlib
+//meta.method_info.github: https://github.com/actelion/openchemlib
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column,
   MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean,
   PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean,
