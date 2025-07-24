@@ -474,7 +474,8 @@ export interface ICalendarSettings {
 
   redWeekends: boolean;
 
-  clickFiltersRows: boolean;
+  /// Determines what happens when you click a date.
+  onClick: keyof typeof RowGroupAction;
 
   showFilteredOnly: boolean;
 
