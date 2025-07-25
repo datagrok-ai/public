@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.0 (2025-07-25)
+
+Compatibility with 1.26.0
+
 ## 4.5.8 (2025-05-02)
 
 Fixes JSON serialization for NaN/Infinity
