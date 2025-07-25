@@ -96,6 +96,7 @@ export namespace decorators {
     viewer?: string;
     units?: string;
     type?: string;
+    step?: string;
     "meta.url"?: boolean;
   }
 
@@ -211,7 +212,7 @@ export namespace decorators {
     test?: { test: string, wait: string, timeout?: string, skip?: string }
   }
 
-  export function func(config: FunctionOptions) {
+  export function func(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -227,7 +228,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function autostart(config: FunctionOptions) {
+  export function autostart(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -235,7 +236,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function init(config: FunctionOptions) {
+  export function init(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -243,7 +244,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function editor(config: FunctionOptions) {
+  export function editor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -251,7 +252,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function panel(config: FunctionOptions) {
+  export function panel(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -259,7 +260,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function folderViewer(config: FunctionOptions) {
+  export function folderViewer(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -267,7 +268,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function semTypeDetector(config: FunctionOptions) {
+  export function semTypeDetector(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -275,7 +276,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function packageSettingsEditor(config: FunctionOptions) {
+  export function packageSettingsEditor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -291,7 +292,7 @@ export namespace decorators {
   //   ) { };
   // }
 
-  export function dashboard(config: DashboardOptions) {
+  export function dashboard(config?: DashboardOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -299,7 +300,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function functionAnalysis(config: FunctionOptions) {
+  export function functionAnalysis(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -307,7 +308,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function converter(config: FunctionOptions) {
+  export function converter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -315,7 +316,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function fileViewer(config: FileViewerOptions) {
+  export function fileViewer(config?: FileViewerOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -323,7 +324,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function fileExporter(config: FunctionOptions) {
+  export function fileExporter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -347,7 +348,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function treeBrowser(config: FunctionOptions) {
+  export function treeBrowser(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
