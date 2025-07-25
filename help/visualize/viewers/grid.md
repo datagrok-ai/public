@@ -310,7 +310,7 @@ Supported summary column types:
 * Sparklines
 * Bar Chart
 * Radar
-* Pie Barchart
+* Pie Chart
 <!--* Markup-->
 
 To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
