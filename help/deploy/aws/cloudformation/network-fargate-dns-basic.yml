@@ -178,7 +178,7 @@ Parameters:
     Type: String
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.25.3
+    Default: 1.26.0
     Description: Enter Datagrok docker image version.
     Type: String
   GpuAMI:
@@ -239,7 +239,7 @@ Parameters:
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.3.30
+    Default: 2.4.0
     Description: Enter Grok Connect docker image version.
     Type: String
   GrokPipeVersion:
@@ -249,7 +249,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.10.1
+    Default: 1.11.1
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -280,7 +280,7 @@ Parameters:
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.14.0
+    Default: 1.15.0
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   Postfix:
