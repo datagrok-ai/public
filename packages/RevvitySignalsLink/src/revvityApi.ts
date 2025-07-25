@@ -6,10 +6,20 @@ import { SignalsSearchParams, SignalsSearchQuery } from "./signalsSearchQuery";
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
+  meta?: RevvityMeta;
   links?: RevvityLinks;
   data?: RevvityData<T> | RevvityData<T>[];
   included?: RevvityIncluded<I>[];
   errors?: RevvityApiError[];
+}
+
+//Meta data included into response
+export interface RevvityMeta {
+  "took-ms": number,
+  "query-timed-out": boolean,
+  "query-reached-limit": boolean,
+  count: number,
+  total: number
 }
 
 // Links object (can be extended as needed)
@@ -47,6 +57,26 @@ export interface RevvityApiError {
   detail: string;
 }
 
+export interface RevvityUserLicense {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export interface RevvityUser {
+  lastLoginAt?: string;
+  createdAt?: string;
+  licenses?: RevvityUserLicense[];
+  userId?: string;
+  userName?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  organization?: string;
+  isEnabled?: boolean;
+}
+
 
 async function request<T>(
   method: string,
@@ -56,7 +86,7 @@ async function request<T>(
 ): Promise<RevvityApiResponse<T>> {
   const headers: any = {
     'x-api-key': await getApiKey(),
-    'Accept': 'application/json',
+    'Accept': 'application/vnd.api+json',
   };
   if (method === 'POST')
     headers['Content-Type'] = 'application/json';
@@ -78,13 +108,37 @@ async function request<T>(
   return res;
 }
 
-
-/** Search entities */
-export async function queryEntities(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
-  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
-  return request('POST', `/entities/search?${paramsStr}`, body);
+export async function queryUsers(): Promise<RevvityApiResponse> {
+  return request('GET', `/users`);
 }
 
+export async function queryEntities(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
+  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
+  return request('POST', `/entities/search${paramsStr}`, body);
+}
+
+export async function queryEntityById(id: string, queryParams?: any): Promise<RevvityApiResponse> {
+  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
+  return request('GET', `/entities/${id}${paramsStr}`);
+}
+
+export async function queryStructureById(id: string): Promise<string> {
+
+  const url = `${await getApiUrl()}/materials/${id}/drawing?format=smiles`;
+  const response = await grok.dapi.fetchProxy(url, {
+    method: 'GET',
+    headers: {
+      'x-api-key': await getApiKey(),
+    }
+  });
+
+  const res: string = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+  }
+  return res;
+}
 
 export function paramsStringFromObj(params: any): string {
   let paramsStr = '';

@@ -6,9 +6,9 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities } from './revvityApi';
-import { dataFrameFromObjects } from './utils';
-import { assetsQuery, batchesQuery } from './compounds';
+import { queryEntities, queryEntityById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject } from './utils';
+import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
 
 
 export const _package = new DG.Package();
@@ -46,8 +46,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   });
 
   const createViewFromPreDefinedQuery = async (query: string, name: string) => {
-    //const v = DG.View.create(name);
-    const df = await grok.functions.call('RevvitySignalsLink:searchEntities', {
+    const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
       params: '{}'
     });
@@ -85,4 +84,57 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     grok.shell.error(e?.message ?? e);
   }
   return df;
+}
+
+//name: Search Entities With Structures
+//input: string query
+//input: string params
+//output: dataframe df
+export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
+  let df = DG.DataFrame.create();
+  try {
+    const queryJson: SignalsSearchQuery = JSON.parse(query);
+    const paramsJson: SignalsSearchParams = JSON.parse(params);
+    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+    if (!response.data)
+      return DG.DataFrame.create();
+    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+
+    const rows = await transformData(data);
+    const moleculeIds = data.map((it) => it.id);
+    df = DG.DataFrame.fromObjects(rows)!;
+    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
+    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
+    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+    df.columns.add(moleculeColumn);
+    reorderColummns(df);
+    addMoleculeStructures(moleculeIds, moleculeColumn);
+  } catch (e: any) {
+    grok.shell.error(e?.message ?? e);
+  }
+  return df;
+}
+
+//name: Get Users
+//output: string users
+export async function getUsers(): Promise<string> {
+  const users: {[key: string]: RevvityUser} = {};
+  const response = await queryUsers();
+  if (!response.data)
+    return '{}';
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  for (const user of data)
+    users[user.id] = Object.assign({}, user.attributes || {});
+  return JSON.stringify(users);
+}
+
+
+//name: Revvity Signals
+//tags: panel, widgets
+//input: string id { semType: RevvitySignalsId }
+//output: widget result
+export async function entityTreeWidget(id: string): Promise<DG.Widget> {
+  const obj = (await queryEntityById(id)) as RevvityApiResponse;
+  const widget = widgetFromObject(obj);
+  return widget;
 }
