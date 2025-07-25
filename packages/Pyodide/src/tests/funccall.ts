@@ -16,7 +16,7 @@ category('Pyodide: FuncCall execution', async () => {
     const actual = {out1, out2, out3, out4};
     const expected  = {out1: false, out2: 3, out3: 4.5, out4: 'my string edited'};
     expectDeepEqual(actual, expected);
-  });
+  }, { skipReason: 'Old CI chrome version' });
 
   test('Simple types call pyodide', async () => {
     const func = DG.Func.byName('Pyodide:SimpleInputsCallPy');
@@ -26,7 +26,7 @@ category('Pyodide: FuncCall execution', async () => {
     const actual = {out1, out2, out3, out4};
     const expected  = {out1: false, out2: 3, out3: 4.5, out4: 'my string edited'};
     expectDeepEqual(actual, expected);
-  });
+  }, { skipReason: 'Old CI chrome version' });
 
   test('Datetime call js', async () => {
     const func = DG.Func.byName('Pyodide:DatetimeInputCallJS');
@@ -36,7 +36,7 @@ category('Pyodide: FuncCall execution', async () => {
     await fc.call();
     const {output_datetime} = fc.outputs;
     expectDeepEqual(output_datetime.unix(), final.unix());
-  });
+  }, { skipReason: 'Old CI chrome version' });
 
   test('Datetime call pyodide', async () => {
     const func = DG.Func.byName('Pyodide:DatetimeInputCallPy');
@@ -46,7 +46,7 @@ category('Pyodide: FuncCall execution', async () => {
     await fc.call();
     const {output_datetime} = fc.outputs;
     expectDeepEqual(output_datetime.unix(), final.unix());
-  });
+  }, { skipReason: 'Old CI chrome version' });
 
   test('Dataframe call js', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'col1', ['val1', 'val2'])]);
@@ -55,7 +55,7 @@ category('Pyodide: FuncCall execution', async () => {
     await fc.call();
     const {output_df} = fc.outputs;
     expectDeepEqual(output_df, DG.DataFrame.fromCsv(resCsv));
-  });
+  }, { skipReason: 'Old CI chrome version' });
 
   test('Dataframe call pyodide', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'col1', ['val1', 'val2'])]);
@@ -64,6 +64,5 @@ category('Pyodide: FuncCall execution', async () => {
     await fc.call();
     const {output_df} = fc.outputs;
     expectDeepEqual(output_df, DG.DataFrame.fromCsv(resCsv));
-
-  });
+  }, { skipReason: 'Old CI chrome version' });
 });
