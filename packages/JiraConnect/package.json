@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/jiraconnect",
   "friendlyName": "Jira Connect",
-  "version": "1.1.8",
+  "version": "1.2.0",
   "description": "Pakcages for Jira integration into Datagrok",
   "author": {
     "name": "Savenko Stanislav",
