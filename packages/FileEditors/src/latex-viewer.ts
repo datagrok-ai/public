@@ -101,9 +101,24 @@ export class LatexViewer {
 
     this.view.append(this.container);
     this.view.setRibbonPanels([[
+      this.getDownLoadIcon(),
       this.getEditToggle(),
       this.refreshWgt,
     ]]);
+  }
+
+  private getDownLoadIcon(): HTMLElement {
+    const icon = ui.iconFA('arrow-to-bottom', () => {
+      const link = document.createElement('a');
+      const file = new Blob([this.editorView!.state.doc.toString()], {type: 'text/plain'});
+      link.href = URL.createObjectURL(file);
+      link.download = this.file.name;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }, 'Download tex-file');
+    icon.classList.add('fe-latex-viewer-ribbon-download');
+
+    return icon;
   }
 
   private getEditToggle(): HTMLElement {
