@@ -1,8 +1,8 @@
 # File Editors changelog
 
-## 1.2.1 (2025-07-30)
+## 1.3.1 (2025-07-30)
 
-Added support of Tex/LaTex files
+Added support of TEX files
 
 ## 1.0.0 (2023-11-13)
 
