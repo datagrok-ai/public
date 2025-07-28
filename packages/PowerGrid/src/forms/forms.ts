@@ -89,7 +89,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     }
     cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
 
-    const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
+    const maxNameWidth = Math.min(150, Math.max(...cols.map((c) => g.measureText(c.name).width)));
     const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * 8)));
     const showColumnNames = settings.showColumnNames == 'Always' ||
       (settings.showColumnNames ?? 'Auto') == 'Auto' && maxNameWidth + maxValueWidth + 10 < b.width;

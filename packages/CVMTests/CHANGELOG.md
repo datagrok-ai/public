@@ -1,5 +1,9 @@
 # CVM Tests changelog
 
+# 1.4.0 (28-07-2025)
+
+* Dependency: datagarok-api >= 1.26.0*
+
 # 1.2.0
 
 * Test fixes

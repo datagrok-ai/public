@@ -322,7 +322,7 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-async function runTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
+async function runTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
   let failed = false;
   let verbosePassed = "";
   let verboseSkipped = "";
@@ -333,7 +333,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   let countFailed = 0;
   let resultDF: any = undefined;
   let lastTest: any = null;
-  let res: string  = '';
+  let res: string = '';
   try {
     for (let testParam of testsParams) {
       lastTest = testParam;
@@ -410,7 +410,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
       res = resultDF.toCsv();
     }
   } catch (e) {
-    failed =true;
+    failed = true;
 
     error = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
       `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
@@ -473,26 +473,26 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
         (<any>window).DG.Test.isInDebug = true;
 
       return new Promise<any>((resolve, reject) => {
-        
-        (<any>window).runTests = eval('(' + testData.func  + ')');
+
+        (<any>window).runTests = eval('(' + testData.func + ')');
 
         (<any>window).runTests(testData.tests, options.stopOnTimeout).then((results: any) => {
-              resolve(results);
+          resolve(results);
+        })
+          .catch((e: any) => {
+            resolve({
+              failed: true,
+              verbosePassed: "",
+              verboseSkipped: "",
+              verboseFailed: "",
+              error: JSON.stringify(e),
+              passedAmount: 0,
+              skippedAmount: 0,
+              failedAmount: 1,
+              csv: "",
+              df: undefined
             })
-            .catch((e: any) => {
-              resolve({
-                failed: true,
-                verbosePassed: "",
-                verboseSkipped: "",
-                verboseFailed: "",
-                error: JSON.stringify(e),
-                passedAmount: 0,
-                skippedAmount: 0,
-                failedAmount: 1,
-                csv: "",
-                df: undefined
-              })
-            });
+          });
 
         // (<any>window).DG.Utils.executeTests(testData.tests, options.stopOnTimeout)
         //   .then((results: any) => {

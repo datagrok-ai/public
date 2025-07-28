@@ -15,9 +15,21 @@ class ChemProp(Engine):
     def train_impl(self, id: str, table: pd.DataFrame, predict: str, parameter_values: dict):
         tmp_dir = Engine.get_temporary_directory(id)
         table_path = os.path.join(tmp_dir, 'table.csv')
-        table.columns = [n if n == predict else 'smiles' for n in table.columns]
+        
+        replaced = False
+        new_columns = []
+        for n in table.columns:
+            if not replaced and n != predict and predict not in n:
+                new_columns.append('smiles')
+                replaced = True
+            else:
+                new_columns.append(n)
+        table.columns = new_columns
+        
         # Convert molblocks to SMILES if needed
         table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
+        table = table.dropna(subset=['smiles'])
+        
         ChemProp._save_table(table, table_path)
         params = [
             'chemprop',
@@ -80,12 +92,15 @@ class ChemProp(Engine):
         table.to_csv(table_path, index=False)
 
     @staticmethod
-    def convert_to_smiles(molblock):
-        try:
-            mol = Chem.MolFromMolBlock(molblock)
-            return Chem.MolToSmiles(mol) if mol else molblock
-        except:
-            return molblock
+    def convert_to_smiles(s):
+        for fn in (Chem.MolFromSmiles, Chem.MolFromMolBlock):
+            try:
+                mol = fn(s)
+                if mol:
+                    return Chem.MolToSmiles(mol)
+            except:
+                pass
+        return None
 
     options = {
         'features_enabled': True,

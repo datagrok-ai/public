@@ -6,7 +6,7 @@ import {IOType} from './config-processing-utils';
 const linkSpecGrammar = `
 Link ::= Name FlagList? (':' Segment)? ('/' Segment)*
 FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
-Flag ::= "call" | "optional"
+Flag ::= "call" | "optional" | "template"
 Segment ::=  WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
 TagSpec ::=  WS* '#' WS* TagSelectorType '(' TagSelectorArgs ')' WS*
 TagSelectorArgs ::= ((RefArg ',' TagIds) | TagIds) {fragment=true}
@@ -32,7 +32,7 @@ const linkParser = new Parser(Grammars.Custom.getRules(linkSpecGrammar));
 export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
 export type TagRefSelectors = 'after*' | 'after' | 'before*' | 'before' | 'same';
 export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
-export type LinkFlags = 'call' | 'optional';
+export type LinkFlags = 'call' | 'optional' | 'template';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 export type TagSelectors = LinkNonRefSelectors | TagRefSelectors;
 
@@ -87,7 +87,7 @@ export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
-export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
+export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
@@ -122,7 +122,15 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const lastSegment = indexFromEnd(segments);
   if (lastSegment && !isBase && !isAction && (lastSegment.selector !== 'first'))
     throw new Error(`Link io ${io} is not ending with input/output selector`);
-  return {name, segments, flags};
+  if (lastSegment && flags.includes('template')) {
+    return lastSegment.ids!.map((id) => {
+      const nname = name + id;
+      const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [id], stopIds: []};
+      const nsegments = [...segments.slice(0, -1), nlastSegment];
+      return {name: nname, segments: nsegments, flags};
+    });
+  }
+  return [{name, segments, flags}];
 }
 
 function checkSelector(io: string, selector: LinkSelectors | TagSelectors, isBase: boolean, ref?: string) {

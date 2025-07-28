@@ -47,7 +47,7 @@ export class LabelElement extends Element {
         : g.textAlign == 'center' ? this.bounds.midX : 0;
       if (this.style?.font != null)
         g.font = this.style.font;
-      g.fillText(this.text, x, this.bounds.midY, this.bounds.width);
+      g.fillText(this.text, x, this.bounds.top + 1, this.bounds.width);
     });
   }
 }
@@ -76,6 +76,10 @@ export class GridCellElement extends Element {
 
   render(g: CanvasRenderingContext2D) {
     g.fillStyle = 'grey';
+    // TODO: do this when we get the patch with updated API, for now using quick hack
+    // this.gridCell.style.vertAlign = 'top';
+    //@ts-ignore
+    window.grok_GridCellStyle_Set_vertAlign(this.gridCell.style.dart, 'top');
     // if we don't do this, the text color will become same as grid background one
     const oldIsTextColorCoded = this.gridCell.gridColumn.isTextColorCoded;
     this.gridCell.gridColumn.isTextColorCoded = false;

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {createPlateTemplate, initPlates, PlateTemplate} from '../plates-crud';
 import {SchemaEditor} from '@datagrok-libraries/utils/src/schema-editor';
-import { merge } from 'rxjs';
+import {merge} from 'rxjs';
 
 
 export function propertySchemaView(template: PlateTemplate): DG.View {
@@ -11,12 +11,14 @@ export function propertySchemaView(template: PlateTemplate): DG.View {
   view.name = 'Templates / ' + template.name;
 
   const extraPropertiesDiv = ui.div([]);
-  const platePropEditor = new SchemaEditor({properties: template.plateProperties, extraPropertiesDiv: extraPropertiesDiv});
-  const wellPropEditor = new SchemaEditor({properties: template.wellProperties, extraPropertiesDiv: extraPropertiesDiv});
+  const platePropEditor =
+    new SchemaEditor({properties: template.plateProperties, extraPropertiesDiv: extraPropertiesDiv});
+  const wellPropEditor =
+    new SchemaEditor({properties: template.wellProperties, extraPropertiesDiv: extraPropertiesDiv});
   const nameEditor = ui.input.string('Name', {value: template.name});
   const descriptionEditor = ui.input.string('Description', {value: template.description});
 
-  const saveButton = ui.bigButton('SAVE', async() => {
+  const saveButton = ui.bigButton('SAVE', async () => {
     template.name = nameEditor.value;
     template.description = descriptionEditor.value;
     template.plateProperties = platePropEditor.properties;

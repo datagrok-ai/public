@@ -86,7 +86,7 @@ export namespace decorators {
     editor?: string;
     nullable?: boolean;
     separators?: string[];
-    choices?: string[];
+    choices?: string[] | string;
     format?: string;
     min?: string;
     max?: string;
@@ -95,6 +95,9 @@ export namespace decorators {
     initialValue?: string;
     viewer?: string;
     units?: string;
+    type?: string;
+    step?: string;
+    "meta.url"?: boolean;
   }
 
   interface Input {
@@ -155,6 +158,7 @@ export namespace decorators {
 
   interface FunctionOptions {
     name?: string,
+    friendlyName?: string,
     tags?: string[],
     description?: string,
     meta?: Meta | Record<string, string>,
@@ -163,41 +167,44 @@ export namespace decorators {
     editor?: string;
     cache?: string;
     ['cache.invalidateOn']?: string;
+    ['top-menu']?: string;
+    condition?: string;
+    helpUrl?: string;
   }
 
-  interface AppOptions extends FunctionOptions{
+  interface AppOptions extends FunctionOptions {
     browsePath?: string,
-    icon?: string, 
+    icon?: string,
     url?: string
   }
 
-  interface ModelOptions extends FunctionOptions{
+  interface ModelOptions extends FunctionOptions {
     icon?: string,
     features?: string,
     runOnInput?: string,
     runOnOpen?: string
   }
 
-  interface CellRendererOptions extends FunctionOptions{
+  interface CellRendererOptions extends FunctionOptions {
     cellType?: string,
     columnTags?: string
   }
 
-  interface DashboardOptions extends FunctionOptions{
+  interface DashboardOptions extends FunctionOptions {
     order?: string
   }
 
-  interface FileViewerOptions extends FunctionOptions{
+  interface FileViewerOptions extends FunctionOptions {
     fileViewer: string;
     fileViewerCheck?: string;
   }
-  
-  interface FileHandlerOptions extends FunctionOptions{
+
+  interface FileHandlerOptions extends FunctionOptions {
     ext: string;
     fileViewerCheck?: string;
   }
-  
-  interface DemoOptions extends FunctionOptions{
+
+  interface DemoOptions extends FunctionOptions {
     path?: string;
     demoPath?: string;
     demoSkip?: string;
@@ -205,7 +212,7 @@ export namespace decorators {
     test?: { test: string, wait: string, timeout?: string, skip?: string }
   }
 
-  export function func(config: FunctionOptions) {
+  export function func(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -221,7 +228,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function autostart(config: FunctionOptions) {
+  export function autostart(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -229,7 +236,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function init(config: FunctionOptions) {
+  export function init(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -237,7 +244,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function editor(config: FunctionOptions) {
+  export function editor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -245,7 +252,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function panel(config: FunctionOptions) {
+  export function panel(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -253,7 +260,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function folderViewer(config: FunctionOptions) {
+  export function folderViewer(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -261,7 +268,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function semTypeDetector(config: FunctionOptions) {
+  export function semTypeDetector(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -269,7 +276,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function packageSettingsEditor(config: FunctionOptions) {
+  export function packageSettingsEditor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -285,7 +292,7 @@ export namespace decorators {
   //   ) { };
   // }
 
-  export function dashboard(config: DashboardOptions) {
+  export function dashboard(config?: DashboardOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -293,7 +300,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function functionAnalysis(config: FunctionOptions) {
+  export function functionAnalysis(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -301,7 +308,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function converter(config: FunctionOptions) {
+  export function converter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -309,7 +316,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function fileViewer(config: FileViewerOptions) {
+  export function fileViewer(config?: FileViewerOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -317,7 +324,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function fileExporter(config: FunctionOptions) {
+  export function fileExporter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -341,7 +348,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function treeBrowser(config: FunctionOptions) {
+  export function treeBrowser(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,

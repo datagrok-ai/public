@@ -59,4 +59,4 @@ category('Modeling: Caret', () => {
   after(async () => {
     await grok.dapi.models.delete(await grok.dapi.models.filter('Test Model Caret').first());
   });
-}, { owner: 'kamelichev@datagrok.ai' });
+}, { owner: 'oserhiienko@datagrok.ai' });

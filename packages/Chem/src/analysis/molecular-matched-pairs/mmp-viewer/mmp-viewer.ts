@@ -69,7 +69,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
 
   //properties
-  molecules: string | null = null;
+  moleculesColumnName: string | null = null;
   activities: string[] | null = null;
   diffTypes: string[] | null = null;
   scalings: string[] | null = null;
@@ -133,9 +133,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    DG.debounce(this.onPropertyChangedObs, 50).subscribe(this.onPropertyChangedDebounced.bind(this));
+    DG.debounce(this.onPropertyChangedObs, 1000).subscribe(this.onPropertyChangedDebounced.bind(this));
     //properties
-    this.molecules = this.string('molecules');
+    this.moleculesColumnName = this.addProperty('moleculesColumnName', DG.TYPE.COLUMN, '',
+      {semType: DG.SEMTYPE.MOLECULE});
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
 
@@ -148,15 +149,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (!this.dataFrame)
       return;
     if (this.totalDataUpdated) {
-      this.moleculesCol = this.dataFrame.col(this.molecules!);
+      this.moleculesCol = this.dataFrame.col(this.moleculesColumnName!);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
       this.render();
       return;
     }
 
-    this.moleculesCol = this.dataFrame.col(this.molecules!);
+    this.moleculesCol = this.dataFrame.col(this.moleculesColumnName!);
     this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
-    if (this.molecules && this.activities && this.fragmentCutoff && this.scalings) {
+    if (this.moleculesColumnName && this.activities && this.fragmentCutoff && this.scalings) {
       this.render();
       return;
     }
@@ -341,6 +342,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage,
       ui.divH([this.showFragmentsChoice.root, this.followCurrentRowInFragGrid.root]));
     fpGrid.prepend(
+      // eslint-disable-next-line max-len
       ui.divText('No substitutions found. Try to change filters or select another molecule if you are in \'Current\' mode.',
         'chem-mmpa-no-fragments-error'));
     this.subs.push(this.pairedGrids!.showErrorEvent.subscribe((showError: boolean) => {
@@ -368,6 +370,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       },
       {
         element: this.showFragmentsChoice.root,
+        // eslint-disable-next-line max-len
         text: `Change mode to 'Current molecule' to filter all subtitutions for current molecule from the initial dataset on the left.`,
         position: ui.hints.POSITION.LEFT,
         parentClass: 'chem-mmp-active-hint-adjust-vert-2px',
@@ -380,6 +383,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       },
       {
         element: this.followCurrentRowInFragGrid.root,
+        // eslint-disable-next-line max-len
         text: `Change to true and click any row in 'Fragments' grid to filter molecule pairs with corresponding substitution in 'Molecule pairs' grid`,
         position: ui.hints.POSITION.RIGHT,
         class: 'chem-mmp-active-hint-element-horz',
@@ -477,13 +481,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //create trellis legend
     const trellisLegend = ui.divH([], 'mmpa-trellis-legend');
-    for (let i = 0; i < this.activityMeanNames.length; i++) {
-      const div = ui.divText(this.activityMeanNames[i], {style: {color: this.colorPalette!.hex[i]}});
-      div.classList.add('mmpa-trellis-legend-item');
-      //show tooltip only in case name is truncated
-      ui.tooltip.bind(div, () => div.scrollWidth > div.clientWidth ? this.activityMeanNames[i] : null);
-      trellisLegend.append(div);
-    }
+    this.updateTrellisLegend(trellisLegend, this.tp!.getOptions().look.innerViewerLook.columnNames);
 
     this.tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
@@ -492,7 +490,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           trellisHeader, filterIcon, summaryColsButton,
           this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP),
           trellisLegend,
-        ]),
+        ], {style: {width: '100%'}}),
         {style: {maxHeight: '30px'}},
       ),
       this.tp.root,
@@ -502,6 +500,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.updateTrellisFiltersWithDefaultValues(tpDiv);
 
     this.tp.onEvent('d4-viewer-rendered').subscribe(() => {
+      this.updateTrellisLegend(trellisLegend, this.tp!.getOptions().look.innerViewerLook.columnNames);
       this.createSortIcon(trellisSortState, TrellisAxis.From, this.tp!, 'chem-mmpa-fragments-sort-icon-x-axis');
       this.createSortIcon(trellisSortState, TrellisAxis.To, this.tp!, 'chem-mmpa-fragments-sort-icon-y-axis');
       const tpButtons = Array.from(this.tp!.root.getElementsByTagName('button'));
@@ -560,6 +559,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       tpDiv,
       mmPairsRoot2,
     ], {style: {width: '100%', height: '100%'}}, true));
+  }
+
+  updateTrellisLegend(trellisLegend: HTMLDivElement, selectedActivities: string[]) {
+    ui.empty(trellisLegend);
+    for (let i = 0; i < selectedActivities.length; i++) {
+      const div = ui.divText(selectedActivities[i], {style: {color: this.colorPalette!.hex[i]}});
+      div.classList.add('mmpa-trellis-legend-item');
+      //show tooltip only in case name is truncated
+      ui.tooltip.bind(div, () => div.scrollWidth > div.clientWidth ? selectedActivities[i] : null);
+      trellisLegend.append(div);
+    }
   }
 
   updateTrellisFiltersWithDefaultValues(tpDiv: HTMLDivElement) {
@@ -679,12 +689,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const hints: MMPHint[] = [
       {
         element: this.sp.root,
+        // eslint-disable-next-line max-len
         text: `Scatter plot where similar molecules are close to each other. Lines connect matched molecular pairs. Arrow points to a molecule with a greater activity value. Click on a line to show molecule pair in the table below and show details in a context panel.`,
         position: ui.hints.POSITION.LEFT,
         class: 'chem-mmp-active-hint-element-horz',
       },
       {
         element: this.mmpFilters.filtersDiv,
+        // eslint-disable-next-line max-len
         text: `Use filters on the scatter plot to change activity difference cutoff or switch of/on the lines for any activity.`,
         position: ui.hints.POSITION.LEFT,
       },

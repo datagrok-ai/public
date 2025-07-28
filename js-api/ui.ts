@@ -502,8 +502,8 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 /** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
-export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
-  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
+export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void, maxRows?: number}): HTMLElement {
+  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart), options?.maxRows ?? 20);
   if (options?.processNode != null)
     for (const c of Array.from(host.children))
       options.processNode(c as HTMLElement);
@@ -1402,6 +1402,15 @@ export class ObjectHandler<T = any> {
 
   toString(): string { return this.name; }
 
+  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher)
+   * For something like CHEMBL object handler, it should return:
+   * regexpMarkup: 'CHEMBL[0-9]+', example: 'CHEMBL1234', nonVariablePart: 'CHEMBL'
+   * 
+  */
+  get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} | null {
+    return null;
+  }
+
   async getById(id: string): Promise<T | null> {
     return null;
   }
@@ -2110,12 +2119,14 @@ export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShare
   return FilesWidget.create(params);
 }
 
-export function time(time: dayjs.Dayjs): HTMLSpanElement {
-  return api.grok_UI_Time(toDart(time));
-}
+export namespace time {
+  export function timeSpan(time: dayjs.Dayjs): HTMLSpanElement {
+    return api.grok_UI_Time(toDart(time));
+  }
 
-export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
-  return api.grok_UI_ShortTimestamp(toDart(time));
+  export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
+    return api.grok_UI_ShortTimestamp(toDart(time));
+  }
 }
 
 export namespace tools {

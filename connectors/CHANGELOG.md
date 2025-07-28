@@ -1,6 +1,15 @@
 # Grok Connect changelog
 
-# 2.3.31 ()2025-07-03) WIP
+# 2.4.0 (2025-07-24) WIP
+
+* BigQuery: Improved provider support, schem browsing, service account auth
+* Fixed bug with duplicated columns in schemas during browsing
+
+## Requires
+
+* Datagrok >= 1.24.0
+
+# 2.3.31 (2025-07-03)
 
 * Snowflake: RSA keys authentication
 * TableQuery: Add schema name to join

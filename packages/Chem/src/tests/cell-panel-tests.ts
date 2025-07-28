@@ -20,16 +20,38 @@ import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
 import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
-import { identifiers } from '../package';
-import { getDescriptorsPy } from '../scripts-api';
+import {identifiers} from '../package';
+import {getDescriptorsPy} from '../scripts-api';
 
 const identifiersVals: {[key: string]: string} = {
-  'Smiles': 'c1ccc2c(c1)CCNC2',
-  'Inchi': 'InChI=1S/C9H11N/c1-2-4-9-7-10-6-5-8(9)3-1/h1-4,10H,5-7H2',
-  'Inchi key': 'UWYZHKAOTLEWKK-UHFFFAOYSA-N'};
+  'Smiles': 'c1ccc2ccccc2c1',
+  'Inchi': 'InChI=1S/C10H8/c1-2-6-10-8-4-3-7-9(10)5-1/h1-8H',
+  'Inchi key': 'UFWIBTONFRDIAS-UHFFFAOYSA-N'};
 
-const additionalIdentifiers: {[key: string]: string} = {
-  'Chembl': 'CHEMBL14346', 'PubChem': '7046', 'bindingdb': '13016',
+const additionalIdentifiers: { [key: string]: string } = {
+  'Chembl': 'CHEMBL16293',
+  'PubChem': '931',
+  'zinc': 'ZINC000000967522',
+  'bindingdb': '50159249',
+  'nikkaji': 'J2.839H',
+  'comptox': 'DTXSID8020913',
+  'pdb': 'NPY',
+  'kegg_ligand': 'C00829',
+  'chebi': '16482',
+  'atlas': 'Naphthalene',
+  'fdasrs': '2166IN72UN',
+  'pubchem_tpharma': '15218960',
+  'actor': '72931-45-4',
+  'recon': 'npthl',
+  'emolecules': '482250',
+  'chemicalbook': 'CB2472212',
+  'metabolights': 'MTBLC16482',
+  'hmdb': 'HMDB0029751',
+  'brenda': '1830',
+  'rhea': '16482',
+  'nmrshiftdb2': '10169',
+  'mcule': 'MCULE-8231589350',
+  'surechembl': 'SCHEMBL8953',
 };
 
 category('cell panel', async () => {
@@ -37,8 +59,10 @@ category('cell panel', async () => {
   const molFormats = [CONST.SMILES, CONST.MOL2000, CONST.MOL3000, CONST.SMARTS, CONST.EMPTY];
   const molFormats_: {[key: string]: string} = {smiles: CONST.SMILES, molV2000: CONST.MOL2000,
     molV3000: CONST.MOL3000, smarts: CONST.SMARTS, empty: CONST.EMPTY};
+  const molFormatsForIdentifiers_: {[key: string]: string} = {smiles: CONST.SMILES_2, molV2000: CONST.MOL2000_2,
+    molV3000: CONST.MOL3000_2};
   const molsExt: {[key: string]: string} = {smiles: CONST.SMILES_EXTENDED, molV2000: CONST.MOL2000_EXTENDED,
-      molV3000: CONST.MOL3000_EXTENDED};
+    molV3000: CONST.MOL3000_EXTENDED};
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -48,7 +72,6 @@ category('cell panel', async () => {
   });
 
   test('drug-likeness', async () => {
-    
     const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
 
     for (const format of Object.keys(molFormats_)) {
@@ -56,7 +79,7 @@ category('cell panel', async () => {
         const dl = assessDruglikeness(molFormats_[format]);
         expectFloat(dl[0], -0.12433218410831226, undefined, `Error for ${format} format`);
         expect(JSON.stringify(dl[1]), expectedDescription, `Error for ${format} format`);
-      }        
+      }
     }
 
     //check that widget doesn't throw errors
@@ -65,9 +88,9 @@ category('cell panel', async () => {
   });
 
   test('identifiers', async () => {
-    for (const format of Object.keys(molFormats_)) {
+    for (const format of Object.keys(molFormatsForIdentifiers_)) {
       if (format !== 'smarts' && format !== 'empty') {
-        const res: any = await getIdentifiersSingle(molFormats_[format]);
+        const res: any = await getIdentifiersSingle(molFormatsForIdentifiers_[format]);
         for (const key of Object.keys(identifiersVals))
           expect(res[key], identifiersVals[key]);
         if (checkPackage('ChemblApi', 'getCompoundsIds')) {
@@ -82,7 +105,7 @@ category('cell panel', async () => {
     //check that widget doesn't throw errors
     for (const mol of molFormats)
       identifiers(mol);
-  }, { timeout: 90000 });
+  }, {timeout: 90000});
 
   test('properties', async () => {
     const expectedRes: {[key: string]: any} = {
@@ -122,7 +145,7 @@ category('cell panel', async () => {
     //check that widget doesn't throw errors
     for (const mol of molFormats)
       await structuralAlertsWidget(mol);
-  }, { timeout: 60000 });
+  }, {timeout: 60000});
 
   for (const k of Object.keys(molFormats_)) {
     test('structure2d-widget.' + k, async () => {
@@ -148,7 +171,7 @@ category('cell panel', async () => {
       if (format !== 'smarts' && format !== 'empty') {
         const risks = getRisks(molsExt[format]);
         expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
-      }        
+      }
     }
 
     //check that widget doesn't throw errors
@@ -212,11 +235,11 @@ category('cell panel', async () => {
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
-    const selesctedDesc = ["FractionCSP3", "HeavyAtomCount", "NHOHCount"];
+    const selesctedDesc = ['FractionCSP3', 'HeavyAtomCount', 'NHOHCount'];
     let jupyterRunning = false;
     grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
       console.log('*********** test python script completed');
-      jupyterRunning = true; 
+      jupyterRunning = true;
     });
     //check that JKG is running
     await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
@@ -231,10 +254,10 @@ category('cell panel', async () => {
       res = desc;
     });
     await awaitCheck(() => {
-      return res !== null && res.rowCount > 0
+      return res !== null && res.rowCount > 0;
     }, `descriptors python scripts hasn't finished in 2 minutes`, 120000, 1000);
     expect(res!.columns.names().length, 3);
-    expect(selesctedDesc.every((it => res!.columns.names().includes(it))), true);
+    expect(selesctedDesc.every(((it) => res!.columns.names().includes(it))), true);
     expect((res!.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
     expect(res!.get('HeavyAtomCount', 0), 25);
     expect(res!.get('NHOHCount', 0), 1);

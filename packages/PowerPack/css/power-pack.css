@@ -5,6 +5,10 @@
     margin-right: 12px;
 }
 
+.power-pack-search-host .power-pack-search-list label {
+    max-width: 200px;
+}
+
 .power-pack-search-host .power-pack-search-list {
     max-height: 400px;
     flex-wrap: wrap;
@@ -53,6 +57,62 @@
 
 .power-pack-widget-host.widget-wide {
     grid-column: span 2;
+}
+
+.power-pack-widget-host:has(.power-pack-activity-widget-content) {
+    grid-column: 1 / -1;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .d4-flex-col > .d4-entity-markup-row {
+    margin-left: 5px;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div {
+    padding-right: 7px;
+}
+
+.power-pack-activity-widget-row {
+    background-color: transparent !important;
+    padding: 2px 0;
+    line-height: 1.5;
+    gap: 6px;
+}
+
+.power-pack-activity-widget-row:hover {
+    background-color: #f9f9f9 !important;
+}
+
+.power-pack-activity-widget-spotlight-root {
+    justify-content: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.power-pack-activity-widget-spotlight-column {
+    max-width: 170px;
+    margin-right: 13px;
+}
+
+.power-pack-activity-widget-spotlight-column .d4-entity-markup-row {
+    margin-bottom: 7px;
+}
+
+.power-pack-activity-widget-spotlight-column .grok-context-arrow-down {
+    margin-left: 0;
+}
+
+.power-pack-activity-widget-spotlight-column label {
+    max-width: 150px;
+}
+
+.power-pack-activity-widget-spotlight-column-admin-row {
+    max-width: 170px;
+    display: inline-block !important;
+}
+
+.power-pack-activity-widget-spotlight-column-header {
+    margin-top: 0;
+    margin-left: 18px;
 }
 
 .power-pack-widget-header {

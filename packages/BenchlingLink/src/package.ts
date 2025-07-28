@@ -14,6 +14,7 @@ import { queryDnaOligos, postDnaOligo } from './dnaOligosApi';
 
 export const _package = new DG.Package();
 const STORAGE_NAME = 'BenchlingLinkFuncEditor';
+let openedView: DG.View | null = null;
 
 //tags: app
 //name: Benchling
@@ -98,10 +99,13 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   }
 
   const addBenchlingView = (viewName: string, funcName: string) => {
-    const v = DG.View.create(viewName);
-    v.root.appendChild(createFuncEditorView(funcName, v));
+    if (openedView)
+      openedView.close();
+    openedView = DG.View.create(viewName);
+    openedView.name = viewName;
+    openedView.root.appendChild(createFuncEditorView(funcName, openedView));
     const path = ['Home', 'Benchling', viewName];
-    grok.shell.addPreview(v);
+    grok.shell.addPreview(openedView);
     setBreadcrumbs(path, treeNode);
   }
 
@@ -132,83 +136,46 @@ export async function benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
 
   try {
     treeNode.items.length = 0;
-    const aaSequenceNode = treeNode.group('AA Sequences');
+    const aaSequenceNode = treeNode.item('AA Sequences');
     aaSequenceNode.onSelected.subscribe(async () => {
       addBenchlingView('AA Sequences', 'BenchlingLink:getAASequences');
     });
-    const createAaSeqNode = aaSequenceNode.item('Create AA Sequence');
-    createAaSeqNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create AA Sequence', 'BenchlingLink:createAASequence');
-    });
 
-    const dnaSequencesNode = treeNode.group('DNA Sequences');
+    const dnaSequencesNode = treeNode.item('DNA Sequences');
     dnaSequencesNode.onSelected.subscribe(async () => {
       addBenchlingView('DNA Sequences', 'BenchlingLink:getDNASequences');
     });
-    const createDnaSeqNode = dnaSequencesNode.item('Create DNA Sequence');
-    createDnaSeqNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create DNA Sequence', 'BenchlingLink:createDNASequence');
-    });
 
-    const assayResultsNode = treeNode.group('Assay Results');
+    const assayResultsNode = treeNode.item('Assay Results');
     assayResultsNode.onSelected.subscribe(async () => {
       addBenchlingView('Assay Results', 'BenchlingLink:getAssayResults');
     });
-    const createAssayResultNode = assayResultsNode.item('Create Assay Result');
-    createAssayResultNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create Assay Result', 'BenchlingLink:createAssayResult');
-    });
 
-    const assayRunsNode = treeNode.group('Assay Runs');
+    const assayRunsNode = treeNode.item('Assay Runs');
     assayRunsNode.onSelected.subscribe(async () => {
       addBenchlingView('Assay Runs', 'BenchlingLink:getAssayRuns');
     });
-    const createAssayRunNode = assayRunsNode.item('Create Assay Run');
-    createAssayRunNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create Assay Run', 'BenchlingLink:createAssayRun');
-    });
 
-    // Add molecules group and item to the tree view
-    const moleculesNode = treeNode.group('Molecules');
+    const moleculesNode = treeNode.item('Molecules');
     moleculesNode.onSelected.subscribe(async () => {
       addBenchlingView('Molecules', 'BenchlingLink:getMolecules');
     });
-    const createMoleculeNode = moleculesNode.item('Create Molecule');
-    createMoleculeNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create Molecule', 'BenchlingLink:createMolecule');
-    });
 
-    // Add plates group and item to the tree view
-    const platesNode = treeNode.group('Plates');
+    const platesNode = treeNode.item('Plates');
     platesNode.onSelected.subscribe(async () => {
       addBenchlingView('Plates', 'BenchlingLink:getPlates');
     });
-    const createPlateNode = platesNode.item('Create Plate');
-    createPlateNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create Plate', 'BenchlingLink:createPlate');
-    });
 
-    // Add mixtures group and item to the tree view
-    const mixturesNode = treeNode.group('Mixtures');
+    const mixturesNode = treeNode.item('Mixtures');
     mixturesNode.onSelected.subscribe(async () => {
       addBenchlingView('Mixtures', 'BenchlingLink:getMixtures');
     });
-    const createMixtureNode = mixturesNode.item('Create Mixture');
-    createMixtureNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create Mixture', 'BenchlingLink:createMixture');
-    });
 
-    // Add DNA Oligos group and item to the tree view
-    const dnaOligosNode = treeNode.group('DNA Oligos');
+    const dnaOligosNode = treeNode.item('DNA Oligos');
     dnaOligosNode.onSelected.subscribe(async () => {
       addBenchlingView('DNA Oligos', 'BenchlingLink:getDnaOligos');
     });
-    const createDnaOligoNode = dnaOligosNode.item('Create DNA Oligo');
-    createDnaOligoNode.onSelected.subscribe(async () => {
-      addBenchlingView('Create DNA Oligo', 'BenchlingLink:createDnaOligo');
-    });
 
-    // Add projects group and item to the tree view
     const projectsNode = treeNode.item('Projects');
     projectsNode.onSelected.subscribe(async () => {
       addBenchlingView('Projects', 'BenchlingLink:getProjects');

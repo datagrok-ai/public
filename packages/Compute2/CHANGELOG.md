@@ -1,5 +1,10 @@
 # Compute2 changelog
 
+## 1.3.9 (2025-07-22)
+
+- Template links syntax
+- Allow multiple meta handlers targiting the same io
+
 ## 1.3.8 (2025-06-30)
 
 - Fix adding steps from pipeline view

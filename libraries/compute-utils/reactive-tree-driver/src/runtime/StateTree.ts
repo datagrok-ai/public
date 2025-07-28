@@ -187,7 +187,7 @@ export class StateTree {
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
     }, false).pipe(
       concatMap(() => this.linksState.waitForLinks()),
-      mapTo(this)
+      mapTo(this),
     );
   }
 
@@ -307,7 +307,7 @@ export class StateTree {
           this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
-      const details: TreeUpdateMutationPayload[] =[ {
+      const details: TreeUpdateMutationPayload[] =[{
         mutationRootPath: ppath,
         addIdx: pos,
       }];
@@ -441,7 +441,7 @@ export class StateTree {
       }];
       return of([{
         isMutation: true,
-        details
+        details,
       }]);
     });
   }
@@ -817,6 +817,7 @@ export class StateTree {
       }
 
       item.clearOldValidations(currentLinkIds);
+      item.clearOldMetas(currentLinkIds);
 
       const ioDeps = this.linksState.ioDependencies.get(item.uuid) ?? {};
       const ioNames = item.instancesWrapper.getStateNames();
@@ -825,8 +826,6 @@ export class StateTree {
         const deps = ioDeps[ioName];
         if (!deps?.data)
           item.clearIORestriction(ioName);
-        if (!deps?.meta)
-          item.clearIOMeta(ioName);
       }
 
       return acc;
