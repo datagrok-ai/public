@@ -318,11 +318,7 @@ export class FuncCallNode implements IStoreProvider {
 
   private deepEq(actual: any, expected: any) {
     try {
-      // expectDeepEqual will not check additional props in an actual
-      // data, only those that are explicitly present in the expected
-      // data
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001});
-      expectDeepEqual(expected, actual, {maxErrorsReport: 1, floatTolerance: 0.0001});
+      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001, forbidAdditionalProps: true});
     } catch {
       return false;
     }

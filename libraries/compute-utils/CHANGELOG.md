@@ -1,5 +1,14 @@
 # compute-utils changelog
 
+## 1.44.1 (2025-07-22)
+
+- Update dependencies
+- Optimize/fix deepEq for FuncCall inputs/outputs
+
+## 1.44.0 (2025-07-22)
+
+- New platform version
+
 ## 1.43.11 (2025-07-22)
 
 - Template links syntax
