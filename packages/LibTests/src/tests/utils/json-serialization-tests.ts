@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import dayjs from 'dayjs';
 
 category('Utils: jsonSerialization', async () => {
   test('serialize/deserialize works Infinity and NaN', async () => {
@@ -33,4 +34,11 @@ category('Utils: jsonSerialization', async () => {
     const results = deserialize(serialize(initial));
     expectDeepEqual(results, initial);
   });
+
+  test('serialize/deserialize works with DayJs', async () => {
+    const initial = {s: dayjs('2025-01-01'), m: dayjs('2025-01-02')};
+    const results = deserialize(serialize(initial));
+    expectDeepEqual(results, initial);
+  });
+
 });

@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {fromUint8Array, toUint8Array} from 'js-base64';
+import dayjs from 'dayjs';
 
 const customTypeKey = '_DG_CUSTOM_SERIALIZED_TOKEN_';
 
@@ -11,7 +12,7 @@ export type SerializeOptions = {
 export function serialize(obj: any, options: SerializeOptions = {}) {
   return JSON.stringify(
     obj,
-    (_key, value) => {
+    function (this: any, key, value) {
       if (value === Infinity) {
         return {
           [customTypeKey]: 'Infinity',
@@ -60,6 +61,12 @@ export function serialize(obj: any, options: SerializeOptions = {}) {
           value: Array.from(value)
         };
       }
+      if (dayjs.isDayjs(this[key])) {
+        return {
+          [customTypeKey]: 'DayJs',
+          value: (this[key] as dayjs.Dayjs).toISOString()
+        };
+      }
       return value;
     },
     options.space
@@ -89,6 +96,8 @@ export function transform(_key: string, value: any) {
       return toUint8Array(value.value).buffer;
     case 'Map':
       return new Map(value.value);
+    case 'DayJs':
+      return dayjs(value.value);
     case 'Set':
       return new Set(value.value);
     case 'Infinity':
