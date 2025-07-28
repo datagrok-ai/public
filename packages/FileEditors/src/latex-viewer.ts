@@ -6,6 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {parse, HtmlGenerator} from 'latex.js';
 import {_package} from './package';
 
+import {basicSetup, EditorView} from 'codemirror';
+import {latex} from 'codemirror-lang-latex';
+
 export function getElementWithLatexContent(latexText: string): HTMLIFrameElement {
   const generator = new HtmlGenerator({hyphenate: false});
   const htmlGenerator = parse(latexText, {generator: generator});
@@ -29,11 +32,18 @@ export class LatexViewer {
   private file: DG.FileInfo;
   private isPlatformFile: boolean = false;
 
-  private codeDiv = ui.div(['Code']);
+  private codeDiv = ui.div();
   private contentDiv = ui.div();
   private container = ui.div();
 
   private isEditorShown = false;
+  private isLatexCodeChanged = false;
+
+  private editorView: EditorView;
+
+  private refreshWgt = this.getRefreshWgt();
+
+  private prevNode: Node | null = null;
 
   static async create(file: DG.FileInfo): Promise<LatexViewer> {
     try {
@@ -59,25 +69,40 @@ export class LatexViewer {
       this.view.append(ui.h2('The file is corrupted and cannot be opened!'));
     else {
       try {
-        this.contentDiv.append(getElementWithLatexContent(latexText));
+        this.prevNode = this.contentDiv.appendChild(getElementWithLatexContent(latexText));
       } catch (err) {
         if (err instanceof Error)
           grok.shell.error(err.message);
 
-        this.view.append(ui.h2('LaTeX code contains errors!'));
+        this.prevNode = this.contentDiv.appendChild(ui.h2('LaTeX code contains errors!'));
       }
+
+      this.editorView = new EditorView({
+        doc: latexText,
+        extensions: [basicSetup, latex()],
+      });
 
       this.buildIO(latexText);
     }
   };
 
   private buildIO(latexText: string): void {
-    this.container = ui.divH([this.codeDiv, this.contentDiv], {style: {width: '100%'}});
+    this.codeDiv.append(this.editorView.dom);
+    this.codeDiv.style.height = '100%';
+    this.contentDiv.style.height = '100%';
+    this.container = ui.divH([this.codeDiv, this.contentDiv], {style: {width: '100%', height: '100%'}});
     this.updateEditorVisibility(this.isEditorShown);
+    this.refreshWgt.hidden = !this.isEditorShown;
+
+    this.editorView.dom.addEventListener('keydown', async (e) => {
+      this.isLatexCodeChanged = true;
+      this.updateRefreshWidget(true);
+    });
 
     this.view.append(this.container);
     this.view.setRibbonPanels([[
       this.getEditToggle(),
+      this.refreshWgt,
     ]]);
   }
 
@@ -99,6 +124,7 @@ export class LatexViewer {
       input.value = this.isEditorShown;
       this.updateEditorVisibility(this.isEditorShown);
       ui.tooltip.bind(wgt, this.isEditorShown ? 'Finish editing' : 'Edit source');
+      this.refreshWgt.hidden = !this.isEditorShown;
       // this.tabControl.currentPane = this.isEditState ? this.editPane : this.solvePane;
       // this.updateRibbonWgts();
       // this.updateRefreshWidget(this.isModelChanged);
@@ -111,5 +137,54 @@ export class LatexViewer {
     this.codeDiv.hidden = !toShow;
     this.contentDiv.style.width = toShow ? '50%' : '100%';
     this.codeDiv.style.width = toShow ? '50%' : '0%';
+    this.contentDiv.style.borderLeft = toShow ? '1px solid var(--steel-1)' : 'none';
+  }
+
+  private getRefreshWgt(): HTMLElement {
+    const span = ui.span(['Refresh']);
+    span.classList.add('fe-latex-viewer-ribbon-text');
+    span.style.color = this.isLatexCodeChanged ? '#40607F' : 'var(--grey-3)';
+
+    const icn = ui.iconFA('sync');
+    icn.style.color = this.isLatexCodeChanged ? '#40607F' : 'var(--grey-3)';
+
+    const wgt = ui.divH([icn, span]);
+    wgt.onclick = async () => {
+      if (this.isLatexCodeChanged) {
+        this.applyChanges(this.editorView!.state.doc.toString());
+        this.updateRefreshWidget(this.isLatexCodeChanged);
+      }
+    };
+
+    ui.tooltip.bind(wgt, 'Apply changes');
+
+    return wgt;
+  }
+
+  private updateRefreshWidget(enabled: boolean) {
+    const ch = this.refreshWgt.children;
+    const color = this.getColor(enabled);
+    (ch.item(0) as HTMLElement).style.color = color;
+    (ch.item(1) as HTMLElement).style.color = color;
+  }
+
+  private getColor(enabled: boolean) {
+    return enabled ? '#40607F' : 'var(--grey-3)';
+  }
+
+  private applyChanges(latexText: string): void {
+    this.isLatexCodeChanged = false;
+
+    if (this.prevNode !== null)
+      this.contentDiv.removeChild(this.prevNode);
+
+    try {
+      this.prevNode = this.contentDiv.appendChild(getElementWithLatexContent(latexText));
+    } catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(err.message);
+
+      this.prevNode = this.contentDiv.appendChild(ui.h2('LaTeX code contains errors!'));
+    }
   }
 }; // LatexViewer

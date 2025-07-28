@@ -8,8 +8,10 @@
   },
   "description": "Support for previewing and opening text file formats (PDF, DOCX, TEX)",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.0",    
+    "@datagrok-libraries/utils": "^4.6.0",
     "cash-dom": "^8.1.5",
+    "codemirror": "^6.0.2",
+    "codemirror-lang-latex": "^0.1.0-alpha.2",
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
     "docx-preview": "^0.1.18",
