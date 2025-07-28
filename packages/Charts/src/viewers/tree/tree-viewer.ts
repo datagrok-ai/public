@@ -905,7 +905,9 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
-    this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
+
+    if (this.dataFrame)
+      this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection, true);
   }
 }
 
