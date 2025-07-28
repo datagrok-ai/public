@@ -347,26 +347,32 @@ class FuncGeneratorPlugin {
 
   _readReturnType(annotation) {
     let resultType = 'dynamic';
+    let nodeAnnotation = annotation;
     let isArray = false; 
+    if (nodeAnnotation?.type === 'TSUnionType' && 
+      nodeAnnotation?.types?.length === 2 && 
+      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword')) 
+      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword')[0];
+    
+
     if (
-      annotation &&
-      annotation.type !== 'TSUnionType' &&
-      annotation.type !== 'TSIntersectionType'
+      nodeAnnotation &&
+      nodeAnnotation.type !== 'TSUnionType' &&
+      nodeAnnotation.type !== 'TSIntersectionType'
     ) {
-      
-      if (annotation.typeName || annotation.type === 'TSTypeReference') {
+      if (nodeAnnotation.typeName || nodeAnnotation.type === 'TSTypeReference') {
         resultType =
-          annotation.typeName?.right?.name ?? annotation.typeName?.name;
-      } else if (annotation.type !== 'TSArrayType') 
-        resultType = this._getTypeNameFromNode(annotation);
-      else if (annotation.elementType.type !== 'TSTypeReference') {
+          nodeAnnotation.typeName?.right?.name ?? nodeAnnotation.typeName?.name;
+      } else if (nodeAnnotation.type !== 'TSArrayType') 
+        resultType = this._getTypeNameFromNode(nodeAnnotation);
+      else if (nodeAnnotation.elementType.type !== 'TSTypeReference') {
         isArray = true;
-        resultType = this._getTypeNameFromNode(annotation?.elementType);
+        resultType = this._getTypeNameFromNode(nodeAnnotation?.elementType);
       } else {
         isArray = true;
         resultType =
-          annotation?.elementType?.typeName?.name ||
-          annotation?.elementType?.typeName?.right?.name;
+          nodeAnnotation?.elementType?.typeName?.name ||
+          nodeAnnotation?.elementType?.typeName?.right?.name;
       } 
     }
     resultType = typesToAnnotation[resultType];
