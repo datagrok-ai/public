@@ -15,13 +15,6 @@ export function getElementWithLatexContent(latexText: string): HTMLIFrameElement
   if ((rightMargin !== null) && (rightMargin !== null))
     (rightMargin as HTMLElement).style.display = 'none';
 
-  const contentRegion = doc.body.children[0];
-
-  if ((contentRegion !== null) && (contentRegion !== null)) {
-    (contentRegion as HTMLElement).style.transform = 'scale(1.5)';
-    (contentRegion as HTMLElement).style.transformOrigin = 'top';
-  }
-
   iframe.srcdoc = doc.documentElement.outerHTML;
   iframe.style.border = 'transparent';
 
