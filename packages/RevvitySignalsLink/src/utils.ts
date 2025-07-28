@@ -3,12 +3,48 @@ import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
 import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers } from './users';
-import { RevvityUser } from './revvityApi';
+import { RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
 import { MOL_COL_NAME } from './compounds';
 
 export const STORAGE_NAME = 'RevvitySignalsSearch';
 export const QUERY_KEY = 'query';
 export const PARAMS_KEY = 'params';
+
+const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
+const TAGS_TO_EXCLUDE = ['system.Keywords'];
+const OWNER_FIELDS = ['owner', 'createdBy', 'editedBy'];
+const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
+const FIELDS_SECTION_NAME = 'fields';
+const TABS_TO_EXCLUDE_FROM_WIDGET = ['chemicalDrawing'];
+const FIELDS_TO_EXCLUDE_FROM_WIDGET = ['assetTypeId', 'assetId', 'eid', 'type', 'library'];
+const MOLECULAR_FORMULA_FIELD_NAME = 'Molecular Formula';
+const SUBMITTER_FIELD_NAME = 'Submitter';
+
+function extractNameFromJavaObjectString(javaString: string): string {
+  try {
+    // Extract firstName
+    const firstNameMatch = javaString.match(/firstName=([^,}]+)/);
+    const firstName = firstNameMatch ? firstNameMatch[1].trim() : '';
+    
+    // Extract lastName
+    const lastNameMatch = javaString.match(/lastName=([^,}]+)/);
+    const lastName = lastNameMatch ? lastNameMatch[1].trim() : '';
+    
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else {
+      // Fallback: try to extract userName
+      const userNameMatch = javaString.match(/userName=([^,}]+)/);
+      return userNameMatch ? userNameMatch[1].trim() : 'Unknown User';
+    }
+  } catch (e) {
+    return 'Unknown User';
+  }
+}
 
 export function loadRevvitySearchQueryAndParams(): { loadedQuery: SignalsSearchQuery | null, loadedParams: SignalsSearchParams | null } {
   // Try to load saved query and params
@@ -157,10 +193,114 @@ export function widgetFromObject(obj: Record<string, any>): DG.Widget {
 }
 
 
-const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
-const TAGS_TO_EXCLUDE = ['system.Keywords'];
-const OWNER_FIELDS = ['owner', 'createdBy', 'editedBy'];
-const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
+export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLDivElement {
+  const data = response.data as RevvityData;
+  if (!data || !data.attributes) {
+    return ui.divText('No data available');
+  }
+
+  const attributes = data.attributes;
+  const relationships = data.relationships || {};
+  const included = response.included || [];
+
+  // Create the main table from attributes
+  const mainMap: Record<string, any> = {};
+
+  const processField = (map: Record<string, any>, key: string, value: any) => {
+    if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
+      // Skip objects except for fields
+      return;
+    } else if (Array.isArray(value))
+      map[key] = value.join(', ');
+    else {
+      //handle molecular formula fields since they contain <sub> tags
+      if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
+        value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
+      else if (key === SUBMITTER_FIELD_NAME) {
+        if (typeof value === 'string' && value.includes('firstName=')) {
+          value = extractNameFromJavaObjectString(value);
+        } else {
+          value = 'Unknown User';
+        }
+      }
+      map[key] = value === null ? '' : value;
+    }
+  }
+
+  // Process regular attributes
+  for (const [key, value] of Object.entries(attributes)) {
+    if (key === FIELDS_SECTION_NAME) continue; // Handle fields separately
+    processField(mainMap, key, value as string);
+  }
+
+  // Process fields
+  if (attributes.fields) {
+    for (const [fieldName, fieldObj] of Object.entries(attributes.fields)) {
+      if ((fieldObj as any)['value']) {
+        processField(mainMap, fieldName, (fieldObj as any)['value'] as string);
+      }
+    }
+  }
+
+  const mainTable = ui.tableFromMap(mainMap);
+  const accordions: DG.Accordion[] = [];
+
+  // Create accordion tabs for relationships
+  for (const [relationshipName, relationshipData] of Object.entries(relationships)) {
+    if (TABS_TO_EXCLUDE_FROM_WIDGET.includes(relationshipName))
+      continue;
+    const relationship = relationshipData as any;
+    if (!relationship.data) continue;
+
+    const relationshipItems: any[] = [];
+
+    // Handle single relationship or array of relationships
+    const items = Array.isArray(relationship.data) ? relationship.data : [relationship.data];
+
+    for (const item of items) {
+      // Find corresponding entity in included section
+      const includedEntity = included.find((inc: any) => inc.id === item.id);
+      if (includedEntity && includedEntity.attributes) {
+        const entityMap: Record<string, string> = {};
+
+        // Process attributes
+        for (const [key, value] of Object.entries(includedEntity.attributes)) {
+          if (key === FIELDS_SECTION_NAME) continue; // Handle fields separately
+          processField(entityMap, key, value as string);
+        }
+
+        // Process fields if present
+        if (includedEntity.attributes.fields) {
+          for (const [fieldName, fieldObj] of Object.entries(includedEntity.attributes.fields)) {
+            processField(entityMap, fieldName, (fieldObj as any)['value'] as string);
+          }
+        }
+        relationshipItems.push(entityMap);
+      }
+    }
+
+    if (relationshipItems.length > 0) {
+      const acc = ui.accordion();
+      acc.addPane(relationshipName, () => {
+        if (relationshipItems.length === 1)
+          return ui.tableFromMap(relationshipItems[0]);
+        else {
+          const innerAcc = ui.accordion();
+          for (const relationshipItem of relationshipItems) {
+            innerAcc.addPane(OWNER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
+              return ui.tableFromMap(relationshipItem);
+            });
+          }
+          return innerAcc.root;
+        }
+      });
+      accordions.push(acc);
+    }
+  }
+
+  const children = [mainTable, ...accordions.map(acc => acc.root)];
+  return ui.divV(children);
+}
 
 export async function transformData(data: Record<string, any>[]): Promise<Record<string, any>[]> {
   const items = [];

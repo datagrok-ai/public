@@ -122,6 +122,12 @@ export async function queryEntityById(id: string, queryParams?: any): Promise<Re
   return request('GET', `/entities/${id}${paramsStr}`);
 }
 
+export async function queryMaterialById(id: string, queryParams?: any): Promise<RevvityApiResponse> {
+  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
+  return request('GET', `/materials/${id}${paramsStr}`);
+}
+
+
 export async function queryStructureById(id: string): Promise<string> {
 
   const url = `${await getApiUrl()}/materials/${id}/drawing?format=smiles`;

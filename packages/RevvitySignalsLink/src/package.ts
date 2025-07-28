@@ -6,8 +6,8 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities, queryEntityById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
-import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject } from './utils';
+import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
 
 
@@ -134,7 +134,7 @@ export async function getUsers(): Promise<string> {
 //input: string id { semType: RevvitySignalsId }
 //output: widget result
 export async function entityTreeWidget(id: string): Promise<DG.Widget> {
-  const obj = (await queryEntityById(id)) as RevvityApiResponse;
-  const widget = widgetFromObject(obj);
-  return widget;
+  const obj = (await queryMaterialById(id)) as RevvityApiResponse;
+  const div = createRevvityResponseWidget(obj);
+  return new DG.Widget(div);
 }
