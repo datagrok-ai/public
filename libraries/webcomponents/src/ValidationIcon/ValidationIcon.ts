@@ -3,15 +3,45 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
-import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import $ from 'cash-dom';
 import {debounceTime, distinct, takeUntil} from 'rxjs/operators';
+
+//
+// TODO: probably a separate type lib (?)
+//
+export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
+
+export type ConsistencyInfo = {
+  restriction: RestrictionType,
+  inconsistent: boolean,
+  assignedValue: any,
+}
+
+export interface ActionItem {
+  actionName: string;
+  action: string;
+  additionalParams?: Record<string, any>;
+}
+
+export interface Advice {
+  description: string;
+  actions?: ActionItem[];
+}
+
+export type ValidationItem = string | Advice;
+
+export interface ValidationResult {
+  errors?: ValidationItem[];
+  warnings?: ValidationItem[];
+  notifications?: ValidationItem[];
+}
 
 export type ValidationIconInput = {
   validation?: ValidationResult,
   consistency?: ConsistencyInfo,
 };
+
+
 
 export class ValidationIcon extends HTMLElement {
   private destroyed$ = new Subject<boolean>();
