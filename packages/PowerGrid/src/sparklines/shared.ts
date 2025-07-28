@@ -35,11 +35,11 @@ export function isSummarySettingsBase(obj: any): obj is SummarySettingsBase {
 
 export function getSettingsBase<T extends SummarySettingsBase>(gc: DG.GridColumn,
   sparklineType: SparklineType): T {
-  return isSummarySettingsBase(gc.settings) ? gc.settings :
-    gc.settings[sparklineType] ??= {
+  return isSummarySettingsBase(gc.settings) ? (gc.settings as unknown as T) :
+    (gc.settings[sparklineType] ??= {
       columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
         .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
-    };
+    } as unknown as T);
 }
 
 export enum SparklineType {
