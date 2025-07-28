@@ -54,7 +54,12 @@ export class LatexViewer {
 
   private editorView: EditorView;
 
-  private saveIcn = ui.iconFA('save', async () => await this.saveToMyFiles(), 'Save tex-file to My files');
+  private saveIcn = ui.iconFA('save', async () => {
+    if (this.isLatexCodeChanged) {
+      await this.saveToMyFiles();
+      this.isLatexCodeChanged = false;
+    }
+  });
 
   private prevNode: Node | null = null;
 
@@ -70,6 +75,11 @@ export class LatexViewer {
 
       return new LatexViewer(file, null, false);
     }
+  }
+
+  private updateSaveWgt(enabled: boolean): void {
+    this.saveIcn.style.color = this.getColor(enabled);
+    ui.tooltip.bind(this.saveIcn, enabled ? 'Save changes' : 'No unsaved changes');
   }
 
   private constructor(file: DG.FileInfo, latexText: string | null, exist: boolean) {
@@ -94,11 +104,11 @@ export class LatexViewer {
         extensions: [basicSetup, latex()],
       });
 
-      this.buildIO(latexText);
+      this.buildIO();
     }
   };
 
-  private buildIO(latexText: string): void {
+  private buildIO(): void {
     this.codeDiv.append(this.editorView.dom);
     this.codeDiv.style.height = '100%';
     this.contentDiv.style.height = '100%';
@@ -107,11 +117,13 @@ export class LatexViewer {
 
     const handleKeyPress = (event: Event) => {
       this.isLatexCodeChanged = true;
+      this.updateSaveWgt(true);
       this.applyChanges(this.editorView.state.doc.toString());
     };
 
     const debouncedInput = debounce(handleKeyPress, 500);
     this.editorView.dom.addEventListener('keydown', debouncedInput);
+    this.updateSaveWgt(false);
 
     this.view.append(this.container);
     this.view.setRibbonPanels([[
@@ -147,6 +159,7 @@ export class LatexViewer {
       try {
         await grok.dapi.files.writeAsText(path, texCode);
         grok.shell.info(`Saved to ${path}`);
+        this.updateSaveWgt(false);
       } catch (error) {
         grok.shell.error(`Failed to save: ${error instanceof Error ? error.message : 'platform issue'}`);
       }
@@ -218,8 +231,6 @@ export class LatexViewer {
   }
 
   private applyChanges(latexText: string): void {
-    this.isLatexCodeChanged = false;
-
     if (this.prevNode !== null)
       this.contentDiv.removeChild(this.prevNode);
 
