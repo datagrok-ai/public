@@ -1,5 +1,11 @@
 # utils changelog
 
+## 4.6.1 (2025-07-28)
+
+Expect support dayjs
+Expect support checking for addinal keys/colums
+Json serialization added dayjs
+
 ## 4.6.0 (2025-07-25)
 
 Compatibility with 1.26.0
