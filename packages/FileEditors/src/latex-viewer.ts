@@ -9,6 +9,20 @@ import {_package} from './package';
 import {basicSetup, EditorView} from 'codemirror';
 import {latex} from 'codemirror-lang-latex';
 
+function debounce<T extends(...args: any[]) => void>(
+  func: T,
+  delay: number,
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  return function(...args: Parameters<T>) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+}
+
 export function getElementWithLatexContent(latexText: string): HTMLIFrameElement {
   const generator = new HtmlGenerator({hyphenate: false});
   const htmlGenerator = parse(latexText, {generator: generator});
@@ -39,8 +53,6 @@ export class LatexViewer {
   private isLatexCodeChanged = false;
 
   private editorView: EditorView;
-
-  private refreshWgt = this.getRefreshWgt();
 
   private saveIcn = ui.iconFA('save', async () => await this.saveToMyFiles(), 'Save tex-file to My files');
 
@@ -92,19 +104,20 @@ export class LatexViewer {
     this.contentDiv.style.height = '100%';
     this.container = ui.divH([this.codeDiv, this.contentDiv], {style: {width: '100%', height: '100%'}});
     this.updateEditorVisibility(this.isEditorShown);
-    this.refreshWgt.hidden = !this.isEditorShown;
 
-    this.editorView.dom.addEventListener('keydown', async (e) => {
+    const handleKeyPress = (event: Event) => {
       this.isLatexCodeChanged = true;
-      this.updateRefreshWidget(true);
-    });
+      this.applyChanges(this.editorView.state.doc.toString());
+    };
+
+    const debouncedInput = debounce(handleKeyPress, 500);
+    this.editorView.dom.addEventListener('keydown', debouncedInput);
 
     this.view.append(this.container);
     this.view.setRibbonPanels([[
       this.saveIcn,
       this.getDownLoadIcon(),
       this.getEditToggle(),
-      this.refreshWgt,
     ]]);
   }
 
@@ -188,10 +201,6 @@ export class LatexViewer {
       input.value = this.isEditorShown;
       this.updateEditorVisibility(this.isEditorShown);
       ui.tooltip.bind(wgt, this.isEditorShown ? 'Finish editing' : 'Edit source');
-      this.refreshWgt.hidden = !this.isEditorShown;
-      // this.tabControl.currentPane = this.isEditState ? this.editPane : this.solvePane;
-      // this.updateRibbonWgts();
-      // this.updateRefreshWidget(this.isModelChanged);
     };
 
     return wgt;
@@ -202,34 +211,6 @@ export class LatexViewer {
     this.contentDiv.style.width = toShow ? '50%' : '100%';
     this.codeDiv.style.width = toShow ? '50%' : '0%';
     this.contentDiv.style.borderLeft = toShow ? '1px solid var(--steel-1)' : 'none';
-  }
-
-  private getRefreshWgt(): HTMLElement {
-    const span = ui.span(['Refresh']);
-    span.classList.add('fe-latex-viewer-ribbon-text');
-    span.style.color = this.isLatexCodeChanged ? '#40607F' : 'var(--grey-3)';
-
-    const icn = ui.iconFA('sync');
-    icn.style.color = this.isLatexCodeChanged ? '#40607F' : 'var(--grey-3)';
-
-    const wgt = ui.divH([icn, span]);
-    wgt.onclick = async () => {
-      if (this.isLatexCodeChanged) {
-        this.applyChanges(this.editorView!.state.doc.toString());
-        this.updateRefreshWidget(this.isLatexCodeChanged);
-      }
-    };
-
-    ui.tooltip.bind(wgt, 'Apply changes');
-
-    return wgt;
-  }
-
-  private updateRefreshWidget(enabled: boolean) {
-    const ch = this.refreshWgt.children;
-    const color = this.getColor(enabled);
-    (ch.item(0) as HTMLElement).style.color = color;
-    (ch.item(1) as HTMLElement).style.color = color;
   }
 
   private getColor(enabled: boolean) {
