@@ -120,7 +120,7 @@ class FuncGeneratorPlugin {
     if (!name) return;
 
     const decoratorOptions = this._readDecoratorOptions(
-      exp.arguments[0].properties,
+      exp.arguments[0]?.properties ?? [],
     );
 
     decoratorOptions.set('tags', [
