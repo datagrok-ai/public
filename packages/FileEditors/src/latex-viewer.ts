@@ -30,7 +30,6 @@ export function getElementWithLatexContent(latexText: string): HTMLIFrameElement
 export class LatexViewer {
   public view: DG.View;
   private file: DG.FileInfo;
-  private isPlatformFile: boolean = false;
 
   private codeDiv = ui.div();
   private contentDiv = ui.div();
@@ -42,6 +41,8 @@ export class LatexViewer {
   private editorView: EditorView;
 
   private refreshWgt = this.getRefreshWgt();
+
+  private saveIcn = ui.iconFA('save', async () => await this.saveToMyFiles(), 'Save tex-file to My files');
 
   private prevNode: Node | null = null;
 
@@ -63,7 +64,6 @@ export class LatexViewer {
     this.file = file;
     this.view = DG.View.create();
     this.view.name = file.fileName;
-    this.isPlatformFile = exist;
 
     if (latexText === null)
       this.view.append(ui.h2('The file is corrupted and cannot be opened!'));
@@ -101,11 +101,60 @@ export class LatexViewer {
 
     this.view.append(this.container);
     this.view.setRibbonPanels([[
+      this.saveIcn,
       this.getDownLoadIcon(),
       this.getEditToggle(),
       this.refreshWgt,
     ]]);
   }
+
+  private async saveToMyFiles(): Promise<void> {
+    const texCode = this.editorView!.state.doc.toString();
+    let fileName = this.file.name.replaceAll(' ', '-');
+    const login = grok.shell.user.project.name;
+    const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
+    const files = await grok.dapi.files.list(folder);
+    const existingNames = files.filter((file) => file.extension === 'tex').map((file) => file.name);
+
+    const nameInput = ui.input.string('Name', {
+      value: fileName,
+      nullable: false,
+      onValueChanged: () => {
+        if (nameInput.value !== null) {
+          fileName = nameInput.value.replaceAll(' ', '-');
+          dlg.getButton('Save').disabled = false;
+        } else
+          dlg.getButton('Save').disabled = true;
+      },
+    });
+
+    const save = async () => {
+      const path = `${folder}${fileName}`;
+
+      try {
+        await grok.dapi.files.writeAsText(path, texCode);
+        grok.shell.info(`Saved to ${path}`);
+      } catch (error) {
+        grok.shell.error(`Failed to save: ${error instanceof Error ? error.message : 'platform issue'}`);
+      }
+
+      dlg.close();
+    };
+
+    const dlg = ui.dialog({title: 'Save to My files'})
+      .add(nameInput)
+      .addButton('Save', async () => {
+        if (!existingNames.includes(fileName))
+          await save();
+        else {
+          ui.dialog({title: 'WARNING'})
+            .add(ui.label('Overwrite existing file?'))
+            .onOK(async () => await save())
+            .show();
+        }
+      }, undefined, 'Save tex-file to My files')
+      .show();
+  }; // saveToMyFiles
 
   private getDownLoadIcon(): HTMLElement {
     const icon = ui.iconFA('arrow-to-bottom', () => {
