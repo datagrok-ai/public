@@ -51,23 +51,27 @@ export class ActivityDashboardWidget extends DG.Widget {
 
 
   async buildTabbedUI(): Promise<void> {
-    console.time('ActivityDashboardWidget.buildTabbedUI');
-    await this.initData();
-    const tabs: {[name: string]: HTMLElement} = {
-      'Spotlight': this.getSpotlightTab(),
-      'Favorites': this.getFavoritesTab(),
-      'Notifications': this.getNotificationsTab(),
-      'Your Activity': this.getActivityTab(),
-    };
+    this.root.appendChild(ui.wait(async () => {
+      console.time('ActivityDashboardWidget.buildTabbedUI');
+      await this.initData();
+      const tabs: {[name: string]: HTMLElement} = {
+        'Spotlight': this.getSpotlightTab(),
+        'Favorites': this.getFavoritesTab(),
+        'Notifications': this.getNotificationsTab(),
+        'Your Activity': this.getActivityTab(),
+      };
 
-    const tabControl = ui.tabControl(tabs, true);
-    tabControl.onTabChanged.subscribe((_) => this.cleanLists());
-    tabControl.root.style.height = '100%';
-    tabControl.root.style.width = '100%';
+      const tabControl = ui.tabControl(tabs, true);
+      tabControl.onTabChanged.subscribe((_) => this.cleanLists());
+      tabControl.root.style.height = '100%';
+      tabControl.root.style.width = '100%';
 
-    this.root.appendChild(tabControl.root);
-    setTimeout(() => this.cleanLists(), 500);
-    console.timeEnd('ActivityDashboardWidget.buildTabbedUI');
+      setTimeout(() => this.cleanLists(), 500);
+      console.timeEnd('ActivityDashboardWidget.buildTabbedUI');
+      return tabControl.root;
+    }));
+
+    ui.setUpdateIndicator(this.root, false);
   }
 
   async initData(): Promise<void> {
@@ -156,13 +160,11 @@ export class ActivityDashboardWidget extends DG.Widget {
                 usedItems.push(item as (DG.UserNotification & DG.Entity));
                 reportPresent = true;
               }
-            }
-            else
+            } else
               usedItems.push(item as (DG.UserNotification & DG.Entity));
           }
         }
-      }
-      else
+      } else
         usedItems = items;
       const ITEMS_LENGTH = 10;
       const itemsToShow = usedItems.slice(0, ITEMS_LENGTH);
@@ -178,8 +180,7 @@ export class ActivityDashboardWidget extends DG.Widget {
             item instanceof DG.Model ? ui.iconSvg('model') : ui.iconSvg('view-layout');
           if (parentElem && parentElem.firstChild)
             parentElem.insertBefore(iconToPaste, parentElem.firstChild);
-        }
-        else if (item instanceof DG.UserNotification) {
+        } else if (item instanceof DG.UserNotification) {
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
             timestamp.style.top = '5px';
@@ -188,8 +189,7 @@ export class ActivityDashboardWidget extends DG.Widget {
             if (timeChild)
               timeChild.remove();
           }
-        }
-        else if (item instanceof DG.LogEvent && item.description.toLowerCase().includes('published version'))
+        } else if (item instanceof DG.LogEvent && item.description.toLowerCase().includes('published version'))
           listChild.querySelector('.d4-markup')!.classList.add('power-pack-activity-widget-spotlight-column-admin-row');
 
         if (title === SpotlightTabNames.SHARED_WITH_YOU && sharedNotification.text) {
@@ -207,8 +207,7 @@ export class ActivityDashboardWidget extends DG.Widget {
           });
           icon.style.top = '5px';
           listChild.prepend(icon);
-        }
-        else if (title === SpotlightTabNames.RECENT) {
+        } else if (title === SpotlightTabNames.RECENT) {
           const timestamp = ui.time.shortTimestamp(this.recentEntityTimes[i]);
           timestamp.style.top = '5px';
           listChild.prepend(timestamp);
@@ -231,7 +230,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       root.appendChild(this.actionRequiredRoot);
     }
 
-   const sharedWithYouRoot = this.sharedWithYou.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_YOU, this.sharedWithYou, ui.iconFA('inbox')) : null;
+    const sharedWithYouRoot = this.sharedWithYou.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_YOU, this.sharedWithYou, ui.iconFA('inbox')) : null;
     if (sharedWithYouRoot)
       root.appendChild(sharedWithYouRoot);
 
@@ -265,8 +264,7 @@ export class ActivityDashboardWidget extends DG.Widget {
           result.appendChild(span);
           replacementIndex++;
         }
-      }
-      else {
+      } else {
         if (node instanceof Text && node.textContent === '.' && time)
           node.textContent = ` ${ui.time.timeSpan(time).textContent}`;
         result.appendChild(node);
@@ -349,8 +347,7 @@ export class ActivityDashboardWidget extends DG.Widget {
           uniqueEvents.set(text, uniqueEvents.get(text)! + 1);
           child.remove();
           continue;
-        }
-        else
+        } else
           uniqueEvents.set(text, 1);
       }
       const div = (child as HTMLElement).querySelector('div');
