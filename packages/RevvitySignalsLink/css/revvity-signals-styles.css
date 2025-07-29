@@ -58,7 +58,19 @@
     margin-bottom: 0px !important;
 }
 
-.revvity-signals-filter-row:hover .revvity-signals-filters-or-button {
+.revvity-signals-filters-and-button {
+    position: absolute;
+    bottom: 0px;
+    right: 40px;
+    font-size: 10px;
+    padding: 2px 6px !important;
+    display: none!important;
+    z-index: 10;
+    margin-bottom: 0px !important;
+}
+
+.revvity-signals-filter-row:hover .revvity-signals-filters-or-button,
+.revvity-signals-filter-row:hover .revvity-signals-filters-and-button {
     display: block!important;
 }
 

@@ -9,6 +9,7 @@ import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
 import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
+import { RevvityFilters } from './filters';
 
 
 export const _package = new DG.Package();
@@ -52,6 +53,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     });
     const tv = grok.shell.addTablePreview(df);
     tv.name = name;
+    new RevvityFilters(tv);
   }
 
   const compounds = treeNode.group('Compounds');
