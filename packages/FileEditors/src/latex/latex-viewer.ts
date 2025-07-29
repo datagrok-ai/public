@@ -1,46 +1,18 @@
+/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 // @ts-ignore
 import {parse, HtmlGenerator} from 'latex.js';
-import {_package} from './package';
+import {_package} from '../package';
 
 import {basicSetup, EditorView} from 'codemirror';
 import {latex} from 'codemirror-lang-latex';
+import {DEBOUNCE_MS, MARGIN_IDX} from './constants';
+import {debounce, isActionKey} from './utils';
 
-function debounce<T extends(...args: any[]) => void>(
-  func: T,
-  delay: number,
-): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout>;
-
-  return function(...args: Parameters<T>) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
-  };
-}
-
-export function getElementWithLatexContent(latexText: string): HTMLIFrameElement {
-  const generator = new HtmlGenerator({hyphenate: false});
-  const htmlGenerator = parse(latexText, {generator: generator});
-  const doc = htmlGenerator.htmlDocument(`${_package.webRoot}css/latex/`) as Document;
-
-  const iframe = ui.iframe({width: '100%', height: '100%'});
-  const rightMargin = doc.body.children[1];
-
-  if ((rightMargin !== null) && (rightMargin !== null))
-    (rightMargin as HTMLElement).style.display = 'none';
-
-  iframe.srcdoc = doc.documentElement.outerHTML;
-  iframe.style.border = 'transparent';
-
-  return iframe;
-}
-
-/** */
+/** Viewer for tex-files */
 export class LatexViewer {
   public view: DG.View;
   private file: DG.FileInfo;
@@ -63,6 +35,7 @@ export class LatexViewer {
 
   private prevNode: Node | null = null;
 
+  /** Load tex-file and create the viewer */
   static async create(file: DG.FileInfo): Promise<LatexViewer> {
     try {
       const latexText = await file.readAsString();
@@ -91,7 +64,7 @@ export class LatexViewer {
       this.view.append(ui.h2('The file is corrupted and cannot be opened!'));
     else {
       try {
-        this.prevNode = this.contentDiv.appendChild(getElementWithLatexContent(latexText));
+        this.prevNode = this.contentDiv.appendChild(this.getElementWithLatexContent(latexText));
       } catch (err) {
         if (err instanceof Error)
           grok.shell.error(err.message);
@@ -108,6 +81,23 @@ export class LatexViewer {
     }
   };
 
+  private getElementWithLatexContent(latexText: string): HTMLIFrameElement {
+    const generator = new HtmlGenerator({hyphenate: false});
+    const htmlGenerator = parse(latexText, {generator: generator});
+    const doc = htmlGenerator.htmlDocument(`${_package.webRoot}css/latex/`) as Document;
+
+    const iframe = ui.iframe({width: '100%', height: '100%'});
+    const rightMargin = doc.body.children[MARGIN_IDX];
+
+    if ((rightMargin !== null) && (rightMargin !== null))
+      (rightMargin as HTMLElement).style.display = 'none';
+
+    iframe.srcdoc = doc.documentElement.outerHTML;
+    iframe.style.border = 'transparent';
+
+    return iframe;
+  }
+
   private buildIO(): void {
     this.codeDiv.append(this.editorView.dom);
     this.codeDiv.style.height = '100%';
@@ -116,17 +106,14 @@ export class LatexViewer {
     this.updateEditorVisibility(this.isEditorShown);
 
     const handleKeyPress = (event: KeyboardEvent) => {
-      const isPrintable = event.key.length === 1;
-      const isDeletion = event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Enter';
-
-      if (isPrintable || isDeletion) {
+      if (isActionKey(event.key)) {
         this.isLatexCodeChanged = true;
         this.updateSaveWgt(true);
         this.applyChanges(this.editorView.state.doc.toString());
       }
     };
 
-    const debouncedInput = debounce(handleKeyPress, 500);
+    const debouncedInput = debounce(handleKeyPress, DEBOUNCE_MS);
     this.editorView.dom.addEventListener('keydown', debouncedInput);
     this.updateSaveWgt(false);
 
@@ -242,7 +229,7 @@ export class LatexViewer {
       this.contentDiv.removeChild(this.prevNode);
 
     try {
-      const newIframe = getElementWithLatexContent(latexText);
+      const newIframe = this.getElementWithLatexContent(latexText);
       this.prevNode = this.contentDiv.appendChild(newIframe);
       newIframe.style.opacity = '0';
       newIframe.style.transition = 'opacity 300ms ease-in';

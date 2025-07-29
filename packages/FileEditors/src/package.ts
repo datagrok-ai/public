@@ -7,7 +7,7 @@ import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
-import {LatexViewer} from './latex-viewer';
+import {LatexViewer} from './latex/latex-viewer';
 
 export const _package = new DG.Package();
 
