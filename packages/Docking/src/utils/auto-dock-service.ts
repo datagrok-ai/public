@@ -9,7 +9,7 @@ import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/mo
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
 import {_package} from './constants';
-import { getAutoDockService } from '../package';
+import { PackageFunctions } from '../package';
 
 namespace Forms {
   export type dockLigand = {
@@ -263,36 +263,36 @@ export async function _runAutodock(
 }
 
 export async function _runAutodock2(molCol: DG.Column<string>, receptor: BiostructureData): Promise<void> {
-  // const receptorPdb: string = await receptorFi.readAsString();
+  // // const receptorPdb: string = await receptorFi.readAsString();
 
-  let resDf: DG.DataFrame | undefined = undefined;
+  // let resDf: DG.DataFrame | undefined = undefined;
 
-  const adSvc = await getAutoDockService();
-  await adSvc.awaitStatus('started', 30000);
-  const ph = await getPdbHelper();
-  for (let lRowI = 0; lRowI < molCol.length; ++lRowI) {
-    const t1 = window.performance.now();
-    try {
-      const ligandMol = molCol.get(lRowI);
-      const ligandPdb = await ph.molToPdb(ligandMol!);
-      const ligandData: BiostructureData = {binary: false, data: ligandPdb, ext: 'pdb'};
-      const autodockGpf = buildDefaultAutodockGpf(receptor.options!.name!, new GridSize(40, 40, 40));
+  // const adSvc = await PackageFunctions.getAutoDockService();
+  // await adSvc.awaitStatus('started', 30000);
+  // const ph = await getPdbHelper();
+  // for (let lRowI = 0; lRowI < molCol.length; ++lRowI) {
+  //   const t1 = window.performance.now();
+  //   try {
+  //     const ligandMol = molCol.get(lRowI);
+  //     const ligandPdb = await ph.molToPdb(ligandMol!);
+  //     const ligandData: BiostructureData = {binary: false, data: ligandPdb, ext: 'pdb'};
+  //     const autodockGpf = buildDefaultAutodockGpf(receptor.options!.name!, new GridSize(40, 40, 40));
 
-      const posesDf = await adSvc.dockLigand(receptor, ligandData, autodockGpf, 10);
+  //     const posesDf = await adSvc.dockLigand(receptor, ligandData, autodockGpf, 10);
 
-      if (resDf === undefined)
-        resDf = posesDf.clone(DG.BitSet.create(posesDf.rowCount, (_i) => false));
+  //     if (resDf === undefined)
+  //       resDf = posesDf.clone(DG.BitSet.create(posesDf.rowCount, (_i) => false));
 
-      resDf!.append(posesDf, true);
-    } finally {
-      const t2 = window.performance.now();
-      _package.logger.debug('_runAutodock2(), ' + `ligand: ${lRowI}, ` + `ET: ${t2 - t2} ms, `);
-    }
-  }
+  //     resDf!.append(posesDf, true);
+  //   } finally {
+  //     const t2 = window.performance.now();
+  //     _package.logger.debug('_runAutodock2(), ' + `ligand: ${lRowI}, ` + `ET: ${t2 - t2} ms, `);
+  //   }
+  // }
 
-  if (resDf !== undefined)
-    DG.Utils.download('models.csv', resDf.toCsv());
-  else
-    window.alert('Empty result');
+  // if (resDf !== undefined)
+  //   DG.Utils.download('models.csv', resDf.toCsv());
+  // else
+  //   window.alert('Empty result');
 }
 

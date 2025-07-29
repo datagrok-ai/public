@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 
-import { getAutodockSingle, runDocking } from '../package';
+import { PackageFunctions, runDocking } from '../package';
 
 export class DockingViewApp extends BaseViewApp {
   protected STORAGE_NAME: string = 'docking-sketcher-values';
@@ -67,12 +67,12 @@ export class DockingViewApp extends BaseViewApp {
 
   private async createDockingWidget(cell: DG.Cell, dataFrame: DG.DataFrame): Promise<HTMLElement | null> {
     const semValue = DG.SemanticValue.fromTableCell(cell);
-    const widget = (await getAutodockSingle(semValue, false, dataFrame));
+    // const widget = (await PackageFunctions.getAutodockSingle(semValue, false, dataFrame));
 
-    if (widget) {
-      this.applyFullSizeStyles(widget.root.firstElementChild as HTMLElement);
-      return widget.root;
-    }
+    // if (widget) {
+    //   this.applyFullSizeStyles(widget.root.firstElementChild as HTMLElement);
+    //   return widget.root;
+    // }
     return null;
   }
 
