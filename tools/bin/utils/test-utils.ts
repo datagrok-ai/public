@@ -369,7 +369,8 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 
       df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
       df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
-      df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
+      if (df.col('widgetsDifference'))
+        df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
       // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
