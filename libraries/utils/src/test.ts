@@ -569,7 +569,7 @@ export async function runTests(options?: TestExecutionOptions) {
         let res: any[];
         if (value.beforeStatus) {
           res = Array.from(t.map((testElem) => {
-            return { date: new Date().toISOString(), logs: '', category: key, name: testElem.name, result: 'before() failed', success: false, ms: 0, skipped: false };
+            return { date: new Date().toISOString(), logs: '', category: key, name: testElem.name, result: 'before() failed', success: false, ms: 0, skipped: false, package: package_.name };
           }));
           res.forEach(async (test) => reportTest('package', test));
         } else
@@ -583,9 +583,9 @@ export async function runTests(options?: TestExecutionOptions) {
         // grok.shell.closeAll();
         // DG.Balloon.closeAll();
         if (value.afterStatus)
-          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false, package: package_.name });
         if (value.beforeStatus)
-          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false, package: package_.name });
           results.push(...data);
       }
     } finally {

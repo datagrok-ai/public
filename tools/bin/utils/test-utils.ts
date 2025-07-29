@@ -3,11 +3,11 @@ import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
-import { PuppeteerNode } from 'puppeteer';
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
-import { spaceToCamelCase } from '../utils/utils';
+import {PuppeteerNode} from 'puppeteer';
+import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
+import {spaceToCamelCase} from '../utils/utils';
 import puppeteer from 'puppeteer';
-import { Browser, Page } from 'puppeteer';
+import {Browser, Page} from 'puppeteer';
 import * as color from '../utils/color-utils';
 import Papa from 'papaparse';
 
@@ -22,15 +22,15 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--disable-dev-shm-usage',
     '--disable-features=site-per-process',
     '--window-size=1920,1080',
-    '--js-flags=--expose-gc'
+    '--js-flags=--expose-gc',
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
-  protocolTimeout: 0
+  protocolTimeout: 0,
 };
 
 export async function getToken(url: string, key: string) {
-  const response = await fetch(`${url}/users/login/dev/${key}`, { method: 'POST' });
+  const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
   const json = await response.json();
   if (json.isSuccess == true)
     return json.token;
@@ -39,7 +39,7 @@ export async function getToken(url: string, key: string) {
 }
 
 export async function getWebUrl(url: string, token: string) {
-  const response = await fetch(`${url}/admin/plugins/admin/settings`, { headers: { Authorization: token } });
+  const response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
   const json = await response.json();
   return json.settings.webRoot;
 }
@@ -61,7 +61,7 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
     url = config['servers'][host]['url'];
     key = config['servers'][host]['key'];
   }
-  return { url, key };
+  return {url, key};
 }
 
 export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
@@ -81,13 +81,13 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = def
       return t.type() === 'other' && t.url().startsWith('devtools://');
     });
     if (devtoolsTarget) {
-      const client = await devtoolsTarget.createCDPSession()
+      const client = await devtoolsTarget.createCDPSession();
       await client.send('Runtime.enable');
       await client.send('Runtime.evaluate', {
         expression: `
       window.UI.viewManager.showView('network');
       window.UI.dockController.setDockSide('bottom')
-    `
+    `,
       });
     }
   }
@@ -99,18 +99,18 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = def
   });
   page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
-  await page.setCookie({ name: 'auth', value: token });
+  await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
   await page.goto(url);
   try {
     //    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, { timeout: 3600000 });
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
   } catch (error) {
     throw error;
   }
-  return { browser, page };
+  return {browser, page};
 }
 
 export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
@@ -166,24 +166,24 @@ export const recorderConfig = {
 };
 
 export async function loadPackages(packagesDir: string, packagesToLoad?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean, release?: boolean): Promise<string[]> {
-  let packagesToRun = new Map<string, boolean>();
-  let hostString = host === undefined ? `` : `${host}`;
-  if (packagesToLoad !== "all") {
-    for (let pacakgeName of (packagesToLoad ?? "").split(' ')) {
+  const packagesToRun = new Map<string, boolean>();
+  const hostString = host === undefined ? `` : `${host}`;
+  if (packagesToLoad !== 'all') {
+    for (const pacakgeName of (packagesToLoad ?? '').split(' ')) {
       if ((pacakgeName ?? '').length !== 0)
         packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
     }
   }
 
-  for (let dirName of fs.readdirSync(packagesDir)) {
-    let packageDir = path.join(packagesDir, dirName);
+  for (const dirName of fs.readdirSync(packagesDir)) {
+    const packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
 
       try {
-        const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
-        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"] ?? '').toLocaleLowerCase() ?? "") ?? packagesToRun.get(dirName);
+        const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), {encoding: 'utf-8'}));
+        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData['friendlyName'] ?? packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? '') ?? packagesToRun.get(dirName);
 
-        if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
+        if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all')) {
           try {
             process.stdout.write(`Building and publishing ${dirName}...`);
             if (skipPublish != true) {
@@ -196,14 +196,12 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
             }
             packagesToRun.set(dirName, true);
             process.stdout.write(` success!\n`);
-          }
-          catch (e: any) {
+          } catch (e: any) {
             process.stdout.write(` fail!\n`);
           }
         }
-      }
-      catch (e: any) {
-        if (utils.isPackageDir(packageDir) && (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === "all"))
+      } catch (e: any) {
+        if (utils.isPackageDir(packageDir) && (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
           console.log(`Couldn't read package.json  ${dirName}`);
       }
     }
@@ -211,11 +209,11 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
   console.log();
   return Array.from(packagesToRun)
     .filter(([key, value]) => value === true)
-    .map(([key]) => key);;
+    .map(([key]) => key); ;
 }
 
 export async function loadTestsList(packages: string[], core: boolean = false): Promise<Test[]> {
-  var packageTestsData = await timeout(async () => {
+  const packageTestsData = await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
     // params['headless'] = false;
     const out = await getBrowserPage(puppeteer, params);
@@ -226,14 +224,14 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
         const promises: any[] = [];
         try {
           packages.map((packageName: string) => {
-            const p = (<any>window).DG.Func.find({ package: packageName, name: 'test' })[0]?.package;
+            const p = (<any>window).DG.Func.find({package: packageName, name: 'test'})[0]?.package;
             if (p) {
               try {
                 promises.push(p.getTests(coreTests).catch((e: any) => {
-                  console.error('something else went wrong with collecting package tests')
-                  console.error(e?.message)
+                  console.error('something else went wrong with collecting package tests');
+                  console.error(e?.message);
                 })
-                  .then((ts: any) => ({ packageName: packageName, tests: ts })))
+                  .then((ts: any) => ({packageName: packageName, tests: ts})));
               } catch (e: any) {
                 console.error('something went wrong while adding test collection promise');
                 console.error(e.message);
@@ -242,7 +240,7 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
           });
 
         } catch (err) {
-          console.error("Error during evaluation in browser context:", err);
+          console.error('Error during evaluation in browser context:', err);
           reject();
         }
         Promise.all(promises)
@@ -251,24 +249,24 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
           }).catch((e: any) => {
             const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
               resolve({
-                failReport: `${e.message}\n${stack}`
+                failReport: `${e.message}\n${stack}`,
               });
             });
           });
       });
     }, packages, core);
-    if (browser != null) {
+    if (browser != null) 
       await browser.close();
-    }
+    
 
     return r;
   }, testCollectionTimeout);
-  let testsList: Test[] = [];
+  const testsList: Test[] = [];
 
-  for (let testPackage of packageTestsData) {
+  for (const testPackage of packageTestsData) {
     for (const key in testPackage.tests) {
       if (testPackage.tests.hasOwnProperty(key)) {
-        for (let testValue of testPackage.tests[key].tests) {
+        for (const testValue of testPackage.tests[key].tests) {
           testValue.packageName = testPackage.packageName;
           testsList.push(testValue);
         }
@@ -285,31 +283,31 @@ export function addLogsToFile(filePath: string, stringToSave: string) {
 export function printBrowsersResult(browserResult: ResultObject, verbose: boolean = false) {
   if (verbose) {
     if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
-      console.log("Passed: ");
+      console.log('Passed: ');
       console.log(browserResult.verbosePassed);
     }
     if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
-      console.log("Skipped: ");
+      console.log('Skipped: ');
       console.log(browserResult.verboseSkipped);
     }
   }
 
   if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
-    console.log("Failed: ");
+    console.log('Failed: ');
     console.log(browserResult.verboseFailed);
   }
-  console.log("Passed amount:  " + browserResult?.passedAmount);
-  console.log("Skipped amount: " + browserResult?.skippedAmount);
-  console.log("Failed amount:  " + browserResult?.failedAmount);
+  console.log('Passed amount:  ' + browserResult?.passedAmount);
+  console.log('Skipped amount: ' + browserResult?.skippedAmount);
+  console.log('Failed amount:  ' + browserResult?.failedAmount);
 
   if (browserResult.failed) {
     if (browserResult.verboseFailed === 'Package not found')
       color.fail('Tests not found');
     else
       color.fail('Tests failed.');
-  } else {
+  } else 
     color.success('Tests passed.');
-  }
+  
 }
 
 export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
@@ -324,10 +322,10 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
 
 async function runTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
   let failed = false;
-  let verbosePassed = "";
-  let verboseSkipped = "";
-  let verboseFailed = "";
-  let error = "";
+  let verbosePassed = '';
+  let verboseSkipped = '';
+  let verboseFailed = '';
+  let error = '';
   let countPassed = 0;
   let countSkipped = 0;
   let countFailed = 0;
@@ -335,13 +333,16 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   let lastTest: any = null;
   let res: string = '';
   try {
-    for (let testParam of testsParams) {
+    for (const testParam of testsParams) {
       lastTest = testParam;
-      let df: any = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
-      let flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+      const df: any = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
+      const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
       df.columns.add(flakingCol);
-      let packageNameCol = (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
-      df.columns.add(packageNameCol);
+      if (!df.getCol('package')) {
+        const packageNameCol = 
+          (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+        df.columns.add(packageNameCol);
+      }
       if (df.rowCount === 0) {
         verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
@@ -351,23 +352,24 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 
       let row = df.rows.get(0);
       if (df.rowCount > 1) {
-        let unhandledErrorRow = df.rows.get(1);
-        if (!unhandledErrorRow.get("success")) {
-          unhandledErrorRow["category"] = row.get("category");
-          unhandledErrorRow["name"] = row.get("name");
+        const unhandledErrorRow = df.rows.get(1);
+        if (!unhandledErrorRow.get('success')) {
+          unhandledErrorRow['category'] = row.get('category');
+          unhandledErrorRow['name'] = row.get('name');
           row = unhandledErrorRow;
         }
       }
-      const category = row.get("category");
-      const testName = row.get("name");
-      const time = row.get("ms");
-      const result = row.get("result");
-      const success = row.get("success");
-      const skipped = row.get("skipped");
-      row["flaking"] = success && (<any>window).DG.Test.isReproducing;
+      const category = row.get('category');
+      const testName = row.get('name');
+      const time = row.get('ms');
+      const result = row.get('result');
+      const success = row.get('success');
+      const skipped = row.get('skipped');
+      row['flaking'] = success && (<any>window).DG.Test.isReproducing;
 
       df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
       df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
+      df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
       // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
 
       if (resultDF === undefined)
@@ -375,15 +377,13 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
       else
         resultDF = resultDF.append(df);
 
-      if (row["skipped"]) {
+      if (row['skipped']) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
         countSkipped += 1;
-      }
-      else if (row["success"]) {
+      } else if (row['success']) {
         verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
         countPassed += 1;
-      }
-      else {
+      } else {
         verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
         countFailed += 1;
         failed = true;
@@ -394,17 +394,17 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 
     if ((<any>window).DG.Test.isInDebug) {
       console.log('on browser closing debug point');
-      debugger
+      debugger;
     }
 
     res = '';
     if (resultDF) {
-      const bs = (<any>window).DG.BitSet.create(resultDF.rowCount)
+      const bs = (<any>window).DG.BitSet.create(resultDF.rowCount);
       bs.setAll(true);
       for (let i = 0; i < resultDF.rowCount; i++) {
-        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
+        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') 
           bs.set(i, false);
-        }
+        
       }
       resultDF = resultDF.clone(bs);
       res = resultDF.toCsv();
@@ -431,13 +431,13 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 }
 
 export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
-  let testsToRun = {
+  const testsToRun = {
     func: runTests.toString(),
-    tests: testExecutionData
+    tests: testExecutionData,
   };
   return await timeout(async () => {
     const params = Object.assign({
-      devtools: browserOptions.debug
+      devtools: browserOptions.debug,
     }, defaultLaunchParameters);
     if (browserOptions.gui)
       params['headless'] = false;
@@ -451,17 +451,17 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
 
     if (browserOptions.record) {
       await recorder.start(recordDir);
-      await page.exposeFunction("addLogsToFile", addLogsToFile);
+      await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
-      page.on('console', (msg) => { addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`); });
-      page.on('pageerror', (error) => { addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`); });
+      page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
+      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
       page.on('response', (response) => {
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
     }
 
-    let testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
+    const testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
 
       if (options.benchmark)
         (<any>window).DG.Test.isInBenchmark = true;
@@ -482,16 +482,16 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
           .catch((e: any) => {
             resolve({
               failed: true,
-              verbosePassed: "",
-              verboseSkipped: "",
-              verboseFailed: "",
+              verbosePassed: '',
+              verboseSkipped: '',
+              verboseFailed: '',
               error: JSON.stringify(e),
               passedAmount: 0,
               skippedAmount: 0,
               failedAmount: 1,
-              csv: "",
-              df: undefined
-            })
+              csv: '',
+              df: undefined,
+            });
           });
 
         // (<any>window).DG.Utils.executeTests(testData.tests, options.stopOnTimeout)
@@ -511,23 +511,23 @@ export async function runBrowser(testExecutionData: OrganizedTests[], browserOpt
         //       df: undefined
         //     })
         //   });
-      })
+      });
     }, testsToRun, browserOptions);
 
-    if (browserOptions.record) {
+    if (browserOptions.record) 
       await recorder.stop();
-    }
+    
 
-    if (browser != null) {
+    if (browser != null) 
       await browser.close();
-    }
+    
     return testingResults;
   }, testInvocationTimeout);
 }
 
 export async function mergeBrowsersResults(browsersResults: ResultObject[]): Promise<ResultObject> {
 
-  let mergedResult: ResultObject = {
+  const mergedResult: ResultObject = {
     failed: browsersResults[0].failed,
     verbosePassed: browsersResults[0].verbosePassed,
     verboseSkipped: browsersResults[0].verboseSkipped,
@@ -537,9 +537,9 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     failedAmount: browsersResults[0].failedAmount,
     csv: browsersResults[0].csv,
     error: '',
-  }
+  };
 
-  for (let browsersResult of browsersResults) {
+  for (const browsersResult of browsersResults) {
     if (mergedResult.csv === browsersResult.csv)
       continue;
 
@@ -559,7 +559,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     mergedResult.csv = [
       header,
       ...resultToMerdge1.slice(1),
-      ...resultToMerdge2.slice(1)
+      ...resultToMerdge2.slice(1),
     ].join('\n');
   }
   return mergedResult;
@@ -630,16 +630,16 @@ export async function addColumnToCsv(csv: string, columnName: string, defaultVal
   Papa.parse(csv, {
     header: true,
     skipEmptyLines: true,
-    complete: function (results) {
+    complete: function(results) {
       const dataWithDefaultColumn = results.data.map((row: any) => {
         row[columnName] = defaultValue;
         return row;
       });
 
       result = Papa.unparse(dataWithDefaultColumn, {
-        header: true
+        header: true,
       });
-    }
+    },
   });
   return result;
 }
