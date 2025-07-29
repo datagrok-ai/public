@@ -178,6 +178,10 @@ export namespace decorators {
     url?: string
   }
 
+  interface DashboardOptions extends FunctionOptions {
+    test?: string,
+  }
+
   interface ModelOptions extends FunctionOptions {
     icon?: string,
     features?: string,
@@ -260,6 +264,14 @@ export namespace decorators {
     ) { };
   }
 
+  export function dashboard(config?: DashboardOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
   export function folderViewer(config?: FunctionOptions) {
     return function (
       target: any,
@@ -291,14 +303,6 @@ export namespace decorators {
   //     descriptor: PropertyDescriptor
   //   ) { };
   // }
-
-  export function dashboard(config?: DashboardOptions) {
-    return function (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) { };
-  }
 
   export function functionAnalysis(config?: FunctionOptions) {
     return function (
