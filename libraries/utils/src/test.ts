@@ -601,7 +601,8 @@ export async function runTests(options?: TestExecutionOptions) {
         name: 'Exception',
         result: error ?? '', success: !error, ms: 0, skipped: false,
         'flaking': DG.Test.isReproducing && !error,
-        owner: packageOwner ?? ''
+        owner: packageOwner ?? '',
+        'package': package_.name
       };
       results.push(params);
       (<any>params).package = package_.name;
@@ -629,7 +630,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, owner?: string };
+  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, owner?: string , package?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -647,14 +648,14 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const startDate = new Date(start).toISOString();
   try {
     if (skip)
-      r = { date: startDate, success: true, result: skipReason!, ms: 0, skipped: true };
+      r = { date: startDate, success: true, result: skipReason!, ms: 0, skipped: true, package: packageName };
     else {
       let timeout_ = testTimeout ?? STANDART_TIMEOUT;
 
       if (DG.Test.isProfiling)
         console.profile(`${t.category}: ${t.name}`);
 
-      r = { date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+      r = { date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false , package: packageName};
 
       if (DG.Test.isProfiling) {
         console.profileEnd(`${t.category}: ${t.name}`);
@@ -663,7 +664,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     }
   } catch (x: any) {
     stdError(x);
-    r = { date: startDate, success: false, result: await getResult(x), ms: 0, skipped: false };
+    r = { date: startDate, success: false, result: await getResult(x), ms: 0, skipped: false, package: packageName };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -687,7 +688,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms, 'date': r.date,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
+      'skipped': r.skipped, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
       'flaking': DG.Test.isReproducing && r.success,
       'timeoutWarning': DG.Test.isInBenchmark && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
     };
