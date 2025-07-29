@@ -231,16 +231,45 @@ export class LatexViewer {
   }
 
   private applyChanges(latexText: string): void {
+    const scrollTop = this.getScrollTop();
+
     if (this.prevNode !== null)
       this.contentDiv.removeChild(this.prevNode);
 
     try {
-      this.prevNode = this.contentDiv.appendChild(getElementWithLatexContent(latexText));
+      console.log('Scroll top:', scrollTop);
+      const newIframe = getElementWithLatexContent(latexText);
+      this.prevNode = this.contentDiv.appendChild(newIframe);
+      newIframe.style.opacity = '0';
+      newIframe.style.transition = 'opacity 300ms ease-in';
+      newIframe.style.opacity = '1';
+
+      newIframe.addEventListener('load', () => {
+        requestAnimationFrame(() => {
+          const maxScrollTop = newIframe.contentDocument.documentElement.scrollHeight -
+          newIframe.contentDocument.documentElement.clientHeight;
+          console.log('Max top:', maxScrollTop);
+          newIframe.contentDocument.documentElement.scrollTop = Math.min(scrollTop, Math.max(0, maxScrollTop));
+        });
+      });
     } catch (err) {
       if (err instanceof Error)
         grok.shell.error(err.message);
 
       this.prevNode = this.contentDiv.appendChild(ui.h2('LaTeX code contains errors!'));
     }
+  }
+
+  private getScrollTop(): number {
+    const iframe = this.contentDiv.querySelector('iframe');
+
+    if ((iframe === null) || (iframe === undefined))
+      return 0;
+
+    const scrollTop = iframe.contentDocument?.documentElement?.scrollTop ?? 0;
+    iframe.style.transition = 'opacity 300ms ease-out';
+    iframe.style.opacity = '0';
+
+    return scrollTop;
   }
 }; // LatexViewer
