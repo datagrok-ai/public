@@ -9,7 +9,7 @@ import {_package} from '../package';
 
 import {basicSetup, EditorView} from 'codemirror';
 import {latex} from 'codemirror-lang-latex';
-import {DEBOUNCE_MS, MARGIN_IDX} from './constants';
+import {HIGH, LIMIT, LOW, MARGIN_IDX} from './constants';
 import {debounce, isActionKey, isCutPaste} from './utils';
 
 /** Viewer for tex-files */
@@ -17,6 +17,7 @@ export class LatexViewer {
   public view: DG.View;
   private file: DG.FileInfo;
   private isPlatformFile = false;
+  private debounceMs = HIGH;
 
   private codeDiv = ui.div();
   private contentDiv = ui.div();
@@ -40,6 +41,7 @@ export class LatexViewer {
   static async create(file: DG.FileInfo): Promise<LatexViewer> {
     try {
       const latexText = await file.readAsString();
+      console.log('Length:', latexText.length);
       const exist = await grok.dapi.files.exists(file);
 
       return new LatexViewer(file, latexText, exist);
@@ -59,6 +61,10 @@ export class LatexViewer {
     );
   }
 
+  private updateDebounceMs(text: string): void {
+    this.debounceMs = text.length > LIMIT ? HIGH : LOW;
+  }
+
   private constructor(file: DG.FileInfo, latexText: string | null, exist: boolean) {
     this.file = file;
     this.view = DG.View.create();
@@ -68,6 +74,8 @@ export class LatexViewer {
     if (latexText === null)
       this.view.append(ui.h2('The file is corrupted and cannot be opened!'));
     else {
+      this.updateDebounceMs(latexText);
+
       try {
         this.prevNode = this.contentDiv.appendChild(this.getElementWithLatexContent(latexText));
       } catch (err) {
@@ -118,7 +126,7 @@ export class LatexViewer {
       }
     };
 
-    const debouncedInput = debounce(handleKeyPress, DEBOUNCE_MS);
+    const debouncedInput = debounce(handleKeyPress, this.debounceMs);
     this.editorView.dom.addEventListener('keydown', debouncedInput);
     this.updateSaveWgt(false);
 
@@ -253,6 +261,8 @@ export class LatexViewer {
       newIframe.style.opacity = '0';
       newIframe.style.transition = 'opacity 300ms ease-in';
       newIframe.style.opacity = '1';
+
+      this.updateDebounceMs(latexText);
 
       newIframe.addEventListener('load', () => {
         requestAnimationFrame(() => {
