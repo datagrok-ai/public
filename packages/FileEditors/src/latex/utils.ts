@@ -1,4 +1,4 @@
-import {ACTION_KEYS, PRINTABLE_LEN} from './constants';
+import {ACTION_KEYS, CUT_PASTE, PRINTABLE_LEN} from './constants';
 
 export function debounce<T extends(...args: any[]) => void>(
   func: T,
@@ -16,4 +16,13 @@ export function debounce<T extends(...args: any[]) => void>(
 
 export function isActionKey(key: string): boolean {
   return (key.length === PRINTABLE_LEN) || ACTION_KEYS.has(key);
+}
+
+export function isCutPaste(event: KeyboardEvent): boolean {
+  const key = event.key.toLowerCase();
+
+  if (event.ctrlKey || event.metaKey)
+    return CUT_PASTE.has(key) && (key !== 'c');
+
+  return (event.shiftKey && key === 'insert');
 }

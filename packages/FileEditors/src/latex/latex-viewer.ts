@@ -10,7 +10,7 @@ import {_package} from '../package';
 import {basicSetup, EditorView} from 'codemirror';
 import {latex} from 'codemirror-lang-latex';
 import {DEBOUNCE_MS, MARGIN_IDX} from './constants';
-import {debounce, isActionKey} from './utils';
+import {debounce, isActionKey, isCutPaste} from './utils';
 
 /** Viewer for tex-files */
 export class LatexViewer {
@@ -106,7 +106,7 @@ export class LatexViewer {
     this.updateEditorVisibility(this.isEditorShown);
 
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (isActionKey(event.key)) {
+      if (isActionKey(event.key) || isCutPaste(event)) {
         this.isLatexCodeChanged = true;
         this.updateSaveWgt(true);
         this.applyChanges(this.editorView.state.doc.toString());
