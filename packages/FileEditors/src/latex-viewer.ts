@@ -115,10 +115,15 @@ export class LatexViewer {
     this.container = ui.divH([this.codeDiv, this.contentDiv], {style: {width: '100%', height: '100%'}});
     this.updateEditorVisibility(this.isEditorShown);
 
-    const handleKeyPress = (event: Event) => {
-      this.isLatexCodeChanged = true;
-      this.updateSaveWgt(true);
-      this.applyChanges(this.editorView.state.doc.toString());
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const isPrintable = event.key.length === 1;
+      const isDeletion = event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Enter';
+
+      if (isPrintable || isDeletion) {
+        this.isLatexCodeChanged = true;
+        this.updateSaveWgt(true);
+        this.applyChanges(this.editorView.state.doc.toString());
+      }
     };
 
     const debouncedInput = debounce(handleKeyPress, 500);
@@ -237,7 +242,6 @@ export class LatexViewer {
       this.contentDiv.removeChild(this.prevNode);
 
     try {
-      console.log('Scroll top:', scrollTop);
       const newIframe = getElementWithLatexContent(latexText);
       this.prevNode = this.contentDiv.appendChild(newIframe);
       newIframe.style.opacity = '0';
@@ -248,7 +252,6 @@ export class LatexViewer {
         requestAnimationFrame(() => {
           const maxScrollTop = newIframe.contentDocument.documentElement.scrollHeight -
           newIframe.contentDocument.documentElement.clientHeight;
-          console.log('Max top:', maxScrollTop);
           newIframe.contentDocument.documentElement.scrollTop = Math.min(scrollTop, Math.max(0, maxScrollTop));
         });
       });
@@ -271,5 +274,5 @@ export class LatexViewer {
     iframe.style.opacity = '0';
 
     return scrollTop;
-  }
+  } // applyChanges
 }; // LatexViewer
