@@ -69,8 +69,8 @@
     margin-bottom: 0px !important;
 }
 
-.revvity-signals-filter-row:hover .revvity-signals-filters-or-button,
-.revvity-signals-filter-row:hover .revvity-signals-filters-and-button {
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-or-button,
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-and-button .last-row{
     display: block!important;
 }
 
@@ -116,5 +116,9 @@
 }
 
 .revvity-signals-filter-row .ui-input-editor {
+    width: auto!important;
+}
+
+.revvity-signals-search-query-operator .ui-input-editor {
     width: auto!important;
 }

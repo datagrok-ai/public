@@ -198,7 +198,7 @@ export class RevvityFilters {
     }
 
     private createDateFilterRow(container: HTMLElement, filterName: string, isAdditionalRow: boolean = false): void {
-        const filterRow = this.createFilterRow();
+        const filterRow = this.createFilterRow(container);
         
         const { choiceInput, dateInput1, dateInput2, dateContainer } = this.createDateInputs();
         
@@ -219,6 +219,9 @@ export class RevvityFilters {
                 const filterRows = Array.from(container.children).filter(child => 
                     child.classList.contains('revvity-signals-filter-row')
                 );
+                if (filterRows.length >= 2) {
+                    filterRows[filterRows.length - 2].classList.add('revvity-filter-last-row');
+                }
                 const rowIndex = filterRows.indexOf(filterRow);
                 
                 // Remove the filter at the correct index
@@ -246,9 +249,14 @@ export class RevvityFilters {
         }
     }
 
-    private createFilterRow(): HTMLElement {
+    private createFilterRow(container: HTMLElement): HTMLElement {
+        const filterRows = Array.from(container.children).filter(child =>
+            child.classList.contains('revvity-signals-filter-row')
+        );
+        if (filterRows.length)
+            filterRows[filterRows.length - 1].classList.remove('revvity-filter-last-row');
         const filterRow = ui.divH([]);
-        filterRow.classList.add('revvity-signals-filter-row');
+        filterRow.classList.add('revvity-signals-filter-row', 'revvity-filter-last-row');
         return filterRow;
     }
 
@@ -348,7 +356,7 @@ export class RevvityFilters {
     }
 
     private createChemFilterRow(container: HTMLElement, isAdditionalRow: boolean = false): void {
-        const filterRow = this.createFilterRow();
+        const filterRow = this.createFilterRow(container);
         
         const { moleculeInput, searchTypeInput, similaritySlider, inputsContainer } = this.createChemInputs();
         
@@ -368,6 +376,9 @@ export class RevvityFilters {
                 const filterRows = Array.from(container.children).filter(child => 
                     child.classList.contains('revvity-signals-filter-row')
                 );
+                if (filterRows.length >= 2) {
+                    filterRows[filterRows.length - 2].classList.add('revvity-filter-last-row');
+                }
                 const rowIndex = filterRows.indexOf(filterRow);
                 
                 // Remove the filter at the correct index

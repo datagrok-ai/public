@@ -10,6 +10,8 @@ import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, 
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
 import { RevvityFilters } from './filters';
+import { buildPropertyFilterForm } from './defaultProperties';
+import { getProperties } from './properties';
 
 
 export const _package = new DG.Package();
@@ -42,6 +44,14 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   search.onSelected.subscribe(() => {
     const v = DG.View.create('Search');
     const queryBuilder = signalsSearchBuilderUI();
+    v.append(queryBuilder);
+    grok.shell.addPreview(v);
+  });
+
+  const search2 = treeNode.item('Search 2');
+  search2.onSelected.subscribe(() => {
+    const v = DG.View.create('Search 2');
+    const queryBuilder = buildPropertyFilterForm(getProperties());
     v.append(queryBuilder);
     grok.shell.addPreview(v);
   });
