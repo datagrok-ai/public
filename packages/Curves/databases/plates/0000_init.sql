@@ -1,6 +1,3 @@
-DROP SCHEMA if exists plates cascade;
-CREATE SCHEMA plates;
-
 -- Explains the meaning of a scalar property.
 CREATE TABLE plates.semantic_types (
     id SERIAL PRIMARY KEY,
@@ -61,7 +58,7 @@ CREATE TABLE plates.layouts (
     description TEXT,
     details JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID references users(id)
+    created_by UUID
 );
 
 -- represents an assay plate
@@ -73,7 +70,7 @@ CREATE TABLE plates.plates (
     description TEXT,
     details JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID references users(id)
+    created_by UUID
 );
 
 -- User-defined plate details
@@ -99,7 +96,7 @@ CREATE TABLE plates.templates (
     name TEXT,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID references users(id)
+    created_by UUID
 );
 
 CREATE TABLE plates.template_plate_properties (

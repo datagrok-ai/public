@@ -7,6 +7,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace queries {
+  export async function mostRecentEntities(user: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('PowerPack:MostRecentEntities', { user });
+  }
+}
+
 export namespace funcs {
   export async function compareColumns(): Promise<void> {
     return await grok.functions.call('PowerPack:CompareColumns', {});
@@ -18,6 +24,10 @@ export namespace funcs {
 
   export async function welcomeView(): Promise<DG.View> {
     return await grok.functions.call('PowerPack:WelcomeView', {});
+  }
+
+  export async function activityDashboardWidget(): Promise<any> {
+    return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
 
   export async function recentProjectsWidget(): Promise<any> {

@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 // custom checkers interfaces API for adding custom checks
 export interface CheckerError {
@@ -31,6 +32,7 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'ArrayBuffer', predicate: arrayBufferPredicate, checker: arrayBufferChecker},
   {name: 'Array', predicate: arrayPredicate, checker: arrayChecker},
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
+  {name: 'DayJs', predicate: dayjsPredicate, checker: dayjsChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
 ];
 
@@ -40,6 +42,7 @@ export class ExpectError extends Error {}
 // expectDeepEqual options
 export interface ExpectDeepEqualOptions {
   floatTolerance?: number,
+  forbidAdditionalProps?: boolean,
   maxErrorsReport?: number,
   maxDepth?: number,
   prefix?: string,
@@ -119,14 +122,11 @@ function mapPredicate(actual: any, expected: any) {
 }
 
 function mapChecker(actual: Map<any, any>, expected: Map<any, any>,
-  _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker
+  state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker
 ): CheckerError[] {
   const errors: CheckerError[] = [];
-  if (actual.size !== expected.size) {
-    const err = {msg: `Maps are of different size: actual map size is ${actual.size} ` +
-      `and expected map size is ${expected.size}`};
-    errors.push(err);
-  }
+  if (state.options.forbidAdditionalProps)
+    errors.push(...checkAdditionalProps([...actual.keys()], [...expected.keys()]));
   for (const k of expected.keys()) {
     const aval = actual.get(k);
     const exval = expected.get(k);
@@ -181,13 +181,16 @@ function dataframePredicate(actual: any, expected: any) {
 }
 
 function dataframeChecker(actual: DG.DataFrame, expected: DG.DataFrame,
-  _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker): CheckerError[] {
+  state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker): CheckerError[] {
   const errors: CheckerError[] = [];
   if (actual.rowCount !== expected.rowCount) {
     const err = {msg: `Dataframes has different row count: actual row count is ${actual.rowCount} ` +
       `and expected row count is ${expected.rowCount}`};
     errors.push(err);
   }
+  if (state.options.forbidAdditionalProps)
+    errors.push(...checkAdditionalProps([...actual.columns].map(x => x.name), [...expected.columns].map(x => x.name)));
+
   for (const column of expected.columns) {
     const actualColumn = actual.columns.byName(column.name);
     if (!actualColumn) {
@@ -219,14 +222,29 @@ function arrayBufferChecker(actual: ArrayBuffer, expected: ArrayBuffer,
   return arrayChecker(Array.from(new Uint8Array(actual)), Array.from(new Uint8Array(expected)), state, checkDeep);
 }
 
+function dayjsPredicate(actual: any, expected: any) {
+  return dayjs.isDayjs(actual) && dayjs.isDayjs(expected);
+}
+
+function dayjsChecker(actual: dayjs.Dayjs, expected: dayjs.Dayjs) {
+  if(!expected.isSame(actual)) {
+    const msg = `Different date, expected ${expected.toISOString()} actual ${actual.toISOString()}`;
+    return [{msg}];
+  }
+}
+
 
 function objectPredicate(actual: any, expected: any) {
   return (typeof actual === 'object' && typeof expected === 'object');
 }
 
 function objectChecker(actual: Record<any, any>, expected: Record<any, any>,
-  _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker): CheckerError[] {
+  state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker): CheckerError[] {
   const errors: CheckerError[] = [];
+
+  if (state.options.forbidAdditionalProps)
+    errors.push(...checkAdditionalProps([...Object.keys(actual)], [...Object.keys(expected)]));
+
   for (const [expectedKey, expectedValue] of Object.entries(expected)) {
     const actualValue = actual[expectedKey];
     checkDeep([expectedKey], actualValue, expectedValue);
@@ -234,9 +252,22 @@ function objectChecker(actual: Record<any, any>, expected: Record<any, any>,
   return errors;
 }
 
+function checkAdditionalProps(actual: string[], expected: string[]) {
+  const errors: CheckerError[] = [];
+  const expectedSet = new Set(expected);
+  for (const prop of actual) {
+    if (!expectedSet.has(prop)) {
+      const err = {msg: `Additional key/col item in actual data found: ${prop}`}
+      errors.push(err);
+    }
+  }
+  return errors;
+}
+
 const defaultOptions: Required<ExpectDeepEqualOptions> = {
   floatTolerance: 0.001,
   maxErrorsReport: 5,
+  forbidAdditionalProps: false,
   maxDepth: 128,
   checkersSeq: defaulCheckersSeq,
   prefix: '',

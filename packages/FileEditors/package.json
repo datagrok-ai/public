@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/file-editors",
   "friendlyName": "File Editors",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "description": "Support for previewing and opening text file formats (PDF, DOCX)",
   "dependencies": {

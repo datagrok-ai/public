@@ -947,6 +947,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
+  grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;
@@ -1390,6 +1391,8 @@ export interface IDartApi {
   grok_Project_Description(p: any): any;
   grok_Project_IsDirty(p: any): any;
   grok_Project_IsEmpty(p: any): any;
+  grok_Project_IsDashboard(p: any): any;
+  grok_Project_IsPackage(p: any): any;
   grok_Project_ToMarkup(p: any): any;
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;

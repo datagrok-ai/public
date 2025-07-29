@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.14.30",
+  "version": "4.14.34",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -30,7 +30,8 @@
     "link": "npm link",
     "prepublishOnly": "babel bin --extensions .ts -d bin",
     "babel": "babel bin --extensions .ts -d bin",
-    "build": "babel bin --extensions .ts -d bin"
+    "build": "babel bin --extensions .ts -d bin",
+    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",

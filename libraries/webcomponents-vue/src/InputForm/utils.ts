@@ -1,11 +1,56 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import $ from 'cash-dom';
-import type {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import {Observable} from 'rxjs';
 import type {ValidationIcon} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
+
+//
+// TODO: probably a separate type lib (?)
+//
+export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
+
+export type ConsistencyInfo = {
+  restriction: RestrictionType,
+  inconsistent: boolean,
+  assignedValue: any,
+}
+
+export interface ActionItem {
+  actionName: string;
+  action: string;
+  additionalParams?: Record<string, any>;
+}
+
+export interface Advice {
+  description: string;
+  actions?: ActionItem[];
+}
+
+export type ValidationItem = string | Advice;
+
+export interface ValidationResult {
+  errors?: ValidationItem[];
+  warnings?: ValidationItem[];
+  notifications?: ValidationItem[];
+}
+
+export type ValidationIconInput = {
+  validation?: ValidationResult,
+  consistency?: ConsistencyInfo,
+};
+
+export interface SubscriptionLike {
+  unsubscribe(): void;
+}
+
+export interface FuncCallInput<T = any> {
+  root: HTMLElement;
+  value: T | null | undefined;
+  notify: boolean;
+  enabled: boolean;
+  onInput: ((cb: Function) => SubscriptionLike) | Observable<T>;
+}
 
 
 export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {

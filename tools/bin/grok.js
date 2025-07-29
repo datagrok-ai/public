@@ -26,12 +26,10 @@ if (command in commands) {
     if (argv['help']) {
       console.log(help[command]);
       exitWithCode(1);
-    }
-    else if (argv.all && onPackageCommandNames.includes(command)) {
+    } else if (argv.all && onPackageCommandNames.includes(command)) {
       runAllCommand(process.cwd(),
         `grok ${process.argv.slice(2).join(' ')}`.replace('--all', ''), {});
-    }
-    else if (!commands[command](argv)) {
+    } else if (!commands[command](argv)) {
       console.log(help[command]);
       exitWithCode(1);
     }

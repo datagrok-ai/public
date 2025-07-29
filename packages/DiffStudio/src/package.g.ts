@@ -1,5 +1,6 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
+
 //name: init
 //tags: init
 //output: dynamic result
@@ -25,7 +26,7 @@ export function solveEquations(problem: any, options: any) {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-//output: dynamic result
+//output: view result
 //meta.browsePath: Compute
 export async function runDiffStudio() {
   return PackageFunctions.runDiffStudio();
@@ -151,4 +152,3 @@ export async function demoBioreactor() {
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) {
   return PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
 }
-

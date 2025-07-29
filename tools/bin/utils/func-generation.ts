@@ -14,7 +14,12 @@ const nonMetaData = [
   'sidebar',
   'editor',
   'friendlyName',
-  'helpUrl'];
+  'helpUrl', 
+  'condition',
+  'top-menu',
+  'cache',
+  'cache.invalidateOn',
+];
 
 const decoratorOptionToAnnotation = new Map<string, string>([
   ['initialValue', 'default'],
@@ -162,12 +167,16 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       type = 'dynamic';
     const options = ((input?.options as any)?.options ? buildStringOfOptions((input.options as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
+    
+    // eslint-disable-next-line max-len
     s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs) {
-      if (output.type !== 'void')
+      if (output.type !== 'void') {
+      // eslint-disable-next-line max-len
         s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
+      }
     }
   }
 
@@ -177,6 +186,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   }
 
   for (const parameter in data) {
+    // eslint-disable-next-line max-len
     if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
@@ -405,10 +415,18 @@ const primitives = new Set([
 ]);
 
 /** Generates a DG function. */
-export function generateFunc(annotation: string, funcName: string, sep: string = '\n', className: string = '', inputs: FuncParam[] = [], isAsync: boolean = false): string {
+export function generateFunc(
+  annotation: string, 
+  funcName: string, 
+  sep: string = '\n', 
+  className: string = '', 
+  inputs: FuncParam[] = [], 
+  isAsync: boolean = false): string {
+  // eslint-disable-next-line max-len
   const funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
   const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
+  // eslint-disable-next-line max-len
   return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
 }
 

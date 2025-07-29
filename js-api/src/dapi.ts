@@ -600,6 +600,11 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     super(s);
   }
 
+  /** Returns recent entities */
+  getRecentEntities(): Promise<Entity[]> {
+    return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
+  }
+
   /** Allows to set properties for entities
    * @param {Map[]} props
    * @returns {Promise} */

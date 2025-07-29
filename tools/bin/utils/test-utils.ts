@@ -643,3 +643,7 @@ export async function addColumnToCsv(csv: string, columnName: string, defaultVal
   });
   return result;
 }
+
+export function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

@@ -1,6 +1,56 @@
 # Chem changelog
 
-## 1.15.1 (WIP)
+## 1.16.0 (2025-07-28)
+
+### Features
+
+* Chem: MMP: Added hints
+* Chem: Similarity/Diversity: Show error in case no molecule column was found
+* Chem: MMP: Collaborative filtering with parent table
+* Chem: MMP: Ability to filter fragments/pairs
+* Chem: MMP: View results on PC plot, select activity difference function with scaling, in cell pc plots for activities, show trellis filters in popup, added trellis legend
+* Chem: Added description to scatter plot for chemical space and activity cliffs
+* Chem: Mixtures renderer, mixtures widgets and semantic type
+* [#3426](https://github.com/datagrok-ai/public/pull/3426) CPC: Moved to chem, factored into a separate widget file
+
+### Bug fixes
+
+* Chem: Scaffold Tree: Fix bitset not updating on structure change
+* Chem: Scaffold Tree: Check if viewer is detached
+* GROK-18069: Chem | Scaffold tree: Error when closing
+* GROK-18074 Chem: Context Panel: Content tab: df flickers when filtering by Scaffold Tree and Activity Cliffs simultaneously
+* Chem: Deprotect: Column already exists
+* GROK-18103: Chem | Scaffold Tree: Skip processing if column is empty
+* Chem: Correct most diverse structures logic
+* GROK-18066: Chem: Context Panel: Structural Alerts: calculate for whole dataset doesn't work for some data
+* GROK-18061: Chem: Prevent from running functions which add viewers not on the active table view
+* Chem: Scaffold Tree: Exclude fragment column from Select columns dialog
+* GROK-18283: Chem | Scaffold Tree: Error when changing scaffold size
+* GROK-18284: Chem | Scaffold Tree: Resetting Description > Title creates duplicates
+* GROK-18305: Chem | Scaffold tree: Error when uploading tree for non-molecular dataset
+* GROK-18269: Chem: Scaffold Tree: Viewer is empty when opening a project
+* Chem: MMP: Do not interpret missing values as zero
+* GROK-18290 : Substructure filter: multiple identical filters issue
+* [#3346](https://github.com/datagrok-ai/public/issues/3346): Export as SDF: Fixed none values are written as numbers ant not as empty strings
+* GROK-18388: Chem | Scaffold tree filter: Error after Close All
+* [#3399](https://github.com/datagrok-ai/public/issues/3399): Do not allow to modify Scaffold colors from Scatterplot or other viewers
+* Chem: do not allow multiple substructure filters
+* GROK-18391: Chem: the project opens with different filtering results before and after clearing the cache
+* GROK-18409: Chem: R-group analysis: column prefix in dialog not working
+* GROK-18405: Chem | Scaffold tree: Incorrect filtering after layout application
+* GROK-18417: Chem: Fix column parent in structural alerts
+* GROK-18419: Chem: MMP: activity list is empty
+* GROK-18495: Chem: Fix errors on current row unselection
+* GROK-18477: Chem: MMP: Update legend when changing activities on tp
+* GROK-18491: Chem: MMP: Fragments: "Full screen" trellis plot icon is not working
+* GROK-18479: Chem: MMP: Generation: should be no empty values
+* GROK-18493: Chem: MMP: Fragments: trellis legend optimization in case of big amount of legend items
+* GROK-18494: Chem: MMP: Properties: changing Molecules name cause no effect and triggers "reading 'toList'" errors in console
+* GROK-18570: Chem | Structural Alerts: Broken styles
+* GROK-18530 Chem: Substructure Filter: incorrect filtering in the cloned view when using the "Similar" option
+* GROK-18567: Chem | Chemprop: Cross validation fails for mol1k.csv
+
+## 1.15.1 (2025-04-23)
 
 ### Features
 
