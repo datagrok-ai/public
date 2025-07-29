@@ -16,6 +16,7 @@ import {debounce, isActionKey, isCutPaste} from './utils';
 export class LatexViewer {
   public view: DG.View;
   private file: DG.FileInfo;
+  private isPlatformFile = false;
 
   private codeDiv = ui.div();
   private contentDiv = ui.div();
@@ -28,7 +29,7 @@ export class LatexViewer {
 
   private saveIcn = ui.iconFA('save', async () => {
     if (this.isLatexCodeChanged) {
-      await this.saveToMyFiles();
+      await this.saveFile();
       this.isLatexCodeChanged = false;
     }
   });
@@ -52,13 +53,17 @@ export class LatexViewer {
 
   private updateSaveWgt(enabled: boolean): void {
     this.saveIcn.style.color = this.getColor(enabled);
-    ui.tooltip.bind(this.saveIcn, enabled ? 'Save changes' : 'No unsaved changes');
+    ui.tooltip.bind(
+      this.saveIcn,
+      enabled ? (this.isPlatformFile ? 'Save changes' : 'Save to My files') : 'No unsaved changes',
+    );
   }
 
   private constructor(file: DG.FileInfo, latexText: string | null, exist: boolean) {
     this.file = file;
     this.view = DG.View.create();
     this.view.name = file.fileName;
+    this.isPlatformFile = exist;
 
     if (latexText === null)
       this.view.append(ui.h2('The file is corrupted and cannot be opened!'));
@@ -125,7 +130,21 @@ export class LatexViewer {
     ]]);
   }
 
-  private async saveToMyFiles(): Promise<void> {
+  private async saveFile(): Promise<void> {
+    if (this.isPlatformFile) {
+      try {
+        const source = new DG.FileSource();
+
+        await source.writeAsText(this.file, this.editorView!.state.doc.toString());
+        grok.shell.info('Saved');
+        this.updateSaveWgt(false);
+      } catch (err) {
+        grok.shell.error(`Failed to save changes: ${err instanceof Error ? err.message : 'the platform issue'}`);
+      }
+
+      return;
+    }
+
     const texCode = this.editorView!.state.doc.toString();
     let fileName = this.file.name.replaceAll(' ', '-');
     const login = grok.shell.user.project.name;
