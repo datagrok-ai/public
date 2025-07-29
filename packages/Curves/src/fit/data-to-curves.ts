@@ -534,11 +534,18 @@ export async function convertDataToCurves(df: DG.DataFrame,
       grouppedValues[groupKey] = {maxYs: [], reportedIC50s: [], qualifiedIC50s: []};
     grouppedValues[groupKey].maxYs.push(Math.max(...curve.y.filter((_, i) => !curve.outliers[i])));
     if (parentData && parentObj[curveKey]) {
-      const ic50 = getNumericValue(parentObj[curveKey].reportedIC50);
-      if (ic50 != undefined)
-        grouppedValues[groupKey].reportedIC50s.push(ic50);
-      if (parentObj[curveKey].reportedQualifiedIC50 ?? '' != '')
+      if (parentObj[curveKey].reportedQualifiedIC50 ?? '' != '') {
         grouppedValues[groupKey].qualifiedIC50s.push(parentObj[curveKey].reportedQualifiedIC50 as string);
+        let ic50 = getNumericValue(parentData.reportedQualifiedIC50Column ? parentObj[curveKey].reportedQualifiedIC50 : parentObj[curveKey].reportedIC50);
+        if (ic50 == undefined) {
+          try {
+            ic50 = DG.Qnum.parse((parentData.reportedQualifiedIC50Column ? parentObj[curveKey].reportedQualifiedIC50 : parentObj[curveKey].reportedIC50) as string);
+          } catch (_e) {
+          }
+        }
+        if (ic50 != undefined)
+          grouppedValues[groupKey].reportedIC50s.push(ic50);
+      }
     }
   }
   const grouppedAggregations: {[groupKey: string]: {[key: string]: undefined | string | null}} = {};
@@ -547,8 +554,10 @@ export async function convertDataToCurves(df: DG.DataFrame,
     const values = grouppedValues[groupKey];
     grouppedAggregations[groupKey] = {
       'Max Percent Inhibition': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
-      'Number of results': values.qualifiedIC50s.length?.toString(),
-      ...(parentData && parentData.table ? {'Geomean IC50': values.reportedIC50s.length ? (Math.exp(values.reportedIC50s.reduce((a, b) => a + Math.log(b), 0) / values.reportedIC50s.length) || null)?.toString() : null, // log based, better for small values
+      ...(parentData && parentData.table ? {
+        'Number of total results': values.qualifiedIC50s.length?.toString(),
+        'Number of reported results': values.reportedIC50s.length?.toString(),
+        'Geomean IC50': values.reportedIC50s.length ? (Math.exp(values.reportedIC50s.reduce((a, b) => a + Math.log(b), 0) / values.reportedIC50s.length) || null)?.toString() : null, // log based, better for small values
         'Standard Deviation': values.reportedIC50s.length > 1 ? Math.sqrt(values.reportedIC50s.reduce((a, b) => a + (b - values.reportedIC50s.reduce((c, d) => c + d, 0) / values.reportedIC50s.length) ** 2, 0) / (values.reportedIC50s.length - 1))?.toString() : null,
         'All Results': values.qualifiedIC50s.join(', ')} : {}),
     };
