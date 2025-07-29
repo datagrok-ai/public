@@ -28,13 +28,6 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
   return PackageFunctions.TestAnalysisReportForCurrentDay(date);
 }
 
-//name: aaa
-//input: string path { optional: true; meta.url: true }
-//output: dynamic result
-export async function aaa(path: string) {
-  return PackageFunctions.aaa(path);
-}
-
 //name: Usage Analysis
 //tags: app
 //input: string path { optional: true; meta.url: true }
