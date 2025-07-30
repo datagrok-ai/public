@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.1 (2025-07-31)
+
+Utils 4.6.2 update
+
 ## 1.4.0 (2025-07-28)
 
 JS-api 1.26.0 release
