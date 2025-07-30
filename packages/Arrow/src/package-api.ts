@@ -30,7 +30,7 @@ export namespace funcs {
   /**
   Converts arrow ipc stream to DG.DataFrame
   */
-  export async function fromFeather(bytes: any ): Promise<any> {
+  export async function fromFeather(bytes: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Arrow:FromFeather', { bytes });
   }
 
@@ -44,7 +44,7 @@ export namespace funcs {
   /**
   Converts binary data in parquet format to DG.DataFrame
   */
-  export async function fromParquet(bytes: any ): Promise<any> {
+  export async function fromParquet(bytes: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Arrow:FromParquet', { bytes });
   }
 

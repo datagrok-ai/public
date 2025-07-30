@@ -50,15 +50,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({ext: 'parquet'})
-  static parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
-    return [this.fromParquet(bytes as Uint8Array)];
+  static parquetFileHandler(@grok.decorators.param({type: 'blob'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
+    const res = this.fromParquet(bytes as Uint8Array);
+    return res ? [res] : null;
   }
 
   @grok.decorators.fileHandler({ext: 'feather'})
-  static featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
+  static featherFileHandler(@grok.decorators.param({type: 'blob'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
     const df = this.fromFeather(bytes as Uint8Array);
-    if (df)
-      return [df];
+    return df ? [df] : null;
   }
 
   @grok.decorators.fileExporter({description: 'Save as Parquet'})

@@ -19,7 +19,7 @@ export async function initPackage() {
 //description: Converts DG.DataFrame to arrow
 //input: dataframe table 
 //input: bool asStream { default: true }
-//output: dynamic result
+//output: blob result
 export function toFeather(table: DG.DataFrame, asStream: boolean) {
   return PackageFunctions.toFeather(table, asStream);
 }
@@ -27,7 +27,7 @@ export function toFeather(table: DG.DataFrame, asStream: boolean) {
 //name: fromFeather
 //description: Converts arrow ipc stream to DG.DataFrame
 //input: blob bytes 
-//output: dynamic result
+//output: dataframe result
 export function fromFeather(bytes: Uint8Array) {
   return PackageFunctions.fromFeather(bytes);
 }
@@ -36,7 +36,7 @@ export function fromFeather(bytes: Uint8Array) {
 //description: Converts DG.DataFrame to parquet
 //input: dataframe table 
 //input: double compression { nullable: true }
-//output: dynamic result
+//output: blob result
 export function toParquet(table: DG.DataFrame, compression: number) {
   return PackageFunctions.toParquet(table, compression);
 }
@@ -44,15 +44,15 @@ export function toParquet(table: DG.DataFrame, compression: number) {
 //name: fromParquet
 //description: Converts binary data in parquet format to DG.DataFrame
 //input: blob bytes 
-//output: dynamic result
+//output: dataframe result
 export function fromParquet(bytes: Uint8Array) {
   return PackageFunctions.fromParquet(bytes);
 }
 
 //name: parquetFileHandler
 //tags: file-handler
-//input: dynamic bytes 
-//output: dynamic result
+//input: blob bytes 
+//output: list result
 //meta.ext: parquet
 export function parquetFileHandler(bytes: any) {
   return PackageFunctions.parquetFileHandler(bytes);
@@ -60,8 +60,8 @@ export function parquetFileHandler(bytes: any) {
 
 //name: featherFileHandler
 //tags: file-handler
-//input: dynamic bytes 
-//output: dynamic result
+//input: blob bytes 
+//output: list result
 //meta.ext: feather
 export function featherFileHandler(bytes: any) {
   return PackageFunctions.featherFileHandler(bytes);
