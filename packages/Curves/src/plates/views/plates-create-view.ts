@@ -4,23 +4,29 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {
-  getPlateById,
-  initPlates,
   PlateTemplate,
   plateTemplates,
   PlateType,
   plateTypes,
   savePlate,
   savePlateAsTemplate,
-  createNewPlateForTemplate
+  createNewPlateForTemplate,
+  initPlates
 } from '../plates-crud';
 import {PlateWidget} from '../../plate/plate-widget';
-
+import {parsePlateFromCsv} from '../../plate/csv-plates';
+import {renderValidationResults} from './plates-validation-panel';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
+
+  const templateState = new Map<number, {plate: Plate, file: DG.FileInfo}>();
+
   const platePropertiesHost = ui.divV([]);
+  const validationHost = ui.divV([]);
+  const importHost = ui.div();
+
   let plateTemplateValues = {};
   let plateType = plateTypes[0];
   let plateTemplate = plateTemplates[0];
@@ -29,18 +35,73 @@ export function createPlatesView(): DG.View {
     throw new Error('No plate templates found. Please create a template first.');
   }
 
-  const updatePlate = async () => {
-    plateWidget.plate = await createNewPlateForTemplate(plateType, plateTemplate);
-    plateWidget.editable = true;
+  const plate = new Plate(plateType.rows, plateType.cols);
+  const plateWidget = PlateWidget.fromPlate(plate);
+  plateWidget.editable = true;
+  plateWidget.root.style.height = '400px';
+
+  let csvFileInput: DG.InputBase<any>;
+  let excelFileInput: DG.InputBase<any>;
+
+  const setTemplate = async (template: PlateTemplate) => {
+    plateTemplate = template;
+    ui.empty(validationHost);
+    ui.empty(platePropertiesHost);
+
+    const state = templateState.get(template.id);
+
+    if (state) {
+      plateTemplateValues = state.plate.details;
+      plateWidget.plate = state.plate;
+      validationHost.appendChild(renderValidationResults(state.plate, template));
+      updateImportHost(state.file);
+    } else {
+      plateTemplateValues = {};
+      plateWidget.plate = await createNewPlateForTemplate(plateType, template);
+      updateImportHost(null);
+    }
+
+    const form = ui.input.form(plateTemplateValues, template.plateProperties.map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE)));
+    platePropertiesHost.appendChild(form);
+    plateWidget.refresh();
   };
 
-  const setTemplate = (template: PlateTemplate) => {
-    plateTemplate = template;
-    plateTemplateValues = {};
-    const form = ui.input.form(plateTemplateValues, template.plateProperties.map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE)));
-    ui.empty(platePropertiesHost);
-    platePropertiesHost.appendChild(form);
-    updatePlate().then((_) => {});
+  const updateImportHost = (file: DG.FileInfo | null) => {
+    ui.empty(importHost);
+    if (file) {
+      const clearIcon = ui.iconFA('times', () => {
+        templateState.delete(plateTemplate.id);
+        setTemplate(plateTemplate);
+      }, 'Clear imported data');
+      clearIcon.style.marginLeft = '10px';
+      clearIcon.style.cursor = 'pointer';
+
+      const fileLabel = ui.divText(file.name);
+      fileLabel.style.overflow = 'hidden';
+      fileLabel.style.textOverflow = 'ellipsis';
+      fileLabel.style.whiteSpace = 'nowrap';
+      fileLabel.style.maxWidth = '200px';
+
+      importHost.appendChild(ui.divH([
+        ui.label('Import from CSV'),
+        fileLabel,
+        clearIcon
+      ], {style: {alignItems: 'center'}}));
+    } else {
+      excelFileInput = ui.input.file('Import from Excel', {});
+      csvFileInput = ui.input.file('Import from CSV', {
+        onValueChanged: async (file) => {
+          const plate = await parsePlateFromCsv(await file.readAsString());
+
+          console.log(`Parsed Plate Data from ${file.name}:`);
+          console.table(plate.data.toJson());
+
+          templateState.set(plateTemplate.id, {plate, file});
+          await setTemplate(plateTemplate);
+        }
+      });
+      importHost.appendChild(ui.divH([excelFileInput.root, csvFileInput.root], {style: {'gap': '10px'}}));
+    }
   };
 
   const plateTypeSelector = ui.input.choice('Plate type', {
@@ -48,7 +109,7 @@ export function createPlatesView(): DG.View {
     value: plateTypes[0].name,
     onValueChanged: (v) => {
       plateType = plateTypes.find((pt) => pt.name === v)!;
-      updatePlate().then((_) => {});
+      setTemplate(plateTemplate);
     }
   });
 
@@ -58,42 +119,15 @@ export function createPlatesView(): DG.View {
     onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
   });
 
-  const fileInput = ui.input.file('Import from Excel', {
-    nullable: true,
-    onValueChanged: async (file) => {
-      const plate = await Plate.fromExcel(await file.readAsBytes());
-      if (plate.rows !== plateType.rows || plate.cols !== plateType.cols) {
-        grok.shell.error(`Plate dimensions do not match the template: ${plate.rows}x${plate.cols} vs ${plateType.rows}x${plateType.cols}`);
-        return;
-      }
-
-      for (const layer of plate.getLayerNames().filter((l) => plateTemplate.wellProperties.find((p) => p.name?.toLowerCase() === l.toLowerCase()))) {
-        const excelCol = plate.data.col(layer)!;
-        plateWidget.plate.data.col(layer)!.init((i) => excelCol.get(i));
-      }
-
-      const missingLayers = plateTemplate.wellProperties.filter((p) => !plate.getLayerNames().includes(p.name!));
-      if (missingLayers.length > 0)
-        grok.shell.warning(`Plate is missing the following layers: ${missingLayers.map((p) => p.name!).join(', ')}`);
-
-      plateWidget.refresh();
-    }
-  });
-
-  // Create plate viewer
-  const plate = new Plate(plateType.rows, plateType.cols);
-  const plateWidget = PlateWidget.fromPlate(plate);
-  plateWidget.editable = true;
-  plateWidget.root.style.height = '400px';
   setTemplate(plateTemplates[0]);
 
-  // Add components to view
   view.root.appendChild(ui.divV([
     ui.form([
       plateTypeSelector,
       plateTemplateSelector,
-      fileInput
     ]),
+    importHost,
+    validationHost,
     platePropertiesHost,
     plateWidget.root
   ]));
@@ -110,11 +144,10 @@ export function createPlatesView(): DG.View {
       await savePlate(plate);
       grok.shell.info(`Plate created: ${plate.id}`);
     }),
-
     ui.button('SAVE TEMPLATE', async () => {
       const plate = getPlate();
       await savePlateAsTemplate(plate, plateTemplate);
-      await initPlates();
+      await initPlates(true);
       grok.shell.info(`Plate template saved: ${plate.id}`);
     })
   ]]);

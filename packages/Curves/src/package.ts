@@ -26,6 +26,7 @@ import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
+import {parsePlateFromCsv} from './plate/csv-plates';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -188,35 +189,56 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func({})
-  static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
+
+@grok.decorators.func({
+  name: 'checkCsvIsPlate',
+  description: 'Checks if a CSV file can be parsed as a plate.'
+})
+  static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
     try {
-      if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
-        return false;
-      const plate = await PackageFunctions.parseExcelPlate(content);
-      return plate !== null;
-    } catch (e) {
+      const contentSample = await file.readAsString();
+      const firstLine = contentSample.substring(0, contentSample.indexOf('\n')).toLowerCase();
+      const commonHeaders = ['well', 'position', 'pos'];
+      return commonHeaders.some((h) => firstLine.includes(h));
+    } catch {
       return false;
     }
   }
 
-  static async parseExcelPlate(content: string | Uint8Array, name?: string) {
-    if (typeof content === 'string') {
-      const blob = new Blob([content], {type: 'application/octet-binary'});
-      const buf = await blob.arrayBuffer();
-      const plate = await Plate.fromExcel(new Uint8Array(buf), name);
-      return plate;
-    } else {
-      return await Plate.fromExcel(content, name);
-    }
+@grok.decorators.fileHandler({
+  ext: 'csv',
+  fileViewerCheck: 'Curves:checkCsvIsPlate'
+})
+static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<void> {
+  try {
+    const plate = await parsePlateFromCsv(fileContent, file.friendlyName);
+
+    const view = DG.View.create();
+    view.name = file.friendlyName;
+    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
+    grok.shell.addView(view);
+  } catch (e: any) {
+    grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
   }
+}
+
+static async parseExcelPlate(content: string | Uint8Array, name?: string) {
+  if (typeof content === 'string') {
+    const blob = new Blob([content], {type: 'application/octet-binary'});
+    const buf = await blob.arrayBuffer();
+    const plate = await Plate.fromExcel(new Uint8Array(buf), name);
+    return plate;
+  } else {
+    return await Plate.fromExcel(content, name);
+  }
+}
 
   @grok.decorators.func({})
-  static checkFileIsPlate(content: string): boolean {
-    if (content.length > 1_000_000)
-      return false;
-    return PlateReader.getReader(content) != null;
-  }
+static checkFileIsPlate(content: string): boolean {
+  if (content.length > 1_000_000)
+    return false;
+  return PlateReader.getReader(content) != null;
+}
 
   @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {
