@@ -73,11 +73,13 @@ export type RangeDescription = {
   min?: number;
   max?: number;
   step?: number;
+  enabled?: boolean;
 }
 
 export type TargetDescription = {
   default?: any;
   argumentCol?: string;
+  enabled?: boolean;
 }
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
@@ -318,6 +320,7 @@ export class FittingView {
           return validation.msg;
         };
 
+        const isInterest = new BehaviorSubject(false);
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -325,14 +328,15 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
+            if (this.options.targets?.[outputProp.name]?.default != null)
+              input.value = this.options.targets?.[outputProp.name]?.default;
+            else
+              input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
-            input.input.hidden = !this.toSetSwitched;
+            isInterest.subscribe((val) => input.input.hidden = !val);
+
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
-
-            if (this.options.targets?.[outputProp.name]?.default != null)
-              setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
 
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
@@ -375,26 +379,24 @@ export class FittingView {
               this.updateApplicabilityState();
             });
 
-
-            if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
-              (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
-
             const isInterestInput = getSwitchElement(
-              this.toSetSwitched,
+              isInterest.value,
               (v: boolean) => {
                 temp.isInterest.next(v);
                 this.updateApplicabilityState();
-                input.input.hidden = !v;
-
-                if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-                  (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                  temp.argColInput.root.hidden = !v;
-                  temp.funcColsInput.root.hidden = !v;
-                }
               },
               false,
-            ).root;
-            input.root.insertBefore(isInterestInput, input.captionLabel);
+            );
+
+            isInterest.subscribe((val) => {
+              isInterestInput.notify = false;
+              try {
+                isInterestInput.value = val;
+              } finally {
+                isInterestInput.notify = true;
+              }
+            });
+            input.root.insertBefore(isInterestInput.root, input.captionLabel);
 
             return input;
           })(),
@@ -418,13 +420,13 @@ export class FittingView {
 
             const infoIcon = ui.icons.info(() => alert('Hello!'));
             infoIcon.classList.add('sa-switch-input');
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
             input.addValidator(validator);
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
 
             return input;
           })(),
-          isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
+          isInterest,
           target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
           funcColsInput: (() => {
             const input = ui.input.columns('functions', {
@@ -433,8 +435,7 @@ export class FittingView {
               onValueChanged: (cols) => this.updateApplicabilityState(),
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
-            this.toSetSwitched = false;
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
             input.addValidator(validator);
 
@@ -503,8 +504,6 @@ export class FittingView {
   private gridCellChangeSubscription: any = null;
 
   private failsDF: DG.DataFrame | null = null;
-
-  private toSetSwitched = true;
 
   private samplesCount = FITTING_UI.SAMPLES;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -637,7 +636,6 @@ export class FittingView {
         this.isFittingAccepted = true;
       }
     });
-
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;
 
@@ -881,6 +879,12 @@ export class FittingView {
     } else
       form.append(...inputsByCategories.get('Misc')!);
 
+    // Check if isChanging is enabled
+    for (const name of Object.keys(this.store.inputs)) {
+      if (this.options.ranges?.[name]?.enabled)
+        this.store.inputs[name].isChanging.next(true);
+    }
+
     // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
@@ -912,10 +916,11 @@ export class FittingView {
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.options.targets?.[name]?.enabled)
+        this.store.outputs[name].isInterest.next(true);
+
+      if (this.store.outputs[name].isInterest.value === true)
         isAnyOutputSelectedAsOfInterest = true;
-        break;
-      }
     }
 
     if (!isAnyOutputSelectedAsOfInterest) {
@@ -1352,11 +1357,13 @@ export class FittingView {
       // Add goodness of fit viewers
       const gofTables = new Array<Map<string, GoFtable>>(rowCount);
 
+      this.currentFuncCalls = [];
       for (let idx = 0; idx < rowCount; ++idx) {
         const gofDfs = new Map<string, GoFtable>();
         const scalarGoFs: GoFtable[] = [];
 
         const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+        this.currentFuncCalls.push(calledFuncCall);
 
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
