@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.4.4 (2025-07-31)
+
+Updated utils
+
 ## 1.4.3 (2025-03-28)
 
 Updated grok tools
