@@ -509,7 +509,9 @@ export async function convertDataToCurves(df: DG.DataFrame,
   // add group column
   tableColList.push(DG.Column.fromStrings(groupColumnName, curvesObjsArray.map((c) => c[1].groupKey)));
 
-  const otherColumns = Object.keys(curvesObjsArray[0][1].info);
+  const otherColumns = curvesObjsArray.reduce((acc, c) => { Object.keys(c[1].info).forEach((k) => acc.add(k)); return acc; }, new Set<string>());
+
+  //Object.keys(curvesObjsArray[0][1].info);
 
   for (const colName of otherColumns) {
     const col = DG.Column.fromStrings(colName, curvesObjsArray.map((c) =>
