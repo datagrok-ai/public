@@ -36,3 +36,45 @@ export async function cddVaultAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   appNode.group('Plates');
   appNode.group('Assays');
 }
+
+async function getMoltrackContainer() {
+  return await grok.dapi.docker.dockerContainers.filter('moltrack').first();
+}
+
+//name: checkMoltrackHealth
+//description: Checks whether the Moltrack service is running and responsive
+//output: string result
+export async function checkMoltrackHealth(): Promise<string> {
+  const container = await getMoltrackContainer();
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/health', {
+    method: 'GET',
+  });
+  return response.text();
+}
+
+//name: fetchMoltrackProperties
+//description: Retrieves all properties defined for the 'compound' scope
+//output: string result
+export async function fetchMoltrackProperties(): Promise<string> {
+  const container = await getMoltrackContainer();
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/compounds', {
+    method: 'GET',
+  });
+  return response.text();
+}
+
+//name: updateMoltrackProperties
+//input: string jsonPayload
+//description: Modifies compound properties in the Moltrack service based on the given JSON data
+//output: string result
+export async function updateMoltrackSchema(jsonPayload: string): Promise<string> {
+  const container = await getMoltrackContainer();
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: jsonPayload,
+  });
+  return response.text();
+}
