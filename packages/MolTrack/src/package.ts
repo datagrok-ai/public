@@ -65,7 +65,7 @@ export async function fetchMoltrackProperties(): Promise<string> {
 
 //name: updateMoltrackProperties
 //input: string jsonPayload
-//description: Modifies compound properties in the Moltrack service based on the given JSON data
+//description: Registers compound properties in the Moltrack service based on the given JSON data
 //output: string result
 export async function updateMoltrackSchema(jsonPayload: string): Promise<string> {
   const container = await getMoltrackContainer();
