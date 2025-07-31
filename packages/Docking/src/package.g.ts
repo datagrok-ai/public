@@ -8,7 +8,7 @@ export function info() {
 }
 
 //name: getAutoDockService
-//output: dynamic result
+//output: object result
 export async function getAutoDockService() {
   return PackageFunctions.getAutoDockService();
 }
@@ -19,7 +19,7 @@ export async function autoDockApp() {
 }
 
 //name: getConfigFiles
-//output: list<string> configFiles
+//output: list result
 export async function getConfigFiles() {
   return PackageFunctions.getConfigFiles();
 }
@@ -38,9 +38,9 @@ export async function dockLigandCached(jsonForm: string, containerId: string) {
 //description: Autodock plugin UI
 //tags: HitTriageFunction
 //input: dataframe table 
-//input: column ligands { type: categorical; semType: Molecule }
-//input: string target { choices: Docking }
-//input: int poses { default: 10 }
+//input: column ligands { type: categorical; semType: Molecule; description: Small molecules to dock }
+//input: string target { choices: Docking:getConfigFiles; description: Folder with config and macromolecule }
+//input: int poses { default: 10; description: Number of output conformations for each small molecule }
 //top-menu: Chem | Docking | AutoDock...
 export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) {
   return PackageFunctions.runAutodock5(table, ligands, target, poses);
@@ -54,10 +54,10 @@ export function isApplicableAutodock(molecule: string) {
 }
 
 //name: AutoDock
-//tags: panel, chem, widgets
+//tags: panel, panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//condition: Docking
+//condition: Docking:isApplicableAutodock(molecule)
 export async function autodockWidget(molecule: DG.SemanticValue) {
   return PackageFunctions.autodockWidget(molecule);
 }

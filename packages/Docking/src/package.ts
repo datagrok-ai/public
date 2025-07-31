@@ -18,26 +18,26 @@ export const _package = new DG.Package();
 
 
 export class PackageFunctions{
-  @grok.decorators.func({
-    'name': 'info'
-  })
+  @grok.decorators.func()
   static info() {
-  
     grok.shell.info(_package.webRoot);
   }
-
+  
   @grok.decorators.func({
-    'name': 'getAutoDockService'
+    'outputs': [
+      {
+        'name': 'result',
+        'type': 'object',
+      }
+    ]
   })
   static async getAutoDockService(): Promise<IAutoDockService> {
-  
     const resSvc: IAutoDockService = await AutoDockService.getSvc();
     return resSvc;
   }
 
   @grok.decorators.func()
   static async autoDockApp(): Promise<void> {
-  
     const pi = DG.TaskBarProgressIndicator.create('AutoDock app...');
     try {
       const app = new AutoDockApp('autoDockApp');
@@ -47,17 +47,8 @@ export class PackageFunctions{
     }
   }
 
-  @grok.decorators.func({
-    'outputs': [
-      {
-        'name': 'configFiles',
-        'type': 'list<string>'
-      }
-    ],
-    'name': 'getConfigFiles'
-  })
+  @grok.decorators.func()
   static async getConfigFiles(): Promise<string[]> {
-  
     const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
     const directoriesWithGpf = await Promise.all(
       targetsFiles.filter(file => file.isDirectory).map(async dir => {
@@ -72,8 +63,7 @@ export class PackageFunctions{
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 1 * *'
-    },
-    'name': 'dockLigandCached'
+    }
   })
   static async dockLigandCached(
     jsonForm: string,
@@ -102,10 +92,10 @@ export class PackageFunctions{
   })
   static async runAutodock5(
     table: DG.DataFrame,
-    @grok.decorators.param({'options':{'type':'categorical','semType':'Molecule'}}) ligands: DG.Column,
-    @grok.decorators.param({'options':{'choices':'Docking'}}) target: string,
-    @grok.decorators.param({'name':'poses','type':'int','options':{'initialValue':'10'}}) poses: number): Promise<void> {
-  
+    @grok.decorators.param({'options':{'type': 'categorical', 'semType':'Molecule', 'description':'Small molecules to dock'}}) ligands: DG.Column,
+    @grok.decorators.param({'options':{'choices':'Docking:getConfigFiles', 'description':'Folder with config and macromolecule'}}) target: string,
+    @grok.decorators.param({'type': 'int', 'options':{'initialValue':'10', 'description': 'Number of output conformations for each small molecule'}}) poses: number): Promise<void> {
+
     const desirableHeight = 100;
     const desirableWidth = 100;
     const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
@@ -154,21 +144,20 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static isApplicableAutodock(molecule: string): boolean {
-  
     return molecule.includes('binding energy');
   }
 
   @grok.decorators.panel({
     'tags': [
+      'panel',
       'chem',
       'widgets'
     ],
     'name': 'AutoDock',
-    'condition': 'Docking'
+    'condition': 'Docking:isApplicableAutodock(molecule)'
   })
   static async autodockWidget(
-    @grok.decorators.param({'options':{'semType':'Molecule3D'}})  molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  
+    @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
     return await PackageFunctions.getAutodockSingle(molecule);
   }
 
@@ -225,7 +214,6 @@ export class PackageFunctions{
     'description': 'Small molecule docking to a macromolecule with pose visualization'
   })
   static async demoDocking(): Promise<void> {
-  
     await _demoDocking();
   }
 
@@ -233,7 +221,7 @@ export class PackageFunctions{
     'name': 'Biology | AutoDock'
   })
   static async autodockPanel(
-    @grok.decorators.param({'options':{'semType':'Molecule'}})  smiles: DG.SemanticValue): Promise<DG.Widget> {
+    @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {
   
     const items = await PackageFunctions.getConfigFiles();
     const target = ui.input.choice('Target', {value: items[0], items: items})
@@ -302,14 +290,12 @@ export async function runDocking(
   return null;
 }
 
-
 export async function prepareAutoDockData(
   target: string, 
   table: DG.DataFrame, 
   ligandColumn: string, 
   poses: number
 ): Promise<AutoDockDataType | null> {
-
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
   const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`))
