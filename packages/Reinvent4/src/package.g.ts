@@ -32,8 +32,8 @@ export async function runReinvent(ligand: string, optimize: string) {
 
 //name: Reinvent
 //tags: HitDesignerFunction
-//input: string ligand 
-//input: string optimize 
+//input: string ligand { semType: Molecule; default: 'OC(CN1CCCC1)NC(CCC1)CC1Cl' }
+//input: string optimize { choices: Reinvent4:getFolders }
 //output: dataframe result
 //editor: Reinvent4
 export async function reinvent(ligand: string, optimize: string) {
@@ -42,7 +42,7 @@ export async function reinvent(ligand: string, optimize: string) {
 
 //name: reinventTopMenu
 //input: string ligand { semType: Molecule; default: 'OC(CN1CCCC1)NC(CCC1)CC1Cl' }
-//input: string optimize { choices: Reinvent4 }
+//input: string optimize { choices: Reinvent4:getFolders }
 //output: dynamic result
 //top-menu: Chem | Generate molecules...
 //editor: Reinvent4

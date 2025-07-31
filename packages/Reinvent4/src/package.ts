@@ -77,7 +77,8 @@ export class PackageFunctions
     'editor': 'Reinvent4'
   })
   static async reinvent(
-    ligand: string, optimize: string
+    @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}}) ligand: string,
+    @grok.decorators.param({'options':{'choices':'Reinvent4:getFolders'}}) optimize: string
   ): Promise<DG.DataFrame> {  
     const resultDfPromise = grok.functions.call('Reinvent4:runReinvent', {
       ligand: ligand,
@@ -127,7 +128,7 @@ export class PackageFunctions
   })
   static async reinventTopMenu(
     @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}})  ligand: string,
-    @grok.decorators.param({'options':{'choices':'Reinvent4'}})   optimize: string) {  
+    @grok.decorators.param({'options':{'choices':'Reinvent4:getFolders'}})   optimize: string) {  
     const generatedDf = await PackageFunctions.reinvent(ligand, optimize);
     grok.shell.addTableView(generatedDf);
   }
