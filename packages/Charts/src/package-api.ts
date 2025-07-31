@@ -9,139 +9,139 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function flagCellRenderer(): Promise<any> {
-    return await grok.functions.call(':FlagCellRenderer', {});
+    return await grok.functions.call('Charts:FlagCellRenderer', {});
   }
 
   /**
   Chord viewer visualizes weighted relationships between several entities
   */
   export async function chordViewerDemo(): Promise<any> {
-    return await grok.functions.call(':ChordViewerDemo', {});
+    return await grok.functions.call('Charts:ChordViewerDemo', {});
   }
 
   /**
   Radar viewer is used on multivariate data to plot groups of values over several common variables
   */
   export async function radarViewerDemo(): Promise<any> {
-    return await grok.functions.call(':RadarViewerDemo', {});
+    return await grok.functions.call('Charts:RadarViewerDemo', {});
   }
 
   /**
   Sankey viewer depicts a flow from one set of values to another
   */
   export async function sankeyViewerDemo(): Promise<any> {
-    return await grok.functions.call(':SankeyViewerDemo', {});
+    return await grok.functions.call('Charts:SankeyViewerDemo', {});
   }
 
   /**
   Sunburst viewer displays hierarchical data
   */
   export async function sunburstViewerDemo(): Promise<any> {
-    return await grok.functions.call(':SunburstViewerDemo', {});
+    return await grok.functions.call('Charts:SunburstViewerDemo', {});
   }
 
   /**
   Surface plot viewer displays a set of three-dimensional data as a mesh surface
   */
   export async function surfacePlotDemo(): Promise<any> {
-    return await grok.functions.call(':SurfacePlotDemo', {});
+    return await grok.functions.call('Charts:SurfacePlotDemo', {});
   }
 
   /**
   Timelines viewer displays the flow of events over time
   */
   export async function timelinesViewerDemo(): Promise<any> {
-    return await grok.functions.call(':TimelinesViewerDemo', {});
+    return await grok.functions.call('Charts:TimelinesViewerDemo', {});
   }
 
   /**
   Tree viewer visualizes hierarchical data by categories
   */
   export async function treeViewerDemo(): Promise<any> {
-    return await grok.functions.call(':TreeViewerDemo', {});
+    return await grok.functions.call('Charts:TreeViewerDemo', {});
   }
 
   /**
   Word Cloud viewer visualizes unstructured text data
   */
   export async function wordCloudViewerDemo(): Promise<any> {
-    return await grok.functions.call(':WordCloudViewerDemo', {});
+    return await grok.functions.call('Charts:WordCloudViewerDemo', {});
   }
 
   /**
   Creates a chord viewer
   */
   export async function chordViewer(): Promise<any> {
-    return await grok.functions.call(':ChordViewer', {});
+    return await grok.functions.call('Charts:ChordViewer', {});
   }
 
   /**
   Creates a globe viewer
   */
   export async function globeViewer(): Promise<any> {
-    return await grok.functions.call(':GlobeViewer', {});
+    return await grok.functions.call('Charts:GlobeViewer', {});
   }
 
   /**
   Creates a group analysis viewer
   */
   export async function groupAnalysisViewer(): Promise<any> {
-    return await grok.functions.call(':GroupAnalysisViewer', {});
+    return await grok.functions.call('Charts:GroupAnalysisViewer', {});
   }
 
   /**
   Creates a multiplot viewer
   */
   export async function multiPlotViewer(): Promise<any> {
-    return await grok.functions.call(':MultiPlotViewer', {});
+    return await grok.functions.call('Charts:MultiPlotViewer', {});
   }
 
   /**
   Creates a radar viewer
   */
   export async function radarViewer(): Promise<any> {
-    return await grok.functions.call(':RadarViewer', {});
+    return await grok.functions.call('Charts:RadarViewer', {});
   }
 
   /**
   Creates a sankey viewer
   */
   export async function sankeyViewer(): Promise<any> {
-    return await grok.functions.call(':SankeyViewer', {});
+    return await grok.functions.call('Charts:SankeyViewer', {});
   }
 
   /**
   Creates a sunburst viewer
   */
   export async function sunburstViewer(): Promise<any> {
-    return await grok.functions.call(':SunburstViewer', {});
+    return await grok.functions.call('Charts:SunburstViewer', {});
   }
 
   /**
   Creates a surface plot viewer
   */
   export async function surfacePlot(): Promise<any> {
-    return await grok.functions.call(':SurfacePlot', {});
+    return await grok.functions.call('Charts:SurfacePlot', {});
   }
 
   /**
   Creates a timelines viewer
   */
   export async function timelinesViewer(): Promise<any> {
-    return await grok.functions.call(':TimelinesViewer', {});
+    return await grok.functions.call('Charts:TimelinesViewer', {});
   }
 
   /**
   Creates a tree viewer
   */
   export async function treeViewer(): Promise<any> {
-    return await grok.functions.call(':TreeViewer', {});
+    return await grok.functions.call('Charts:TreeViewer', {});
   }
 
   /**
   Creates a word cloud viewer
   */
   export async function wordCloudViewer(): Promise<any> {
-    return await grok.functions.call(':WordCloudViewer', {});
+    return await grok.functions.call('Charts:WordCloudViewer', {});
   }
 }
