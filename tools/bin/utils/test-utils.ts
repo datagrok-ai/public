@@ -332,17 +332,29 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   let resultDF: any = undefined;
   let lastTest: any = null;
   let res: string = '';
+
+  // function addColumn(columnName: string, column: any, df : any) {
+  //   if (!df.getCol(columnName)) 
+  //     df.columns.add(column);
+  // }
+
   try {
     for (const testParam of testsParams) {
       lastTest = testParam;
       const df: any = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
-      const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
-      df.columns.add(flakingCol);
-      if (!df.getCol('package')) {
-        const packageNameCol = 
-          (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
-        df.columns.add(packageNameCol);
-      }
+      
+      df.columns.setOrder([ 'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking' ]);
+      // addColumn('flaking', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
+      // addColumn('package', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
+      // if (!df.getCol('flaking')) {
+      //   const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+      //   df.columns.add(flakingCol);
+      // }
+      // if (!df.getCol('package')) {
+      //   const packageNameCol = 
+      //     (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+      //   df.columns.add(packageNameCol);
+      // }
       if (df.rowCount === 0) {
         verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
