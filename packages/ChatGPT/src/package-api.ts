@@ -11,4 +11,16 @@ export namespace funcs {
   export async function init(): Promise<any> {
     return await grok.functions.call('ChatGPT:Init', {});
   }
+
+  export async function chatGpt(chatRequest: any ): Promise<any> {
+    return await grok.functions.call('ChatGPT:ChatGpt', { chatRequest });
+  }
+
+  export async function ask(question: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:Ask', { question });
+  }
+
+  export async function askFun(question: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskFun', { question });
+  }
 }
