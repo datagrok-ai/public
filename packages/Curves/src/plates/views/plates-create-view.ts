@@ -1,25 +1,22 @@
+/* eslint-disable prefer-const */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {
-  PlateTemplate,
-  plateTemplates,
-  PlateType,
-  plateTypes,
-  savePlate,
-  savePlateAsTemplate,
-  createNewPlateForTemplate,
-  initPlates,
+  PlateTemplate, plateTemplates, PlateType, plateTypes,
+  savePlate, savePlateAsTemplate, createNewPlateForTemplate, initPlates,
 } from '../plates-crud';
 import {PlateWidget} from '../../plate/plate-widget';
-// Assuming your new CSV parser will live here
 import {renderValidationResults} from './plates-validation-panel';
-import {parsePlateFromCsv} from './../../plate/csv-plates';
+import {parsePlateFromCsv} from '../../plate/csv-plates';
 
-// Define a type for our more complex state
-type PlateFile = {plate: Plate, file: DG.FileInfo};
+type PlateFile = {
+  plate: Plate;
+  file: DG.FileInfo;
+  reconciliationMap: Map<string, string>; // Maps NEW name -> ORIGINAL name
+};
 type TemplateState = {
   plates: PlateFile[],
   activePlateIdx: number
@@ -29,69 +26,222 @@ export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
 
-  // The state "store" now supports multiple plates per template
   const templateState = new Map<number, TemplateState>();
 
-  // --- UI Hosts ---
   const platePropertiesHost = ui.divV([]);
-  const validationHost = ui.divV([], {style: {marginTop: '10px'}});
+  const validationHost = ui.divV([]); 
   const fileTabsHost = ui.divH([], {style: {'gap': '4px', 'flexWrap': 'wrap', 'alignItems': 'center'}});
   const wellPropsHeaderHost = ui.div();
 
   let plateType = plateTypes[0];
   let plateTemplate = plateTemplates[0];
   if (!plateTemplate) {
-    grok.shell.error('No plate templates found. Please create a template first.');
-    // Return an empty view to avoid further errors
+    grok.shell.error('No plate templates found.');
     return view;
   }
 
   const plateWidget = PlateWidget.fromPlate(new Plate(plateType.rows, plateType.cols));
   plateWidget.editable = true;
 
-  // --- File Tabs UI Renderer ---
-  // Moved this function definition before `setTemplate` to fix the scope issue.
+  let setTemplate: (template: PlateTemplate) => Promise<void>;
+
+  const handleMapping = (sourceField: string, targetField: string) => {
+    const state = templateState.get(plateTemplate.id);
+    if (!state || !state.plates[state.activePlateIdx]) return;
+
+    const activeFile = state.plates[state.activePlateIdx];
+    const plate = activeFile.plate;
+    const targetColumn = plate.data.col(targetField);
+    if (!targetColumn) return;
+
+    let originalName = targetField;
+    for (const [newName, oldName] of activeFile.reconciliationMap.entries()) {
+      if (newName === targetField) {
+        originalName = oldName;
+        break;
+      }
+    }
+
+    activeFile.reconciliationMap.set(sourceField, originalName);
+    if (activeFile.reconciliationMap.has(targetField))
+      activeFile.reconciliationMap.delete(targetField);
+
+    targetColumn.name = sourceField;
+    grok.shell.info(`Mapped '${targetField}' to '${sourceField}'.`);
+    setTemplate(plateTemplate);
+  };
+
+  const handleUndoMapping = (mappedField: string) => {
+    const state = templateState.get(plateTemplate.id);
+    if (!state || !state.plates[state.activePlateIdx]) {
+      console.warn('No active plate state found for undo mapping');
+      return;
+    }
+
+    const activeFile = state.plates[state.activePlateIdx];
+    const originalName = activeFile.reconciliationMap.get(mappedField);
+
+    if (originalName) {
+      const columnToRevert = activeFile.plate.data.col(mappedField);
+      if (columnToRevert) {
+        columnToRevert.name = originalName;
+        activeFile.reconciliationMap.delete(mappedField);
+        grok.shell.info(`Reverted mapping for '${mappedField}'.`);
+
+        try {
+          setTemplate(plateTemplate);
+        } catch (error) {
+          console.error('Error refreshing template after undo:', error);
+          window.location.reload();
+        }
+      } else {
+        console.warn(`Column '${mappedField}' not found for reverting`);
+      }
+    } else {
+      console.warn(`No original mapping found for '${mappedField}'`);
+    }
+  };
+
+  const createReconciliationSummary = (activeFile: PlateFile | null, validationResults: {conflictCount: number}) => {
+    const appliedCount = activeFile ? activeFile.reconciliationMap.size : 0;
+    const pendingCount = validationResults.conflictCount;
+
+    const indicator = ui.divText(
+      `${pendingCount} pending, ${appliedCount} applied`,
+      {
+        style: {
+          backgroundColor: pendingCount > 0 ? 'var(--orange-1)' : 'var(--green-1)',
+          border: `1px solid ${pendingCount > 0 ? 'var(--orange-3)' : 'var(--green-3)'}`,
+          borderRadius: '12px',
+          padding: '4px 12px',
+          fontSize: '12px',
+          cursor: 'pointer',
+          color: pendingCount > 0 ? 'var(--orange-6)' : 'var(--green-6)',
+          fontWeight: '500',
+          userSelect: 'none'
+        }
+      }
+    );
+
+    ui.tooltip.bind(indicator, 'Click to view mapping details and undo changes');
+
+    indicator.addEventListener('click', () => {
+      const summaryDialog = ui.dialog('Field Mapping Summary');
+      summaryDialog.root.style.minWidth = '400px';
+
+      const content = ui.divV([], {style: {gap: '16px'}});
+
+      if (appliedCount > 0) {
+        content.appendChild(ui.h3('Applied Mappings', {style: {color: 'var(--green-6)', margin: '0'}}));
+
+        const mappingsList = ui.divV([], {style: {gap: '8px'}});
+        Array.from(activeFile!.reconciliationMap.entries()).forEach(([newName, oldName]) => {
+          const mappingRow = ui.divH([
+            ui.divV([
+              ui.divText(oldName, {style: {fontSize: '11px', color: 'var(--grey-5)'}}),
+              (() => {
+                const arrow = ui.iconFA('arrow-down');
+                arrow.style.fontSize = '10px';
+                arrow.style.color = 'var(--grey-4)';
+                return arrow;
+              })(),
+              ui.divText(newName, {style: {fontWeight: '500'}})
+            ], {style: {alignItems: 'center', gap: '2px'}}),
+            (() => {
+              const closeIcon = ui.iconFA('times', () => {
+                handleUndoMapping(newName);
+                summaryDialog.close();
+              }, 'Undo this mapping');
+              Object.assign(closeIcon.style, {
+                cursor: 'pointer',
+                color: 'var(--red-3)',
+                padding: '4px',
+                borderRadius: '2px',
+                fontSize: '12px'
+              });
+              return closeIcon;
+            })()
+          ], {
+            style: {
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '8px 12px',
+              backgroundColor: 'var(--green-0)',
+              border: '1px solid var(--green-2)',
+              borderRadius: '4px'
+            }
+          });
+          mappingsList.appendChild(mappingRow);
+        });
+        content.appendChild(mappingsList);
+      }
+
+      // Pending conflicts section
+      if (pendingCount > 0) {
+        if (appliedCount > 0)
+          content.appendChild(ui.divText('', {style: {borderTop: '1px solid var(--grey-2)', margin: '8px 0'}}));
+
+        content.appendChild(ui.h3('Pending Conflicts', {style: {color: 'var(--orange-6)', margin: '0'}}));
+        content.appendChild(ui.divText(
+          `${pendingCount} field${pendingCount > 1 ? 's' : ''} still need${pendingCount === 1 ? 's' : ''} to be mapped. Use drag & drop in the validation table to resolve.`,
+          {style: {color: 'var(--grey-6)', fontSize: '14px'}}
+        ));
+      }
+
+      if (appliedCount === 0 && pendingCount === 0)
+        content.appendChild(ui.divText('All fields are properly mapped!', {style: {color: 'var(--green-6)'}}));
+
+
+      summaryDialog.add(content);
+      summaryDialog.show();
+    });
+
+    return indicator;
+  };
+
   const renderFileTabs = (template: PlateTemplate, state: TemplateState | undefined) => {
     ui.empty(fileTabsHost);
-
-    // Render existing file tabs
     state?.plates.forEach((plateFile, idx) => {
-      const validation = renderValidationResults(plateFile.plate, template);
+      const dummyTable = ui.div();
+      const validation = renderValidationResults(dummyTable, plateFile.plate, template, handleMapping);
       const hasConflicts = validation.conflictCount > 0;
       const tabLabel = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
 
       const tab = ui.divText(tabLabel, 'd4-tag-editor');
       ui.tooltip.bind(tab, () => plateFile.file.name);
-
       Object.assign(tab.style, {
-        padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
-        border: '1px solid var(--grey-2)', display: 'flex', alignItems: 'center',
-        position: 'relative', transition: 'background-color 0.1s, border-color 0.1s, box-shadow 0.1s'
+        padding: '6px 12px',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        border: '1px solid var(--grey-2)',
+        display: 'flex',
+        alignItems: 'center',
+        position: 'relative',
+        transition: 'all 0.2s ease'
       });
 
       if (idx === state.activePlateIdx) {
-        tab.style.borderColor = 'var(--blue-2)';
-        tab.style.boxShadow = '0 0 0 1px var(--blue-2)';
-        tab.style.backgroundColor = 'var(--blue-0)';
-      } else {
-        tab.addEventListener('mouseenter', () => tab.style.backgroundColor = 'var(--grey-1)');
-        tab.addEventListener('mouseleave', () => tab.style.backgroundColor = '');
+        tab.style.borderColor = 'var(--blue-3)';
+        tab.style.backgroundColor = 'var(--blue-1)';
+        tab.style.color = 'var(--blue-6)';
+        tab.style.fontWeight = '500';
       }
 
-      tab.onclick = () => {
-        if (state) {
-          state.activePlateIdx = idx;
-          // We can call setTemplate here since it will be defined by the time this event is fired.
-          setTemplate(template);
-        }
-      };
+      tab.onclick = () => { if (state) { state.activePlateIdx = idx; setTemplate(template); } };
 
       if (hasConflicts) {
-        const conflictDot = ui.div('');
-        Object.assign(conflictDot.style, {
-          position: 'absolute', top: '-3px', right: '-3px', width: '8px', height: '8px',
-          backgroundColor: 'var(--red-3)', borderRadius: '50%',
-          border: '1px solid var(--grey-0)'
+        const conflictDot = ui.div('', {
+          style: {
+            position: 'absolute',
+            top: '-2px',
+            right: '-2px',
+            width: '8px',
+            height: '8px',
+            backgroundColor: 'var(--red-3)',
+            borderRadius: '50%',
+            border: '2px solid white',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+          }
         });
         tab.appendChild(conflictDot);
       }
@@ -99,158 +249,128 @@ export function createPlatesView(): DG.View {
       const clearIcon = ui.iconFA('times', () => {
         if (state) {
           state.plates.splice(idx, 1);
-          if (state.activePlateIdx >= idx)
-            state.activePlateIdx = Math.max(0, state.activePlateIdx - 1);
-
-          if (state.plates.length === 0)
-            templateState.delete(template.id);
-
+          if (state.activePlateIdx >= idx) state.activePlateIdx = Math.max(0, state.activePlateIdx - 1);
+          if (state.plates.length === 0) templateState.delete(template.id);
           setTemplate(template);
         }
-      }, 'Clear imported data');
+      }, 'Remove this plate');
       clearIcon.style.marginLeft = '8px';
-
+      clearIcon.style.opacity = '0.6';
+      clearIcon.style.fontSize = '11px';
       tab.appendChild(clearIcon);
       fileTabsHost.appendChild(tab);
     });
 
-    // Render the "Import" button
     const importInput = ui.input.file('', {
       onValueChanged: async (file: DG.FileInfo) => {
         if (!file) return;
-
         try {
           const parsedPlates = await parsePlateFromCsv(await file.readAsString());
           const currentState = templateState.get(template.id) ?? {plates: [], activePlateIdx: -1};
-
           for (const plate of parsedPlates)
-            currentState.plates.push({plate, file});
+            currentState.plates.push({plate, file, reconciliationMap: new Map<string, string>()});
 
           currentState.activePlateIdx = currentState.plates.length - 1;
           templateState.set(template.id, currentState);
           await setTemplate(template);
-        } catch (e: any) {
-          grok.shell.error(`Failed to parse CSV: ${e.message}`);
-        }
+        } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
       }
     });
 
     const buttonElement = importInput.root.querySelector('button');
-    if (buttonElement instanceof HTMLElement) {
+    if (buttonElement) {
       ui.empty(buttonElement);
       buttonElement.appendChild(ui.iconFA('plus'));
+      buttonElement.style.padding = '6px 8px';
+      buttonElement.style.borderRadius = '6px';
     }
     importInput.root.querySelector('label')?.remove();
     ui.tooltip.bind(importInput.root, 'Import new CSV file');
     fileTabsHost.appendChild(importInput.root);
   };
 
-  // --- Main Controller Function ---
-  const setTemplate = async (template: PlateTemplate) => {
-    plateTemplate = template;
-    const state = templateState.get(template.id);
-    const activePlateFile = state ? state.plates[state.activePlateIdx] : null;
+  setTemplate = async (template: PlateTemplate) => {
+    try {
+      plateTemplate = template;
+      const state = templateState.get(template.id);
+      const activeFile = state ? state.plates[state.activePlateIdx] : null;
 
-    // Clear all dynamic UI hosts
-    ui.empty(platePropertiesHost);
-    ui.empty(validationHost);
-    ui.empty(wellPropsHeaderHost);
+      ui.empty(platePropertiesHost);
+      ui.empty(validationHost);
+      ui.empty(wellPropsHeaderHost);
 
-    // Render the row of file tabs
-    renderFileTabs(template, state);
+      renderFileTabs(template, state);
 
-    let conflictCount = 0;
-    if (activePlateFile) {
-      plateWidget.plate = activePlateFile.plate;
-      const validation = renderValidationResults(activePlateFile.plate, template);
-      validationHost.appendChild(validation.element);
-      conflictCount = validation.conflictCount;
-      const form = ui.input.form(activePlateFile.plate.details, template.plateProperties.map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE)));
-      platePropertiesHost.appendChild(form);
-    } else {
-      plateWidget.plate = await createNewPlateForTemplate(plateType, template);
-      const form = ui.input.form({}, template.plateProperties.map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE)));
-      platePropertiesHost.appendChild(form);
-      validationHost.appendChild(ui.divText('Import a file to see validation results.', {style: {color: 'var(--grey-5)', padding: '10px'}}));
-    }
+      let validationResults = {conflictCount: 0};
 
-    // --- (4) Render Well Properties Header with Fix Indicator ---
-    const appliedFixes = 3; // Placeholder as requested
+      if (activeFile && activeFile.plate && activeFile.plate.data) {
+        try {
+          plateWidget.plate = activeFile.plate;
+          validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping);
 
-    // FIX: Create a "chip" manually using a styled ui.div, since ui.chip doesn't exist.
-    const indicator = ui.divText(`${conflictCount} pending, ${appliedFixes} applied`, {
-      style: {
-        backgroundColor: 'var(--grey-1)',
-        border: '1px solid var(--grey-2)',
-        borderRadius: '12px',
-        padding: '2px 8px',
-        fontSize: '11px',
-        cursor: 'pointer',
-        color: 'var(--grey-6)',
-        fontWeight: '500'
+          const plateProperties = template.plateProperties
+            .filter((p) => p && p.name && p.type)
+            .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
+
+          if (plateProperties.length > 0) {
+            const form = ui.input.form(activeFile.plate.details || {}, plateProperties);
+            platePropertiesHost.appendChild(form);
+          }
+        } catch (validationError) {
+          console.error('Error during validation rendering:', validationError);
+          validationHost.appendChild(ui.divText(
+            'Error loading validation results. Please try reimporting the file.',
+            {style: {color: 'var(--red-5)', padding: '20px', textAlign: 'center'}}
+          ));
+        }
+      } else {
+        try {
+          plateWidget.plate = await createNewPlateForTemplate(plateType, template);
+
+          const templateProperties = template.plateProperties
+            .filter((p) => p && p.name && p.type) 
+            .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
+
+          if (templateProperties.length > 0) {
+            const form = ui.input.form({}, templateProperties);
+            platePropertiesHost.appendChild(form);
+          }
+
+          validationHost.appendChild(ui.divText(
+            'Import a CSV file to see validation results and start mapping fields.',
+            {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center', fontStyle: 'italic'}}
+          ));
+        } catch (plateCreationError) {
+          console.error('Error creating new plate:', plateCreationError);
+        }
       }
-    });
-    indicator.addEventListener('click', () => {
-      ui.dialog('Reconciliation Summary')
-        .add(ui.divV([
-          ui.h2('Pending Fixes'),
-          ui.divText(`- ${conflictCount} properties have mismatches or are missing.`),
-          ui.h2('Applied Fixes'),
-          ui.divText('- 3 properties have been manually mapped.'), // Placeholder
-        ]))
-        .show();
-    });
-    ui.tooltip.bind(indicator, 'View reconciliation summary');
 
-    const header = ui.h2('Well Properties');
-    wellPropsHeaderHost.appendChild(ui.divH([header, indicator], {style: {justifyContent: 'space-between', alignItems: 'center'}}));
+      const indicator = createReconciliationSummary(activeFile, validationResults);
+      const header = ui.h2('Well Properties');
+      wellPropsHeaderHost.appendChild(ui.divH([header, indicator], {style: {justifyContent: 'space-between', alignItems: 'center'}}));
 
-    plateWidget.refresh();
+      try {
+        plateWidget.refresh();
+      } catch (refreshError) {
+        console.error('Error refreshing plate widget:', refreshError);
+      }
+    } catch (error) {
+      console.error('Critical error in setTemplate:', error);
+      grok.shell.error(`Error updating template: ${error}`);
+    }
   };
 
-  // --- (2 & 3) Improved Top Level Selectors ---
-  const plateTypeSelector = ui.input.choice('Plate Type', {
-    value: plateType.name, items: plateTypes.map((pt) => pt.name),
-    onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }
-  });
-  const plateTemplateSelector = ui.input.choice('Template', {
-    value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name),
-    onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
-  });
-
-  // Add styling to make inputs stand out
+  const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }});
+  const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
   plateTypeSelector.input.style.border = '1px solid var(--grey-3)';
   plateTypeSelector.input.style.backgroundColor = 'var(--grey-1)';
   plateTemplateSelector.input.style.border = '1px solid var(--grey-3)';
   plateTemplateSelector.input.style.backgroundColor = 'var(--grey-1)';
-
-  const topPanel = ui.divH([
-    plateTypeSelector.root,
-    plateTemplateSelector.root,
-  ], {style: {gap: '24px', alignItems: 'center', marginBottom: '10px'}});
-
-  // --- Assemble the View Layout ---
-  const leftPanel = ui.divV([
-    ui.h2('Plate Properties'),
-    platePropertiesHost,
-    wellPropsHeaderHost, // The new header with indicator goes here
-    validationHost,
-  ], {style: {minWidth: '320px', maxWidth: '400px', flexGrow: '0', gap: '10px'}});
-
-  const rightPanel = ui.divV([
-    fileTabsHost,
-    plateWidget.root,
-  ], {style: {flexGrow: '1', gap: '10px'}});
-
-  view.root.appendChild(ui.divV([
-    topPanel,
-    ui.divH([leftPanel, rightPanel], {style: {gap: '20px'}}),
-  ]));
-
-  // --- Initial setup call ---
+  const topPanel = ui.divH([plateTypeSelector.root, plateTemplateSelector.root], {style: {gap: '24px', alignItems: 'center', marginBottom: '10px'}});
+  const leftPanel = ui.divV([ui.h2('Plate Properties'), platePropertiesHost, wellPropsHeaderHost, validationHost], {style: {minWidth: '320px', maxWidth: '400px', flexGrow: '0', gap: '10px'}});
+  const rightPanel = ui.divV([fileTabsHost, plateWidget.root], {style: {flexGrow: '1', gap: '10px'}});
+  view.root.appendChild(ui.divV([topPanel, ui.divH([leftPanel, rightPanel], {style: {gap: '20px'}})]));
   setTemplate(plateTemplates[0]);
-
-  // --- Ribbon Panels ---
 
   const getPlate = () => {
     const state = templateState.get(plateTemplate.id);
@@ -268,22 +388,14 @@ export function createPlatesView(): DG.View {
         return;
       }
 
-      // Check for conflicts before saving
-      const validation = renderValidationResults(plateToSave, plateTemplate);
-      if (validation.conflictCount > 0) {
-        // As requested, skipping the confirm dialog for now.
-        // You can re-enable this later if grok.shell.confirm becomes available or you implement a custom dialog.
-        // if (!await grok.shell.confirm('There are unresolved validation issues. Are you sure you want to create the plate?'))
-        //    return;
+      const dummyTableElement = ui.div();
+      const validation = renderValidationResults(dummyTableElement, plateToSave, plateTemplate, handleMapping);
+
+      if (validation.conflictCount > 0)
         grok.shell.warning('Saving plate with unresolved validation issues.');
-      }
 
-      // FIX: The `savePlate` function expects only the plate object and an optional `options` object.
-      // We are not passing any special options here, so we just pass the plate.
-      // The template association seems to be handled differently (e.g., via `savePlateAsTemplate`).
-      plateToSave.plateTemplateId = plateTemplate.id; // Store the template ID on the plate object itself.
+      plateToSave.plateTemplateId = plateTemplate.id;
       await savePlate(plateToSave);
-
       grok.shell.info(`Plate created: ${plateToSave.barcode}`);
     }),
     ui.button('SAVE TEMPLATE', async () => {
@@ -293,11 +405,9 @@ export function createPlatesView(): DG.View {
         return;
       }
       await savePlateAsTemplate(plateToSave, plateTemplate);
-      await initPlates(true); // Force reload of templates
+      await initPlates(true);
       grok.shell.info(`Plate template updated: ${plateTemplate.name}`);
     })
   ]]);
-
-
   return view;
 }
