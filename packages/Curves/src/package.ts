@@ -81,9 +81,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}})reportedIC50Column?: string,
     @grok.decorators.param({options: {nullable: true}})reportedQualifiedIC50Column?: string,
     @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
-    @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[]
+    @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})wellLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string
   ): Promise<DG.DataFrame> {
     const pt = parentTable;
+    const joinInfo = pt && wellLevelJoinCol && parentLevelJoinCol && df.col(wellLevelJoinCol) && pt.col(parentLevelJoinCol) ? {
+      wellLevelCol: df.col(wellLevelJoinCol)!,
+      parentLevelCol: pt.col(parentLevelJoinCol)!,
+    } : undefined;
     // this needs to work with datasync so we use wide format
     return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
       table: pt,
@@ -93,7 +99,9 @@ export class PackageFunctions {
       experimentIDColumn: experimentIDColumn ? pt?.col(experimentIDColumn) ?? undefined : undefined,
       qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
       additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
-    });
+    },
+    joinInfo
+    );
   }
 
   @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves'})
@@ -248,7 +256,7 @@ export class PackageFunctions {
     return PlateReader.getReader(content) != null;
   }
 
-  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }
@@ -266,9 +274,9 @@ export class PackageFunctions {
   }
 }
 
-//name: platesAppTreeBrowser
+//name: platesAppTreeBrowserTempDisabled
 //input: dynamic treeNode
 //input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
   await initPlatesAppTree(treeNode);
 }
