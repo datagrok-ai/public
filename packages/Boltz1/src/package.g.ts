@@ -35,7 +35,7 @@ export async function folding(df: DG.DataFrame, sequences: DG.Column) {
 //name: Docking
 //input: dataframe df 
 //input: column molecules { semType: Molecule }
-//input: string config { choices: Boltz1: getBoltzConfigFolders; caption: Folder with config files for docking }
+//input: string config { choices: Boltz1: getBoltzConfigFolders; description: Folder with config files for docking }
 //output: dataframe result
 //top-menu: Chem | Docking | Boltz-1...
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string) {

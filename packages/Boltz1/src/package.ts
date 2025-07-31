@@ -28,8 +28,8 @@ export class PackageFunctions {
     }
   })
   static async runBoltz(
-    @grok.decorators.param({name: 'config', type: DG.TYPE.STRING}) config: string,
-    @grok.decorators.param({name: 'msa', type: DG.TYPE.STRING}) msa: string,
+    config: string,
+    msa: string,
   ): Promise<string> {
     return await BoltzService.runBoltz(config, msa);
   }
@@ -39,8 +39,8 @@ export class PackageFunctions {
     'top-menu': 'Bio | Folding | Boltz-1...'
   })
   static async folding(
-    @grok.decorators.param({name: 'df', type: DG.TYPE.DATA_FRAME}) df: DG.DataFrame,
-    @grok.decorators.param({name: 'sequences', type: DG.TYPE.COLUMN, options: {semType: 'Macromolecule'}}) sequences: DG.Column,
+    df: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequences: DG.Column,
   ): Promise<DG.DataFrame> {
     return await BoltzService.folding(df, sequences);
   }
@@ -50,9 +50,9 @@ export class PackageFunctions {
     'top-menu': 'Chem | Docking | Boltz-1...'
   })
   static async docking(
-    @grok.decorators.param({name: 'df', type: DG.TYPE.DATA_FRAME}) df: DG.DataFrame,
-    @grok.decorators.param({name: 'molecules', type: DG.TYPE.COLUMN, options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({name: 'config', type: DG.TYPE.STRING, options: {choices: 'Boltz1: getBoltzConfigFolders', caption: 'Folder with config files for docking'}}) config: string,
+    df: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {choices: 'Boltz1: getBoltzConfigFolders', description: 'Folder with config files for docking'}}) config: string,
   ): Promise<DG.DataFrame> {
     return await BoltzService.docking(df, molecules, config);
   }
@@ -66,14 +66,14 @@ export class PackageFunctions {
     condition: 'Boltz1:isApplicableBoltz(molecule)',
   })
   static async boltzWidget(
-    @grok.decorators.param({name: 'molecule', type: DG.TYPE.SEMANTIC_VALUE, options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue,
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue,
   ): Promise<DG.Widget<any> | null> {
     return await BoltzService.boltzWidget(molecule);
   }
 
   @grok.decorators.func()
   static isApplicableBoltz(
-    @grok.decorators.param({name: 'molecule', type: DG.TYPE.STRING}) molecule: string,
+    molecule: string,
   ): boolean {
     return molecule.includes('confidence_score');
   }
