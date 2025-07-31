@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
 import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
-import { KeyObject } from 'crypto';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
@@ -314,12 +313,6 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   const packageId = package_.id;
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
-  if (moduleTests[autoTestsCatName] !== undefined ||
-    moduleTests[demoCatName] !== undefined ||
-    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
-    wasRegistered[packageId] = true;
-    return;
-  }
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
     for (const f of (<any>window).dartTests) {
       const arr = f.name.split(/\s*\|\s*!/g);
@@ -353,19 +346,23 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
           else if (arr[0].startsWith('timeout')) map['timeout'] = parseInt(arr[4]);
         });
-        const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+        const test = new Test(map.cat ?? autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
           const res = await grok.functions.eval(addNamespace(tests[i], f));
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
         }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT });
         if (map.cat) {
-          const cat: string = autoTestsCatName + ': ' + map.cat;
-          test.category = cat;
+          const cat: string = map.cat;
           if (moduleTests[cat] === undefined)
             moduleTests[cat] = { tests: [], clear: true };
+
+          // only before/after can be defined in ts files tests under the category
+          if (!moduleTests[cat].tests)
+            moduleTests[cat].tests = [];
           moduleTests[cat].tests.push(test);
-        } else
+        }
+        else
           moduleAutoTests.push(test);
       }
     }
@@ -466,7 +463,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   return results;
 
   async function invokeCategoryMethod(method: (() => Promise<void>) | undefined, category: string): Promise<string | undefined> {
-    var invokationResult = undefined;
+    let invokationResult = undefined;
     try {
       if (method !== undefined) {
         await timeout(async () => {
@@ -589,8 +586,9 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             return {  date: new Date().toISOString(), category: key, name: testElem.name, success: false, result: 'before() failed', ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing };
           }));
           res.forEach(async (test) => reportTest('package', test));
-        } else
-        res = await invokeTestsInCategory(value, options);
+        }
+        else
+          res = await invokeTestsInCategory(value, options);
         const data : TestResultExtended[] = res.filter((d) => d.result != 'skipped');
 
         if (!skipped)
@@ -730,7 +728,7 @@ export function shuffle(array: any[]): any[] {
   const newArr = array.slice();
   newArr.sort(() => Math.random() - 0.5);
   return newArr;
-};
+}
 
 /* Waits [ms] milliseconds */
 export async function delay(ms: number) {
