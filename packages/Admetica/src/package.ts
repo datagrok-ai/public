@@ -53,7 +53,6 @@ export class PackageFunctions {
     @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Distribution\')', nullable: true } })distribution: string[],
     @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Metabolism\')', nullable: true } })metabolism: string[],
     @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Excretion\')', nullable: true } })excretion: string[],
-    addProbabilities: boolean,
   ): Promise<void> {
     const resultString: string = [
       ...absorption,
@@ -85,7 +84,7 @@ export class PackageFunctions {
       .show();
   }
 
-  @grok.decorators.func({'name': 'AdmeticaMenu', 'top-menu': 'Chem | Admetica | Сalculate...', 'editor': 'Admetica: AdmeticaEditor'})
+  @grok.decorators.func({'name': 'AdmeticaMenu', 'top-menu': 'Chem | Admetica | Сalculate...', 'editor': 'Admetica:AdmeticaEditor'})
   static async admeticaMenu(
     table: DG.DataFrame,
     @grok.decorators.param({options: { semType: 'Molecule' }, type: 'column'}) molecules: DG.Column,
@@ -93,7 +92,6 @@ export class PackageFunctions {
     models: string[],
     addPiechart: boolean,
     addForm: boolean,
-    properties: string,
   ): Promise<void> {
     await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
   }

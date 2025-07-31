@@ -24,9 +24,8 @@ export async function getModels(property: string) {
 //input: list<string> distribution { choices: Admetica:getModels('Distribution'); nullable: true }
 //input: list<string> metabolism { choices: Admetica:getModels('Metabolism'); nullable: true }
 //input: list<string> excretion { choices: Admetica:getModels('Excretion'); nullable: true }
-//input: bool addProbabilities 
-export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, absorption: string[], distribution: string[], metabolism: string[], excretion: string[], addProbabilities: boolean) {
-  return PackageFunctions.admeticaHT(table, molecules, absorption, distribution, metabolism, excretion, addProbabilities);
+export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, absorption: string[], distribution: string[], metabolism: string[], excretion: string[]) {
+  return PackageFunctions.admeticaHT(table, molecules, absorption, distribution, metabolism, excretion);
 }
 
 //name: admeticaEditor
@@ -43,11 +42,10 @@ export function admeticaEditor(call: DG.FuncCall) {
 //input: list<string> models 
 //input: bool addPiechart 
 //input: bool addForm 
-//input: string properties 
 //top-menu: Chem | Admetica | Сalculate...
-//editor: Admetica: AdmeticaEditor
-export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean, properties: string) {
-  return PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm, properties);
+//editor: Admetica:AdmeticaEditor
+export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) {
+  return PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
 }
 
 //name: admeProperty
@@ -60,7 +58,7 @@ export async function admeProperty(molecule: string, prop: string) {
 
 //name: Admetica
 //tags: app
-//output: dynamic result
+//output: view result
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
 export async function admeticaApp() {
@@ -69,7 +67,7 @@ export async function admeticaApp() {
 
 //name: Admetica Demo
 //description: Evaluating ADMET properties
-//output: dynamic result
+//output: view result
 //meta.demoPath: Cheminformatics | Admetica
 export async function admeticaDemo() {
   return PackageFunctions.admeticaDemo();

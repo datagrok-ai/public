@@ -20,30 +20,30 @@ export namespace funcs {
     return await grok.functions.call('Admetica:GetModels', { property });
   }
 
-  export async function admeticaHT(table: DG.DataFrame , molecules: DG.Column , absorption: any | null, distribution: any | null, metabolism: any | null, excretion: any | null, addProbabilities: boolean ): Promise<void> {
-    return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion, addProbabilities });
+  export async function admeticaHT(table: DG.DataFrame , molecules: DG.Column , absorption: any | null, distribution: any | null, metabolism: any | null, excretion: any | null): Promise<void> {
+    return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion });
   }
 
   export async function admeticaEditor(call: any ): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaEditor', { call });
   }
 
-  export async function admeticaMenu(table: DG.DataFrame , molecules: DG.Column , template: string , models: any , addPiechart: boolean , addForm: boolean , properties: string ): Promise<void> {
-    return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm, properties });
+  export async function admeticaMenu(table: DG.DataFrame , molecules: DG.Column , template: string , models: any , addPiechart: boolean , addForm: boolean ): Promise<void> {
+    return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
   export async function admeProperty(molecule: string , prop: string ): Promise<any> {
     return await grok.functions.call('Admetica:AdmeProperty', { molecule, prop });
   }
 
-  export async function admeticaApp(): Promise<any> {
+  export async function admeticaApp(): Promise<DG.View> {
     return await grok.functions.call('Admetica:AdmeticaApp', {});
   }
 
   /**
   Evaluating ADMET properties
   */
-  export async function admeticaDemo(): Promise<any> {
+  export async function admeticaDemo(): Promise<DG.View> {
     return await grok.functions.call('Admetica:AdmeticaDemo', {});
   }
 }
