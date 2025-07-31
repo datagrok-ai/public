@@ -351,8 +351,8 @@ class FuncGeneratorPlugin {
     let isArray = false; 
     if (nodeAnnotation?.type === 'TSUnionType' && 
       nodeAnnotation?.types?.length === 2 && 
-      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword')) 
-      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword')[0];
+      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword')) 
+      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword')[0];
     
 
     if (
