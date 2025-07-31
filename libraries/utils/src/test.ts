@@ -631,7 +631,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 }
 
 async function reportTest(type: string, params: any): Promise<void> {
-  debugger;
   if ((<any>grok.shell).reportTest != null)
     await (<any>grok.shell).reportTest(type, params);
   else {
