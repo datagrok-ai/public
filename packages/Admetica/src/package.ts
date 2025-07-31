@@ -49,10 +49,10 @@ export class PackageFunctions {
   static async admeticaHT(
     table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Absorption\')', nullable: true } })absorption: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Distribution\')', nullable: true } })distribution: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Metabolism\')', nullable: true } })metabolism: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Excretion\')', nullable: true } })excretion: string[],
+    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Absorption\')', nullable: true } }) absorption: string[],
+    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Distribution\')', nullable: true } }) distribution: string[],
+    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Metabolism\')', nullable: true } }) metabolism: string[],
+    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Excretion\')', nullable: true } }) excretion: string[],
   ): Promise<void> {
     const resultString: string = [
       ...absorption,
@@ -84,10 +84,14 @@ export class PackageFunctions {
       .show();
   }
 
-  @grok.decorators.func({'name': 'AdmeticaMenu', 'top-menu': 'Chem | Admetica | Сalculate...', 'editor': 'Admetica:AdmeticaEditor'})
+  @grok.decorators.func({
+    'name': 'AdmeticaMenu',
+    'top-menu': 'Chem | Admetica | Сalculate...',
+    'editor': 'Admetica:AdmeticaEditor'
+  })
   static async admeticaMenu(
     table: DG.DataFrame,
-    @grok.decorators.param({options: { semType: 'Molecule' }, type: 'column'}) molecules: DG.Column,
+    @grok.decorators.param({options: { semType: 'Molecule' }}) molecules: DG.Column,
     template: string,
     models: string[],
     addPiechart: boolean,
@@ -110,7 +114,11 @@ export class PackageFunctions {
     return await initializeAdmeticaApp(true, parent);
   }
 
-  @grok.decorators.demo({name: 'Admetica Demo', description: 'Evaluating ADMET properties', meta: {demoPath: 'Cheminformatics | Admetica'}})
+  @grok.decorators.demo({
+    name: 'Admetica Demo',
+    description: 'Evaluating ADMET properties',
+    meta: {demoPath: 'Cheminformatics | Admetica'}
+  })
   static async admeticaDemo(): Promise<DG.ViewBase | null> {
     return await initializeAdmeticaApp(false);
   }
