@@ -6,15 +6,15 @@ import * as DG from 'datagrok-api/dg';
 export interface FilterCondition {
     field?: string;           // Field name
     operator?: string | 'and' | 'or';  // Operator like "=", ">", "IN", "IS SIMILAR", "AND", "OR", etc.
-    value?: any;             // Value for the condition
+    values?: any[];             // Value for the condition
     threshold?: number;       // For similarity searches
     conditions?: FilterCondition[]; // For nested conditions
 }
 
-export const defaultFilters: { [key in DG.TYPE]?: (prop: DG.Property) => HTMLElement } = {
- [DG.TYPE.DATE_TIME]: (prop: DG.Property) => new DateFilter(prop).root,
- [DG.TYPE.STRING]: (prop: DG.Property) => new StringFilter(prop).root,
- [DG.TYPE.FLOAT]: (prop: DG.Property) => new FloatFilter(prop).root,
+export const defaultFilters: { [key in DG.TYPE]?: (prop: DG.Property, cond: FilterCondition) => PropertyFilter } = {
+ [DG.TYPE.DATE_TIME]: (prop: DG.Property, cond: FilterCondition) => new DateFilter(prop, cond),
+ [DG.TYPE.STRING]: (prop: DG.Property, cond: FilterCondition) => new StringFilter(prop, cond),
+ [DG.TYPE.FLOAT]: (prop: DG.Property, cond: FilterCondition) => new FloatFilter(prop, cond),
 }
 
 export namespace Operators {
@@ -39,11 +39,10 @@ export namespace Operators {
         [DG.TYPE.STRING]: [STARTS_WITH, ENDS_WITH, EQ, NOT_EQ, IN],
         [DG.TYPE.INT]: [GT, LT, GTE, LTE, EQ, NOT_EQ],
         [DG.TYPE.FLOAT]: [GT, LT, GTE, LTE, EQ, NOT_EQ],
-        [DG.TYPE.DATE_TIME]: [BEFORE, AFTER, ON, BETWEEN]
+        [DG.TYPE.DATE_TIME]: [BEFORE, AFTER, BETWEEN]
     };
 
-    export enum ConditionOperators {
-        property = 'property',
+    export enum Logical {
         and = 'and',
         or = 'or',
     }
@@ -52,9 +51,9 @@ export namespace Operators {
         [DG.SEMTYPE.MOLECULE]: [CONTAINS, IS_CONTAINED, EQ, IS_SIMILAR]
     };
 
-    export function getCondition(fieldName: string, op: string, values: any[]): string | null {
+    export function getStringCondition(fieldName: string, op: string, values: any[]): string {
         if (!values || !values.length)
-            return null;
+            return '';
 
         switch (op) {
             case STARTS_WITH: return `starts_with(${fieldName}, '${values[0]}')`;
@@ -70,7 +69,7 @@ export namespace Operators {
             case AFTER: return `${fieldName} > ${values[0]}`;
             case BETWEEN: return `${fieldName} between(${values[0]}, ${values[1]})`;
         }
-        return null;
+        return '';
     }
 }
 
@@ -91,129 +90,135 @@ export function buildPropertyFilterUI(
     condition: FilterCondition,
     properties: DG.Property[],
     onValueChange: () => void,
-    onStructureChange: () => void
+    onStructureChange: () => void,
+    parentCondition?: FilterCondition
 ): HTMLElement {
-    
-    // Handle empty or undefined condition by creating a default condition
+
     if (!condition) {
         condition = {};
     }
-    
-    // Create logical operator choice input
-    const conditionInput = ui.input.choice('Condition', {
-        items: Object.values(Operators.ConditionOperators),
-        value: condition.operator || Operators.ConditionOperators.property,
-        nullable: false,
-        onValueChanged: () => {
-            condition.operator = conditionInput.value!;
-            onValueChange();
-            onStructureChange();
-        }
-    });
 
-    const container = ui.divV([conditionInput.root], 'revvity-signals-search-query-operator');
+    const removeOrReplaceCondition = (condToRemove: FilterCondition, condArray?: FilterCondition[], replaceCond?: FilterCondition) => {
+        if (condArray) {
+            const condIdx = condArray.indexOf(condToRemove);
+            if (condIdx !== -1)
+                replaceCond ? condArray[condIdx] = replaceCond : condArray.splice(condIdx, 1)
+        };
+    }
 
-    // If PROPERTY is selected, show field selection
-    if (conditionInput.value === Operators.ConditionOperators.property) {
-        const fieldChoiceInput = ui.input.choice('', {
-            items: properties.map(prop => prop.name),
-            value: properties[0]?.name || '', // Set default to first property
-            nullable: false, // Make it non-nullable
-            onValueChanged: () => {
-                const selectedField = fieldChoiceInput.value!;
-                if (selectedField) {
-                    condition.field = selectedField;
-                    const property = properties.find(prop => prop.name === selectedField);
-                    if (property) {
-                        const filterFactory = defaultFilters[property.propertyType];
-                        if (filterFactory) {
-                            // Clear existing field UI and add new filter UI
-                            const existingFieldUI = filterContainer.querySelector('.field-filter-ui');
-                            if (existingFieldUI) {
-                                existingFieldUI.remove();
-                            }
-                            
-                            const fieldFilterUI = filterFactory(property);
-                            fieldFilterUI.classList.add('field-filter-ui');
-                            filterContainer.appendChild(fieldFilterUI);
-                        }
-                    }
-                }
-                onValueChange();
-            }
-        });
-        
-        // Create horizontal container for field choice and filter UI
-        const filterContainer = ui.divH([fieldChoiceInput.root], 'revvity-signals-filter-inputs');
-        container.appendChild(filterContainer);
-        
-        // Trigger the field selection to initialize the field filter UI
-        if (fieldChoiceInput.value) {
-            condition.field = fieldChoiceInput.value;
-            const property = properties.find(prop => prop.name === fieldChoiceInput.value);
+    const createPropertyFilterContainer = (cond: FilterCondition, parentCondition?: FilterCondition) => {
+
+        const createFilter = () => {
+            const property = properties.find(prop => prop.name === fieldChoiceInput.value!);
             if (property) {
                 const filterFactory = defaultFilters[property.propertyType];
                 if (filterFactory) {
-                    const fieldFilterUI = filterFactory(property);
-                    fieldFilterUI.classList.add('field-filter-ui');
-                    filterContainer.appendChild(fieldFilterUI);
+                    // Clear existing field UI and add new filter UI
+                    ui.empty(filterInputsContainer);
+                    const fieldFilter = filterFactory(property, cond);
+                    filterInputsContainer.appendChild(fieldFilter.root);
                 }
             }
-            onValueChange();
         }
+
+        cond.field ??= (properties[0]?.name || '')
+
+        const fieldChoiceInput = ui.input.choice('', {
+            items: properties.map(prop => prop.name),
+            value: cond.field,
+            nullable: false,
+            onValueChanged: () => {
+                cond.field = fieldChoiceInput.value!;
+                cond.values = undefined;
+                cond.operator = undefined;
+                createFilter();
+                onValueChange();
+            }
+        });
+
+        const deleteFieldIcon = ui.icons.delete(() => {
+            container.removeChild(filterContainer);
+            removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions);
+            onStructureChange();
+        });
+
+        const addNestedConditionIcon = ui.icons.add(() => {
+            const parentCond = { operator: Operators.Logical.and, conditions: [cond] };
+            removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions, parentCond);
+            onStructureChange();
+
+        }, 'Add nested condition');
+
+        const filterInputsContainer = ui.div();
+        const filterContainer = ui.divH([fieldChoiceInput.root, filterInputsContainer,
+            deleteFieldIcon, addNestedConditionIcon], 'revvity-signals-filter-inputs');
+        container.appendChild(filterContainer);
+        createFilter();
     }
-    
-    // If AND or OR is selected, create nested conditions with light border
-    else if (conditionInput.value === Operators.ConditionOperators.and || conditionInput.value === Operators.ConditionOperators.or) {
-        // Ensure conditions array exists and is properly initialized
-        if (!condition.conditions) {
-            condition.conditions = [];
+
+    // adding filter field
+    const addFieldIcon = ui.icons.add(() => {
+        const conditionForFilter = {};
+        //if we are handling top level condition and adding second field - restructure so that we put conditions to array and add 'AND' condition by default
+        if (!parentCondition && !condition.conditions?.length) {
+            const firstCondition = Object.assign({}, condition);
+            condition.operator = Operators.Logical.and;
+            condition.field = undefined;
+            condition.values = undefined;
+            condition.conditions = [firstCondition, conditionForFilter];
+            container.classList.add('property-query-builder-multipe-filelds');
+
+        } else {
+            condition.conditions?.push(conditionForFilter);
         }
-        const conditions = condition.conditions;
-        
-        // Create container for nested conditions with light border
-        const conditionsContainer = ui.divV([], 'revvity-signals-search-query-operator');
-        
-        // Function to rebuild the conditions UI for this specific level
-        const rebuildConditionsUI = () => {
-            ui.empty(conditionsContainer);
-            
-            // Add existing conditions
-            conditions.forEach((childCondition, idx) => {
-                const conditionUI = buildPropertyFilterUI(childCondition, properties, onValueChange, () => {
-                    // When nested condition structure changes, rebuild this level and notify parent
-                    rebuildConditionsUI();
-                    onStructureChange();
-                });
-                const conditionContainer = ui.divH([
-                    conditionUI,
-                    ui.icons.delete(() => {
-                        conditions.splice(idx, 1);
-                        rebuildConditionsUI();
-                        onStructureChange();
-                    }, 'Remove condition')
-                ]);
-                conditionsContainer.appendChild(conditionContainer);
-            });
-            
-            // Add plus icon to add new condition
-            const addConditionIcon = ui.icons.add(() => {
-                const newCondition: FilterCondition = {
-                    operator: Operators.ConditionOperators.property // Initialize with NONE so it shows field selection
-                };
-                conditions.push(newCondition);
-                // Add a temporary visual indicator
-                rebuildConditionsUI();
-                onStructureChange();
-            });
-            addConditionIcon.style.cssText = 'padding: 2px 6px; font-size: 12px; color: #2083D5;';
-            conditionsContainer.appendChild(addConditionIcon);
-        };
-        
-        // Initial build
-        rebuildConditionsUI();
-        
-        container.appendChild(conditionsContainer);
+        onStructureChange();
+    }, 'Add field to the condition');
+
+    // AND/OR operators handling
+    let and = true;
+    const logicalOperatorIcon = ui.button('AND', () => {
+        and = !and;
+        condition.operator = !and ? Operators.Logical.or : Operators.Logical.and;
+        logicalOperatorIcon.innerText = !and ? 'OR' : 'AND';
+        onValueChange();
+    }, 'Logical operator');
+    logicalOperatorIcon.classList.add('property-query-builder-and-or-operator');
+    if (!parentCondition)
+        logicalOperatorIcon.classList.add('property-query-builder-parent-level');
+
+
+    const iconsDiv = ui.divH([addFieldIcon, logicalOperatorIcon]);
+    const container = ui.divV([iconsDiv], 'revvity-signals-search-query-operator');
+
+    //delete icon for nested conditions to remove the whole nested condition at once
+    if (parentCondition) {
+        const deleteCondition = ui.icons.delete(() => {
+            removeOrReplaceCondition(condition, parentCondition.conditions);
+            onStructureChange();
+        });
+        iconsDiv.append(deleteCondition);
+        onValueChange();
+    }
+
+    if (condition.operator !== Operators.Logical.and && condition.operator !== Operators.Logical.or) {
+        createPropertyFilterContainer(condition);
+    }
+    // If AND or OR is selected, create nested conditions
+    else {
+        if (condition.conditions) {
+            for (const nestedCondition of condition.conditions!) {
+                if (nestedCondition.operator !== Operators.Logical.and && nestedCondition.operator !== Operators.Logical.or)
+                    createPropertyFilterContainer(nestedCondition);
+                else {
+                    const nestedContainer = buildPropertyFilterUI(nestedCondition, properties, onValueChange, onStructureChange,
+                        parentCondition ?? condition);
+                    container.append(nestedContainer);
+                }
+            }
+
+            condition.conditions.length < 2 ? container.classList.remove('property-query-builder-multipe-filelds') :
+                container.classList.add('property-query-builder-multipe-filelds');
+        }
     }
 
     return container;
@@ -222,9 +227,7 @@ export function buildPropertyFilterUI(
 // Main UI builder function for property filters
 export function buildPropertyFilterForm(properties: DG.Property[], initialCondition?: FilterCondition): HTMLElement {
     // Initialize with provided condition or create a default logical condition
-    const rootCondition: FilterCondition = initialCondition || {
-        operator: Operators.ConditionOperators.property,
-    };
+    const rootCondition: FilterCondition = initialCondition || {};
 
     // Preview area
     const jsonPreview = document.createElement('textarea');
@@ -232,6 +235,7 @@ export function buildPropertyFilterForm(properties: DG.Property[], initialCondit
     jsonPreview.classList.add('revvity-signals-search-query-preview');
 
     function updatePreview() {
+        console.log(rootCondition);
         jsonPreview.value = JSON.stringify({ filter: rootCondition }, null, 2);
     }
 
@@ -267,24 +271,41 @@ export function buildPropertyFilterForm(properties: DG.Property[], initialCondit
     return mainContainer;
 }
 
-export class StringFilter {
+export abstract class PropertyFilter {
+  root: HTMLDivElement = ui.div();
+  condition: FilterCondition;
+  prop: DG.Property;
+
+  abstract getStringCondition(): string;
+
+  protected constructor(prop: DG.Property, condition: FilterCondition) {
+    this.prop = prop;
+    this.condition = condition;
+  }
+}
+
+export class StringFilter extends PropertyFilter {
     operators = Operators.typeOperators[DG.TYPE.STRING];
-    root: HTMLElement;
-    constructor(private prop: DG.Property, private value: string = '',
-        private operator: string = Operators.EQ) {
+
+    constructor(prop: DG.Property, condition: FilterCondition) {
+        super(prop, condition);
+        condition.operator ??= Operators.EQ;
         const operatorChoice = ui.input.choice('', {
-            value: this.operator,
+            value: condition.operator,
             items: Object.values(this.operators),
             nullable: false,
             onValueChanged: () => {
-                this.operator = operatorChoice.value!;
+                condition.operator = operatorChoice.value!;
             }
         });
+        
+        if (!condition.values || !Array.isArray(condition.values) || !condition.values.length)
+            condition.values = [null];
 
         const stringInput = ui.input.forProperty(this.prop, null, {
-            value: this.value,
+            value: condition.values[0],
             onValueChanged: () => {
-                this.value = stringInput.value!;
+                condition.values![0] = stringInput.value!;
             }
         });
         stringInput.addCaption(''); // Hide the property name label
@@ -296,29 +317,33 @@ export class StringFilter {
 
     }
 
-    getCondition() {
-        return Operators.getCondition(this.prop.name, this.operator, [this.value]);
+    getStringCondition() {
+        return Operators.getStringCondition(this.prop.name, this.condition.operator!, this.condition.values!);
     }
 }
 
-export class FloatFilter {
+export class FloatFilter extends PropertyFilter {
     operators = Operators.typeOperators[DG.TYPE.FLOAT];
-    root: HTMLElement;
-    constructor(private prop: DG.Property, private value: number = 0,
-        private operator: string = Operators.EQ) {
+
+    constructor(prop: DG.Property, condition: FilterCondition) {
+        super(prop, condition);
+        condition.operator ??= Operators.EQ;
         const operatorChoice = ui.input.choice('', {
-            value: this.operator,
+            value: condition.operator,
             items: Object.values(this.operators),
             nullable: false,
             onValueChanged: () => {
-                this.operator = operatorChoice.value!;
+                condition.operator = operatorChoice.value!;
             }
         });
 
+        if (!condition.values || !Array.isArray(condition.values) || !condition.values.length)
+            condition.values = [null];
+
         const floatInput = ui.input.forProperty(this.prop, null, {
-            value: this.value,
+            value: condition.values[0],
             onValueChanged: () => {
-                this.value = floatInput.value!;
+                condition.values![0] = floatInput.value!;
             }
         });
         floatInput.addCaption(''); // Hide the property name label
@@ -330,26 +355,30 @@ export class FloatFilter {
 
     }
 
-    getCondition() {
-        return Operators.getCondition(this.prop.name, this.operator, [this.value]);
+    getStringCondition() {
+        return Operators.getStringCondition(this.prop.name, this.condition.operator!, this.condition.values!);
     }
 }
 
-export class DateFilter {
+export class DateFilter extends PropertyFilter {
     operators = Operators.typeOperators[DG.TYPE.DATE_TIME];
-    root: HTMLElement;
     datesDiv = ui.divH([]);
-    constructor(private prop: DG.Property, private date1: string = '', private date2: string = '',
-        private operator: string = Operators.BEFORE) {
+
+    constructor(prop: DG.Property, condition: FilterCondition) {
+        super(prop, condition);
+        condition.operator ??= Operators.BEFORE;
         const operatorChoice = ui.input.choice('', {
-            value: this.operator,
+            value: condition.operator,
             items: Object.values(this.operators),
             nullable: false,
             onValueChanged: () => {
-                this.operator = operatorChoice.value!;
+                condition.operator = operatorChoice.value!;
                 this.createFilter();
             }
         });
+
+        if (!condition.values || !Array.isArray(condition.values) || condition.values.length < 2)
+            condition.values = [Date.now(), Date.now()];
 
         this.createFilter();
         this.root = ui.divH([
@@ -361,13 +390,13 @@ export class DateFilter {
 
     createFilter() {
         ui.empty(this.datesDiv);
-        switch (this.operator) {
+        switch (this.condition.operator) {
             case Operators.BEFORE:
             case Operators.AFTER:
                 const dateInput = ui.input.forProperty(this.prop, null, {
-                    value: this.date1,
+                    value: this.condition.values![0],
                     onValueChanged: () => {
-                        this.date1 = dateInput.value!;
+                        this.condition.values![0] = dateInput.value!;
                     }
                 });
                 dateInput.addCaption(''); // Hide the property name label
@@ -375,16 +404,16 @@ export class DateFilter {
                 return;
             case Operators.BETWEEN:
                 const dateInput1 = ui.input.forProperty(this.prop, null, {
-                    value: this.date1,
+                    value: this.condition.values![0],
                     onValueChanged: () => {
-                        this.date1 = dateInput1.value!;
+                        this.condition.values![0] = dateInput1.value!;
                     }
                 });
                 dateInput1.addCaption(''); // Hide the property name label
                 const dateInput2 = ui.input.forProperty(this.prop, null, {
-                    value: this.date1,
+                    value: this.condition.values![1],
                     onValueChanged: () => {
-                        this.date2 = dateInput2.value!;
+                        this.condition.values![1] = dateInput2.value!;
                     }
                 });
                 dateInput2.addCaption(''); // Hide the property name label
@@ -396,7 +425,8 @@ export class DateFilter {
         }
     }
 
-    getCondition() {
-        return Operators.getCondition(this.prop.name, this.operator, [this.date1, this.date2]);
+    getStringCondition() {
+        return Operators.getStringCondition(this.prop.name, this.condition.operator!, this.condition.values!);
     }
+
 }
