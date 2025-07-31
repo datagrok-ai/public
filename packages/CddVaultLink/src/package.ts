@@ -21,10 +21,8 @@ export const _package = new DG.Package();
 
 export class PackageFunctions{
   @grok.decorators.app({
-    'meta': {
-      'icon': 'images/cdd-icon-small.png',
-      'browsePath': 'Chem'
-    },
+    'icon': 'images/cdd-icon-small.png',
+    'browsePath': 'Chem',
     'name': 'CDD Vault'
   })
   static async cddVaultApp(
