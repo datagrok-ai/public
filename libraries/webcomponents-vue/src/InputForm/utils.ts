@@ -56,8 +56,10 @@ export interface FuncCallInput<T = any> {
 export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {
   const icon = new (customElements.get('dg-validation-icon')!)() as ValidationIcon;
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
+  icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
   icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
+  icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(ev.detail, t.value));
 
   const wrapper = ui.element('i') as HTMLElement;
   wrapper.classList.add('rfv2-validation-icon');
@@ -95,4 +97,19 @@ export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
 
 export function isInputInjected(arg: any): boolean {
   return arg?.setStatus && isFuncCallInput(arg);
+}
+
+function showDFDiff(df1?: DG.DataFrame, df2?: DG.DataFrame) {
+  const idxName = '__compare_idx_col__'
+  if (!df1 || !df2) {
+    grok.shell.warning('One of dataframes is empty');
+    return;
+  }
+  const cols1 = df1.columns.toList().map(col => col.name);
+  const cols2 = df2.columns.toList().map(col => col.name);
+  const df1c = df1.clone();
+  df1c.columns.addNew(idxName, 'int').init((idx) => idx);
+  const df2c = df2.clone();
+  df2c.columns.addNew(idxName, 'int').init((idx) => idx);
+  grok.data.compareTables(df1c, df2c, [idxName], [idxName], cols1, cols2, true);
 }

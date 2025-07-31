@@ -10,13 +10,13 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.10",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.34",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
