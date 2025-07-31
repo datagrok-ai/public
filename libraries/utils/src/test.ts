@@ -631,6 +631,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 }
 
 async function reportTest(type: string, params: any): Promise<void> {
+  debugger;
   if ((<any>grok.shell).reportTest != null)
     await (<any>grok.shell).reportTest(type, params);
   else {
@@ -709,7 +710,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       'success': r.success, 'result': r.result, 'ms': r.ms, 'date': r.date,
       'skipped': r.skipped, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
       'flaking': DG.Test.isReproducing && r.success,
-      'timeoutWarning': DG.Test.isInBenchmark && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
+      'package': r.package
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
