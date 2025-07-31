@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 //@ts-ignore
 export * from './package.g';
 
@@ -21,12 +22,11 @@ import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
-import {dataToCurvesUI} from './fit/data-to-curves';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
-import wu from 'wu';
-import { PlateTemplateHandler } from './plates/objects/plate-template-handler';
+import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
+import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -34,7 +34,7 @@ const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 
-class Sync {
+export class Sync {
   private static _currentPromise: Promise<any> = Promise.resolve();
   public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
     Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
@@ -70,6 +70,35 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
+  }
+
+  @grok.decorators.func({})
+  static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
+    runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
+    // rest is parent level data
+    @grok.decorators.param({options: {nullable: true}})parentTable?: DG.DataFrame, // these inputs need to be string and resolved here bellow, because this function is used in datasync, otherwise context is lost
+    @grok.decorators.param({options: {nullable: true}})fitParamColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})reportedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})reportedQualifiedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
+    @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[]
+  ): Promise<DG.DataFrame> {
+    const pt = parentTable;
+    // this needs to work with datasync so we use wide format
+    return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
+      table: pt,
+      fitParamColumns: (fitParamColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+      reportedIC50Column: reportedIC50Column ? pt?.col(reportedIC50Column) ?? undefined : undefined,
+      reportedQualifiedIC50Column: reportedQualifiedIC50Column ? pt?.col(reportedQualifiedIC50Column) ?? undefined : undefined,
+      experimentIDColumn: experimentIDColumn ? pt?.col(experimentIDColumn) ?? undefined : undefined,
+      qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
+      additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+    });
+  }
+
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves'})
+  static async dataToCurvesTopMenu() {
+    dataToCurvesUI();
   }
 
   @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
@@ -123,8 +152,9 @@ export class PackageFunctions {
         const cell = df.cell(i, colName);
         if (!cell || !cell.value)
           return null;
-        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
+        const chartData =
+          cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+            convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&

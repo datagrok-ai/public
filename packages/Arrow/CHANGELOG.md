@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.4.0 (2025-07-28)
+
+* Bump datagrok-api dependency >= 1.26.0
+
 ## 1.1.2 (2024-09-23)
 
 * Bump datagrok-api dependency

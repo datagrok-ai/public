@@ -2,7 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import {
   FitConfidenceIntervals,
-  FitFunction,
   IFitChartData,
   IFitSeries,
   statisticsProperties
@@ -16,6 +15,7 @@ import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {FitConstants} from './const';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
+import {FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 export enum ColorType {

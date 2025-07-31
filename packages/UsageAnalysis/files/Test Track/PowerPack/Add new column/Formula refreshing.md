@@ -29,7 +29,7 @@ Expected result:
 
 Additional Notes:
 - Ensure that modifying the formulas does not cause calculation errors or unexpected behavior.
-- Validate that changes are saved and persist after closing and reopening the dataset.
+- Validate that changes are saved and persist after saving as project and re-opening it.
 
 
 ---

@@ -4,8 +4,8 @@
   "version": "1.1.1",
   "description": "MLflow integration package",
   "author": {
-    "name": "Konstantin Amelichev",
-    "email": "kamelichev@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",

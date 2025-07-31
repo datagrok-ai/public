@@ -22,6 +22,7 @@ import {initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
+import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -121,10 +122,19 @@ export function _welcomeView(): DG.View | undefined {
   return welcomeView();
 }
 
-//name: Recent projects
+//name: Activity dashboard
 //output: widget result
 //tags: dashboard
 //meta.order: 1
+//meta.showName: false
+export function activityDashboardWidget(): DG.Widget {
+  return new ActivityDashboardWidget();
+}
+
+//name: Recent projects
+//output: widget result
+//tags: dashboard
+//meta.order: 2
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }

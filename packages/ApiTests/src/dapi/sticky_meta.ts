@@ -75,5 +75,5 @@ category('Dapi: sticky meta', () => {
     expect(df.col(property.name)?.get(0), value);
   }, {stressTest: true});
 }, {
-  owner: 'kamelichev@datagrok.ai'
+  owner: 'aparamonov@datagrok.ai'
 });

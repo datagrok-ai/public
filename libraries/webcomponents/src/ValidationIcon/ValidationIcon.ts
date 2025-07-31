@@ -3,21 +3,52 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
-import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import $ from 'cash-dom';
 import {debounceTime, distinct, takeUntil} from 'rxjs/operators';
+
+//
+// TODO: probably a separate type lib (?)
+//
+export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
+
+export type ConsistencyInfo = {
+  restriction: RestrictionType,
+  inconsistent: boolean,
+  assignedValue: any,
+}
+
+export interface ActionItem {
+  actionName: string;
+  action: string;
+  additionalParams?: Record<string, any>;
+}
+
+export interface Advice {
+  description: string;
+  actions?: ActionItem[];
+}
+
+export type ValidationItem = string | Advice;
+
+export interface ValidationResult {
+  errors?: ValidationItem[];
+  warnings?: ValidationItem[];
+  notifications?: ValidationItem[];
+}
 
 export type ValidationIconInput = {
   validation?: ValidationResult,
   consistency?: ConsistencyInfo,
 };
 
+
+
 export class ValidationIcon extends HTMLElement {
   private destroyed$ = new Subject<boolean>();
 
   private status$ = new BehaviorSubject<ValidationIconInput | undefined>(undefined);
-  private scalar$ = new BehaviorSubject(true);
+  private isScalar$ = new BehaviorSubject(true);
+  private isDataFrame$ = new BehaviorSubject(false);
   private hover$ = new BehaviorSubject(false);
   private currentIcon?: HTMLElement;
   private currentPopover?: HTMLElement;
@@ -25,7 +56,7 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
 
-    combineLatest([this.status$.pipe(distinct()), this.scalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
+    combineLatest([this.status$.pipe(distinct()), this.isScalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
       debounceTime(0),
       takeUntil(this.destroyed$)
     ).subscribe(() => this.update());
@@ -59,11 +90,19 @@ export class ValidationIcon extends HTMLElement {
   }
 
   set isScalar(v: boolean) {
-    this.scalar$.next(v);
+    this.isScalar$.next(v);
   }
 
   get isScalar() {
-    return this.scalar$.value;
+    return this.isScalar$.value;
+  }
+
+  set isDataFrame(v: boolean) {
+    this.isDataFrame$.next(v);
+  }
+
+  get isDataFrame() {
+    return this.isDataFrame$.value;
   }
 
   consistencyReset() {
@@ -72,6 +111,10 @@ export class ValidationIcon extends HTMLElement {
 
   requestAction(id: string) {
     this.dispatchEvent(new CustomEvent('action-request', {detail: id}));
+  }
+
+  showDataFrameDiff(cval: any) {
+    this.dispatchEvent(new CustomEvent('show-dataframe-diff', {detail: cval}));
   }
 
   update() {
@@ -175,9 +218,16 @@ export class ValidationIcon extends HTMLElement {
         ui.divH([
           icon,
           ui.divText(`Current value is incosistent. Computed value was ${
-            this.scalar$.value ? consistentValue : 'different'
+            this.isScalar$.value ? consistentValue : 'different'
           }`),
         ]),
+        ...(this.isDataFrame$.value ? [
+          ui.link(
+            'Show dataframes diff',
+            () => this.showDataFrameDiff(consistentValue),
+            undefined, { style: { paddingLeft: '20px' } },
+          ),
+        ] : []),
         ui.link(
           'Reset to consistent value',
           () => this.consistencyReset(),

@@ -4,8 +4,8 @@
   "friendlyName": "PhyloTree Viewer",
   "version": "1.4.0",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "description": "Phylogenetic trees visualization.",
   "repository": {

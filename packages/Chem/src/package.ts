@@ -90,6 +90,7 @@ import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
+import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1822,6 +1823,10 @@ export async function callChemDiversitySearch(
 //input: bool rotatableBonds = false
 //input: bool stereoCenters = false
 //input: bool moleculeCharge = false
+//meta.function_family: biochem-calculator
+//meta.method_info.author: Open Chem Lib Team
+//meta.method_info.year: 2024
+//meta.method_info.github: https://github.com/actelion/openchemlib
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column,
   MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean,
   PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean,
@@ -2417,4 +2422,12 @@ export async function mixtureTreeWidget(mixture: string): Promise<DG.Widget> {
     resDiv.append(contentsAcc.root);
   }
   return new DG.Widget(resDiv);
+}
+
+
+//name: Biochemical Properties
+//top-menu: Chem | Calculate | Biochemical Properties
+//description: Dynamically discovers and executes tagged biochemical calculators
+export async function biochemPropsWidget(): Promise<void> {
+  await biochemicalPropertiesDialog();
 }

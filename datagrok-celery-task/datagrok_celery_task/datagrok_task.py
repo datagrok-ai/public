@@ -13,7 +13,7 @@ import websocket
 from celery.signals import worker_shutdown, task_revoked
 from celery import current_app
 
-from .utils import InputValueProcessor, ReturnValueProcessor, camel_to_snake, DatagrokFanoutType
+from .utils import InputValueProcessor, ReturnValueProcessor, DatagrokFanoutType
 from .func_call import FuncCall, Type, FuncCallParam, FuncCallStatus
 from .settings import Settings
 from .logger import get_logger
@@ -224,7 +224,7 @@ class DatagrokTask(celery.Task):
     def _run(self) -> Any:
         args = []
         kwargs = {}
-        param_map = {camel_to_snake(x.name): x for x in self._call.input_params}
+        param_map = {x.name: x for x in self._call.input_params}
         fn = getattr(self, '__wrapped__', None)
         if fn is None:
             raise RuntimeError("Incorrect usage of DatagrokTask. Should be used as a base for Celery decorators")

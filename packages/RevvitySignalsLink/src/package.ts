@@ -6,9 +6,12 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities } from './revvityApi';
-import { dataFrameFromObjects } from './utils';
-import { assetsQuery, batchesQuery } from './compounds';
+import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
+import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
+import { RevvityFilters } from './filters';
+import { buildPropertyFilterForm } from './defaultProperties';
+import { getProperties } from './properties';
 
 
 export const _package = new DG.Package();
@@ -45,14 +48,22 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     grok.shell.addPreview(v);
   });
 
+  const search2 = treeNode.item('Search 2');
+  search2.onSelected.subscribe(() => {
+    const v = DG.View.create('Search 2');
+    const queryBuilder = buildPropertyFilterForm(getProperties());
+    v.append(queryBuilder);
+    grok.shell.addPreview(v);
+  });
+
   const createViewFromPreDefinedQuery = async (query: string, name: string) => {
-    //const v = DG.View.create(name);
-    const df = await grok.functions.call('RevvitySignalsLink:searchEntities', {
+    const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
       params: '{}'
     });
     const tv = grok.shell.addTablePreview(df);
     tv.name = name;
+    new RevvityFilters(tv);
   }
 
   const compounds = treeNode.group('Compounds');
@@ -85,4 +96,57 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     grok.shell.error(e?.message ?? e);
   }
   return df;
+}
+
+//name: Search Entities With Structures
+//input: string query
+//input: string params
+//output: dataframe df
+export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
+  let df = DG.DataFrame.create();
+  try {
+    const queryJson: SignalsSearchQuery = JSON.parse(query);
+    const paramsJson: SignalsSearchParams = JSON.parse(params);
+    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+    if (!response.data)
+      return DG.DataFrame.create();
+    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+
+    const rows = await transformData(data);
+    const moleculeIds = data.map((it) => it.id);
+    df = DG.DataFrame.fromObjects(rows)!;
+    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
+    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
+    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+    df.columns.add(moleculeColumn);
+    reorderColummns(df);
+    addMoleculeStructures(moleculeIds, moleculeColumn);
+  } catch (e: any) {
+    grok.shell.error(e?.message ?? e);
+  }
+  return df;
+}
+
+//name: Get Users
+//output: string users
+export async function getUsers(): Promise<string> {
+  const users: {[key: string]: RevvityUser} = {};
+  const response = await queryUsers();
+  if (!response.data)
+    return '{}';
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  for (const user of data)
+    users[user.id] = Object.assign({}, user.attributes || {});
+  return JSON.stringify(users);
+}
+
+
+//name: Revvity Signals
+//tags: panel, widgets
+//input: string id { semType: RevvitySignalsId }
+//output: widget result
+export async function entityTreeWidget(id: string): Promise<DG.Widget> {
+  const obj = (await queryMaterialById(id)) as RevvityApiResponse;
+  const div = createRevvityResponseWidget(obj);
+  return new DG.Widget(div);
 }

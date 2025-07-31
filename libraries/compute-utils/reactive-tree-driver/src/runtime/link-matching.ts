@@ -143,16 +143,18 @@ function getRefOrigin(
   rnode: TreeNode<StateTreeNode>,
   currentIO: Record<string, MatchedNodePaths>,
   parsedLink: LinkIOParsed,
-  ref: string,
+  ref: string | undefined,
   selector: LinkRefSelectors,
   path: readonly NodePathSegment[],
 ) {
+  if (ref == null)
+    return;
   const io = currentIO[ref];
   if (io == null)
     throw new Error(`Node ${rnode.getItem().config.id} referenced unknown io ${ref} in ${parsedLink.name}`);
   const refOrigin = refSelectorDirection(selector) === 'before' ? io[0] : indexFromEnd(io)!;
   if (!BaseTree.isNodeChildOrEq(path, refOrigin.path))
-    throw new Error(`Node ${rnode.getItem().config.id} reference path ${JSON.stringify(refOrigin.path)} is different from current ${JSON.stringify(path)}`);
+    return;
   return refOrigin;
 }
 
@@ -174,10 +176,9 @@ function matchLinkIO(
         nextNodes = matchNonRefSegment(pnode, ids, selector);
       else {
         let originIdx = undefined;
-        if (ref) {
-          const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        if (refOrigin)
           originIdx = refOrigin.path[currentSegment!].idx;
-        }
         nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
       }
       return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
@@ -187,9 +188,9 @@ function matchLinkIO(
       if (isNonRefSelector(selector))
         nextNodes = matchNonRefTag(pnode, tags, selector);
       else {
-        if (!ref)
-          return [];
         const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        if (!refOrigin)
+          return [];
         const refNode = rnode.getNode(refOrigin.path);
         if (!refNode)
           return [];

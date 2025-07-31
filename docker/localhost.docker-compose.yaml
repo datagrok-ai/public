@@ -17,7 +17,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:1.0.1
+    image: datagrok/grok_pipe:latest
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -109,7 +109,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:2.3.30
+    image: datagrok/grok_connect:latest
     platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50

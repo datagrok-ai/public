@@ -10,6 +10,7 @@ const HEIGHT = 100;
 
 export enum COLUMN_NAMES {
   CANONICAL_SMILES = 'CanonicalSMILES',
+  CONNECTIVITY_SMILES = 'ConnectivitySMILES',
   CID = 'CID',
   MOLECULE = 'molecule',
   SCORE = 'score',
@@ -163,7 +164,9 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   const resultDf = DG.DataFrame.fromObjects(moleculesJson)!;
 
   let similarStructures: DG.DataFrame | null = null;
-  const moleculesCol = resultDf.getCol(COLUMN_NAMES.CANONICAL_SMILES);
+  const moleculesCol = resultDf.col(COLUMN_NAMES.CANONICAL_SMILES) ?? resultDf.col(COLUMN_NAMES.CONNECTIVITY_SMILES);
+  if (!moleculesCol)
+    throw new Error(`Resulting table doesn't contain ${COLUMN_NAMES.CANONICAL_SMILES} or ${COLUMN_NAMES.CONNECTIVITY_SMILES} column`);
   let indexes = new Int32Array(0);
   let scoreCol: DG.Column<number> | null = null;
   let rowCount = resultDf.rowCount;

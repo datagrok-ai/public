@@ -15,7 +15,7 @@ const _examplePDBID = '2V0A';
  * @param {string} [pdbID=_examplePDBID]
  */
 export async function _testRCSBAlive(pdbID = _examplePDBID) {
-  const pdb = new PdbEntry(pdbID);
+  const pdb = new PdbEntry(pdbID, false);
   let noException = true;
 
   try {
@@ -31,7 +31,7 @@ export async function _testRCSBAlive(pdbID = _examplePDBID) {
 
 /** Test if parsing of a sample PDB id is done properly. */
 export async function _testParseExamplePDBFile() {
-  const pdb = new PdbEntry(_examplePDBID);
+  const pdb = new PdbEntry(_examplePDBID, false);
 
   await pdb.fetchInfo();
 

@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.6.4 (2025-07-28)
+
+- Release for 1.26.0
+
 ## 0.6.3 (2025-06-09)
 
 - Add StartWorkflow return

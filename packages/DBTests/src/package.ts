@@ -4,18 +4,20 @@ import * as DG from 'datagrok-api/dg';
 import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
+export * from './package.g';
 
-//name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
+export class PackageFunctions {
+  @grok.decorators.func()
+  static info() {
+    grok.shell.info(_package.webRoot);
+  }
 
-//name: expectTable
-//name: expectTable
-//input: dataframe actual
-//input: dataframe expected
-//output: bool result
-export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): boolean {
-  _expectTable(actual, expected);
-  return true;
+
+  @grok.decorators.func()
+  static expectTable(
+    actual: DG.DataFrame,
+    expected: DG.DataFrame): boolean {
+    _expectTable(actual, expected);
+    return true;
+  }
 }

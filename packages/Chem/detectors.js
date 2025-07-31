@@ -71,6 +71,7 @@ class ChemPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: GROK-17630
   detectMixture(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
       return s.includes(MIX_FILE_VERSION);

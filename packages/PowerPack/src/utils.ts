@@ -71,7 +71,7 @@ function createWidgetHost(title: string): HTMLDivElement {
 }
 
 export function widgetHostFromFunc(f: DG.Func) {
-  const host: HTMLDivElement = createWidgetHost(f.friendlyName);
+  const host: HTMLDivElement = createWidgetHost(f.options['showName'] === 'false' ? '' : f.friendlyName);
   const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {

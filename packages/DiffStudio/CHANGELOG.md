@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.0 (2025-07-28)
+
+JS-api 1.26.0 release
+
 ## 1.3.6 (2025-05-12)
 
 Sensitivity analysis in workers

@@ -163,22 +163,25 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
-      let packageList = ['datlas', 'ddt', 'ddtx', 'dinq', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
+      let packageList = ['datlas', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
       let testColumn: DG.Column = df.col('test')!;
       let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let brokenPackages: Map<string, string[]> = new Map();
-      for (var i = 0; i < packageList.length; i++)
-        for (var row = 0; row < testColumn.length; row++)
-          if (testColumn.getString(row)?.startsWith(packageList[i]))
+      let checkedPackages = new Set();
+      for (let i = 0; i < packageList.length; i++)
+        for (let row = 0; row < testColumn.length; row++)
+          if (testColumn.getString(row)?.startsWith(packageList[i])) {
+            checkedPackages.add(packageList[i]);
             if (failingColumn.get(row)) {
               if (!brokenPackages.has(packageList[i]))
                 brokenPackages.set(packageList[i], []);
               brokenPackages.get(packageList[i])!.push(testColumn.getString(row).slice(packageList[i].length));
             }
+          }
 
       let verdicts: Verdict[] = [];
       for (const packageName of brokenPackages.keys()) {
-        let widget: DG.Widget = DG.Widget.fromRoot(ui.span(['package ' + packageName + ' has broken tests']));
+        let widget: DG.Widget = DG.Widget.fromRoot(ui.span([packageName + ' has broken tests']));
         widget.root.onclick = (ev: MouseEvent) => {
           df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
           df.selection.init((row) => testColumn.getString(row)?.startsWith(packageName) && (failingColumn.get(row) ?? false));
@@ -187,6 +190,14 @@ export class TestDashboardWidget extends DG.JsViewer {
         ui.tooltip.bind(widget.root, 'Click to filter');
         verdicts.push(new Verdict(Priority.BLOCKER, 'Critical package failure', widget.root));
       }
+
+      if (!packageList.every((p) => checkedPackages.has(p))) {
+        for (const packageName of packageList.filter((p) => !checkedPackages.has(p))) {
+          let widget: DG.Widget = DG.Widget.fromRoot(ui.span([packageName + ' tests weren\'t run']));
+          verdicts.push(new Verdict(Priority.BLOCKER, 'Missing required packages tests', widget.root));
+        }
+      }
+
       return verdicts;
     } catch (x) {
       return [new Verdict(Priority.BLOCKER, 'Unhandled exception', ui.div([

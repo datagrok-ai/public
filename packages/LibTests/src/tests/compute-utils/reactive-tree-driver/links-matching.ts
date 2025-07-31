@@ -1111,4 +1111,99 @@ category('ComputeUtils: Driver links matching', async () => {
     cleanMatchInfos(matchInfos);
     await snapshotCompare(matchInfos, 'Links nested relative tags matching');
   });
+
+  test('Links selector and tags matching', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'pipeline2',
+          type: 'static',
+          tags: ['taggedPipeline'],
+          steps: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestMul2',
+              tags: ['taggedStep'],
+            },
+            {
+              id: 'pipeline3',
+              type: 'static',
+              tags: ['taggedPipeline'],
+              steps: [
+                {
+                  id: 'step1',
+                  nqName: 'LibTests:TestMul2',
+                  tags: ['taggedStep'],
+                }
+              ]
+            },
+            {
+              id: 'step2',
+              nqName: 'LibTests:TestMul2',
+              tags: ['taggedStep'],
+            },
+          ]
+        },
+        {
+          id: 'pipeline4',
+          type: 'static',
+          tags: ['taggedPipeline'],
+          steps: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestMul2',
+              tags: ['taggedStep'],
+            },
+            {
+              id: 'pipeline5',
+              type: 'static',
+              tags: ['taggedPipeline'],
+              steps: [
+                {
+                  id: 'step1',
+                  nqName: 'LibTests:TestMul2',
+                  tags: ['taggedStep'],
+                }
+              ]
+            },
+            {
+              id: 'step2',
+              nqName: 'LibTests:TestMul2',
+              tags: ['taggedStep'],
+            },
+          ]
+        },
+        {
+          id: 'step3',
+          nqName: 'LibTests:TestMul2',
+          tags: ['taggedStep'],
+
+        },
+      ],
+      links: [{
+        id: 'link1',
+        base: 'base:expand(pipeline2|pipeline4)/expand(pipeline3|pipeline5)/#expand(taggedStep)',
+        from: 'in1:#same(@base,taggedStep)/res',
+        to: 'out1:#after(@base,taggedStep)/a',
+        type: 'meta',
+        handler() {}
+      }, {
+        id: 'link2',
+        base: 'base:#expand(taggedPipeline)/expand(pipeline3|pipeline5)/#expand(taggedStep)',
+        from: 'in1:#same(@base,taggedStep)/res',
+        to: 'out1:#after(@base,taggedStep)/a',
+        type: 'meta',
+        handler() {}
+      }]
+    };
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
+    cleanMatchInfos(matchInfos);
+    await snapshotCompare(matchInfos, 'Links selector and tags matching');
+  });
 });

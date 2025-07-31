@@ -1187,6 +1187,9 @@ export class GridCellStyle {
   /** Vertical text orientation */
   get textVertical(): boolean { return api.grok_GridCellStyle_Get_TextVertical(this.dart); }
   set textVertical(x: boolean) { api.grok_GridCellStyle_Set_TextVertical(this.dart, x); }
+
+  get vertAlign(): VertAlign | null { return api.grok_GridCellStyle_Get_vertAlign(this.dart); }
+  set vertAlign(x: VertAlign | null) { api.grok_GridCellStyle_Set_vertAlign(this.dart, x); }
 }
 
 

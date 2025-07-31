@@ -381,6 +381,14 @@ export class Project extends Entity {
     return api.grok_Project_IsEmpty(this.dart);
   }
 
+  get isDashboard(): boolean {
+    return api.grok_Project_IsDashboard(this.dart);
+  }
+
+  get isPackage(): boolean {
+    return api.grok_Project_IsPackage(this.dart);
+  }
+
   toMarkup(): string {
     return api.grok_Project_ToMarkup(this.dart);
   }

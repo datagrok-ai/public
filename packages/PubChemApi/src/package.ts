@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getBy} from './pubchem';
-import {getSearchWidget} from './widget';
+import {COLUMN_NAMES, getSearchWidget} from './widget';
 import {pubChemRest} from './tests/const';
 import { TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL } from './constants';
 
@@ -55,7 +55,8 @@ export async function pubChemToSmiles(id: string) {
   const url = `${pubChemRest}/pug/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
   const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
-  return json['PropertyTable']['Properties'][0]['CanonicalSMILES'];
+  return json['PropertyTable']['Properties'][0][COLUMN_NAMES.CANONICAL_SMILES] ??
+    json['PropertyTable']['Properties'][0][COLUMN_NAMES.CONNECTIVITY_SMILES];
 }
 
 //name: inchiKeysToSmiles

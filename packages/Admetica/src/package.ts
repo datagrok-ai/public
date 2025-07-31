@@ -8,9 +8,9 @@ import {
   getModelsSingle,
   performChemicalPropertyPredictions,
   runAdmeticaFunc,
-  setProperties
+  setProperties,
 } from './utils/admetica-utils';
-import { properties, convertLD50 } from './utils/admetica-utils';
+import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
@@ -87,7 +87,7 @@ export function admeticaEditor(call: DG.FuncCall): void {
 //input: list<string> models
 //input: bool addPiechart
 //input: bool addForm
-//editor: Admetica: AdmeticaEditor
+//editor: Admetica:AdmeticaEditor
 export async function admeticaMenu(
   table: DG.DataFrame, molecules: DG.Column, template: string, models: string[],
   addPiechart: boolean, addForm: boolean, properties: string,
@@ -100,7 +100,7 @@ export async function admeticaMenu(
 //input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
 //output: double propValue
 export async function admeProperty(molecule: string, prop: string): Promise<any> {
-  let df: DG.DataFrame = await runAdmeticaFunc(`smiles\n${molecule}`, prop, false);
+  const df: DG.DataFrame = await runAdmeticaFunc(`smiles\n${molecule}`, prop, false);
   return df.get(prop, 0);
 }
 

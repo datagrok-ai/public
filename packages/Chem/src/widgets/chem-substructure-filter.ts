@@ -452,8 +452,14 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.setMolFile(state.molBlock);
       this.updateFilterUiOnSketcherChanged(this.currentMolfile);
     }
-    if (state.searchType && state.searchType !== this.searchType)
+    if (state.searchType && state.searchType !== this.searchType) {
+      //for correct synchronization of similarity filters when cloning views, need to firts set cutoff and fp
+      if (state.searchType === SubstructureSearchType.IS_SIMILAR) {
+        this.similarityCutOff = state.simCutOff;
+        this.fp = state.fp;
+      }
       this.searchTypeInput.value = state.searchType;
+    }
     if (state.simCutOff && state.simCutOff !== this.similarityCutOff)
       this.similarityCutOffInput.value = state.simCutOff;
     if (state.fp && state.fp !== this.fp)

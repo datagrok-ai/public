@@ -2,8 +2,8 @@
   "name": "@datagrok/oligo-batch-calculator",
   "friendlyName": "Oligo Batch Calculator",
   "author": {
-    "name": "Alexey Chopovsky",
-    "email": "achopovsky@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "version": "1.2.0",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",

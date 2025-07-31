@@ -412,20 +412,23 @@ export class RadarViewer extends EChartViewer {
   }
 
   /* Going to be replaced with perc in stats */
-  getQuantile(columns: DG.Column<any>[], percent: number) {
-    const result = [];
-    for (const c of columns) {
-      const datetime = c.getRawData().map((value: number) => this.getDate(c, value));
-      const values = c.type === 'datetime' ? datetime : Array.from(c.values());
-      const isValidValue = (value: number) => typeof value === 'bigint' ?
+  getQuantile(columns: DG.Column<any>[], percent: number): number[] {
+    const isValidValue = (value: any) =>
+      typeof value === 'bigint' ?
         value !== BigInt('-2147483648') :
         value !== -2147483648;
-      const sortedValues = values.filter(isValidValue).sort((a, b) => Number(a) - Number(b));
 
-      const idx = Math.floor(percent * (sortedValues.length - 1));
-      const value = sortedValues[idx];
-      result.push(Number(value));
-    }
-    return result;
+    return columns.map((column) => {
+      const values = column.type === 'datetime' ?
+        column.getRawData().map((v: number) => this.getDate(column, v)) :
+        Array.from(column.values());
+
+      const validSorted = values
+        .filter(isValidValue)
+        .sort((a, b) => Number(a) - Number(b));
+
+      const idx = Math.floor(percent * (validSorted.length - 1));
+      return Number(validSorted[idx]);
+    });
   }
 }

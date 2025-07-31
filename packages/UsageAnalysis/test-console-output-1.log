@@ -1,0 +1,240 @@
+CONSOLE LOG REQUEST: 304, http://localhost:63343/font/Roboto-Regular.woff2
+CONSOLE LOG REQUEST: 304, http://localhost:63343/font/font-awesome/webfonts/fa-light-300.woff2
+CONSOLE LOG REQUEST: 200, http://localhost:8082/projects/namespaces?include=user
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text&include=shares.connection&file=true&order=name
+CONSOLE LOG REQUEST: 200, http://localhost:8082/projects/namespaces?include=user
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text&include=shares.connection&file=true&order=name
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Bio/admin/Rlsy5zChjKurKqfGEnLKA3ZLbW3dJDlu/2/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/BiostructureViewer/admin/wDiqXLd8scSYd7bKvyrpqtAp8uHxTzmx/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/ApiTests/admin/szJ2X2k6AXXcFqYkOISAMEyhFoldSzLF/2/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Chembl/admin/kTvZ5kmLtk6lJTn3avY2sdYtuHXga3Ue/2/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Charts/admin/NJjVSTYiHNdAH8CP125F5NhN1tGPUiBa/2/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Chem/admin/oV0IB18itoHTPxLeXsOcjJ7BvghpDF2A/2/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Gis/admin/z25gfP3IPudCBENfhFLQv5V5QCWyH2yQ/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/PowerGrid/admin/OepwScsCdT7TStlm77fEpKbFZ3y8mKgm/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/UsageAnalysis/admin/7jncucwYGCbncNkBc4ulwlCMD0zGPXOG/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/PowerPack/admin/JKS7F08lwo3Jmp2LR11nlsUKdYXbCeex/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/UsageAnalysis/admin/7jncucwYGCbncNkBc4ulwlCMD0zGPXOG/1/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/UsageAnalysis/admin/7jncucwYGCbncNkBc4ulwlCMD0zGPXOG/1/dist/package-test.js
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs?text=package.id%2520%253D%2520%25227c2b41a0-5e50-11f0-9f7c-d3b25ff79e85%2522
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties?
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties?
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.mdx
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/entities/types?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/entities/types?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/entities/types?include=schemas&showSystem=true
+CONSOLE LOG REQUEST: 200, http://localhost:8082/entities/types?include=schemas&showSystem=true
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?include=entityProperties%2CentityTypes
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?include=entityProperties%2CentityTypes
+CONSOLE LOG REQUEST: 200, http://localhost:8082/entities/types?include=schemas&showSystem=true
+CONSOLE LOG REQUEST: 200, http://localhost:8082/properties/schemas?include=entityProperties%2CentityTypes
+CONSOLE LOG REQUEST: 404, http://localhost:8082/packages/published/files/Jiraconnect/admin/kkR2plHfIjfhXUlZsxsTU7Lzf6v597JD/1/package.js
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG ENTRY: Refused to execute script from 'http://localhost:8082/packages/published/files/Jiraconnect/admin/kkR2plHfIjfhXUlZsxsTU7Lzf6v597JD/1/package.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Chembl/admin/kTvZ5kmLtk6lJTn3avY2sdYtuHXga3Ue/2/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/GenomeBrowser/admin/fBnWvlmOHsbM1IwhtogdP3HtXLejuYnR/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Helm/admin/XVVXLbbZyd9oDGd7WSmWAeoF5BwMTcdL/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/PowerPack/admin/JKS7F08lwo3Jmp2LR11nlsUKdYXbCeex/1/css/power-pack.css
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/SequenceTranslator/admin/ue7reRioKMOzNcdTBivyuuDZYFhfuTwx/1/detectors.js
+CONSOLE LOG REQUEST: 200, http://localhost:63343/js/common/codemirror/codemirror.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Arrow/admin/8zUzK07b1omLpsWKAokTIy3D52Nurkvp/2/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:63343/js/common/codemirror/codemirror.css
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/PowerGrid/admin/OepwScsCdT7TStlm77fEpKbFZ3y8mKgm/1/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/System.AppData/file/Chembl%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=272
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/PowerPack/admin/JKS7F08lwo3Jmp2LR11nlsUKdYXbCeex/1/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/DevTools/admin/mc4Q2uDizIBiuu8KVVYCvJW64QiSc4SX/1/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:63343/js/common/openchemlib-full.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Arrow/admin/8zUzK07b1omLpsWKAokTIy3D52Nurkvp/2/dist/parquet_wasm_bg.wasm
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522Datagrok%2522&limit=1
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522Datagrok%2522&limit=1
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/System.AppData/file/Chembl%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=272
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/System.AppData/file/PowerPack%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=337
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522CHEMBL%2522
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/System.AppData/file/PowerPack%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=337
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Chem/admin/oV0IB18itoHTPxLeXsOcjJ7BvghpDF2A/2/dist/package.js
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522Datagrok%2522
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522CHEMBL%2522
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections?text=name%253D%2522Datagrok%2522
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/31ffa84a-bea3-5c4b-bb28-02805b259387/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/Chem/admin/oV0IB18itoHTPxLeXsOcjJ7BvghpDF2A/2//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/31ffa84a-bea3-5c4b-bb28-02805b259387/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/relations?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/c981b88d-0202-5b27-a48f-975b6384e263/schema/relations?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/31ffa84a-bea3-5c4b-bb28-02805b259387/schema/relations?schema=public
+CONSOLE LOG ENTRY: Datagrok user object handlers registered
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs?text=package.id%2520%253D%2520%25227c2b41a0-5e50-11f0-9f7c-d3b25ff79e85%2522
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/connectors/connections/31ffa84a-bea3-5c4b-bb28-02805b259387/schema/relations?schema=public
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: CHEMBL object handlers registered
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Error detecting semantic type detectFit. Detector deactivated.
+CONSOLE LOG ENTRY: Unable to find JS function "detectFit"
+CONSOLE LOG ENTRY: Error detecting semantic type detectXMLCurveChart. Detector deactivated.
+CONSOLE LOG ENTRY: Unable to find JS function "detectXMLCurveChart"
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App Events
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published/files/UsageAnalysis/admin/7jncucwYGCbncNkBc4ulwlCMD0zGPXOG/1/package.png
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: Finished App Events for 2261 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.mdx
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App Functions
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: Finished App Functions for 924 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App Log
+CONSOLE LOG REQUEST: 200, http://localhost:8082/users?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/users?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG REQUEST: 200, http://localhost:63343/font/font-awesome/webfonts/fa-solid-900.woff2
+CONSOLE LOG ENTRY: Finished App Log for 612 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.mdx
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App open
+CONSOLE LOG ENTRY: Finished App open for 0 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.mdx
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App Overview
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: Finished App Overview for 590 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 404, http://localhost:63343/help/datagrok/datagrok.mdx
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started App category
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups?include=children.child%2C%2Cparents.parent%2C
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG REQUEST: 200, http://localhost:8082/groups/lookup?query=All%20users
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG REQUEST: 200, http://localhost:8082/packages/published?
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG ENTRY: Deprecation warning: allowHTML will default to false in a future release. To render HTML in Choices, you will need to set it to true. Setting allowHTML will suppress this message.
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started App Packages
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/funcs/calls?
+CONSOLE LOG ENTRY: Finished App Packages for 672 ms
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false
+CONSOLE LOG ENTRY: DG.Favorites is not a constructor
+CONSOLE LOG REQUEST: 200, http://localhost:8082/log/tests/package?benchmark=false&ciCd=false

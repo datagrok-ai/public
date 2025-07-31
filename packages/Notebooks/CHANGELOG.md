@@ -1,5 +1,9 @@
 # Notebooks changelog
 
+## 1.4.0. (2025-07-28)
+
+Bug fixes, datagarok-api >= 1.26.0*
+
 ## 1.3.0 (2025-04-08)
 
 Bug fixes, Docker container with jupyter_notebook server

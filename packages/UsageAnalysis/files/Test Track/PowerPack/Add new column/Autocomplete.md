@@ -6,7 +6,6 @@
 6. Remove added function from text field
 7. Press 'ctrl+space' - autocomplete tooltip should also appear
 8. Press $ symbol - autocomplete tooltip with list of available columns should appear
-9. Call autocomplete by 'ctrl+space' or typing. Select any package from the list (for instance 'Chem'). For packages you will see 'package' word on the right of the function name. After adding package a cascade autocomplete with functions from selected package should appear
 
 ---
 {

@@ -74,5 +74,5 @@ category('Packages: migrations', () => {
     await deletePackage('apitestsbad');
   });
 }, {
-  owner: 'kamelichev@datagrok.ai'
+  owner: 'aparamonov@datagrok.ai'
 });

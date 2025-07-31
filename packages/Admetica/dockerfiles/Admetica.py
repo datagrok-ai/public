@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 import tempfile
 from time import time
@@ -15,7 +14,7 @@ from lightning import pytorch as pl
 from lightning.pytorch.accelerators import find_usable_cuda_devices
 from io import StringIO
 from celery import Celery
-from datagrok_celery_task import DatagrokTask, Settings
+from datagrok_celery_task import DatagrokTask, Settings, get_logger
 
 from constants import mean_vectors
 from chemprop import data, featurizers, models
@@ -26,10 +25,10 @@ logging.basicConfig(level=logging_level)
 
 settings = Settings(log_level=logging_level)
 app = Celery(settings.celery_name, broker=settings.broker_url)
+logger = get_logger()
 
 # Global flag to control whether exceptions should be raised or logged
 raise_ex_flag = False  # Default is to log exceptions, not raise them
-
 
 def is_malformed(smiles):
     with tempfile.NamedTemporaryFile(mode='w+', delete=True) as tmp_file:
@@ -45,6 +44,8 @@ def is_malformed(smiles):
 
         tmp_file.seek(0)
         warning_msg = tmp_file.read().strip()
+    
+    logger.debug(f"Checking SMILES: {smiles}, Warning: {warning_msg}")
 
     if mol is None or warning_msg:
         print(f"Invalid SMILES detected: {smiles}. Warning: {warning_msg}")
@@ -60,7 +61,7 @@ def convert_to_smiles(molecule):
       mol = Chem.MolFromMolBlock(molecule)
       return Chem.MolToSmiles(mol) if mol else ''
     except Exception as e:
-      logging.error(f"Error converting molblock to SMILES: {str(e)}")
+      logger.error(f"Error converting molblock to SMILES: {str(e)}")
       if raise_ex_flag:
         raise ValueError("Error converting molblock to SMILES") from e
       return None
@@ -96,15 +97,15 @@ def make_chemprop_predictions(df_test, checkpoint_path, batch_size=512):
     batch_size=batch_size
   )
 
-  logging.debug('Check GPU availability')
-  logging.debug(f"CUDA available: {torch.cuda.is_available()}")
+  logger.debug('Check GPU availability')
+  logger.debug(f"CUDA available: {torch.cuda.is_available()}")
 
   if torch.cuda.is_available():
-    logging.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
+    logger.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
   else:
-    logging.debug("No usable CUDA devices found. Using CPU.")
+    logger.debug("No usable CUDA devices found. Using CPU.")
 
-  logging.debug(f'Model device: {next(mpnn.parameters()).device}')
+  logger.debug(f'Model device: {next(mpnn.parameters()).device}')
 
   with torch.inference_mode():
     trainer = pl.Trainer(
@@ -155,7 +156,7 @@ def predict_for_model(model, df_test, add_probability):
 
   start = time()
   predictions = make_chemprop_predictions(df_test, model_name)
-  logging.debug(f'Chemprop prediction for {model} took {time() - start}')
+  logger.debug(f'Chemprop prediction for {model} took {time() - start}')
   df = pd.DataFrame(predictions, columns=[model])
   if add_probability:
     probabilities = calculate_chemprop_probability(df_test.iloc[:, 0].tolist(), model)

@@ -165,7 +165,12 @@ export namespace historyUtils {
         await grok.dapi.permissions.grant(callCopy.inputs[input.name].getTableInfo(), allGroup, false);
       }));
 
-    return await grok.dapi.functions.calls.allPackageVersions().save(callCopy);
+    const fc = await grok.dapi.functions.calls.allPackageVersions().save(callCopy);
+    grok.log.audit('@user saved run of the @model model', {
+      'user': DG.User.current(),
+      'model': fc.func,
+    });
+    return fc;
   }
 
   export async function deleteRun(callToDelete: DG.FuncCall) {

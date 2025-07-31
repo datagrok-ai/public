@@ -2,8 +2,8 @@
   "name": "@datagrok/tensorflow-dev",
   "friendlyName": "TensorFlow.js",
   "author": {
-    "name": "Amelichev Konstantin",
-    "email": "kamelichev@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "version": "0.0.7",
   "description": "TensorFlow.js provides support for training and applying TensorFlow.js-based predictive models.",
