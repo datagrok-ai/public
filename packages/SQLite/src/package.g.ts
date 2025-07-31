@@ -12,7 +12,7 @@ export async function sqlJsInit() {
 //description: Opens SQLite files
 //tags: file-handler
 //input: list bytes 
-//output: dynamic result
+//output: list result
 //meta.ext: sqlite
 export function importSQLite(bytes: Uint8Array) {
   return PackageFunctions.importSQLite(bytes);

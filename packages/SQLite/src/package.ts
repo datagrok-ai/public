@@ -22,7 +22,7 @@ export class PackageFunctions {
     'description': 'Opens SQLite files',
   })
   static importSQLite(
-    @grok.decorators.param({'type': 'list'}) bytes: Uint8Array) {
+    @grok.decorators.param({'type': 'list'}) bytes: Uint8Array): DG.DataFrame[] {
     return importSQLiteImpl(bytes, SQL);
   }
 }
