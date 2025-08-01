@@ -6,17 +6,17 @@ import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-contain
 import {CONTAINER_TIMEOUT} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
-import { getMapIdentifiers } from '../widgets/identifiers';
-import { addChemPropertiesColumns, addChemRisksColumns, addInchisKeysTopMenu, addInchisTopMenu, structuralAlertsTopMenu } from '../package';
+import {getMapIdentifiers} from '../widgets/identifiers';
+import {PackageFunctions} from '../package';
 
 category('calculate', () => {
   let smiles: DG.DataFrame;
 
   before(async () => {
-        if (!chemCommonRdKit.moduleInitialized) {
-          chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-          await chemCommonRdKit.initRdKitModuleLocal();
-        }
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
     grok.shell.closeAll();
   });
 
@@ -30,7 +30,7 @@ category('calculate', () => {
       await getMapIdentifiers(smiles, smiles.col('smiles')!, 'smiles', name);
       expect(smiles.columns.names().includes(name), true, `${name} column hasn't been added`);
       expect(smiles.col(name)?.get(2), value, `incorrect ${name} value`);
-    }
+    };
 
     await checkIdentifier('inchi', 'InChI=1S/C6H4O3S2/c7-5-3-4(6(8)9-5)11-2-1-10-3/h1-2H2');
 
@@ -38,8 +38,8 @@ category('calculate', () => {
     if (chemblPackInstalled) {
       await checkIdentifier('actor', '10489-75-5');
       await checkIdentifier('chembl', 'CHEMBL2262349');
-      await checkIdentifier('pubchem', '82669'); 
-      await checkIdentifier('mcule', 'MCULE-6494517749');     
+      await checkIdentifier('pubchem', '82669');
+      await checkIdentifier('mcule', 'MCULE-6494517749');
     }
   }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
@@ -47,7 +47,7 @@ category('calculate', () => {
   test('to inchi', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    addInchisTopMenu(smiles, smiles.col('smiles')!);
+    PackageFunctions.addInchisTopMenu(smiles, smiles.col('smiles')!);
     expect(smiles.columns.names().includes('inchi'), true, `inchi column hasn't been added`);
     expect(smiles.col('inchi')?.get(5), 'InChI=1S/C13H9Cl3N4/c14-5-8-1-3-9(4-2-8)6-20-7-17-12-10(20)11(15)18-13(16)19-12/h1-4,7H,5-6H2', `incorrect inchi value`);
   }, {stressTest: true});
@@ -55,7 +55,7 @@ category('calculate', () => {
   test('to inchi keys', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    addInchisKeysTopMenu(smiles, smiles.col('smiles')!);
+    PackageFunctions.addInchisKeysTopMenu(smiles, smiles.col('smiles')!);
     expect(smiles.columns.names().includes('inchi_key'), true, `inchi_key column hasn't been added`);
     expect(smiles.col('inchi_key')?.get(5), 'BSKYPUUFGNPHLM-UHFFFAOYSA-N', `incorrect inchi_key value`);
   }, {stressTest: true});
@@ -64,7 +64,7 @@ category('calculate', () => {
   test('toxicity risks', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    await addChemRisksColumns(smiles, smiles.col('smiles')!, true, true, true, true);
+    await PackageFunctions.addChemRisksColumns(smiles, smiles.col('smiles')!, true, true, true, true);
     expect(['Mutagenicity', 'Tumorigenicity', 'Irritating effects', 'Reproductive effects'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all toxicity columns have been added');
     expect(smiles.col('Mutagenicity')?.get(2), 'None', `incorrect Mutagenicity value`);
@@ -77,7 +77,7 @@ category('calculate', () => {
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    await addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
+    await PackageFunctions.addChemPropertiesColumns(smiles, smiles.col('smiles')!, true, true, true);
     expect(['MW', 'HBA', 'HBD'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all properties columns have been added');
     expect(smiles.col('MW')?.get(3), 342.107177734375, `incorrect MW value`);
@@ -89,7 +89,7 @@ category('calculate', () => {
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    await structuralAlertsTopMenu(smiles, smiles.col('smiles')!, true, true, true, false, false, false, false, false);
+    await PackageFunctions.structuralAlertsTopMenu(smiles, smiles.col('smiles')!, true, true, true, false, false, false, false, false);
     expect(['PAINS (smiles)', 'BMS (smiles)', 'SureChEMBL (smiles)'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all structural alerts columns have been added');
     expect(smiles.col('PAINS (smiles)')?.get(2), false, `incorrect PAINS (smiles) value`);

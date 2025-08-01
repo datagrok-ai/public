@@ -13,7 +13,7 @@ import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint,
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
-import {getRdKitModule} from '../package';
+import {PackageFunctions} from '../package';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
@@ -123,7 +123,7 @@ export async function chemDiversitySearch(
     randomIndexes = size < 1000 ? Array.from({length: size}, (_, i) => i) : Array.from(new Set(Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.categories.length))));
     size = randomIndexes.length;
     fingerprintArray = new Array<BitArray | null>(size).fill(null);
-    const rdkit = getRdKitModule();
+    const rdkit = PackageFunctions.getRdKitModule();
     for (let i = 0; i < randomIndexes.length; ++i) {
       const mol = getMolSafe(moleculeColumn.categories[randomIndexes[i]], {}, rdkit).mol;
       if (mol) {

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
-import {convertMolNotation} from '../package';
+import {PackageFunctions} from '../package';
 import * as DG from 'datagrok-api/dg';
 
 let sketcherId = 0;
@@ -79,7 +79,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    return convertMolNotation(this.molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
+    return PackageFunctions.convertMolNotation(this.molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   }
 
   set smarts(s: string) {
@@ -96,7 +96,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   private async convertAndSetSmarts(s: string) {
-    const molfile = convertMolNotation(s, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+    const molfile = PackageFunctions.convertMolNotation(s, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     this._sketcher?.setMolFile(molfile);
   }
 }

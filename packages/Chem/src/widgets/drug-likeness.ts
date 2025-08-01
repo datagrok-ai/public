@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {oclMol, renderDescription} from '../utils/chem-common-ocl';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {getRdKitModule} from '../package';
+import {PackageFunctions} from '../package';
 import {OCLService} from '../open-chem/ocl-service';
 import '../../css/chem.css';
 
@@ -15,7 +15,7 @@ export function assessDruglikeness(molString: string): [number, OCL.IParameteriz
 }
 
 export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
-  const rdKitModule = getRdKitModule();
+  const rdKitModule = PackageFunctions.getRdKitModule();
   let convertedMolstring: string = '';
   try {
     convertedMolstring = _convertMolNotation(molString.value,

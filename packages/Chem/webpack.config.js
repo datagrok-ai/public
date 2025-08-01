@@ -1,5 +1,6 @@
 const path = require('path');
 const rdkitLibVersion = require('./src/rdkit_lib_version.js');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 const mode = process.env.NODE_ENV ?? 'production';
@@ -66,6 +67,9 @@ module.exports = (_env, _options) => ({
     },
     extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx'],
   },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
   module: {
     rules: [
       // prevent a webpack name change

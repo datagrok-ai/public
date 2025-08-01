@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {category, before, after, expect, test} from '@datagrok-libraries/utils/src/test';
-import {getCompoundsIds} from '../package';
+import {PackageFunctions} from '../package';
 
 const sampleIdentifiers = [
   {
@@ -40,7 +40,7 @@ category('identifiers', () => {
 
 
   test('identifiers', async () => {
-    const res: any[] | null = await getCompoundsIds('HRYZQEDCGWRROX-UHFFFAOYSA-N');
+    const res: any[] | null = await PackageFunctions.getCompoundsIds('HRYZQEDCGWRROX-UHFFFAOYSA-N');
     expect(res?.length, 7, `Expected 7 identifiers, got ${res?.length}`);
     for (let i = 0; i < res!.length; i++) {
       expect(res![i].src_id, sampleIdentifiers[i].src_id);

@@ -7,6 +7,8 @@
     "moduleResolution": "node",
     "skipLibCheck": true,
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "experimentalDecorators": true,              /* Enables experimental support for ES7 decorators. */
+    "emitDecoratorMetadata": true,
   }
 }

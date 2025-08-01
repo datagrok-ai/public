@@ -11,7 +11,7 @@ import {chem} from 'datagrok-api/grok';
 import {InputBase, toJs, TreeViewGroup, TreeViewNode} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
-import {_package, getScaffoldTree} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {IColoredScaffold, _addColorsToBondsAndAtoms} from '../rendering/rdkit-cell-renderer';
@@ -913,7 +913,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     let jsonStr = null;
     try {
-      jsonStr = await getScaffoldTree(dataFrame, this.ringCutoff, this.dischargeAndDeradicalize);
+      jsonStr = await PackageFunctions.getScaffoldTree(dataFrame, this.ringCutoff, this.dischargeAndDeradicalize);
     } catch (e: any) {
       ui.setUpdateIndicator(this.root, false);
       this.progressBar?.update(50, 'Build failed');

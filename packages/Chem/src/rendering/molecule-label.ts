@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../package';
+import {PackageFunctions} from '../package';
 import {RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getFirstNSymbols} from '../utils/chem-common';
@@ -77,7 +77,7 @@ export async function drawMoleculeLabels(
     ctxMain.textAlign = 'left';
     //ctxMain.textBaseline = 'top';
     const textOffset = 20;
-    const rdkitModule = getRdKitModule();
+    const rdkitModule = PackageFunctions.getRdKitModule();
 
     for (let i = 0; i < counter; i++) {
       let mol: RDMol | null = null;
@@ -90,7 +90,7 @@ export async function drawMoleculeLabels(
         const canvasHeight = canwasWidth * 0.7;
         const imageHost = ui.canvas(canwasWidth, canvasHeight);
         mol = rdkitModule.get_mol(molCol.get(pointsOnScreenIdxs[i]));
-        mol.draw_to_canvas_with_highlights(imageHost, JSON.stringify(RDKIT_COMMON_RENDER_OPTS));
+        mol?.draw_to_canvas_with_highlights(imageHost, JSON.stringify(RDKIT_COMMON_RENDER_OPTS));
         ctxMain.arc(pointsOnScreen[i].x, pointsOnScreen[i].y, Math.floor(largeMarkerSize/2), 0, 2 * Math.PI);
         ctxMain.fill();
         const leftX = pointsOnScreen[i].x - Math.floor(canwasWidth / 2);

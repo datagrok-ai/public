@@ -1,5 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const mode = 'production';
 const webpack = require('webpack');
 
@@ -9,25 +10,25 @@ module.exports = {
   },
   mode: mode,
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts'
+    test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts',
   },
   resolve: {
-    fallback: { "url": false },
+    fallback: {'url': false},
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' },
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
-      { test: /\.(jpe?g|gif|png|svg|sdf)$/, loader: "file-loader" }
+      {test: /\.tsx?$/, loader: 'ts-loader'},
+      {test: /\.css$/, use: ['style-loader', 'css-loader']},
+      {test: /\.(jpe?g|gif|png|svg|sdf)$/, loader: 'file-loader'},
     ],
   },
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
-    'datagrok-api/ui': 'ui'
+    'datagrok-api/ui': 'ui',
   },
   output: {
     filename: '[name].js',
@@ -35,9 +36,10 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
-  plugins:[
+  plugins: [
     new webpack.DefinePlugin({
-        process: {env: {}}
-    })
-  ]
+      process: {env: {}},
+    }),
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
 };
