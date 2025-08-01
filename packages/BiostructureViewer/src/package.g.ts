@@ -11,8 +11,8 @@ export async function init() {
 //name: pdbCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
-//meta.columnTags: Molecule3D
 //meta.cellType: Molecule3D
+//meta.columnTags: quality=Molecule3D
 export function Molecule3dCellRenderer() {
   return PackageFunctions.Molecule3dCellRenderer();
 }
@@ -88,7 +88,7 @@ export async function importWithNgl(fileContent: string) {
 //tags: file-handler
 //input: string fileContent 
 //input: bool test { optional: true; default: false }
-//output: list tables
+//output: list result
 //meta.ext: pdbqt
 export async function importPdbqt(fileContent: string, test: boolean) {
   return PackageFunctions.importPdbqt(fileContent, test);
@@ -293,6 +293,7 @@ export async function openTableResiduesMenuItem(fi: DG.FileInfo) {
 //description: Display ligand poses along the structure
 //meta.demoPath: Bioinformatics | Docking Conformations
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
+//meta.demoWait: 3000
 //meta.demoSkip: GROK-15250
 //test: demoBioDockingConformations() //wait: 3000 , timeout: 60000 , skip: GROK-15250 
 export async function demoBioDockingConformations() {
