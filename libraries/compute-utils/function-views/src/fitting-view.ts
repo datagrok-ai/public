@@ -352,6 +352,9 @@ export class FittingView {
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
 
+            if (this.options.targets?.[outputProp.name]?.default != null)
+              setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
+
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
 
