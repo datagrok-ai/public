@@ -151,12 +151,35 @@ export async function hierarchicalClusteringUI(
     // const clusterDf = DG.DataFrame.fromColumns([
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
     loaderNB.close();
-    injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    tv.grid.props.onInitializedScript = `
+      setTimeout(async () => {
+        const t = grok.shell.table('${tv.dataFrame.name}');
+        if (!t)
+          return;
+        await t.meta.detectSemanticTypes();
+        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];
+        if (!func)
+          return;
+        const cols = ${JSON.stringify(colNameList)};
+        func.apply({
+          df: t,
+          colNameList: cols,
+          distance: '${distance}',
+          linkage: '${linkage}'
+        });
+      }, 1000)
+    `;
+    const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    const s = nb.onClosed.subscribe(() => {
+      tv.grid.props.onInitializedScript = '';
+      s.unsubscribe();
+    });
     const viewRemoveSub = grok.events.onViewRemoved.subscribe((view) => {
       if (view === tv) {
         try {
           viewRemoveSub.unsubscribe();
           loaderNB.close();
+          tv.grid.props.onInitializedScript = '';
         } catch {}
       };
     });
