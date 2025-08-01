@@ -105,11 +105,15 @@ export class GridCellElement extends Element {
     // this.gridCell.style.vertAlign = 'top';
     //@ts-ignore
     window.grok_GridCellStyle_Set_vertAlign(this.gridCell.style.dart, 'top');
+    //@ts-ignore
+    window.grok_GridCellStyle_Set_textWrap(this.gridCell.style.dart, 'new line');
+
     // if we don't do this, the text color will become same as grid background one
     const oldIsTextColorCoded = this.gridCell.gridColumn.isTextColorCoded;
     this.gridCell.gridColumn.isTextColorCoded = false;
+    //this.gridCell.render({context: g, bounds: this.bounds});
     this.gridCell.renderer.render(g,
-      this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height,
+      this.bounds.x, Math.ceil(this.bounds.y), this.bounds.width, Math.ceil(this.bounds.height),
       this.gridCell, this.gridCell.style);
     this.gridCell.gridColumn.isTextColorCoded = oldIsTextColorCoded;
   }

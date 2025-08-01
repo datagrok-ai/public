@@ -110,7 +110,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         scene.elements.push(e);
       } else {
         // render in a column
-        const r = new DG.Rect(b.x, b.y + i * colHeight, b.width, colHeight);
+        const r = new DG.Rect(Math.ceil(b.x), Math.ceil(b.y + i * colHeight), Math.ceil(b.width), Math.ceil(colHeight));
         if (showColumnNames) {
           scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name, {
             horzAlign: 'right',
@@ -168,7 +168,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
-    const el = scene.hitTest(e.offsetX, e.offsetY);
+    const el = scene?.hitTest(e.offsetX, e.offsetY);
     if (el?.style?.tooltip)
       setTimeout(() => ui.tooltip.show(el.style!.tooltip!, e.x + 20, e.y - 20));
     else

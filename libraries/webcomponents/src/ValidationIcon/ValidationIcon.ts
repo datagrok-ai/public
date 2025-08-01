@@ -47,7 +47,8 @@ export class ValidationIcon extends HTMLElement {
   private destroyed$ = new Subject<boolean>();
 
   private status$ = new BehaviorSubject<ValidationIconInput | undefined>(undefined);
-  private scalar$ = new BehaviorSubject(true);
+  private isScalar$ = new BehaviorSubject(true);
+  private isDataFrame$ = new BehaviorSubject(false);
   private hover$ = new BehaviorSubject(false);
   private currentIcon?: HTMLElement;
   private currentPopover?: HTMLElement;
@@ -55,7 +56,7 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
 
-    combineLatest([this.status$.pipe(distinct()), this.scalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
+    combineLatest([this.status$.pipe(distinct()), this.isScalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
       debounceTime(0),
       takeUntil(this.destroyed$)
     ).subscribe(() => this.update());
@@ -89,11 +90,19 @@ export class ValidationIcon extends HTMLElement {
   }
 
   set isScalar(v: boolean) {
-    this.scalar$.next(v);
+    this.isScalar$.next(v);
   }
 
   get isScalar() {
-    return this.scalar$.value;
+    return this.isScalar$.value;
+  }
+
+  set isDataFrame(v: boolean) {
+    this.isDataFrame$.next(v);
+  }
+
+  get isDataFrame() {
+    return this.isDataFrame$.value;
   }
 
   consistencyReset() {
@@ -102,6 +111,10 @@ export class ValidationIcon extends HTMLElement {
 
   requestAction(id: string) {
     this.dispatchEvent(new CustomEvent('action-request', {detail: id}));
+  }
+
+  showDataFrameDiff(cval: any) {
+    this.dispatchEvent(new CustomEvent('show-dataframe-diff', {detail: cval}));
   }
 
   update() {
@@ -205,9 +218,16 @@ export class ValidationIcon extends HTMLElement {
         ui.divH([
           icon,
           ui.divText(`Current value is incosistent. Computed value was ${
-            this.scalar$.value ? consistentValue : 'different'
+            this.isScalar$.value ? consistentValue : 'different'
           }`),
         ]),
+        ...(this.isDataFrame$.value ? [
+          ui.link(
+            'Show dataframes diff',
+            () => this.showDataFrameDiff(consistentValue),
+            undefined, { style: { paddingLeft: '20px' } },
+          ),
+        ] : []),
         ui.link(
           'Reset to consistent value',
           () => this.consistencyReset(),

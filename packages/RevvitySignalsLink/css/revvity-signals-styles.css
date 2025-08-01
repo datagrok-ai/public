@@ -12,12 +12,10 @@
 .revvity-signals-search .fa-trash-alt {
     font-size: 12px;
     color: #2083D5;
-    padding-top: 6px;
 }
 
 .revvity-signals-search .fa-plus {
     color: #2083D5;
-    padding-left: 10px;
 }
 
 .revvity-signals-search-logical-operator {
@@ -58,7 +56,19 @@
     margin-bottom: 0px !important;
 }
 
-.revvity-signals-filter-row:hover .revvity-signals-filters-or-button {
+.revvity-signals-filters-and-button {
+    position: absolute;
+    bottom: 0px;
+    right: 40px;
+    font-size: 10px;
+    padding: 2px 6px !important;
+    display: none!important;
+    z-index: 10;
+    margin-bottom: 0px !important;
+}
+
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-or-button,
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-and-button .last-row{
     display: block!important;
 }
 
@@ -101,8 +111,27 @@
     align-items: center;
     gap: 12px;
     flex: 1;
+    min-height: 32px;
 }
 
-.revvity-signals-filter-row .ui-input-editor {
+.revvity-signals-filter-inputs .ui-input-editor {
     width: auto!important;
+}
+
+.revvity-signals-filter-inputs .ui-input-root {
+    width: auto!important;
+}
+
+.property-query-builder-and-or-operator {
+    font-size: 10px;
+    margin: 0px!important;
+    height: 12px!important;
+}
+
+.property-query-builder-parent-level {
+    display: none!important;
+}
+
+.property-query-builder-multipe-filelds .property-query-builder-parent-level {
+    display: flex!important;
 }

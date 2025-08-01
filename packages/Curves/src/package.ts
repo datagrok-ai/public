@@ -26,6 +26,7 @@ import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
+import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -69,6 +70,43 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
+  }
+
+  @grok.decorators.func({})
+  static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
+    runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
+    // rest is parent level data
+    @grok.decorators.param({options: {nullable: true}})parentTable?: DG.DataFrame, // these inputs need to be string and resolved here bellow, because this function is used in datasync, otherwise context is lost
+    @grok.decorators.param({options: {nullable: true}})fitParamColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})reportedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})reportedQualifiedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
+    @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})wellLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string
+  ): Promise<DG.DataFrame> {
+    const pt = parentTable;
+    const joinInfo = pt && wellLevelJoinCol && parentLevelJoinCol && df.col(wellLevelJoinCol) && pt.col(parentLevelJoinCol) ? {
+      wellLevelCol: df.col(wellLevelJoinCol)!,
+      parentLevelCol: pt.col(parentLevelJoinCol)!,
+    } : undefined;
+    // this needs to work with datasync so we use wide format
+    return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
+      table: pt,
+      fitParamColumns: (fitParamColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+      reportedIC50Column: reportedIC50Column ? pt?.col(reportedIC50Column) ?? undefined : undefined,
+      reportedQualifiedIC50Column: reportedQualifiedIC50Column ? pt?.col(reportedQualifiedIC50Column) ?? undefined : undefined,
+      experimentIDColumn: experimentIDColumn ? pt?.col(experimentIDColumn) ?? undefined : undefined,
+      qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
+      additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+    },
+    joinInfo
+    );
+  }
+
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves'})
+  static async dataToCurvesTopMenu() {
+    dataToCurvesUI();
   }
 
   @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
@@ -218,7 +256,7 @@ export class PackageFunctions {
     return PlateReader.getReader(content) != null;
   }
 
-  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }
@@ -236,9 +274,9 @@ export class PackageFunctions {
   }
 }
 
-//name: platesAppTreeBrowser
+//name: platesAppTreeBrowserTempDisabled
 //input: dynamic treeNode
 //input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
   await initPlatesAppTree(treeNode);
 }

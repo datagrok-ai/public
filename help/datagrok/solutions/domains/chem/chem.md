@@ -25,6 +25,7 @@ keywords:
   - patents search
   - cdd vault integration
   - compound registration system
+  - mixtures
 ---
 
 ```mdx-code-block
@@ -42,7 +43,7 @@ design.
   * Support for SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, [and more](../../../../access/files/supported-formats.md#cheminformatics)
   * [Integration with compound registration systems](#compound-registration-systems)
 * **Interactive exploration and analysis**
-  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
+  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules, rendering of chemical mixtures
   * Powerful chemically-aware [spreadsheet](#chemically-aware-spreadsheet) and [viewers](#chemically-aware-viewers)
   * [Chemical space](#chemical-space) and interactive [structure search](#structure-search)
   * Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
@@ -214,6 +215,20 @@ To learn how to customize and extend the platform programmatically, see the **De
 Info panes can be extended with [functions](../../../concepts/functions/functions.md) in any supported language.
 
 :::
+
+Also Datagrok capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
+Mixfiles are automatically detected by Datagrok and the data is assigned with ChemicalMixture semantic type, allowing to render mixtures of any complexity and retrieve detailed information through context panel.
+The main features are:
+
+* rendering of the list of components in one cell with clear distinguish between components (square brackets are used for nested mixtures). In case component quantity/ratio is present in the Mixfile, it is also shown within the cell
+
+* interaction with each mixture component straight from the grid cell. Hover over any component to get more details in the tooltip. Click on separate component to get structure details in the context panel
+
+![Mixtures renderer](img/mixtures_components.gif)
+
+* summary mixture information in the context panel. You can browse the mixture using either table or tree view
+
+![Mixtures panels](img/mixtures_context_panel.gif)
 
 ### Chemically aware spreadsheet
 

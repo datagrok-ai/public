@@ -8,7 +8,8 @@ import {
   getModelsSingle,
   performChemicalPropertyPredictions,
   runAdmeticaFunc,
-  setProperties } from './utils/admetica-utils';
+  setProperties,
+} from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
