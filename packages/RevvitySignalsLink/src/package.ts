@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import { u2 } from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
@@ -12,17 +12,18 @@ import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from '
 import { RevvityFilters } from './filters';
 import { buildPropertyFilterForm } from './defaultProperties';
 import { getProperties } from './properties';
+import { testFilterCondition } from './conts';
 
 export * from './package.g';
 export const _package = new DG.Package();
 let openedView: DG.View | null = null;
 
 
-export class PackageFunctions{
+export class PackageFunctions {
   @grok.decorators.app({
     'meta': {
       'browsePath': 'Chem'
-    }, 
+    },
     'name': 'Revvity Signals'
   })
   static async revvitySignalsLinkApp(): Promise<DG.ViewBase> {
@@ -42,11 +43,19 @@ export class PackageFunctions{
   @grok.decorators.func()
   static async revvitySignalsLinkAppTreeBrowser(
     treeNode: DG.TreeViewGroup) {
-  
+
     const search = treeNode.item('Search');
     search.onSelected.subscribe(() => {
       const v = DG.View.create('Search');
       const queryBuilder = signalsSearchBuilderUI();
+      v.append(queryBuilder);
+      grok.shell.addPreview(v);
+    });
+
+    const search2 = treeNode.item('Search 2');
+    search2.onSelected.subscribe(() => {
+      const v = DG.View.create('Search 2');
+      const queryBuilder = buildPropertyFilterForm(getProperties(), testFilterCondition);
       v.append(queryBuilder);
       grok.shell.addPreview(v);
     });
@@ -80,7 +89,7 @@ export class PackageFunctions{
   static async searchEntities(
     query: string,
     params: string): Promise<DG.DataFrame> {
-  
+
     let df = DG.DataFrame.create();
     try {
       const queryJson: SignalsSearchQuery = JSON.parse(query);
@@ -101,7 +110,7 @@ export class PackageFunctions{
   static async searchEntitiesWithStructures(
     query: string,
     params: string): Promise<DG.DataFrame> {
-  
+
     let df = DG.DataFrame.create();
     try {
       const queryJson: SignalsSearchQuery = JSON.parse(query);
@@ -130,8 +139,8 @@ export class PackageFunctions{
     'name': 'Get Users'
   })
   static async getUsers(): Promise<string> {
-  
-    const users: {[key: string]: RevvityUser} = {};
+
+    const users: { [key: string]: RevvityUser } = {};
     const response = await queryUsers();
     if (!response.data)
       return '{}';
@@ -148,8 +157,8 @@ export class PackageFunctions{
     'name': 'Revvity Signals'
   })
   static async entityTreeWidget(
-    @grok.decorators.param({'options':{'semType':'RevvitySignalsId'}})  id: string): Promise<DG.Widget> {
-  
+    @grok.decorators.param({ 'options': { 'semType': 'RevvitySignalsId' } }) id: string): Promise<DG.Widget> {
+
     const obj = (await queryMaterialById(id)) as RevvityApiResponse;
     const div = createRevvityResponseWidget(obj);
     return new DG.Widget(div);

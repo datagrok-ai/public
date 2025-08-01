@@ -810,6 +810,11 @@ export class MSAScrollingHeader {
     return false;
   }
 
+  private isInsideColumnHeaderArea(x: number, y: number): boolean {
+    const titleHeight = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE() ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+    return y < titleHeight;
+  }
+
   private snapToTrackHeight(trackId: string): void {
     let targetHeight: number;
 
@@ -1300,6 +1305,8 @@ export class MSAScrollingHeader {
 
     if (this.handleTrackButtonClick(x, y))
       return;
+    if (this.isInsideColumnHeaderArea(x, y))
+      return;
 
 
     const cellWidth = this.config.positionWidth;
@@ -1537,6 +1544,9 @@ export class MSAScrollingHeader {
       e.stopPropagation();
       return;
     }
+
+    if (this.isInsideColumnHeaderArea(x, y))
+      return;
 
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 

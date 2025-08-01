@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.54.2",
+  "version": "5.54.3",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.7",
@@ -17,7 +17,7 @@
     "@datagrok-libraries/utils": "^4.5.7",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "fastest-levenshtein": "^1.0.16",
     "js-base64": "^3.7.5",

@@ -11,7 +11,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",
     "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5"
@@ -20,7 +20,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/wu": "^2.1.44",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.34",
     "style-loader": "^4.0.0",
     "ts-loader": "9.4.2",
     "typescript": "^5.3.3",
