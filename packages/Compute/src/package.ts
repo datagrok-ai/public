@@ -23,6 +23,8 @@ import {
   testPipeline as testPipelineInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
 
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+
 export const _package = new DG.Package();
 
 //name: openModelFromFuncall
@@ -73,7 +75,7 @@ const options = {
   funcName: 'modelCatalog',
   setStartUriLoaded: () => startUriLoaded = true,
   getStartUriLoaded: () => startUriLoaded,
-}
+};
 
 //tags: init
 export function init() {
@@ -283,4 +285,57 @@ export function ObjectCoolingSelector(params: any) {
     'Previous run',
     'ObjectCooling',
   );
+}
+
+//name: fitTestFunc
+//description: Test for optimization: multiple scalars output
+//input: double x1 = 1 {caption: param1; min: -3; max: 3}
+//input: double x2 = -1 {caption: param2; min: -3; max: 3}
+//input: dataframe y {caption: table}
+//input: bool bool
+//output: int integer
+//output: double float
+//output: dataframe table
+//editor: Compute:RichFunctionViewEditor
+//meta.features: {"fitting": true, "sens-analysis": true}
+//meta.runOnOpen: true
+//meta.runOnInput: true
+export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
+  return {
+    integer: x1**3 * (x1 - 1) * x2**3 * (x2 - 1),
+    float: (x2 - 1)**2 + (x1 - 1)**2,
+    table: DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4, 9, 16, 25]),
+    ]),
+  };
+}
+
+//name: testFittingOutputs
+//description: Test for optimization: multiple scalars output
+export async function name() {
+  const func = await grok.functions.find('Compute:fitTestFunc');
+
+  if (func === null) {
+    grok.shell.error('The function "Compute:fitTestFunc" not found!');
+    return;
+  }
+
+  const targetDf = DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4, 9, 16, 25]),
+  ]);
+  targetDf.name = 'test-df';
+
+  await FittingView.fromEmpty(func, {
+    targets: {
+      integer: {default: 123, enabled: true},
+      float: {default: 456.789, enabled: true},
+      table: {
+        default: targetDf,
+        enabled: true,
+        argumentCol: 'arg',
+      },
+    },
+  });
 }
