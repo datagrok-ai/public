@@ -300,6 +300,23 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
+        const defaultValue = (this.options.targets?.[outputProp.name]?.default != null) ?
+          this.options.targets?.[outputProp.name]?.default :
+          (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : getInputValue(outputProp, 'default');
+
+        let defaultArgColName: string | null = null;
+        let defaultColNames: Array<string | null> = [null];
+        let defaultFuncCols: DG.Column[] | undefined = undefined;
+        let defaultTable: DG.DataFrame | undefined = undefined;
+
+        if ((defaultValue != null) && (defaultValue instanceof DG.DataFrame)) {
+          defaultTable = defaultValue;
+          const numericalCols = defaultTable.columns.toList().filter((col) => col.isNumerical);
+          defaultColNames = numericalCols.map((col) => col.name);
+          defaultArgColName = this.options.targets?.[outputProp.name]?.argumentCol ?? defaultColNames[0];
+          defaultFuncCols =numericalCols.filter((col) => col.name !== defaultArgColName);
+        }
+
         const validator = (_: string) => {
           const validation = getValidation(temp);
 
@@ -328,10 +345,7 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            if (this.options.targets?.[outputProp.name]?.default != null)
-              input.value = this.options.targets?.[outputProp.name]?.default;
-            else
-              input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
+            input.value = defaultValue;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
             isInterest.subscribe((val) => input.input.hidden = !val);
 
@@ -400,11 +414,11 @@ export class FittingView {
 
             return input;
           })(),
-          argName: '_',
+          argName: defaultArgColName ?? '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
-              value: null,
-              items: [null],
+              value: defaultArgColName,
+              items: defaultColNames,
               tooltipText: 'Independent variable',
               onValueChanged: (value) => {
                 if (value !== null)
@@ -427,9 +441,11 @@ export class FittingView {
             return input;
           })(),
           isInterest,
-          target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
+          target: defaultValue,
           funcColsInput: (() => {
             const input = ui.input.columns('functions', {
+              table: defaultTable,
+              value: defaultFuncCols,
               nullable: false,
               tooltipText: 'Target dependent variables',
               onValueChanged: (cols) => this.updateApplicabilityState(),
@@ -693,6 +709,7 @@ export class FittingView {
       this.runIcon.classList.add('fas');
 
       this.updateApplicabilityState();
+      //this.processOptionTargets();
     });
 
     this.diffGrok = options.diffGrok;
