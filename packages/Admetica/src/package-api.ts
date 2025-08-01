@@ -12,8 +12,8 @@ export namespace funcs {
     return await grok.functions.call('Admetica:Info', {});
   }
 
-  export async function admeticaWidget(smiles: any ): Promise<any> {
-    return await grok.functions.call('Admetica:AdmeticaWidget', { smiles });
+  export async function admeticaWidget(semValue: any ): Promise<any> {
+    return await grok.functions.call('Admetica:AdmeticaWidget', { semValue });
   }
 
   export async function getModels(property: string ): Promise<any> {
@@ -32,7 +32,7 @@ export namespace funcs {
     return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
-  export async function admeProperty(molecule: string , prop: string ): Promise<number> {
+  export async function admeProperty(molecule: string , prop: string ): Promise<any> {
     return await grok.functions.call('Admetica:AdmeProperty', { molecule, prop });
   }
 
@@ -43,7 +43,7 @@ export namespace funcs {
   /**
   Evaluating ADMET properties
   */
-  export async function admeticaDemo(): Promise<void> {
+  export async function admeticaDemo(): Promise<DG.View> {
     return await grok.functions.call('Admetica:AdmeticaDemo', {});
   }
 }
