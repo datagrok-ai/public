@@ -24,8 +24,7 @@ See also:
 
 ## 2025-07-25 Datagrok 1.26.0 release
 
-The Datagrok 1.26.0 release focuses on improved data access and collaboration,  
-enhanced visualization capabilities, and navigation UI/UX improvements.
+The Datagrok 1.26.0 release focuses on improved data access and collaboration, enhanced visualization capabilities, and navigation UI/UX improvements.
 
 <!-- ### Breaking changes
 
@@ -33,8 +32,7 @@ enhanced visualization capabilities, and navigation UI/UX improvements.
 
 ### Main updates
 
-* **Spaces** allow users to create personal workspaces that hold files, folders, connections, queries, and projects,
-offering a better way to organize and access frequently used resources
+* **Spaces**: use them to organize, access, and share files, folders, connections, queries, projects, and other frequently used entities in Datagrok
 * **Power Search**: quickly find tables, queries, functions, packages, projects, and help topics directly from the **Home Page**
 * **Activity Dashboard**: a **Home Page** widget that brings together recent activity, shared items, favorites, personal actions, and notifications, making it easy to track and access key updates in one place
 * **Complex Calculated Columns** allow a single vector function to generate multiple columns in one step, eliminating the need to add each column manually
@@ -118,6 +116,19 @@ Fixed:
   * Histogram: Improved filters performance for large datasets
 
 ### Packages
+
+#### [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio/CHANGELOG.md)
+
+* [MSA Header Enhancements](https://community.datagrok.ai/t/plugin-releases/775/122):
+  * Added header tracks: Conservation and WebLogo
+  * Added tooltips for the WebLogo header
+  * Improved performance of Conservation and WebLogo calculations
+* Sequence Scrolling and Positioning:
+  * Added optional scrolling header for short sequences
+  * Improved detection of the maximum sequence length
+  * Improved display of the current position
+* Performance Improvements:
+  *  Added faster methods for retrieving monomers at specified positions
 
 #### [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem/CHANGELOG.md)
 
