@@ -12,6 +12,7 @@ import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from '
 import { RevvityFilters } from './filters';
 import { buildPropertyFilterForm } from './defaultProperties';
 import { getProperties } from './properties';
+import { testFilterCondition } from './conts';
 
 
 export const _package = new DG.Package();
@@ -51,7 +52,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   const search2 = treeNode.item('Search 2');
   search2.onSelected.subscribe(() => {
     const v = DG.View.create('Search 2');
-    const queryBuilder = buildPropertyFilterForm(getProperties());
+    const queryBuilder = buildPropertyFilterForm(getProperties(), testFilterCondition);
     v.append(queryBuilder);
     grok.shell.addPreview(v);
   });

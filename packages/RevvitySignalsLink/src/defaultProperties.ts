@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { Subject } from 'rxjs';
+import dayjs from 'dayjs';
 
 // Interface for filter conditions matching the query structure
 export interface FilterCondition {
@@ -12,9 +14,9 @@ export interface FilterCondition {
 }
 
 export const defaultFilters: { [key in DG.TYPE]?: (prop: DG.Property, cond: FilterCondition) => PropertyFilter } = {
- [DG.TYPE.DATE_TIME]: (prop: DG.Property, cond: FilterCondition) => new DateFilter(prop, cond),
- [DG.TYPE.STRING]: (prop: DG.Property, cond: FilterCondition) => new StringFilter(prop, cond),
- [DG.TYPE.FLOAT]: (prop: DG.Property, cond: FilterCondition) => new FloatFilter(prop, cond),
+ [DG.TYPE.DATE_TIME]: (prop: DG.Property, cond: FilterCondition) => new DateFilter(prop, cond, Operators.typeOperators[DG.TYPE.DATE_TIME]),
+ [DG.TYPE.STRING]: (prop: DG.Property, cond: FilterCondition) => new PropertyFilter(prop, cond, Operators.typeOperators[DG.TYPE.STRING]),
+ [DG.TYPE.FLOAT]: (prop: DG.Property, cond: FilterCondition) => new PropertyFilter(prop, cond, Operators.typeOperators[DG.TYPE.FLOAT]),
 }
 
 export namespace Operators {
@@ -116,6 +118,7 @@ export function buildPropertyFilterUI(
                     // Clear existing field UI and add new filter UI
                     ui.empty(filterInputsContainer);
                     const fieldFilter = filterFactory(property, cond);
+                    fieldFilter.onChanged.subscribe(() => onValueChange());
                     filterInputsContainer.appendChild(fieldFilter.root);
                 }
             }
@@ -154,6 +157,7 @@ export function buildPropertyFilterUI(
             deleteFieldIcon, addNestedConditionIcon], 'revvity-signals-filter-inputs');
         container.appendChild(filterContainer);
         createFilter();
+        onValueChange();
     }
 
     // adding filter field
@@ -175,13 +179,13 @@ export function buildPropertyFilterUI(
     }, 'Add field to the condition');
 
     // AND/OR operators handling
-    let and = true;
-    const logicalOperatorIcon = ui.button('AND', () => {
-        and = !and;
-        condition.operator = !and ? Operators.Logical.or : Operators.Logical.and;
-        logicalOperatorIcon.innerText = !and ? 'OR' : 'AND';
+    condition.operator ??= Operators.Logical.and;
+    const logicalOperatorIcon = ui.button(condition.operator, () => {
+        condition.operator = condition.operator === Operators.Logical.or ? Operators.Logical.and : Operators.Logical.or;
+        logicalOperatorIcon.innerText = condition.operator.toUpperCase();
         onValueChange();
     }, 'Logical operator');
+
     logicalOperatorIcon.classList.add('property-query-builder-and-or-operator');
     if (!parentCondition)
         logicalOperatorIcon.classList.add('property-query-builder-parent-level');
@@ -271,88 +275,47 @@ export function buildPropertyFilterForm(properties: DG.Property[], initialCondit
     return mainContainer;
 }
 
-export abstract class PropertyFilter {
-  root: HTMLDivElement = ui.div();
-  condition: FilterCondition;
-  prop: DG.Property;
+export class PropertyFilter {
+    root: HTMLDivElement = ui.div();
+    condition: FilterCondition;
+    prop: DG.Property;
+    onChanged: Subject<any> = new Subject<any>();
+    operators: string[] = []
 
-  abstract getStringCondition(): string;
+    constructor(prop: DG.Property, condition: FilterCondition, operators: string[]) {
+        this.prop = prop;
+        this.condition = condition;
+        this.operators = operators;
+        this.init();
+    }
 
-  protected constructor(prop: DG.Property, condition: FilterCondition) {
-    this.prop = prop;
-    this.condition = condition;
-  }
-}
-
-export class StringFilter extends PropertyFilter {
-    operators = Operators.typeOperators[DG.TYPE.STRING];
-
-    constructor(prop: DG.Property, condition: FilterCondition) {
-        super(prop, condition);
-        condition.operator ??= Operators.EQ;
+    init() {
+        this.condition.operator ??= this.operators?.length ? this.operators[0] : Operators.EQ;
         const operatorChoice = ui.input.choice('', {
-            value: condition.operator,
+            value: this.condition.operator,
             items: Object.values(this.operators),
             nullable: false,
             onValueChanged: () => {
-                condition.operator = operatorChoice.value!;
+                this.condition.operator = operatorChoice.value!;
+                this.onChanged.next();
             }
         });
-        
-        if (!condition.values || !Array.isArray(condition.values) || !condition.values.length)
-            condition.values = [null];
 
-        const stringInput = ui.input.forProperty(this.prop, null, {
-            value: condition.values[0],
+        if (!this.condition.values || !Array.isArray(this.condition.values) || !this.condition.values.length)
+            this.condition.values = [null];
+
+        const valueInput = ui.input.forProperty(this.prop, this.condition.values[0], {
             onValueChanged: () => {
-                condition.values![0] = stringInput.value!;
+                this.condition.values![0] = valueInput.value!;
+                this.onChanged.next();
             }
         });
-        stringInput.addCaption(''); // Hide the property name label
+        valueInput.addCaption(''); // Hide the property name label
 
         this.root = ui.divH([
             operatorChoice.root,
-            stringInput.root
+            valueInput.root
         ]);
-
-    }
-
-    getStringCondition() {
-        return Operators.getStringCondition(this.prop.name, this.condition.operator!, this.condition.values!);
-    }
-}
-
-export class FloatFilter extends PropertyFilter {
-    operators = Operators.typeOperators[DG.TYPE.FLOAT];
-
-    constructor(prop: DG.Property, condition: FilterCondition) {
-        super(prop, condition);
-        condition.operator ??= Operators.EQ;
-        const operatorChoice = ui.input.choice('', {
-            value: condition.operator,
-            items: Object.values(this.operators),
-            nullable: false,
-            onValueChanged: () => {
-                condition.operator = operatorChoice.value!;
-            }
-        });
-
-        if (!condition.values || !Array.isArray(condition.values) || !condition.values.length)
-            condition.values = [null];
-
-        const floatInput = ui.input.forProperty(this.prop, null, {
-            value: condition.values[0],
-            onValueChanged: () => {
-                condition.values![0] = floatInput.value!;
-            }
-        });
-        floatInput.addCaption(''); // Hide the property name label
-
-        this.root = ui.divH([
-            operatorChoice.root,
-            floatInput.root
-        ]);
-
     }
 
     getStringCondition() {
@@ -361,24 +324,28 @@ export class FloatFilter extends PropertyFilter {
 }
 
 export class DateFilter extends PropertyFilter {
-    operators = Operators.typeOperators[DG.TYPE.DATE_TIME];
-    datesDiv = ui.divH([]);
+    datesDiv: HTMLDivElement | null = null;
 
-    constructor(prop: DG.Property, condition: FilterCondition) {
-        super(prop, condition);
-        condition.operator ??= Operators.BEFORE;
+    constructor(prop: DG.Property, condition: FilterCondition, operators: string[]) {
+        super(prop, condition, operators);
+    }
+
+    override init() {
+        this.datesDiv = ui.divH([]);
+        this.condition.operator ??= Operators.BEFORE;
         const operatorChoice = ui.input.choice('', {
-            value: condition.operator,
+            value: this.condition.operator,
             items: Object.values(this.operators),
             nullable: false,
             onValueChanged: () => {
-                condition.operator = operatorChoice.value!;
+                this.condition.operator = operatorChoice.value!;
                 this.createFilter();
+                this.onChanged.next();
             }
         });
 
-        if (!condition.values || !Array.isArray(condition.values) || condition.values.length < 2)
-            condition.values = [Date.now(), Date.now()];
+        if (!this.condition.values || !Array.isArray(this.condition.values) || this.condition.values.length < 2)
+            this.condition.values = [undefined, undefined];
 
         this.createFilter();
         this.root = ui.divH([
@@ -389,43 +356,49 @@ export class DateFilter extends PropertyFilter {
     }
 
     createFilter() {
-        ui.empty(this.datesDiv);
+        ui.empty(this.datesDiv!);
         switch (this.condition.operator) {
             case Operators.BEFORE:
             case Operators.AFTER:
-                const dateInput = ui.input.forProperty(this.prop, null, {
-                    value: this.condition.values![0],
+                const dateInput = ui.input.date('', {
+                    value: this.condition.values![0] ? dayjs(this.condition.values![0]) : undefined,
+                    nullable: true,
                     onValueChanged: () => {
                         this.condition.values![0] = dateInput.value!;
+                        this.onChanged.next();
                     }
                 });
                 dateInput.addCaption(''); // Hide the property name label
-                this.datesDiv.append(dateInput.root);
+                this.datesDiv!.append(dateInput.root);
                 return;
             case Operators.BETWEEN:
-                const dateInput1 = ui.input.forProperty(this.prop, null, {
-                    value: this.condition.values![0],
+                const dateInput1 = ui.input.date('', {
+                    value: this.condition.values![0] ? dayjs(this.condition.values![0]) : undefined,
+                    nullable: true,
                     onValueChanged: () => {
                         this.condition.values![0] = dateInput1.value!;
+                        this.onChanged.next();
                     }
                 });
                 dateInput1.addCaption(''); // Hide the property name label
-                const dateInput2 = ui.input.forProperty(this.prop, null, {
-                    value: this.condition.values![1],
+                const dateInput2 = ui.input.date('', {
+                    value: this.condition.values![1] ? dayjs(this.condition.values![0]) : undefined,
+                    nullable: true,
                     onValueChanged: () => {
                         this.condition.values![1] = dateInput2.value!;
+                        this.onChanged.next();
                     }
                 });
                 dateInput2.addCaption(''); // Hide the property name label
-                this.datesDiv.append(dateInput1.root, dateInput2.root);
+                this.datesDiv!.append(dateInput1.root, dateInput2.root);
                 return;
             default:
-                this.datesDiv.append(ui.div('Unknown date operator'));
+                this.datesDiv!.append(ui.div('Unknown date operator'));
 
         }
     }
 
-    getStringCondition() {
+    override getStringCondition() {
         return Operators.getStringCondition(this.prop.name, this.condition.operator!, this.condition.values!);
     }
 
