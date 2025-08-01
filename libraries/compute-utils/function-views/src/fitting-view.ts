@@ -328,15 +328,15 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            if (this.options.targets?.[outputProp.name]?.default != null)
-              input.value = this.options.targets?.[outputProp.name]?.default;
-            else
-              input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
+            input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
             isInterest.subscribe((val) => input.input.hidden = !val);
 
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
+
+            if (this.options.targets?.[outputProp.name]?.default != null)
+              setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
 
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
