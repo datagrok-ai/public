@@ -28,3 +28,7 @@ export {
   getPaletteByType,
   MonomerToShortFunc
 } from './utils';
+
+export {
+  MONOMER_MOTIF_SPLITTER
+} from './consts';
