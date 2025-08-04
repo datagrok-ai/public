@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: benchlingLinkApp
+//name: Benchling
 //tags: app
 //output: view result
 //meta.browsePath: Chem
@@ -11,9 +11,10 @@ export async function benchlingLinkApp() {
 
 //name: benchlingLinkAppTreeBrowser
 //input: dynamic treeNode 
+//input: view browseView 
 //output: dynamic result
-export async function benchlingLinkAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.benchlingLinkAppTreeBrowser(treeNode);
+export async function benchlingLinkAppTreeBrowser(treeNode: any, browseView: DG.View) {
+  return PackageFunctions.benchlingLinkAppTreeBrowser(treeNode, browseView);
 }
 
 //name: Get AA Sequences

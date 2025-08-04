@@ -19,7 +19,10 @@ const STORAGE_NAME = 'BenchlingLinkFuncEditor';
 let openedView: DG.View | null = null;
 
 export class PackageFunctions {
-  @grok.decorators.app({browsePath: 'Chem'})
+  @grok.decorators.app({
+    browsePath: 'Chem',
+    name: 'Benchling'
+  })
   static async benchlingLinkApp(): Promise<DG.ViewBase> {
 
     const appHeader = u2.appHeader({
@@ -38,7 +41,7 @@ export class PackageFunctions {
   }
   
   @grok.decorators.func()
-  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {
     function createFuncEditorView(funcName: string, v: DG.View) {
       let func = DG.Func.byName(funcName);
       let editorDiv = ui.div();

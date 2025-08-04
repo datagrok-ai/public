@@ -12,8 +12,8 @@ export namespace funcs {
     return await grok.functions.call('BenchlingLink:BenchlingLinkApp', {});
   }
 
-  export async function benchlingLinkAppTreeBrowser(treeNode: any ): Promise<any> {
-    return await grok.functions.call('BenchlingLink:BenchlingLinkAppTreeBrowser', { treeNode });
+  export async function benchlingLinkAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+    return await grok.functions.call('BenchlingLink:BenchlingLinkAppTreeBrowser', { treeNode, browseView });
   }
 
   export async function getAASequences(sort: string | null, createdAt: string | null, modifiedAt: string | null, name: string | null, nameIncludes: string | null, aminoAcids: string | null, folderId: string | null, mentionedIn: string | null, projectId: string | null, registryId: string | null, schemaId: string | null, schemaFields: string | null, archiveReason: string | null, mentions: string | null, ids: string | null, entityRegistryIds_anyOf: string | null, names_anyOf: string | null, names_anyOf_caseSensitive: string | null, creatorIds: string | null, authorIds_anyOf: string | null, returning: string | null): Promise<DG.DataFrame> {
