@@ -13,7 +13,6 @@ import {renderValidationResults} from './plates-validation-panel';
 import {parsePlateFromCsv} from '../../plate/csv-plates';
 import {toExcelPosition} from '../../plate/utils';
 
-// Correctly import CSS using the standard webpack method for Datagrok packages.
 import './plates-create-view.css';
 
 type PlateFile = {
@@ -37,9 +36,6 @@ export function createPlatesView(): DG.View {
   const validationHost = ui.divV([]);
   const wellPropsHeaderHost = ui.div();
 
-  // --- ARCHITECTURE REFACTOR ---
-  // Instead of a TabControl, we'll use a simple div to hold manually created tab headers.
-  // This prevents the PlateWidget from being destroyed and recreated.
   const tabHeaderContainer = ui.divH([], 'plate-file-tabs-container');
 
   let plateType = plateTypes[0];
@@ -110,7 +106,7 @@ export function createPlatesView(): DG.View {
     const pendingCount = validationResults.conflictCount;
 
     const pendingIcon = ui.iconFA('exclamation-circle');
-    const appliedIcon = ui.iconFA('link');
+    const appliedIcon = ui.iconFA('exchange-alt');
 
     const indicator = ui.divH([
       ui.divH([pendingIcon, ui.divText(`${pendingCount}`)], 'reco-summary__item'),
@@ -276,7 +272,8 @@ export function createPlatesView(): DG.View {
       }
       const indicator = createReconciliationSummary(activeFile, validationResults);
       const header = ui.h2('Well Properties');
-      wellPropsHeaderHost.appendChild(ui.divH([header, indicator], 'space-between-center'));
+      const templateNameSpan = ui.span([template.name], 'well-props-header__template-name');
+      wellPropsHeaderHost.appendChild(ui.divH([header, templateNameSpan, indicator], 'space-between-center'));
       try {
         plateWidget.refresh();
         plateWidget.updateRoleSummary();
@@ -347,7 +344,7 @@ export function createPlatesView(): DG.View {
 
   roleInput.onInput.subscribe(() => updateAssignButtonState());
 
-  const importInput = ui.input.file('', {
+  const fileInput = ui.input.file('', {
     onValueChanged: async (file: DG.FileInfo) => {
       if (!file) return;
       try {
@@ -361,14 +358,19 @@ export function createPlatesView(): DG.View {
       } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
     },
   });
-  importInput.root.classList.add('import-csv-button');
-  const buttonElement = importInput.root.querySelector('button');
-  if (buttonElement) {
-    ui.empty(buttonElement);
-    buttonElement.appendChild(ui.iconFA('plus'));
+  fileInput.root.classList.add('plate-import-button');
+  const fileInputButton = fileInput.root.querySelector('button');
+  if (fileInputButton) {
+    ui.empty(fileInputButton);
+    fileInputButton.appendChild(ui.iconFA('upload'));
   }
-  importInput.root.querySelector('label')?.remove();
-  ui.tooltip.bind(importInput.root, 'Import new CSV file');
+  fileInput.root.querySelector('label')?.remove();
+  ui.tooltip.bind(fileInput.root, 'Import a plate from a CSV file');
+
+  const importContainer = ui.divH([
+    ui.divText('Import Plate File'),
+    fileInput.root,
+  ], 'plate-import-container');
 
   const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }});
   const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
@@ -387,7 +389,7 @@ export function createPlatesView(): DG.View {
   ], 'create-plate-view__left-panel');
 
   const rightPanel = ui.divV([
-    ui.divH([importInput.root]),
+    importContainer,
     tabHeaderContainer,
     plateWidget.root
   ], 'create-plate-view__right-panel');
