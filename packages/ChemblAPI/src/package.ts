@@ -122,20 +122,6 @@ export async function getSmiles(molString: string): Promise<string> {
   return molString;
 }
 
-
-export async function getById(id: string): Promise<DG.DataFrame | null> {
-  if (!id.toLowerCase().startsWith('chembl'))
-    id = `CHEMBL${id}`;
-
-  try {
-    return await grok.data.query(`${_package.name}:MoleculeJson`, {'molecule_chembl_id__exact': id});
-  } catch (e: any) {
-    console.error(e);
-    return null;
-  }
-}
-
-
 export class PackageFunctions {
   @grok.decorators.func({
     'tags': [
@@ -231,11 +217,24 @@ export class PackageFunctions {
 
 
   @grok.decorators.func()
-  static async getCompoundsIds(inchiKey: string): Promise<{[key: string]: string | number}[] | null> {
+  static async getCompoundsIds(inchiKey: string): Promise<{[key: string]: string | number}[]> {
     const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
     const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
     const response = await grok.dapi.fetchProxy(url, params);
     const json = await response.json();
     return response.status !== 200 || json.error ? {} : json;
+  }
+
+  @grok.decorators.func()
+  static async getById(id: string): Promise<DG.DataFrame> {
+    if (!id.toLowerCase().startsWith('chembl'))
+      id = `CHEMBL${id}`;
+
+    try {
+      return await grok.data.query(`${_package.name}:MoleculeJson`, {'molecule_chembl_id__exact': id});
+    } catch (e: any) {
+      console.error(e);
+      return DG.DataFrame.create();
+    }
   }
 }

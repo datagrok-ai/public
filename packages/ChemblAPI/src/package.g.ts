@@ -34,3 +34,10 @@ export async function chemblSimilaritySearchPanel(mol: string) {
 export async function getCompoundsIds(inchiKey: string) {
   return PackageFunctions.getCompoundsIds(inchiKey);
 }
+
+//name: getById
+//input: string id 
+//output: dataframe result
+export async function getById(id: string) {
+  return PackageFunctions.getById(id);
+}

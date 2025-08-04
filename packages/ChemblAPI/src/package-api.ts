@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function chemblSearchWidget(mol: string , substructure: boolean ): Promise<any> {
-    return await grok.functions.call('ChEMBLAPI:ChemblSearchWidget', { mol, substructure });
+  export async function chemblSearchWidget(mol: string , searchType: string ): Promise<any> {
+    return await grok.functions.call('ChEMBLAPI:ChemblSearchWidget', { mol, searchType });
   }
 
   export async function chemblSubstructureSearchPanel(mol: string ): Promise<any> {
@@ -22,5 +22,9 @@ export namespace funcs {
 
   export async function getCompoundsIds(inchiKey: string ): Promise<any> {
     return await grok.functions.call('ChEMBLAPI:GetCompoundsIds', { inchiKey });
+  }
+
+  export async function getById(id: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ChEMBLAPI:GetById', { id });
   }
 }
