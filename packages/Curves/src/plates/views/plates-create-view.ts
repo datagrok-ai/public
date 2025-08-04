@@ -11,15 +11,16 @@ import {
 import {PlateWidget} from '../../plate/plate-widget';
 import {renderValidationResults} from './plates-validation-panel';
 import {parsePlateFromCsv} from '../../plate/csv-plates';
+import {toExcelPosition} from '../../plate/utils';
 
 type PlateFile = {
-  plate: Plate;
-  file: DG.FileInfo;
-  reconciliationMap: Map<string, string>; // Maps NEW name -> ORIGINAL name
+    plate: Plate;
+    file: DG.FileInfo;
+    reconciliationMap: Map<string, string>; // Maps NEW name -> ORIGINAL name
 };
 type TemplateState = {
-  plates: PlateFile[],
-  activePlateIdx: number
+    plates: PlateFile[],
+    activePlateIdx: number
 };
 
 export function createPlatesView(): DG.View {
@@ -29,9 +30,13 @@ export function createPlatesView(): DG.View {
   const templateState = new Map<number, TemplateState>();
 
   const platePropertiesHost = ui.divV([]);
-  const validationHost = ui.divV([]); 
-  const fileTabsHost = ui.divH([], {style: {'gap': '4px', 'flexWrap': 'wrap', 'alignItems': 'center'}});
+  const validationHost = ui.divV([]);
   const wellPropsHeaderHost = ui.div();
+
+  const fileTabs = ui.tabControl(null, false);
+  fileTabs.root.classList.add('plate-file-tabs');
+  fileTabs.root.style.marginLeft = '140px';
+
 
   let plateType = plateTypes[0];
   let plateTemplate = plateTemplates[0];
@@ -87,13 +92,7 @@ export function createPlatesView(): DG.View {
         columnToRevert.name = originalName;
         activeFile.reconciliationMap.delete(mappedField);
         grok.shell.info(`Reverted mapping for '${mappedField}'.`);
-
-        try {
-          setTemplate(plateTemplate);
-        } catch (error) {
-          console.error('Error refreshing template after undo:', error);
-          window.location.reload();
-        }
+        setTemplate(plateTemplate);
       } else {
         console.warn(`Column '${mappedField}' not found for reverting`);
       }
@@ -106,34 +105,35 @@ export function createPlatesView(): DG.View {
     const appliedCount = activeFile ? activeFile.reconciliationMap.size : 0;
     const pendingCount = validationResults.conflictCount;
 
-    const indicator = ui.divText(
-      `${pendingCount} pending, ${appliedCount} applied`,
-      {
-        style: {
-          backgroundColor: pendingCount > 0 ? 'var(--orange-1)' : 'var(--green-1)',
-          border: `1px solid ${pendingCount > 0 ? 'var(--orange-3)' : 'var(--green-3)'}`,
-          borderRadius: '12px',
-          padding: '4px 12px',
-          fontSize: '12px',
-          cursor: 'pointer',
-          color: pendingCount > 0 ? 'var(--orange-6)' : 'var(--green-6)',
-          fontWeight: '500',
-          userSelect: 'none'
-        }
-      }
-    );
+    const pendingIcon = ui.iconFA('exclamation-circle');
+    const appliedIcon = ui.iconFA('link');
+
+    const indicator = ui.divH([
+      ui.divH([pendingIcon, ui.divText(`${pendingCount}`)], {style: {gap: '4px', alignItems: 'center'}}),
+      ui.divH([appliedIcon, ui.divText(`${appliedCount}`)], {style: {gap: '4px', alignItems: 'center'}}),
+    ], {
+      style: {
+        backgroundColor: pendingCount > 0 ? 'var(--orange-1)' : 'var(--green-1)',
+        border: `1px solid ${pendingCount > 0 ? 'var(--orange-3)' : 'var(--green-3)'}`,
+        borderRadius: '12px',
+        padding: '4px 12px',
+        fontSize: '12px',
+        cursor: 'pointer',
+        color: pendingCount > 0 ? 'var(--orange-6)' : 'var(--green-6)',
+        fontWeight: '500',
+        userSelect: 'none',
+        gap: '12px',
+      },
+    });
 
     ui.tooltip.bind(indicator, 'Click to view mapping details and undo changes');
 
     indicator.addEventListener('click', () => {
       const summaryDialog = ui.dialog('Field Mapping Summary');
       summaryDialog.root.style.minWidth = '400px';
-
       const content = ui.divV([], {style: {gap: '16px'}});
-
       if (appliedCount > 0) {
         content.appendChild(ui.h3('Applied Mappings', {style: {color: 'var(--green-6)', margin: '0'}}));
-
         const mappingsList = ui.divV([], {style: {gap: '8px'}});
         Array.from(activeFile!.reconciliationMap.entries()).forEach(([newName, oldName]) => {
           const mappingRow = ui.divH([
@@ -145,7 +145,7 @@ export function createPlatesView(): DG.View {
                 arrow.style.color = 'var(--grey-4)';
                 return arrow;
               })(),
-              ui.divText(newName, {style: {fontWeight: '500'}})
+              ui.divText(newName, {style: {fontWeight: '500'}}),
             ], {style: {alignItems: 'center', gap: '2px'}}),
             (() => {
               const closeIcon = ui.iconFA('times', () => {
@@ -153,100 +153,88 @@ export function createPlatesView(): DG.View {
                 summaryDialog.close();
               }, 'Undo this mapping');
               Object.assign(closeIcon.style, {
-                cursor: 'pointer',
-                color: 'var(--red-3)',
-                padding: '4px',
-                borderRadius: '2px',
-                fontSize: '12px'
+                cursor: 'pointer', color: 'var(--red-3)', padding: '4px',
+                borderRadius: '2px', fontSize: '12px',
               });
               return closeIcon;
-            })()
+            })(),
           ], {
             style: {
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '8px 12px',
-              backgroundColor: 'var(--green-0)',
-              border: '1px solid var(--green-2)',
-              borderRadius: '4px'
-            }
+              justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px',
+              backgroundColor: 'var(--green-0)', border: '1px solid var(--green-2)', borderRadius: '4px',
+            },
           });
           mappingsList.appendChild(mappingRow);
         });
         content.appendChild(mappingsList);
       }
-
-      // Pending conflicts section
       if (pendingCount > 0) {
         if (appliedCount > 0)
           content.appendChild(ui.divText('', {style: {borderTop: '1px solid var(--grey-2)', margin: '8px 0'}}));
-
         content.appendChild(ui.h3('Pending Conflicts', {style: {color: 'var(--orange-6)', margin: '0'}}));
         content.appendChild(ui.divText(
           `${pendingCount} field${pendingCount > 1 ? 's' : ''} still need${pendingCount === 1 ? 's' : ''} to be mapped. Use drag & drop in the validation table to resolve.`,
           {style: {color: 'var(--grey-6)', fontSize: '14px'}}
         ));
       }
-
       if (appliedCount === 0 && pendingCount === 0)
         content.appendChild(ui.divText('All fields are properly mapped!', {style: {color: 'var(--green-6)'}}));
-
-
       summaryDialog.add(content);
       summaryDialog.show();
     });
-
     return indicator;
   };
 
   const renderFileTabs = (template: PlateTemplate, state: TemplateState | undefined) => {
-    ui.empty(fileTabsHost);
-    state?.plates.forEach((plateFile, idx) => {
+    fileTabs.clear();
+
+    if (!state || state.plates.length === 0) {
+      fileTabs.root.style.display = 'none';
+      return;
+    }
+    fileTabs.root.style.display = 'flex';
+
+    state.plates.forEach((plateFile, idx) => {
       const dummyTable = ui.div();
       const validation = renderValidationResults(dummyTable, plateFile.plate, template, handleMapping);
       const hasConflicts = validation.conflictCount > 0;
-      const tabLabel = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
+      const tabLabelText = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
 
-      const tab = ui.divText(tabLabel, 'd4-tag-editor');
-      ui.tooltip.bind(tab, () => plateFile.file.name);
-      Object.assign(tab.style, {
-        padding: '6px 12px',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        border: '1px solid var(--grey-2)',
-        display: 'flex',
-        alignItems: 'center',
-        position: 'relative',
-        transition: 'all 0.2s ease'
-      });
+      const pane = fileTabs.addPane(tabLabelText, () => ui.div());
+      const header = pane.header;
 
-      if (idx === state.activePlateIdx) {
-        tab.style.borderColor = 'var(--blue-3)';
-        tab.style.backgroundColor = 'var(--blue-1)';
-        tab.style.color = 'var(--blue-6)';
-        tab.style.fontWeight = '500';
-      }
+      ui.empty(header);
+      header.style.display = 'flex';
+      header.style.alignItems = 'center';
 
-      tab.onclick = () => { if (state) { state.activePlateIdx = idx; setTemplate(template); } };
+      const labelElement = ui.divText(tabLabelText);
+
+      header.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (state) {
+          state.activePlateIdx = idx;
+          setTemplate(template);
+        }
+      };
+
+      const controlsContainer = ui.divH([], {style: {gap: '8px', alignItems: 'center', marginLeft: '8px'}});
 
       if (hasConflicts) {
         const conflictDot = ui.div('', {
           style: {
-            position: 'absolute',
-            top: '-2px',
-            right: '-2px',
-            width: '8px',
-            height: '8px',
-            backgroundColor: 'var(--red-3)',
-            borderRadius: '50%',
-            border: '2px solid white',
+            width: '8px', height: '8px',
+            backgroundColor: 'var(--red-3)', borderRadius: '50%',
+            border: '1px solid var(--white)',
             boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
           }
         });
-        tab.appendChild(conflictDot);
+        ui.tooltip.bind(conflictDot, `${validation.conflictCount} unresolved fields`);
+        controlsContainer.appendChild(conflictDot);
       }
 
-      const clearIcon = ui.iconFA('times', () => {
+      const clearIcon = ui.iconFA('times', (e: MouseEvent) => {
+        e.stopPropagation();
         if (state) {
           state.plates.splice(idx, 1);
           if (state.activePlateIdx >= idx) state.activePlateIdx = Math.max(0, state.activePlateIdx - 1);
@@ -254,39 +242,16 @@ export function createPlatesView(): DG.View {
           setTemplate(template);
         }
       }, 'Remove this plate');
-      clearIcon.style.marginLeft = '8px';
       clearIcon.style.opacity = '0.6';
-      clearIcon.style.fontSize = '11px';
-      tab.appendChild(clearIcon);
-      fileTabsHost.appendChild(tab);
+      controlsContainer.appendChild(clearIcon);
+
+      header.appendChild(labelElement);
+      header.appendChild(controlsContainer);
+      ui.tooltip.bind(header, () => plateFile.file.name);
     });
 
-    const importInput = ui.input.file('', {
-      onValueChanged: async (file: DG.FileInfo) => {
-        if (!file) return;
-        try {
-          const parsedPlates = await parsePlateFromCsv(await file.readAsString());
-          const currentState = templateState.get(template.id) ?? {plates: [], activePlateIdx: -1};
-          for (const plate of parsedPlates)
-            currentState.plates.push({plate, file, reconciliationMap: new Map<string, string>()});
-
-          currentState.activePlateIdx = currentState.plates.length - 1;
-          templateState.set(template.id, currentState);
-          await setTemplate(template);
-        } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
-      }
-    });
-
-    const buttonElement = importInput.root.querySelector('button');
-    if (buttonElement) {
-      ui.empty(buttonElement);
-      buttonElement.appendChild(ui.iconFA('plus'));
-      buttonElement.style.padding = '6px 8px';
-      buttonElement.style.borderRadius = '6px';
-    }
-    importInput.root.querySelector('label')?.remove();
-    ui.tooltip.bind(importInput.root, 'Import new CSV file');
-    fileTabsHost.appendChild(importInput.root);
+    if (state.activePlateIdx !== -1 && fileTabs.panes.length > state.activePlateIdx)
+      fileTabs.currentPane = fileTabs.panes[state.activePlateIdx];
   };
 
   setTemplate = async (template: PlateTemplate) => {
@@ -294,24 +259,18 @@ export function createPlatesView(): DG.View {
       plateTemplate = template;
       const state = templateState.get(template.id);
       const activeFile = state ? state.plates[state.activePlateIdx] : null;
-
       ui.empty(platePropertiesHost);
       ui.empty(validationHost);
       ui.empty(wellPropsHeaderHost);
-
       renderFileTabs(template, state);
-
       let validationResults = {conflictCount: 0};
-
       if (activeFile && activeFile.plate && activeFile.plate.data) {
         try {
           plateWidget.plate = activeFile.plate;
           validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping);
-
           const plateProperties = template.plateProperties
             .filter((p) => p && p.name && p.type)
             .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-
           if (plateProperties.length > 0) {
             const form = ui.input.form(activeFile.plate.details || {}, plateProperties);
             platePropertiesHost.appendChild(form);
@@ -326,16 +285,13 @@ export function createPlatesView(): DG.View {
       } else {
         try {
           plateWidget.plate = await createNewPlateForTemplate(plateType, template);
-
           const templateProperties = template.plateProperties
-            .filter((p) => p && p.name && p.type) 
+            .filter((p) => p && p.name && p.type)
             .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-
           if (templateProperties.length > 0) {
             const form = ui.input.form({}, templateProperties);
             platePropertiesHost.appendChild(form);
           }
-
           validationHost.appendChild(ui.divText(
             'Import a CSV file to see validation results and start mapping fields.',
             {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center', fontStyle: 'italic'}}
@@ -344,13 +300,12 @@ export function createPlatesView(): DG.View {
           console.error('Error creating new plate:', plateCreationError);
         }
       }
-
       const indicator = createReconciliationSummary(activeFile, validationResults);
       const header = ui.h2('Well Properties');
       wellPropsHeaderHost.appendChild(ui.divH([header, indicator], {style: {justifyContent: 'space-between', alignItems: 'center'}}));
-
       try {
         plateWidget.refresh();
+        plateWidget.updateRoleSummary();
       } catch (refreshError) {
         console.error('Error refreshing plate widget:', refreshError);
       }
@@ -360,23 +315,105 @@ export function createPlatesView(): DG.View {
     }
   };
 
+  const selectionStatusDiv = ui.divText('Drag on the plate to select wells.');
+  selectionStatusDiv.style.marginTop = '10px';
+  const roles = ['Control', 'Buffer', 'Assay Reagent', 'Sample'];
+  const roleInput = ui.input.multiChoice('Roles', {items: roles, value: []});
+
+  const assignButton = ui.button('Assign Roles', async () => {
+    const selectedRoles = roleInput.value;
+    const plate = plateWidget.plate;
+    const selection = plate.data.selection;
+
+    if (selectedRoles?.length === 0 || selection.trueCount === 0) return;
+
+    const roleCol = plate.data.columns.getOrCreate('Role', DG.COLUMN_TYPE.STRING);
+    const selectedIndexes = selection.getSelectedIndexes();
+
+    for (const i of selectedIndexes)
+      roleCol.set(i, selectedRoles?.join(',') ?? '');
+
+    plateWidget._colorColumn = roleCol;
+    plateWidget.grid.invalidate();
+    plateWidget.updateRoleSummary();
+
+    selection.setAll(false, true);
+  });
+  assignButton.disabled = true;
+
+  const roleAssignmentPanel = ui.divV([
+    ui.h2('Role Assignment'),
+    selectionStatusDiv,
+    roleInput.root,
+    assignButton,
+  ], {style: {borderTop: '1px solid var(--grey-2)', marginTop: '20px', paddingTop: '10px'}});
+
+  const updateAssignButtonState = () => {
+    const selectionCount = plateWidget.plate.data.selection.trueCount;
+    const rolesCount = roleInput.value?.length ?? 0;
+    assignButton.disabled = selectionCount === 0 || rolesCount === 0;
+  };
+
+  plateWidget.plate.data.selection.onChanged.subscribe(() => {
+    const selectionCount = plateWidget.plate.data.selection.trueCount;
+
+    if (selectionCount > 0) {
+      selectionStatusDiv.textContent = `${selectionCount} wells selected`;
+      const selectedPositions = Array.from(plateWidget.plate.data.selection.getSelectedIndexes()).map((idx) => {
+        const [row, col] = plateWidget.plate.rowIndexToExcel(idx);
+        return toExcelPosition(row, col);
+      });
+      ui.tooltip.bind(selectionStatusDiv, () => ui.divText(selectedPositions.join(', ')));
+    } else {
+      selectionStatusDiv.textContent = 'Drag on the plate to select wells.';
+      ui.tooltip.bind(selectionStatusDiv, () => null);
+    }
+    updateAssignButtonState();
+  });
+
+  roleInput.onInput.subscribe(() => updateAssignButtonState());
+
+  const importInput = ui.input.file('', {
+    onValueChanged: async (file: DG.FileInfo) => {
+      if (!file) return;
+      try {
+        const parsedPlates = await parsePlateFromCsv(await file.readAsString());
+        const currentState = templateState.get(plateTemplate.id) ?? {plates: [], activePlateIdx: -1};
+        for (const plate of parsedPlates)
+          currentState.plates.push({plate, file, reconciliationMap: new Map<string, string>()});
+        currentState.activePlateIdx = currentState.plates.length - 1;
+        templateState.set(plateTemplate.id, currentState);
+        await setTemplate(plateTemplate);
+      } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
+    },
+  });
+  const buttonElement = importInput.root.querySelector('button');
+  if (buttonElement) {
+    ui.empty(buttonElement);
+    buttonElement.appendChild(ui.iconFA('plus'));
+    buttonElement.style.padding = '6px 8px';
+    buttonElement.style.borderRadius = '6px';
+  }
+  importInput.root.querySelector('label')?.remove();
+  ui.tooltip.bind(importInput.root, 'Import new CSV file');
+
   const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }});
   const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
-  plateTypeSelector.input.style.border = '1px solid var(--grey-3)';
-  plateTypeSelector.input.style.backgroundColor = 'var(--grey-1)';
-  plateTemplateSelector.input.style.border = '1px solid var(--grey-3)';
-  plateTemplateSelector.input.style.backgroundColor = 'var(--grey-1)';
-  const topPanel = ui.divH([plateTypeSelector.root, plateTemplateSelector.root], {style: {gap: '24px', alignItems: 'center', marginBottom: '10px'}});
-  const leftPanel = ui.divV([ui.h2('Plate Properties'), platePropertiesHost, wellPropsHeaderHost, validationHost], {style: {minWidth: '320px', maxWidth: '400px', flexGrow: '0', gap: '10px'}});
-  const rightPanel = ui.divV([fileTabsHost, plateWidget.root], {style: {flexGrow: '1', gap: '10px'}});
+
+  const topPanel = ui.divH([plateTypeSelector.root, plateTemplateSelector.root, ui.div([], {style: {flexGrow: '1'}}), importInput.root], {style: {gap: '24px', alignItems: 'center', marginBottom: '10px'}});
+
+  const leftPanel = ui.divV([ui.h2('Plate Properties'), platePropertiesHost, wellPropsHeaderHost, validationHost, roleAssignmentPanel], {style: {minWidth: '320px', maxWidth: '400px', flexGrow: '0', gap: '10px'}});
+
+  const rightPanel = ui.divV([fileTabs.root, plateWidget.root], {style: {flexGrow: '1', gap: '0px'}});
+
   view.root.appendChild(ui.divV([topPanel, ui.divH([leftPanel, rightPanel], {style: {gap: '20px'}})]));
+
   setTemplate(plateTemplates[0]);
 
   const getPlate = () => {
     const state = templateState.get(plateTemplate.id);
     if (state && state.plates.length > 0)
       return state.plates[state.activePlateIdx].plate;
-
     return plateWidget.plate;
   };
 
@@ -387,13 +424,10 @@ export function createPlatesView(): DG.View {
         grok.shell.warning('No active plate to save.');
         return;
       }
-
       const dummyTableElement = ui.div();
       const validation = renderValidationResults(dummyTableElement, plateToSave, plateTemplate, handleMapping);
-
       if (validation.conflictCount > 0)
         grok.shell.warning('Saving plate with unresolved validation issues.');
-
       plateToSave.plateTemplateId = plateTemplate.id;
       await savePlate(plateToSave);
       grok.shell.info(`Plate created: ${plateToSave.barcode}`);
@@ -407,7 +441,7 @@ export function createPlatesView(): DG.View {
       await savePlateAsTemplate(plateToSave, plateTemplate);
       await initPlates(true);
       grok.shell.info(`Plate template updated: ${plateTemplate.name}`);
-    })
+    }),
   ]]);
   return view;
 }

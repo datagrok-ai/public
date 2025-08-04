@@ -10,9 +10,7 @@ import {Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 import * as jStat from 'jstat';
 import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
 import {fromEvent, Subject} from 'rxjs';
-
 import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
-
 
 export type AnalysisOptions = {
     roleName: string,
@@ -41,12 +39,11 @@ export class PlateWidget extends DG.Widget {
   _plate: Plate = new Plate(8, 12);
   grid: DG.Grid = DG.Viewer.heatMap(DG.DataFrame.create());
   colorColumnName: string = '';
-  colorSelector?: DG.InputBase;
   detailsDiv?: HTMLElement;
   wellDetailsDiv?: HTMLElement;
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
-  tabs: DG.TabControl = DG.TabControl.create();
+  tabs: DG.TabControl = DG.TabControl.create(true);
   tabsContainer: HTMLElement = ui.divH([], 'curves-plate-tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
@@ -59,6 +56,8 @@ export class PlateWidget extends DG.Widget {
   private _canvas: HTMLCanvasElement | null = null;
   private _onDestroy = new Subject<void>();
 
+  roleSummaryDiv: HTMLElement = ui.divH([], {style: {gap: '12px', marginTop: '8px', flexWrap: 'wrap'}});
+
   get editable() { return this._editable; }
   set editable(x: boolean) {
     this._editable = x;
@@ -68,18 +67,23 @@ export class PlateWidget extends DG.Widget {
   constructor() {
     super(ui.div([], 'curves-plate-widget'));
 
+    // MODIFIED: Set a fixed width on the vertical tabs for consistent alignment.
+    this.tabs.root.style.width = '140px';
+    this.tabs.root.style.minWidth = '140px';
+    this.tabs.root.style.flexShrink = '0';
+
     this.tabs.root.style.flexGrow = '1';
 
     this.tabsContainer.appendChild(this.tabs.root);
     this.root.appendChild(this.tabsContainer);
 
-    // --- Disable Default Grid Highlighting ---
+    this.root.appendChild(this.roleSummaryDiv);
+
     this.grid.props.allowRowSelection = false;
     this.grid.props.allowColSelection = false;
     this.grid.props.allowBlockSelection = false;
     this.grid.props.showCurrentRowIndicator = false;
     this.grid.props.showMouseOverRowIndicator = false;
-    // --- End of Highlighting Disable ---
 
     this.grid.props.showHeatmapScrollbars = false;
     this.grid.props.colHeaderHeight = 30;
@@ -112,8 +116,6 @@ export class PlateWidget extends DG.Widget {
     fromEvent<MouseEvent>(interactionElement, 'mousedown')
       .pipe(takeUntil(this._onDestroy))
       .subscribe((e: MouseEvent) => {
-        if (!e.shiftKey) return;
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -141,7 +143,6 @@ export class PlateWidget extends DG.Widget {
           this.clearSelectionRect();
           this._selectionRect = null;
 
-          // --- NEW: Log selected well positions ---
           const selectedIndexes = this.plate.data.selection.getSelectedIndexes();
           if (selectedIndexes.length > 0) {
             const selectedPositions = Array.from(selectedIndexes).map((idx) => {
@@ -150,11 +151,9 @@ export class PlateWidget extends DG.Widget {
             });
             console.log('Selected wells:', selectedPositions);
           }
-          // --- End of new logic ---
         });
       });
   }
-
 
   private drawSelectionRect() {
     if (!this._canvas || !this._selectionRect) return;
@@ -174,17 +173,12 @@ export class PlateWidget extends DG.Widget {
   }
 
   private updateSelection() {
-    // Guard against calls when the widget is not fully initialized or is being re-rendered.
     if (!this._selectionRect || !this.grid || this.grid.columns.length === 0)
       return;
 
     const selection = this.plate.data.selection;
-    // FIX: Use setAll(false) to clear the BitSet, as it does not have a .clear() method.
-    // The second 'false' argument prevents firing a notification for every bit change.
     selection.setAll(false, false);
 
-    // FIX: Manually normalize the rectangle, as .normalize() does not exist on DG.Rect.
-    // This handles cases where the user drags from bottom-right to top-left.
     const r = this._selectionRect;
     const normalizedRect = new DG.Rect(
       r.width < 0 ? r.x + r.width : r.x,
@@ -195,13 +189,9 @@ export class PlateWidget extends DG.Widget {
 
     for (let row = 0; row < this.plate.rows; row++) {
       for (let col = 0; col < this.plate.cols; col++) {
-        // The grid has a row header at index 0, so data columns start at index 1.
         const gridCol = this.grid.columns.byIndex(col + 1);
-
-        // Add a guard to ensure gridCol exists before we access its properties.
         if (gridCol) {
           const cell = this.grid.cell(gridCol.name, row);
-          // Add a second guard to ensure the cell object itself is valid.
           if (cell) {
             const cellBounds = cell.bounds;
             if (normalizedRect.contains(cellBounds.midX, cellBounds.midY)) {
@@ -212,13 +202,35 @@ export class PlateWidget extends DG.Widget {
         }
       }
     }
-
-    // Fire a single notification after all changes are made for better performance.
     selection.fireChanged();
-    this.grid.invalidate(); // Redraw grid to show selection
+    this.grid.invalidate();
   }
 
-  // --- End of rectangular selection methods ---
+  updateRoleSummary() {
+    ui.empty(this.roleSummaryDiv);
+    const roleColumn = this.plate.data.col('Role');
+    if (!roleColumn || roleColumn.stats.valueCount === 0) return;
+
+    const countsDf = this.plate.data.groupBy(['Role']).count().aggregate();
+    const roleColumnColors = roleColumn.meta.colors;
+    const originalRolesList = roleColumn.toList();
+
+    for (const row of countsDf.rows) {
+      const role = row.Role;
+      const count = row.count;
+
+      const firstIndex = originalRolesList.indexOf(role);
+      const color = (firstIndex !== -1) ?
+        DG.Color.toHtml(roleColumnColors.getColor(firstIndex)) :
+        DG.Color.toHtml(DG.Color.lightGray);
+
+      const legendItem = ui.divH([
+        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
+        ui.divText(`${role} (${count} wells)`),
+      ], {style: {gap: '6px', alignItems: 'center'}});
+      this.roleSummaryDiv.appendChild(legendItem);
+    }
+  }
 
   static fromPlate(plate: Plate) {
     return PlateWidget.detailedView(plate);
@@ -228,11 +240,6 @@ export class PlateWidget extends DG.Widget {
     const pw = new PlateWidget();
     pw.grid.root.style.width = '100%';
     pw.plate = plate;
-    pw.colorSelector = ui.input.column('Color by', {
-      table: plate.data,
-      value: pw._colorColumn,
-      onValueChanged: (v) => { pw._colorColumn = v; pw.grid.invalidate(); }
-    });
     pw.detailsDiv = ui.divV([]);
     pw.wellDetailsDiv = div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
@@ -241,8 +248,6 @@ export class PlateWidget extends DG.Widget {
       const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
             pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
     });
-
-    pw.root.prepend(pw.colorSelector.root);
     pw.tabsContainer.appendChild(pw.detailsDiv);
     return pw;
   }
@@ -257,18 +262,14 @@ export class PlateWidget extends DG.Widget {
     grid.props.showColumnGridlines = true;
     grid.props.heatmapColors = false;
     grid.props.colHeaderHeight = 25;
-
-    // --- Disable Default Grid Highlighting for layer grids ---
     grid.props.allowRowSelection = false;
     grid.props.allowColSelection = false;
     grid.props.allowBlockSelection = false;
     grid.props.showCurrentRowIndicator = false;
     grid.props.showMouseOverRowIndicator = false;
-    // --- End of Highlighting Disable ---
 
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
-
 
   get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
@@ -276,7 +277,6 @@ export class PlateWidget extends DG.Widget {
     this.refresh();
   }
 
-  /** Re-renders the UI */
   refresh() {
     this.tabs.clear();
     this.tabs.addPane('Summary', () => this.grid.root);
@@ -289,7 +289,7 @@ export class PlateWidget extends DG.Widget {
           const p = this.plate;
           for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
-                            p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+                          p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
           }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });
@@ -345,7 +345,6 @@ export class PlateWidget extends DG.Widget {
     } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
       const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
 
-      // --- Highlighting for selected cells ---
       if (this.plate.data.selection.get(dataRow)) {
         g.fillStyle = 'rgba(0, 128, 255, 0.2)';
         g.fillRect(x, y, w, h);
@@ -382,7 +381,6 @@ export class PlateWidget extends DG.Widget {
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
   }
 
-  /** Applies plate widget options to all grids */
   syncGrids() {
     for (const grid of this.grids.values())
       grid.props.allowEdit = this.editable;
