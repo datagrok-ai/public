@@ -57,16 +57,6 @@ export let c: DG.FuncCall;
 
 let cliniclaCaseLaunched = false;
 
-export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {// TODO: DG.BrowseView
-  if (!validationRulesList)
-    validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
-  const url = new URL(window.location.href);
-  const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
-    url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
-  const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-  await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
-}
-
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   let currentStudy = '';
   let currentViewName = '';
@@ -407,6 +397,17 @@ export class PackageFunctions {
     ]));
     cliniclaCaseLaunched = true;
     return view;
+  }
+
+  @grok.decorators.func()
+  static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {// TODO: DG.BrowseView
+    if (!validationRulesList)
+      validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
+    const url = new URL(window.location.href);
+    const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
+      url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
+    const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
+    await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
   }
 
   @grok.decorators.folderViewer({
