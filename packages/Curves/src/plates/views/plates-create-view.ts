@@ -13,6 +13,9 @@ import {renderValidationResults} from './plates-validation-panel';
 import {parsePlateFromCsv} from '../../plate/csv-plates';
 import {toExcelPosition} from '../../plate/utils';
 
+// Correctly import CSS using the standard webpack method for Datagrok packages.
+import './plates-create-view.css';
+
 type PlateFile = {
     plate: Plate;
     file: DG.FileInfo;
@@ -26,6 +29,7 @@ type TemplateState = {
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
+  view.root.classList.add('create-plate-view');
 
   const templateState = new Map<number, TemplateState>();
 
@@ -33,10 +37,10 @@ export function createPlatesView(): DG.View {
   const validationHost = ui.divV([]);
   const wellPropsHeaderHost = ui.div();
 
-  const fileTabs = ui.tabControl(null, false);
-  fileTabs.root.classList.add('plate-file-tabs');
-  fileTabs.root.style.marginLeft = '140px';
-
+  // --- ARCHITECTURE REFACTOR ---
+  // Instead of a TabControl, we'll use a simple div to hold manually created tab headers.
+  // This prevents the PlateWidget from being destroyed and recreated.
+  const tabHeaderContainer = ui.divH([], 'plate-file-tabs-container');
 
   let plateType = plateTypes[0];
   let plateTemplate = plateTemplates[0];
@@ -109,22 +113,11 @@ export function createPlatesView(): DG.View {
     const appliedIcon = ui.iconFA('link');
 
     const indicator = ui.divH([
-      ui.divH([pendingIcon, ui.divText(`${pendingCount}`)], {style: {gap: '4px', alignItems: 'center'}}),
-      ui.divH([appliedIcon, ui.divText(`${appliedCount}`)], {style: {gap: '4px', alignItems: 'center'}}),
-    ], {
-      style: {
-        backgroundColor: pendingCount > 0 ? 'var(--orange-1)' : 'var(--green-1)',
-        border: `1px solid ${pendingCount > 0 ? 'var(--orange-3)' : 'var(--green-3)'}`,
-        borderRadius: '12px',
-        padding: '4px 12px',
-        fontSize: '12px',
-        cursor: 'pointer',
-        color: pendingCount > 0 ? 'var(--orange-6)' : 'var(--green-6)',
-        fontWeight: '500',
-        userSelect: 'none',
-        gap: '12px',
-      },
-    });
+      ui.divH([pendingIcon, ui.divText(`${pendingCount}`)], 'reco-summary__item'),
+      ui.divH([appliedIcon, ui.divText(`${appliedCount}`)], 'reco-summary__item'),
+    ], 'reco-summary');
+
+    indicator.classList.toggle('reco-summary--pending', pendingCount > 0);
 
     ui.tooltip.bind(indicator, 'Click to view mapping details and undo changes');
 
@@ -186,13 +179,14 @@ export function createPlatesView(): DG.View {
   };
 
   const renderFileTabs = (template: PlateTemplate, state: TemplateState | undefined) => {
-    fileTabs.clear();
+    ui.empty(tabHeaderContainer);
 
     if (!state || state.plates.length === 0) {
-      fileTabs.root.style.display = 'none';
+      tabHeaderContainer.style.display = 'none';
       return;
     }
-    fileTabs.root.style.display = 'flex';
+
+    tabHeaderContainer.style.display = 'flex';
 
     state.plates.forEach((plateFile, idx) => {
       const dummyTable = ui.div();
@@ -200,35 +194,11 @@ export function createPlatesView(): DG.View {
       const hasConflicts = validation.conflictCount > 0;
       const tabLabelText = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
 
-      const pane = fileTabs.addPane(tabLabelText, () => ui.div());
-      const header = pane.header;
-
-      ui.empty(header);
-      header.style.display = 'flex';
-      header.style.alignItems = 'center';
-
       const labelElement = ui.divText(tabLabelText);
-
-      header.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (state) {
-          state.activePlateIdx = idx;
-          setTemplate(template);
-        }
-      };
-
-      const controlsContainer = ui.divH([], {style: {gap: '8px', alignItems: 'center', marginLeft: '8px'}});
+      const controlsContainer = ui.divH([], 'plate-file-tab__controls');
 
       if (hasConflicts) {
-        const conflictDot = ui.div('', {
-          style: {
-            width: '8px', height: '8px',
-            backgroundColor: 'var(--red-3)', borderRadius: '50%',
-            border: '1px solid var(--white)',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-          }
-        });
+        const conflictDot = ui.div('', 'plate-file-tab__conflict-dot');
         ui.tooltip.bind(conflictDot, `${validation.conflictCount} unresolved fields`);
         controlsContainer.appendChild(conflictDot);
       }
@@ -242,16 +212,24 @@ export function createPlatesView(): DG.View {
           setTemplate(template);
         }
       }, 'Remove this plate');
-      clearIcon.style.opacity = '0.6';
+      clearIcon.classList.add('plate-file-tab__clear-icon');
       controlsContainer.appendChild(clearIcon);
 
-      header.appendChild(labelElement);
-      header.appendChild(controlsContainer);
-      ui.tooltip.bind(header, () => plateFile.file.name);
-    });
+      const header = ui.divH([labelElement, controlsContainer], 'plate-file-tab__header');
+      header.classList.toggle('active', idx === state.activePlateIdx);
 
-    if (state.activePlateIdx !== -1 && fileTabs.panes.length > state.activePlateIdx)
-      fileTabs.currentPane = fileTabs.panes[state.activePlateIdx];
+      header.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (state) {
+          state.activePlateIdx = idx;
+          setTemplate(template);
+        }
+      };
+
+      ui.tooltip.bind(header, () => plateFile.file.name);
+      tabHeaderContainer.appendChild(header);
+    });
   };
 
   setTemplate = async (template: PlateTemplate) => {
@@ -277,10 +255,7 @@ export function createPlatesView(): DG.View {
           }
         } catch (validationError) {
           console.error('Error during validation rendering:', validationError);
-          validationHost.appendChild(ui.divText(
-            'Error loading validation results. Please try reimporting the file.',
-            {style: {color: 'var(--red-5)', padding: '20px', textAlign: 'center'}}
-          ));
+          validationHost.appendChild(ui.divText('Error loading validation results.', 'error-message'));
         }
       } else {
         try {
@@ -293,8 +268,7 @@ export function createPlatesView(): DG.View {
             platePropertiesHost.appendChild(form);
           }
           validationHost.appendChild(ui.divText(
-            'Import a CSV file to see validation results and start mapping fields.',
-            {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center', fontStyle: 'italic'}}
+            'Import a CSV file to see validation results and start mapping fields.', 'info-message'
           ));
         } catch (plateCreationError) {
           console.error('Error creating new plate:', plateCreationError);
@@ -302,7 +276,7 @@ export function createPlatesView(): DG.View {
       }
       const indicator = createReconciliationSummary(activeFile, validationResults);
       const header = ui.h2('Well Properties');
-      wellPropsHeaderHost.appendChild(ui.divH([header, indicator], {style: {justifyContent: 'space-between', alignItems: 'center'}}));
+      wellPropsHeaderHost.appendChild(ui.divH([header, indicator], 'space-between-center'));
       try {
         plateWidget.refresh();
         plateWidget.updateRoleSummary();
@@ -346,7 +320,7 @@ export function createPlatesView(): DG.View {
     selectionStatusDiv,
     roleInput.root,
     assignButton,
-  ], {style: {borderTop: '1px solid var(--grey-2)', marginTop: '20px', paddingTop: '10px'}});
+  ], 'left-panel-section');
 
   const updateAssignButtonState = () => {
     const selectionCount = plateWidget.plate.data.selection.trueCount;
@@ -387,12 +361,11 @@ export function createPlatesView(): DG.View {
       } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
     },
   });
+  importInput.root.classList.add('import-csv-button');
   const buttonElement = importInput.root.querySelector('button');
   if (buttonElement) {
     ui.empty(buttonElement);
     buttonElement.appendChild(ui.iconFA('plus'));
-    buttonElement.style.padding = '6px 8px';
-    buttonElement.style.borderRadius = '6px';
   }
   importInput.root.querySelector('label')?.remove();
   ui.tooltip.bind(importInput.root, 'Import new CSV file');
@@ -400,13 +373,27 @@ export function createPlatesView(): DG.View {
   const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }});
   const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
 
-  const topPanel = ui.divH([plateTypeSelector.root, plateTemplateSelector.root, ui.div([], {style: {flexGrow: '1'}}), importInput.root], {style: {gap: '24px', alignItems: 'center', marginBottom: '10px'}});
+  const templatePanel = ui.divV([
+    ui.h2('Template'),
+    plateTypeSelector.root,
+    plateTemplateSelector.root,
+  ], 'left-panel-section');
 
-  const leftPanel = ui.divV([ui.h2('Plate Properties'), platePropertiesHost, wellPropsHeaderHost, validationHost, roleAssignmentPanel], {style: {minWidth: '320px', maxWidth: '400px', flexGrow: '0', gap: '10px'}});
+  const leftPanel = ui.divV([
+    templatePanel,
+    ui.divV([ui.h2('Plate Properties'), platePropertiesHost], 'left-panel-section'),
+    ui.divV([wellPropsHeaderHost, validationHost], 'left-panel-section'),
+    roleAssignmentPanel
+  ], 'create-plate-view__left-panel');
 
-  const rightPanel = ui.divV([fileTabs.root, plateWidget.root], {style: {flexGrow: '1', gap: '0px'}});
+  const rightPanel = ui.divV([
+    ui.divH([importInput.root]),
+    tabHeaderContainer,
+    plateWidget.root
+  ], 'create-plate-view__right-panel');
 
-  view.root.appendChild(ui.divV([topPanel, ui.divH([leftPanel, rightPanel], {style: {gap: '20px'}})]));
+  const mainLayout = ui.divH([leftPanel, rightPanel], 'create-plate-view__main-layout');
+  view.root.appendChild(mainLayout);
 
   setTemplate(plateTemplates[0]);
 
@@ -445,3 +432,4 @@ export function createPlatesView(): DG.View {
   ]]);
   return view;
 }
+

@@ -25,7 +25,11 @@ export function createTemplatesView(): DG.View {
         name: 'New Template',
         description: '',
         plateProperties: [],
-        wellProperties: [],
+        wellProperties: [
+          {name: 'Concentration', type: DG.COLUMN_TYPE.FLOAT},
+          {name: 'Volume', type: DG.COLUMN_TYPE.FLOAT},
+          {name: 'Sample', type: DG.COLUMN_TYPE.STRING},
+        ],
         id: -1,
         plate_layout_id: -1
       };

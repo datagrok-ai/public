@@ -33,7 +33,6 @@ export const dimensions = new Map([
   [1536, {rows: 32, cols: 48}],
 ]);
 
-/** Visualizes multiple layers of {@link Plate} in tabbed interface and lets you edit it */
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
@@ -44,7 +43,7 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create(true);
-  tabsContainer: HTMLElement = ui.divH([], 'curves-plate-tabs-container');
+  tabsContainer: HTMLElement = ui.divH([], 'plate-widget__tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
@@ -56,7 +55,7 @@ export class PlateWidget extends DG.Widget {
   private _canvas: HTMLCanvasElement | null = null;
   private _onDestroy = new Subject<void>();
 
-  roleSummaryDiv: HTMLElement = ui.divH([], {style: {gap: '12px', marginTop: '8px', flexWrap: 'wrap'}});
+  roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
 
   get editable() { return this._editable; }
   set editable(x: boolean) {
@@ -65,18 +64,11 @@ export class PlateWidget extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([], 'curves-plate-widget'));
+    super(ui.div([], 'plate-widget'));
 
-    // MODIFIED: Set a fixed width on the vertical tabs for consistent alignment.
-    this.tabs.root.style.width = '140px';
-    this.tabs.root.style.minWidth = '140px';
-    this.tabs.root.style.flexShrink = '0';
-
-    this.tabs.root.style.flexGrow = '1';
-
+    this.tabs.root.classList.add('plate-widget__tabs');
     this.tabsContainer.appendChild(this.tabs.root);
     this.root.appendChild(this.tabsContainer);
-
     this.root.appendChild(this.roleSummaryDiv);
 
     this.grid.props.allowRowSelection = false;
@@ -227,7 +219,7 @@ export class PlateWidget extends DG.Widget {
       const legendItem = ui.divH([
         ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
         ui.divText(`${role} (${count} wells)`),
-      ], {style: {gap: '6px', alignItems: 'center'}});
+      ], 'role-summary__item');
       this.roleSummaryDiv.appendChild(legendItem);
     }
   }
@@ -238,9 +230,8 @@ export class PlateWidget extends DG.Widget {
 
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
-    pw.grid.root.style.width = '100%';
     pw.plate = plate;
-    pw.detailsDiv = ui.divV([]);
+    pw.detailsDiv = ui.divV([], 'plate-widget__details');
     pw.wellDetailsDiv = div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
     pw.grid.onCurrentCellChanged.pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
@@ -289,7 +280,7 @@ export class PlateWidget extends DG.Widget {
           const p = this.plate;
           for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
-                          p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+                      p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
           }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });
@@ -392,3 +383,4 @@ export class PlateWidget extends DG.Widget {
     super.detach();
   }
 }
+
