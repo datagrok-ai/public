@@ -608,12 +608,12 @@ export namespace funcs {
     return await grok.functions.call('Chem:DetectSmiles', { col, min });
   }
 
-  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , limit?: number , minScore?: number , fingerprint: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CallChemSimilaritySearch', { df, col, molecule, metricName, limit, minScore, fingerprint });
+  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , fingerprint: string , limit?: number , minScore?: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CallChemSimilaritySearch', { df, col, molecule, metricName, fingerprint, limit, minScore });
   }
 
-  export async function callChemDiversitySearch(col: DG.Column , metricName: string , limit?: number , fingerprint: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, limit, fingerprint });
+  export async function callChemDiversitySearch(col: DG.Column , metricName: string , fingerprint: string , limit?: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, fingerprint, limit });
   }
 
   export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<DG.DataFrame> {

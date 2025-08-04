@@ -443,6 +443,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Chem Similarity Search',
     tags: ['viewer'],
+    outputs: [{name: 'result', type: 'viewer'}],
     meta: {icon: 'files/icons/chem-similarity-search-viewer.svg'},
   })
   static similaritySearchViewer(): ChemSimilarityViewer {
@@ -1605,7 +1606,7 @@ export class PackageFunctions {
     const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
     progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
     const fingerprints : DG.DataFrame = await PackageFunctions.callChemSimilaritySearch(dframe, molCol, smiles,
-      BitArrayMetricsNames.Tanimoto, 1000000, 0.0, Fingerprint.Morgan);
+      BitArrayMetricsNames.Tanimoto, Fingerprint.Morgan, 1000000, 0.0);
     ui.setUpdateIndicator(grid.root, false);
     progressBar.update(100, 'Sort completed');
     progressBar.close();
@@ -1786,9 +1787,9 @@ export class PackageFunctions {
     col: DG.Column,
     molecule: string,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics,
+    @grok.decorators.param({type: 'string'}) fingerprint: string,
     @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number,
-    @grok.decorators.param({type: 'double', options: {optional: true}}) minScore: number,
-    @grok.decorators.param({type: 'string'}) fingerprint: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'double', options: {optional: true}}) minScore: number): Promise<DG.DataFrame> {
     const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
       fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
     return res ?? DG.DataFrame.create();
@@ -1802,8 +1803,7 @@ export class PackageFunctions {
   static async callChemDiversitySearch(
     col: DG.Column,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics,
-    @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number,
-    fingerprint: string): Promise<number[]> {
+    fingerprint: string, @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number): Promise<number[]> {
     return await chemDiversitySearch(col, similarityMetric[metricName], limit,
       fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   }

@@ -176,7 +176,7 @@ export async function saveAsSdf() {
 
 //name: Chem Similarity Search
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/chem-similarity-search-viewer.svg
 export function similaritySearchViewer() {
   return PackageFunctions.similaritySearchViewer();
@@ -821,22 +821,22 @@ export function detectSmiles(col: DG.Column, min: number) {
 //input: column col 
 //input: string molecule 
 //input: string metricName { choices: ['Tanimoto','Asymmetric','Cosine','Sokal'] }
+//input: string fingerprint 
 //input: int limit { optional: true }
 //input: double minScore { optional: true }
-//input: string fingerprint 
 //output: dataframe result
-export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, limit: number, minScore: number, fingerprint: string) {
-  return PackageFunctions.callChemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint);
+export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, fingerprint: string, limit: number, minScore: number) {
+  return PackageFunctions.callChemSimilaritySearch(df, col, molecule, metricName, fingerprint, limit, minScore);
 }
 
 //name: chemDiversitySearch
 //input: column col 
 //input: string metricName { choices: ['Tanimoto','Asymmetric','Cosine','Sokal'] }
-//input: int limit { optional: true }
 //input: string fingerprint 
+//input: int limit { optional: true }
 //output: dataframe result
-export async function callChemDiversitySearch(col: DG.Column, metricName: any, limit: number, fingerprint: string) {
-  return PackageFunctions.callChemDiversitySearch(col, metricName, limit, fingerprint);
+export async function callChemDiversitySearch(col: DG.Column, metricName: any, fingerprint: string, limit: number) {
+  return PackageFunctions.callChemDiversitySearch(col, metricName, fingerprint, limit);
 }
 
 //name: Chemical Properties
