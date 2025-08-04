@@ -42,7 +42,7 @@ export async function pricesPanel(id: string) {
 //name: getChemspaceIds
 //input: column<string> molColumn { semType: Molecule }
 //input: string shipToCountry 
-//output: dynamic result
+//output: column result
 //meta.vectorFunc: true
 export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: string) {
   return PackageFunctions.getChemspaceIds(molColumn, shipToCountry);
@@ -50,9 +50,21 @@ export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: strin
 
 //name: getChemspacePrices
 //input: dataframe data 
-//input: column idsColumn 
+//input: column<string> idsColumn { semType: chemspace-id }
 //input: string shipToCountry 
-//output: dynamic result
+//output: dataframe res { action: join(data) }
 export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column, shipToCountry: string) {
   return PackageFunctions.getChemspacePrices(data, idsColumn, shipToCountry);
+}
+
+//name: queryMultipart
+//description: Perform query with multipart form data
+//input: string path 
+//input: string formParamsStr 
+//input: string paramsStr { optional: true }
+//output: string result
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+export async function queryMultipart(path: string, formParamsStr: string, paramsStr: string) {
+  return PackageFunctions.queryMultipart(path, formParamsStr, paramsStr);
 }

@@ -34,13 +34,12 @@ enum CATEGORY {
 const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub',
   [SEARCH_MODE.TEXT]: 'text', [SEARCH_MODE.EXACT]: 'exact'};
 
-export class PackageFunctions{
+export class PackageFunctions {
   @grok.decorators.app({
     'browsePath': 'Chem',
-    'name': 'Chemspace'
+    'name': 'Chemspace',
   })
   static async app(): Promise<void> {
-  
     await getApiToken();
 
     const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
@@ -100,15 +99,14 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'tags': [
-      'widgets'
+      'widgets',
     ],
     'name': 'Databases | Chemspace',
     'description': 'Chemspace Samples',
-    'condition': 'true'
+    'condition': 'true',
   })
   static async samplesPanel(
-    @grok.decorators.param({'options':{'semType':'Molecule'}})  smiles: string): Promise<DG.Widget> {
-  
+    @grok.decorators.param({'options': {'semType': 'Molecule'}}) smiles: string): Promise<DG.Widget> {
     const updateSearchResults = (acc: DG.Accordion,
       categoryToData: {[key: string]: {[searchMode in SEARCH_MODE]?: HTMLDivElement}},
       cat: CATEGORY, shipToCountry: COUNTRY_CODES): void => {
@@ -231,15 +229,14 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'tags': [
-      'widgets'
+      'widgets',
     ],
     'name': 'Chemspace Prices',
     'description': 'Chemspace Prices',
-    'condition': 'true'
+    'condition': 'true',
   })
   static async pricesPanel(
-    @grok.decorators.param({'options':{'semType':'chemspace-id'}})  id: string): Promise<DG.Widget> {
-  
+    @grok.decorators.param({'options': {'semType': 'chemspace-id'}}) id: string): Promise<DG.Widget> {
     let prices: HTMLDivElement | null = null;
     const resData = ui.div([ui.loader()]);
     const updatePrices = (categoryToData: { [key: string]: HTMLDivElement },
@@ -317,13 +314,12 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     'meta': {
-      'vectorFunc': 'true'
-    }
+      'vectorFunc': 'true',
+    },
   })
   static async getChemspaceIds(
-    @grok.decorators.param({'type':'column<string>','options':{'semType':'Molecule'}})  molColumn: DG.Column,
-    shipToCountry: string): Promise<DG.Column | undefined> {
-  
+    @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'Molecule'}}) molColumn: DG.Column,
+      shipToCountry: string): Promise<DG.Column> {
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace ids for ${molColumn.name}...`);
     try {
       await getApiToken();
@@ -353,16 +349,19 @@ export class PackageFunctions{
       return DG.Column.fromStrings('csIds', ids);
     } catch (e: any) {
       grok.shell.error(e.message ?? e);
+      return DG.Column.fromStrings('csIds', []);
     } finally {
       pi.close();
     }
   }
 
 
-  @grok.decorators.func()
-  static async getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column,
-    shipToCountry: string): Promise<DG.DataFrame | undefined> {
-  
+  @grok.decorators.func({
+    outputs: [{name: 'res', type: 'dataframe', options: {action: 'join(data)'}}],
+  })
+  static async getChemspacePrices(data: DG.DataFrame,
+     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id'}}) idsColumn: DG.Column,
+    shipToCountry: string): Promise<DG.DataFrame> {
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace prices for ${idsColumn.name}...`);
     try {
       await getApiToken();
@@ -415,8 +414,70 @@ export class PackageFunctions{
       return DG.DataFrame.fromColumns([vendorCol, mgCol, priceCol, leadTime]);
     } catch (e: any) {
       grok.shell.error(e.message ?? e);
+      return DG.DataFrame.create();
     } finally {
       pi.close();
+    }
+  }
+
+  @grok.decorators.func({
+    description: 'Perform query with multipart form data',
+    meta: {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *',
+    },
+  })
+  static async queryMultipart(path: string, formParamsStr: string,
+   @grok.decorators.param({options: {optional: true}}) paramsStr?: string): Promise<string> {
+    const formParams: { [key: string]: string } = JSON.parse(formParamsStr);
+    const params: { [key: string]: string | number } | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
+
+    const formData = new FormData();
+    Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
+    const queryUrlParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
+    const url = `${host}/v4/${path}${queryUrlParams}`;
+
+    const queryParams = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json; version=2.6',
+      },
+      body: formData,
+    };
+
+    try {
+      let response = await grok.dapi.fetchProxy(url, queryParams);
+      let totalAttempts = 10;
+      let attemptsCount = 0;
+      const delayMs = 1000;
+      const rerunRequest = async (): Promise<void> => {
+        response = await grok.dapi.fetchProxy(url, queryParams);
+        if (!response.ok && response.status !== 429)
+          throw new Error(`${response.status}, ${response.statusText}`);
+      };
+      if (!response.ok) {
+      //attempt to update token
+        if (response.status === 401) {
+          token = null;
+          await getApiToken();
+          await rerunRequest();
+        }
+
+        if (response.status === 429) {
+          while (response.status === 429 && totalAttempts > 0) {
+            totalAttempts--;
+            attemptsCount++;
+            await delay(delayMs * attemptsCount);
+            await rerunRequest();
+          }
+        } else
+          throw new Error(`${response.status}, ${response.statusText}`);
+      }
+      const list: ChemspaceResult[] = (await response.json()).items;
+      return JSON.stringify(list && list.length > 0 ? list : []);
+    } catch (e) {
+      throw e;
     }
   }
 }
@@ -427,62 +488,6 @@ async function getApiToken(): Promise<void> {
     if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
       throw new Error('API key is not set in package credentials');
     token = await requestAuthToken(credentials.parameters[API_KEY_PARAM_NAME]);
-  }
-}
-
-
-export async function queryMultipart(path: string,   formParamsStr: string,   paramsStr?: string): Promise<string> {
- 
- 
-  const formParams: { [key: string]: string } = JSON.parse(formParamsStr);
-  const params: { [key: string]: string | number } | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
-
-  const formData = new FormData();
-  Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
-  const queryUrlParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
-  const url = `${host}/v4/${path}${queryUrlParams}`;
-
-  const queryParams = {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json; version=2.6',
-    },
-    body: formData,
-  };
-
-  try {
-    let response = await grok.dapi.fetchProxy(url, queryParams);
-    let totalAttempts = 10;
-    let attemptsCount = 0;
-    const delayMs = 1000;
-    const rerunRequest = async (): Promise<void> => {
-      response = await grok.dapi.fetchProxy(url, queryParams);
-      if (!response.ok && response.status !== 429)
-        throw new Error(`${response.status}, ${response.statusText}`);
-    };
-    if (!response.ok) {
-      //attempt to update token
-      if (response.status === 401) {
-        token = null;
-        await getApiToken();
-        await rerunRequest();
-      }
-
-      if (response.status === 429) {
-        while (response.status === 429 && totalAttempts > 0) {
-          totalAttempts--;
-          attemptsCount++;
-          await delay(delayMs * attemptsCount);
-          await rerunRequest();
-        }
-      } else
-        throw new Error(`${response.status}, ${response.statusText}`);
-    }
-    const list: ChemspaceResult[] = (await response.json()).items;
-    return JSON.stringify(list && list.length > 0 ? list : []);
-  } catch (e) {
-    throw e;
   }
 }
 
