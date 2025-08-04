@@ -60,12 +60,13 @@ export class PackageFunctions {
   @grok.decorators.func({
     'meta': {
       'role': 'converter',
-      'inputRegexp': '(^\\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\\s*\\',
+      'inputRegexp': '(^\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\s*\:\s*[0-9]+\s*$)',
       'connection': 'PubChemApi',
     },
+    outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}]
   })
   static async pubChemToSmiles(
-    id: string) {
+    id: string): Promise<string> {
     const pubChemId = id.substring(id.indexOf(':') + 1).trim();
     const url = `${pubChemRest}/pug/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
     const response = await grok.dapi.fetchProxy(url);
@@ -81,9 +82,10 @@ export class PackageFunctions {
       'inputRegexp': '([A-Z]{14}-[A-Z]{10}-N)',
       'connection': 'PubChemApi',
     },
+    outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}]
   })
   static async inchiKeysToSmiles(
-    id: string) {
+    id: string): Promise<string> {
     const s = await getBy('InChIKey', 'cids', id);
     const cids = s['IdentifierList']['CID'][0];
     const smiles = await PackageFunctions.pubChemToSmiles(cids.toString());
@@ -97,7 +99,7 @@ export class PackageFunctions {
     },
   })
   static async GetIupacName(
-    smiles: string) {
+    smiles: string): Promise<string> {
     // need to escape # sign (triple bond) in URL
     const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;

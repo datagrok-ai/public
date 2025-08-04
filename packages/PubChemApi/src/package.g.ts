@@ -27,9 +27,9 @@ export async function pubChemIdentitySearch(molString: string) {
 
 //name: pubChemToSmiles
 //input: string id 
-//output: dynamic result
+//output: string result { semType: Molecule }
 //meta.role: converter
-//meta.inputRegexp: (^\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\s*\
+//meta.inputRegexp: (^s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]s*:s*[0-9]+s*$)
 //meta.connection: PubChemApi
 export async function pubChemToSmiles(id: string) {
   return PackageFunctions.pubChemToSmiles(id);
@@ -37,7 +37,7 @@ export async function pubChemToSmiles(id: string) {
 
 //name: inchiKeysToSmiles
 //input: string id 
-//output: dynamic result
+//output: string result { semType: Molecule }
 //meta.role: converter
 //meta.inputRegexp: ([A-Z]{14}-[A-Z]{10}-N)
 //meta.connection: PubChemApi
@@ -47,7 +47,7 @@ export async function inchiKeysToSmiles(id: string) {
 
 //name: GetIupacName
 //input: string smiles 
-//output: dynamic result
+//output: string result
 //meta.connection: PubChemApi
 export async function GetIupacName(smiles: string) {
   return PackageFunctions.GetIupacName(smiles);

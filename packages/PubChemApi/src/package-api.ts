@@ -20,7 +20,7 @@ export namespace funcs {
     return await grok.functions.call('PubChem:PubChemIdentitySearch', { molString });
   }
 
-  export async function pubChemToSmiles(id: string ): Promise<any> {
+  export async function pubChemToSmiles(id: string ): Promise<string> {
     return await grok.functions.call('PubChem:PubChemToSmiles', { id });
   }
 
