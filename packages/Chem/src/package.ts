@@ -1464,7 +1464,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Molecule',
+    description: 'Molecule',
     tags: ['cellEditor'],
   })
   static async editMoleculeCell(

@@ -663,7 +663,8 @@ export function convertMixtureToSmiles(col: DG.Column) {
   return PackageFunctions.convertMixtureToSmiles(col);
 }
 
-//name: Molecule
+//name: editMoleculeCell
+//description: Molecule
 //tags: cellEditor
 //input: grid_cell cell 
 export async function editMoleculeCell(cell: any) {
