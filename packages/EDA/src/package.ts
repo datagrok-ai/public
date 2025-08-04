@@ -614,7 +614,9 @@ export class PackageFunctions {
     'name': 'trainSigmoidKernelSVM'
   })
   static async trainSigmoidKernelSVM(df: DG.DataFrame, predictColumn: DG.Column,
-    gamma: number, kappa: number, theta: number): Promise<any> {
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1.0'}}) gamma: number,
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1'}}) kappa: number,
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1'}}) theta: number): Promise<any> {
   
     const trainedModel = await getTrainedModel(
       {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta},
