@@ -67,8 +67,8 @@ export class PackageFunctions {
     df: DG.DataFrame,
     @grok.decorators.param({'options':{'type':'numerical'}})   xCol: DG.Column,
     @grok.decorators.param({'options':{'type':'numerical'}})   yCol: DG.Column,
-    @grok.decorators.param({'options':{'caption':'Epsilon','initialValue':'0.02'}})   epsilon: number,
-    @grok.decorators.param({'type':'int','options':{'caption':'Minimum points','initialValue':'4'}})   minPts: number) : Promise<DG.Column> {
+    @grok.decorators.param({'options':{'caption':'Epsilon','initialValue':'0.02', description: 'The maximum distance between two samples for them to be considered as in the same neighborhood.'}})   epsilon: number,
+    @grok.decorators.param({'type':'int','options':{'caption':'Minimum points','initialValue':'4', description: 'The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.'}})   minPts: number) : Promise<DG.Column> {
   
     const x = xCol.getRawData() as Float32Array;
     const y = yCol.getRawData() as Float32Array;
@@ -87,9 +87,9 @@ export class PackageFunctions {
   static async PCA(
       table: DG.DataFrame,
     @grok.decorators.param({'type':'column_list','options':{'type':'numerical','nullable':false}})   features: DG.ColumnList,
-    @grok.decorators.param({'type':'int','options':{'caption':'Components','nullable':false,'min':'1','initialValue':'2'}})   components: number,
-    @grok.decorators.param({'type':'bool','options':{'initialValue':'false'}})   center: boolean,
-    @grok.decorators.param({'type':'bool','options':{'initialValue':'false'}})   scale: boolean): Promise<void> {
+    @grok.decorators.param({'type':'int','options':{'caption':'Components','nullable':false,'min':'1','initialValue':'2', description: 'Number of components.'}})   components: number,
+    @grok.decorators.param({'type':'bool','options':{'initialValue':'false', description: 'Indicating whether the variables should be shifted to be zero centered.'}})   center: boolean,
+    @grok.decorators.param({'type':'bool','options':{'initialValue':'false', description: 'Indicating whether the variables should be scaled to have unit variance.'}})   scale: boolean): Promise<void> {
   
     try {
       const pcaTable = await computePCA(table, features, components, center, scale);
@@ -123,8 +123,8 @@ export class PackageFunctions {
   static async dbscanPostProcessingFunction(
     col1: DG.Column,
     col2: DG.Column,
-    @grok.decorators.param({'options':{'initialValue':'0.01'}})   epsilon: number,
-    @grok.decorators.param({'type':'int','options':{'initialValue':'5'}})   minimumPoints: number) {
+    @grok.decorators.param({'options':{'initialValue':'0.01', description: 'Minimum distance between two points to be considered as in the same neighborhood.'}})   epsilon: number,
+    @grok.decorators.param({'type':'int','options':{'initialValue':'5', description: 'Minimum number of points to form a dense region.'}})   minimumPoints: number) {
   
     const df = col1.dataFrame;
     if (df === null)
@@ -259,7 +259,7 @@ export class PackageFunctions {
     'top-menu': 'ML | Cluster | MCL...',
     'name': 'MCLClustering',
     'description': 'Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.',
-    'editor': 'EDA'
+    'editor': 'EDA: GetMCLEditor'
   })
   static async MCLClustering(
     df: DG.DataFrame,
@@ -799,10 +799,10 @@ export class PackageFunctions {
     'name': 'trainSoftmax'
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, 
-    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20'}}) rate: number,
-    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10'}}) iterations: number, 
-    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '0.1', 'min': '0.0001', 'max': '1'}}) penalty: number, 
-    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1'}}) tolerance: number): Promise<Uint8Array> {
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', description: 'Learning rate.'}}) rate: number,
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', description: 'Fitting iterations count'}}) iterations: number, 
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '0.1', 'min': '0.0001', 'max': '1', description: 'Regularization rate.'}}) penalty: number, 
+    @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', description: 'Fitting tolerance.'}}) tolerance: number): Promise<Uint8Array> {
   
     const features = df.columns;
 
@@ -875,7 +875,7 @@ export class PackageFunctions {
   static async trainPLSRegression(
       df: DG.DataFrame,
        predictColumn: DG.Column,
-    @grok.decorators.param({'type':'int','options':{'min':'1','max':'10','initialValue':'3'}})   components: number): Promise<Uint8Array> {
+    @grok.decorators.param({'type':'int','options':{'min':'1','max':'10','initialValue':'3', description: 'Number of latent components.'}})   components: number): Promise<Uint8Array> {
   
     const features = df.columns;
 
@@ -965,11 +965,11 @@ export class PackageFunctions {
   static async trainXGBooster(
       df: DG.DataFrame,
        predictColumn: DG.Column,
-    @grok.decorators.param({'type':'int','options':{'min':'1','max':'100','initialValue':'20'}})   iterations: number,
-    @grok.decorators.param({'type':'double','options':{'caption':'Rate','min':'0','max':'1','initialValue':'0.3'}})   eta: number,
-    @grok.decorators.param({'type':'int','options':{'min':'0','max':'20','initialValue':'6'}})   maxDepth: number,
-    @grok.decorators.param({'type':'double','options':{'min':'0','max':'100','initialValue':'1'}})   lambda: number,
-    @grok.decorators.param({'type':'double','options':{'min':'0','max':'100','initialValue':'0'}})   alpha: number): Promise<Uint8Array> { 
+    @grok.decorators.param({'type':'int','options':{'min':'1','max':'100','initialValue':'20', description: 'Number of training iterations.'}})   iterations: number,
+    @grok.decorators.param({'type':'double','options':{'caption':'Rate','min':'0','max':'1','initialValue':'0.3', description: 'Learning rate.'}})   eta: number,
+    @grok.decorators.param({'type':'int','options':{'min':'0','max':'20','initialValue':'6', description: 'Maximum depth of a tree.'}})   maxDepth: number,
+    @grok.decorators.param({'type':'double','options':{'min':'0','max':'100','initialValue':'1', description: 'L2 regularization term.'}})   lambda: number,
+    @grok.decorators.param({'type':'double','options':{'min':'0','max':'100','initialValue':'0', description: 'L1 regularization term.'}})   alpha: number): Promise<Uint8Array> { 
     const features = df.columns;
 
     const booster = new XGBooster();

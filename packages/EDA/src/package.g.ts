@@ -18,8 +18,8 @@ export async function init() {
 //input: dataframe df 
 //input: column xCol { type: numerical }
 //input: column yCol { type: numerical }
-//input: double epsilon { caption: Epsilon; default: 0.02 }
-//input: int minPts { caption: Minimum points; default: 4 }
+//input: double epsilon { caption: Epsilon; default: 0.02; description: The maximum distance between two samples for them to be considered as in the same neighborhood. }
+//input: int minPts { caption: Minimum points; default: 4; description: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. }
 //output: column result
 //top-menu: ML | Cluster | DBSCAN...
 export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) {
@@ -30,9 +30,9 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //description: Principal component analysis (PCA)
 //input: dataframe table 
 //input: column_list features { type: numerical; nullable: false }
-//input: int components { caption: Components; nullable: false; min: 1; default: 2 }
-//input: bool center { default: false }
-//input: bool scale { default: false }
+//input: int components { caption: Components; nullable: false; min: 1; default: 2; description: Number of components. }
+//input: bool center { default: false; description: Indicating whether the variables should be shifted to be zero centered. }
+//input: bool scale { default: false; description: Indicating whether the variables should be scaled to have unit variance. }
 //top-menu: ML | Analyze | PCA...
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean) {
   return PackageFunctions.PCA(table, features, components, center, scale);
@@ -42,8 +42,8 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //tags: dim-red-postprocessing-function
 //input: column col1 
 //input: column col2 
-//input: double epsilon { default: 0.01 }
-//input: int minimumPoints { default: 5 }
+//input: double epsilon { default: 0.01; description: Minimum distance between two points to be considered as in the same neighborhood. }
+//input: int minimumPoints { default: 5; description: Minimum number of points to form a dense region. }
 //output: dynamic result
 //meta.defaultPostProcessingFunction: true
 export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) {
@@ -101,7 +101,7 @@ export function GetMCLEditor(call: DG.FuncCall) {
 //input: int minClusterSize { default: 5 }
 //output: dynamic result
 //top-menu: ML | Cluster | MCL...
-//editor: EDA
+//editor: EDA: GetMCLEditor
 export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: any, weights: number[], aggregationMethod: any, preprocessingFuncs: any[], preprocessingFuncArgs: any[], threshold: number, maxIterations: number, useWebGPU: boolean, inflate: number, minClusterSize: number) {
   return PackageFunctions.MCLClustering(df, cols, metrics, weights, aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate, minClusterSize);
 }
@@ -313,9 +313,9 @@ export async function visualizePolynomialKernelSVM(df: DG.DataFrame, targetColum
 //name: trainSigmoidKernelSVM
 //input: dataframe df 
 //input: column predictColumn 
-//input: double gamma 
-//input: double kappa 
-//input: double theta 
+//input: double gamma { category: Hyperparameters; default: 1.0 }
+//input: double kappa { category: Hyperparameters; default: 1 }
+//input: double theta { category: Hyperparameters; default: 1 }
 //output: dynamic result
 //meta.mlname: sigmoid kernel LS-SVM
 //meta.mlrole: train
@@ -431,10 +431,10 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //name: trainSoftmax
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate { category: Hyperparameters; default: 1.0; min: 0.001; max: 20 }
-//input: double iterations { category: Hyperparameters; default: 100; min: 1; max: 10000; step: 10 }
-//input: double penalty { category: Hyperparameters; default: 0.1; min: 0.0001; max: 1 }
-//input: double tolerance { category: Hyperparameters; default: 0.001; min: 0.00001; max: 0.1 }
+//input: double rate { category: Hyperparameters; default: 1.0; min: 0.001; max: 20; description: Learning rate. }
+//input: double iterations { category: Hyperparameters; default: 100; min: 1; max: 10000; step: 10; description: Fitting iterations count }
+//input: double penalty { category: Hyperparameters; default: 0.1; min: 0.0001; max: 1; description: Regularization rate. }
+//input: double tolerance { category: Hyperparameters; default: 0.001; min: 0.00001; max: 0.1; description: Fitting tolerance. }
 //output: blob result
 //meta.mlname: Softmax
 //meta.mlrole: train
@@ -475,7 +475,7 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 //name: trainPLSRegression
 //input: dataframe df 
 //input: column predictColumn 
-//input: int components { min: 1; max: 10; default: 3 }
+//input: int components { min: 1; max: 10; default: 3; description: Number of latent components. }
 //output: blob result
 //meta.mlname: PLS Regression
 //meta.mlrole: train
@@ -528,11 +528,11 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 //name: trainXGBooster
 //input: dataframe df 
 //input: column predictColumn 
-//input: int iterations { min: 1; max: 100; default: 20 }
-//input: double eta { caption: Rate; min: 0; max: 1; default: 0.3 }
-//input: int maxDepth { min: 0; max: 20; default: 6 }
-//input: double lambda { min: 0; max: 100; default: 1 }
-//input: double alpha { min: 0; max: 100; default: 0 }
+//input: int iterations { min: 1; max: 100; default: 20; description: Number of training iterations. }
+//input: double eta { caption: Rate; min: 0; max: 1; default: 0.3; description: Learning rate. }
+//input: int maxDepth { min: 0; max: 20; default: 6; description: Maximum depth of a tree. }
+//input: double lambda { min: 0; max: 100; default: 1; description: L2 regularization term. }
+//input: double alpha { min: 0; max: 100; default: 0; description: L1 regularization term. }
 //output: blob result
 //meta.mlname: XGBoost
 //meta.mlrole: train
