@@ -7,9 +7,9 @@
 5. In the **Context Panel**, check the **Sharing** section - **a new user should be created for the shared email**  
 6. Check for notifications both in email and on the platform
 7. Right-click the project and select **Details**
-8. In the **Context Panel**, review all tabs
+8. On the **Context Panel**, review all tabs
 
 ---
 {
-  "order": 3
+  "order": 2
 }
