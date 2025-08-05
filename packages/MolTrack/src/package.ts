@@ -2,13 +2,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import { u2 } from "@datagrok-libraries/utils/src/u2";
+import { createRegistrationNode } from './utils';
 
 export const _package = new DG.Package();
 
 //tags: app
-//name: CDD Vault
-//meta.icon: images/cdd-icon-small.png
+//name: MolTrack App
+//meta.icon: images/cdd-icon-big.png
 //output: view v
 //meta.browsePath: Chem
 export async function molTrackApp(): Promise<DG.ViewBase> {
@@ -28,10 +29,14 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
   ]));
 }
 
-
 //input: dynamic treeNode
 //input: view browseView
-export async function cddVaultAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
+export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
+  //search node
+  const searchNode = appNode.item("Register");
+  searchNode.onSelected.subscribe(() => {
+    createRegistrationNode(appNode);
+  });
   appNode.group('Protocols');
   appNode.group('Plates');
   appNode.group('Assays');
