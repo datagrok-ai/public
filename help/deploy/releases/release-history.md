@@ -26,9 +26,9 @@ See also:
 
 The Datagrok 1.26.0 release focuses on improved data access and collaboration, enhanced visualization capabilities, and navigation UI/UX improvements.
 
-<!-- ### Breaking changes
+### Breaking changes
 
-* Database structure changes. Older versions will not work without manual rollback.-->
+Database structure changes: older versions are not compatible with this release. Rollback to 1.25 requires manually reverting the database changes
 
 ### Main updates
 
