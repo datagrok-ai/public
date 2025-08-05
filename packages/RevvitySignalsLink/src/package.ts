@@ -3,16 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { u2 } from "@datagrok-libraries/utils/src/u2";
-import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
+import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signals-search-builder';
 import '../css/revvity-signals-styles.css';
-import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
 import { RevvityFilters } from './filters';
-import { buildPropertyFilterForm } from './defaultProperties';
+import { buildPropertyFilterForm, ComplexCondition } from './query-builder';
 import { getProperties } from './properties';
-import { testFilterCondition } from './conts';
+import { testFilterCondition } from './const';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -42,7 +42,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async revvitySignalsLinkAppTreeBrowser(
-    treeNode: DG.TreeViewGroup) {
+    treeNode: DG.TreeViewGroup, browseView: DG.View) {
 
     const search = treeNode.item('Search');
     search.onSelected.subscribe(() => {
@@ -55,7 +55,7 @@ export class PackageFunctions {
     const search2 = treeNode.item('Search 2');
     search2.onSelected.subscribe(() => {
       const v = DG.View.create('Search 2');
-      const queryBuilder = buildPropertyFilterForm(getProperties(), testFilterCondition);
+      const queryBuilder = buildPropertyFilterForm(getProperties(), JSON.parse(JSON.stringify(testFilterCondition)) as ComplexCondition);
       v.append(queryBuilder);
       grok.shell.addPreview(v);
     });

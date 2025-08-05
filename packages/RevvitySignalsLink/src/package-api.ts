@@ -12,8 +12,8 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkApp', {});
   }
 
-  export async function revvitySignalsLinkAppTreeBrowser(treeNode: any ): Promise<any> {
-    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode });
+  export async function revvitySignalsLinkAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode, browseView });
   }
 
   export async function searchEntities(query: string , params: string ): Promise<DG.DataFrame> {
