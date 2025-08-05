@@ -5,6 +5,46 @@ import { Subject } from 'rxjs';
 import dayjs from 'dayjs';
 import { IProperty } from 'datagrok-api/dg';
 
+/**
+ * Generates a color for nesting levels that progressively gets darker
+ * @param level The nesting level (1-based)
+ * @returns A hex color string
+ */
+function generateNestingColor(level: number): string {
+    // Base color: light blue (#bbdefb)
+    const baseColor = { r: 187, g: 222, b: 251 };
+    
+    // Calculate darkening factor (0.1 to 0.9)
+    const darkeningFactor = Math.min(0.1 + (level - 1) * 0.08, 0.9);
+    
+    // Apply darkening
+    const r = Math.round(baseColor.r * (1 - darkeningFactor));
+    const g = Math.round(baseColor.g * (1 - darkeningFactor));
+    const b = Math.round(baseColor.b * (1 - darkeningFactor));
+    
+    // Convert to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+
+// export interface SimpleConditionTest<T extends string = string> {
+//     field?: string;
+//     operator?: T;
+//     value?: OperatorMapping[T];
+// }
+
+// type OperatorMapping = {
+//    [Operators.CONTAINS]: string, 
+//    [Operators.GT]: number,
+//    [key: string]: any
+// }
+
+// const t: SimpleConditionTest = {
+//     field: 'test',
+//     operator: Operators.CONTAINS,
+//     value: 5
+// }
+
 export type SimpleCondition<T = any> = {
     field: string;
     operator: string;
@@ -29,6 +69,10 @@ export class BaseConditionEditor<T = any> {
             operator: operator,
             value: undefined as T
         };
+        this.initializeEditor(prop);
+    }
+
+    protected initializeEditor(prop: DG.Property): void {
         const input = ui.input.forProperty(prop, this.condition.value, {
             onValueChanged: () => {
                 this.condition.value = input.value as T;
@@ -37,6 +81,103 @@ export class BaseConditionEditor<T = any> {
         });
         input.addCaption('');
         this.root.append(input.root);
+    }
+}
+
+export class DateBetweenConditionEditor extends BaseConditionEditor<Date> {
+    // TODO: change UI
+    override initializeEditor(prop: DG.Property): void {
+        const input = ui.input.forProperty(prop, this.condition.value || new Date(), {
+            onValueChanged: () => {
+                this.condition.value = input.value;
+                this.onChanged.next(this.condition);
+            }
+        });
+        input.addCaption('');
+        this.root.append(input.root);
+    }
+}
+
+export class MultiValueConditionEditor extends BaseConditionEditor<any[]> {
+    override initializeEditor(prop: DG.Property): void {
+        const input = ui.input.string((this.condition.value || []).join(', '), {
+            onValueChanged: () => {
+                this.condition.value = input.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                this.onChanged.next(this.condition);
+            }
+        });
+        input.addCaption('Comma-separated values');
+        this.root.append(input.root);
+    }
+}
+
+// Condition editor registry
+export class ConditionEditorRegistry {
+    private static instance: ConditionEditorRegistry;
+    private editorRegistry: Map<string, new (prop: DG.Property, operator: string, initialCondition?: any) => BaseConditionEditor> = new Map();
+
+    private constructor() {
+        this.initializeDefaultEditors();
+    }
+
+    static getInstance(): ConditionEditorRegistry {
+        if (!ConditionEditorRegistry.instance) {
+            ConditionEditorRegistry.instance = new ConditionEditorRegistry();
+        }
+        return ConditionEditorRegistry.instance;
+    }
+
+    private initializeDefaultEditors(): void {
+        // Register default editors by property type (with empty semType and operator)
+        this.registerEditor(DG.TYPE.STRING, '', '', BaseConditionEditor);
+        this.registerEditor(DG.TYPE.INT, '', '', BaseConditionEditor);
+        this.registerEditor(DG.TYPE.FLOAT, '', '', BaseConditionEditor);
+        this.registerEditor(DG.TYPE.DATE_TIME, '', '', BaseConditionEditor);
+
+        // Register specialized editors for specific combinations
+        this.registerEditor(DG.TYPE.STRING, '', 'in', MultiValueConditionEditor);
+        this.registerEditor(DG.TYPE.DATE_TIME, '', 'between', DateBetweenConditionEditor);
+    }
+
+    // Register an editor for a specific combination
+    registerEditor<T>(
+        propertyType: string, 
+        semType: string, 
+        operator: string, 
+        editorClass: new (prop: DG.Property, operator: string) => BaseConditionEditor<T>
+    ): void {
+        const key = this.createKey(propertyType, semType, operator);
+        this.editorRegistry.set(key, editorClass);
+    }
+
+    // Create editor for a property and operator
+    createEditor<T>(property: DG.Property, operator: string, initialCondition?: SimpleCondition<T>): BaseConditionEditor<T> {
+        // Try to find a specialized editor first (propertyType + semType + operator)
+        const specializedKey = this.createKey(property.propertyType, property.semType, operator);
+        let EditorClass = this.editorRegistry.get(specializedKey);
+
+        // If no specialized editor, try with empty semType (propertyType + operator)
+        if (!EditorClass) {
+            const typeOnlyKey = this.createKey(property.propertyType, '', operator);
+            EditorClass = this.editorRegistry.get(typeOnlyKey);
+        }
+
+        // If still no specialized editor, use default editor for property type (propertyType only)
+        if (!EditorClass) {
+            const defaultKey = this.createKey(property.propertyType, '', '');
+            EditorClass = this.editorRegistry.get(defaultKey);
+        }
+
+        // Fallback to base editor
+        if (!EditorClass) {
+            EditorClass = BaseConditionEditor;
+        }
+
+        return new EditorClass(property, operator, initialCondition);
+    }
+
+    private createKey(propertyType: string, semType: string, operator: string): string {
+        return `${propertyType}:${semType}:${operator}`;
     }
 }
 
@@ -131,11 +272,14 @@ export namespace Operators {
 }
 
 export function getConditionEditor<T = any>(property: DG.Property, operator: string, condition?: SimpleCondition<T>): BaseConditionEditor<T> {
-    const registry = OperatorRegistry.getInstance();
-    if (registry.isOperatorSupported(property, operator))
-        return new BaseConditionEditor<T>(property, operator, condition);
-    else 
+    const operatorRegistry = OperatorRegistry.getInstance();
+    const editorRegistry = ConditionEditorRegistry.getInstance();
+    
+    if (operatorRegistry.isOperatorSupported(property, operator)) {
+        return editorRegistry.createEditor(property, operator, condition);
+    } else {
         throw Error(`Operator '${operator}' is not supported for property type '${property.propertyType}'`);
+    }
 }
 
 // Recursive UI builder for filter conditions
@@ -144,7 +288,8 @@ export function buildPropertyFilterUI(
     properties: DG.Property[],
     onValueChange: () => void,
     onStructureChange: () => void,
-    parentCondition?: ComplexCondition
+    parentCondition?: ComplexCondition,
+    nestingLevel: number = 0
 ): HTMLElement {
 
     if (!condition) {
@@ -254,6 +399,13 @@ export function buildPropertyFilterUI(
 
     const iconsDiv = ui.divH([addFieldIcon, logicalOperatorIcon], 'query-builder-nested-condition-operators');
     const container = ui.divV([iconsDiv], 'revvity-signals-search-query-operator');
+    
+    // Add nesting level styling dynamically
+    if (nestingLevel > 0) {
+        container.setAttribute('data-nesting-level', nestingLevel.toString());
+        const color = generateNestingColor(nestingLevel);
+        container.style.setProperty('--nesting-color', color);
+    }
 
     //delete icon for nested conditions to remove the whole nested condition at once
     if (parentCondition) {
@@ -270,7 +422,7 @@ export function buildPropertyFilterUI(
             createPropertyFilterContainer(nestedCondition);
         else {
             const nestedContainer = buildPropertyFilterUI(nestedCondition as ComplexCondition, properties, onValueChange, onStructureChange,
-                parentCondition ?? condition);
+                parentCondition ?? condition, nestingLevel + 1);
             container.append(nestedContainer);
         }
     }
@@ -301,10 +453,10 @@ export function buildPropertyFilterForm(properties: DG.Property[], initialCondit
 
     function rebuildUI() {
         updatePreview();
-        builderDiv.replaceWith(builderDiv = buildPropertyFilterUI(rootCondition, properties, updatePreview, rebuildUI));
+        builderDiv.replaceWith(builderDiv = buildPropertyFilterUI(rootCondition, properties, updatePreview, rebuildUI, undefined, 0));
     }
 
-    let builderDiv = buildPropertyFilterUI(rootCondition, properties, updatePreview, rebuildUI);
+    let builderDiv = buildPropertyFilterUI(rootCondition, properties, updatePreview, rebuildUI, undefined, 0);
 
     const submitBtn = ui.button('Apply Filters', async () => {
         // Here you would apply the filters
