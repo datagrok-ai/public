@@ -35,8 +35,8 @@ Database structure changes: older versions are not compatible with this release.
 * **Spaces**: use them to organize, access, and share files, folders, connections, queries, projects, and other frequently used entities in Datagrok
 * **Power Search**: quickly find tables, queries, functions, packages, projects, and help topics directly from the **Home Page**
 * **Activity Dashboard**: a **Home Page** widget that brings together recent activity, shared items, favorites, personal actions, and notifications, making it easy to track and access key updates in one place
-* **Complex Calculated Columns** allow a single vector function to generate multiple columns in one step, eliminating the need to add each column manually
-* **Python Celery Task Wrapper** enables seamless integration of Python Docker applications with Datagrok,
+* **Complex calculated columns** allow a single vector function to generate multiple columns in one step, eliminating the need to add each column manually
+* **Python Celery task wrapper** enables seamless integration of Python Docker applications with Datagrok,
 running Python functions as Celery tasks in isolated containers while the platform handles orchestration, task queuing, and results. For details, see [Creating Python Docker apps](https://datagrok.ai/help/develop/how-to/packages/python-functions)
 
 
