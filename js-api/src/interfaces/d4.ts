@@ -1640,6 +1640,9 @@ export interface ILineChartSettings {
   markers: string;
   markersColumnName: string;
 
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
+
   markerType: string;
 
   markerSize: number;
