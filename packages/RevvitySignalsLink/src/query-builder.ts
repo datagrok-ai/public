@@ -5,10 +5,10 @@ import { Subject } from 'rxjs';
 import dayjs from 'dayjs';
 import { IProperty } from 'datagrok-api/dg';
 
-export type SimpleCondition = {
+export type SimpleCondition<T = any> = {
     field: string;
     operator: string;
-    value: any;
+    value: T;
 }
 
 export type ComplexCondition = {
@@ -18,35 +18,28 @@ export type ComplexCondition = {
 
 type Expression = SimpleCondition | ComplexCondition;
 
-export interface ICriteria {
-    root: HTMLDivElement;
-    onChanged: Subject<any>;
-    getStringValue: () => string;
-}
-
-export class Criteria implements ICriteria{
+export class BaseConditionEditor<T = any> {
     root: HTMLDivElement = ui.div();
-    prop: DG.Property;
-    onChanged: Subject<any> = new Subject<any>();
-    operator: string;
-    input: DG.InputBase;
+    condition: SimpleCondition<T>;
+    onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
 
-    constructor(prop: DG.Property, operator: string, value: any) {
-        this.prop = prop;
-        this.operator = operator;
-        this.input = ui.input.forProperty(this.prop, value, {
+    constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
+        this.condition = initialCondition ?? {
+            field: prop.name,
+            operator: operator,
+            value: undefined as T
+        };
+        const input = ui.input.forProperty(prop, this.condition.value, {
             onValueChanged: () => {
-                this.onChanged.next(this.input.value);
+                this.condition.value = input.value as T;
+                this.onChanged.next(this.condition);
             }
         });
-        this.input.addCaption('');
-        this.root.append(this.input.root);
-    }
-
-    getStringValue(): string {
-        return `${this.operator} ${this.input.value}`;
+        input.addCaption('');
+        this.root.append(input.root);
     }
 }
+
 
 export namespace Operators {
     export const CONTAINS = 'contains';
@@ -89,9 +82,9 @@ const dict = {
     
 }
 
-export function getCriteria(property: DG.Property, operator: string, value: any): ICriteria {
+export function getConditionEditor<T = any>(property: DG.Property, operator: string, condition?: SimpleCondition<T>): BaseConditionEditor<T> {
     if (Operators.oneFieldOperators.includes(operator))
-        return new Criteria(property, operator, value);
+        return new BaseConditionEditor<T>(property, operator, condition);
     else 
         throw Error(`Unknown operator`);
 }
@@ -132,19 +125,19 @@ export function buildPropertyFilterUI(
                     value: initValue,
                     items: operators,
                     onValueChanged: () => {
-                        createCriteria(property, operatorsInput.value!, undefined);
+                        createEditor(property, operatorsInput.value!, cond);
                     },
                     nullable: false
                 });
                 operatorInputDiv.append(operatorsInput.root);
-                createCriteria(property, initValue, cond.value);
+                createEditor(property, initValue, cond);
             }
         }
 
-        const createCriteria = (property: DG.Property, operator: string, value: any) => {
+        const createEditor = (property: DG.Property, operator: string, condition: SimpleCondition) => {
             ui.empty(criteriaDiv);
-            const criteria = getCriteria(property, operator, value);
-            criteriaDiv.append(criteria.root);
+            const editor = getConditionEditor(property, operator, condition);
+            criteriaDiv.append(editor.root);
         }
 
         cond.field ??= (properties[0]?.name || '')
