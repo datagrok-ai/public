@@ -7,7 +7,7 @@ import {
   IFitChartData,
   IFitSeries,
   fitChartDataProperties,
-  fitSeriesProperties, IFitChartOptions, IFitPoint, FitCurve, FitFunction,
+  statisticsProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -32,6 +32,7 @@ import {
 } from './render-utils';
 import {merge} from 'rxjs';
 import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
+import {Fit, FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 export interface FitCellOutlierToggleArgs {
@@ -175,24 +176,25 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
-    mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
-    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
-    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
+    mergeProperties(statisticsProperties, cellChartData.seriesOptions, series);
+    mergeProperties(statisticsProperties, columnChartOptions.seriesOptions, series);
+    mergeProperties(statisticsProperties, dfChartOptions.seriesOptions, series);
   }
 
   return cellChartData;
 }
 
 /** Returns existing, or fits curve for the specified grid cell and series. */
-export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction,
+// @ts-ignore
+export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: string,
   chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true): FitCurve {
   const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache);
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
   const column = tableCell?.column;
   return (useCache && column && tableCell) ?
     FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${seriesIdx}`, () => {
-      return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
-    }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
+      return fitSeries(series, fitFunc as unknown as FitFunction<Fit>, dataPoints, chartLogOptions);
+    }) : fitSeries(series, fitFunc as unknown as FitFunction<Fit>, dataPoints, chartLogOptions);
 }
 
 /** Returns existing, or maps new data points for the specified series. */
@@ -452,7 +454,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           }
           curve = getCurve(series, fitFunc);
         } else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, isRenderedOnGrid);
+          // @ts-ignore
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc as string, chartLogOptions, tableCell, isRenderedOnGrid);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters];
           series.parameters = params;

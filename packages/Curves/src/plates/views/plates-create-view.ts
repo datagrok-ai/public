@@ -12,13 +12,14 @@ import {PlateWidget} from '../../plate/plate-widget';
 import {renderValidationResults} from './plates-validation-panel';
 import {parsePlateFromCsv} from '../../plate/csv-plates';
 import {toExcelPosition} from '../../plate/utils';
+import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 
 import './plates-create-view.css';
 
 type PlateFile = {
     plate: Plate;
     file: DG.FileInfo;
-    reconciliationMap: Map<string, string>; // Maps NEW name -> ORIGINAL name
+    reconciliationMap: Map<string, string>;
 };
 type TemplateState = {
     plates: PlateFile[],
@@ -30,11 +31,16 @@ export function createPlatesView(): DG.View {
   view.name = 'Create Plate';
   view.root.classList.add('create-plate-view');
 
+
   const templateState = new Map<number, TemplateState>();
 
   const platePropertiesHost = ui.divV([]);
   const validationHost = ui.divV([]);
   const wellPropsHeaderHost = ui.div();
+  const drcAnalysisHost = ui.divV([], 'create-plate-view__drc-host');
+
+  drcAnalysisHost.style.width = '100%';
+  drcAnalysisHost.style.flexGrow = '1';
 
   const tabHeaderContainer = ui.divH([], 'plate-file-tabs-container');
 
@@ -45,8 +51,13 @@ export function createPlatesView(): DG.View {
     return view;
   }
 
+
   const plateWidget = PlateWidget.fromPlate(new Plate(plateType.rows, plateType.cols));
   plateWidget.editable = true;
+  plateWidget.root.style.width = '100%';
+  plateWidget.root.style.minWidth = '0';
+  plateWidget.root.style.flexGrow = '0';
+
 
   let setTemplate: (template: PlateTemplate) => Promise<void>;
 
@@ -177,10 +188,13 @@ export function createPlatesView(): DG.View {
   const renderFileTabs = (template: PlateTemplate, state: TemplateState | undefined) => {
     ui.empty(tabHeaderContainer);
 
+
     if (!state || state.plates.length === 0) {
-      tabHeaderContainer.style.display = 'none';
+      tabHeaderContainer.style.visibility = 'hidden';
       return;
     }
+
+    tabHeaderContainer.style.visibility = 'visible';
 
     tabHeaderContainer.style.display = 'flex';
 
@@ -236,11 +250,24 @@ export function createPlatesView(): DG.View {
       ui.empty(platePropertiesHost);
       ui.empty(validationHost);
       ui.empty(wellPropsHeaderHost);
+      // --- MODIFIED: Clear the DRC host on every template change ---
+      ui.empty(drcAnalysisHost);
       renderFileTabs(template, state);
       let validationResults = {conflictCount: 0};
       if (activeFile && activeFile.plate && activeFile.plate.data) {
         try {
           plateWidget.plate = activeFile.plate;
+
+          const drcCurvesElement = PlateDrcAnalysis.createCurvesGrid(activeFile.plate, plateWidget);
+
+          if (drcCurvesElement) {
+            drcAnalysisHost.appendChild(drcCurvesElement);
+          } else {
+            const info = ui.divText('To see dose-response curves, ensure your CSV has "SampleID", "Concentration", and "Activity" columns.', 'info-message');
+            info.style.padding = '10px';
+            drcAnalysisHost.appendChild(info);
+          }
+
           validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping);
           const plateProperties = template.plateProperties
             .filter((p) => p && p.name && p.type)
@@ -355,7 +382,9 @@ export function createPlatesView(): DG.View {
         currentState.activePlateIdx = currentState.plates.length - 1;
         templateState.set(plateTemplate.id, currentState);
         await setTemplate(plateTemplate);
-      } catch (e: any) { grok.shell.error(`Failed to parse CSV: ${e.message}`); }
+      } catch (e: any) {
+        grok.shell.error(`Failed to parse CSV: ${e.message}`);
+      }
     },
   });
   fileInput.root.classList.add('plate-import-button');
@@ -372,7 +401,9 @@ export function createPlatesView(): DG.View {
     fileInput.root,
   ], 'plate-import-container');
 
-  const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => { plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate); }});
+  const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => {
+    plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate);
+  }});
   const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
 
   const templatePanel = ui.divV([
@@ -385,26 +416,33 @@ export function createPlatesView(): DG.View {
     templatePanel,
     ui.divV([ui.h2('Plate Properties'), platePropertiesHost], 'left-panel-section'),
     ui.divV([wellPropsHeaderHost, validationHost], 'left-panel-section'),
-    roleAssignmentPanel
+    roleAssignmentPanel,
   ], 'create-plate-view__left-panel');
 
   const rightPanel = ui.divV([
     importContainer,
     tabHeaderContainer,
-    plateWidget.root
+    plateWidget.root,
+    drcAnalysisHost,
   ], 'create-plate-view__right-panel');
+
+  rightPanel.style.width = '100%';
+  rightPanel.style.height = '100%';
+  rightPanel.style.display = 'flex';
+  rightPanel.style.flexDirection = 'column';
+
 
   const mainLayout = ui.divH([leftPanel, rightPanel], 'create-plate-view__main-layout');
   view.root.appendChild(mainLayout);
 
   setTemplate(plateTemplates[0]);
-
   const getPlate = () => {
     const state = templateState.get(plateTemplate.id);
     if (state && state.plates.length > 0)
       return state.plates[state.activePlateIdx].plate;
     return plateWidget.plate;
   };
+
 
   view.setRibbonPanels([[
     ui.bigButton('CREATE', async () => {
@@ -432,6 +470,6 @@ export function createPlatesView(): DG.View {
       grok.shell.info(`Plate template updated: ${plateTemplate.name}`);
     }),
   ]]);
+
   return view;
 }
-
