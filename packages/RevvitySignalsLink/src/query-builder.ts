@@ -40,6 +40,57 @@ export class BaseConditionEditor<T = any> {
     }
 }
 
+export class OperatorRegistry {
+    private static instance: OperatorRegistry;
+    private typeOperators: Map<string, string[]> = new Map();
+    private semTypeOperators: Map<string, string[]> = new Map();
+
+    private constructor() {
+        this.initializeDefaultOperators();
+    }
+
+    static getInstance(): OperatorRegistry {
+        if (!OperatorRegistry.instance) {
+            OperatorRegistry.instance = new OperatorRegistry();
+        }
+        return OperatorRegistry.instance;
+    }
+
+    private initializeDefaultOperators(): void {
+        // Type operators
+        this.registerTypeOperators(DG.TYPE.STRING, ['starts with', 'ends with', '=', '!=', 'in']);        
+        this.registerTypeOperators(DG.TYPE.INT, ['>', '<', '>=', '<=', '=', '!=']);
+        this.registerTypeOperators(DG.TYPE.FLOAT, ['>', '<', '>=', '<=', '=', '!=']);     
+        this.registerTypeOperators(DG.TYPE.DATE_TIME, ['before', 'after', 'between']);
+
+        // SemType operators (take precedence over type operators)
+        this.registerSemTypeOperators(DG.SEMTYPE.MOLECULE, ['contains', 'is contained', '=', 'is similar']);
+    }
+
+    registerTypeOperators(propertyType: string, operators: string[]): void {
+        this.typeOperators.set(propertyType, operators);
+    }
+
+    registerSemTypeOperators(semType: string, operators: string[]): void {
+        this.semTypeOperators.set(semType, operators);
+    }
+
+    getOperatorsForProperty(property: DG.Property): string[] {
+        // Check semType first, then fall back to type
+        const semTypeOps = this.semTypeOperators.get(property.semType);
+        if (semTypeOps) return semTypeOps;
+
+        const typeOps = this.typeOperators.get(property.propertyType);
+        return typeOps || [];
+    }
+
+    isOperatorSupported(property: DG.Property, operator: string): boolean {
+        const operators = this.getOperatorsForProperty(property);
+        return operators.includes(operator);
+    }
+}
+
+
 
 export namespace Operators {
     export const CONTAINS = 'contains';
@@ -59,6 +110,7 @@ export namespace Operators {
     export const IS_SIMILAR = 'is similar';
     export const IS_CONTAINED = 'is contained';
 
+    // Legacy properties - now use registry
     export const typeOperators: { [key: string]: string[] } = {
         [DG.TYPE.STRING]: [STARTS_WITH, ENDS_WITH, EQ, NOT_EQ, IN],
         [DG.TYPE.INT]: [GT, LT, GTE, LTE, EQ, NOT_EQ],
@@ -78,15 +130,12 @@ export namespace Operators {
     };
 }
 
-const dict = {
-    
-}
-
 export function getConditionEditor<T = any>(property: DG.Property, operator: string, condition?: SimpleCondition<T>): BaseConditionEditor<T> {
-    if (Operators.oneFieldOperators.includes(operator))
+    const registry = OperatorRegistry.getInstance();
+    if (registry.isOperatorSupported(property, operator))
         return new BaseConditionEditor<T>(property, operator, condition);
     else 
-        throw Error(`Unknown operator`);
+        throw Error(`Operator '${operator}' is not supported for property type '${property.propertyType}'`);
 }
 
 // Recursive UI builder for filter conditions
@@ -119,7 +168,8 @@ export function buildPropertyFilterUI(
             ui.empty(operatorInputDiv);
             const property = properties.find(prop => prop.name === fieldChoiceInput.value!);
             if (property) {
-                const operators = Operators.typeOperators[property.propertyType];
+                const registry = OperatorRegistry.getInstance();
+                const operators = registry.getOperatorsForProperty(property);
                 const initValue = cond.operator && cond.operator !== '' ? cond.operator : operators[0]
                 const operatorsInput = ui.input.choice('', {
                     value: initValue,
