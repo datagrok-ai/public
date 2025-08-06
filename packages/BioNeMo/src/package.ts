@@ -7,22 +7,22 @@ import { CONSTANTS, DiffDockModel, PosesJson } from './diffdock/diffdock-model';
 export * from './package.g';
 export const _package = new DG.Package();
 
-//name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
-
 export class PackageFunctions { 
+  @grok.decorators.func()
+  static info() {
+    grok.shell.info(_package.webRoot);
+  }
+
   @grok.decorators.func({ name: 'MolMIMModel' })
   static async molMIMModel(
-    @grok.decorators.param({ options: { initialValue: 'CMA-ES' } }) algorithm: string = 'CMA-ES',
-    @grok.decorators.param({ options: { initialValue: '30' } }) num_molecules: number = 30,
-    @grok.decorators.param({ options: { initialValue: 'QED' } }) property_name: string = 'QED',
+    @grok.decorators.param({ options: { initialValue: '\'CMA-ES\'' } }) algorithm: string = 'CMA-ES',
+    @grok.decorators.param({ type: 'int', options: { initialValue: '30' } }) num_molecules: number = 30,
+    @grok.decorators.param({ options: { initialValue: '\'QED\'' } }) property_name: string = 'QED',
     @grok.decorators.param({ options: { initialValue: 'false' } }) minimize: boolean = false,
     @grok.decorators.param({ options: { initialValue: '0.3' } }) min_similarity: number = 0.3,
-    @grok.decorators.param({ options: { initialValue: '30' } }) particles: number = 30,
-    @grok.decorators.param({ options: { initialValue: '10' } }) iterations: number = 10,
-    @grok.decorators.param({ options: { initialValue: '[H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34', semType: 'Molecule' } }) smi: string
+    @grok.decorators.param({ type: 'int', options: { initialValue: '30' } }) particles: number = 30,
+    @grok.decorators.param({ type: 'int', options: { initialValue: '10' } }) iterations: number = 10,
+    @grok.decorators.param({ options: { initialValue: '\'[H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34\'', semType: 'Molecule' } }) smi: string
   ): Promise<void> {
     const apiKey = await getApiKey();
     const results = await grok.functions.call('BioNeMo:MolMIMGenerate', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey });
@@ -100,7 +100,10 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 * * * *'
     }
   })
-  static async diffDockModelScript(ligand: string, target: string, poses: number): Promise<string | undefined> {
+  static async diffDockModelScript(
+    ligand: string, 
+    target: string, 
+    @grok.decorators.param({type:'int'})poses: number): Promise<string | undefined> {
     try {
       const apiKey = await getApiKey();
       const encodedPoses = await grok.functions.call('Bionemo:diffdock', {
@@ -124,7 +127,7 @@ export class PackageFunctions {
     df: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) ligands: DG.Column,
     @grok.decorators.param({ options: { choices: 'Bionemo: getTargetFiles' } }) target: string,
-    @grok.decorators.param({ options: { initialValue: '5' } }) poses: number
+    @grok.decorators.param({ type:'int', options: { initialValue: '5' } }) poses: number
   ): Promise<void> {
     const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);
