@@ -351,8 +351,8 @@ class FuncGeneratorPlugin {
     let isArray = false; 
     if (nodeAnnotation?.type === 'TSUnionType' && 
       nodeAnnotation?.types?.length === 2 && 
-      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword')) 
-      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword')[0];
+      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword'|| e?.type === 'TSUndefinedKeyword')) 
+      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword' || e?.type === 'TSUndefinedKeyword')[0];
     
 
     if (
@@ -422,6 +422,8 @@ class FuncGeneratorPlugin {
       return typeNode.typeName.name;
     else if (typeNode.type === 'TSVoidKeyword') 
       return 'void';
+    else if (typeNode.type === 'TSUndefinedKeyword ') 
+      return 'undefined';
     else if (typeNode.type === 'TSNumberKeyword') 
       return 'number';
     else if (typeNode.type === 'TSStringKeyword') 
