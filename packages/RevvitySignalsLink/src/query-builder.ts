@@ -48,14 +48,10 @@ export namespace Operators {
     }
 }
 
-export interface SimpleConditionBase<T = any> {
+export interface SimpleCondition<T = any> {
     field: string;
     operator: string;
     value: T;
-}
-
-export interface SimpleConditionWithThreshold<T> extends SimpleConditionBase<T> {
-    threshold: number
 }
 
 export interface ComplexCondition {
@@ -63,9 +59,8 @@ export interface ComplexCondition {
     conditions: Expression[];
 }
 
-export type Expression = SimpleConditionBase | ComplexCondition;
+export type Expression<T = any> = SimpleCondition<T> | ComplexCondition;
 
-export type SimpleCondition<T = any> = SimpleConditionBase<T> | SimpleConditionWithThreshold<T>;
 
 export class BaseConditionEditor<T = any> {
     root: HTMLDivElement = ui.div();
@@ -133,27 +128,29 @@ export class MoleculeConditionEditor extends BaseConditionEditor<string> {
     }
 }
 
-
-export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<string> {
+export type MoleculeSimilarity = {
+    molecule: string,
+    threshold: number
+}
+export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<MoleculeSimilarity> {
     override initializeEditor(prop: DG.Property): void {
-        if (!this.condition.value)
-            this.condition.value = '';
-        if ('threshold' in this.condition)
-            this.condition.threshold = 0.6;
+        if (!this.condition.value) {
+            this.condition.value = {molecule: '', threshold: 0.7};
+        }
         const moleculeInput = ui.input.molecule('', {
             onValueChanged: () => {
-                this.condition.value = moleculeInput.value;
+                this.condition.value.molecule = moleculeInput.value;
                 this.onChanged.next(this.condition);
             }
         });
         const tresholdInput = ui.input.float('', {
-            value: (this.condition as SimpleConditionWithThreshold<DG.TYPE.FLOAT>).threshold,
+            value: this.condition.value.threshold,
             min: 0,
             max: 1,
             step: 0.01
         });
         DG.debounce(tresholdInput.onChanged, 300).subscribe(() => {
-            (this.condition as SimpleConditionWithThreshold<DG.TYPE.FLOAT>).threshold = tresholdInput.value!;
+            this.condition.value.threshold = tresholdInput.value!;
             this.onChanged.next(this.condition);
         })
         this.root.append(ui.divV([moleculeInput.root, tresholdInput.root]));
