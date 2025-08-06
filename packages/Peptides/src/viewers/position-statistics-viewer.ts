@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {PeptideUtils} from '../peptideUtils';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, MONOMER_MOTIF_SPLITTER} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export const POSITION_HIDDEN_NAME = '~sequence_position_monomers';
 
@@ -15,12 +15,17 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
   private _positionColumn?: DG.Column;
   private _boxPlotViewer?: DG.Viewer;
   public valueColumnName: string;
-
+  public leftMotifLength: number = 0;
+  public rightMotifLength: number = 0;
+  public showPositionInfo: boolean = true;
   constructor() {
     super();
     this.position = this.int('position', 0, {nullable: false});
     this.sequenceColumnName = this.column('sequence', {semType: DG.SEMTYPE.MACROMOLECULE, nullable: false});
     this.valueColumnName = this.column('value', {columnTypeFilter: 'numerical', nullable: false});
+    this.leftMotifLength = this.int('leftMotifLength', 0, {nullable: false, min: 0, max: 10});
+    this.rightMotifLength = this.int('rightMotifLength', 0, {nullable: false, min: 0, max: 10});
+    this.showPositionInfo = this.bool('showPositionInfo', true, {nullable: false, defaultValue: true, description: 'Show position and overhangs info in the viewer header'});
     grok.events.onContextMenu.subscribe((e) => {
       if (e.causedBy && e.causedBy.target && this._boxPlotViewer?.root.contains(e.causedBy.target)) {
         e.causedBy.preventDefault();
@@ -74,19 +79,44 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     const seqHelper = PeptideUtils.getSeqHelper();
     const sequenceColumn = this.dataFrame.col(this.sequenceColumnName)!;
     const seqHandler = seqHelper.getSeqHandler(sequenceColumn);
-    const canonicalMonomers: string[] = seqHandler.getMonomersAtPosition(this.position, true);
-    this._positionColumn.init((i) => canonicalMonomers[i]);
+    const leftOverhang = Math.min(Math.max(this.leftMotifLength ?? 0, 0), 10);
+    const rightOverhang = Math.min(Math.max(this.rightMotifLength ?? 0, 0), 10);
+    const start = Math.max(0, this.position - leftOverhang);
+    const end = rightOverhang + this.position;
+    const canonicals = Array.from({length: end - start + 1}).fill('')
+      .map((_, i) => seqHandler.getMonomersAtPosition(start + i, true));
+    this._positionColumn.init((i) => canonicals.map((c) => c[i]).join(MONOMER_MOTIF_SPLITTER));
 
     this._boxPlotViewer = this.dataFrame.plot.box({categoryColumnNames: [this._positionColumn.name], plotStyle: 'violin',
       valueColumnName: this.valueColumnName, colorColumnName: this._positionColumn.name, showColorSelector: false, showSizeSelector: false, showCategorySelector: false,
-      legendVisibility: DG.VisibilityMode.Never, description: `Position ${this.position + 1}`, markerColorColumnName: this._positionColumn.name, title: 'Sequence Position Statistics',
+      legendVisibility: DG.VisibilityMode.Never, markerColorColumnName: this._positionColumn.name, title: 'Sequence Position Statistics',
       autoLayout: false, labelOrientation: 'Vert',
     });
 
-    setTimeout(() => {
-      this._boxPlotViewer!.props.title = 'Sequence Position Statistics';
-      this._boxPlotViewer!.props.description = `${this.sequenceColumnName}: Position ${this.position + 1}`;
-    }, 200);
+    const leftOverhangInput = ui.input.int('Left Overhang', {value: leftOverhang, min: 0, max: 10, step: 1, showSlider: false, showPlusMinus: true,
+      onValueChanged: (v) => {
+        this.getProperty('leftMotifLength')!.set(this, leftOverhangInput.value);
+      }, tooltipText: 'Left overhang motif length from the selected position',
+    });
+    const rightOverhangInput = ui.input.int('Right Overhang', {value: rightOverhang, min: 0, max: 10, step: 1, showSlider: false, showPlusMinus: true,
+      onValueChanged: (v) => {
+        this.getProperty('rightMotifLength')!.set(this, rightOverhangInput.value);
+      }, tooltipText: 'Right overhang motif length from the selected position',
+    });
+
+    const descriptionDiv = ui.divH([
+      leftOverhangInput.root, ui.h2(`${this.sequenceColumnName}: Position ${this.position + 1}`),
+      rightOverhangInput.root,
+    ], {style: {alignItems: 'center', justifyContent: 'space-around', width: '100%'}});
+    if (this.showPositionInfo) {
+      this.root.appendChild(descriptionDiv);
+      leftOverhangInput.input.style.width = '20px';
+      rightOverhangInput.input.style.width = '20px';
+    }
+    // setTimeout(() => {
+    //   this._boxPlotViewer!.props.title = 'Sequence Position Statistics';
+    //   this._boxPlotViewer!.props.description = `${this.sequenceColumnName}: Position ${this.position + 1}`;
+    // }, 200);
 
     this._boxPlotViewer.props.statistics = ['min', 'max', 'avg', 'med', 'count'];
 

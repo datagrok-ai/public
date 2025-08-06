@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getFolders } from '../package';
+import { PackageFunctions } from '../package';
 
 export const TARGET_PATH = 'System:AppData/Reinvent4/reinvent';
 
@@ -30,7 +30,7 @@ export class ReinventBaseEditor {
     this.initOptimizeInput();
   }
   private async initOptimizeInput(template?: string) {
-    const templates = await getFolders();
+    const templates = await PackageFunctions.getFolders();
     this.optimizeInput.items = templates;
     if (template)
       this.optimizeInput.value = template;

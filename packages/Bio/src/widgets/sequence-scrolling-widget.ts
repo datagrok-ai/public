@@ -15,6 +15,7 @@ import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-h
 import * as RxJs from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import wu from 'wu';
 
 // ============================================================================
 // OPTIMIZED VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
@@ -462,7 +463,7 @@ export function handleSequenceHeaderRendering() {
 
                   if (cur !== scrollerCur) {
                     seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
-                    if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView) {
+                    if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView && wu(grid.dataFrame?.columns.numerical).find((_c) => true)) {
                       positionStatsViewerAddedOnce = true;
                       const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
                       grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
@@ -475,7 +476,7 @@ export function handleSequenceHeaderRendering() {
                 if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
                 setTimeout(() => grid.props.colHeaderHeight = _newHeight);
               },
-            });
+            }, gCol);
 
             scroller.setupTooltipHandling();
 
@@ -511,12 +512,12 @@ export function handleSequenceHeaderRendering() {
               scroller.positionWidth = font + 8; // MSA always has padding
 
               const start = getStart();
-              const startPadding = 0; // MSA doesn't need extra padding
+
 
               scroller.draw(
-                cellBounds.x + startPadding,
+                cellBounds.x,
                 cellBounds.y,
-                cellBounds.width - startPadding,
+                cellBounds.width,
                 cellBounds.height,
                 getCurrent(),
                 start,

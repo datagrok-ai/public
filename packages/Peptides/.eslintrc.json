@@ -48,9 +48,6 @@
       }
     ],
     "block-spacing": 2,
-    "@typescript-eslint/explicit-function-return-type": [
-      "error"
-    ],
     "@typescript-eslint/no-unsafe-return": "error"
   }
 }

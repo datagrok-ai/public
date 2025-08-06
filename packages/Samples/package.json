@@ -13,7 +13,7 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.3",
     "datagrok-api": "^1.26.0",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",

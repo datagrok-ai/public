@@ -69,6 +69,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
 
   //properties
+  molecules: string;
   moleculesColumnName: string | null = null;
   activities: string[] | null = null;
   diffTypes: string[] | null = null;
@@ -139,6 +140,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       {semType: DG.SEMTYPE.MOLECULE});
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
+    this.molecules = this.string('molecules', '', {userEditable: false});
 
     this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: true});
     this.diffTypes = this.stringList('diffTypes', [], {userEditable: false, includeInLayout: true, nullable: false});
@@ -148,8 +150,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   onPropertyChangedDebounced() {
     if (!this.dataFrame)
       return;
-    if (this.totalDataUpdated) {
-      this.moleculesCol = this.dataFrame.col(this.moleculesColumnName!);
+    if (this.totalDataUpdated && this.moleculesColumnName) {
+      this.moleculesCol = this.dataFrame.col(this.moleculesColumnName);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
       this.render();
       return;
@@ -168,6 +170,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (property?.name === 'totalData')
       this.totalDataUpdated = true;
+    if (property?.name === 'molecules' && property.get(this) !== '') { //for backward compatibility after changing molecules property to moleculesColumnName property
+      this.moleculesColumnName = property.get(this);
+      this.molecules = '';
+      return;
+    }
 
     this.onPropertyChangedObs.next(property);
   }

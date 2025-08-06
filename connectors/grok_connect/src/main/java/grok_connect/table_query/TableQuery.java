@@ -33,7 +33,7 @@ public class TableQuery extends DataQuery {
 
     private String getFullTableName(String tableName, JdbcDataProvider provider) {
         tableName = provider.addBrackets(tableName);
-        return schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks")
+        return GrokConnectUtil.isNotEmpty(schema) && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks") && !tableName.contains(".")
                 ? provider.addBrackets(schema) + "." + tableName : tableName;
     }
 

@@ -455,17 +455,17 @@ export async function getRegionTopMenu(
 //input: func preprocessingFunction
 //input: object options {optional: true}
 //input: bool demo {optional: true}
-//output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<string>, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
   options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
-  if (table.name !== grok.shell.tv.dataFrame.name) {
+  if (table !== grok.shell.tv.dataFrame) {
     grok.shell.error(`Table ${table.name} is not a current table view`);
     return;
   }
+  const tv = grok.shell.tv;
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(table);
@@ -509,7 +509,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
   }
 
   const pi = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-  return new Promise<DG.Viewer | undefined>((resolve, reject) => {
+  const scRes = (await new Promise<DG.Viewer | undefined>((resolve, reject) => {
     if (table.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
@@ -524,7 +524,13 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
     throw err;
-  }).finally(() => { pi.close(); });
+  }).finally(() => { pi.close(); })) as DG.ScatterPlotViewer | undefined;
+  if (scRes?.props?.xColumnName && scRes?.props?.yColumnName && table.col(scRes.props.xColumnName) && table.col(scRes.props.yColumnName)) {
+    table.col(scRes.props.xColumnName)!.set(0, table.col(scRes.props.xColumnName)!.get(0)); // to trigger rendering
+    table.col(scRes.props.yColumnName)!.set(0, table.col(scRes.props.yColumnName)!.get(0)); // to trigger rendering
+  }
+
+  return scRes;
 }
 
 //name: Encode Sequences

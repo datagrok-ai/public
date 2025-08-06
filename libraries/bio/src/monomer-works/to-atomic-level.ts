@@ -257,7 +257,9 @@ function setShiftsAndTerminalNodes(
   // remove the 'rightmost' chain-extending r-group node in the backbone
   if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
     setShifts(monomerGraph, polymerType);
-    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+    const removedR2Atom = removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+    if (removedR2Atom?.removedAtom)
+      monomerGraph.terminalR2Atom = removedR2Atom.removedAtom; // store the removed R2 Atom type, if any
   } else { // nucleotides
     if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol) {
       // remove R2
@@ -304,7 +306,6 @@ function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], ca
     rNodes: [],
   };
 
-
   // R1 and R2 are required, but we might have cases where one of those is absent,
   // e.g. in starting monomers or ending monomers. in those cases,
   // mark the missing r-node as the furthest atom from non-missing one
@@ -314,13 +315,33 @@ function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], ca
     const existingRgroupIdx = Array.from(capGroupIdxMap.keys()).find((i) => capGroupIdxMap.get(i) === existingRgroup)! - 1; // -1 because molfile indexing starts from 1
     const existingRgroupX = atoms.x[existingRgroupIdx];
     const existingRgroupY = atoms.y[existingRgroupIdx];
-    const furthestAtomIdx = atoms.x.reduce((furthestIdx, x, idx) => {
-      if (idx === existingRgroupIdx) return furthestIdx; // skip existing r-group
+    const atomBondedToExistingRgroupIdx = bonds.atomPairs.find((pair) => pair.includes(existingRgroupIdx + 1))!.
+      find((i) => i !== existingRgroupIdx + 1)! - 1; // -1 because molfile indexing starts from 1
+
+    let furthestAtomIdx = atoms.x.reduce((furthestIdx, x, idx) => {
+      if (idx === existingRgroupIdx)
+        return furthestIdx; // skip existing r-group
+      // also skip the atom bonded to the existing r-group
+      if (idx === atomBondedToExistingRgroupIdx)
+        return furthestIdx;
       const y = atoms.y[idx];
       const dist = Math.sqrt((x - existingRgroupX) ** 2 + (y - existingRgroupY) ** 2);
       return dist > Math.sqrt((atoms.x[furthestIdx] - existingRgroupX) ** 2 +
         (atoms.y[furthestIdx] - existingRgroupY) ** 2) ? idx : furthestIdx;
-    }, 0);
+    }, -1);
+    if (furthestAtomIdx === -1) {
+      furthestAtomIdx = atoms.x.length;
+      // add pseudo-hydrogen atom, very relevant for stuff like NH2-R
+      atoms.x = new Float32Array([...atoms.x, -existingRgroupX]);
+      atoms.y = new Float32Array([...atoms.y, -existingRgroupY]);
+      atoms.atomTypes = [...atoms.atomTypes, 'H'];
+      atoms.kwargs = [...atoms.kwargs, ''];
+      bonds.atomPairs.push([atomBondedToExistingRgroupIdx + 1, furthestAtomIdx + 1]); // +1 because molfile indexing starts from 1
+      bonds.bondTypes = new Uint32Array([...bonds.bondTypes, 1]); // single bond
+      bonds.kwargs.set(bonds.atomPairs.length - 1, ''); // empty kwargs for the new bond
+    }
+
+
     capGroupIdxMap.set(furthestAtomIdx + 1, missingRGroup); // +1 because molfile indexing starts from 1
     // finaly splice the capGroups array in correct place
     if (missingRGroup === 1)
@@ -721,8 +742,10 @@ function removeRgroupKwargs(monomerGraph: MolGraph): void {
 /** Remove node 'removedNode' and the associated bonds. Notice, numeration of
  * nodes in molfiles starts from 1, not 0
  * @param {MolGraph} monomerGraph - monomer graph
- * @param {number} removedNode - node to be removed*/
-function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void {
+ * @param {number} removedNode - node to be removed
+ * @return {{removedAtom: string} | undefined} - removed atom type, if any
+ * */
+function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): {removedAtom: string} | undefined {
   if (typeof removedNode !== 'undefined') {
     const removedNodeIdx = removedNode - 1;
     const atoms = monomerGraph.atoms;
@@ -730,7 +753,7 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
     const meta = monomerGraph.meta;
 
     // remove the node from atoms
-    atoms.atomTypes.splice(removedNodeIdx, 1);
+    const removedAtomType = atoms.atomTypes.splice(removedNodeIdx, 1)[0];
     atoms.x = spliceTypedArray<Float32Array>(Float32Array, atoms.x, removedNodeIdx, 1);
     atoms.y = spliceTypedArray<Float32Array>(Float32Array, atoms.y, removedNodeIdx, 1);
     atoms.kwargs.splice(removedNodeIdx, 1);
@@ -786,6 +809,7 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
         bonds.kwargs.set(key - 1, value);
       }
     });
+    return removedAtomType ? {removedAtom: removedAtomType} : undefined;
   }
 }
 

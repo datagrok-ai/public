@@ -71,3 +71,5 @@ export const GapOriginals: {
   [NOTATION.SEPARATOR]: '',
   [NOTATION.HELM]: '*',
 };
+
+export const MONOMER_MOTIF_SPLITTER = ' , ';

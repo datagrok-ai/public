@@ -96,12 +96,13 @@ export function monomerSeqToMolfile(
   const monomers: MonomerMap = new MonomerMap();
   const steabsCollection: number [] = [];
   let nAtoms = 0;
+  let lastMonomerCappingAtom: string | undefined = undefined;
 
   for (v.i = 0; v.i < LC.seqLength; ++v.i) {
     const seqMonomer = monomerSeq[v.i];
     if (seqMonomer.symbol === GAP_SYMBOL) continue;
     const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
-
+    lastMonomerCappingAtom = monomer.terminalR2Atom;
     const mAtomFirst = v.nodeShift;
     const mBondFirst = v.bondShift;
     addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, LC);
@@ -126,7 +127,7 @@ export function monomerSeqToMolfile(
 
   // if the last monomer needs to be capped, add the terminal OH to the resulting molfile
   if (needsCapping)
-    capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
+    capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC, lastMonomerCappingAtom ?? C.OXYGEN);
 
   const molfileCountsLine = C.V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + C.V3K_COUNTS_LINE_ENDING;
 
@@ -183,12 +184,12 @@ function getCollectionBlock(collection: number[]): string {
  * @param {LoopConstants} LC - Loop constants*/
 function capResultingMolblock(
   molfileAtomBlock: string[], molfileBondBlock: string[],
-  v: LoopVariables, LC: LoopConstants
+  v: LoopVariables, LC: LoopConstants, cappingAtomType: string = C.OXYGEN
 ): void {
   // add terminal oxygen
   const atomIdx = v.nodeShift + 1;
   molfileAtomBlock[LC.atomCount] = C.V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-    C.OXYGEN + ' ' + keepPrecision(v.backbonePositionShift[0]) + ' ' +
+    (cappingAtomType ?? C.OXYGEN) + ' ' + keepPrecision(v.backbonePositionShift[0]) + ' ' +
     v.flipFactor * keepPrecision(v.backbonePositionShift[1]) + ' ' + '0.000000 0' + '\n';
 
   // add terminal bond
@@ -374,8 +375,10 @@ function getResultingAtomBondCounts(
     // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
     bondCount += monomerCount;
     // if the last monomer is something like NH2, which only has R1, there is no need to cap it
+    // although, this should never happen, but hey... in other bits of code, there is a chunk that adds pseudo-R2 as hydrogen
+    // we should also check, if the R2 of the last monomer is not hydrogen, that case should also be omitted
     if (monomerCount > 0) {
-      if ((lastMonomerGraph?.meta?.rNodes?.length ?? 0) < 2) {
+      if ((lastMonomerGraph?.meta?.rNodes?.length ?? 0) < 2 || lastMonomerGraph?.terminalR2Atom?.toLowerCase() === C.HYDROGEN.toLowerCase()) {
         needsCapping = false;
         atomCount -= 1; // remove the last atom (the terminal 'O')
         bondCount -= 1; // remove the last bond (the terminal C-OH)

@@ -118,7 +118,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         this.rows.push(this.dataFrame.mouseOverRowIdx);
       if (this.showSelectedRowsCurves) {
         selectionStart = this.rows.length;
-        this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+        this.rows.push(...this.dataFrame.selection.clone().and(this.dataFrame.filter).getSelectedIndexes());
       }
     }
 

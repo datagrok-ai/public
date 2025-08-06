@@ -60,6 +60,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 |------------------|-------------------|------------------------------------------------|------------------|
 | `.pdf`             | File format       | Portable Document Format                       | [File Editors]   |
 | `.docx`            | File format       | Microsoft Word document                        | [File Editors]   |
+| `.tex`            | File format       | LaTeX Source File                         | [File Editors]   |
 
 
 ## Domain-specific formats

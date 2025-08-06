@@ -57,7 +57,8 @@ export type MolGraph = {
     atoms: Atoms,
     bonds: Bonds,
     meta: MonomerMetadata,
-    stereoAtoms?: number[]
+    stereoAtoms?: number[],
+    terminalR2Atom?: string, // for peptides, store the removed R2 Atom type, if any
 }
 
 export type MonomerMolGraphMap = { [polymerType: string]: { [symbol: string]: MolGraph } };

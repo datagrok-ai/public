@@ -3,7 +3,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 
 module.exports = {
   cache: {type: 'filesystem'},
-  mode: 'development',
+  mode: 'production',
   entry: {
     package: ['./src/package.ts'],
     test: {

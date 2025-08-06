@@ -111,12 +111,61 @@ class ReturnValueProcessor:
         if not isinstance(val, pd.DataFrame):
             raise ValueError(f"Incorrect return type for {param.name}. Expected pandas.DataFrame, got {type(val)}")
         if use_parquet:
+            ReturnValueProcessor.flatten_columns(val)
+            ReturnValueProcessor.fill_nulls_for_export(val)
+            ReturnValueProcessor.downcast_int64_to_int32(val)
             buffer = io.BytesIO()
             val.to_parquet(buffer, engine="pyarrow", compression="snappy")
             buffer.seek(0)
             param.value = buffer.getvalue()
         else:
             param.value = val.to_csv(index=False).encode("utf-8")
+
+    @staticmethod
+    def flatten_columns(df, sep="."):
+        cols = df.columns
+
+        if isinstance(cols, pd.MultiIndex):
+            df.columns = [sep.join(map(str, filter(None, x))) for x in cols.values]
+        elif isinstance(cols, pd.CategoricalIndex):
+            df.columns = cols.astype(str)
+        elif not all(isinstance(x, str) for x in cols):
+            df.columns = list(map(str, cols))
+
+        for col in df.columns:
+            sample = df[col].dropna().head(10)
+            if not sample.empty and sample.apply(lambda x: isinstance(x, (list, dict))).any():
+                df[col] = df[col].apply(lambda x: json.dumps(x) if pd.notnull(x) else "")
+
+    @staticmethod
+    def fill_nulls_for_export(df):
+        for col in df.columns:
+            series = df[col]
+            if pd.api.types.is_integer_dtype(series):
+                df[col] = series.fillna(-2_147_483_648)
+            elif pd.api.types.is_float_dtype(series):
+                df[col] = series.fillna(2.6789344063684636e-34)
+            elif (
+                pd.api.types.is_object_dtype(series)
+                or pd.api.types.is_string_dtype(series)
+                or pd.api.types.is_categorical_dtype(series)
+            ):
+                df[col] = series.fillna("")
+
+    @staticmethod
+    def downcast_int64_to_int32(df):
+        INT32_MIN, INT32_MAX = -2_147_483_648, 2_147_483_647
+
+        for col in df.columns:
+            series = df[col]
+            if pd.api.types.is_integer_dtype(series):
+                values = series.dropna().astype(np.int64)
+                if not values.empty and values.min() >= INT32_MIN and values.max() <= INT32_MAX:
+                    df[col] = (
+                        series.astype("Int32")
+                        if pd.api.types.is_nullable_integer_dtype(series)
+                        else series.astype("int32")
+                    )
 
     type_map = {
         Type.INT: set_int.__func__,

@@ -59,18 +59,6 @@ More information about Datagrok design and components:
 5. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking the running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
-### Configure Datagrok settings
-
-1. Go into the web browser to `DATAGROK_DNS`, login to Datagrok using username `admin` and unique password, which was
-   generated during terraform run. You can find it in the `GROK_PARAMETERS` environment variable in the datagrok task
-   definition.
-2. Edit settings in the Datagrok (Tools | Settings...). Remember to click Apply to save new settings.
-
-   * Scripting:
-     * CVM URL Client: `https://<CVM_DNS>`
-   * Dev:
-     * CVM Url: `https://<CVM_DNS>`
-
 ## Advanced usage
 
 The Terraform code is highly configurable. Feel free to adapt the code and variables to meet your needs and
@@ -78,4 +66,3 @@ requirements.
 Terraform modules documentation:
 
 * [Datagrok Core README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/README.md)
-* [Datagrok CVM README](https://github.com/datagrok-ai/tf-module-datagrok-cvm/blob/main/aws/README.md)
