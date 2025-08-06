@@ -44,12 +44,13 @@
 .create-plate-view__left-panel {
   flex-grow: 0;
   flex-shrink: 0;
-  width: 320px;
-  max-width: 400px;
+  width: 370px; /* MODIFIED: Increased width from 320px */
+  max-width: 450px; /* MODIFIED: Increased max-width */
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
+
 
 /* === Left Panel Styling === */
 .left-panel-section {
@@ -215,3 +216,21 @@
 .space-between-center { justify-content: space-between; align-items: center; }
 .info-message { color: var(--grey-5); padding: 20px; text-align: center; font-style: italic; }
 .error-message { color: var(--red-5); padding: 20px; text-align: center; }
+
+.plate-validation-table-header,
+.plate-validation-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px 0; /* Use vertical padding, but remove horizontal */
+  align-items: center;
+}
+
+.plate-validation-table-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+/* Ensure our new custom input fills the cell */
+.plate-validation-table-row .d4-input-root {
+  width: 100%;
+}

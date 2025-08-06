@@ -137,31 +137,31 @@ export function createPlatesView(): DG.View {
 
   let setTemplate: (template: PlateTemplate) => Promise<void>;
 
-  const handleMapping = (sourceField: string, targetField: string) => {
+  const handleMapping = (currentColName: string, templatePropName: string) => {
     const state = templateState.get(plateTemplate.id);
     if (!state || !state.plates[state.activePlateIdx]) return;
 
     const activeFile = state.plates[state.activePlateIdx];
     const plate = activeFile.plate;
-    const targetColumn = plate.data.col(targetField);
-    if (!targetColumn) return;
 
-    let originalName = targetField;
-    for (const [newName, oldName] of activeFile.reconciliationMap.entries()) {
-      if (newName === targetField) {
-        originalName = oldName;
-        break;
-      }
+    // Find the column by its current name and rename it to the template property name
+    const columnToRename = plate.data.col(currentColName);
+    if (!columnToRename) {
+      console.warn(`Column '${currentColName}' not found for renaming.`);
+      return;
     }
 
-    activeFile.reconciliationMap.set(sourceField, originalName);
-    if (activeFile.reconciliationMap.has(targetField))
-      activeFile.reconciliationMap.delete(targetField);
+    // --- This is the core logic ---
+    columnToRename.name = templatePropName;
 
-    targetColumn.name = sourceField;
-    grok.shell.info(`Mapped '${targetField}' to '${sourceField}'.`);
+    // We can still use the reconciliationMap to track changes for undo functionality later if needed
+    activeFile.reconciliationMap.set(templatePropName, currentColName);
+
+    grok.shell.info(`Mapped column '${currentColName}' to '${templatePropName}'.`);
+
+    // Refresh the entire view to reflect the column name change
     setTemplate(plateTemplate);
-  };
+  }; ;
 
   const handleUndoMapping = (mappedField: string) => {
     const state = templateState.get(plateTemplate.id);

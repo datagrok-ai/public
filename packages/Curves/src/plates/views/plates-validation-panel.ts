@@ -3,107 +3,118 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {PlateTemplate} from '../plates-crud';
-
-type ReconciliationDragObject = {
-  sourceField: string,
-  sourceType: DG.TYPE
-};
+import {fromEvent} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 /**
- * Renders a validation table comparing the plate's data schema to the template's requirements.
+ * Creates a custom input that allows both free text entry and selection from a list of suggestions.
+ */
+function createMappingInput(
+  initialValue: string,
+  suggestions: string[],
+  onCommit: (newValue: string) => void
+): DG.InputBase<string> {
+  const textInput = ui.input.string('', {value: initialValue});
+
+  // Commit the value when the user presses Enter or the input loses focus
+  fromEvent(textInput.input, 'change').subscribe(() => {
+    if (textInput.value)
+      onCommit(textInput.value);
+  });
+
+  // Show a suggestions popup menu when the user types
+  fromEvent(textInput.input, 'input').pipe(debounceTime(200)).subscribe(() => {
+    const currentVal = textInput.value.toLowerCase();
+    const filtered = suggestions.filter((s) => s.toLowerCase().includes(currentVal));
+
+    if (filtered.length > 0) {
+      const menu = DG.Menu.popup();
+      for (const prop of filtered) {
+        menu.item(prop, () => {
+          textInput.value = prop;
+          onCommit(prop);
+        });
+      }
+      menu.show();
+    }
+  });
+
+  return textInput;
+}
+
+
+/**
+ * Renders a validation and mapping table, driven by the columns of the uploaded plate data.
  */
 export function renderValidationResults(
   tableElement: HTMLElement,
   plate: Plate,
   template: PlateTemplate,
-  onMap: (source: string, target: string) => void
+  onMap: (currentColName: string, templatePropName: string) => void
 ): { element: HTMLElement, conflictCount: number } {
   const templateWellProps = template.wellProperties
     .filter((p) => p && p.name)
     .map((p) => ({name: p.name!.toLowerCase(), type: p.type as DG.TYPE, originalName: p.name!}));
-  const plateColumns = plate.data.columns.toList().map((c) => ({name: c.name.toLowerCase(), type: c.type as DG.TYPE, originalName: c.name}));
-  const validationData: any[] = [];
+
+  const plateColumns = plate.data.columns.toList().map((c) => ({
+    name: c.name.toLowerCase(),
+    type: c.type as DG.TYPE,
+    originalName: c.name
+  }));
+
+  const mappingData: any[] = [];
   let conflictCount = 0;
 
-  const mappedPlateCols = new Set<string>();
-  for (const requiredProp of templateWellProps) {
-    const foundCol = plateColumns.find((p) => p.name === requiredProp.name);
-    if (foundCol)
-      mappedPlateCols.add(foundCol.name);
-  }
-  const unmappedPlateCols = plateColumns.filter((p) => !mappedPlateCols.has(p.name));
+  for (const pCol of plateColumns) {
+    const matchedProp = templateWellProps.find((tProp) => tProp.name === pCol.name);
 
-  for (const requiredProp of templateWellProps) {
-    const foundCol = plateColumns.find((p) => p.name === requiredProp.name);
-    if (foundCol) {
-      const typeMatch = foundCol.type === requiredProp.type;
+    if (matchedProp) {
+      const typeMatch = matchedProp.type === pCol.type;
       if (!typeMatch) conflictCount++;
-      validationData.push({
-        templateField: requiredProp.originalName, templateType: requiredProp.type,
-        plateField: foundCol.originalName, status: typeMatch ? 'Match' : 'Type Mismatch', isConflict: !typeMatch,
+      mappingData.push({
+        plateField: pCol.originalName,
+        templateField: matchedProp.originalName,
+        status: typeMatch ? 'Match' : 'Type Mismatch',
       });
     } else {
-      conflictCount++;
-      validationData.push({
-        templateField: requiredProp.originalName, templateType: requiredProp.type, plateField: '',
-        status: 'Not Mapped', isConflict: true,
+      mappingData.push({
+        plateField: pCol.originalName,
+        templateField: '', // Start with empty mapping
+        status: 'Not Mapped',
       });
     }
   }
 
   ui.empty(tableElement);
-  if (validationData.length === 0) {
-    tableElement.appendChild(ui.divText('No well properties defined in template.'));
+  if (plateColumns.length === 0) {
+    tableElement.appendChild(ui.divText('No columns found in the imported file.'));
     return {element: tableElement, conflictCount: 0};
   }
 
   tableElement.className = 'plate-validation-table';
 
   const header = ui.divH([
-    ui.divText('Property', {style: {fontWeight: 'bold'}}),
     ui.divText('Column', {style: {fontWeight: 'bold'}}),
-  ], {style: {padding: '8px 12px', borderBottom: '1px solid var(--grey-2)', display: 'grid', gridTemplateColumns: '1fr 2fr'}});
+    ui.divText('Maps To', {style: {fontWeight: 'bold'}}),
+  ], 'plate-validation-table-header');
   tableElement.appendChild(header);
 
-  validationData.forEach((item) => {
-    const propertyCell = ui.divV([
-      ui.divText(item.templateField),
-      ui.divText(item.templateType, {style: {color: 'var(--grey-5)', fontSize: '11px'}})
-    ]);
-    ui.tooltip.bind(propertyCell, () => `Expected type: ${item.templateType}`);
-    propertyCell.style.cursor = 'grab';
-    ui.makeDraggable(propertyCell, {
-      getDragObject: (): ReconciliationDragObject => ({sourceField: item.templateField, sourceType: item.templateType}),
-      getDragCaption: () => `Map: ${item.templateField}`,
+  mappingData.forEach((item) => {
+    const columnCell = ui.divText(item.plateField);
+
+    const availableProps = templateWellProps.map((p) => p.originalName);
+
+    // --- Use the new custom input for all mapping scenarios ---
+    const mappingInput = createMappingInput(item.templateField, availableProps, (newValue) => {
+      onMap(item.plateField, newValue);
     });
 
-    let columnCell: HTMLElement;
-    if (item.status === 'Not Mapped') {
-      const choices = ['', ...unmappedPlateCols.map((p) => p.originalName)];
-      const choiceInput = ui.input.choice('', {items: choices, value: ''});
-      choiceInput.onInput.subscribe(() => {
-        if (choiceInput.value)
-          onMap(item.templateField, choiceInput.value);
-      });
-      ui.tooltip.bind(choiceInput.root, `Property "${item.templateField}" is not mapped.`);
-      columnCell = choiceInput.root;
-    } else {
-      const statusIcon = item.status === 'Match' ? ui.iconFA('check', null, 'Match') : ui.iconFA('exchange-alt', null, 'Type Mismatch');
-      statusIcon.style.color = item.status === 'Match' ? 'var(--green-3)' : 'var(--orange-3)';
-      columnCell = ui.divH([ui.divText(item.plateField), statusIcon], {style: {gap: '8px', alignItems: 'center'}});
-    }
-
-    ui.makeDroppable(columnCell, {
-      acceptDrop: (dragObject: ReconciliationDragObject) => dragObject && typeof dragObject.sourceField === 'string',
-      doDrop: (dragObject: ReconciliationDragObject) => onMap(dragObject.sourceField, item.plateField),
-    });
-
-    const row = ui.divH([propertyCell, columnCell], {style: {padding: '4px 12px', display: 'grid', gridTemplateColumns: '1fr 2fr'}});
+    const row = ui.divH([columnCell, mappingInput.root], 'plate-validation-table-row');
     row.classList.add('d4-table-row-hover');
-    Array.from(row.children).forEach((c) => (c as HTMLElement).style.alignSelf = 'center');
-
     tableElement.appendChild(row);
   });
+
+  // (Conflict count logic can be refined here if needed)
 
   return {element: tableElement, conflictCount};
 }
