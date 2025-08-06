@@ -162,3 +162,22 @@
     background-color: white;
     left: 10px;
 }
+
+
+.revvity-signals-filter-inputs .add-delete-icons {
+    visibility: hidden;
+    gap: 6px;
+    padding-top: 15px;
+}
+
+.revvity-signals-filter-inputs:hover .add-delete-icons {
+    visibility: visible;
+}
+
+.nested-add-delete-icons {
+    visibility: hidden;
+}
+
+.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
+}

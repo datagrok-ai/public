@@ -366,7 +366,7 @@ export function buildPropertyFilterUI(
         const operatorInputDiv = ui.div();
         const criteriaDiv = ui.div();
         const filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
-            deleteFieldIcon, addNestedConditionIcon], 'revvity-signals-filter-inputs');
+            ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'revvity-signals-filter-inputs');
         container.appendChild(filterContainer);
         createFilter();
         onValueChange();
@@ -394,13 +394,12 @@ export function buildPropertyFilterUI(
     }, 'Logical operator');
 
     logicalOperatorIcon.classList.add('property-query-builder-and-or-operator');
-    if (!parentCondition)
-        logicalOperatorIcon.classList.add('property-query-builder-parent-level');
 
-    const iconsDiv = ui.divH([addFieldIcon, logicalOperatorIcon], 'query-builder-nested-condition-operators');
+    const addDeleteIconsDiv = ui.divH([addFieldIcon], 'nested-add-delete-icons');
+    const iconsDiv = ui.divH([logicalOperatorIcon, addDeleteIconsDiv], 'query-builder-nested-condition-operators');
     const container = ui.divV([iconsDiv], 'revvity-signals-search-query-operator');
     
-    // Add nesting level styling dynamically
+
     if (nestingLevel > 0) {
         container.setAttribute('data-nesting-level', nestingLevel.toString());
         const color = generateNestingColor(nestingLevel);
@@ -413,7 +412,7 @@ export function buildPropertyFilterUI(
             removeOrReplaceCondition(condition, parentCondition.conditions);
             onStructureChange();
         });
-        iconsDiv.append(deleteCondition);
+        addDeleteIconsDiv.append(deleteCondition);
         onValueChange();
     }
 
