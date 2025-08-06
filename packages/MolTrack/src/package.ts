@@ -3,7 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { u2 } from "@datagrok-libraries/utils/src/u2";
-import { createRegistrationNode } from './utils';
+import { createRegistrationNode, getMolTrackContainer } from './utils';
+import { scopeToUrl } from './constants';
+import '../css/moltrack.css';
 
 export const _package = new DG.Package();
 
@@ -42,38 +44,35 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   appNode.group('Assays');
 }
 
-async function getMoltrackContainer() {
-  return await grok.dapi.docker.dockerContainers.filter('moltrack').first();
-}
 
-//name: checkMoltrackHealth
-//description: Checks whether the Moltrack service is running and responsive
+//name: checkMolTrackHealth
+//description: Checks whether the MolTrack service is running and responsive
 //output: string result
-export async function checkMoltrackHealth(): Promise<string> {
-  const container = await getMoltrackContainer();
+export async function checkMolTrackHealth(): Promise<string> {
+  const container = await getMolTrackContainer();
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/health', {
     method: 'GET',
   });
   return response.text();
 }
 
-//name: fetchMoltrackProperties
+//name: fetchMolTrackProperties
 //description: Retrieves all properties defined for the 'compound' scope
 //output: string result
-export async function fetchMoltrackProperties(): Promise<string> {
-  const container = await getMoltrackContainer();
+export async function fetchMolTrackProperties(): Promise<string> {
+  const container = await getMolTrackContainer();
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/compounds', {
     method: 'GET',
   });
   return response.text();
 }
 
-//name: updateMoltrackProperties
+//name: updateMolTrackProperties
 //input: string jsonPayload
-//description: Registers compound properties in the Moltrack service based on the given JSON data
+//description: Registers compound properties in the MolTrack service based on the given JSON data
 //output: string result
-export async function updateMoltrackSchema(jsonPayload: string): Promise<string> {
-  const container = await getMoltrackContainer();
+export async function updateMolTrackSchema(jsonPayload: string): Promise<string> {
+  const container = await getMolTrackContainer();
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/', {
     method: 'POST',
     headers: {
@@ -82,4 +81,43 @@ export async function updateMoltrackSchema(jsonPayload: string): Promise<string>
     body: jsonPayload,
   });
   return response.text();
+}
+
+
+
+//name: registerBulk
+//input: file csv_file
+//input: string scope
+//input: string mapping
+//input: string errorHandling
+//output: dataframe result
+export async function registerBulk(csv_file: DG.FileInfo, scope: string, mapping: string, errorHandling: string): Promise<DG.DataFrame> {
+  let resultJson ="";
+  const formData = new FormData();
+  const content = await csv_file.readAsBytes();
+  const blob = new Blob([content], { type: 'text/csv' });
+  const file = new File([blob], csv_file.fileName, { type: 'text/csv' });
+  formData.append('csv_file', file, csv_file.name);
+  formData.append('mapping', mapping || '');
+  formData.append('error_handling', errorHandling || 'reject_row');
+  formData.append('output_format', 'json');
+  try {
+    const container = await getMolTrackContainer();
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, scopeToUrl[scope], {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`MolTrack API error: ${response.status} ${errorText}`);
+    }
+    resultJson = await response.text();
+  } catch (e) {
+    grok.shell.error(String(e));
+  }
+
+  const json = JSON.stringify(JSON.parse(resultJson)['data']);
+  const ret_value = DG.DataFrame.fromJson(json);
+  return ret_value;
 }

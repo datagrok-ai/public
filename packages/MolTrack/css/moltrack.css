@@ -1,0 +1,14 @@
+.moltrack-register-res-div {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.moltrack-register-res-div .d4-grid {
+    width: 100%!important;
+    height: 100%!important;
+}
+
+.moltrack-run-register-button {
+    width: 100px;
+}
