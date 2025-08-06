@@ -32,10 +32,10 @@ Database structure changes: older versions are not compatible with this release.
 
 ### Main updates
 
-* **Spaces**: use them to organize, access, and share files, folders, connections, queries, projects, and other frequently used entities in Datagrok
-* **Power Search**: quickly find tables, queries, functions, packages, projects, and help topics directly from the **Home Page**
-* **Activity Dashboard**: a **Home Page** widget that brings together recent activity, shared items, favorites, personal actions, and notifications, making it easy to track and access key updates in one place
-* **Complex calculated columns** allow a single vector function to generate multiple columns in one step, eliminating the need to add each column manually
+* We've added **Spaces**, a new section in **Browse** that lets you organize, access, and share projects, files, folders, connections, and other frequently used items, enabling easier collaboration
+* **Power Search**: we've improved search on the **Home Page**, making it easier to quickly find tables, queries, functions, projects, and help topics from a single place
+* We've added a new **Home Page** widget, **Activity Dashboard**, that lets you view recent activity, shared items, favorites, personal actions, and notifications in one place, making it easy to track and access key updates
+* **Complex calculated columns**: you can now use a single vector function to generate multiple columns in one step, so you no longer have to add each column manually
 * **Python Celery task wrapper** enables seamless integration of Python Docker applications with Datagrok,
 running Python functions as Celery tasks in isolated containers while the platform handles orchestration, task queuing, and results. For details, see [Creating Python Docker apps](https://datagrok.ai/help/develop/how-to/packages/python-functions)
 
@@ -48,9 +48,7 @@ running Python functions as Celery tasks in isolated containers while the platfo
 * Provided the possibility to send email notifications with membership requests
 * Added the ability to restrict sharing within user groups
 * Enabled custom function call editors that integrate into the Datagrok UI, allowing tailored parameter input forms. For details, see [Custom function editors](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#custom-function-editors)
-* Navigation UI/UX improvements:
-  * Tabs: Close icons (×) are now shown only on hover with red highlight  
-  * Ribbon and Toolbar: Moved directly under each tab for better context and clearer visual hierarchy
+  
 * Fixed: 
   * [#3325](https://github.com/datagrok-ai/public/issues/3325): CSV Export: Pinned columns are not saved when "Visible Columns Only" is enabled 
   * [#2654](https://github.com/datagrok-ai/public/issues/2654): Projects: Error when using joining table function  
@@ -60,8 +58,9 @@ running Python functions as Celery tasks in isolated containers while the platfo
   * Find and Replace: Finding all empty values is not supported  
   * Float column formats: Some different formats look the same in examples  
   
-### Browse
+#### Browse
 
+* Browse tree navigation improvements: the selected directory is now sticky, so it stays in view when you navigate between sections, making it easier to keep your context while browsing
 * Redesigned Docker UX with added **Resources**, **Logs**, and **Build logs** sections for easier container management and monitoring
 
 ### [JS API](https://datagrok.ai/help/develop/js-api)
@@ -151,8 +150,9 @@ Fixed:
 #### [Diff Studio](https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio/CHANGELOG.md)
 
 * Model Analysis: Improved fitting and sensitivity analysis
-* Sensitivity Analysis: In-worker analysis for Diff Studio models
-* Fitting: Improved colors in line charts
+* Sensitivity Analysis: implemented parallel evaluation of Diff Studio models, which significantly speeds up calculations
+* Parameters optimization: improved usability and consistent line chart colors
+
 
 #### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA/CHANGELOG.md)
 
