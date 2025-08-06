@@ -376,7 +376,7 @@ class FuncGeneratorPlugin {
       } 
     }
     resultType = typesToAnnotation[resultType];
-    if (isArray && resultType) resultType = `list`;
+    if (isArray && resultType) resultType = `list<${resultType}>`;
     return resultType ?? 'dynamic';
   }
 
