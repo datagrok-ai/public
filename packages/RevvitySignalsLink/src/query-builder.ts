@@ -421,7 +421,7 @@ export function buildPropertyFilterUI(
             createPropertyFilterContainer(nestedCondition);
         else {
             const nestedContainer = buildPropertyFilterUI(nestedCondition as ComplexCondition, properties, onValueChange, onStructureChange,
-                parentCondition ?? condition, nestingLevel + 1);
+                condition, nestingLevel + 1);
             container.append(nestedContainer);
         }
     }
