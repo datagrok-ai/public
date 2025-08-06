@@ -368,6 +368,39 @@ items list:
 { items: ['one', 'two', 'three'] }
 ```
 
+There are also integrations avaliable with
+[sensitivity-analysis](../compute#sensitivity-analysis) and
+[optimization](../compute#input-parameter-optimization)
+tools. Enabling these tool integrations could be done only for
+javascript functions using the following annotation:
+
+```
+//meta.features: {"sens-analysis": true, "fitting": true}
+```
+
+For sensitivity analysis scalar numerical inputs can have `rangeSA`
+meta item with the following properties:
+
+```
+default?: number;
+min?: number;
+max?: number;
+step?: number;
+```
+
+This will set sensitivity analysis tool default input settings
+accordingly.
+
+For optimization tool inputs settings could be set using
+`rangeFitting` meta item which has the same properties as the
+`rangeSA`. For outputs the `targetFitting` meta item is used, it has
+the following properties:
+
+```
+default?: any;
+argumentCol?: string;
+```
+
 
 ### Description links
 
