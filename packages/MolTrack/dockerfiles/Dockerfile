@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y python3-venv supervisor curl gosu
 
 RUN python3 -m venv /opt/venv
 
-RUN /opt/venv/bin/pip install --no-cache-dir dg-mol-track==0.2.0
+RUN /opt/venv/bin/pip install --no-cache-dir dg-mol-track==0.3.0
 
 ENV PATH="/opt/venv/bin:$PATH"
 
