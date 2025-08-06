@@ -87,22 +87,6 @@ export class PlateDrcAnalysis {
     detailsRoot!.prepend(pw.plateDetailsDiv);
     detailsRoot!.append(pw.plateActionsDiv);
 
-    const statisticsAliases = {
-      'rSquared': ['rsquared', 'r2', 'r squared', 'r^2'],
-      'slope': ['slope', 'hill', 'steepness', 'hill slope'],
-      'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
-      'top': ['top', 'max', 'maximum', 'maxy', 'max y'],
-      'interceptX': ['interceptx', 'intercept x', 'ic50', 'ic 50', 'ic-50', 'ic_50', 'ic 50 value', 'ic50 value', 'ic50value', 'ec50', 'ec 50', 'ec-50', 'ec_50', 'ec 50 value', 'ec50 value', 'ec50value'],
-      'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
-    };
-
-    const actualStatNames: Record<string, string> = {};
-    actOptions.statisticsColumns.forEach((stat) => {
-      const alias = Object.entries(statisticsAliases).find(([_, aliases]) => aliases.includes(stat.toLowerCase()));
-      if (alias)
-        actualStatNames[alias[0]] = stat;
-    });
-
     if (!gridRoot || !detailsRoot)
       return pw;
 
@@ -149,7 +133,6 @@ export class PlateDrcAnalysis {
     const roleCol = DG.Column.string(actOptions.roleName, seriesVals.length);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
 
-    // --- FIXED: Manually create the object for JSON.stringify to avoid circular references ---
     curveCol.init((i) => {
       const currentSeries = seriesVals[i][1];
       const seriesData = {
@@ -175,17 +158,33 @@ export class PlateDrcAnalysis {
     roleCol.init((i) => seriesVals[i][0]);
 
     const df = DG.DataFrame.fromColumns([roleCol, curveCol]);
-    df.name = pw.plate.data.name;
+    df.name = plate.data.name;
     df.id = randomizeTableId();
-
-    curveCol.semType = 'fit';
+    curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
+
+    const statisticsAliases = {
+      'rSquared': ['rsquared', 'r2', 'r squared', 'r^2'],
+      'slope': ['slope', 'hill', 'steepness', 'hill slope'],
+      'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
+      'top': ['top', 'max', 'maximum', 'maxy', 'max y'],
+      'interceptX': ['interceptx', 'intercept x', 'ic50', 'ic 50', 'ic-50', 'ic_50'],
+      'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
+    };
+
+    const actualStatNames: Record<string, string> = {};
+    actOptions.statisticsColumns.forEach((stat) => {
+      const alias = Object.entries(statisticsAliases).find(([_, aliases]) => aliases.includes(stat.toLowerCase()));
+      if (alias)
+        actualStatNames[alias[0]] = stat;
+    });
 
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
       const params = {table: df, colName: curveCol.name, propName: statName, seriesNumber: 0};
       const col: DG.Column = (DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false})).getOutputParamValue();
       col.name = alias;
     });
+
     if (actualStatNames['interceptX'])
       df.col(actualStatNames['interceptX']) && (df.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
 
@@ -294,6 +293,7 @@ export class PlateDrcAnalysis {
     }
     return pw;
   }
+
   static createCurvesGrid(plate: Plate, plateWidget: PlateWidget, options?: Partial<AnalysisOptions>, layout: 'csv' | 'excel' = 'csv'): HTMLElement | null {
     const defaultOptions: AnalysisOptions = {
       roleName: 'layout', concentrationName: 'concentration', valueName: 'readout',
@@ -357,6 +357,31 @@ export class PlateDrcAnalysis {
     df.id = randomizeTableId();
     curveCol.semType ='fit';
     const curvesGrid = df.plot.grid();
+
+    const statisticsAliases = {
+      'rSquared': ['rsquared', 'r2', 'r squared', 'r^2'],
+      'slope': ['slope', 'hill', 'steepness', 'hill slope'],
+      'bottom': ['bottom', 'min', 'minimum', 'miny', 'min y'],
+      'top': ['top', 'max', 'maximum', 'maxy', 'max y'],
+      'interceptX': ['interceptx', 'intercept x', 'ic50', 'ic 50', 'ic-50', 'ic_50'],
+      'auc': ['auc', 'area under the curve', 'area under curve', 'area'],
+    };
+
+    const actualStatNames: Record<string, string> = {};
+    actOptions.statisticsColumns.forEach((stat) => {
+      const alias = Object.entries(statisticsAliases).find(([_, aliases]) => aliases.includes(stat.toLowerCase()));
+      if (alias)
+        actualStatNames[alias[0]] = stat;
+    });
+
+    Object.entries(actualStatNames).forEach(([statName, alias]) => {
+      const params = {table: df, colName: curveCol.name, propName: statName, seriesNumber: 0};
+      const col: DG.Column = (DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false})).getOutputParamValue();
+      col.name = alias;
+    });
+
+    if (actualStatNames['interceptX'])
+      df.col(actualStatNames['interceptX'])!.meta.format = 'scientific';
 
     let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string, curvesGridCell?: DG.GridCell} | null = null;
 
