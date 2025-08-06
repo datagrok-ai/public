@@ -14,8 +14,18 @@
     color: #2083D5;
 }
 
+.query-builder-nested-condition-operators .fa-trash-alt {
+    padding: 0px 7px 0px 5px;
+    font-size: 10px !important;
+    margin-top: 2px;
+}
+
 .revvity-signals-search .fa-plus {
     color: #2083D5;
+}
+
+.query-builder-nested-condition-operators .fa-plus {
+    padding: 1px 5px 1px 5px;
 }
 
 .revvity-signals-search-logical-operator {
@@ -26,9 +36,16 @@
 }
 
 .revvity-signals-search-query-operator {
-    border: 1px solid #eee;
+    border: none;
     margin: 4px;
-    padding: 4px;
+    padding: 4px 4px 4px 12px;
+    position: relative;
+    margin-top: 20px;
+    border-left: 3px solid #e0e0e0;
+}
+
+.revvity-signals-search-query-operator[data-nesting-level] {
+    border-left-color: var(--nesting-color, #e0e0e0);
 }
 
 .revvity-signals-search-query-preview {
@@ -128,10 +145,39 @@
     height: 12px!important;
 }
 
-.property-query-builder-parent-level {
+.query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    padding: 2px 5px 0px 5px!important;
     display: none!important;
 }
 
-.property-query-builder-multipe-filelds .property-query-builder-parent-level {
+.property-query-builder-multipe-filelds > .query-builder-nested-condition-operators .property-query-builder-and-or-operator {
     display: flex!important;
+}
+
+.query-builder-nested-condition-operators {
+    position: absolute;
+    top: -7px;
+    border: none;
+    border-radius: 4px;
+    background-color: white;
+    left: 10px;
+}
+
+
+.revvity-signals-filter-inputs .add-delete-icons {
+    visibility: hidden;
+    gap: 6px;
+    padding-top: 15px;
+}
+
+.revvity-signals-filter-inputs:hover .add-delete-icons {
+    visibility: visible;
+}
+
+.nested-add-delete-icons {
+    visibility: hidden;
+}
+
+.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
 }
