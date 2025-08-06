@@ -66,6 +66,20 @@ export async function _toAtomicLevel(
   if (res.warnings.length > 0.05 * srcColLength)
     grok.shell.warning(`Molfile conversion resulted in ${res.warnings.length} errors`);
 
+  // use chirality engine to fix chirality of linear sequences, i.e. add STEABS
+  const chiralityFunc = DG.Func.find({name: 'convertToV3KViaOCL'})[0];
+  if (chiralityFunc && res.molCol) {
+    try {
+      const mols = res.molCol.toList();
+      const molsV3K = await chiralityFunc.apply({mols: mols});
+      res.molCol.init((i) => {
+        return molsV3K[i] ? molsV3K[i] : mols[i];
+      })
+    } catch (err: any) {
+      console.error(err);
+    }
+  }
+
   return res;
 }
 
