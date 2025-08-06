@@ -87,7 +87,14 @@
 /* === Right Panel Components === */
 .plate-import-container {
   align-items: center;
-  gap: 8px;
+  gap: 24px; /* This adds space between all items */
+  padding: 8px 0; /* A little vertical room */
+}
+
+/* Target the text and input labels */
+.plate-import-container > .d4-div-text,
+.plate-import-container .d4-input-label {
+  font-weight: 500; /* This creates a "medium" or "semi-bold" look */
   color: var(--grey-6);
 }
 

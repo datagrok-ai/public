@@ -10,7 +10,7 @@ import {
 } from '../plates-crud';
 import {PlateWidget} from '../../plate/plate-widget';
 import {renderValidationResults} from './plates-validation-panel';
-import {parsePlateFromCsv} from '../../plate/csv-plates';
+import {parsePlates} from '../../plate/csv-plates';
 import {toExcelPosition} from '../../plate/utils';
 import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 
@@ -50,6 +50,82 @@ export function createPlatesView(): DG.View {
     grok.shell.error('No plate templates found.');
     return view;
   }
+
+  let sourceDataFrame: DG.DataFrame | null = null;
+  let plateIdentifierColumn: string | null = 'Destination Plate Barcode';
+  let replicateIdentifierColumn: string | null = 'Technical Duplicate ID';
+  let plateNumberColumn: string | null = 'Plate Number'; // New state variable
+  const plateIdentifierHost = ui.div([]);
+  const replicateIdentifierHost = ui.div([]);
+  const plateNumberHost = ui.div([]); // New UI host
+
+
+  let reprocessPlates: () => Promise<void>;
+
+  const updatePlateIdentifierControl = () => {
+    ui.empty(plateIdentifierHost);
+    if (!sourceDataFrame) return; // Do nothing if no file is loaded
+
+    const choiceInput = ui.input.choice('Plate Index', {
+      value: plateIdentifierColumn,
+      items: [null, ...sourceDataFrame.columns.names()], // Allow 'None' to treat as single plate
+      onValueChanged: (newColumn: string | null) => {
+        plateIdentifierColumn = newColumn;
+        reprocessPlates(); // Trigger re-parsing and UI update
+      },
+    });
+    ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
+    plateIdentifierHost.appendChild(choiceInput.root);
+  };
+
+  const updateReplicateIdentifierControl = () => {
+    ui.empty(replicateIdentifierHost);
+    if (!sourceDataFrame) return;
+
+    const choiceInput = ui.input.choice('Replicate Index', {
+      value: replicateIdentifierColumn,
+      items: [null, ...sourceDataFrame.columns.names()], // Allow 'None'
+      onValueChanged: (newColumn: string | null) => {
+        replicateIdentifierColumn = newColumn;
+        reprocessPlates(); // Trigger re-parsing
+      },
+    });
+    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
+    replicateIdentifierHost.appendChild(choiceInput.root);
+  };
+  const updatePlateNumberControl = () => {
+    ui.empty(plateNumberHost);
+    if (!sourceDataFrame) return;
+
+    const choiceInput = ui.input.choice('Plate Number Index', {
+      value: plateNumberColumn,
+      items: [null, ...sourceDataFrame.columns.names()],
+      onValueChanged: (newColumn: string | null) => {
+        plateNumberColumn = newColumn;
+        reprocessPlates();
+      },
+    });
+    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies the plate number within a barcode.');
+    plateNumberHost.appendChild(choiceInput.root);
+  };
+
+  reprocessPlates = async () => {
+    if (!sourceDataFrame) return;
+
+    // Pass BOTH column names to the updated parsing function
+    const parsedPlates = parsePlates(sourceDataFrame, plateIdentifierColumn, replicateIdentifierColumn, plateNumberColumn);
+
+
+    const currentState = templateState.get(plateTemplate.id) ?? {plates: [], activePlateIdx: -1};
+    currentState.plates = [];
+    for (const plate of parsedPlates) {
+      const dummyFile = {name: `Plate: ${plate.barcode}`, fullPath: ''} as DG.FileInfo;
+      currentState.plates.push({plate, file: dummyFile, reconciliationMap: new Map<string, string>()});
+    }
+    currentState.activePlateIdx = currentState.plates.length > 0 ? 0 : -1;
+    templateState.set(plateTemplate.id, currentState);
+    await setTemplate(plateTemplate);
+  };
 
 
   const plateWidget = PlateWidget.fromPlate(new Plate(plateType.rows, plateType.cols));
@@ -375,18 +451,20 @@ export function createPlatesView(): DG.View {
     onValueChanged: async (file: DG.FileInfo) => {
       if (!file) return;
       try {
-        const parsedPlates = await parsePlateFromCsv(await file.readAsString());
-        const currentState = templateState.get(plateTemplate.id) ?? {plates: [], activePlateIdx: -1};
-        for (const plate of parsedPlates)
-          currentState.plates.push({plate, file, reconciliationMap: new Map<string, string>()});
-        currentState.activePlateIdx = currentState.plates.length - 1;
-        templateState.set(plateTemplate.id, currentState);
-        await setTemplate(plateTemplate);
+        sourceDataFrame = DG.DataFrame.fromCsv(await file.readAsString());
+
+        updatePlateIdentifierControl();
+        updateReplicateIdentifierControl();
+        updatePlateNumberControl(); // Update the new control
+
+        await reprocessPlates();
       } catch (e: any) {
         grok.shell.error(`Failed to parse CSV: ${e.message}`);
       }
     },
   });
+
+
   fileInput.root.classList.add('plate-import-button');
   const fileInputButton = fileInput.root.querySelector('button');
   if (fileInputButton) {
@@ -399,7 +477,11 @@ export function createPlatesView(): DG.View {
   const importContainer = ui.divH([
     ui.divText('Import Plate File'),
     fileInput.root,
-  ], 'plate-import-container');
+    plateIdentifierHost,
+    replicateIdentifierHost,
+    plateNumberHost, // Add the new host here
+  ], 'plate-import-container'); // We'll add this class in the CSS step
+
 
   const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => {
     plateType = plateTypes.find((pt) => pt.name === v)!; setTemplate(plateTemplate);
