@@ -237,6 +237,7 @@ class FuncGeneratorPlugin {
         //   defaultValue = baseParam?.right?.raw;
         baseParam = baseParam?.left;
       }
+      const optional = param.optional;
 
       if (baseParam.type === 'RestElement' || baseParam.type === 'Identifier') {
         let name =
@@ -258,8 +259,7 @@ class FuncGeneratorPlugin {
           baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
         if (type !== 'any' && params && params.length > 0)
           type += `<${params.map((e) => e.typeName?.name ?? 'any').join(',')}>`;
-
-        return {name: name, type: type, options: options};
+        return {name: name, type: type, options: options, optional: optional};
       }
       // Commented code belove sets more strong types for ObjectPatterns and ArrayPatterns
       // else if (baseParam.type === 'ObjectPattern' || baseParam.type === 'ArrayPattern') {
@@ -294,7 +294,7 @@ class FuncGeneratorPlugin {
 
       //   return { name: name, type: type, options: options };
       // }
-      return {name: 'value', type: 'any', options: undefined};
+      return {name: 'value', type: 'any', options: undefined, optional: optional};
     });
     return params;
   }
@@ -346,7 +346,7 @@ class FuncGeneratorPlugin {
   }
 
   _readReturnType(annotation) {
-    let resultType = 'dynamic';
+    let resultType = 'void';
     let nodeAnnotation = annotation;
     let isArray = false; 
     if (nodeAnnotation?.type === 'TSUnionType' && 
@@ -398,9 +398,8 @@ class FuncGeneratorPlugin {
       results = this._readOutputsFromReturnTypeObject(annotation);
     else {
       const resultType = this._readReturnType(annotation);
-      results.push({name: 'result', type: resultType});
-      if (resultType === 'void')
-        results = [];
+      if (resultType !== 'void')
+        results.push({name: 'result', type: resultType});
     }
     return results;
   }
