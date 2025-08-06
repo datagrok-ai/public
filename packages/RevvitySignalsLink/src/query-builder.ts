@@ -113,7 +113,7 @@ export class DateBetweenConditionEditor extends BaseConditionEditor<Date[]> {
                 this.onChanged.next(this.condition);
             }
         });
-        this.root.append(ui.divH([date1.root, date2.root], {style: {gap: '10px'}}));
+        this.root.append(ui.divH([date1.root, date2.root], { style: { gap: '10px' } }));
     }
 }
 
@@ -196,13 +196,13 @@ export class ConditionRegistry {
 
     private initializeDefaultOperators(): void {
         // Type operators
-        this.registerTypeOperators(DG.TYPE.STRING, ['starts with', 'ends with', '=', '!=', 'in']);        
-        this.registerTypeOperators(DG.TYPE.INT, ['>', '<', '>=', '<=', '=', '!=']);
-        this.registerTypeOperators(DG.TYPE.FLOAT, ['>', '<', '>=', '<=', '=', '!=']);     
-        this.registerTypeOperators(DG.TYPE.DATE_TIME, ['before', 'after', 'between']);
+        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.ENDS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ, Operators.NOT_EQ]);
+        this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ, Operators.NOT_EQ]);
+        this.registerTypeOperators(DG.TYPE.DATE_TIME, [Operators.BEFORE, Operators.AFTER, Operators.BETWEEN]);
 
         // SemType operators (take precedence over type operators)
-        this.registerSemTypeOperators(DG.SEMTYPE.MOLECULE, ['contains', 'is contained', '=', 'is similar']);
+        this.registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_CONTAINED, Operators.EQ, Operators.IS_SIMILAR]);
     }
 
     private initializeDefaultEditors(): void {
@@ -213,12 +213,12 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.DATE_TIME, '', '', BaseConditionEditor);
 
         // Register specialized editors for specific combinations
-        this.registerEditor(DG.TYPE.STRING, '', 'in', MultiValueConditionEditor);
-        this.registerEditor(DG.TYPE.DATE_TIME, '', 'between', DateBetweenConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, 'contains', MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, 'is contained', MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, '=', MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, 'is similar', MoleculeSimilarityConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, '', Operators.IN, MultiValueConditionEditor);
+        this.registerEditor(DG.TYPE.DATE_TIME, '', Operators.BETWEEN, DateBetweenConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.CONTAINS, MoleculeConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_CONTAINED, MoleculeConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.EQ, MoleculeConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_SIMILAR, MoleculeSimilarityConditionEditor);
     }
 
     // Operator registration methods
@@ -248,9 +248,9 @@ export class ConditionRegistry {
 
     // Editor registration methods
     registerEditor<T>(
-        propertyType: string, 
-        semType: string, 
-        operator: string, 
+        propertyType: string,
+        semType: string,
+        operator: string,
         editorClass: new (prop: DG.Property, operator: string) => BaseConditionEditor<T>
     ): void {
         const key = this.createEditorKey(propertyType, semType, operator);
@@ -483,26 +483,26 @@ export class QueryBuilder {
     }
 
     generateNestingColor(level: number): string {
-    const baseColor = { r: 187, g: 222, b: 251 };
-    
-    const darkeningFactor = Math.min(0.1 + (level - 1) * 0.08, 0.9);
-    
-    const r = Math.round(baseColor.r * (1 - darkeningFactor));
-    const g = Math.round(baseColor.g * (1 - darkeningFactor));
-    const b = Math.round(baseColor.b * (1 - darkeningFactor));
-    
-    // Convert to hex
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
+        const baseColor = { r: 187, g: 222, b: 251 };
+
+        const darkeningFactor = Math.min(0.1 + (level - 1) * 0.08, 0.9);
+
+        const r = Math.round(baseColor.r * (1 - darkeningFactor));
+        const g = Math.round(baseColor.g * (1 - darkeningFactor));
+        const b = Math.round(baseColor.b * (1 - darkeningFactor));
+
+        // Convert to hex
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
 }
 
 
 
 // Main UI builder function for property filters
 export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initialCondition?: ComplexCondition): HTMLElement {
-    
+
     const builder = new QueryBuilder(properties, initialCondition);
-    
+
     // Preview condition (will be further removed)
     const jsonPreview = document.createElement('textarea');
     jsonPreview.readOnly = true;
@@ -531,7 +531,7 @@ export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initia
     const mainContainer = ui.splitV([
         formContainer,
         previewContainer
-    ], {style: {width: '100%'}}, true);
+    ], { style: { width: '100%' } }, true);
 
     updatePreview();
     return mainContainer;
