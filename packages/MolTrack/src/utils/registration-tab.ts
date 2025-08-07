@@ -26,7 +26,7 @@ export class RegisrationView {
   }
 
   private createInputs() {
-    this.datasetInput = ui.input.table('Dataset');
+    this.datasetInput = ui.input.file('Dataset');
     this.scopeInput = this.createChoiceInput('Scope', Object.values(Scope));
     this.errorHandlingInput = this.createChoiceInput('Error handling', Object.values(ErrorHandling));
     this.mappingInput = ui.input.textArea('Mapping', { value: '' });
