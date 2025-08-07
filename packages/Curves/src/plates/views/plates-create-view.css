@@ -2,7 +2,7 @@
 .create-plate-view__right-panel {
   display: flex;
   flex-direction: column;
-  height: 100%; 
+  height: 100%;
   width: 100%; /* Ensure full width */
 }
 
@@ -12,14 +12,14 @@
 }
 
 .create-plate-view__drc-host {
-  flex-grow: 1; /* CHANGED: Allow it to grow and fill remaining space */
-  overflow: auto; 
+  flex-grow: 1; /* Allow it to grow and fill remaining space */
+  overflow: auto;
   border-top: 1px solid var(--grey-2);
   padding-top: 10px;
   width: 100%; /* Ensure full width */
 }
 
-/* NEW: Style for the DRC grid container */
+/* Style for the DRC grid container */
 .drc-grid-container {
   width: 100%;
   height: 100%;
@@ -44,13 +44,12 @@
 .create-plate-view__left-panel {
   flex-grow: 0;
   flex-shrink: 0;
-  width: 370px; /* MODIFIED: Increased width from 320px */
-  max-width: 450px; /* MODIFIED: Increased max-width */
+  width: 370px;
+  max-width: 450px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-
 
 /* === Left Panel Styling === */
 .left-panel-section {
@@ -88,14 +87,13 @@
 /* === Right Panel Components === */
 .plate-import-container {
   align-items: center;
-  gap: 24px; /* This adds space between all items */
-  padding: 8px 0; /* A little vertical room */
+  gap: 24px;
+  padding: 8px 0;
 }
 
-/* Target the text and input labels */
 .plate-import-container > .d4-div-text,
 .plate-import-container .d4-input-label {
-  font-weight: 500; /* This creates a "medium" or "semi-bold" look */
+  font-weight: 500;
   color: var(--grey-6);
 }
 
@@ -110,8 +108,8 @@
   flex-wrap: wrap;
   border-bottom: 1px solid var(--grey-2);
   margin-bottom: 10px;
-  margin-left: 30px; 
-  min-height: 40px; 
+  margin-left: 30px;
+  min-height: 40px;
 }
 
 .plate-file-tab__header {
@@ -124,23 +122,47 @@
   align-items: center;
   gap: 8px;
 }
-.plate-file-tab__header:hover { background-color: var(--grey-0); }
+
+.plate-file-tab__header:hover {
+  background-color: var(--grey-0);
+}
+
 .plate-file-tab__header.active {
   color: var(--blue-1);
   border-bottom-color: var(--blue-1);
   font-weight: 500;
 }
-.plate-file-tab__controls { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
-.plate-file-tab__conflict-dot { width: 8px; height: 8px; background-color: var(--red-3); border-radius: 50%; border: 1px solid var(--white); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-.plate-file-tab__clear-icon { opacity: 0.6; }
-.plate-file-tab__clear-icon:hover { opacity: 1; }
+
+.plate-file-tab__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.plate-file-tab__conflict-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--red-3);
+  border-radius: 50%;
+  border: 1px solid var(--white);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.plate-file-tab__clear-icon {
+  opacity: 0.6;
+}
+
+.plate-file-tab__clear-icon:hover {
+  opacity: 1;
+}
 
 .plate-widget {
   flex-grow: 0;
-  width: 100%; /* Ensure full width */
+  width: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 300px; 
+  min-height: 300px;
 }
 
 .plate-widget__main-container {
@@ -149,19 +171,19 @@
   flex-direction: row;
   gap: 15px;
   min-height: 0;
-  width: 100%; /* Ensure full width */
+  width: 100%;
 }
 
 .plate-widget__tabs {
   flex-grow: 1;
   display: flex;
-  flex-direction: row; /* Vertical tabs have a row flex-direction */
-  width: 100%; /* Ensure full width */
+  flex-direction: row;
+  width: 100%;
 }
 
 .plate-widget__tabs > .d4-tab-contents {
   flex-grow: 1;
-  width: 100%; /* Ensure full width */
+  width: 100%;
 }
 
 .plate-widget__details-panel {
@@ -198,30 +220,47 @@
   user-select: none;
   gap: 12px;
 }
+
 .reco-summary:hover {
   border-color: var(--grey-3);
   background-color: var(--grey-1);
 }
+
 .reco-summary--pending {
   background-color: var(--orange-1);
   border-color: var(--orange-3);
   color: var(--orange-6);
 }
+
 .reco-summary__item {
   gap: 4px;
   align-items: center;
 }
 
 /* === Helper & Utility Classes === */
-.space-between-center { justify-content: space-between; align-items: center; }
-.info-message { color: var(--grey-5); padding: 20px; text-align: center; font-style: italic; }
-.error-message { color: var(--red-5); padding: 20px; text-align: center; }
+.space-between-center {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-message {
+  color: var(--grey-5);
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
+}
+
+.error-message {
+  color: var(--red-5);
+  padding: 20px;
+  text-align: center;
+}
 
 .plate-validation-table-header,
 .plate-validation-table-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 4px 0; /* Use vertical padding, but remove horizontal */
+  padding: 4px 0;
   align-items: center;
 }
 
@@ -230,7 +269,34 @@
   border-bottom: 1px solid var(--grey-2);
 }
 
-/* Ensure our new custom input fills the cell */
 .plate-validation-table-row .d4-input-root {
   width: 100%;
+}
+
+/* Style for the locked mapping input */
+.locked-mapping-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 8px;
+  height: 26px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-3);
+  border-radius: 4px;
+  width: 100%;
+}
+
+.locked-mapping-input > .grok-icon {
+  color: var(--grey-4);
+  cursor: pointer;
+  visibility: hidden;
+  padding: 4px;
+}
+
+.plate-validation-table-row:hover .locked-mapping-input > .grok-icon {
+  visibility: visible;
+}
+
+.locked-mapping-input > .grok-icon:hover {
+  color: var(--red-3);
 }

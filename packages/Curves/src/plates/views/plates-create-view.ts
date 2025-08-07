@@ -16,14 +16,9 @@ import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 
 import './plates-create-view.css';
 
-type PlateFile = {
-    plate: Plate;
-    file: DG.FileInfo;
-    reconciliationMap: Map<string, string>;
+type PlateFile = {plate: Plate;file: DG.FileInfo;reconciliationMap: Map<string, string>;
 };
-type TemplateState = {
-    plates: PlateFile[],
-    activePlateIdx: number
+type TemplateState = {plates: PlateFile[], activePlateIdx: number
 };
 
 export function createPlatesView(): DG.View {
@@ -276,7 +271,7 @@ export function createPlatesView(): DG.View {
 
     state.plates.forEach((plateFile, idx) => {
       const dummyTable = ui.div();
-      const validation = renderValidationResults(dummyTable, plateFile.plate, template, handleMapping);
+      const validation = renderValidationResults(dummyTable, plateFile.plate, template, handleMapping, plateFile.reconciliationMap, handleUndoMapping);
       const hasConflicts = validation.conflictCount > 0;
       const tabLabelText = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
 
@@ -344,7 +339,7 @@ export function createPlatesView(): DG.View {
             drcAnalysisHost.appendChild(info);
           }
 
-          validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping);
+          validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping, activeFile.reconciliationMap, handleUndoMapping);
           const plateProperties = template.plateProperties
             .filter((p) => p && p.name && p.type)
             .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
@@ -534,7 +529,7 @@ export function createPlatesView(): DG.View {
         return;
       }
       const dummyTableElement = ui.div();
-      const validation = renderValidationResults(dummyTableElement, plateToSave, plateTemplate, handleMapping);
+      const validation = renderValidationResults(dummyTableElement, plateToSave, plateTemplate, handleMapping, new Map(), () => {});
       if (validation.conflictCount > 0)
         grok.shell.warning('Saving plate with unresolved validation issues.');
       plateToSave.plateTemplateId = plateTemplate.id;

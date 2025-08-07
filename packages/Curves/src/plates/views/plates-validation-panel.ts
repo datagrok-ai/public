@@ -7,8 +7,8 @@ import {fromEvent} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
 /**
- * Creates a custom input that allows both free text entry and selection from a list of suggestions.
- */
+ * Creates a custom input that allows both free text entry and selection from a list of suggestions.
+ */
 function createMappingInput(
   initialValue: string,
   suggestions: string[],
@@ -44,13 +44,15 @@ function createMappingInput(
 
 
 /**
- * Renders a validation and mapping table, driven by the columns of the uploaded plate data.
- */
+ * Renders a validation and mapping table, driven by the columns of the uploaded plate data.
+ */
 export function renderValidationResults(
   tableElement: HTMLElement,
   plate: Plate,
   template: PlateTemplate,
-  onMap: (currentColName: string, templatePropName: string) => void
+  onMap: (currentColName: string, templatePropName: string) => void,
+  reconciliationMap: Map<string, string>,
+  onUndo: (mappedField: string) => void
 ): { element: HTMLElement, conflictCount: number } {
   const templateWellProps = template.wellProperties
     .filter((p) => p && p.name)
@@ -79,7 +81,7 @@ export function renderValidationResults(
     } else {
       mappingData.push({
         plateField: pCol.originalName,
-        templateField: '', // Start with empty mapping
+        templateField: '', 
         status: 'Not Mapped',
       });
     }
@@ -100,16 +102,26 @@ export function renderValidationResults(
   tableElement.appendChild(header);
 
   mappingData.forEach((item) => {
-    const columnCell = ui.divText(item.plateField);
+    const currentName = item.plateField;
+    const originalName = reconciliationMap.get(currentName);
+    const isMapped = !!originalName;
 
-    const availableProps = templateWellProps.map((p) => p.originalName);
+    const columnCell = ui.divText(isMapped ? originalName : currentName);
+    let rightCell: HTMLElement;
 
-    // --- Use the new custom input for all mapping scenarios ---
-    const mappingInput = createMappingInput(item.templateField, availableProps, (newValue) => {
-      onMap(item.plateField, newValue);
-    });
+    if (isMapped) {
+      const host = ui.divText(currentName);
+      const icon = ui.iconFA('times', () => onUndo(currentName), 'Undo this mapping');
+      rightCell = ui.divH([host, icon], 'locked-mapping-input');
+    } else {
+      const availableProps = templateWellProps.map((p) => p.originalName);
+      const mappingInput = createMappingInput(item.templateField, availableProps, (newValue) => {
+        onMap(currentName, newValue);
+      });
+      rightCell = mappingInput.root;
+    }
 
-    const row = ui.divH([columnCell, mappingInput.root], 'plate-validation-table-row');
+    const row = ui.divH([columnCell, rightCell], 'plate-validation-table-row');
     row.classList.add('d4-table-row-hover');
     tableElement.appendChild(row);
   });
