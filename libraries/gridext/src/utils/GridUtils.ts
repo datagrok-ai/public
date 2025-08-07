@@ -116,7 +116,7 @@ export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendere
 }
 
 export function getGridColumnHeaderHeight(grid : DG.Grid, colHeaderHeight: number = -1) : number {
-  const nHColHeader = colHeaderHeight !== -1 ? colHeaderHeight : grid.getOptions(true).look.colHeaderHeight;
+  const nHColHeader = (colHeaderHeight ?? -1) !== -1 ? colHeaderHeight : grid.getOptions(true).look.colHeaderHeight;
   if(nHColHeader === null || nHColHeader === undefined) {//DG bug
 
     const cellGrid = grid.hitTest(2,2);//.cell(col.name, 0);

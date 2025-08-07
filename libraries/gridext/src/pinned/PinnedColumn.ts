@@ -301,7 +301,7 @@ export class PinnedColumn {
 
     const storeGridOptions = () => {
       const gridLook = grid.getOptions(true).look;
-      this.colHeaderHeight = gridLook.colHeaderHeight;
+      // this.colHeaderHeight = gridLook.colHeaderHeight ?? 40; // need to fix DG bug
       this.rowHeight = gridLook.rowHeight;
       this.colHeaderFont = gridLook.colHeaderFont;
     }
@@ -1357,7 +1357,8 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     // g.fillText(str, nXX, nYY);
     const gridColHeader = DG.GridCell.createColHeader(this.m_colGrid);
-    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW, nHCH)});
+    gridColHeader.style.font = fontScaled;
+    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW * devicePixelRatio, nHCH)});
 
     //Paint Sort Arrow
     if(this.m_colGrid.idx > 0) {
