@@ -1,127 +1,125 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Scope } from '../utils/constants'
+import { Scope } from '../utils/constants';
 import dayjs from 'dayjs';
 
 let openedView: DG.ViewBase | null = null;
 
 export class RegistrationSingleView {
-    view: DG.View;
-    main_div: HTMLDivElement;
-    compound_registration_div: HTMLDivElement;
-    batch_registration_div: HTMLDivElement;
-    assay_run_registration_div: HTMLDivElement;
-    assay_results_registration_div: HTMLDivElement;
-    gridDiv: HTMLDivElement;
-    scope_input: DG.InputBase | null = null;
-    structureInput: DG.InputBase | null = null;
-    epa_batch_id_input: DG.InputBase | null = null;
-    assay_name_input: DG.InputBase | null = null;
-    assay_run_date_input: DG.DateInput | null = null;
+  view: DG.View;
+  mainDiv: HTMLDivElement;
+  compoundDiv: HTMLDivElement;
+  batchDiv: HTMLDivElement;
+  assayRunDiv: HTMLDivElement;
+  assayResultsDiv: HTMLDivElement;
+  gridDiv: HTMLDivElement;
+  scopeInput: DG.InputBase | null = null;
+  structureInput: DG.InputBase | null = null;
+  epaBatchIdInput: DG.InputBase | null = null;
+  assayNameInput: DG.InputBase | null = null;
+  assayRunDateInput: DG.DateInput | null = null;
+  inputTest;
 
-    constructor() {
-        this.view = DG.View.create();
-        this.view.name = 'Register Entities';
-        this.createInputs();
-        this.main_div = ui.div('', 'moltrack-register-single-div');
-        this.compound_registration_div = ui.div('', 'moltrack-register-single-div');
-        this.batch_registration_div = ui.div('', 'moltrack-register-single-div');
-        this.assay_run_registration_div = ui.div('', 'moltrack-register-single-div');
-        this.assay_results_registration_div = ui.div('', 'moltrack-register-single-div');
-        this.gridDiv = ui.div('', 'moltrack-register-res-div');
-        this.main_div.append(this.getScopeDiv(this.scope_input!.value!));
-        this.buildUI();
+  constructor() {
+    this.view = DG.View.create();
+    this.view.name = 'Register Entity';
+    this.createInputs();
+    this.mainDiv = ui.div('', 'moltrack-register-single-div');
+    this.compoundDiv = ui.div('', 'moltrack-register-single-div');
+    this.batchDiv = ui.div('', 'moltrack-register-single-div');
+    this.assayRunDiv = ui.div('', 'moltrack-register-single-div');
+    this.assayResultsDiv = ui.div('', 'moltrack-register-single-div');
+    this.gridDiv = ui.div('', 'moltrack-register-res-div');
+    this.mainDiv.append(this.getScopeDiv(this.scopeInput!.value!));
+    this.inputTest = ui.typeAhead('Country', {source: {
+      local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});
+    this.buildUI();
+  }
+
+  private createInputs() {
+    const scopeChoices = Object.values(Scope);
+    this.scopeInput = ui.input.choice('Scope', {
+      value: scopeChoices[0], items: scopeChoices, onValueChanged: () => {
+        ui.empty(this.mainDiv);
+        this.mainDiv.append(this.getScopeDiv(this.scopeInput!.value!));
+      },
+    });
+    // Compound registration
+    this.structureInput = ui.input.molecule('Structure');
+    this.structureInput.classList.add('moltrack-register-single-input');
+
+    // Batch registration
+    this.epaBatchIdInput = ui.input.string('EPA Batch ID');
+
+    // Assay run registration
+    this.assayNameInput = ui.input.string('Assay run name');
+    this.assayRunDateInput = ui.input.date('Assay run date', { value: dayjs() });
+  }
+
+  private getScopeDiv(scope: string): HTMLDivElement {
+    let retVal = this.mainDiv;
+    switch (scope) {
+    case Scope.COMPOUNDS:
+      ui.empty(this.compoundDiv);
+      this.compoundDiv.append(this.scopeInput!.root);
+      this.compoundDiv.append(this.structureInput!.root);
+      retVal = this.compoundDiv;
+      break;
+    case Scope.BATCHES:
+      ui.empty(this.batchDiv);
+      this.batchDiv.append(this.scopeInput!.root);
+      this.batchDiv.append(this.epaBatchIdInput!.root);
+      this.batchDiv.append(this.structureInput!.root);
+      retVal = this.batchDiv;
+      break;
+    case Scope.ASSAY_RUNS:
+      ui.empty(this.assayRunDiv);
+      this.assayRunDiv.append(this.scopeInput!.root);
+      this.assayRunDiv.append(this.assayNameInput!.root);
+      this.assayRunDiv.append(this.assayRunDateInput!.root);
+      retVal = this.assayRunDiv;
+      break;
+    case Scope.ASSAY_RESULTS:
+      ui.empty(this.assayRunDiv);
+      this.assayResultsDiv.append(this.scopeInput!.root);
+      this.assayResultsDiv.append(this.assayNameInput!.root);
+      this.assayResultsDiv.append(this.assayRunDateInput!.root);
+      this.assayResultsDiv.append(this.epaBatchIdInput!.root);
+      this.assayResultsDiv.append(this.inputTest!.root);
+      retVal = this.assayResultsDiv;
+      break;
     }
+    return retVal;
+  }
 
-    private createInputs() {
-        const scopeChoices = Object.values(Scope);
-        this.scope_input = ui.input.choice('Scope', {
-            value: scopeChoices[0], items: scopeChoices, onValueChanged: () => {
-                ui.empty(this.main_div);
-                this.main_div.append(this.getScopeDiv(this.scope_input!.value!));
-            }
-        });
-        // Compound registration
-        this.structureInput = ui.input.molecule('Structure');
-        this.structureInput.classList.add('moltrack-register-single-input');
+  private buildUI() {
+    const registerButton = ui.bigButton('REGISTER', async () => await this.registerEntity());
+    registerButton.classList.add('moltrack-run-register-button');
 
-        // Batch registration
-        this.epa_batch_id_input = ui.input.string('EPA Batch ID');
+    const addToWorkspaceButton = ui.icons.add(() => {
+      // if (this.df)
+      //     grok.shell.addTablePreview(this.df);
+    }, 'Add registration results to workspace');
 
-        // Assay run registration
-        this.assay_name_input = ui.input.string('Assay run name');
-        this.assay_run_date_input = ui.input.date('Assay run date', { value: dayjs() });
-    }
+    this.view.setRibbonPanels([[addToWorkspaceButton]]);
+    this.view.root.append(
+      ui.divV([
+        ui.divV([
+          this.mainDiv,
+          registerButton,
+        ], 'ui-form'),
+        this.gridDiv,
+      ]),
+    );
+  }
 
-    private getScopeDiv(scope: string): HTMLDivElement {
-        let ret_val = this.main_div;
-        switch (scope) {
-            case Scope.COMPOUNDS:
-                ui.empty(this.compound_registration_div);
-                this.compound_registration_div.append(this.scope_input!.root);
-                this.compound_registration_div.append(this.structureInput!.root);
-                ret_val = this.compound_registration_div;
-                break;
-            case Scope.BATCHES:
-                ui.empty(this.batch_registration_div);
-                this.batch_registration_div.append(this.scope_input!.root);
-                this.batch_registration_div.append(this.epa_batch_id_input!.root);
-                this.batch_registration_div.append(this.structureInput!.root);
-                ret_val = this.batch_registration_div;
-                break;
-            case Scope.ASSAY_RUNS:
-                ui.empty(this.assay_run_registration_div);
-                this.assay_run_registration_div.append(this.scope_input!.root);
-                this.assay_run_registration_div.append(this.assay_name_input!.root);
-                this.assay_run_registration_div.append(this.assay_run_date_input!.root);
-                ret_val = this.assay_run_registration_div;
-                break;
-            case Scope.ASSAY_RESULTS:
-                ui.empty(this.assay_run_registration_div);
-                this.assay_results_registration_div.append(this.scope_input!.root);
-                this.assay_results_registration_div.append(this.assay_name_input!.root);
-                this.assay_results_registration_div.append(this.assay_run_date_input!.root);
-                this.assay_results_registration_div.append(this.epa_batch_id_input!.root);
-                ret_val = this.assay_results_registration_div;
-                break;
-        }
+  private async registerEntity() {
+  }
 
-        return ret_val;
-    }
-
-    private buildUI() {
-        const registerButton = ui.bigButton('REGISTER', async () => await this.registerEntity());
-        registerButton.classList.add('moltrack-run-register-button');
-
-        const addToWorkspaceButton = ui.icons.add(() => {
-            // if (this.df)
-            //     grok.shell.addTablePreview(this.df);
-        }, 'Add registration results to workspace');
-
-        this.view.setRibbonPanels([[addToWorkspaceButton]]);
-        this.view.root.append(
-            ui.divV([
-                ui.divV([
-                    this.main_div,
-                    registerButton,
-                ], 'ui-form'),
-                this.gridDiv,
-            ]),
-        );
-    }
-
-    public getEditor(): HTMLElement {
-        return this.main_div;
-    }
-
-    private async registerEntity() {
-    }
-
-    show() {
-        openedView?.close();
-        openedView = this.view;
-        grok.shell.addPreview(this.view);
-    }
-
+  show() {
+    openedView?.close();
+    openedView = this.view;
+    grok.shell.addPreview(this.view);
+  }
 }
