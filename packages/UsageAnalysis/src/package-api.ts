@@ -462,20 +462,16 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:InitUA', {});
   }
 
-  export async function testsList(): Promise<any> {
+  export async function testsList(): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestsList', {});
   }
 
-  export async function testsListJoined(): Promise<any> {
+  export async function testsListJoined(): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestsListJoined', {});
   }
 
-  export async function testAnalysisReportForCurrentDay(date: any ): Promise<any> {
+  export async function testAnalysisReportForCurrentDay(date: any ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
-  }
-
-  export async function aaa(path?: string ): Promise<any> {
-    return await grok.functions.call('UsageAnalysis:Aaa', { path });
   }
 
   export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string ): Promise<DG.View> {
@@ -494,11 +490,11 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
-  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: any ): Promise<any> {
+  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function reportsAppTreeBrowser(treeNode: any , browseView: any ): Promise<any> {
+  export async function reportsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode, browseView });
   }
 
@@ -525,7 +521,7 @@ export namespace funcs {
   /**
   Creates JIRA ticket using current error log
   */
-  export async function createJiraTicket(): Promise<any> {
+  export async function createJiraTicket(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
   }
 }

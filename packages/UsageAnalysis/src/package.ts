@@ -78,7 +78,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async TestAnalysisReportForCurrentDay(
-    @grok.decorators.param({'type':'datetime'})  date: any) {
+    @grok.decorators.param({'type':'datetime'})  date: any) : Promise<DG.DataFrame> {
   
     const tests = await TestAnalysisManager.collectPackageTests();
     const testsListMapped = tests.map((elem) => {
@@ -165,7 +165,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async serviceLogsAppTreeBrowser(
     treeNode: DG.TreeViewGroup,
-    browseView: any) {  
+    browseView: DG.ViewBase) {  
     const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
     loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
     const loaderItem = treeNode.item(loaderDiv);
@@ -210,40 +210,26 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async reportsAppTreeBrowser(
     treeNode: DG.TreeViewGroup,
-    browseView: any) {  
+    browseView: DG.ViewBase) {  
     await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
     await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
   }
 
-  //Add after release 1.26.1
-  // 'test': {
-  //   'test': 'usageWidget()'
-  // }
-  @grok.decorators.func({
+  @grok.decorators.dashboard({
     'meta': {
       'canView': 'Developers,Administrators'
     },
-    'tags': [
-      'dashboard'
-    ],
     'name': 'Usage',
+    'test': 'usageWidget()',
   })
   static usageWidget(): DG.Widget {
     return new UsageWidget();
   }
 
-  //Add after release  1.26.1
-  //'test': {
-  //   'test': 'reportsWidget()'
-  // }
-  @grok.decorators.func({
-    'meta': {
-      'canView': 'Developers,Administrators'
-    },
-    'tags': [
-      'dashboard'
-    ],
+  @grok.decorators.dashboard({
+    'meta': {'canView': 'Developers,Administrators' },
     'name': 'Reports',
+    'test': 'reportsWidget()'
   })
   static reportsWidget(): DG.Widget {
     return new ReportsWidget();
