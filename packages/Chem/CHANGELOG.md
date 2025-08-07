@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.16.2 (2025-08-07)
+
+### Bug fixes
+
+* GROK-18622: Implement logic to check and switch TableView if needed
+
 ## 1.16.1 (2025-08-04)
 
 ### Bug fixes
