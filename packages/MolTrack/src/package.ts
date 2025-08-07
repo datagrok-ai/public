@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
-import { RegisrationView } from './utils/registration-tab';
+import { RegistrationView } from './utils/registration-tab';
+import { RegistrationSingleView } from './utils/registration-single-tab'
 
 export const _package = new DG.Package();
 
@@ -42,12 +43,13 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   //search node
   const registerBulkNode = appNode.getOrCreateGroup("Register").item("Register bulk");
   registerBulkNode.onSelected.subscribe(() => {
-    const registrationView = new RegisrationView();
+    const registrationView = new RegistrationView();
     registrationView.show();
   });
   const registerSingleNode = appNode.getOrCreateGroup("Register").item("Register single");
   registerSingleNode.onSelected.subscribe(() => {
-    //RegisterSingleNode(appNode);
+    const registrationSingleView = new RegistrationSingleView();
+    registrationSingleView.show();
   });
 }
 

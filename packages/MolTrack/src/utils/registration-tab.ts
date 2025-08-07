@@ -6,7 +6,7 @@ import '../../css/moltrack.css';
 
 let openedView: DG.ViewBase | null = null;
 
-export class RegisrationView {
+export class RegistrationView {
   view: DG.View;
   datasetInput: DG.InputBase | null = null;
   scopeInput: DG.InputBase | null = null;
