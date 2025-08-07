@@ -140,6 +140,13 @@ export class DateBetweenConditionEditor extends BaseConditionEditor<Date[]> {
 
 export class MoleculeConditionEditor extends BaseConditionEditor<string> {
     override initializeEditor(prop: DG.Property): void {
+        //if we swith from similarity input to standard molecule input - need to modify value
+        if (this.condition.value && typeof this.condition.value !== 'string') {
+            if ('molecule' in this.condition.value)
+                 this.condition.value = (this.condition.value as MoleculeSimilarity).molecule;
+            else
+                this.condition.value = '';
+        }
         const input = ui.input.molecule('', {
             value: this.condition.value,
             onValueChanged: () => {
@@ -160,8 +167,9 @@ export type MoleculeSimilarity = {
 }
 export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<MoleculeSimilarity> {
     override initializeEditor(prop: DG.Property): void {
-        if (!this.condition.value) {
-            this.condition.value = {molecule: '', threshold: 0.7};
+        //in case we switch from some other operator, where value is a string (contains, is contained)
+        if (!this.condition.value || typeof this.condition.value === 'string') {
+            this.condition.value = {molecule: this.condition.value ?? '', threshold: 0.7};
         }
         const moleculeInput = ui.input.molecule('', {
             onValueChanged: () => {
@@ -383,8 +391,8 @@ export class QueryBuilder {
                         value: cond.operator,
                         items: operators,
                         onValueChanged: () => {
-                            createEditor(property, operatorsInput.value!, cond);
                             cond.operator = operatorsInput.value!;
+                            this.rebuildUI();
                             this.structureChanged.next(this.condition);
                         },
                         nullable: false
