@@ -98,8 +98,8 @@ export async function registerBulk(csv_file: DG.FileInfo, scope: string, mapping
   const blob = new Blob([content], { type: 'text/csv' });
   const file = new File([blob], csv_file.fileName, { type: 'text/csv' });
   formData.append('csv_file', file, csv_file.name);
-  formData.append('mapping', mapping || '');
   formData.append('error_handling', errorHandling || 'reject_row');
+  formData.append('mapping', mapping || '');
   formData.append('output_format', 'json');
   try {
     const container = await getMolTrackContainer();
@@ -116,7 +116,6 @@ export async function registerBulk(csv_file: DG.FileInfo, scope: string, mapping
   } catch (e) {
     grok.shell.error(String(e));
   }
-
   const json = JSON.stringify(JSON.parse(resultJson)['data']);
   const ret_value = DG.DataFrame.fromJson(json);
   return ret_value;
