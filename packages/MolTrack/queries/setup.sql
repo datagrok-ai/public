@@ -6,7 +6,7 @@ insert into moltrack.users (
   created_by, updated_by
 ) values (
   '3f5b8c3e-1a72-4c09-9aeb-2f12a7a81e8d',
-  'admin', 'Admin', 'Admin',
+  'admin' || chr(64) || 'datagrok.ai', 'Admin', 'Admin',
   true, true, true,
   '3f5b8c3e-1a72-4c09-9aeb-2f12a7a81e8d',
   '3f5b8c3e-1a72-4c09-9aeb-2f12a7a81e8d'
@@ -23,7 +23,7 @@ on conflict (name) do nothing;
 --name: insertProperties
 --connection: moltrack
 with admin as (
-  select id from moltrack.users where email = 'admin'
+  select id from moltrack.users where email = 'admin' || chr(64) || 'datagrok.ai'
 ),
 stype as (
   select id from moltrack.semantic_types where name = 'Synonym'
