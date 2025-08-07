@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { ErrorHandling, Scope } from './constants'
 import '../css/moltrack.css';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import { RegisterEditor } from './register-editor'
 
 let openedView: DG.ViewBase | null = null;
 
@@ -12,7 +13,7 @@ export async function getMolTrackContainer() {
 }
 
 //input: dynamic treeNode
-export function createRegistrationNode(treeNode: DG.TreeViewGroup) {
+export function createRegisterBulkNode(treeNode: DG.TreeViewGroup) {
     openedView?.close();
     openedView = DG.View.create();
     openedView.name = 'Register Entities';
@@ -76,4 +77,38 @@ async function adjustIdColumnWidth(tv: DG.TableView) {
    const idCol = tv.grid.col('id');
    if (idCol)
     idCol.width = 100;
+}
+
+//input: dynamic treeNode
+export function createRegisterSingleNode(treeNode: DG.TreeViewGroup) {
+    openedView?.close();
+    openedView = DG.View.create();
+    openedView.name = 'Register Entity';
+
+    const editor = new RegisterEditor();
+    const main_div = editor.getEditor();
+
+    const scopeChoices = Object.values(Scope);
+    const scopeInput = ui.input.choice('Scope', { value: scopeChoices[0], items: scopeChoices });
+    const structureInput = ui.input.molecule('Structure');
+    let df: DG.DataFrame | null = null;
+    const registerButton = ui.bigButton('REGISTER', async () => {
+    });
+    const gridDiv = ui.div('', 'moltrack-register-res-div');
+    registerButton.classList.add('moltrack-run-register-button');
+    const addToWorkspaceButton = ui.icons.add(() => {
+        if (df) {
+            const tv = grok.shell.addTablePreview(df);
+            adjustIdColumnWidth(tv);
+        }
+    }, 'Add registration results to workspace');
+
+    openedView.setRibbonPanels([[addToWorkspaceButton]]);
+    openedView.root.append(ui.divV([
+        main_div,
+        registerButton,
+        gridDiv
+    ], { style: { height: '100%', gap: '8px', width: '100%' } }));
+
+    grok.shell.addPreview(openedView);
 }

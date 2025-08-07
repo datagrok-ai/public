@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { u2 } from "@datagrok-libraries/utils/src/u2";
-import { createRegistrationNode, getMolTrackContainer } from './utils';
+import { createRegisterBulkNode, getMolTrackContainer, createRegisterSingleNode } from './utils';
 import { scopeToUrl } from './constants';
 import '../css/moltrack.css';
 
@@ -43,13 +43,14 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
   //search node
-  const searchNode = appNode.item("Register");
-  searchNode.onSelected.subscribe(() => {
-    createRegistrationNode(appNode);
+  const registerBulkNode = appNode.getOrCreateGroup("Register").item("Register bulk");
+  registerBulkNode.onSelected.subscribe(() => {
+    createRegisterBulkNode(appNode);
   });
-  appNode.group('Protocols');
-  appNode.group('Plates');
-  appNode.group('Assays');
+  const registerSingleNode = appNode.getOrCreateGroup("Register").item("Register single");
+  registerSingleNode.onSelected.subscribe(() => {
+    createRegisterSingleNode(appNode);
+  });
 }
 
 
