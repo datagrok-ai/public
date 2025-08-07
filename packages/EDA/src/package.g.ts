@@ -2,12 +2,10 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: info
-//output: dynamic result
 export function info() {
   return PackageFunctions.info();
 }
 
-//name: init
 //tags: init
 export async function init() {
   return PackageFunctions.init();
@@ -44,7 +42,6 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //input: column col2 
 //input: double epsilon { default: 0.01; description: Minimum distance between two points to be considered as in the same neighborhood. }
 //input: int minimumPoints { default: 5; description: Minimum number of points to form a dense region. }
-//output: dynamic result
 //meta.defaultPostProcessingFunction: true
 export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) {
   return PackageFunctions.dbscanPostProcessingFunction(col1, col2, epsilon, minimumPoints);
@@ -54,7 +51,7 @@ export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Col
 //tags: dim-red-preprocessing-function
 //input: column col 
 //input: string _metric { optional: true }
-//output: dynamic result
+//output: object result
 //meta.supportedTypes: int,float,double,qnum
 //meta.supportedDistanceFunctions: Difference
 export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
@@ -65,7 +62,7 @@ export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
 //tags: dim-red-preprocessing-function
 //input: column col 
 //input: string _metric { optional: true }
-//output: dynamic result
+//output: object result
 //meta.supportedTypes: string
 //meta.supportedDistanceFunctions: One-Hot,Levenshtein,Hamming
 export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
@@ -142,7 +139,6 @@ export async function MVA() {
 
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
-//output: dynamic result
 //meta.demoPath: Compute | Multivariate Analysis
 export async function demoMultivariateAnalysis() {
   return PackageFunctions.demoMultivariateAnalysis();
@@ -374,7 +370,6 @@ export function anova() {
 
 //name: KNN impute
 //description: Missing values imputation using the k-nearest neighbors method (KNN)
-//output: dynamic result
 //top-menu: ML | Impute Missing Values...
 export function kNNImputation() {
   return PackageFunctions.kNNImputation();
@@ -383,7 +378,6 @@ export function kNNImputation() {
 //name: KNN imputation for a table
 //description: Missing values imputation using the k-nearest neighbors method
 //input: dataframe table 
-//output: dynamic result
 export async function kNNImputationForTable(table: DG.DataFrame) {
   return PackageFunctions.kNNImputationForTable(table);
 }
@@ -391,7 +385,7 @@ export async function kNNImputationForTable(table: DG.DataFrame) {
 //name: trainLinearRegression
 //input: dataframe df 
 //input: column predictColumn 
-//output: blob result
+//output: dynamic model
 //meta.mlname: Linear Regression
 //meta.mlrole: train
 export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.Column) {
@@ -435,7 +429,7 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //input: double iterations { category: Hyperparameters; default: 100; min: 1; max: 10000; step: 10; description: Fitting iterations count }
 //input: double penalty { category: Hyperparameters; default: 0.1; min: 0.0001; max: 1; description: Regularization rate. }
 //input: double tolerance { category: Hyperparameters; default: 0.001; min: 0.00001; max: 0.1; description: Fitting tolerance. }
-//output: blob result
+//output: dynamic model
 //meta.mlname: Softmax
 //meta.mlrole: train
 export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, rate: number, iterations: number, penalty: number, tolerance: number) {
@@ -476,7 +470,7 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 //input: dataframe df 
 //input: column predictColumn 
 //input: int components { min: 1; max: 10; default: 3; description: Number of latent components. }
-//output: blob result
+//output: dynamic model
 //meta.mlname: PLS Regression
 //meta.mlrole: train
 export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number) {
@@ -533,7 +527,7 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 //input: int maxDepth { min: 0; max: 20; default: 6; description: Maximum depth of a tree. }
 //input: double lambda { min: 0; max: 100; default: 1; description: L2 regularization term. }
 //input: double alpha { min: 0; max: 100; default: 0; description: L1 regularization term. }
-//output: blob result
+//output: dynamic model
 //meta.mlname: XGBoost
 //meta.mlrole: train
 export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column, iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) {

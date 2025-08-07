@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function info(): Promise<any> {
+  export async function info(): Promise<void> {
     return await grok.functions.call('EDA:Info', {});
   }
 
@@ -30,7 +30,7 @@ export namespace funcs {
     return await grok.functions.call('EDA:PCA', { table, features, components, center, scale });
   }
 
-  export async function dbscanPostProcessingFunction(col1: DG.Column , col2: DG.Column , epsilon: number , minimumPoints: number ): Promise<any> {
+  export async function dbscanPostProcessingFunction(col1: DG.Column , col2: DG.Column , epsilon: number , minimumPoints: number ): Promise<void> {
     return await grok.functions.call('EDA:DbscanPostProcessingFunction', { col1, col2, epsilon, minimumPoints });
   }
 
@@ -88,7 +88,7 @@ export namespace funcs {
   /**
   Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
   */
-  export async function demoMultivariateAnalysis(): Promise<any> {
+  export async function demoMultivariateAnalysis(): Promise<void> {
     return await grok.functions.call('EDA:DemoMultivariateAnalysis', {});
   }
 
@@ -182,14 +182,14 @@ export namespace funcs {
   /**
   Missing values imputation using the k-nearest neighbors method (KNN)
   */
-  export async function kNNImputation(): Promise<any> {
+  export async function kNNImputation(): Promise<void> {
     return await grok.functions.call('EDA:KNNImputation', {});
   }
 
   /**
   Missing values imputation using the k-nearest neighbors method
   */
-  export async function kNNImputationForTable(table: DG.DataFrame ): Promise<any> {
+  export async function kNNImputationForTable(table: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('EDA:KNNImputationForTable', { table });
   }
 

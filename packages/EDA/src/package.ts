@@ -149,10 +149,9 @@ export class PackageFunctions {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference'
     },
-    'tags': [
-      'dim-red-preprocessing-function'
-    ],
-    'name': 'None (number)'
+    'tags': ['dim-red-preprocessing-function'],
+    'name': 'None (number)',
+    'outputs': [{name: 'result', type:'object'}]
   })
   static numberPreprocessingFunction(
     col: DG.Column,
@@ -169,10 +168,9 @@ export class PackageFunctions {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming'
     },
-    'tags': [
-      'dim-red-preprocessing-function'
-    ],
-    'name': 'None (string)'
+    'tags': ['dim-red-preprocessing-function'],
+    'name': 'None (string)',
+    'outputs': [{name: 'result', type:'object'}]
   })
   static stringPreprocessingFunction(
     col: DG.Column,
@@ -263,9 +261,9 @@ export class PackageFunctions {
   })
   static async MCLClustering(
     df: DG.DataFrame,
-    @grok.decorators.param({'type':'list<column>'})   cols: DG.Column[],
-    @grok.decorators.param({'type':'list<string>'})   metrics: KnownMetrics[],
-    @grok.decorators.param({'type':'list<double>'})   weights: number[],
+    cols: DG.Column[],
+    @grok.decorators.param({'type':'list<string>'}) metrics: KnownMetrics[],
+    weights: number[],
     @grok.decorators.param({'type':'string'})   aggregationMethod: DistanceAggregationMethod,
     @grok.decorators.param({'type':'list<func>'})   preprocessingFuncs: any[],
     @grok.decorators.param({'type':'object'})   preprocessingFuncArgs: any[],
@@ -294,12 +292,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'outputs': [
-      {
-        'name': 'result',
-        'type': 'viewer'
-      }
-    ],
+    'outputs': [{'name': 'result','type': 'viewer'}],
     'tags': [
       'viewer'
     ],
@@ -311,12 +304,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'outputs': [
-      {
-        'name': 'plsResults',
-        'type': 'object'
-      }
-    ],
+    'outputs': [{'name': 'plsResults', 'type': 'object'}],
     'description': 'Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.'
   })
   static async PLS(
@@ -365,8 +353,7 @@ export class PackageFunctions {
     'name': 'MVA demo',
     'description': 'Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.'
   })
-  static async demoMultivariateAnalysis(): Promise<any> {
-  
+  static async demoMultivariateAnalysis(): Promise<void> {
     await runDemoMVA();
   }
 
@@ -588,12 +575,7 @@ export class PackageFunctions {
       'mlname': 'polynomial kernel LS-SVM',
       'mlrole': 'visualize'
     },
-    'outputs': [
-      {
-        'name': 'widget',
-        'type': 'dynamic'
-      }
-    ],
+    'outputs': [{'name': 'widget','type': 'dynamic'}],
     'name': 'visualizePolynomialKernelSVM'
   })
   static async visualizePolynomialKernelSVM(
@@ -726,7 +708,8 @@ export class PackageFunctions {
       'mlname': 'Linear Regression',
       'mlrole': 'train'
     },
-    'name': 'trainLinearRegression'
+    'name': 'trainLinearRegression',
+    'outputs': [{'type': 'dynamic', 'name': 'model'}]
   })
   static async trainLinearRegression(
       df: DG.DataFrame,
@@ -796,7 +779,8 @@ export class PackageFunctions {
       'mlname': 'Softmax',
       'mlrole': 'train'
     },
-    'name': 'trainSoftmax'
+    'name': 'trainSoftmax',
+    'outputs': [{'type': 'dynamic', 'name': 'model'}]
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, 
     @grok.decorators.param({'options':{'category':'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', description: 'Learning rate.'}}) rate: number,
@@ -870,7 +854,8 @@ export class PackageFunctions {
       'mlname': 'PLS Regression',
       'mlrole': 'train'
     },
-    'name': 'trainPLSRegression'
+    'name': 'trainPLSRegression',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
   })
   static async trainPLSRegression(
       df: DG.DataFrame,
@@ -960,7 +945,8 @@ export class PackageFunctions {
       'mlname': 'XGBoost',
       'mlrole': 'train'
     },
-    'name': 'trainXGBooster'
+    'name': 'trainXGBooster',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
   })
   static async trainXGBooster(
       df: DG.DataFrame,
