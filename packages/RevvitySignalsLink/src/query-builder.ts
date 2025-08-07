@@ -24,6 +24,8 @@ import { IProperty } from 'datagrok-api/dg';
 //     value: 5
 // }
 
+export const SUGGESTIONS_FUNCTION = 'suggestionsFunction';
+
 export namespace Operators {
     export const CONTAINS = 'contains';
     export const IN = 'in';
@@ -81,10 +83,34 @@ export class BaseConditionEditor<T = any> {
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
+                if (showSuggestions && !menuItemClicked) {
+                    addSuggestions();
+                }
+                menuItemClicked = false;
             }
         });
         input.addCaption('');
         this.root.append(input.root);
+        const showSuggestions = prop.type === DG.TYPE.STRING && prop.options[SUGGESTIONS_FUNCTION];
+        if (showSuggestions) {
+           suggestionMenuKeyNavigation(this.root);
+        }
+        let menuItemClicked = false;
+        const addSuggestions = async () => {
+            if (input.value) {
+                const suggestions: Array<string> = await prop.options[SUGGESTIONS_FUNCTION](input.value);
+                if (suggestions.length === 1 && suggestions[0] === input.value)
+                    return;
+                const suggestionsMenu = DG.Menu.popup();
+                suggestions.forEach((s) => {
+                    suggestionsMenu!.item(s, () => {
+                        input.value = s;
+                        menuItemClicked = true;
+                    });
+                });
+                suggestionsMenu.show({element: input.root, y: input.root.offsetHeight});
+            }
+        }
     }
 }
 
@@ -532,4 +558,30 @@ export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initia
 
     updatePreview();
     return mainContainer;
+}
+
+
+function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
+  inputContainer.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
+      return;
+    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
+    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
+    if (!allItems || allItems.length === 0)
+      return;
+    allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position
+
+    let currentIndex = currentlySelected ? allItems.indexOf(currentlySelected) : -1;
+    if (e.key === 'ArrowDown')
+      currentIndex = (currentIndex + 1) % allItems.length;
+    else if (e.key === 'ArrowUp')
+      currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
+    else if (e.key === 'Enter' && currentlySelected) {
+      currentlySelected.click();
+      e.preventDefault();
+      return;
+    }
+    currentlySelected?.classList.remove('d4-menu-item-hover');
+    allItems[currentIndex].classList.add('d4-menu-item-hover');
+  });
 }
