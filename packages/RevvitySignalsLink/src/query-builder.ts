@@ -442,7 +442,7 @@ export class QueryBuilder {
 
             }, 'Add nested condition');
 
-            const operatorInputDiv = ui.div();
+            const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
             const criteriaDiv = ui.div();
             const filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
             ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'revvity-signals-filter-inputs');
@@ -528,6 +528,30 @@ export class QueryBuilder {
 }
 
 
+function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
+  inputContainer.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
+      return;
+    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
+    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
+    if (!allItems || allItems.length === 0)
+      return;
+    allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position
+
+    let currentIndex = currentlySelected ? allItems.indexOf(currentlySelected) : -1;
+    if (e.key === 'ArrowDown')
+      currentIndex = (currentIndex + 1) % allItems.length;
+    else if (e.key === 'ArrowUp')
+      currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
+    else if (e.key === 'Enter' && currentlySelected) {
+      currentlySelected.click();
+      e.preventDefault();
+      return;
+    }
+    currentlySelected?.classList.remove('d4-menu-item-hover');
+    allItems[currentIndex].classList.add('d4-menu-item-hover');
+  });
+}
 
 // Main UI builder function for property filters
 export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initialCondition?: ComplexCondition): HTMLElement {
@@ -566,30 +590,4 @@ export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initia
 
     updatePreview();
     return mainContainer;
-}
-
-
-function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
-  inputContainer.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
-      return;
-    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
-    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
-    if (!allItems || allItems.length === 0)
-      return;
-    allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position
-
-    let currentIndex = currentlySelected ? allItems.indexOf(currentlySelected) : -1;
-    if (e.key === 'ArrowDown')
-      currentIndex = (currentIndex + 1) % allItems.length;
-    else if (e.key === 'ArrowUp')
-      currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
-    else if (e.key === 'Enter' && currentlySelected) {
-      currentlySelected.click();
-      e.preventDefault();
-      return;
-    }
-    currentlySelected?.classList.remove('d4-menu-item-hover');
-    allItems[currentIndex].classList.add('d4-menu-item-hover');
-  });
 }

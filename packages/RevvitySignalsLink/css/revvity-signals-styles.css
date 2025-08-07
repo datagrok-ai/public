@@ -41,11 +41,10 @@
     padding: 4px 4px 4px 12px;
     position: relative;
     margin-top: 20px;
-    border-left: 3px solid #e0e0e0;
 }
 
 .revvity-signals-search-query-operator[data-nesting-level] {
-    border-left-color: var(--nesting-color, #e0e0e0);
+    border-left: 3px solid var(--nesting-color, #e0e0e0);
 }
 
 .revvity-signals-search-query-preview {
@@ -126,7 +125,7 @@
 .revvity-signals-filter-inputs {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     min-height: 32px;
 }
 
@@ -179,4 +178,19 @@
 
 .revvity-signals-search-query-operator:hover .nested-add-delete-icons {
     visibility: visible !important;
+}
+
+/* Hide dropdown arrow on select elements by default, show only on hover */
+.revvity-signals-filter-inputs select.ui-input-editor {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: none !important;
+    background: none !important;
+}
+
+.revvity-signals-filter-inputs select.ui-input-editor:hover {
+    background-image: url("../img/chevron.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0px top 50% !important;
 }
