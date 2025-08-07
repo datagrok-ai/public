@@ -2,10 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { u2 } from "@datagrok-libraries/utils/src/u2";
-import { createRegisterBulkNode, getMolTrackContainer, createRegisterSingleNode } from './utils';
-import { scopeToUrl } from './constants';
-import '../css/moltrack.css';
+import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { MolTrackDockerService } from './utils/moltrack-docker-service';
+import { RegisrationView } from './utils/registration-tab';
 
 export const _package = new DG.Package();
 
@@ -23,15 +22,13 @@ export async function init(): Promise<void> {
 //output: view v
 //meta.browsePath: Chem
 export async function molTrackApp(): Promise<DG.ViewBase> {
-
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/cdd-icon-big.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
     description: '- Chemical compound registration system\n' +
       '- Analyze assay data\n' +
-      '- Find contextual information on molecules.\n'
+      '- Find contextual information on molecules.\n',
   });
-
 
   return DG.View.fromRoot(ui.divV([
     appHeader,
@@ -45,11 +42,12 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   //search node
   const registerBulkNode = appNode.getOrCreateGroup("Register").item("Register bulk");
   registerBulkNode.onSelected.subscribe(() => {
-    createRegisterBulkNode(appNode);
+    const registrationView = new RegisrationView();
+    registrationView.show();
   });
   const registerSingleNode = appNode.getOrCreateGroup("Register").item("Register single");
   registerSingleNode.onSelected.subscribe(() => {
-    createRegisterSingleNode(appNode);
+    //RegisterSingleNode(appNode);
   });
 }
 
@@ -58,22 +56,16 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 //description: Checks whether the MolTrack service is running and responsive
 //output: string result
 export async function checkMolTrackHealth(): Promise<string> {
-  const container = await getMolTrackContainer();
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/health', {
-    method: 'GET',
-  });
-  return response.text();
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.checkHealth();
 }
 
 //name: fetchMolTrackProperties
 //description: Retrieves all properties defined for the 'compound' scope
 //output: string result
 export async function fetchMolTrackProperties(): Promise<string> {
-  const container = await getMolTrackContainer();
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/compounds', {
-    method: 'GET',
-  });
-  return response.text();
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.fetchProperties();
 }
 
 //name: updateMolTrackProperties
@@ -81,49 +73,24 @@ export async function fetchMolTrackProperties(): Promise<string> {
 //description: Registers compound properties in the MolTrack service based on the given JSON data
 //output: string result
 export async function updateMolTrackSchema(jsonPayload: string): Promise<string> {
-  const container = await getMolTrackContainer();
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/v1/schema/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: jsonPayload,
-  });
-  return response.text();
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.updateSchema(jsonPayload);
 }
 
 //name: registerBulk
-//input: file csv_file
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//input: file csvFile
 //input: string scope
 //input: string mapping
 //input: string errorHandling
 //output: dataframe result
-export async function registerBulk(csv_file: DG.FileInfo, scope: string, mapping: string, errorHandling: string): Promise<DG.DataFrame> {
-  let resultJson ="";
-  const formData = new FormData();
-  const content = await csv_file.readAsBytes();
-  const blob = new Blob([content], { type: 'text/csv' });
-  const file = new File([blob], csv_file.fileName, { type: 'text/csv' });
-  formData.append('csv_file', file, csv_file.name);
-  formData.append('error_handling', errorHandling || 'reject_row');
-  formData.append('mapping', mapping || '');
-  formData.append('output_format', 'json');
-  try {
-    const container = await getMolTrackContainer();
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, scopeToUrl[scope], {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`MolTrack API error: ${response.status} ${errorText}`);
-    }
-    resultJson = await response.text();
-  } catch (e) {
-    grok.shell.error(String(e));
-  }
-  const json = JSON.stringify(JSON.parse(resultJson)['data']);
-  const ret_value = DG.DataFrame.fromJson(json);
-  return ret_value;
+export async function registerBulk(
+  csvFile: DG.FileInfo,
+  scope: string,
+  mapping: string,
+  errorHandling: string,
+): Promise<DG.DataFrame> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
 }
