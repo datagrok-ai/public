@@ -9,6 +9,14 @@ import '../css/moltrack.css';
 
 export const _package = new DG.Package();
 
+//tags: init
+export async function init(): Promise<void> {
+  const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
+  const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
+  for (const query of queries)
+    await (query.prepare()).call();
+}
+
 //tags: app
 //name: MolTrack App
 //meta.icon: images/cdd-icon-big.png
@@ -82,8 +90,6 @@ export async function updateMolTrackSchema(jsonPayload: string): Promise<string>
   });
   return response.text();
 }
-
-
 
 //name: registerBulk
 //input: file csv_file
