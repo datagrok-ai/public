@@ -1046,7 +1046,7 @@ export class FittingView {
 
         areSelectedFilled = areSelectedFilled && cur;
       } else {
-        const val = input.const.input.value;
+        const val = input.const.input.value ?? input.const.input.stringValue;
         cur = (val !== null) && (val !== undefined);
 
         if (!cur)
