@@ -7,7 +7,7 @@ import '../css/moltrack.css';
 let openedView: DG.ViewBase | null = null;
 
 export async function getMolTrackContainer() {
-    return await grok.dapi.docker.dockerContainers.filter('moltrack').first();
+    return await grok.dapi.docker.dockerContainers.filter('name = "moltrack"').first();
 }
 
 //input: dynamic treeNode
