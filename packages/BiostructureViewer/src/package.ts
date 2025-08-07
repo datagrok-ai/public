@@ -97,13 +97,13 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static getNglGlService(): NglGlServiceBase {
     return _getNglGlService();
   }
 
   @grok.decorators.func()
-  static async viewBiostructure(content: string, format: string,
+  static async viewBiostructure(content: string, format?: string,
     @grok.decorators.param({options: {optional: true}}) name?: string): Promise<void> {
     await viewMolstarUI(content, name, format as BuiltInTrajectoryFormat);
   }
@@ -163,7 +163,7 @@ export class PackageFunctions {
    * //TODO Fix preview .pqr
    */
   @grok.decorators.fileViewer({fileViewer: 'mmtf,cns,top,prmtop,pqr'})
-  static previewNglStructure(file: any): DG.View {
+  static previewNglStructure( @grok.decorators.param({type: 'file'}) file: any): DG.View {
     return previewNgl(file);
   }
 
@@ -171,14 +171,14 @@ export class PackageFunctions {
    * TODO Support preview .ply with Molstar
    */
   @grok.decorators.fileViewer({fileViewer: 'ply,obj'})
-  static previewNglSurface(file: any) {
+  static previewNglSurface( @grok.decorators.param({type: 'file'}) file: any): DG.View {
     return previewNgl(file);
   }
 
   //TODO Support preview .ccp4 with Molstar
   //eslint-disable-next-line max-len
   @grok.decorators.fileViewer({fileViewer: 'ccp4'})
-  static previewNglDensity(file: any) {
+  static previewNglDensity( @grok.decorators.param({type: 'file'}) file: any): DG.View {
     return previewNgl(file);
   }
 
@@ -358,7 +358,7 @@ export class PackageFunctions {
 
   // -- Utils --
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async getPdbHelper(): Promise<IPdbHelper> {
     return PdbHelper.getInstance();
   }
@@ -388,27 +388,32 @@ export class PackageFunctions {
   // -- Handle context menu --
 
   @grok.decorators.func({name: 'Copy Biostructure raw value'})
-  static async copyRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  static async copyRawBiostructureValue(
+    @grok.decorators.param({type: 'object'}) gridCell: DG.GridCell): Promise<void> {
     copyRawValue(gridCell);
   }
 
   @grok.decorators.func({name: 'Download Biostructure raw value'})
-  static async downloadRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  static async downloadRawBiostructureValue(
+    @grok.decorators.param({type: 'object'}) gridCell: DG.GridCell): Promise<void> {
     downloadRawValue(gridCell);
   }
 
   @grok.decorators.func({name: 'Show Biostructure Viewer menu item'})
-  static async showBiostructureViewerMenuItem(gridCell: DG.GridCell) {
+  static async showBiostructureViewerMenuItem(
+    @grok.decorators.param({type: 'object'}) gridCell: DG.GridCell) {
     await showBiostructureViewer(gridCell);
   }
 
   @grok.decorators.func({name: 'Show NGL Viewer menu item'})
-  static async showNglViewerMenuItem(gridCell: DG.GridCell) {
+  static async showNglViewerMenuItem(
+    @grok.decorators.param({type: 'object'}) gridCell: DG.GridCell) {
     await showNglViewer(gridCell);
   }
 
   @grok.decorators.func({name: 'Open PDB residues table menu item'})
-  static async openTableResiduesMenuItem(fi: DG.FileInfo) {
+  static async openTableResiduesMenuItem(
+    @grok.decorators.param({type: 'object'})fi: DG.FileInfo) {
     try {
       await PackageFunctions.openPdbResidues(fi);
     } catch (err: any) {
@@ -647,7 +652,7 @@ export class PackageFunctions {
       cacheInvalidateOn: '0 * * * *'
     }
   })
-  static async readAsTextDapi(file: string) {
+  static async readAsTextDapi(file: string): Promise<string> {
     const [resStr, exists] = await Promise.all([
       grok.dapi.files.readAsText(file),
       grok.dapi.files.exists(file)
@@ -705,7 +710,7 @@ export class PackageFunctions {
     },
   })
   static async getBiostructureRcsbBcif(
-    @grok.decorators.param({options: {initialValue: '1QBS'}}) id: string
+    @grok.decorators.param({options: {initialValue: '\'1QBS\''}}) id: string
   ): Promise<string> {
     const url = `https://models.rcsb.org/${id}.bcif`;
     const response = await fetch(url);
@@ -721,9 +726,9 @@ export class PackageFunctions {
   })
   static biostructureDataToJson(
     binary: boolean,
-    data: string | Uint8Array,
+    @grok.decorators.param({type: 'object'}) data: string | Uint8Array,
     ext: string,
-    @grok.decorators.param({options: {optional: true}}) options?: object
+    @grok.decorators.param({type: 'map', options: {optional: true}}) options?: object
   ): string {
     return BiostructureDataJson.fromData({binary, data, ext, options});
   }

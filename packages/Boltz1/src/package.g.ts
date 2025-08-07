@@ -2,13 +2,12 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: info
-//description: Show package web root
 export function info() {
   return PackageFunctions.info();
 }
 
 //name: getBoltzConfigFolders
-//output: list result
+//output: list<string> result
 export async function getBoltzConfigFolders() {
   return PackageFunctions.getBoltzConfigFolders();
 }
@@ -35,7 +34,7 @@ export async function folding(df: DG.DataFrame, sequences: DG.Column) {
 //name: Docking
 //input: dataframe df 
 //input: column molecules { semType: Molecule }
-//input: string config { choices: Boltz1: getBoltzConfigFolders; description: Folder with config files for docking }
+//input: string config { choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
 //output: dataframe result
 //top-menu: Chem | Docking | Boltz-1...
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string) {
