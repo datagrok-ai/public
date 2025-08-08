@@ -643,7 +643,7 @@ export class MSAScrollingHeader {
   private trackButtons: Array<{id: string, label: string, x: number, y: number, width: number, height: number}> = [];
   private userSelectedTracks: TrackVisibilityConfig | null = null;
 
-  constructor(options: MSAHeaderOptions) {
+  constructor(options: MSAHeaderOptions, private gridColumn: DG.GridColumn) {
     this.config = {
       x: options.x || 0,
       y: options.y || 0,
@@ -808,6 +808,11 @@ export class MSAScrollingHeader {
       }
     }
     return false;
+  }
+
+  private isInsideColumnHeaderArea(x: number, y: number): boolean {
+    const titleHeight = this.config.headerHeight >= HEIGHT_THRESHOLDS.WITH_TITLE() ? LAYOUT_CONSTANTS.TITLE_HEIGHT : 0;
+    return y < titleHeight;
   }
 
   private snapToTrackHeight(trackId: string): void {
@@ -1300,6 +1305,8 @@ export class MSAScrollingHeader {
 
     if (this.handleTrackButtonClick(x, y))
       return;
+    if (this.isInsideColumnHeaderArea(x, y))
+      return;
 
 
     const cellWidth = this.config.positionWidth;
@@ -1410,8 +1417,13 @@ export class MSAScrollingHeader {
   }
 
   public get isValid() {
+    const gc = this.gridColumn;
+    const g = gc?.grid;
+    const minScroll = g?.horzScroll?.min || 0;
+    const maxScroll = g?.horzScroll?.max || 1e7;
     return !!this.canvas && !!this.ctx &&
-           this.config.height >= HEIGHT_THRESHOLDS.WITH_TITLE();
+           this.config.height >= HEIGHT_THRESHOLDS.WITH_TITLE() &&
+           g && (between(gc.left ?? 0, minScroll, maxScroll) || between(gc.right ?? Infinity, minScroll, maxScroll)); // check that the column is actually visible
   }
 
   private handleMouseDown(e: MouseEvent): void {
@@ -1538,6 +1550,9 @@ export class MSAScrollingHeader {
       return;
     }
 
+    if (this.isInsideColumnHeaderArea(x, y))
+      return;
+
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 
     if (y < sliderTop && y >= 0) {
@@ -1593,4 +1608,8 @@ export class MSAScrollingHeader {
       WITH_BOTH: HEIGHT_THRESHOLDS.WITH_BOTH()
     };
   }
+}
+
+function between(value: number, min: number, max: number): boolean {
+  return value >= min && value <= max;
 }

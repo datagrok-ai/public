@@ -237,6 +237,7 @@ class FuncGeneratorPlugin {
         //   defaultValue = baseParam?.right?.raw;
         baseParam = baseParam?.left;
       }
+      const optional = param.optional;
 
       if (baseParam.type === 'RestElement' || baseParam.type === 'Identifier') {
         let name =
@@ -258,8 +259,7 @@ class FuncGeneratorPlugin {
           baseParam.typeAnnotation.typeAnnotation.typeArguments?.params;
         if (type !== 'any' && params && params.length > 0)
           type += `<${params.map((e) => e.typeName?.name ?? 'any').join(',')}>`;
-
-        return {name: name, type: type, options: options};
+        return {name: name, type: type, options: options, optional: optional};
       }
       // Commented code belove sets more strong types for ObjectPatterns and ArrayPatterns
       // else if (baseParam.type === 'ObjectPattern' || baseParam.type === 'ArrayPattern') {
@@ -294,7 +294,7 @@ class FuncGeneratorPlugin {
 
       //   return { name: name, type: type, options: options };
       // }
-      return {name: 'value', type: 'any', options: undefined};
+      return {name: 'value', type: 'any', options: undefined, optional: optional};
     });
     return params;
   }
@@ -346,31 +346,37 @@ class FuncGeneratorPlugin {
   }
 
   _readReturnType(annotation) {
-    let resultType = 'dynamic';
+    let resultType = 'void';
+    let nodeAnnotation = annotation;
     let isArray = false; 
+    if (nodeAnnotation?.type === 'TSUnionType' && 
+      nodeAnnotation?.types?.length === 2 && 
+      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword'|| e?.type === 'TSUndefinedKeyword')) 
+      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword' || e?.type === 'TSUndefinedKeyword')[0];
+    
+
     if (
-      annotation &&
-      annotation.type !== 'TSUnionType' &&
-      annotation.type !== 'TSIntersectionType'
+      nodeAnnotation &&
+      nodeAnnotation.type !== 'TSUnionType' &&
+      nodeAnnotation.type !== 'TSIntersectionType'
     ) {
-      
-      if (annotation.typeName || annotation.type === 'TSTypeReference') {
+      if (nodeAnnotation.typeName || nodeAnnotation.type === 'TSTypeReference') {
         resultType =
-          annotation.typeName?.right?.name ?? annotation.typeName?.name;
-      } else if (annotation.type !== 'TSArrayType') 
-        resultType = this._getTypeNameFromNode(annotation);
-      else if (annotation.elementType.type !== 'TSTypeReference') {
+          nodeAnnotation.typeName?.right?.name ?? nodeAnnotation.typeName?.name;
+      } else if (nodeAnnotation.type !== 'TSArrayType') 
+        resultType = this._getTypeNameFromNode(nodeAnnotation);
+      else if (nodeAnnotation.elementType.type !== 'TSTypeReference') {
         isArray = true;
-        resultType = this._getTypeNameFromNode(annotation?.elementType);
+        resultType = this._getTypeNameFromNode(nodeAnnotation?.elementType);
       } else {
         isArray = true;
         resultType =
-          annotation?.elementType?.typeName?.name ||
-          annotation?.elementType?.typeName?.right?.name;
+          nodeAnnotation?.elementType?.typeName?.name ||
+          nodeAnnotation?.elementType?.typeName?.right?.name;
       } 
     }
     resultType = typesToAnnotation[resultType];
-    if (isArray && resultType) resultType = `list`;
+    if (isArray && resultType) resultType = `list<${resultType}>`;
     return resultType ?? 'dynamic';
   }
 
@@ -392,9 +398,8 @@ class FuncGeneratorPlugin {
       results = this._readOutputsFromReturnTypeObject(annotation);
     else {
       const resultType = this._readReturnType(annotation);
-      results.push({name: 'result', type: resultType});
-      if (resultType === 'void')
-        results = [];
+      if (resultType !== 'void')
+        results.push({name: 'result', type: resultType});
     }
     return results;
   }
@@ -417,6 +422,8 @@ class FuncGeneratorPlugin {
       return typeNode.typeName.name;
     else if (typeNode.type === 'TSVoidKeyword') 
       return 'void';
+    else if (typeNode.type === 'TSUndefinedKeyword ') 
+      return 'undefined';
     else if (typeNode.type === 'TSNumberKeyword') 
       return 'number';
     else if (typeNode.type === 'TSStringKeyword') 

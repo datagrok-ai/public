@@ -63,7 +63,8 @@ export interface FuncParam {
   name?: string, 
   type?: string, 
   defaultValue?: string, 
-  options?: any[] 
+  options?: any[],
+  optional?: boolean
 }
 
 export type FuncValidator = ({}: FuncMetadata) => ValidationResult;

@@ -186,6 +186,14 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     lineLayouts: Array<{ lineIdx: number; elements: IMultilineLayoutElement[]; }>;
     lineHeight: number;
     } {
+    if (this.dirty) {
+      try {
+        this.reset();
+      } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        this.logger.error(errMsg, undefined, errStack);
+      }
+    }
     // --- 1. Setup ---
     const {lineHeight, monomerSpacing} = this.calculateFontBasedSpacing(g);
     const availableWidth = w - (this.padding * 2);
@@ -499,6 +507,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         this.setMonomerLengthLimit(maxLengthOfMonomer);
         this.setSeparatorWidth(sh.isMsa() ? msaGapLength : gapLength);
         tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
+        this.dirty = true;
       }
 
 
@@ -534,7 +543,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
 
 
-      const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol) && drawStyle !== DrawStyle.MSA;
+      const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol);
 
       if (shouldUseMultiLine) {
         const currentCellBounds: IMonomerLayoutData[] = [];

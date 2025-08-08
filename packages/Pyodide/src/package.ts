@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-
+export * from './package.g';
 export const _package = new DG.Package();
 
 let pyodideWorker: Worker;
@@ -50,24 +50,6 @@ interface FuncCallResults {
   error?: Error;
   results?: {[key: string]: any};
   typings?: {[key: string]: any};
-}
-
-//tags: init
-export async function initPyodide() {
-  pyodideWorker = new Worker(new URL('worker.js', import.meta.url));
-
-  pyodideWorker.onmessage = async (event: MessageEvent<StdoutMessage | ScriptResults | StartFuncCall>) => {
-    // console.log(event);
-    switch (event.data.type) {
-      case 'stdoutMessage':
-        return handleStdoutMessage(event.data);
-      case 'scriptResults':
-        return await handleScriptResults(event.data);
-      case 'startFuncCall':
-        return await handleStartFuncCall(event.data);
-    }
-  };
-  /* supportsArrow = DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0; */
 }
 
 function handleStdoutMessage(result: StdoutMessage) {
@@ -321,42 +303,70 @@ async function setOutputs(scriptCall: DG.FuncCall, results: Record<string, any>)
   }
 }
 
-//name: makeVectorCode
-//input: script script
-//output: string code
-export function makeVectorCode(script: DG.Script): string {
-  const inputTable = DG.Script.vecInputTableName;
-  let code: string = `input_table_length = len(${inputTable}.index)\n`;
-  for (const param of script.inputs.filter((p) => p.isVectorizable))
-    code += `${param.vectorName} = ${inputTable}["${param.name}"]\n`;
-  for (const param of script.outputs.filter((p) => p.isVectorizable))
-    code += `${param.vectorName} = [None] * input_table_length\n`;
-  code += 'for vec_loop_idx in range(0, input_table_length):\n';
 
-  for (const param of script.inputs.filter((p) => p.isVectorizable))
-    code += `\t${param.name} = ${param.vectorName}[vec_loop_idx]\n`;
-  code += `${script.clientCode.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).map((l) => `\t${l}`).join('\n')}\n`;
-  for (const param of script.outputs.filter((p) => p.isVectorizable))
-    code += `\t${param.vectorName}[vec_loop_idx] = ${param.name}\n`;
-  code += `${DG.Script.vecOutputTableName} = pd.DataFrame({${script.outputs.filter((p) => p.isVectorizable).map((p) => `"${p.vectorName}": ${p.vectorName}`).join(', ')}})\n`;
-  return code;
+export class PackageFunctions{
+  @grok.decorators.init()
+  static async initPyodide() : Promise<void> {
+  
+    pyodideWorker = new Worker(new URL('worker.js', import.meta.url));
+
+    pyodideWorker.onmessage = async (event: MessageEvent<StdoutMessage | ScriptResults | StartFuncCall>) => {
+      // console.log(event);
+      switch (event.data.type) {
+        case 'stdoutMessage':
+          return handleStdoutMessage(event.data);
+        case 'scriptResults':
+          return await handleScriptResults(event.data);
+        case 'startFuncCall':
+          return await handleStartFuncCall(event.data);
+      }
+    };
+    /* supportsArrow = DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0; */
+  }
+
+  @grok.decorators.func()
+  static makeVectorCode(
+    @grok.decorators.param({type: 'script'}) script: DG.Script): string {
+  
+    const inputTable = DG.Script.vecInputTableName;
+    let code: string = `input_table_length = len(${inputTable}.index)\n`;
+    for (const param of script.inputs.filter((p) => p.isVectorizable))
+      code += `${param.vectorName} = ${inputTable}["${param.name}"]\n`;
+    for (const param of script.outputs.filter((p) => p.isVectorizable))
+      code += `${param.vectorName} = [None] * input_table_length\n`;
+    code += 'for vec_loop_idx in range(0, input_table_length):\n';
+
+    for (const param of script.inputs.filter((p) => p.isVectorizable))
+      code += `\t${param.name} = ${param.vectorName}[vec_loop_idx]\n`;
+    code += `${script.clientCode.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).map((l) => `\t${l}`).join('\n')}\n`;
+    for (const param of script.outputs.filter((p) => p.isVectorizable))
+      code += `\t${param.vectorName}[vec_loop_idx] = ${param.name}\n`;
+    code += `${DG.Script.vecOutputTableName} = pd.DataFrame({${script.outputs.filter((p) => p.isVectorizable).map((p) => `"${p.vectorName}": ${p.vectorName}`).join(', ')}})\n`;
+    return code;
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'scriptHandler.language': 'pyodide',
+      'scriptHandler.extensions': 'py',
+      'scriptHandler.commentStart': '#',
+      'scriptHandler.templateScript': '#name: Template\\n#description: Calculates number of cells in the table\\n#language: pyodide\\n#sample: cars.csv\\n#input: dataframe table [Data table]\\n#output: int count [Number of cells in table]\\n\\ncount = table.shape[0] * table.shape[1]',
+      'scriptHandler.codeEditorMode': 'python',
+      'scriptHandler.vectorizationFunction': 'Pyodide:makeVectorCode',
+      'icon': 'files/pyodide.png'
+    },
+    'tags': [
+      'scriptHandler'
+    ]
+  })
+  static async pyodideLanguageHandler(
+    scriptCall: DG.FuncCall): Promise<void> {
+  
+    const req: StartWorkerScript = await prepareRequest(scriptCall);
+    currentScriptCalls[req.id] = scriptCall;
+    scriptCall.debugLogger?.debug(`Final code:\n${req.script}`);
+    const response = await sendRequest(req); // spawn new worker if current is busy?
+    await setOutputs(scriptCall, response);
+  }
 }
-
-//tags: scriptHandler
-//meta.scriptHandler.language: pyodide
-//meta.scriptHandler.extensions: py
-//meta.scriptHandler.commentStart: #
-//meta.scriptHandler.templateScript: #name: Template\n#description: Calculates number of cells in the table\n#language: pyodide\n#sample: cars.csv\n#input: dataframe table [Data table]\n#output: int count [Number of cells in table]\n\ncount = table.shape[0] * table.shape[1]
-//meta.scriptHandler.codeEditorMode: python
-//meta.scriptHandler.vectorizationFunction: Pyodide:makeVectorCode
-//meta.icon: files/pyodide.png
-//input: funccall scriptCall
-export async function pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<void> {
-  const req: StartWorkerScript = await prepareRequest(scriptCall);
-  currentScriptCalls[req.id] = scriptCall;
-  scriptCall.debugLogger?.debug(`Final code:\n${req.script}`);
-  const response = await sendRequest(req); // spawn new worker if current is busy?
-  await setOutputs(scriptCall, response);
-}
-
-export * from './package.g';

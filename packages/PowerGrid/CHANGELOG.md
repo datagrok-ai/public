@@ -1,5 +1,10 @@
 # Power Grid changelog
 
+## 1.7.2 (2025-07-29)
+
+* GROK-18597 Smart form: can't add add categorical columns from the Context Panel
+* GROK-18596 Smart Form: incorrect rendering on column resize
+
 ## 1.6.2 (2025-04-18)
 
 * Removed dependency from datagrok=tools

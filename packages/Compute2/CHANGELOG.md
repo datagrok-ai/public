@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.10 (2025-07-28)
+
+- API updated for 1.26.0
+
 ## 1.3.9 (2025-07-22)
 
 - Template links syntax

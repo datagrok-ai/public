@@ -8,12 +8,10 @@ import { getJiraCreds } from './app/credentials';
 import { addJiraDetector } from './detectors';
 import { JiraGridCellHandler } from './jira-grid-cell-handler';
 import '../css/jira_connect.css';
-import { LruCache } from "datagrok-api/dg";
 
 export let _package = new DG.Package();
-export const cache = new LruCache<string, JiraIssue>(100);
+export const cache = new DG.LruCache<string, JiraIssue>(100);
 export const queried = new Set<string>();
-
 
 //name: info
 export function info() {

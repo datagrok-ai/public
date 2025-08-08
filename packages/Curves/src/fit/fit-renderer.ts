@@ -6,8 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {
   IFitChartData,
   IFitSeries,
-  fitChartDataProperties,
-  statisticsProperties, IFitChartOptions, IFitPoint, FitCurve,
+  fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -32,7 +31,7 @@ import {
 } from './render-utils';
 import {merge} from 'rxjs';
 import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
-import {Fit, FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 export interface FitCellOutlierToggleArgs {
@@ -185,8 +184,7 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
 }
 
 /** Returns existing, or fits curve for the specified grid cell and series. */
-// @ts-ignore
-export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: string,
+export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction<Fit>,
   chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true): FitCurve {
   const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache);
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`

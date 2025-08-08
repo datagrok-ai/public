@@ -30,6 +30,7 @@ import {
 import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from './const';
 import {ColorType, getSeriesColor} from './render-utils';
+import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 const CHART_OPTIONS = 'chartOptions';

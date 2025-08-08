@@ -5,7 +5,6 @@ import {plateTemplates} from '../plates-crud';
 import {propertySchemaView} from './plates-schema-view';
 import {PlateTemplateHandler} from '../objects/plate-template-handler';
 
-
 export function createTemplatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Templates';

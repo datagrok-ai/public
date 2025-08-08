@@ -7,6 +7,7 @@ import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
+import {LatexViewer} from './latex/latex-viewer';
 
 export const _package = new DG.Package();
 
@@ -135,4 +136,29 @@ export async function previewRtf(file: DG.FileInfo): Promise<DG.View> {
     });
   });
   return view;
+}
+
+//name: previewTex
+//tags: fileViewer
+//input: file file
+//output: view v
+//meta.fileViewer: tex
+export async function previewTex(file: DG.FileInfo): Promise<DG.View> {
+  // const view = DG.View.create();
+  // view.name = file.fileName;
+
+  // try {
+  //   const latexText = await file.readAsString();
+  //   view.append(getElementWithLatexContent(latexText));
+  // } catch (err) {
+  //   view.append(ui.h2('The file is corrupted and cannot be opened!'));
+  //   if (err instanceof Error)
+  //     grok.shell.error(err.message);
+  // }
+
+  // return view;
+
+  const viewer = await LatexViewer.create(file);
+
+  return viewer.view;
 }

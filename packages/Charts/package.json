@@ -1,7 +1,8 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.5.5",
+  "friendlyName": "Charts",
+  "version": "1.6.0",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Oleksandra Serhiienko",
@@ -27,7 +28,7 @@
     "graphlib": "^2.1.8",
     "rxjs": "6.5.5",
     "three": "^0.154.0",
-    "three-globe": "^2.24.13",
+    "three-globe": "2.24.13",
     "ws": "^7.5.1"
   },
   "scripts": {
@@ -63,7 +64,7 @@
     "@typescript-eslint/parser": "^5.27.0",
     "css-loader": "^5.2.7",
     "d3-cloud": "^1.2.5",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.40", 
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",

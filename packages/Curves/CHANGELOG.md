@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.10.0 (2025-07-29)
+
+### Features
+* 4plDoseResponse: Added 4PL dose-response curve fitting function
+* Data-to-curves: fully covered script with history, datasync and 2 tier support
+* Raw PNG renderer
 
 ## 1.6.0 - 1.8.0 (2025-03-31)
 

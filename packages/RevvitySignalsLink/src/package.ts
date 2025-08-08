@@ -3,12 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
-import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
+import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signals-search-builder';
 import '../css/revvity-signals-styles.css';
-import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
+import { RevvityFilters } from './filters';
+import { getProperties } from './properties';
+import { buildPropertyBasedQueryBuilder } from './query-builder';
+import { testFilterCondition } from './const';
 
 
 export const _package = new DG.Package();
@@ -45,6 +49,14 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     grok.shell.addPreview(v);
   });
 
+  const search2 = treeNode.item('Search 2');
+  search2.onSelected.subscribe(() => {
+    const v = DG.View.create('Search 2');
+    const queryBuilder = buildPropertyBasedQueryBuilder(getProperties(), JSON.parse(JSON.stringify(testFilterCondition)));
+    v.append(queryBuilder);
+    grok.shell.addPreview(v);
+  });
+
   const createViewFromPreDefinedQuery = async (query: string, name: string) => {
     const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
@@ -52,6 +64,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     });
     const tv = grok.shell.addTablePreview(df);
     tv.name = name;
+    new RevvityFilters(tv);
   }
 
   const compounds = treeNode.group('Compounds');

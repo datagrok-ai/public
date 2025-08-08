@@ -22,7 +22,7 @@
    1. Y: Y Axis Type to logarithmic
 1. Go to SPGI
 1. Select/deselect some/all rows. Verify that data displayed on the line chart is as expected (only filtered rows displayed, data not missing unexpectedly)
-1. Save the project with datasync as ‘NxProject’
+1. Save the project with datasync as NxProject
 1. Close All
 ---
 {

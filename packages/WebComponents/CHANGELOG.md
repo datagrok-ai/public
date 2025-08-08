@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.2.4 (2025-07-28)
+
+- API updated for 1.26.0
+
 ## 1.2.4 (2025-06-03)
 
 - Allow all users to use

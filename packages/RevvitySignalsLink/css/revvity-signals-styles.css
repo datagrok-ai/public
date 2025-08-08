@@ -12,12 +12,20 @@
 .revvity-signals-search .fa-trash-alt {
     font-size: 12px;
     color: #2083D5;
-    padding-top: 6px;
+}
+
+.query-builder-nested-condition-operators .fa-trash-alt {
+    padding: 0px 7px 0px 5px;
+    font-size: 10px !important;
+    margin-top: 2px;
 }
 
 .revvity-signals-search .fa-plus {
     color: #2083D5;
-    padding-left: 10px;
+}
+
+.query-builder-nested-condition-operators .fa-plus {
+    padding: 1px 5px 1px 5px;
 }
 
 .revvity-signals-search-logical-operator {
@@ -28,9 +36,15 @@
 }
 
 .revvity-signals-search-query-operator {
-    border: 1px solid #eee;
+    border: none;
     margin: 4px;
-    padding: 4px;
+    padding: 4px 4px 4px 12px;
+    position: relative;
+    margin-top: 20px;
+}
+
+.revvity-signals-search-query-operator[data-nesting-level] {
+    border-left: 3px solid var(--nesting-color, #e0e0e0);
 }
 
 .revvity-signals-search-query-preview {
@@ -45,4 +59,138 @@
 .revvity-signals-search-res-grid {
     width: 100%!important;
     height: 100%!important;
+}
+
+.revvity-signals-filters-or-button {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    font-size: 10px;
+    padding: 2px 6px !important;
+    display: none!important;
+    z-index: 10;
+    margin-bottom: 0px !important;
+}
+
+.revvity-signals-filters-and-button {
+    position: absolute;
+    bottom: 0px;
+    right: 40px;
+    font-size: 10px;
+    padding: 2px 6px !important;
+    display: none!important;
+    z-index: 10;
+    margin-bottom: 0px !important;
+}
+
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-or-button,
+.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-and-button .last-row{
+    display: block!important;
+}
+
+.revvity-signals-filter-row {
+    position: relative;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 4px 0;
+    transition: border-color 0.2s ease;
+}
+
+.revvity-signals-filter-row:hover {
+    border-color: #2083D5;
+}
+
+.revvity-signals-filter-close-button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 12px;
+    padding: 2px 6px;
+    display: none;
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+}
+
+.revvity-signals-filter-close-button:hover {
+    color: #d32f2f;
+}
+
+.revvity-signals-filter-row:hover .revvity-signals-filter-close-button {
+    display: block;
+}
+
+.revvity-signals-filter-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+}
+
+.revvity-signals-filter-inputs .ui-input-editor {
+    width: auto!important;
+}
+
+.revvity-signals-filter-inputs .ui-input-root {
+    width: auto!important;
+}
+
+.property-query-builder-and-or-operator {
+    font-size: 10px;
+    margin: 0px!important;
+    height: 12px!important;
+}
+
+.query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    padding: 2px 5px 0px 5px!important;
+    display: none!important;
+}
+
+.property-query-builder-multipe-filelds > .query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    display: flex!important;
+}
+
+.query-builder-nested-condition-operators {
+    position: absolute;
+    top: -7px;
+    border: none;
+    border-radius: 4px;
+    background-color: white;
+    left: 10px;
+}
+
+
+.revvity-signals-filter-inputs .add-delete-icons {
+    visibility: hidden;
+    gap: 6px;
+    padding-top: 15px;
+}
+
+.revvity-signals-filter-inputs:hover .add-delete-icons {
+    visibility: visible;
+}
+
+.nested-add-delete-icons {
+    visibility: hidden;
+}
+
+.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
+}
+
+/* Hide dropdown arrow on select elements by default, show only on hover */
+.revvity-signals-filter-inputs select.ui-input-editor {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: none !important;
+    background: none !important;
+}
+
+.revvity-signals-filter-inputs select.ui-input-editor:hover {
+    background-image: url("../img/chevron.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0px top 50% !important;
 }

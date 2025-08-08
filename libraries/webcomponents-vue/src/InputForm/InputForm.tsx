@@ -3,10 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {injectInputBaseStatus, isInputInjected} from './utils';
+import {ConsistencyInfo, injectInputBaseStatus, isInputInjected, ValidationResult} from './utils';
 import {BehaviorSubject, merge} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {useExtractedObservable} from '@vueuse/rxjs';
@@ -122,7 +120,7 @@ export const InputForm = Vue.defineComponent({
           }
           // TODO: FormApi
           // const rangeMeta = meta[param.property.name]?.['range'];
-          //if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
+          // if (rangeMeta && (input.inputType === DG.InputType.Float || input.inputType === DG.InputType.Int)) {}
           const hideMeta = meta[param.property.name]?.['hidden'];
           if (hideMeta)
             input.root.style.display = 'none';
