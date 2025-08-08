@@ -12,3 +12,7 @@
 .moltrack-run-register-button {
     width: 100px;
 }
+
+.ui-form{
+    height: 100%!important;
+}

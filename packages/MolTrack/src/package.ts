@@ -6,6 +6,11 @@ import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
 import { RegistrationSingleView } from './utils/registration-single-tab'
+import { RegistrationCompoundView } from './utils/registration-compound-tab';
+import { RegistrationBatchView } from './utils/registration-batch-tab';
+import { RegistrationAssayView } from './utils/registration-assay-tab';
+import { RegistrationAssayRunView } from './utils/registration-assay-run-tab';
+import { RegistrationAssayResultView } from './utils/registration-assay-results-tab';
 
 export const _package = new DG.Package();
 
@@ -46,10 +51,30 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
     const registrationView = new RegistrationView();
     registrationView.show();
   });
-  const registerSingleNode = appNode.getOrCreateGroup("Register").item("Register single");
-  registerSingleNode.onSelected.subscribe(() => {
-    const registrationSingleView = new RegistrationSingleView();
-    registrationSingleView.show();
+  const registerCompoundNode = appNode.getOrCreateGroup("Register").item("Register compound");
+  registerCompoundNode.onSelected.subscribe(() => {
+    const registrationCompoundView = new RegistrationCompoundView();
+    registrationCompoundView.show();
+  });
+  const registerBatchNode = appNode.getOrCreateGroup("Register").item("Register batch");
+  registerBatchNode.onSelected.subscribe(() => {
+    const registrationBatchView = new RegistrationBatchView();
+    registrationBatchView.show();
+  });
+  const registerAssayNode = appNode.getOrCreateGroup("Register").item("Register assay");
+  registerAssayNode.onSelected.subscribe(() => {
+    const registrationAssayView = new RegistrationAssayView();
+    registrationAssayView.show();
+  });
+  const registerAssayRunNode = appNode.getOrCreateGroup("Register").item("Register assay run");
+  registerAssayRunNode.onSelected.subscribe(() => {
+    const registrationAssayRunView = new RegistrationAssayRunView();
+    registrationAssayRunView.show();
+  });
+    const registerAssayResultNode = appNode.getOrCreateGroup("Register").item("Register assay result");
+  registerAssayResultNode.onSelected.subscribe(() => {
+    const registrationAssayResultView = new RegistrationAssayResultView();
+    registrationAssayResultView.show();
   });
 }
 

@@ -20,6 +20,7 @@ export class RegistrationSingleView {
   assayNameInput: DG.InputBase | null = null;
   assayRunDateInput: DG.DateInput | null = null;
   inputTest;
+  inputTest2;
 
   constructor() {
     this.view = DG.View.create();
@@ -34,7 +35,17 @@ export class RegistrationSingleView {
     this.mainDiv.append(this.getScopeDiv(this.scopeInput!.value!));
     this.inputTest = ui.typeAhead('Country', {source: {
       local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});
-    this.buildUI();
+    const prop = DG.Property.fromOptions({
+      'name': 'what',
+      'inputType': 'Float',
+      'min': 0,
+      'max': 10,
+      // @ts-ignore
+      'showSlider': true,
+      'step': 1,
+    });
+    this.inputTest2 = ui.input.forProperty(prop);
+   this.buildUI();
   }
 
   private createInputs() {
@@ -87,6 +98,8 @@ export class RegistrationSingleView {
       this.assayResultsDiv.append(this.assayRunDateInput!.root);
       this.assayResultsDiv.append(this.epaBatchIdInput!.root);
       this.assayResultsDiv.append(this.inputTest!.root);
+      this.assayResultsDiv.append(this.inputTest2!.root);
+
       retVal = this.assayResultsDiv;
       break;
     }
