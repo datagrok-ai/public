@@ -117,7 +117,7 @@ export namespace funcs {
     return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol });
   }
 
-  export async function dataToCurvesTopMenu(): Promise<void> {
+  export async function dataToCurvesTopMenu(): Promise<any> {
     return await grok.functions.call('Curves:DataToCurvesTopMenu', {});
   }
 
@@ -129,7 +129,7 @@ export namespace funcs {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
 
-  export async function platesFolderPreview(folder: DG.FileInfo , files: any ): Promise<void> {
+  export async function platesFolderPreview(folder: DG.FileInfo , files: any ): Promise<any> {
     return await grok.functions.call('Curves:PlatesFolderPreview', { folder, files });
   }
 
