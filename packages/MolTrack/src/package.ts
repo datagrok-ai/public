@@ -6,6 +6,7 @@ import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
 import { RegistrationSingleView } from './utils/registration-single-tab'
+import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
 import { RegistrationAssayView } from './utils/registration-assay-tab';
@@ -16,10 +17,15 @@ export const _package = new DG.Package();
 
 //tags: init
 export async function init(): Promise<void> {
-  const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
-  const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
-  for (const query of queries)
-    await (query.prepare()).call();
+  await updateAllMolTrackSchemas();
+  await registerAssayData();
+  await registerAllData();
+
+  // This will be used for the updated docker setup later.
+  // const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
+  // const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
+  // for (const query of queries)
+  //   await (query.prepare()).call();
 }
 
 //tags: app
@@ -102,6 +108,14 @@ export async function fetchMolTrackProperties(): Promise<string> {
 export async function updateMolTrackSchema(jsonPayload: string): Promise<string> {
   await MolTrackDockerService.init();
   return await MolTrackDockerService.updateSchema(jsonPayload);
+}
+
+//name: registerAssays
+//input: string assayPayload
+//output: string result
+export async function registerAssays(assayPayload: string): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.registerAssay(assayPayload);
 }
 
 //name: registerBulk
