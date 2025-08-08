@@ -300,3 +300,45 @@
 .locked-mapping-input > .grok-icon:hover {
   color: var(--red-3);
 }
+
+
+/* === NEW: Styles for custom mapping suggestions === */
+
+/* === NEW: Styles for the custom suggestion dropdown === */
+
+.custom-suggestion-popup {
+  position: absolute;
+  z-index: 1000; /* High z-index to appear over other UI */
+  /* background-color: var(--grey-0); */
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  max-height: 250px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.custom-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--grey-8);
+}
+
+.custom-suggestion-item:hover {
+  background-color: var(--grey-1);
+}
+
+.custom-suggestion-name {
+  font-weight: 500;
+}
+
+.custom-suggestion-annotation {
+  font-size: 11px;
+  color: var(--grey-5);
+  margin-left: 16px;
+  white-space: nowrap;
+  font-style: italic;
+}
