@@ -1754,9 +1754,9 @@ export interface ILineChartSettings {
 
   rowGroupTooltip: string;
 
-  /// When true, lines are added to the legend
-  /// Requires *Multi Axis* to be enabled
-  addLinesToLegend: boolean;
+  /// When selected, column names are added to the legend.
+  /// Requires *Multi Axis* to be enabled.
+  addYColumnsToLegend: boolean;
 
   autoAdjustMultiAxisLegendPosition: boolean;
 
