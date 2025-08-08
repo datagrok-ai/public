@@ -14,5 +14,7 @@
 }
 
 .ui-form{
-    height: 100%!important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block;
 }

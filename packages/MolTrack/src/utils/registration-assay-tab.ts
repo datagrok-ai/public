@@ -1,17 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import dayjs from 'dayjs';
 
 let openedView: DG.ViewBase | null = null;
 
 export class RegistrationAssayView {
-    view: DG.View;
-    mainDiv: HTMLDivElement;
-    gridDiv: HTMLDivElement;
-    assayNameInput: DG.InputBase | null = null;
+  view: DG.View;
+  mainDiv: HTMLDivElement;
+  gridDiv: HTMLDivElement;
+  assayNameInput: DG.InputBase | null = null;
 
-    constructor() {
+  constructor() {
     this.view = DG.View.create();
     this.view.name = 'Register Assay';
     this.createInputs();

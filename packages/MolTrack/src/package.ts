@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
-import { RegistrationSingleView } from './utils/registration-single-tab'
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
@@ -44,7 +43,7 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 
   return DG.View.fromRoot(ui.divV([
     appHeader,
-    ui.wait(async () => (await grok.functions.call('MolTrack:getCompounds') as DG.DataFrame).plot.grid().root)
+    ui.wait(async () => (await grok.functions.call('MolTrack:getCompounds') as DG.DataFrame).plot.grid().root),
   ]));
 }
 
@@ -52,32 +51,32 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
   //search node
-  const registerBulkNode = appNode.getOrCreateGroup("Register").item("Register bulk");
+  const registerBulkNode = appNode.getOrCreateGroup('Register').item('Register bulk');
   registerBulkNode.onSelected.subscribe(() => {
     const registrationView = new RegistrationView();
     registrationView.show();
   });
-  const registerCompoundNode = appNode.getOrCreateGroup("Register").item("Register compound");
+  const registerCompoundNode = appNode.getOrCreateGroup('Register').item('Register compound');
   registerCompoundNode.onSelected.subscribe(() => {
     const registrationCompoundView = new RegistrationCompoundView();
     registrationCompoundView.show();
   });
-  const registerBatchNode = appNode.getOrCreateGroup("Register").item("Register batch");
+  const registerBatchNode = appNode.getOrCreateGroup('Register').item('Register batch');
   registerBatchNode.onSelected.subscribe(() => {
     const registrationBatchView = new RegistrationBatchView();
     registrationBatchView.show();
   });
-  const registerAssayNode = appNode.getOrCreateGroup("Register").item("Register assay");
+  const registerAssayNode = appNode.getOrCreateGroup('Register').item('Register assay');
   registerAssayNode.onSelected.subscribe(() => {
     const registrationAssayView = new RegistrationAssayView();
     registrationAssayView.show();
   });
-  const registerAssayRunNode = appNode.getOrCreateGroup("Register").item("Register assay run");
+  const registerAssayRunNode = appNode.getOrCreateGroup('Register').item('Register assay run');
   registerAssayRunNode.onSelected.subscribe(() => {
     const registrationAssayRunView = new RegistrationAssayRunView();
     registrationAssayRunView.show();
   });
-    const registerAssayResultNode = appNode.getOrCreateGroup("Register").item("Register assay result");
+  const registerAssayResultNode = appNode.getOrCreateGroup('Register').item('Register assay result');
   registerAssayResultNode.onSelected.subscribe(() => {
     const registrationAssayResultView = new RegistrationAssayResultView();
     registrationAssayResultView.show();

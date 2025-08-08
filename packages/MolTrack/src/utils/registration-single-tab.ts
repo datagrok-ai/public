@@ -45,7 +45,7 @@ export class RegistrationSingleView {
       'step': 1,
     });
     this.inputTest2 = ui.input.forProperty(prop);
-   this.buildUI();
+    this.buildUI();
   }
 
   private createInputs() {
