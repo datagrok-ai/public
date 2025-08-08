@@ -1670,6 +1670,8 @@ export interface ILineChartSettings {
   /// Use column format for axis labels, where possible
   axesUseColumnFormat: boolean;
 
+  showAggrTypeSelector: boolean;
+
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
   whiskersType: string;
