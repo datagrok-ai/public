@@ -8,7 +8,6 @@ import {
   IFitSeries,
   fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
-  statisticsProperties,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
@@ -176,9 +175,9 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
-    mergeProperties(statisticsProperties, cellChartData.seriesOptions, series);
-    mergeProperties(statisticsProperties, columnChartOptions.seriesOptions, series);
-    mergeProperties(statisticsProperties, dfChartOptions.seriesOptions, series);
+    mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
+    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
   }
 
   return cellChartData;
@@ -192,8 +191,8 @@ export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number,
   const column = tableCell?.column;
   return (useCache && column && tableCell) ?
     FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${seriesIdx}`, () => {
-      return fitSeries(series, fitFunc as unknown as FitFunction<Fit>, dataPoints, chartLogOptions);
-    }) : fitSeries(series, fitFunc as unknown as FitFunction<Fit>, dataPoints, chartLogOptions);
+      return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
+    }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
 }
 
 /** Returns existing, or maps new data points for the specified series. */
@@ -453,8 +452,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           }
           curve = getCurve(series, fitFunc);
         } else {
-          // @ts-ignore
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc as string, chartLogOptions, tableCell, isRenderedOnGrid);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, isRenderedOnGrid);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters];
           series.parameters = params;

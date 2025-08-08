@@ -69,8 +69,7 @@ export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, char
         series.parameters[2] = Math.log10(series.parameters[2]);
     }
   } else {
-    // @ts-ignore
-    const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction as string, chartLogOptions, tableCell, useCache).parameters;
+    const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction, chartLogOptions, tableCell, useCache).parameters;
     series.parameters = [...params];
   }
 
@@ -145,7 +144,7 @@ function detectSettings(df: DG.DataFrame): void {
     fitChartDataProperties.map((prop) => {
       fitColumns[i].temp[`${CHART_OPTIONS}-custom-${prop.name}`] = false;
     });
-    statisticsProperties.map((prop) => {
+    fitSeriesProperties.map((prop) => {
       fitColumns[i].temp[`${SERIES_OPTIONS}-custom-${prop.name}`] = false;
     });
     if (fitColumns[i].getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX)
@@ -161,7 +160,7 @@ function detectSettings(df: DG.DataFrame): void {
           fitColumns[i].temp[`${CHART_OPTIONS}-custom-${prop.name}`] = true;
       });
 
-      statisticsProperties.map((prop) => {
+      fitSeriesProperties.map((prop) => {
         if (!chartData.series) return;
         for (const series of chartData.series) {
           if (series[prop.name as keyof IFitSeriesOptions] !== undefined)
@@ -293,9 +292,9 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
     setValidColors('fitLineColor');
     setValidColors('outlierColor');
 
-    mergeProperties(statisticsProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
+    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
-    mergeProperties(statisticsProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
+    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
     mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions,
       chartData.chartOptions ? chartData.chartOptions : {});
@@ -307,7 +306,7 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
       substituteZeroes(chartData);
 
     const form = ui.form([switchLevelInput]);
-    const fitSeriesChildren = statisticsProperties.map((p) => ui.input.forProperty(p, chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], seriesOptionsRefresh));
+    const fitSeriesChildren = fitSeriesProperties.map((p) => ui.input.forProperty(p, chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], seriesOptionsRefresh));
     ui.forms.addGroup(form, 'Series options', fitSeriesChildren);
     ui.forms.addGroup(form, 'Chart options', fitChartDataProperties.map((p) => ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
