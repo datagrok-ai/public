@@ -96,7 +96,6 @@ export function GetMCLEditor(call: DG.FuncCall) {
 //input: bool useWebGPU { default: false }
 //input: double inflate { default: 2 }
 //input: int minClusterSize { default: 5 }
-//output: dynamic result
 //top-menu: ML | Cluster | MCL...
 //editor: EDA: GetMCLEditor
 export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: any, weights: number[], aggregationMethod: any, preprocessingFuncs: any[], preprocessingFuncArgs: any[], threshold: number, maxIterations: number, useWebGPU: boolean, inflate: number, minClusterSize: number) {

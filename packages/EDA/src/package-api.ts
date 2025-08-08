@@ -53,7 +53,7 @@ export namespace funcs {
   /**
   Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
   */
-  export async function mclclustering(df: DG.DataFrame , cols: any , metrics: any , weights: any , aggregationMethod: string , preprocessingFuncs: any , preprocessingFuncArgs: any , threshold: number , maxIterations: number , useWebGPU: boolean , inflate: number , minClusterSize: number ): Promise<any> {
+  export async function mclclustering(df: DG.DataFrame , cols: any , metrics: any , weights: any , aggregationMethod: string , preprocessingFuncs: any , preprocessingFuncArgs: any , threshold: number , maxIterations: number , useWebGPU: boolean , inflate: number , minClusterSize: number ): Promise<void> {
     return await grok.functions.call('EDA:MCLClustering', { df, cols, metrics, weights, aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate, minClusterSize });
   }
 
