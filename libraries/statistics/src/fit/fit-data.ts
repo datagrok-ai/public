@@ -3,24 +3,21 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   FitErrorModel,
-  fitData,
-  getCurveConfidenceIntervals,
   getStatistics,
-  FitFunction,
   getFittedCurve,
   FitStatistics,
   FitConfidenceIntervals,
   FitCurve,
-  getOrCreateFitFunction,
   IFitPoint,
   IFitChartData,
   IFitSeries,
-  fitSeriesProperties,
   fitChartDataProperties,
   FitParamBounds,
   IFitChartOptions,
   FitErrorModelType,
 } from './fit-curve';
+import {fitData, FitFunction, fitSeriesProperties,
+  getCurveConfidenceIntervals, getOrCreateFitFunction} from './new-fit-API';
 
 export type LogOptions = {
   logX: boolean | undefined,

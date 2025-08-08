@@ -8,7 +8,8 @@ import {
   getModelsSingle,
   performChemicalPropertyPredictions,
   runAdmeticaFunc,
-  setProperties } from './utils/admetica-utils';
+  setProperties,
+} from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { Model, Subgroup } from './utils/constants';
@@ -18,19 +19,21 @@ export * from './package.g';
 export const _package = new DG.Package();
 
 //name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
 
 export class PackageFunctions {
   // @grok.decorators.init()
   // static async init() { }
 
+  @grok.decorators.func()
+  static info() {
+    grok.shell.info(_package.webRoot);
+  }
+
   @grok.decorators.panel({
     name: 'Biology | Admetica',
     tags: ['chem', 'widgets']})
   static async admeticaWidget(
-    @grok.decorators.param({ options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
+    @grok.decorators.param({ name: 'smiles', options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
     const smiles = await grok.functions.call('Chem:convertMolNotation',
       { molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles });
     return await getModelsSingle(smiles, semValue);
@@ -63,7 +66,7 @@ export class PackageFunctions {
     await performChemicalPropertyPredictions(molecules, table, resultString);
   }
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({name: 'AdmeticaEditor'})
   static admeticaEditor(call: DG.FuncCall): void {
     const funcEditor = new AdmeticaBaseEditor();
     ui.dialog({ title: 'Admetica' })
@@ -87,15 +90,15 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'top-menu': 'Chem | Admetica | Сalculate...',
-    'editor': 'Admetica:AdmeticaEditor'
+    'editor': 'Admetica: AdmeticaEditor',
   })
   static async admeticaMenu(
-    table: DG.DataFrame,
-    @grok.decorators.param({options: { semType: 'Molecule' }}) molecules: DG.Column,
-    template: string,
-    models: string[],
-    addPiechart: boolean,
-    addForm: boolean,
+    @grok.decorators.param({options: { description: 'Input data table' }})table: DG.DataFrame,
+    @grok.decorators.param({options: { type: 'categorical', semType: 'Molecule' }}) molecules: DG.Column,
+      template: string,
+      models: string[],
+      addPiechart: boolean,
+      addForm: boolean,
   ): Promise<void> {
     await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
   }
@@ -103,7 +106,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async admeProperty(
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
-    @grok.decorators.param({ options: { choices: ['Caco2', 'Solubility', 'Lipophilicity', 'PPBR', 'VDss'] } }) prop: string): Promise<any> {
+    @grok.decorators.param({ options: { choices: ['Caco2', 'Solubility', 'Lipophilicity', 'PPBR', 'VDss'] } }) prop: string): Promise<number> {
     const df: DG.DataFrame = await runAdmeticaFunc(`smiles\n${molecule}`, prop, false);
     return df.get(prop, 0);
   }
@@ -117,7 +120,8 @@ export class PackageFunctions {
   @grok.decorators.demo({
     name: 'Admetica Demo',
     description: 'Evaluating ADMET properties',
-    meta: {demoPath: 'Cheminformatics | Admetica'}
+    meta: {demoPath: 'Cheminformatics | Admetica'},
+    outputs: [],
   })
   static async admeticaDemo(): Promise<DG.ViewBase | null> {
     return await initializeAdmeticaApp(false);

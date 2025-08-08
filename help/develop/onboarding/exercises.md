@@ -480,6 +480,9 @@ from our server.
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
    as instructed [here](../how-to/db/access-data.md#creating-queries), update credentials, create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
+   
+   For examples of how to define different connections, check the [Samples package](https://github.com/datagrok-ai/public/tree/master/packages/Samples/connections).
+
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
     of the `ordersByCountry('USA')` call:
@@ -584,7 +587,7 @@ from our server.
 
       // Load every table and add a view for it
       for (const file of csvFiles) {
-         const df = await _package.files.readCsv(file.path);
+         const df = await _package.files.readCsv(file.name);
          grok.shell.addTableView(df);
          // Alternative ways to read a table are:
          // const df = await grok.data.loadTable(`${_package.webRoot}${file.path}`);
@@ -623,7 +626,7 @@ First, let's explore how scripting viewer works.
    `Data` corresponds to the first button from the top of the Datagrok sidebar. Make sure the table view with the data
    appears.
 1. Activate the top menu from the sidebar, using a `Windows | Menu` switch. 3. In this menu, hit `Add | Scripting
-Viewers | Add Scripting Viewer`.
+Viewers | New Scripting Viewer`.
 1. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 1. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
 1. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`. After checking
@@ -694,7 +697,7 @@ Viewers | Add Scripting Viewer`.
    * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
    * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
    * creates a dataframe `df` out of `df1` and `df2` in the following way:
-      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
+      * the rows of `df2` are appended directly after those of `df1`, with data from both original columns merged into one resulting column — this is a UNION
         operation for dataframes, as in SQL; use the dataframe's
         [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
       * a new column `Counts` appears in `df`, which contains:
@@ -721,7 +724,7 @@ Viewers | Add Scripting Viewer`.
 
 5. Implement test for `fuzzyJoin` function:
 
-   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)). 
+   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/tests/test-packages)). 
    Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package and add import to package-test file. 
 
    To create test in `fuzzy-join-test.ts` import `test` and `category` functions from `library/utils` to the file. You can use these functions to implement basic test:
@@ -789,6 +792,7 @@ of the `fuzzyJoin` function and run the test again. Repeat this process until th
         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
         let seq = gridCell.cell.value;
         let ctx = g.canvas.getContext('2d');
+        if (!ctx) return;
         ctx.font = '11px courier';
         // ...
         for (let i = 0; i < gridCell.cell.value.length; i++)
@@ -907,10 +911,10 @@ contained in a currently selected grid cell.
    ```
 
    Incorporate a
-   [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/components/accordion.js)
+   [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/inputs/advanced/input-api.js)
    control to display a sequence in a scrollable fashion. Add a caption to that text area to display an ENA's name for
    this sequence, which also comes in the fasta file. Use a
-   [`splitV`](https://datagrok.ai/api/js/api/ui/functions/splitV)
+   [`splitV`](https://datagrok.ai/api/js/ui/functions/splitV)
    control to nicely locate the caption at the top and the text area at the bottom.
 
 `fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a
@@ -942,14 +946,14 @@ dialog-based function which forms such files automatically by a given search inp
     ]);
     ```
 
-   The output from `ebi.ac.uk` is a raw text, and you need to parse it to get the desired pieces. Trim the sequence so
+   The output from `ebi.ac.uk` is a raw text, and you need to parse it to extract both the ID and its associated sequence. Trim the sequence so
    that isn't longer than 60 characters. Use your previous knowledge about [`fetchProxy`][022] to do the `GET` query.
 
 2. Make a function `formENADataTable` which constructs a dialog giving the user a two-step process for constructing a
    dataframe with ENA sequence data in it.
 
     * First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results in the
-      grid right in this window after clicking the "Search" button. Consider this as a preview before the actual
+      grid right in this window after clicking the "Preview" button. Consider this as a preview before the actual
       dataframe is produced.
     * Second, when the user is happy with what's in the preview, he/she proceeds to the "Ok" button to get the actual
       dataframe with the ENA data on the screen in the Datagrok's grid view. This table shall consist of the number of
@@ -961,7 +965,9 @@ dialog-based function which forms such files automatically by a given search inp
     let grid = DG.Viewer.grid(df);
     let limitInput = ui.input.int('How many rows: ', {value: 100});
     let queryInput = ui.input.string('Query: ', {value: 'coronavirus'});
-    let button = ui.button('Preview');
+    let button = ui.button('Preview', () => {
+      /* Handle preview creation */
+    });
     ui.dialog('Create sequences table')
       .add(ui.splitV([
         ui.splitH([

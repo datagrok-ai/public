@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function info(): Promise<any> {
+  export async function info(): Promise<void> {
     return await grok.functions.call('Reinvent4:Info', {});
   }
 
@@ -28,7 +28,7 @@ export namespace funcs {
     return await grok.functions.call('Reinvent4:Reinvent', { ligand, optimize });
   }
 
-  export async function reinventTopMenu(ligand: string , optimize: string ): Promise<any> {
+  export async function reinventTopMenu(ligand: string , optimize: string ): Promise<void> {
     return await grok.functions.call('Reinvent4:ReinventTopMenu', { ligand, optimize });
   }
 }

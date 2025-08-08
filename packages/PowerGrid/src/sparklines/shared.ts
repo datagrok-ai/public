@@ -143,7 +143,7 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
         settings.columnNames = names(value);
         gridColumn.grid.invalidate();
       },
-      available: names(gridColumn.grid.dataFrame.columns.numerical)
+      available: isSmartForm ? names(gridColumn.grid.dataFrame.columns) : names(gridColumn.grid.dataFrame.columns.numerical)
     }),
     ...inputs,
     ui.input.choice<SummaryColumnColoringType>('Color Code', {

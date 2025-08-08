@@ -118,7 +118,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         this.rows.push(this.dataFrame.mouseOverRowIdx);
       if (this.showSelectedRowsCurves) {
         selectionStart = this.rows.length;
-        this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+        this.rows.push(...this.dataFrame.selection.clone().and(this.dataFrame.filter).getSelectedIndexes());
       }
     }
 
@@ -153,8 +153,10 @@ export class MultiCurveViewer extends DG.JsViewer {
     this.data.chartOptions = mergeChartOptions(chartOptions);
     this.mergeViewerChartOptions();
     this.data.series?.forEach((series, i) => {
-      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
-      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      if (!series.fitLineColor && !series.pointColor) {
+        series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+        series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      }
       series.showCurveConfidenceInterval = false;
       series.droplines = [];
       if (this.data.series?.length! > 20) {
@@ -162,7 +164,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         series.lineStyle = 'solid';
       }
       if (this.data.series?.length! > 10 && this.data.series?.length! < 100 && i >= selectionStart) {
-        const color = DG.Color.fromHtml(series.fitLineColor);
+        const color = DG.Color.fromHtml(series.fitLineColor!);
         series.fitLineColor = `rgba(${DG.Color.r(color)}, ${DG.Color.g(color)}, ${DG.Color.b(color)}, 0.2)`;
       }
     });

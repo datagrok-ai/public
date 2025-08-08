@@ -1,5 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
 module.exports = {
   cache: {
@@ -44,6 +45,9 @@ module.exports = {
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
   },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
   output: {
     filename: '[name].js',
     library: 'arrow',

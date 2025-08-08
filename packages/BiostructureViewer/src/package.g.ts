@@ -1,9 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: init
 //tags: init
-//output: dynamic result
 export async function init() {
   return PackageFunctions.init();
 }
@@ -11,8 +9,8 @@ export async function init() {
 //name: pdbCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
-//meta.columnTags: Molecule3D
 //meta.cellType: Molecule3D
+//meta.columnTags: quality=Molecule3D
 export function Molecule3dCellRenderer() {
   return PackageFunctions.Molecule3dCellRenderer();
 }
@@ -27,7 +25,6 @@ export function pdbIdCellRenderer() {
 
 //name: viewPdbById
 //input: string pdbId 
-//output: dynamic result
 export async function viewPdbById(pdbId: string) {
   return PackageFunctions.viewPdbById(pdbId);
 }
@@ -40,7 +37,7 @@ export async function viewPdbByData(pdbData: string, name: string) {
 }
 
 //name: getNglGlService
-//output: dynamic result
+//output: object result
 export function getNglGlService() {
   return PackageFunctions.getNglGlService();
 }
@@ -49,7 +46,7 @@ export function getNglGlService() {
 //input: string content 
 //input: string format 
 //input: string name { optional: true }
-export async function viewBiostructure(content: string, format: string, name: string) {
+export async function viewBiostructure(content: string, format?: string, name?: string) {
   return PackageFunctions.viewBiostructure(content, format, name);
 }
 
@@ -57,7 +54,7 @@ export async function viewBiostructure(content: string, format: string, name: st
 //description: Opens PDB file
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: mmcif, cifCore, pdb, gro
 export async function importPdb(fileContent: string) {
   return PackageFunctions.importPdb(fileContent);
@@ -67,7 +64,7 @@ export async function importPdb(fileContent: string) {
 //description: Opens XYZ file
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: xyz
 export async function importXYZ(fileContent: string) {
   return PackageFunctions.importXYZ(fileContent);
@@ -77,7 +74,7 @@ export async function importXYZ(fileContent: string) {
 //description: Opens biostructure files supported with NGL
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: mmtf, cns, top, prmtop, ply, obj, ccp4
 export async function importWithNgl(fileContent: string) {
   return PackageFunctions.importWithNgl(fileContent);
@@ -88,7 +85,7 @@ export async function importWithNgl(fileContent: string) {
 //tags: file-handler
 //input: string fileContent 
 //input: bool test { optional: true; default: false }
-//output: list tables
+//output: list<dataframe> result
 //meta.ext: pdbqt
 export async function importPdbqt(fileContent: string, test: boolean) {
   return PackageFunctions.importPdbqt(fileContent, test);
@@ -96,7 +93,7 @@ export async function importPdbqt(fileContent: string, test: boolean) {
 
 //name: previewNglStructure
 //tags: fileViewer
-//input: dynamic file 
+//input: file file 
 //output: view result
 //meta.fileViewer: mmtf,cns,top,prmtop,pqr
 export function previewNglStructure(file: any) {
@@ -105,8 +102,8 @@ export function previewNglStructure(file: any) {
 
 //name: previewNglSurface
 //tags: fileViewer
-//input: dynamic file 
-//output: dynamic result
+//input: file file 
+//output: view result
 //meta.fileViewer: ply,obj
 export function previewNglSurface(file: any) {
   return PackageFunctions.previewNglSurface(file);
@@ -114,8 +111,8 @@ export function previewNglSurface(file: any) {
 
 //name: previewNglDensity
 //tags: fileViewer
-//input: dynamic file 
-//output: dynamic result
+//input: file file 
+//output: view result
 //meta.fileViewer: ccp4
 export function previewNglDensity(file: any) {
   return PackageFunctions.previewNglDensity(file);
@@ -164,14 +161,12 @@ export function pdbIdNglPanelWidget(pdbId: string) {
 
 //name: nglForGridTestApp
 //description: Example app for NGL drawing in grid cells
-//output: dynamic result
 export async function nglForGridTestApp() {
   return PackageFunctions.nglForGridTestApp();
 }
 
 //name: nglViewerApp
 //description: Test app for NglViewer
-//output: dynamic result
 export async function nglViewerApp() {
   return PackageFunctions.nglViewerApp();
 }
@@ -239,52 +234,47 @@ export function saguaroViewer() {
 }
 
 //name: getPdbHelper
-//output: dynamic result
+//output: object result
 export async function getPdbHelper() {
   return PackageFunctions.getPdbHelper();
 }
 
 //name: dockingDemo
-//output: dynamic result
 export async function dockingDemo() {
   return PackageFunctions.dockingDemo();
 }
 
 //name: inGridDemo
-//output: dynamic result
 export async function inGridDemo() {
   return PackageFunctions.inGridDemo();
 }
 
 //name: Copy Biostructure raw value
-//input: dynamic gridCell 
+//input: object gridCell 
 export async function copyRawBiostructureValue(gridCell: any) {
   return PackageFunctions.copyRawBiostructureValue(gridCell);
 }
 
 //name: Download Biostructure raw value
-//input: dynamic gridCell 
+//input: object gridCell 
 export async function downloadRawBiostructureValue(gridCell: any) {
   return PackageFunctions.downloadRawBiostructureValue(gridCell);
 }
 
 //name: Show Biostructure Viewer menu item
-//input: dynamic gridCell 
-//output: dynamic result
+//input: object gridCell 
 export async function showBiostructureViewerMenuItem(gridCell: any) {
   return PackageFunctions.showBiostructureViewerMenuItem(gridCell);
 }
 
 //name: Show NGL Viewer menu item
-//input: dynamic gridCell 
-//output: dynamic result
+//input: object gridCell 
 export async function showNglViewerMenuItem(gridCell: any) {
   return PackageFunctions.showNglViewerMenuItem(gridCell);
 }
 
 //name: Open PDB residues table menu item
-//input: file fi 
-//output: dynamic result
+//input: object fi 
 export async function openTableResiduesMenuItem(fi: DG.FileInfo) {
   return PackageFunctions.openTableResiduesMenuItem(fi);
 }
@@ -293,6 +283,7 @@ export async function openTableResiduesMenuItem(fi: DG.FileInfo) {
 //description: Display ligand poses along the structure
 //meta.demoPath: Bioinformatics | Docking Conformations
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
+//meta.demoWait: 3000
 //meta.demoSkip: GROK-15250
 //test: demoBioDockingConformations() //wait: 3000 , timeout: 60000 , skip: GROK-15250 
 export async function demoBioDockingConformations() {
@@ -336,7 +327,7 @@ export async function readAsText(file: string) {
 
 //name: readAsTextDapi
 //input: string file 
-//output: dynamic result
+//output: string result
 //meta.cache: client
 //meta.cacheInvalidateOn: 0 * * * *
 export async function readAsTextDapi(file: string) {
@@ -365,7 +356,7 @@ export async function getBiostructureRcsbMmcif(id: string) {
 
 //name: RCSB bCIF
 //description: Get biostructure by id as BinaryCIF
-//input: string id { default: 1QBS }
+//input: string id { default: '1QBS' }
 //output: string result
 //meta.dataProvider: Molecule3D
 //meta.cache: client
@@ -377,11 +368,11 @@ export async function getBiostructureRcsbBcif(id: string) {
 //name: biostructureDataToJson
 //description: Packs BiostructureData value into JSON string
 //input: bool binary 
-//input: dynamic data 
+//input: object data 
 //input: string ext 
-//input: dynamic options { optional: true }
+//input: object options { optional: true }
 //output: string result
-export function biostructureDataToJson(binary: boolean, data: any, ext: string, options: any) {
+export function biostructureDataToJson(binary: boolean, data: any, ext: string, options?: any) {
   return PackageFunctions.biostructureDataToJson(binary, data, ext, options);
 }
 

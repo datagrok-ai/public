@@ -2,7 +2,7 @@
 
 import { getApiKey, getApiUrl } from "./credentials-utils";
 import * as grok from 'datagrok-api/grok';
-import { SignalsSearchParams, SignalsSearchQuery } from "./signalsSearchQuery";
+import { SignalsSearchParams, SignalsSearchQuery } from "./signals-search-query";
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
