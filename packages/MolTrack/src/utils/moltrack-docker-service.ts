@@ -19,6 +19,15 @@ export class MolTrackDockerService {
     return this._container;
   }
 
+  static async postToEndpoint(endpoint: string, jsonPayload: string): Promise<string> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: jsonPayload,
+    });
+    return response.text();
+  }
+
   static async checkHealth(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/health');
     return response.text();
@@ -30,12 +39,11 @@ export class MolTrackDockerService {
   }
 
   static async updateSchema(jsonPayload: string): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: jsonPayload,
-    });
-    return response.text();
+    return this.postToEndpoint('/v1/schema/', jsonPayload);
+  }
+
+  static async registerAssay(jsonPayload: string): Promise<string> {
+    return this.postToEndpoint('/v1/assays', jsonPayload);
   }
 
   static async registerBulk(

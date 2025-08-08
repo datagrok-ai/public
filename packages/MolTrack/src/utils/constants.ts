@@ -24,3 +24,6 @@ export const scopeToUrl: { [key: string]: string } = {
   assay_runs: '/v1/assay_runs/',
   assay_results: '/v1/assay_results/',
 };
+
+export const GITHUB_BASE_URL =
+  'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/simple/';
