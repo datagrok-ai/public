@@ -79,6 +79,8 @@ export class BaseConditionEditor<T = any> {
     }
 
     protected initializeEditor(prop: DG.Property): void {
+        if (Array.isArray(this.condition.value))
+            this.condition.value = undefined as T;
         const input = ui.input.forProperty(prop, this.condition.value, {
             onValueChanged: () => {
                 this.condition.value = input.value as T;
@@ -114,27 +116,28 @@ export class BaseConditionEditor<T = any> {
     }
 }
 
-export class DateBetweenConditionEditor extends BaseConditionEditor<Date[]> {
+export class BetweenConditionEditor extends BaseConditionEditor {
     override initializeEditor(prop: DG.Property): void {
         if (!this.condition.value || !Array.isArray(this.condition.value)) {
-            this.condition.value = [new Date(), new Date()];
+            this.condition.value = [this.condition.value, undefined];
             this.onChanged.next(this.condition);
         }
-        const date1 = ui.input.date('', {
-            value: dayjs(this.condition.value[0]),
+        const input1 = ui.input.forProperty(prop, this.condition.value[0], {
             onValueChanged: () => {
-                this.condition.value[0] = date1.value!.toDate();
+                this.condition.value[0] = input1.value!;
                 this.onChanged.next(this.condition);
             }
         });
-        const date2 = ui.input.date('', {
-            value: dayjs(this.condition.value[1]),
+        input1.addCaption('');
+        const input2 = ui.input.forProperty(prop, this.condition.value[1], {
+            value: this.condition.value[1],
             onValueChanged: () => {
-                this.condition.value[1] = date2.value!.toDate();
+                this.condition.value[1] = input2.value!;
                 this.onChanged.next(this.condition);
             }
         });
-        this.root.append(ui.divH([date1.root, date2.root], { style: { gap: '10px' } }));
+        input2.addCaption('');
+        this.root.append(ui.divH([input1.root, input2.root], { style: { gap: '10px' } }));
     }
 }
 
@@ -193,15 +196,50 @@ export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<Molec
 }
 
 
-export class MultiValueConditionEditor extends BaseConditionEditor<any[]> {
+export class MultiValueConditionEditorString extends BaseConditionEditor<string[]> {
     override initializeEditor(prop: DG.Property): void {
-        const input = ui.input.string((this.condition.value || []).join(', '), {
+        if (!Array.isArray(this.condition.value)) {
+            this.condition.value = [];
+        }
+        const input = ui.input.list('', {
+            value: this.condition.value,
             onValueChanged: () => {
-                this.condition.value = input.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                this.condition.value = input.value!;
                 this.onChanged.next(this.condition);
             }
         });
-        input.addCaption('Comma-separated values');
+        this.root.append(input.root);
+    }
+}
+
+export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> {
+    override initializeEditor(prop: DG.Property): void {
+        if (!Array.isArray(this.condition.value)) {
+            this.condition.value = [];
+        }
+        const input = ui.input.list('', {
+            value: this.condition.value,
+            onValueChanged: () => {
+                this.condition.value = input.value!.map((it) => parseInt(it));
+                this.onChanged.next(this.condition);
+            }
+        });
+        this.root.append(input.root);
+    }
+}
+
+export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]> {
+    override initializeEditor(prop: DG.Property): void {
+        if (!Array.isArray(this.condition.value)) {
+            this.condition.value = [];
+        }
+        const input = ui.input.list('', {
+            value: this.condition.value,
+            onValueChanged: () => {
+                this.condition.value = input.value!.map((it) => parseFloat(it));
+                this.onChanged.next(this.condition);
+            }
+        });
         this.root.append(input.root);
     }
 }
@@ -227,9 +265,12 @@ export class ConditionRegistry {
 
     private initializeDefaultOperators(): void {
         // Type operators
-        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.ENDS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
-        this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ, Operators.NOT_EQ]);
-        this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ, Operators.NOT_EQ]);
+        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.ENDS_WITH, Operators.EQ,
+            Operators.NOT_EQ, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
+            Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
+            Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.DATE_TIME, [Operators.BEFORE, Operators.AFTER, Operators.BETWEEN]);
 
         // SemType operators (take precedence over type operators)
@@ -244,8 +285,12 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.DATE_TIME, '', '', BaseConditionEditor);
 
         // Register specialized editors for specific combinations
-        this.registerEditor(DG.TYPE.STRING, '', Operators.IN, MultiValueConditionEditor);
-        this.registerEditor(DG.TYPE.DATE_TIME, '', Operators.BETWEEN, DateBetweenConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, '', Operators.IN, MultiValueConditionEditorString);
+        this.registerEditor(DG.TYPE.INT, '', Operators.IN, MultiValueConditionEditorInt);
+        this.registerEditor(DG.TYPE.FLOAT, '', Operators.IN, MultiValueConditionEditorFloat);
+        this.registerEditor(DG.TYPE.DATE_TIME, '', Operators.BETWEEN, BetweenConditionEditor);
+        this.registerEditor(DG.TYPE.INT, '', Operators.BETWEEN, BetweenConditionEditor);
+        this.registerEditor(DG.TYPE.FLOAT, '', Operators.BETWEEN, BetweenConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.CONTAINS, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_CONTAINED, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.EQ, MoleculeConditionEditor);
@@ -337,12 +382,34 @@ export class QueryBuilder {
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
 
     constructor(properties: DG.Property[], initialCondition?: ComplexCondition) {
-        // Initialize with provided condition or create a default logical condition
-        this.condition = initialCondition || {
-            logicalOperator: Operators.Logical.and,
-            conditions: []
-        };
         this.properties = properties;
+        
+        if (initialCondition) {
+            this.condition = initialCondition;
+        } else {
+            // Create a default condition with the first property and its first operator
+            const firstProperty = properties[0];
+            if (firstProperty) {
+                const registry = ConditionRegistry.getInstance();
+                const operators = registry.getOperatorsForProperty(firstProperty);
+                const firstOperator = operators[0];
+                
+                this.condition = {
+                    logicalOperator: Operators.Logical.and,
+                    conditions: [{
+                        field: firstProperty.name,
+                        operator: firstOperator,
+                        value: undefined
+                    }]
+                };
+            } else {
+                // Fallback if no properties are available
+                this.condition = {
+                    logicalOperator: Operators.Logical.and,
+                    conditions: []
+                };
+            }
+        }
 
         this.root = this.buildUI(this.condition, undefined, 0);
     }

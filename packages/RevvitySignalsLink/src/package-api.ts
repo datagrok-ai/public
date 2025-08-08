@@ -28,6 +28,10 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetUsers', {});
   }
 
+  export async function getLibraries(): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetLibraries', {});
+  }
+
   export async function entityTreeWidget(id: string ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
   }

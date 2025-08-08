@@ -127,6 +127,14 @@ export async function queryMaterialById(id: string, queryParams?: any): Promise<
   return request('GET', `/materials/${id}${paramsStr}`);
 }
 
+export async function queryLibraries(): Promise<RevvityApiResponse> {
+  return request('GET', `/materials/libraries`);
+}
+
+export async function queryTerms(body: SignalsSearchQuery): Promise<RevvityApiResponse> {
+  return request('POST', `/entities/search/terms`, body);
+}
+
 
 export async function queryStructureById(id: string): Promise<string> {
 
