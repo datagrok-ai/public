@@ -27,6 +27,7 @@ import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
+import {parsePlateFromCsv} from './plate/csv-plates';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -211,7 +212,15 @@ export class PackageFunctions {
   static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
     const view = DG.View.create();
     const plate = await PackageFunctions.parseExcelPlate(fileContent);
-    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
+
+    const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
+
+    if (plateWidget) {
+      view.root.appendChild(plateWidget.root);
+    } else {
+      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+      view.close();
+    }
     view.name = 'Plate';
     grok.shell.addView(view);
     return [];
@@ -222,7 +231,14 @@ export class PackageFunctions {
     const view = DG.View.create();
     view.name = file.friendlyName;
     const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
-    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
+    const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
+
+    if (plateWidget) {
+      view.root.appendChild(plateWidget.root);
+    } else {
+      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+      view.close();
+    }
     return view;
   }
 
@@ -248,11 +264,16 @@ export class PackageFunctions {
 })
 static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<void> {
   try {
-    const plate = await parsePlateFromCsv(fileContent, file.friendlyName);
-
+    const plate = await parsePlateFromCsv(fileContent);
     const view = DG.View.create();
     view.name = file.friendlyName;
-    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
+    const plateWidget = PlateDrcAnalysis.analysisView(plate[0], {}, 'csv');
+    if (plateWidget) {
+      view.root.appendChild(plateWidget.root);
+    } else {
+      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+      view.close();
+    }
     grok.shell.addView(view);
   } catch (e: any) {
     grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
@@ -270,17 +291,17 @@ static async parseExcelPlate(content: string | Uint8Array, name?: string) {
   }
 }
 
-  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
-  static platesApp(): DG.View {
-    return platesAppView();
-  }
+@grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+static platesApp(): DG.View {
+  return platesAppView();
+}
 
   @grok.decorators.func({})
-  static async getPlateByBarcode(barcode: string): Promise<Plate> {
-    await initPlates();
-    const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
-    return Plate.fromDbDataFrame(df);
-  }
+static async getPlateByBarcode(barcode: string): Promise<Plate> {
+  await initPlates();
+  const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
+  return Plate.fromDbDataFrame(df);
+}
 
   @grok.decorators.func({})
   static async createDummyPlateData(): Promise<void> {
@@ -288,9 +309,9 @@ static async parseExcelPlate(content: string | Uint8Array, name?: string) {
   }
 }
 
-//name: platesAppTreeBrowserTempDisabled
+//name: platesAppTreeBrowser
 //input: dynamic treeNode
 //input: view browseView
-export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
   await initPlatesAppTree(treeNode);
 }

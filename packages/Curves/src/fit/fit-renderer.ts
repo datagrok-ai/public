@@ -8,6 +8,7 @@ import {
   IFitSeries,
   fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
+  statisticsProperties,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
