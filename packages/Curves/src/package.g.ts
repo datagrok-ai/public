@@ -62,9 +62,11 @@ export function _initCurves() {
 //input: string experimentIDColumn { nullable: true }
 //input: string qualifierColumn { nullable: true }
 //input: list<string> additionalColumns { nullable: true }
+//input: string wellLevelJoinCol { nullable: true }
+//input: string parentLevelJoinCol { nullable: true }
 //output: dataframe result
-export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol: DG.Column, parentTable: DG.DataFrame, fitParamColumns: string[], reportedIC50Column: string, reportedQualifiedIC50Column: string, experimentIDColumn: string, qualifierColumn: string, additionalColumns: string[]) {
-  return PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns);
+export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentTable?: DG.DataFrame, fitParamColumns?: string[], reportedIC50Column?: string, reportedQualifiedIC50Column?: string, experimentIDColumn?: string, qualifierColumn?: string, additionalColumns?: string[], wellLevelJoinCol?: string, parentLevelJoinCol?: string) {
+  return PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol);
 }
 
 //name: dataToCurvesTopMenu
@@ -120,7 +122,7 @@ export function previewPlate(file: DG.FileInfo) {
 //name: importPlate
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
 export async function importPlate(fileContent: string) {
@@ -158,14 +160,6 @@ export async function checkExcelIsPlate(content: Uint8Array) {
 //output: bool result
 export function checkFileIsPlate(content: string) {
   return PackageFunctions.checkFileIsPlate(content);
-}
-
-//name: Browse
-//tags: app
-//output: view result
-//meta.browsePath: Plates
-export function platesApp() {
-  return PackageFunctions.platesApp();
 }
 
 //name: getPlateByBarcode
