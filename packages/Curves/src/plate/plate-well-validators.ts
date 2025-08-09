@@ -1,4 +1,4 @@
-import { Plate } from "./plate";
+import {Plate} from './plate';
 
 export interface IPlateWellValidator {
   name: string;
@@ -11,7 +11,7 @@ export const plateWellValidators: IPlateWellValidator[] = [
     name: 'Concentration and volume go together',
     description: 'Concentration and volume should either be both present or both absent',
     validate: (plate: Plate, row: number, col: number) => {
-      if (!plate.data.col('concentration') || !plate.data.col('volume')) 
+      if (!plate.data.col('concentration') || !plate.data.col('volume'))
         return null;
 
       const concentration = plate.get('concentration', row, col);
@@ -35,7 +35,7 @@ export const plateWellValidators: IPlateWellValidator[] = [
       if (concentration != null && concentration < 0)
         return 'Concentration should not be negative';
 
-      return null;  
+      return null;
     },
   },
 ];
