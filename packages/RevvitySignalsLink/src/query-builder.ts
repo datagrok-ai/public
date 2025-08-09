@@ -68,6 +68,8 @@ export class BaseConditionEditor<T = any> {
     root: HTMLDivElement = ui.div();
     condition: SimpleCondition<T>;
     onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
+    showSuggestions = false;
+    suggestionsMenuClicked = false
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -85,34 +87,38 @@ export class BaseConditionEditor<T = any> {
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
-                if (showSuggestions && !menuItemClicked) {
-                    addSuggestions();
-                }
-                menuItemClicked = false;
+                this.addSuggestions(prop, input);
             }
         });
         input.addCaption('');
         this.root.append(input.root);
-        const showSuggestions = prop.type === DG.TYPE.STRING && prop.options[SUGGESTIONS_FUNCTION];
-        if (showSuggestions) {
+        this.initializeSuggestions(prop, input);
+    }
+
+    initializeSuggestions(prop: DG.Property, input: DG.InputBase) {
+        this.showSuggestions = prop.type === DG.TYPE.STRING && prop.options[SUGGESTIONS_FUNCTION];
+        if (this.showSuggestions) {
            suggestionMenuKeyNavigation(this.root);
         }
-        let menuItemClicked = false;
-        const addSuggestions = async () => {
+    }
+
+    async addSuggestions(prop: DG.Property, input: DG.InputBase) {
+        if (this.showSuggestions && !this.suggestionsMenuClicked) {
             if (input.value) {
-                const suggestions: Array<string> = await prop.options[SUGGESTIONS_FUNCTION](input.value);
-                if (suggestions.length === 1 && suggestions[0] === input.value)
-                    return;
-                const suggestionsMenu = DG.Menu.popup();
-                suggestions.forEach((s) => {
-                    suggestionsMenu!.item(s, () => {
-                        input.value = s;
-                        menuItemClicked = true;
-                    });
+            const suggestions: Array<string> = await prop.options[SUGGESTIONS_FUNCTION](input.value);
+            if (suggestions.length === 1 && suggestions[0] === input.value)
+                return;
+            const suggestionsMenu = DG.Menu.popup();
+            suggestions.forEach((s) => {
+                suggestionsMenu!.item(s, () => {
+                    input.value = s;
+                    this.suggestionsMenuClicked = true;
                 });
-                suggestionsMenu.show({element: input.root, y: input.root.offsetHeight});
-            }
+            });
+            suggestionsMenu.show({ element: input.root, y: input.root.offsetHeight });
         }
+        }
+        this.suggestionsMenuClicked = false;
     }
 }
 

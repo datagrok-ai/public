@@ -13,6 +13,7 @@ import { RevvityFilters } from './filters';
 import { getDefaultProperties } from './properties';
 import { buildPropertyBasedQueryBuilder, ComplexCondition, ConditionRegistry, Operators, QueryBuilder } from './query-builder';
 import { testFilterCondition } from './const';
+import { getRevvityUsers } from './users';
 
 
 export const _package = new DG.Package();
@@ -55,10 +56,10 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
   return view;
 }
 
-
 //input: dynamic treeNode
 //input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  getRevvityUsers();
   const search = treeNode.item('Search');
   search.onSelected.subscribe(() => {
     const v = DG.View.create('Search');
@@ -135,8 +136,6 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       createRadio(libraryTypeForm, config.libraries[0].types, currentLib);
       queryDiv.append(libraryTypeForm);
     }
-    //register operators for molecule semType, applicable for Revvity
-    ConditionRegistry.getInstance().registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_SIMILAR]);
     const queryBuilder = new QueryBuilder(getDefaultProperties());
     queryDiv.append(queryBuilder.root);
     let resultDf: DG.DataFrame | null = null;
@@ -164,8 +163,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
           }
         );
       };
-      for (let cond of queryBuilder.condition.conditions)
-        condition.conditions.push(cond);
+      condition.conditions.push(queryBuilder.condition);
       const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
       console.log(signalsQuery);
       resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
@@ -245,7 +243,7 @@ export async function searchEntitiesWithStructures(query: string, params: string
     const queryJson: SignalsSearchQuery = JSON.parse(query);
     const paramsJson: SignalsSearchParams = JSON.parse(params);
     const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    if (!response.data)
+    if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
       return DG.DataFrame.create();
     const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
 
@@ -269,7 +267,7 @@ export async function searchEntitiesWithStructures(query: string, params: string
 export async function getUsers(): Promise<string> {
   const users: {[key: string]: RevvityUser} = {};
   const response = await queryUsers();
-  if (!response.data)
+  if (!response.data  || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
@@ -283,7 +281,7 @@ export async function getUsers(): Promise<string> {
 export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
   const libraries: RevvityLibrary[] = [];
-  if (!response.data)
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const lib of data) {
@@ -355,7 +353,7 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
     }
   };
   const response = await queryTags(query);
-  if (!response.data)
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const tags: {[key: string]: string} = {};
