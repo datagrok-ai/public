@@ -13,6 +13,12 @@ export function getDefaultProperties(): DG.Property[] {
     return [created, edited, creator, editor, structure, id, idInt];
 }
 
+export const PROPERTY_NAMES_TO_QUERY_MAPPING = {
+    'Created': 'createdAt',
+    'Edited': 'editedAt',
+    'Creator': 'createdBy',
+    'Editor': 'editedBy',
+}
 
 const names = ['Davit Rizhinashvili', 'Maria Dolotova', 'Andrew Skalkin', 'Ed Jaeger'];
 

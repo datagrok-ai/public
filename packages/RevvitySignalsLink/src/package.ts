@@ -5,25 +5,34 @@ import * as DG from 'datagrok-api/dg';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signals-search-builder';
 import '../css/revvity-signals-styles.css';
-import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryEntities, queryEntityById, queryLibraries, queryMaterialById, queryStructureById, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
+import { convertComplexConditionToQueryOperator, convertComplexConditionToSignalsSearchQuery, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { queryEntities, queryEntityById, queryLibraries, queryMaterialById, queryStructureById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
-import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
+import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, MOL_COL_NAME } from './compounds';
 import { RevvityFilters } from './filters';
 import { getDefaultProperties } from './properties';
-import { buildPropertyBasedQueryBuilder, QueryBuilder } from './query-builder';
+import { buildPropertyBasedQueryBuilder, ComplexCondition, ConditionRegistry, Operators, QueryBuilder } from './query-builder';
 import { testFilterCondition } from './const';
 
 
 export const _package = new DG.Package();
+
 export type RevvityLibrary = {
   id: string;
   name: string;
   types: string[];
 }
+
+export type CurrentRevvityLibrary = {
+  libId: string;
+  libName: string;
+  type?: string;
+}
+
 export type RevvityConfig = {
   libraries?: RevvityLibrary[];
 }
+
 let openedView: DG.View | null = null;
 let config: RevvityConfig = {libraries: undefined};
 
@@ -66,7 +75,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     grok.shell.addPreview(v);
   });
 
-  const createRadio = (form: HTMLElement, types: string[], searchObj: { library: string, type: string | undefined }) => {
+  const createRadio = (form: HTMLElement, types: string[], currentLib: CurrentRevvityLibrary) => {
     const previousRadio = form.querySelector('.revvity-seach-type-radio');
     if (previousRadio)
       previousRadio.remove();
@@ -75,7 +84,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
         value: types[0],
         items: types,
         onValueChanged: () => {
-          searchObj.type = radio.value!;
+          currentLib.type = radio.value!;
         }
       })
       radio.classList.add('revvity-seach-type-radio');
@@ -99,32 +108,88 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 
 
   const createMaterialsSearchUI = (v: DG.View) => {
-    const searchDiv = ui.divV([], 'revvity-signals-materials-search');
+    const queryDiv = ui.divV([], 'revvity-signals-materials-search');
+    const resultsDiv = ui.div('', {style: {width: '100%', height: '100%', position: 'relative'}});
+    let currentLib: CurrentRevvityLibrary | null = null
     if (config.libraries?.length) {
       const radioDiv = ui.div();
-      const searchObj = { library: config.libraries[0].name, type: config.libraries[0].types.length ? config.libraries[0].types[0] : undefined};
+      currentLib = {
+        libName: config.libraries[0].name,
+        libId: config.libraries[0].id,
+        type: config.libraries[0].types.length ? config.libraries[0].types[0] : undefined
+      };
       const library = ui.input.choice('Search', {
         value: config.libraries[0].name,
         items: config.libraries.map((it) => it.name),
         onValueChanged: () => {
-          searchObj.library = library.value!;
           const selectedLib = config.libraries!.filter((it) => it.name === library.value!);
-          searchObj.type = selectedLib[0].types.length ? selectedLib[0].types[0] : undefined;
-          createRadio(radioDiv, selectedLib[0].types, searchObj);
+          if (!selectedLib.length)
+            return;
+          currentLib!.libName = selectedLib[0].name;
+          currentLib!.libId = selectedLib[0].id;
+          currentLib!.type = selectedLib[0].types.length ? selectedLib[0].types[0] : undefined;
+          createRadio(radioDiv, selectedLib[0].types, currentLib!);
         }
       });
       const libraryTypeForm = ui.form([library]);
-      createRadio(libraryTypeForm, config.libraries[0].types, searchObj);
-      searchDiv.append(libraryTypeForm);
+      createRadio(libraryTypeForm, config.libraries[0].types, currentLib);
+      queryDiv.append(libraryTypeForm);
     }
+    //register operators for molecule semType, applicable for Revvity
+    ConditionRegistry.getInstance().registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_SIMILAR]);
     const queryBuilder = new QueryBuilder(getDefaultProperties());
-    searchDiv.append(queryBuilder.root);
-    const runButton = ui.bigButton('RUN', () => {
-      console.log(queryBuilder.condition);
+    queryDiv.append(queryBuilder.root);
+    let resultDf: DG.DataFrame | null = null;
+    const runButton = ui.bigButton('RUN', async () => {
+      ui.setUpdateIndicator(resultsDiv, true, 'Searching...');
+      const condition: ComplexCondition = {
+        logicalOperator: Operators.Logical.and,
+        conditions: [
+          materialsCondition
+        ]
+      }
+      if (currentLib) {
+        condition.conditions.push(
+          {
+            field: "assetTypeEid",
+            operator: Operators.EQ,
+            value: `${currentLib.libId}`
+          }
+        );
+        condition.conditions.push(
+          {
+            field: "type",
+            operator: Operators.EQ,
+            value: `${currentLib.type}`
+          }
+        );
+      };
+      for (let cond of queryBuilder.condition.conditions)
+        condition.conditions.push(cond);
+      const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
+      console.log(signalsQuery);
+      resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
+        query: JSON.stringify(signalsQuery),
+        params: '{}'
+      });
+      const grid = resultDf!.plot.grid();
+      grid.root.style.width = '100%';
+      grid.root.style.height = '100%';
+      //ui.setUpdateIndicator(resultsDiv, false);
+      ui.empty(resultsDiv);
+      resultsDiv.append(grid.root);
     });
+
+    const addToWorkspaceButton = ui.icons.add(() => {
+      if (resultDf) {
+        grok.shell.addTablePreview(resultDf);
+      }
+    }, 'Add search results to workspace');
+    v.setRibbonPanels([[addToWorkspaceButton]]);
     runButton.classList.add('revvity-signals-materials-search-run');
-    searchDiv.append(runButton);
-    v.append(searchDiv);
+    queryDiv.append(runButton);
+    v.append(queryDiv);
+    v.append(resultsDiv);
     ui.setUpdateIndicator(v.root, false);
   }
 
@@ -256,6 +321,48 @@ export async function getLibraries(): Promise<string> {
     }
   }
   return JSON.stringify(libraries);
+}
+
+
+//name: Get Tags
+//input: string type
+//input: string assetTypeId
+//output: string fields
+export async function getTags(type: string, assetTypeId: string): Promise<string> {
+  const query = {
+    "query": {
+      "$and": [
+        {
+          "$match": {
+            "field": "assetTypeEid",
+            "value": assetTypeId,
+          }
+        },
+        {
+          "$match": {
+            "field": "type",
+            "value": "batch",
+            "mode": "keyword"
+          }
+        },
+        {
+          "$match": {
+            "field": "isTemplate",
+            "value": false
+          }
+        }
+      ]
+    }
+  };
+  const response = await queryTags(query);
+  if (!response.data)
+    return '{}';
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const tags: {[key: string]: string} = {};
+  for (const tag of data) {
+    tags[tag.id] = tag.attributes.types.type;
+  }
+  return JSON.stringify(tags);
 }
 
 

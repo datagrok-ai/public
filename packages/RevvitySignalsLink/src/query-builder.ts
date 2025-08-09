@@ -265,8 +265,8 @@ export class ConditionRegistry {
 
     private initializeDefaultOperators(): void {
         // Type operators
-        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.ENDS_WITH, Operators.EQ,
-            Operators.NOT_EQ, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.BOOL, [Operators.EQ]);
+        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
             Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
@@ -283,6 +283,7 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.INT, '', '', BaseConditionEditor);
         this.registerEditor(DG.TYPE.FLOAT, '', '', BaseConditionEditor);
         this.registerEditor(DG.TYPE.DATE_TIME, '', '', BaseConditionEditor);
+        this.registerEditor(DG.TYPE.BOOL, '', '', BaseConditionEditor);
 
         // Register specialized editors for specific combinations
         this.registerEditor(DG.TYPE.STRING, '', Operators.IN, MultiValueConditionEditorString);
@@ -379,7 +380,7 @@ export class QueryBuilder {
     condition: ComplexCondition;
     properties: DG.Property[];
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
-    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
+    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();    
 
     constructor(properties: DG.Property[], initialCondition?: ComplexCondition) {
         this.properties = properties;

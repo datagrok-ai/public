@@ -2,103 +2,53 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
+import { ComplexCondition, Operators } from './query-builder';
+import { OPERATORS } from './signals-search-query';
 
 export const assetsQuery = {
     "query": {
-        "$and": [
-            {
-                "$match": {
-                    "field": "assetTypeEid",
-                    "value": "assetType:686ecf60e3c7095c954bd94f",
-                    "mode": "keyword"
-                }
-            },
-            {
-                "$match": {
-                    "field": "type",
-                    "value": "asset",
-                    "mode": "keyword"
-                }
-            },
-            {
-                "$and": [
-                    {
-                        "$match": {
-                            "field": "isMaterial",
-                            "value": true
-                        }
-                    },
-                    {
-                        "$not": [
-                            {
-                                "$match": {
-                                    "field": "type",
-                                    "value": "assetType"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
+        "$match": {
+            "field": "type",
+            "value": "asset",
+            "mode": "keyword"
+        }
     },
     "options": {
         "offset": 0,
         "limit": 20,
         "stop-after-items": 1000000
-    },
-    "meta": {
-        "reason": "Advanced Search"
     }
-}
+};
 
 export const batchesQuery = {
     "query": {
-        "$and": [
-            {
-                "$match": {
-                    "field": "assetTypeEid",
-                    "value": "assetType:686ecf60e3c7095c954bd94f",
-                    "mode": "keyword"
-                }
-            },
-            {
-                "$match": {
-                    "field": "type",
-                    "value": "batch",
-                    "mode": "keyword"
-                }
-            },
-            {
-                "$and": [
-                    {
-                        "$match": {
-                            "field": "isMaterial",
-                            "value": true
-                        }
-                    },
-                    {
-                        "$not": [
-                            {
-                                "$match": {
-                                    "field": "type",
-                                    "value": "assetType"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
+        "$match": {
+            "field": "type",
+            "value": "batch",
+            "mode": "keyword"
+        }
     },
     "options": {
         "offset": 0,
         "limit": 20,
         "stop-after-items": 1000000
-    },
-    "meta": {
-        "reason": "Advanced Search"
     }
+};
+
+export const materialsCondition: ComplexCondition = {
+    logicalOperator: Operators.Logical.and,
+    conditions: [
+        {
+            field: "isMaterial",
+            operator: Operators.EQ,
+            value: true
+        },
+        {
+            field: "type",
+            operator: Operators.NOT_EQ,
+            value: "assetType"
+        }
+    ]
 }
 
 export const MOL_COL_NAME = 'molecule';
