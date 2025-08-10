@@ -18,7 +18,7 @@ We'll make a workflow that can make the following:
 ## Development setup and minimal workflow
 
 Setup a dev environment as described
-[here](../develop/dev-process/set-up-environment).
+[here](../../develop/dev-process/set-up-environment).
 
 To create a package for workflow, run the following commands:
 
@@ -115,7 +115,7 @@ You will see the following interface:
 
 ## Using scripts for workflow steps
 
-Now, let's make our workflow useful - add to it logic.
+Now, let's make our workflow useful — add to it some logic.
 Since Datagrok supports multi-language development,
 we can implement computational logic using any supported language.
 For this example, we'll use Python as the most used data science language.
@@ -148,7 +148,8 @@ df_wine = pd.concat([df_red, df_white], ignore_index=True)
 total_lines = df_wine.shape[0]
 ```
 
-Make changes to the main `package.ts` file to chage the step function:
+Change the step function in the main `package.ts` file:
+
 
 ```typescript
   const c: PipelineConfiguration = {
@@ -157,8 +158,9 @@ Make changes to the main `package.ts` file to chage the step function:
     version: '1.0',
     type: 'static',
     steps: [{
-      id: 'step1',
-      nqName: 'winequalitywf:fetchwinedata',
+      id: 'fetchdata',
+          friendlyName: 'Fetch data',
+          nqName: 'winequalitywf:fetchwinedata',
     }]
   };
 
@@ -170,13 +172,257 @@ Compile and publish the package:
 npm i && npm run build && grok publish local --release
 ```
 
-Now you can
-
 Open the workflow and run the first Let's run the workflow. You will see the following:
 
 ![data fetch step](pics/WineQFetch_workflow.png)
 
-Datagrok recognizes declared inputs and automatically creates UI for it.
+Datagrok recognized declared inputs in the Python script
+and automatically created UI for it.
+
+## Connecting steps
+
+Now, let's add a step that performes some calculations with the fetched data.
+For example, try to cluster different wine data based on the wine characteristics.
+
+Add to the scripts the second file `clusterwinedata.py` with the following content:
+
+```python
+#name: clusterwinedata
+#description: Cluster fetched data
+#language: python
+#input: dataframe df_wine
+#output: dataframe df_clustering
+
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+
+# --- Step 1: Preprocessing ---
+features = df_wine.drop(labels=["quality", "wine_type"], axis=1)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(features)
+
+# --- Step 2: PCA for visualization ---
+pca = PCA(n_components=4)
+X_pca = pca.fit_transform(X_scaled)
+
+# --- Step 3: K-means clustering ---
+kmeans = KMeans(n_clusters=5, random_state=42)
+clusters = kmeans.fit_predict(X_scaled).astype(str)
+
+# --- Step 4: Plotting ---
+df_clustering = pd.DataFrame({
+    "PCA1": X_pca[:, 0],
+    "PCA2": X_pca[:, 1],
+    "cluster": clusters,
+    "wine_type": df_wine["wine_type"]
+})
+```
+
+This script runs PCA and then simple k-means clustering on the all wine characteristics,
+excluding quality and type.
+
+Now, we need to add the clustering step to the pipeline.
+
+Add the data clustering step to the pipeline configuration
+
+```typescript
+steps: [
+        {
+          id: 'fetchdata',
+          friendlyName: 'Fetch data',
+          nqName: 'winequalitywf:fetchwinedata',
+        },
+        {
+          id: 'clusterwinedata',
+          friendlyName: 'Clustering',
+          nqName: 'winequalitywf:clusterwinedata',
+        }
+]
+```
+
+After the `steps` section add the `links` list,
+describing the data link between steps:
+
+```typescript
+links: [
+      {
+        id: 'winedatatoclustering',
+        type: 'data',
+        from: [
+          'value_in:fetchdata/df_wine',
+        ],
+        to: [
+          'value_out:clusterwinedata/df_wine',
+        ],
+      }
+]
+```
+
+The `id` field is a user-specified name of the link.
+The fields `from` and `to` contain description of inputs and outputs of steps,
+that the link can use.
+
+For now, we're using a simple notation defining a static link between two steps.
+Lists `from` and `to` contain only one value, defined in the format
+`<direction>:<step><parameter>`
+Please, not that here `<step>` name refers to the name defined in the pipeline configuration,
+not the name of the script itself.
+This allows you to create several steps with different input using the same script
+defining step logic.
+
+Inputs and outputs are described using the **Link Query Language**.
+Links system of the low-code workflow is very flexible and allows dynamic matching
+of step inputs and outputs for dynamically added steps,
+and even between different workflows.
+To find more information about link capabilities,
+see the [Link types](./link-types.mdx) section of the documentation.
+
+
+Publish the package:
+
+```shell
+npm i && npm run build && grok publish local --release
+```
+
+Open the workflow pachage in Datagrok and run the first step.
+On the second step you'll see the following:
+
+![Two-step workflow with wine quaity data](pics/WineQ_two_steps_connection.png)
+
+AS you can see, the fetched dataframe with wine data was automatically
+feeded into the step input.
+
+### Adding output visualization
+
+Let's improve the clustering step input and output.
+First, we can add a visualization to the output data.
+The best way to do it is use **Datagrok Scatterplot** — a high-performant and customixable
+scatterplot viewer.
+To do it, modify the output declaration of the clustering script:
+
+```python
+#output: dataframe df_clustering { viewer: scatterPlot(x:"PCA1", y:"PCA2", color:"cluster")}
+```
+
+Here we specified dataframe columns for x, y, and color.
+You can here use all scatterplot properties.
+To fine mode about output viewer, visit the page
+[Visualize output data](../scripting/scripting-features/visualize-output-data.md) section
+
+Publish and run the workflow. You'll get the following:
+
+![Two-step workflow visualization](pics/WineQ_two_steps_visualization.png)
+
+### Adding input parameters
+
+To make the clusterign step configurable,
+let's add number of clusters and PCA components to the script inputs.
+
+Add parameters to the input declaration:
+
+```python
+#input: int n_pca = 6 { caption: PCA components } [Number of PCA components to cluster]
+#input: int n_clusters = 2 {caption: Clusters} [Number of cluisters for K-means]
+```
+
+And modify the PCA and clustering code like this:
+
+```python
+pca = PCA(n_components=n_pca)
+...
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+```
+
+Now you can change the number of clusters and PCA components.
+
+![Two-step workflow - inputs](pics/WineQ_two_steps_step_input.png)
+
+## Adding regression step
+
+Now, let's add one more step to our workflow.
+Now we want to make a regression of the wuality based on the numeric data.
+
+Add the tew file `trainregression.py` to the `scripts` folder:
+
+```python
+#name: trainregression
+#description: Train regression on wine quality data
+#language: python
+#input: dataframe df_wine
+#input: double test_size = 0.2 {caption: PCA components; min:0.1; max:0.5 }
+#output: dataframe df_regression { viewer: scatterPlot(x:"actual", y:"predicted")}
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# --- Prepare features and target ---
+X = df_wine.drop(columns=["quality", "wine_type"])  # features
+y = df_wine["quality"]  # target
+
+# --- Train/test split ---
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# --- Train model ---
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# --- Predict and evaluate ---
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# --- Make dataframe actual vs predicted ---
+df_regression = pd.DataFrame({
+    'actual': y_test,
+    'predicted': y_pred,
+})
+```
+
+Add to the package.ts the new step:
+
+```typescript
+steps: [
+        ...
+        {
+          id: 'clusterwinedata',
+          friendlyName: 'Clustering',
+          nqName: 'winequalitywf:clusterwinedata',
+        },
+        {
+          id: 'trainregression',
+          friendlyName: 'Train Regression Model',
+          nqName: 'winequalitywf:trainregression',
+        }
+]
+```
+
+And the new connection:
+
+```typescript
+links: [
+      ...
+      {
+        id: 'winedatatoregression',
+        type: 'data',
+        from: [
+          'value_in:fetchdata/df_wine',
+        ],
+        to: [
+          'value_out:trainregression/df_wine',
+        ],
+      }
+]
+```
+
+Publish the package and run the model.
+Now you can see the regression step in the workflow.
+Both computational steps use data from the data fetch step.
+
+![Two-step workflow - inputs](pics/WineQ_regression.png)
 
 
 
