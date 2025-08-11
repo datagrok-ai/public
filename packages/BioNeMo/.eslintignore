@@ -1,0 +1,3 @@
+src/**/*.d.ts*
+package.g.ts
+package-api.ts

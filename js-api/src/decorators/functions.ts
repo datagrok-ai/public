@@ -169,13 +169,19 @@ export namespace decorators {
     ['cache.invalidateOn']?: string;
     ['top-menu']?: string;
     condition?: string;
-    helpUrl?: string;
+    ['help-url']?: string;
+    connection?: string;
   }
 
   interface AppOptions extends FunctionOptions {
     browsePath?: string,
     icon?: string,
     url?: string
+  }
+
+  interface DashboardOptions extends FunctionOptions {
+    test?: string,
+    order?: string,
   }
 
   interface ModelOptions extends FunctionOptions {
@@ -260,6 +266,14 @@ export namespace decorators {
     ) { };
   }
 
+  export function dashboard(config?: DashboardOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
   export function folderViewer(config?: FunctionOptions) {
     return function (
       target: any,
@@ -291,14 +305,6 @@ export namespace decorators {
   //     descriptor: PropertyDescriptor
   //   ) { };
   // }
-
-  export function dashboard(config?: DashboardOptions) {
-    return function (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) { };
-  }
 
   export function functionAnalysis(config?: FunctionOptions) {
     return function (

@@ -1,3 +1,5 @@
+/* eslint-disable valid-jsdoc */
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -34,7 +36,7 @@ function getSettings(gc: DG.GridColumn): FormSettings {
   gc.settings ??= {};
   const settings: FormSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.Form] ??= getSettingsBase(gc, SparklineType.Form);
-  settings.colorCode ??= SummaryColumnColoringType.Off;
+  settings.colorCode ??= SummaryColumnColoringType.Auto;
   return settings;
 }
 
@@ -42,11 +44,11 @@ let scene: Scene;
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
-  if (column.type == DG.TYPE.INT)
-    return column.max.toString().length;
-  else if (column.type == DG.TYPE.FLOAT || column.type == DG.TYPE.QNUM)
+  if (column.type === DG.TYPE.INT)
+    return column.max.toString().length * 8;
+  else if (column.type === DG.TYPE.FLOAT || column.type === DG.TYPE.QNUM)
     return 50;
-  else if (column.type == DG.TYPE.STRING) {
+  else if (column.type === DG.TYPE.STRING) {
     const values = column.categories;
     if (values.length < 50)
       return Math.min(...values.map((v) => v.length));
@@ -89,11 +91,11 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     }
     cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
 
+    const maxValueWidth = Math.min(70, Math.max(...cols.map((c) => getMaxValueWidth(c))));
     const maxNameWidth = Math.min(150, Math.max(...cols.map((c) => g.measureText(c.name).width)));
-    const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * 8)));
     const showColumnNames = settings.showColumnNames == 'Always' ||
-      (settings.showColumnNames ?? 'Auto') == 'Auto' && maxNameWidth + maxValueWidth + 10 < b.width;
-    const columnNamesWidth = showColumnNames ? maxNameWidth + 10 : 0;
+      ((settings.showColumnNames ?? 'Auto') == 'Auto' && b.width - maxValueWidth > 30); // as long as there is small space for names
+    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, b.width - maxValueWidth), 0) : 0;
     const colHeight = Math.min(20, b.height / cols.length);
 
     for (let i = 0; i < cols.length; i++) {
@@ -110,12 +112,11 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
         scene.elements.push(e);
-      }
-      else {
+      } else {
         // render in a column
-        const r = new DG.Rect(b.x, b.y + i * colHeight, b.width, colHeight);
+        const r = new DG.Rect(Math.ceil(b.x), Math.ceil(b.y + i * colHeight), Math.ceil(b.width), Math.ceil(colHeight));
         if (showColumnNames) {
-          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), col.name, {
+          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name, {
             horzAlign: 'right',
             color: 'lightgrey',
             font: font
@@ -130,6 +131,17 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
         scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
       }
+    }
+
+    // find the lowest point in the scene, and use it to align the scene vertically
+    const lowestPoint = scene.elements.reduce((acc, el) => {
+      return Math.max(acc, el.bounds.bottom - scene.bounds.top);
+    }, 0);
+    if (lowestPoint < b.bottom) {
+      const delta = (b.height - lowestPoint) / 2;
+      scene.elements.forEach((el) => {
+        el.bounds.y += delta;
+      });
     }
 
     return scene;
@@ -160,10 +172,11 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
-    const el = scene.hitTest(e.x, e.y);
+    const el = scene?.hitTest(e.offsetX, e.offsetY);
     if (el?.style?.tooltip)
-      setTimeout(() => ui.tooltip.show(el.style!.tooltip!, el.bounds.right + 10, el.bounds.top));
-
+      setTimeout(() => ui.tooltip.show(el.style!.tooltip!, e.x + 20, e.y - 20));
+    else
+      ui.tooltip.hide();
     //super.onMouseMove(gridCell, e);
   }
 

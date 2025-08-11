@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
+import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers } from './users';
-import { RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
+import { RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { MOL_COL_NAME } from './compounds';
 
 export const STORAGE_NAME = 'RevvitySignalsSearch';

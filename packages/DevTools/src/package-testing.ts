@@ -498,7 +498,8 @@ export class TestManager extends DG.ViewBase {
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
         this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
-        this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
+        if (this.testsResultsDf.col('memoryDelta'))
+          this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.addPackageInfo(this.testsResultsDf, t.packageName);
       } else {
         if (res.col('package') == null || this.verboseCheckBox.value)
@@ -508,7 +509,8 @@ export class TestManager extends DG.ViewBase {
         if (this.testsResultsDf.col('memoryUsed'))
           this.testsResultsDf.col('memoryUsed').name = 'memoryDelta';
         res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
-        // res.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
+        if (this.testsResultsDf.col('memoryDelta'))
+          this.testsResultsDf.changeColumnType('memoryDelta', DG.COLUMN_TYPE.BIG_INT);
         this.testsResultsDf = this.testsResultsDf.append(res);
       }
     }
@@ -631,7 +633,8 @@ export class TestManager extends DG.ViewBase {
   }
 
   addPackageInfo(df: DG.DataFrame, pack: string): void {
-    df.columns.addNewString('package').init(() => pack);
+    if (!df.getCol('package'))
+      df.columns.addNewString('package').init(() => pack);
   }
 
   removeTestRow(pack: string, cat: string, test: string): void {

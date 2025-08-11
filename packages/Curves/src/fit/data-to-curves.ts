@@ -1,10 +1,305 @@
 /* eslint-disable max-len */
 
-import {FIT_FUNCTION_4PL_REGRESSION, FitChartData, FitMarkerType, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_DOSE_RESPONSE, FIT_FUNCTION_4PL_REGRESSION, FitChartData, FitMarkerType, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as api from '../package-api';
 import wu from 'wu';
+import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+
+const groupColumnName = 'Compound|Assay|Target';
+
+function setColumnDefaultValue(table: DG.DataFrame, input: DG.InputBase<DG.Column | null>, check: (col: DG.Column) => boolean, values: string[]) {
+  const col = table.columns.toList().filter((c) => check(c)).sort((a, b) => a.name.length - b.name.length).find((c) => values.some((v) => c.name.toLowerCase().includes(v)));
+  if (col)
+    input.value = col;
+}
+
+function createFitParamsEditor(table: DG.DataFrame, type: FitFunctionType) {
+  const inputs: DG.InputBase<DG.Column | null>[] = [];
+  //['Top', 'Slope', 'EC50', 'Bottom'];
+  switch (type) {
+    case FitFunctionTypes.FOUR_PL_REGRESSION:
+    case FitFunctionTypes.FOUR_PL_DOSE_RESPONSE:
+    default:
+      inputs.push(ui.input.column('Max', {table: table, nullable: false, tooltipText: 'Maximum value for the curve'}));
+      inputs.push(ui.input.column('Hill', {table: table, nullable: false, tooltipText: 'Hill coefficient for the curve'}));
+      inputs.push(ui.input.column('Inflection', {table: table, nullable: false, tooltipText: 'Inflection value for the curve'}));
+      inputs.push(ui.input.column('Min', {table: table, nullable: false, tooltipText: 'Minimum value for the curve'}));
+      setColumnDefaultValue(table, inputs[0], (c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['max']);
+      setColumnDefaultValue(table, inputs[1], (c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['hill']);
+      setColumnDefaultValue(table, inputs[2], (c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['inflection']);
+      setColumnDefaultValue(table, inputs[3], (c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['min']);
+      break;
+  }
+  return inputs;
+}
+
+export type FitFunctionEditorHistory = {
+  fitParamCols: string[],
+  fitFunction: FitFunctionType,
+  useFitParamCols: boolean
+}
+
+function createFitFunctionEditor(table: DG.DataFrame) {
+  const fitFunctions = [FitFunctionTypes.FOUR_PL_DOSE_RESPONSE, FitFunctionTypes.FOUR_PL_REGRESSION];
+  const fitFunctionInput = ui.input.choice('Fit Function', {value: FitFunctionTypes.FOUR_PL_DOSE_RESPONSE, items: fitFunctions, nullable: false, tooltipText: 'Select the fit function to use for the curve fitting'});
+  const form = ui.form([]);
+  let fitParamInputs: DG.InputBase<DG.Column>[] = [];
+  const useFitParamsInput = ui.input.bool('Use Prefit Parameters', {value: true, tooltipText: 'Use selected fit curve parameters instead of fitting the curve from scratch'});
+  useFitParamsInput.onChanged.subscribe(() => {
+    fitParamInputs.forEach((i) => i.enabled = useFitParamsInput.value);
+  });
+  // const checkContainer: HTMLDivElement | null = useFitParamsInput.root.querySelector('div.ui-input-editor');
+  // if (checkContainer)
+  //   checkContainer.style.setProperty('padding', '0px', 'important');
+  fitFunctionInput.addOptions(useFitParamsInput.captionLabel);
+  fitFunctionInput.addOptions(useFitParamsInput.input);
+  useFitParamsInput.captionLabel.style.color = 'var(--grey-6)';
+  const onChanged = () => {
+    ui.empty(form);
+    const inputs = createFitParamsEditor(table, fitFunctionInput.value!);
+    fitParamInputs = inputs as DG.InputBase<DG.Column>[];
+    ui.appendAll(form, [fitFunctionInput.root, ...inputs.map((i) => i.root)]);
+    useFitParamsInput.fireChanged();
+  };
+  onChanged();
+  fitFunctionInput.onChanged.subscribe(() => onChanged());
+  return {
+    form,
+    getValues: () => useFitParamsInput.value ? fitParamInputs.map((i) => i.value) : [],
+    getFitFunction: () => fitFunctionInput.value!,
+    getHystory: (): FitFunctionEditorHistory => ({
+      fitParamCols: fitParamInputs.map((i) => i.value?.name ?? ''),
+      fitFunction: fitFunctionInput.value!,
+      useFitParamCols: useFitParamsInput.value,
+    }),
+    applyHistory: (history: FitFunctionEditorHistory) => {
+      // first, set the fit function
+      fitFunctionInput.value = history.fitFunction as typeof fitFunctionInput.items[number];
+      // then, set the fit parameters
+      useFitParamsInput.value = history.useFitParamCols;
+      if (history.fitParamCols?.length === fitParamInputs?.length) {
+        for (let i = 0; i < fitParamInputs.length; i++) {
+          const col = table.col(history.fitParamCols[i]);
+          if (col)
+            fitParamInputs[i].value = col;
+        }
+      }
+    }
+  };
+}
+
+export type ParentTableFormHistory = {
+  tableName: string | null,
+  reportedIC50Col: string | null,
+  reportedQualifiedIC50Col: string | null,
+  experimentIDCol: string | null,
+  qualifierCol: string | null,
+  additionalColumns: string[],
+  fitParams: FitFunctionEditorHistory | null,
+}
+
+function createParentTableForm(onTableChange: (t: DG.DataFrame | null) => void) {
+  const tableInput = ui.input.table('Parent Table', {value: undefined, nullable: true, tooltipText: 'Table with parent data'});
+  const form = ui.form([]);
+  let fitFunctionEditor: ReturnType<typeof createFitFunctionEditor> | null = null;
+  let reportedIC50Col: DG.InputBase<DG.Column | null>;
+  let reportedQualifiedIC50Col: DG.InputBase<DG.Column | null>;
+  let experimentIDCol: DG.InputBase<DG.Column | null>;
+  let qualifierCol: DG.InputBase<DG.Column | null>;
+  let additionalColumnsInput: DG.InputBase<DG.Column[] | null>;
+  const onChanged = () => {
+    ui.empty(form);
+    form.appendChild(tableInput.root);
+    onTableChange(tableInput.value);
+    if (!tableInput.value) {
+      fitFunctionEditor = null;
+      return;
+    }
+    reportedIC50Col = ui.input.column('Reported IC50', {table: tableInput.value!, nullable: true, tooltipText: 'Column with reported IC50 values'});
+    reportedQualifiedIC50Col = ui.input.column('Reported Qualified IC50', {table: tableInput.value!, nullable: true, tooltipText: 'Column with reported qualified IC50 values'});
+    experimentIDCol = ui.input.column('Experiment ID', {table: tableInput.value!, nullable: true, tooltipText: 'Column with experiment IDs'});
+    qualifierCol = ui.input.column('Qualifier', {table: tableInput.value!, nullable: true, tooltipText: 'Column with qualifier values'});
+    additionalColumnsInput = ui.input.columns('Additional Columns', {table: tableInput.value!, nullable: true, tooltipText: 'Additional columns to include in the curves data'});
+    // the first two are sort of sketchy, because their columns (while expected to be numerical), can contain stuff like inconclusive, not applicable, etc.
+    setColumnDefaultValue(tableInput.value!, reportedIC50Col, (c) => true && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['reported ic50', 'reported_ic50', 'reported-ic50']);
+    setColumnDefaultValue(tableInput.value!, reportedQualifiedIC50Col, (c) => true && c.type !== DG.COLUMN_TYPE.DATE_TIME, ['qualified_reported_ic50', 'qualified reported ic50', 'qualified-reported-ic50']);
+    setColumnDefaultValue(tableInput.value!, experimentIDCol, (c) => c.isCategorical, ['experiment id', 'experiment_id', 'experiment-id']);
+    setColumnDefaultValue(tableInput.value!, qualifierCol, (c) => c.isCategorical, ['qualifier']);
+    const columnsForm = ui.form([reportedIC50Col, reportedQualifiedIC50Col, experimentIDCol, qualifierCol, additionalColumnsInput]);
+
+    fitFunctionEditor = createFitFunctionEditor(tableInput.value!);
+    ui.appendAll(form, [columnsForm, fitFunctionEditor.form]);
+  };
+  onChanged();
+  tableInput.onChanged.subscribe(() => onChanged());
+
+  return {
+    getValue: () => ({
+      fitParamCols: fitFunctionEditor?.getValues ? fitFunctionEditor.getValues() : null,
+      reportedIC50Col: reportedIC50Col?.value,
+      reportedQualifiedIC50Col: reportedQualifiedIC50Col?.value,
+      experimentIDCol: experimentIDCol?.value,
+      qualifierCol: qualifierCol?.value,
+      additionalColumns: additionalColumnsInput?.value,
+      fitFunction: fitFunctionEditor?.getFitFunction ? fitFunctionEditor.getFitFunction() : null,
+    }),
+    form,
+    getTable: () => tableInput.value,
+    getHistory: (): ParentTableFormHistory => ({
+      tableName: tableInput.value?.name ?? null,
+      reportedIC50Col: reportedIC50Col?.value?.name ?? null,
+      reportedQualifiedIC50Col: reportedQualifiedIC50Col?.value?.name ?? null,
+      experimentIDCol: experimentIDCol?.value?.name ?? null,
+      qualifierCol: qualifierCol?.value?.name ?? null,
+      additionalColumns: additionalColumnsInput?.value?.map((c) => c.name) ?? [],
+      fitParams: fitFunctionEditor?.getHystory ? fitFunctionEditor.getHystory() : null,
+    }),
+    applyHistory: (history: ParentTableFormHistory) => {
+      if (history.tableName) {
+        const df = grok.shell.table(history.tableName);
+        if (df)
+          tableInput.value = df;
+      }
+      if (!tableInput.value)
+        return;
+
+      history.reportedIC50Col && tableInput.value.col(history.reportedIC50Col) && (reportedIC50Col.value = tableInput.value.col(history.reportedIC50Col));
+      history.reportedQualifiedIC50Col && tableInput.value.col(history.reportedQualifiedIC50Col) && (reportedQualifiedIC50Col.value = tableInput.value.col(history.reportedQualifiedIC50Col));
+      history.additionalColumns && (additionalColumnsInput.value = history.additionalColumns.map((c) => tableInput.value!.col(c)).filter((c) => c != null) as DG.Column[]);
+      history.experimentIDCol && tableInput.value.col(history.experimentIDCol) && (experimentIDCol.value = tableInput.value.col(history.experimentIDCol));
+      history.qualifierCol && tableInput.value.col(history.qualifierCol) && (qualifierCol.value = tableInput.value.col(history.qualifierCol));
+      if (fitFunctionEditor && history.fitParams)
+        fitFunctionEditor.applyHistory(history.fitParams);
+    }
+  };
+}
+
+
+function createWellTableForm(onTableChange: (t: DG.DataFrame | null) => void) {
+  const tableInput = ui.input.table('Well Table', {value: grok.shell.tv.dataFrame, nullable: false, tooltipText: 'Table with well level data'});
+  let assayColInput: DG.InputBase<DG.Column | null>;
+  let concentrationColInput: DG.InputBase<DG.Column | null>;
+  let readoutColInput: DG.InputBase<DG.Column | null>;
+  let excludeOutliersInput: DG.InputBase<DG.Column | null>;
+  let compoundIDColInput: DG.InputBase<DG.Column | null>;
+  let batchIDColInput: DG.InputBase<DG.Column | null>;
+  let runIDColInput: DG.InputBase<DG.Column | null>;
+  let targetEntityColInput: DG.InputBase<DG.Column | null>;
+  const form = ui.form([]);
+
+  const onTableInputChange = () => {
+    const df = tableInput.value!;
+    ui.empty(form);
+    onTableChange(tableInput.value);
+    assayColInput = ui.input.column('Assay Name', {table: df, nullable: true, filter: (c) => c.isCategorical, tooltipText: 'Column with assay names'});
+    concentrationColInput = ui.input.column('Concentration', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with concentration values'});
+    readoutColInput = ui.input.column('Readout', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with readout values'});
+    excludeOutliersInput = ui.input.column('Outliers', {table: df, nullable: true, filter: (c) => (c.isCategorical || c.type === DG.TYPE.BOOL) && c.categories.length === 2, tooltipText: 'Column with outliers to exclude from the analysis'});
+    compoundIDColInput = ui.input.column('Compound ID', {table: df, nullable: true, tooltipText: 'Column with compound IDs'});
+    batchIDColInput = ui.input.column('Batch ID', {table: df, nullable: false, tooltipText: 'Column with batch IDs. this column along with the Assay column will be used to group the data into curves'});
+    runIDColInput = ui.input.column('Run ID', {table: df, nullable: true, tooltipText: 'Column with run IDs. this column along with the Assay column will be used to group the data into curves'});
+    targetEntityColInput = ui.input.column('Target Entity', {table: df, nullable: false, filter: (c) => c.isCategorical, tooltipText: 'Column with target entity names. This column will be used to group the data into curves'});
+
+    assayColInput.value = wu(df.columns.categorical).find((c) => c.name.toLowerCase().includes('assay') && c.name.toLowerCase().includes('name')) ?? null;
+    concentrationColInput.value = df.columns.firstWhere((c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME && c.name.toLowerCase().includes('concentration')) ?? null;
+    readoutColInput.value = df.columns.firstWhere((c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME && (c.name.toLowerCase().includes('inhibition'))) ?? null;
+    excludeOutliersInput.value = df.columns.firstWhere((c) => (c.isCategorical || c.type === DG.TYPE.BOOL) && c.categories.length === 2 && (c.name.toLowerCase().includes('outlier') || (c.name.toLowerCase().includes('include') && c.name.toLowerCase().includes('exclude')))) ?? null;
+    compoundIDColInput.value = df.columns.firstWhere((c) => c.isCategorical && c.name.toLowerCase().includes('compound_id') || c.name.toLowerCase().includes('compoundid') || c.name.toLowerCase().includes('compound id')) ?? null;
+    batchIDColInput.value = df.columns.firstWhere((c) => c.name.toLowerCase().includes('batch') && c.name.toLowerCase().includes('id')) ?? null;
+    runIDColInput.value = df.columns.firstWhere((c) => (c.name.toLowerCase().includes('run') || c.name.toLowerCase().includes('set')) && c.name.toLowerCase().includes('id')) ?? null;
+    targetEntityColInput.value = df.columns.firstWhere((c) => c.isCategorical && (c.name.toLowerCase().includes('target') && c.name.toLowerCase().includes('entity'))) ?? null;
+    ui.appendAll(form, [tableInput.root, assayColInput.root, batchIDColInput.root, runIDColInput.root, concentrationColInput.root, readoutColInput.root, compoundIDColInput.root, targetEntityColInput.root, excludeOutliersInput.root]);
+  };
+  onTableInputChange();
+  tableInput.onChanged.subscribe(() => onTableInputChange());
+  return {form, getValues: () => ({
+    table: tableInput.value!,
+    assayCol: assayColInput.value,
+    batchIDCol: batchIDColInput.value,
+    concentrationCol: concentrationColInput.value,
+    readoutCol: readoutColInput.value,
+    compoundIDCol: compoundIDColInput.value,
+    excludeOutliersCol: excludeOutliersInput.value,
+    targetEntityCol: targetEntityColInput.value,
+    runIDCol: runIDColInput.value,
+  }), applyHistory: (v: {[key in 'assayCol' | 'batchIDCol' | 'concentrationCol' | 'readoutCol' | 'compoundIDCol' | 'excludeOutliersCol' | 'runIDCol' | 'targetEntityCol'
+  ]: string | null}
+  ) => {
+    const df = tableInput.value!;
+    assayColInput.value = v.assayCol ? df.col(v.assayCol) : null;
+    batchIDColInput.value = v.batchIDCol ? df.col(v.batchIDCol) : null;
+    concentrationColInput.value = v.concentrationCol ? df.col(v.concentrationCol) : null;
+    readoutColInput.value = v.readoutCol ? df.col(v.readoutCol) : null;
+    compoundIDColInput.value = v.compoundIDCol ? df.col(v.compoundIDCol) : null;
+    excludeOutliersInput.value = v.excludeOutliersCol ? df.col(v.excludeOutliersCol) : null;
+    runIDColInput.value = v.runIDCol ? df.col(v.runIDCol) : null;
+    targetEntityColInput.value = v.targetEntityCol ? df.col(v.targetEntityCol) : null;
+  }
+  };
+}
+
+function createJoinEditor() {
+  const form = ui.divH([], {style: {alignItems: 'center'}});
+  let wellLevelColInput: DG.InputBase<DG.Column | null> | null = null;
+  let parentLevelColInput: DG.InputBase<DG.Column | null> | null = null;
+  let wellDataTable: DG.DataFrame | null = null;
+  let parentDataTable: DG.DataFrame | null = null;
+  const onTableChange = (wellLevelData: DG.DataFrame | null, parentLevelData: DG.DataFrame | null) => {
+    ui.empty(form);
+    if (!wellLevelData || !parentLevelData) {
+      wellLevelColInput = null;
+      parentLevelColInput = null;
+      wellDataTable = null;
+      parentDataTable = null;
+      return;
+    }
+    wellDataTable = wellLevelData;
+    parentDataTable = parentLevelData;
+    wellLevelColInput = ui.input.column('JOIN', {table: wellLevelData, nullable: true, tooltipText: 'Column to join on from the well level data'});
+    parentLevelColInput = ui.input.column('ON', {table: parentLevelData, nullable: true, tooltipText: 'Column to join on from the parent level data'});
+    const potentialParentCol = wu(parentLevelData.columns.categorical).map((c) => {
+      let score = c.categories.length;
+      if (c.name.toLowerCase().includes('id'))
+        score += 10;
+      if (c.name.toLowerCase().includes('unique'))
+        score += 15;
+      return {col: c, score: score};
+    }).toArray().sort((a, b) => b.score - a.score)[0];
+    if (potentialParentCol?.col && potentialParentCol.score > 0) {
+      parentLevelColInput.value = potentialParentCol.col;
+      const n = potentialParentCol.col.name.toLowerCase();
+      const potentialWellCol = wu(wellLevelData.columns.categorical).filter((c) => c.name.toLowerCase().includes(n)).toArray()[0];
+      if (potentialWellCol)
+        wellLevelColInput.value = potentialWellCol;
+    }
+    const infoIcon = ui.icons.info(() => {}, 'Specify the columns that will be used to join the well level data with the parent level data. if not specified, combination of the compound ID, assay name, target entity and run ID will be used for joining.');
+    ui.appendAll(form, [infoIcon, wellLevelColInput.root, parentLevelColInput.root]);
+  };
+
+  return {
+    form,
+    getValues: () => (wellLevelColInput?.value && parentLevelColInput?.value) ? ({
+      wellLevelCol: wellLevelColInput?.value,
+      parentLevelCol: parentLevelColInput?.value,
+    }) : null,
+    getHistory: () => (wellLevelColInput?.value && parentLevelColInput?.value) ? ({
+      wellLevelCol: wellLevelColInput?.value?.name ?? null,
+      parentLevelCol: parentLevelColInput?.value?.name ?? null,
+    }) : null,
+    applyHistory: (history: {wellLevelCol: string | null, parentLevelCol: string | null}) => {
+      if (!history.wellLevelCol || !history.parentLevelCol || !wellDataTable || !parentDataTable)
+        return;
+      if (wellLevelColInput && parentLevelColInput) {
+        wellLevelColInput.value = wellDataTable.col(history.wellLevelCol);
+        parentLevelColInput.value = parentDataTable.col(history.parentLevelCol);
+      }
+    },
+    onTableChange: (wellLevelData: DG.DataFrame | null, parentLevelData: DG.DataFrame | null) => onTableChange(wellLevelData, parentLevelData),
+  };
+}
 
 export function dataToCurvesUI() {
   const tv = grok.shell.tv;
@@ -12,138 +307,357 @@ export function dataToCurvesUI() {
     grok.shell.warning('No open tableview');
     return;
   }
+  let wellLevelForm: ReturnType<typeof createWellTableForm> | null = null;
+  let parentTableForm: ReturnType<typeof createParentTableForm> | null = null;
 
-  const df = tv.dataFrame;
+  const joinEditor = createJoinEditor();
+  wellLevelForm = createWellTableForm(() => joinEditor.onTableChange(wellLevelForm?.getValues()?.table ?? null, parentTableForm?.getTable() ?? null));
+  parentTableForm = createParentTableForm(() => joinEditor.onTableChange(wellLevelForm?.getValues()?.table ?? null, parentTableForm?.getTable() ?? null));
+  const horzForm = ui.divH([wellLevelForm.form, parentTableForm.form], {style: {minWidth: '400px', gap: '20px'}});
 
-  const assayColInput = ui.input.column('Assay Column', {table: df, nullable: true, filter: (c) => c.isCategorical, tooltipText: 'Column with assay names'});
-  const concentrationColInput = ui.input.column('Concentration Column', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with concentration values'});
-  const readoutColInput = ui.input.column('Readout Column', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with readout values'});
-  const excludeOutliersInput = ui.input.column('Outliers Column', {table: df, nullable: true, filter: (c) => (c.isCategorical || c.type === DG.TYPE.BOOL) && c.categories.length === 2, tooltipText: 'Column with outliers to exclude from the analysis'});
-  const compoundIDColInput = ui.input.column('Compound ID Column', {table: df, nullable: true, tooltipText: 'Column with compound IDs'});
-  const batchIDColInput = ui.input.column('Batch ID Column', {table: df, nullable: false, tooltipText: 'Column with batch IDs. this column along with the Assay column will be used to group the data into curves'});
-  const runIDColInput = ui.input.column('Run ID Column', {table: df, nullable: true, tooltipText: 'Column with run IDs. this column along with the Assay column will be used to group the data into curves'});
-
-  assayColInput.value = wu(df.columns.categorical).find((c) => c.name.toLowerCase().includes('assay')) ?? null;
-  concentrationColInput.value = df.columns.firstWhere((c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME && c.name.toLowerCase().includes('concentration')) ?? null;
-  readoutColInput.value = df.columns.firstWhere((c) => c.isNumerical && c.type !== DG.COLUMN_TYPE.DATE_TIME && (c.name.toLowerCase().includes('inhibition'))) ?? null;
-  excludeOutliersInput.value = df.columns.firstWhere((c) => (c.isCategorical || c.type === DG.TYPE.BOOL) && c.categories.length === 2 && (c.name.toLowerCase().includes('outlier') || (c.name.toLowerCase().includes('include') && c.name.toLowerCase().includes('exclude')))) ?? null;
-  compoundIDColInput.value = df.columns.firstWhere((c) => c.isCategorical && c.name.toLowerCase().includes('compound') && c.name.toLowerCase().includes('id')) ?? null;
-  batchIDColInput.value = df.columns.firstWhere((c) => c.name.toLowerCase().includes('batch') && c.name.toLowerCase().includes('id')) ?? null;
-  runIDColInput.value = df.columns.firstWhere((c) => (c.name.toLowerCase().includes('run') || c.name.toLowerCase().includes('set')) && c.name.toLowerCase().includes('id')) ?? null;
-
-  const onOK = async () => {
-    if (!concentrationColInput.value || !readoutColInput.value || !batchIDColInput.value) {
-      grok.shell.warning('Please fill all required fields');
-      return;
-    }
-
-    const resultObj: {[assay: string]: {[batchID: string]: {[runID: string]: {x: number[], y: number[], outliers: boolean[], compoundId: any}}}} = {};
-
-    const assayCol = assayColInput.value;
-    const concentrationCol = concentrationColInput.value!;
-    const readoutCol = readoutColInput.value!;
-    const excludeOutliersCol = excludeOutliersInput.value;
-    const compoundIDCol = compoundIDColInput.value;
-    const batchIDCol = batchIDColInput.value!;
-    const runIDCol = runIDColInput.value;
-
-    const getAssay = assayCol ? (row: number) => assayCol.get(row) : () => 'All';
-    const otlierIndexes = excludeOutliersCol ? excludeOutliersCol.getRawData() : null;
-    const isOutlier = excludeOutliersCol ? (excludeOutliersCol.type == DG.COLUMN_TYPE.BOOL ? (row: number) => !!otlierIndexes![row] : (row: number) => !otlierIndexes![row] ) : (_row: number) => false;
-    const getConcentration = (row: number) => concentrationCol.get(row);
-    const getReadout = (row: number) => readoutCol.get(row);
-    const getBatchID = (row: number) => batchIDCol.get(row);
-    const getCompoundID = compoundIDCol ? (row: number) => compoundIDCol.get(row) : () => null;
-    const getRunID = runIDCol ? (row: number) => runIDCol.get(row) : () => null;
-    const markerTypes: FitMarkerType[] = ['circle', 'triangle bottom', 'star', 'cross border', 'diamond', 'square', 'triangle left', 'triangle right', 'triangle top', 'asterisk'];
-    let markerTypeIndex = 0; // will keep track of the markers
-    const runIdToMarkerType: {[runID: string]: FitMarkerType} = {};
-    const getMarkerType = (runID: string) => {
-      if (runID in runIdToMarkerType) { return runIdToMarkerType[runID]; } else {
-        const markerType = markerTypes[markerTypeIndex];
-        runIdToMarkerType[runID] = markerType;
-        markerTypeIndex = (markerTypeIndex + 1) % markerTypes.length;
-        return markerType;
+  ui.dialog('Data to Curves')
+    .add(horzForm)
+    .add(joinEditor.form)
+    .onOK(async () => {
+      const formRes = wellLevelForm.getValues();
+      let parentLevelData: WellTableParentData | undefined = undefined;
+      const parentTable = parentTableForm.getTable();
+      const parentFormValues = parentTableForm.getValue();
+      const fitParamValues = parentFormValues.fitParamCols;
+      if (parentTable && fitParamValues && fitParamValues.length > 0) {
+        parentLevelData = {
+          table: parentTable,
+          fitParamColumns: fitParamValues,
+          fitFunction: parentFormValues.fitFunction!,
+          reportedIC50Column: parentFormValues.reportedIC50Col!,
+          reportedQualifiedIC50Column: parentFormValues.reportedQualifiedIC50Col!,
+          experimentIDColumn: parentFormValues.experimentIDCol!,
+          qualifierColumn: parentFormValues.qualifierCol!,
+          additionalColumns: parentFormValues.additionalColumns ?? [],
+        };
       }
-    };
-
-    for (let i = 0; i < df.rowCount; i++) {
-      const assay = getAssay(i);
-      const batchID = getBatchID(i);
-
-      const concentration = getConcentration(i);
-      const readout = getReadout(i);
-      const outlier = isOutlier(i);
-      if (!resultObj[assay])
-        resultObj[assay] = {};
-
-      const assayObj = resultObj[assay];
-      if (!assayObj[batchID])
-        assayObj[batchID] = {};
-
-      const assayBatchObj = assayObj[batchID];
-      // {x: [], y: [], outliers: [], compoundId: compoundID};
-      // use batchID as a key if runID is not provided
-      const runID = getRunID(i) ?? batchID;
-      if (!assayBatchObj[runID]) {
-        const compoundID = getCompoundID(i);
-        assayBatchObj[runID] = {x: [], y: [], outliers: [], compoundId: compoundID};
+      const joinValues = joinEditor.getValues();
+      const {table, assayCol, batchIDCol, concentrationCol, readoutCol, compoundIDCol, excludeOutliersCol, runIDCol, targetEntityCol} = formRes;
+      const func = DG.Func.find({name: 'dataToCurves'})[0];
+      if (!func) {
+        grok.shell.error('Function dataToCurves not found');
+        return;
       }
-      const assayBatchRunObj = assayBatchObj[runID];
-      assayBatchRunObj.x.push(concentration);
-      assayBatchRunObj.y.push(readout);
-      assayBatchRunObj.outliers.push(outlier);
+      //parentTable?: DG.DataFrame, fitParamColumns?: DG.Column[], reportedIC50Column?: DG.Column, reportedQualifiedIC50Column?: DG.Column,
+      //  experimentIDColumn?: DG.Column, qualifierColumn?: DG.Column, additionalColumns?: DG.Column[]
+      const fc = func.prepare({
+        df: table,
+        concentrationCol: concentrationCol,
+        readoutCol: readoutCol,
+        batchIDCol: batchIDCol,
+        assayCol: assayCol,
+        runIDCol: runIDCol,
+        compoundIDCol: compoundIDCol,
+        targetEntityCol: targetEntityCol,
+        excludeOutliersCol: excludeOutliersCol,
+        // parentData:
+        parentTable: parentLevelData?.table,
+        fitParamColumns: parentLevelData?.fitParamColumns?.map((c) => c.name) ?? [],
+        reportedIC50Column: parentLevelData?.reportedIC50Column?.name,
+        reportedQualifiedIC50Column: parentLevelData?.reportedQualifiedIC50Column?.name,
+        experimentIDColumn: parentLevelData?.experimentIDColumn?.name,
+        qualifierColumn: parentLevelData?.qualifierColumn?.name,
+        additionalColumns: parentLevelData?.additionalColumns?.map((c) => c.name) ?? [],
+        // joinInfo
+        wellLevelJoinCol: joinValues?.wellLevelCol?.name,
+        parentLevelJoinCol: joinValues?.parentLevelCol?.name,
+      });
+      console.log(fc.toString());
+      const needsCreationScript = table.tags[DG.Tags.CreationScript] && (!parentLevelData?.table || parentLevelData.table.tags[DG.Tags.CreationScript]);
+      await fc.call(undefined, undefined, {processed: !needsCreationScript});
+      //console.log(fc.getResultViews());
+      //const resDf: DG.DataFrame | null = fc.getOutputParamValue();
+      const tv = fc.getResultViews()[0];
+      if (tv && tv instanceof DG.TableView && tv.dataFrame) {
+        if (!needsCreationScript)
+          grok.shell.addView(tv);
+
+        tv.filters();
+        const trellis = tv.trellisPlot({yColumnNames: [groupColumnName], xColumnNames: [], viewerType: 'MultiCurveViewer',
+          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: false, showYSelectors: true, packCategories: true,
+          onClick: 'Select'
+        });
+        tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(tv.grid.root), 'Fitted Curves', 0.5);
+        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: DG.RowSet.FilteredSelected, selectedRowsColor: DG.Color.white});
+        tv.dockManager.dock(selectionGrid, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(tv.grid.root), 'Selected Curves');
+        selectionGrid.props.title = 'Selected Curves';
+
+        const multiCurveViewer = tv.addViewer('MultiCurveViewer', {showCurrentRowCurve: false, showMouseOverRowCurve: false, showSelectedRowsCurves: true});
+        const md = tv.dockManager.dock(multiCurveViewer, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(selectionGrid.root));
+        tv.dockManager.dock(tv.grid, DG.DOCK_TYPE.FILL, md);
+        tv.grid.props.title = 'Fitted Curves';
+      }
+    })
+    .show()
+    .history(() => {
+      const formRes = wellLevelForm.getValues();
+      const {assayCol, batchIDCol, concentrationCol, readoutCol, compoundIDCol, excludeOutliersCol, runIDCol, targetEntityCol} = formRes;
+      const obj = {
+        assayCol: assayCol?.name,
+        batchIDCol: batchIDCol?.name,
+        concentrationCol: concentrationCol?.name,
+        readoutCol: readoutCol?.name,
+        compoundIDCol: compoundIDCol?.name,
+        excludeOutliersCol: excludeOutliersCol?.name,
+        runIDCol: runIDCol?.name,
+        targetEntityCol: targetEntityCol?.name,
+      };
+      return {wells: JSON.stringify(Object.fromEntries(Object.entries(obj).filter(([_, v]) => !!v)) ?? {}), parent: JSON.stringify(parentTableForm.getHistory() ?? {}), join: JSON.stringify(joinEditor.getHistory() ?? {})};
+    }, (v) => {
+      const wells = JSON.parse(v?.wells ?? '{}');
+      const parent = JSON.parse(v?.parent ?? '{}');
+      wellLevelForm.applyHistory(wells);
+      parentTableForm.applyHistory(parent);
+      const joinHistory = JSON.parse(v?.join ?? '{}');
+      joinEditor.applyHistory(joinHistory);
+    });
+}
+export type WellTableParentData = {
+    table?: DG.DataFrame, fitParamColumns?: DG.Column[], fitFunction?: FitFunctionType, reportedIC50Column?: DG.Column, reportedQualifiedIC50Column?: DG.Column,
+    experimentIDColumn?: DG.Column, qualifierColumn?: DG.Column, additionalColumns?: DG.Column[],
+}
+
+export async function convertDataToCurves(df: DG.DataFrame,
+  concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column,
+  assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentData?: WellTableParentData,
+  joinInfo?: {wellLevelCol: DG.Column, parentLevelCol: DG.Column}
+): Promise<DG.DataFrame> {
+  if (!concentrationCol || !readoutCol || !batchIDCol) {
+    grok.shell.warning('Please fill all required fields');
+    throw new Error('Please fill all required fields');
+  }
+
+  const curvesObj: {[curveKey: string]: {name: string, x: number[], y: number[], outliers: boolean[], groupKey: string, runID: string, info: {[key: string]: any}}} = {};
+  const assayColCats = assayCol?.categories;
+  const assayColIndexes = assayCol?.getRawData();
+  const consentrationRawData = concentrationCol.getRawData();
+  const readoutRawData = readoutCol.getRawData();
+  const batchIDCategories = batchIDCol?.categories;
+  const batchIDRawData = batchIDCol?.getRawData();
+  const compoundIDCategories = compoundIDCol?.categories;
+  const compoundIDRawData = compoundIDCol?.getRawData();
+  const runIDCategories = runIDCol?.categories;
+  const runIDRawData = runIDCol?.getRawData();
+  const targetEntityCategories = targetEntityCol?.categories;
+  const targetEntityRawData = targetEntityCol?.getRawData();
+
+
+  const getAssay = assayCol ? (row: number) => assayColCats![assayColIndexes![row]] : () => 'All';
+  const otlierIndexes = excludeOutliersCol ? excludeOutliersCol.getRawData() : null;
+  const isOutlier = excludeOutliersCol ? (excludeOutliersCol.type == DG.COLUMN_TYPE.BOOL ? (row: number) => !!otlierIndexes![row] : (row: number) => !otlierIndexes![row] ) : (_row: number) => false;
+  const getConcentration = (row: number) => consentrationRawData[row];
+  const getReadout = (row: number) => readoutRawData[row];
+  const getBatchID = (row: number) => batchIDCategories[batchIDRawData[row]];
+  const getCompoundID = compoundIDCol ? (row: number) => compoundIDCategories![compoundIDRawData![row]] : () => null;
+  const getRunID = runIDCol ? (row: number) => runIDCategories![runIDRawData![row]] : () => null;
+  const getTargetEntity = targetEntityCol ? (row: number) => targetEntityCategories![targetEntityRawData![row]] : () => null;
+  const markerTypes: FitMarkerType[] = ['circle', 'triangle bottom', 'star', 'cross border', 'diamond', 'square', 'triangle left', 'triangle right', 'triangle top', 'asterisk'];
+  let markerTypeIndex = 0; // will keep track of the markers
+  const runIdToMarkerType: {[runID: string]: FitMarkerType} = {};
+  const getMarkerType = (runID: string) => {
+    if (runID in runIdToMarkerType) { return runIdToMarkerType[runID]; } else {
+      const markerType = markerTypes[markerTypeIndex];
+      runIdToMarkerType[runID] = markerType;
+      markerTypeIndex = (markerTypeIndex + 1) % markerTypes.length;
+      return markerType;
     }
+  };
 
-    // create fit series
+  const hasJoinInfo = !!(joinInfo?.parentLevelCol && joinInfo?.wellLevelCol);
+  const parentCompoundIDCol = parentData?.table?.col(compoundIDCol.name);
+  const parentAssayCol = parentData?.table?.col(assayCol.name);
+  const parentTargetEntityCol = parentData?.table?.col(targetEntityCol.name);
+  const parentRunIDCol = parentData?.table?.col(runIDCol.name);
+  const hasParentGrouppingCols = parentCompoundIDCol && parentAssayCol && parentTargetEntityCol && parentRunIDCol;
 
-    const assays: string[] = [];
-    const batchIDs: string[] = [];
-    const compoundIDs: string[] = [];
-    const seriesData: Omit<FitChartData, 'seriesOptions'>[] = [];
+  const getGroupKey = (row: number) => `${getCompoundID(row)}||${getAssay(row)}||${getTargetEntity(row)}`;
+  const getCurveName = (row: number) => `${getGroupKey(row)}||${getRunID(row)}`;
+  const getCurveKey = !hasJoinInfo ? ((row: number) => getCurveName(row)) : ((row: number) => `${joinInfo!.wellLevelCol.get(row)}`);
+  const getParentDataCurveKey = !hasJoinInfo ? (hasParentGrouppingCols ? ((row: number) =>
+    `${parentData!.table?.col(compoundIDCol.name)!.get(row)}||${parentData!.table?.col(assayCol.name)!.get(row)}||${parentData!.table?.col(targetEntityCol.name)!.get(row)}||${parentData!.table?.col(runIDCol.name)!.get(row)}`) :
+    ((_row: number) => null)) : ((row: number) => `${joinInfo!.parentLevelCol.get(row)}`);
+  // put the parent data into the parentObj
+  const parentObj: {[curveKey: string]: {groupKey?: string, fitParams: number[], fitFunction: FitFunctionType, reportedIC50?: number, reportedQualifiedIC50?: number | string, experimentID?: string, qualifier?: string, additionalColumns?: {[colName: string]: any}}} = {};
+  if (parentData) {
+    for (let i = 0; i < (parentData.table?.rowCount ?? 0); i++) {
+      const curveKey = getParentDataCurveKey ? getParentDataCurveKey(i) : null;
+      if (!curveKey || parentObj[curveKey]) continue;
+      parentObj[curveKey] = {
+        fitParams: parentData.fitParamColumns?.map((c) => c.get(i)) ?? [],
+        fitFunction: parentData.fitFunction ?? FIT_FUNCTION_4PL_DOSE_RESPONSE,
+        reportedIC50: parentData.reportedIC50Column ? parentData.reportedIC50Column.get(i) : undefined,
+        reportedQualifiedIC50: parentData.reportedQualifiedIC50Column ? parentData.reportedQualifiedIC50Column.get(i) : undefined,
+        experimentID: parentData.experimentIDColumn ? parentData.experimentIDColumn.get(i) : undefined,
+        qualifier: parentData.qualifierColumn ? parentData.qualifierColumn.get(i) : undefined,
+        additionalColumns: parentData.additionalColumns ? Object.fromEntries(parentData.additionalColumns.map((c) => [c.name, c.get(i)])) : undefined,
+      };
+    }
+  }
 
-    for (const assay in resultObj) {
-      for (const batchID in resultObj[assay]) {
-        const assayBatchObj = resultObj[assay][batchID];
-        for (const runID in assayBatchObj) {
-          assays.push(assay);
-          batchIDs.push(batchID);
-          const compoundID = Object.values(assayBatchObj)[0]?.compoundId;
-          compoundIDs.push(compoundID);
-          const x = assayBatchObj[runID].x;
-          const y = assayBatchObj[runID].y;
-          const outliers = assayBatchObj[runID].outliers;
-          const markerType = getMarkerType(runID);
-          const s: IFitSeries = {
-            fit: undefined, fitFunction: FIT_FUNCTION_4PL_REGRESSION, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
-            points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 6})).sort((a, b) => a.x - b.x),
-          };
-          const fitData: Omit<FitChartData, 'seriesOptions'> = {
-            chartOptions: {
-              xAxisName: concentrationCol.name,
-              yAxisName: readoutCol.name,
-              logX: true,
-              title: `${assay} - ${batchID} - ${runID}`,
-            },
-            series: [s],
-          };
-          seriesData.push(fitData);
+  for (let i = 0; i < df.rowCount; i++) {
+    const assay = getAssay(i);
+    const batchID = getBatchID(i);
+    const concentration = getConcentration(i);
+    const readout = getReadout(i);
+    const outlier = isOutlier(i);
+    const compoundID = getCompoundID(i);
+    const targetEntity = getTargetEntity(i);
+    const runID = getRunID(i) ?? '';
+
+    const groupKey = getGroupKey(i);
+    const curveKey = getCurveKey(i);
+    const curveName = getCurveName(i);
+
+    if (!curvesObj[curveKey]) {
+      curvesObj[curveKey] = {name: curveName, x: [], y: [], outliers: [], groupKey, runID: runID, info: {
+        'Assay Name': assay,
+        'Batch ID': batchID,
+        'Compound ID': compoundID,
+        'Target Entity': targetEntity,
+        'Run ID': runID,
+        'Max Percent Inhibition': null, // will be calculated later
+      }};
+      if (parentData && parentObj[curveKey]) {
+        curvesObj[curveKey].info['Reported IC50'] = parentObj[curveKey].reportedIC50;
+        curvesObj[curveKey].info['Qualified Reported IC50'] = parentObj[curveKey].reportedQualifiedIC50;
+        curvesObj[curveKey].info['Experiment ID'] = parentObj[curveKey].experimentID;
+        curvesObj[curveKey].info['Qualifier'] = parentObj[curveKey].qualifier;
+        if (parentObj[curveKey].additionalColumns)
+          Object.assign(curvesObj[curveKey].info, parentObj[curveKey].additionalColumns);
+        if (parentObj[curveKey].fitParams && parentObj[curveKey].fitParams.length > 0) {
+          for (let j = 0; j < (parentData.fitParamColumns?.length ?? 0); j++) {
+            const paramName = parentData.fitParamColumns![j].name;
+            curvesObj[curveKey].info[paramName] = parentObj[curveKey].fitParams[j];
+          }
         }
+        parentObj[curveKey].groupKey = groupKey; // save the group key for the parent object
       }
     }
+    const curve = curvesObj[curveKey];
+    curve.x.push(concentration);
+    curve.y.push(readout);
+    curve.outliers.push(outlier);
+    if (!outlier && readout != null || readout != DG.FLOAT_NULL && readout != DG.INT_NULL)
+      curve.info['Max Percent Inhibition'] = Math.max(curve.info['Max Percent Inhibition'] ?? -Infinity, readout);
+  }
 
-    const assaysColumn = DG.Column.fromStrings('Assay', assays);
-    const batchIDsColumn = DG.Column.fromStrings('Batch ID', batchIDs);
-    const compoundIDsColumn = DG.Column.fromStrings('Compound ID', compoundIDs);
-    const seriesColumn = DG.Column.fromStrings('Series', seriesData.map((s) => JSON.stringify(s)));
-    const allResultsColumn = DG.Column.fromStrings('All Results', seriesData.map((s) => s.series[0]?.points.map((p) => `(${p.x}, ${p.y})`).join(', ')));
-    const runIdColumn = DG.Column.fromStrings('Run ID', seriesData.map((s) => s.series[0]!.name ?? ''));
-    seriesColumn.semType = 'fit';
-    seriesColumn.setTag('cell.renderer', 'fit');
+  // create fit series
+  const colorHash: {[key: string]: string} = {};
 
-    const resDF = DG.DataFrame.fromColumns([seriesColumn, assaysColumn, batchIDsColumn, compoundIDsColumn, runIdColumn, allResultsColumn]);
-    resDF.name = 'Fitted Curves';
+  const getColor = (key: string): string => {
+    if (colorHash[key]) return colorHash[key];
+    const color = DG.Color.getCategoricalColor(Object.keys(colorHash).length);
+    colorHash[key] = DG.Color.toHtml(color);
+    return colorHash[key];
+  };
 
+
+  const curvesObjsArray = Object.entries(curvesObj);
+  const tableColList: DG.Column[] = [];
+  const curvesCol = DG.Column.string('Fitted Curve', curvesObjsArray.length);
+  curvesCol.init((i) => {
+    const [curveKey, curve] = curvesObjsArray[i];
+    const x = curve.x;
+    const y = curve.y;
+    const outliers = curve.outliers;
+    const runID = curve.runID;
+    const markerType = getMarkerType(runID);
+    const params = parentObj[curveKey] ? parentObj[curveKey].fitParams : undefined;
+    const colorKey = (curve.info['Compound ID'] ?? '') + '||'+ (curve.info['Assay Name'] ?? '') + '||' + (curve.info['Target Entity'] ?? '');
+    const color = getColor(colorKey);
+    const fitFunctionName = parentObj?.[curveKey]?.fitFunction ? parentObj[curveKey].fitFunction : FIT_FUNCTION_4PL_DOSE_RESPONSE;
+    const s: IFitSeries = {
+      fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
+      points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 5})).sort((a, b) => a.x - b.x), parameters: params, fitLineColor: color, pointColor: DG.Color.toHtml(DG.Color.gray)
+    };
+    const fitData: Omit<FitChartData, 'seriesOptions'> = {
+      chartOptions: {
+        xAxisName: concentrationCol.name,
+        yAxisName: readoutCol.name,
+        logX: true,
+        title: `${curve.name ?? curveKey ?? ''}`,
+      },
+      series: [s],
+    };
+    return JSON.stringify(fitData);
+  });
+  tableColList.push(curvesCol);
+  curvesCol.semType = 'fit';
+  curvesCol.setTag('cell.renderer', 'fit');
+  // add group column
+  tableColList.push(DG.Column.fromStrings(groupColumnName, curvesObjsArray.map((c) => c[1].groupKey)));
+
+  const otherColumns = curvesObjsArray.reduce((acc, c) => { Object.keys(c[1].info).forEach((k) => acc.add(k)); return acc; }, new Set<string>());
+
+  //Object.keys(curvesObjsArray[0][1].info);
+
+  for (const colName of otherColumns) {
+    const col = DG.Column.fromStrings(colName, curvesObjsArray.map((c) =>
+      c[1].info[colName]?.toString?.() ?? ''));
+    tableColList.push(col);
+  }
+
+
+  const getNumericValue = (x: any) =>
+    (x != undefined && !isNaN(x)) ?
+      (typeof x === 'number' && x != DG.FLOAT_NULL && x != DG.INT_NULL) ? x :
+        ((typeof x === 'string') ? ((Number.parseFloat(x) != undefined && !isNaN(Number.parseFloat(x))) ? Number.parseFloat(x) : undefined) : undefined) : undefined;
+
+  // add additional calculated columns, based on the results
+  // max percent inhibition, total results, all results and so on
+  // all of them will be an aggregate of some kind, so we need to group the needed data
+  const grouppedValues: {[groupKey: string]: {maxYs: number[], reportedIC50s: number[], qualifiedIC50s: string[],}} = {};
+  for (const [curveKey, curve] of curvesObjsArray) {
+    const groupKey = curve.groupKey;
+    if (!groupKey) continue;
+    if (!(groupKey in grouppedValues))
+      grouppedValues[groupKey] = {maxYs: [], reportedIC50s: [], qualifiedIC50s: []};
+    grouppedValues[groupKey].maxYs.push(Math.max(...curve.y.filter((_, i) => !curve.outliers[i])));
+    if (parentData && parentObj[curveKey]) {
+      if (parentObj[curveKey].reportedQualifiedIC50 ?? '' != '') {
+        grouppedValues[groupKey].qualifiedIC50s.push(parentObj[curveKey].reportedQualifiedIC50 as string);
+        let ic50 = getNumericValue(parentData.reportedQualifiedIC50Column ? parentObj[curveKey].reportedQualifiedIC50 : parentObj[curveKey].reportedIC50);
+        if (ic50 == undefined) {
+          try {
+            ic50 = DG.Qnum.parse((parentData.reportedQualifiedIC50Column ? parentObj[curveKey].reportedQualifiedIC50 : parentObj[curveKey].reportedIC50) as string);
+          } catch (_e) {
+          }
+        }
+        if (ic50 != undefined)
+          grouppedValues[groupKey].reportedIC50s.push(ic50);
+      }
+    }
+  }
+  const grouppedAggregations: {[groupKey: string]: {[key: string]: undefined | string | null}} = {};
+
+  for (const groupKey in grouppedValues) {
+    const values = grouppedValues[groupKey];
+    grouppedAggregations[groupKey] = {
+      'Max Percent Inhibition (Compound | Assay | Target)': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
+      ...(parentData && parentData.table ? {
+        'Number of total results': values.qualifiedIC50s.length?.toString(),
+        'Number of reported results': values.reportedIC50s.length?.toString(),
+        'Geomean IC50': values.reportedIC50s.length ? (Math.exp(values.reportedIC50s.reduce((a, b) => a + Math.log(b), 0) / values.reportedIC50s.length) || null)?.toString() : null, // log based, better for small values
+        'Standard Deviation': values.reportedIC50s.length > 1 ? Math.sqrt(values.reportedIC50s.reduce((a, b) => a + (b - values.reportedIC50s.reduce((c, d) => c + d, 0) / values.reportedIC50s.length) ** 2, 0) / (values.reportedIC50s.length - 1))?.toString() : null,
+        'All Results': values.qualifiedIC50s.join(', ')} : {}),
+    };
+  }
+  const grouppedAggregationsColNames = Object.keys(grouppedAggregations[Object.keys(grouppedAggregations)[0]]);
+  for (const colName of grouppedAggregationsColNames) {
+    const col = DG.Column.fromStrings(colName, curvesObjsArray.map((c) => grouppedAggregations[c[1].groupKey]?.[colName] ?? ''));
+    tableColList.push(col);
+  }
+
+
+  const resDF = DG.DataFrame.fromColumns(tableColList);
+  resDF.name = 'Fitted Curves';
+
+  if (!parentData || !parentData.table) {
     const actualStatNames = {
       'interceptX': 'IC50',
       'top': 'Max',
@@ -153,68 +667,11 @@ export function dataToCurvesUI() {
     };
 
     Object.entries(actualStatNames).forEach(([statName, alias]) => {
-      const params = {table: resDF, colName: seriesColumn.name, propName: statName, seriesNumber: 0};
+      const params = {table: resDF, colName: curvesCol.name, propName: statName, seriesNumber: 0};
       DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(params).callSync({processed: false}).getOutputParamValue().name = alias;
     });
     if (actualStatNames['interceptX'])
       resDF.col(actualStatNames['interceptX']) && (resDF.col(actualStatNames['interceptX'])!.meta.format = 'scientific');
-
-    return resDF;
-  };
-
-  ui.dialog('Data to Curves')
-    .add(assayColInput)
-    .add(batchIDColInput)
-    .add(runIDColInput)
-    .add(concentrationColInput)
-    .add(readoutColInput)
-    .add(compoundIDColInput)
-    .add(excludeOutliersInput)
-    .onOK(async () => {
-      const df = await onOK();
-      if (df) {
-        const tv = grok.shell.addTableView(df);
-        const trellis = tv.trellisPlot({yColumnNames: ['Batch ID'], xColumnNames: [], viewerType: 'MultiCurveViewer',
-          showControlPanel: false, showXLabels: false, showYLabels: false, showXSelectors: false, showYSelectors: true, packCategories: true,
-          onClick: 'Select'
-        });
-        tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, null, 'Fitted Curves', 0.5);
-        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: 'Selected', selectedRowsColor: DG.Color.white});
-        tv.dockManager.dock(selectionGrid, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(tv.grid.root), 'Selected Curves');
-        selectionGrid.props.title = 'Selected Curves';
-        tv.dockManager.dock(tv.grid, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(selectionGrid.root));
-        tv.grid.props.title = 'Fitted Curves';
-
-        // add the pivot table
-
-        const pivot = tv.addViewer(DG.VIEWER.PIVOT_TABLE, {
-          rowSource: 'Selected', pivotColumnNames: [],
-          groupByColumnNames: ['Assay'], aggregateColumnNames: ['IC50', 'AUC', 'Hill', 'Min', 'Max'],
-          aggregateAggTypes: ['geomean', 'avg', 'geomean', 'avg', 'avg'], showHeader: false
-        });
-        pivot.props.title = 'Selected Statistics';
-        tv.dockManager.dock(pivot, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(trellis.root), 'Selected Statistics', 0.1);
-      }
-    })
-    .show()
-    .history(() => {
-      const obj = {
-        assayCol: assayColInput.value?.name,
-        batchIDCol: batchIDColInput.value?.name,
-        concentrationCol: concentrationColInput.value?.name,
-        readoutCol: readoutColInput.value?.name,
-        compoundIDCol: compoundIDColInput.value?.name,
-        excludeOutliersCol: excludeOutliersInput.value?.name,
-        runIDCol: runIDColInput.value?.name,
-      };
-      return Object.fromEntries(Object.entries(obj).filter(([_, v]) => !!v));
-    }, (v) => {
-      assayColInput.value = v.assayCol ? df.columns.byName(v.assayCol) : null;
-      batchIDColInput.value = v.batchIDCol ? df.columns.byName(v.batchIDCol) : null;
-      concentrationColInput.value = df.columns.byName(v.concentrationCol);
-      readoutColInput.value = df.columns.byName(v.readoutCol);
-      compoundIDColInput.value = v.compoundIDCol ? df.columns.byName(v.compoundIDCol) : null;
-      excludeOutliersInput.value = v.excludeOutliersCol ? df.columns.byName(v.excludeOutliersCol) : null;
-      runIDColInput.value = v.runIDCol ? df.columns.byName(v.runIDCol) : null;
-    });
-}
+  }
+  return resDF;
+};

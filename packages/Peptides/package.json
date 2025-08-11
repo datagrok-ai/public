@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.23.14",
+  "version": "1.23.16",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -13,15 +13,15 @@
     "directory": "packages/Peptides"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.53.2",
+    "@datagrok-libraries/bio": "^5.54.6",
     "@datagrok-libraries/math": "^1.2.5",
-    "@datagrok-libraries/ml": "^6.8.2",
+    "@datagrok-libraries/ml": "^6.10.4",
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.3",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "^1.25.0",
     "file-loader": "^6.2.0",
     "rxjs": "^6.5.5",
     "uuid": "^10.0.0",
@@ -40,7 +40,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.37",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",

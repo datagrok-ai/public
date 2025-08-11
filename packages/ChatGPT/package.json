@@ -7,11 +7,11 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "latest",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.40",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

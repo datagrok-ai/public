@@ -50,7 +50,11 @@ as the `Dockerfile`. This file defines resource allocation and container behavio
   "memory": 2048,
   "on_demand": true,
   "shutdown_timeout": 60,
-  "storage": 25
+  "storage": 25,
+  "env": {
+    "CONN": "#{x.Package:Entity}",
+    "LOGIN": "login"
+  }
 }
 ```
 
@@ -63,13 +67,18 @@ as the `Dockerfile`. This file defines resource allocation and container behavio
 | **memory**           | Integer | 512     | Amount of RAM allocated in megabytes.                            |
 | **on_demand**        | Boolean | false   | If `true`, the container starts only when a request is received. |
 | **shutdown_timeout** | Integer | null    | Time in minutes after which the container shuts down if idle.    |
- | **storage**          | Integer | 21      | Allocated storage size in gigabytes.                             |
+| **storage**          | Integer | 21      | Allocated storage size in gigabytes.                             |
 | **shm_size**         | Integer | 64      | Shared memory size in megabytes.                                 |
+| **env**              | Object  |         | Environment variables for the container.                         |
 
 ### Usage
 
 1. Place `container.json` in the same directory as the `Dockerfile`.
 2. Modify resource limits as needed before publishing the package.
+
+Pass any environment variables to the container using env parameter.
+Use `#{x.Package:Entity}` expression to pass JSON-serialized entity from the package or any other namespace, for example: `#{x.MolTrack:Moltrack}` means Moltrack entity from Moltrack package.
+Please note, credentials for the connection are passed only within the same package. You can't get credentials from a connection that does not belong to your package.
 
 For more details, refer to the example [container.json](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/dockerfiles/container.json) 
 that is located in the `Admetica` plugin.
