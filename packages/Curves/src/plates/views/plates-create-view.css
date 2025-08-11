@@ -1,22 +1,51 @@
 /* === DRC === */
-.create-plate-view__right-panel {
+.drc-container {
+  border-top: 1px solid var(--grey-2);
+  padding-top: 10px;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  width: 100%; /* Ensure full width */
+}
+
+.create-plate-view__right-panel {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .create-plate-view__right-panel > .d4-viewer {
-  flex-shrink: 0; /* Prevent the plate widget from shrinking */
-  width: 100%; /* Force full width */
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .create-plate-view__drc-host {
-  flex-grow: 1; /* Allow it to grow and fill remaining space */
-  overflow: auto;
-  border-top: 1px solid var(--grey-2);
-  padding-top: 10px;
-  width: 100%; /* Ensure full width */
+  flex-grow: 1;
+  overflow-y: auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drc-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background-color: var(--grey-0);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--grey-5);
+  max-width: 400px;
+  border: 1px dashed var(--grey-2);
+}
+
+.drc-skeleton > .d4-div-text {
+  font-style: italic;
+  line-height: 1.4;
 }
 
 /* Style for the DRC grid container */
@@ -39,20 +68,36 @@
   gap: 20px;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .create-plate-view__left-panel {
-  flex-grow: 0;
   flex-shrink: 0;
   width: 370px;
   max-width: 450px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1px; /* Reduced gap for collapsible sections */
+  overflow-y: auto;
 }
 
 /* === Left Panel Styling === */
 .left-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Let collapse header/content handle padding */
+  border-bottom: 1px solid var(--grey-1);
+}
+
+.left-panel-section > .d4-collapse-header {
+  padding: 8px 4px;
+}
+
+.left-panel-section > .d4-collapse-content {
+  padding: 8px 4px 12px 4px;
+}
+
+.left-panel-section-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -133,11 +178,38 @@
   font-weight: 500;
 }
 
+.plate-file-tab__label {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .plate-file-tab__controls {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: 8px;
+  margin-left: auto;
+}
+
+.plate-file-tab__mapped-pill {
+    background-color: var(--grey-1);
+    border-radius: 10px;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.plate-file-tab__mapped-pill:hover {
+    background-color: var(--grey-2);
+}
+
+.plate-file-tab__mapped-pill > .grok-icon {
+    color: var(--blue-1);
+    font-size: 11px;
+    margin: 0;
 }
 
 .plate-file-tab__conflict-dot {
@@ -301,22 +373,49 @@
   color: var(--red-3);
 }
 
-
-/* === NEW: Styles for custom mapping suggestions === */
-
-/* === NEW: Styles for the custom suggestion dropdown === */
-
+/* === Styles for custom mapping suggestions === */
 .custom-suggestion-popup {
   position: absolute;
-  z-index: 1000; /* High z-index to appear over other UI */
-  /* background-color: var(--grey-0); */
+  z-index: 1000;
   border: 1px solid var(--grey-2);
   border-radius: 4px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   max-height: 250px;
   overflow-y: auto;
   box-sizing: border-box;
+  background-color: var(--white); /* Added solid background */
 }
+
+.custom-suggestion-legend {
+    display: flex;
+    gap: 16px;
+    padding: 6px 12px;
+    color: var(--grey-5);
+    font-size: 11px;
+    background-color: var(--grey-0);
+    position: sticky;
+    top: 0;
+}
+
+.custom-suggestion-legend > .d4-div-h {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Centered icons and text */
+}
+
+.legend-icon {
+  margin-right: 2px;
+}
+.legend-icon-template, .custom-suggestion-item .fa-file-alt {
+  color: var(--blue-1) !important;
+}
+.legend-icon-analysis, .custom-suggestion-item .fa-chart-line {
+  color: var(--green-3) !important;
+}
+.legend-icon-required, .custom-suggestion-item .fa-lock {
+  color: var(--red-3) !important;
+}
+
 
 .custom-suggestion-item {
   display: flex;
@@ -327,18 +426,134 @@
   color: var(--grey-8);
 }
 
+.custom-suggestion-item .custom-suggestion-icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+.custom-suggestion-item .custom-suggestion-icons > .grok-icon {
+    font-size: 12px;
+    width: 14px;
+    text-align: center;
+}
+
+/* Remove the old text annotation style */
+.custom-suggestion-annotation {
+    display: none;
+}
+
 .custom-suggestion-item:hover {
   background-color: var(--grey-1);
 }
 
 .custom-suggestion-name {
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
-.custom-suggestion-annotation {
-  font-size: 11px;
-  color: var(--grey-5);
-  margin-left: 16px;
-  white-space: nowrap;
+/* Style for required template fields */
+.custom-suggestion-item .custom-suggestion-name.required-field::before {
+    content: '•';
+    color: var(--red-3);
+    margin-right: 6px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Differentiate analysis annotations */
+.custom-suggestion-item .analysis-field-annotation {
+    color: var(--green-3) !important;
+    font-weight: 500;
+}
+
+.mapping-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapping-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-2);
+}
+
+.mapping-summary-old-name {
+  color: var(--grey-6);
   font-style: italic;
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-new-name {
+  font-weight: 500;
+  color: var(--grey-8);
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(1) { /* The arrow icon */
+  color: var(--grey-4);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2) { /* The 'times' icon to undo */
+  margin-left: auto;
+  color: var(--grey-4);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2):hover {
+  color: var(--red-3);
+  background-color: var(--grey-1);
+}
+
+
+
+.plate-selection-host {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--grey-2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+}
+.ui-badge-red, .ui-badge-blue {
+  border-radius: 10px;
+  padding: 2px 7px;
+  font-size: 11px;
+  color: white;
+  margin-right: 8px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+
+.ui-badge-red {
+  background-color: var(--red-3);
+}
+
+.ui-badge-blue {
+  background-color: var(--blue-1);
+}
+
+/* === Styles for Manage Mappings Button === */
+.manage-mappings-button > .d4-div-h {
+  gap: 8px;
+  align-items: center;
+}
+
+.manage-mappings-button .ui-badge-red,
+.manage-mappings-button .ui-badge-blue {
+  margin: 0;
+}
+
+.manage-mappings-button .d4-div-h > .grok-icon {
+  margin-right: 4px;
 }

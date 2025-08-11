@@ -6,25 +6,27 @@ import {PlateTemplate} from '../plates-crud';
 import {fromEvent, Subscription} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
+// --- Configuration for autosuggestions ---
+const REQUIRED_ANALYSIS_FIELDS = [
+  {name: 'Activity', required: true},
+  {name: 'Concentration', required: true},
+  {name: 'SampleID', required: true},
+];
+
+const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
+
 /**
- * Creates a custom input that shows a custom-styled dropdown with suggestions on focus.
+ * Creates a custom input that shows a dropdown with icon-based suggestions.
  */
 function createMappingInput(
   initialValue: string,
   template: PlateTemplate,
+  usedTemplateProperties: Set<string>,
   onCommit: (newValue: string) => void
 ): DG.InputBase<string> {
   const textInput = ui.input.string('', {value: initialValue});
   const popup = ui.div([], 'custom-suggestion-popup');
   let clickOutsideSubscription: Subscription | null = null;
-
-  const requiredFields = ['activity', 'concentration', 'sampleid'];
-  const templateWellProps = template.wellProperties
-    .filter((p) => p && p.name)
-    .map((p) => ({
-      name: p.name!,
-      required: requiredFields.includes(p.name!.toLowerCase()),
-    }));
 
   const hideSuggestions = () => {
     if (popup.parentElement)
@@ -37,10 +39,62 @@ function createMappingInput(
     if (popup.parentElement)
       hideSuggestions();
 
-    popup.innerHTML = '';
-    const currentVal = textInput.value.toLowerCase();
-    const filtered = templateWellProps.filter((p) => p.name.toLowerCase().includes(currentVal));
+    popup.innerHTML = ''; // Clear previous content
 
+    // --- 1. Create and add the Legend ---
+    const legend = ui.divH([
+      ui.divH([ui.iconFA('file-alt'), ui.span(['Template'])]),
+      ui.divH([ui.iconFA('chart-line'), ui.span(['Analysis'])]),
+      ui.divH([ui.iconFA('lock'), ui.span(['Required'])]),
+    ], 'custom-suggestion-legend');
+    popup.appendChild(legend);
+    popup.appendChild(ui.div([], 'dg-separator'));
+
+    // --- 2. Get suggestions from different sources ---
+    const templateSuggestions = template.wellProperties
+      .filter((p) => p && p.name && !usedTemplateProperties.has(p.name))
+      .map((p) => ({
+        name: p.name!,
+        isTemplate: true,
+        isAnalysis: false,
+        isRequired: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!),
+      }));
+
+    const analysisSuggestions = REQUIRED_ANALYSIS_FIELDS
+      .filter((ap) => !usedTemplateProperties.has(ap.name))
+      .map((ap) => ({
+        name: ap.name,
+        isTemplate: false,
+        isAnalysis: true,
+        isRequired: ap.required,
+      }));
+
+    // --- 3. Merge and de-duplicate suggestions ---
+    const suggestionMap = new Map<string, {name: string, isTemplate: boolean, isAnalysis: boolean, isRequired: boolean}>();
+    [...templateSuggestions, ...analysisSuggestions].forEach((s) => {
+      const existing = suggestionMap.get(s.name);
+      if (existing) {
+        existing.isTemplate = existing.isTemplate || s.isTemplate;
+        existing.isAnalysis = existing.isAnalysis || s.isAnalysis;
+        existing.isRequired = existing.isRequired || s.isRequired;
+      } else {
+        suggestionMap.set(s.name, {...s});
+      }
+    });
+    const allAvailableSuggestions = Array.from(suggestionMap.values());
+
+    // --- 4. Filter by user input & Sort ---
+    const currentVal = textInput.value.toLowerCase();
+    const filtered = allAvailableSuggestions
+      .filter((s) => s.name.toLowerCase().includes(currentVal))
+      .sort((a, b) => {
+        const scoreA = a.isRequired ? 100 : 0;
+        const scoreB = b.isRequired ? 100 : 0;
+        if (scoreA !== scoreB) return scoreB - scoreA; // Required items first
+        return a.name.localeCompare(b.name); // Alphabetical tie-break
+      });
+
+    // --- 5. Render the sorted list with icons ---
     if (filtered.length === 0) {
       hideSuggestions();
       return;
@@ -48,12 +102,19 @@ function createMappingInput(
 
     for (const prop of filtered) {
       const nameEl = ui.span([prop.name], 'custom-suggestion-name');
-      const annotationText = `from ${template.name}${prop.required ? ' (required)' : ''}`;
-      const annotationEl = ui.span([annotationText], 'custom-suggestion-annotation');
-      const itemEl = ui.divH([nameEl, annotationEl], 'custom-suggestion-item');
+      const iconsHost = ui.divH([], 'custom-suggestion-icons');
+
+      if (prop.isRequired)
+        iconsHost.appendChild(ui.iconFA('lock'));
+      if (prop.isTemplate)
+        iconsHost.appendChild(ui.iconFA('file-alt'));
+      if (prop.isAnalysis)
+        iconsHost.appendChild(ui.iconFA('chart-line'));
+
+      const itemEl = ui.divH([nameEl, iconsHost], 'custom-suggestion-item');
 
       itemEl.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // Prevent input from losing focus
+        e.preventDefault();
         textInput.value = prop.name;
         onCommit(prop.name);
         hideSuggestions();
@@ -64,14 +125,12 @@ function createMappingInput(
     const rect = textInput.input.getBoundingClientRect();
     popup.style.left = `${rect.left}px`;
     popup.style.top = `${rect.bottom + 2}px`;
-    // FIXED: Use min-width to allow the popup to expand, instead of a fixed width.
     popup.style.minWidth = `${rect.width}px`;
     document.body.appendChild(popup);
 
-    // Use a timeout to prevent the same click that opened the popup from closing it.
     setTimeout(() => {
       clickOutsideSubscription = fromEvent(document, 'click').subscribe((e: Event) => {
-        if (!textInput.root.contains(e.target as Node))
+        if (!popup.contains(e.target as Node) && !textInput.root.contains(e.target as Node))
           hideSuggestions();
       });
     }, 0);
@@ -111,10 +170,15 @@ export function renderValidationResults(
   const mappingData: any[] = [];
   let conflictCount = 0;
 
+  // Track which template properties have been used, either by direct match or by user mapping.
+  const usedTemplateProperties = new Set<string>();
+  reconciliationMap.forEach((_, mappedName) => usedTemplateProperties.add(mappedName));
+
   for (const pCol of plateColumns) {
     const matchedProp = templateWellProps.find((tProp) => tProp.name === pCol.name);
 
     if (matchedProp) {
+      usedTemplateProperties.add(matchedProp.originalName);
       const typeMatch = matchedProp.type === pCol.type;
       if (!typeMatch) conflictCount++;
       mappingData.push({
@@ -123,9 +187,10 @@ export function renderValidationResults(
         status: typeMatch ? 'Match' : 'Type Mismatch',
       });
     } else {
+      conflictCount++;
       mappingData.push({
         plateField: pCol.originalName,
-        templateField: '', // Start with empty mapping
+        templateField: '',
         status: 'Not Mapped',
       });
     }
@@ -147,20 +212,27 @@ export function renderValidationResults(
 
   mappingData.forEach((item) => {
     const currentName = item.plateField;
-    const originalName = reconciliationMap.get(currentName);
-    const isMapped = !!originalName;
+    const isMappedByRecon = reconciliationMap.has(currentName);
+    const originalNameIfRecon = reconciliationMap.get(currentName);
+    const isDirectMatch = item.status === 'Match' && item.templateField && !isMappedByRecon;
 
-    const columnCell = ui.divText(isMapped ? originalName : currentName);
+    const columnCell = ui.divText(isMappedByRecon ? originalNameIfRecon! : currentName);
     let rightCell: HTMLElement;
 
-    if (isMapped) {
+    const onCommit = (newValue: string) => {
+      onMap(currentName, newValue);
+      // Add the newly mapped property to the used set so other inputs can update
+      usedTemplateProperties.add(newValue);
+    };
+
+    if (isMappedByRecon) {
       const host = ui.divText(currentName);
       const icon = ui.iconFA('times', () => onUndo(currentName), 'Undo this mapping');
       rightCell = ui.divH([host, icon], 'locked-mapping-input');
+    } else if (isDirectMatch) {
+      rightCell = ui.divText(item.templateField, 'd4-read-only-input');
     } else {
-      const mappingInput = createMappingInput(item.templateField, template, (newValue) => {
-        onMap(currentName, newValue);
-      });
+      const mappingInput = createMappingInput('', template, usedTemplateProperties, onCommit);
       rightCell = mappingInput.root;
     }
 

@@ -16,10 +16,145 @@ import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 
 import './plates-create-view.css';
 
-type PlateFile = {plate: Plate;file: DG.FileInfo;reconciliationMap: Map<string, string>;
+type PlateFile = {plate: Plate; file: DG.FileInfo; reconciliationMap: Map<string, string>;
 };
 type TemplateState = {plates: PlateFile[], activePlateIdx: number
 };
+
+function createCollapsiblePanel(header: HTMLElement, content: HTMLElement, expanded: boolean = true): HTMLElement {
+  const icon = ui.iconFA(expanded ? 'chevron-down' : 'chevron-right', () => {
+    const isExpanded = content.style.display !== 'none';
+    content.style.display = isExpanded ? 'none' : 'block';
+    icon.classList.toggle('fa-chevron-down', !isExpanded);
+    icon.classList.toggle('fa-chevron-right', isExpanded);
+  });
+  icon.style.marginRight = '8px';
+  icon.style.color = 'var(--grey-4)';
+  icon.style.cursor = 'pointer';
+
+  // Make the entire header clickable
+  header.style.cursor = 'pointer';
+  header.onclick = () => icon.click();
+
+  const headerContainer = ui.divH([icon, header]);
+  headerContainer.style.alignItems = 'center';
+
+  content.style.display = expanded ? 'block' : 'none';
+  content.style.paddingLeft = '24px'; // Indent content to align under the header text
+
+  return ui.divV([headerContainer, content], 'left-panel-section');
+}
+/**
+ * Shows a dialog to manage and apply field mappings to multiple plates.
+ * @param allPlates - Array of all currently loaded PlateFile objects.
+ * @param sourceMappings - The mappings from the active plate, used as the template to apply.
+ * @param onSync - Callback to execute when synchronizing mappings with the selected plates.
+ * @param onUndo - Callback to undo a mapping definition from the source.
+ */
+function showMultiPlateMappingDialog(
+  allPlates: PlateFile[],
+  sourceMappings: Map<string, string>,
+  onSync: (mappings: Map<string, string>, selectedIndexes: number[]) => void,
+  onUndo: (mappedField: string) => void
+) {
+  const dialog = ui.dialog('Apply Field Mappings');
+  dialog.root.style.minWidth = '500px';
+  const content = ui.divV([], {style: {gap: '20px'}});
+
+  // --- Section 1: Mappings to Apply ---
+  const mappingsSection = ui.divV([], {style: {gap: '8px'}});
+  mappingsSection.appendChild(ui.h3('Mappings to Apply'));
+
+  if (sourceMappings.size > 0) {
+    const mappingsList = ui.divV([], 'mapping-summary-list');
+    sourceMappings.forEach((oldName, newName) => {
+      const row = ui.divH([
+        ui.divText(oldName, 'mapping-summary-old-name'),
+        ui.iconFA('long-arrow-alt-right', null, 'maps to'),
+        ui.divText(newName, 'mapping-summary-new-name'),
+        ui.iconFA('times', () => {
+          onUndo(newName);
+          dialog.close();
+          grok.shell.info(`Mapping for '${newName}' has been reset. Open "Manage Mappings" again to proceed.`);
+        }, 'Undo this mapping definition')
+      ], 'mapping-summary-row');
+      mappingsList.appendChild(row);
+    });
+    mappingsSection.appendChild(mappingsList);
+  } else {
+    mappingsSection.appendChild(ui.divText('No mappings defined yet. Use the validation panel to map columns on the active plate.', 'info-message'));
+  }
+
+  // --- Section 2: Target Plates ---
+  const platesSection = ui.divV([], {style: {gap: '8px'}});
+  platesSection.appendChild(ui.h3('Apply to Plates'));
+
+  const plateCheckboxes: DG.InputBase<boolean>[] = [];
+  const plateSelectionHost = ui.divV([], 'plate-selection-host');
+
+  allPlates.forEach((plateFile, idx) => {
+    // A plate is considered "mapped" if all source mappings are present in its reconciliation map.
+    const isCurrentlyMapped = [...sourceMappings.keys()].every((key) => plateFile.reconciliationMap.has(key));
+    const cb = ui.input.bool(plateFile.plate.barcode ?? `Plate ${idx + 1}`, {value: isCurrentlyMapped});
+    plateCheckboxes.push(cb);
+    plateSelectionHost.appendChild(cb.root);
+  });
+
+  const allPlatesCheckbox = ui.input.bool('Select All', {value: false, onValueChanged: (v) => {
+    plateCheckboxes.forEach((cb) => cb.value = v);
+  }});
+  allPlatesCheckbox.value = plateCheckboxes.every((cb) => cb.value);
+
+  platesSection.appendChild(allPlatesCheckbox.root);
+  platesSection.appendChild(plateSelectionHost);
+
+  // --- Dialog Assembly ---
+  content.appendChild(mappingsSection);
+  if (plateCheckboxes.length > 0)
+    content.appendChild(platesSection);
+
+
+  dialog.add(content);
+  dialog.onOK(() => {
+    const selectedIndexes = plateCheckboxes
+      .map((cb, idx) => cb.value ? idx : -1)
+      .filter((idx) => idx !== -1);
+
+    if (sourceMappings.size > 0)
+      onSync(sourceMappings, selectedIndexes);
+  });
+
+  dialog.show();
+}
+
+function createAnalysisSkeleton(): HTMLElement {
+  const curveSvg = `
+  <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .axis { stroke: #e0e0e0; stroke-width: 2; }
+      .curve { fill: none; stroke: #d0d0d0; stroke-width: 3; stroke-dasharray: 4 4; }
+      .grid-line { stroke: #f0f0f0; stroke-width: 1; }
+    </style>
+    <line x1="20" y1="20" x2="20" y2="130" class="axis" />
+    <line x1="20" y1="130" x2="180" y2="130" class="axis" />
+    <line x1="60" y1="130" x2="60" y2="20" class="grid-line" />
+    <line x1="100" y1="130" x2="100" y2="20" class="grid-line" />
+    <line x1="140" y1="130" x2="140" y2="20" class="grid-line" />
+    <line x1="20" y1="95" x2="180" y2="95" class="grid-line" />
+    <line x1="20" y1="60" x2="180" y2="60" class="grid-line" />
+    <path d="M 30 25 Q 80 30, 100 80 T 170 125" class="curve"/>
+  </svg>`;
+  const svgDiv = ui.div([]);
+  svgDiv.innerHTML = curveSvg;
+
+  const message = ui.divText('To see dose-response curves, ensure your CSV has "SampleID", "Concentration", and "Activity" columns.');
+
+  const skeleton = ui.divV([
+    svgDiv,
+    message,
+  ], 'drc-skeleton');
+  return skeleton;
+}
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -49,24 +184,24 @@ export function createPlatesView(): DG.View {
   let sourceDataFrame: DG.DataFrame | null = null;
   let plateIdentifierColumn: string | null = 'Destination Plate Barcode';
   let replicateIdentifierColumn: string | null = 'Technical Duplicate ID';
-  let plateNumberColumn: string | null = 'Plate Number'; // New state variable
+  let plateNumberColumn: string | null = 'Plate Number';
   const plateIdentifierHost = ui.div([]);
   const replicateIdentifierHost = ui.div([]);
-  const plateNumberHost = ui.div([]); // New UI host
+  const plateNumberHost = ui.div([]);
 
 
   let reprocessPlates: () => Promise<void>;
 
   const updatePlateIdentifierControl = () => {
     ui.empty(plateIdentifierHost);
-    if (!sourceDataFrame) return; // Do nothing if no file is loaded
+    if (!sourceDataFrame) return;
 
     const choiceInput = ui.input.choice('Plate Index', {
       value: plateIdentifierColumn,
-      items: [null, ...sourceDataFrame.columns.names()], // Allow 'None' to treat as single plate
+      items: [null, ...sourceDataFrame.columns.names()],
       onValueChanged: (newColumn: string | null) => {
         plateIdentifierColumn = newColumn;
-        reprocessPlates(); // Trigger re-parsing and UI update
+        reprocessPlates();
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
@@ -79,10 +214,10 @@ export function createPlatesView(): DG.View {
 
     const choiceInput = ui.input.choice('Replicate Index', {
       value: replicateIdentifierColumn,
-      items: [null, ...sourceDataFrame.columns.names()], // Allow 'None'
+      items: [null, ...sourceDataFrame.columns.names()],
       onValueChanged: (newColumn: string | null) => {
         replicateIdentifierColumn = newColumn;
-        reprocessPlates(); // Trigger re-parsing
+        reprocessPlates();
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
@@ -107,9 +242,7 @@ export function createPlatesView(): DG.View {
   reprocessPlates = async () => {
     if (!sourceDataFrame) return;
 
-    // Pass BOTH column names to the updated parsing function
     const parsedPlates = parsePlates(sourceDataFrame, plateIdentifierColumn, replicateIdentifierColumn, plateNumberColumn);
-
 
     const currentState = templateState.get(plateTemplate.id) ?? {plates: [], activePlateIdx: -1};
     currentState.plates = [];
@@ -132,6 +265,7 @@ export function createPlatesView(): DG.View {
 
   let setTemplate: (template: PlateTemplate) => Promise<void>;
 
+  /** Applies mapping to the active plate ONLY */
   const handleMapping = (currentColName: string, templatePropName: string) => {
     const state = templateState.get(plateTemplate.id);
     if (!state || !state.plates[state.activePlateIdx]) return;
@@ -139,25 +273,19 @@ export function createPlatesView(): DG.View {
     const activeFile = state.plates[state.activePlateIdx];
     const plate = activeFile.plate;
 
-    // Find the column by its current name and rename it to the template property name
     const columnToRename = plate.data.col(currentColName);
     if (!columnToRename) {
       console.warn(`Column '${currentColName}' not found for renaming.`);
       return;
     }
 
-    // --- This is the core logic ---
     columnToRename.name = templatePropName;
-
-    // We can still use the reconciliationMap to track changes for undo functionality later if needed
     activeFile.reconciliationMap.set(templatePropName, currentColName);
-
     grok.shell.info(`Mapped column '${currentColName}' to '${templatePropName}'.`);
-
-    // Refresh the entire view to reflect the column name change
     setTemplate(plateTemplate);
-  }; ;
+  };
 
+  /** Undoes mapping for the active plate ONLY */
   const handleUndoMapping = (mappedField: string) => {
     const state = templateState.get(plateTemplate.id);
     if (!state || !state.plates[state.activePlateIdx]) {
@@ -175,108 +303,85 @@ export function createPlatesView(): DG.View {
         activeFile.reconciliationMap.delete(mappedField);
         grok.shell.info(`Reverted mapping for '${mappedField}'.`);
         setTemplate(plateTemplate);
-      } else {
-        console.warn(`Column '${mappedField}' not found for reverting`);
-      }
-    } else {
-      console.warn(`No original mapping found for '${mappedField}'`);
-    }
+      } else { console.warn(`Column '${mappedField}' not found for reverting`); }
+    } else { console.warn(`No original mapping found for '${mappedField}'`); }
   };
 
-  const createReconciliationSummary = (activeFile: PlateFile | null, validationResults: {conflictCount: number}) => {
-    const appliedCount = activeFile ? activeFile.reconciliationMap.size : 0;
-    const pendingCount = validationResults.conflictCount;
+  /** NEW: Synchronizes mappings for all plates based on dialog selection. */
+  const syncMappingsWithSelection = (sourceMappings: Map<string, string>, selectedIndexes: number[]) => {
+    const state = templateState.get(plateTemplate.id);
+    if (!state) return;
 
-    const pendingIcon = ui.iconFA('exclamation-circle');
-    const appliedIcon = ui.iconFA('exchange-alt');
+    const selectedIndexesSet = new Set(selectedIndexes);
+    let platesModified = 0;
 
-    const indicator = ui.divH([
-      ui.divH([pendingIcon, ui.divText(`${pendingCount}`)], 'reco-summary__item'),
-      ui.divH([appliedIcon, ui.divText(`${appliedCount}`)], 'reco-summary__item'),
-    ], 'reco-summary');
+    state.plates.forEach((plateFile, index) => {
+      const shouldBeMapped = selectedIndexesSet.has(index);
+      const isCurrentlyMapped = [...sourceMappings.keys()].every((key) => plateFile.reconciliationMap.has(key));
 
-    indicator.classList.toggle('reco-summary--pending', pendingCount > 0);
-
-    ui.tooltip.bind(indicator, 'Click to view mapping details and undo changes');
-
-    indicator.addEventListener('click', () => {
-      const summaryDialog = ui.dialog('Field Mapping Summary');
-      summaryDialog.root.style.minWidth = '400px';
-      const content = ui.divV([], {style: {gap: '16px'}});
-      if (appliedCount > 0) {
-        content.appendChild(ui.h3('Applied Mappings', {style: {color: 'var(--green-6)', margin: '0'}}));
-        const mappingsList = ui.divV([], {style: {gap: '8px'}});
-        Array.from(activeFile!.reconciliationMap.entries()).forEach(([newName, oldName]) => {
-          const mappingRow = ui.divH([
-            ui.divV([
-              ui.divText(oldName, {style: {fontSize: '11px', color: 'var(--grey-5)'}}),
-              (() => {
-                const arrow = ui.iconFA('arrow-down');
-                arrow.style.fontSize = '10px';
-                arrow.style.color = 'var(--grey-4)';
-                return arrow;
-              })(),
-              ui.divText(newName, {style: {fontWeight: '500'}}),
-            ], {style: {alignItems: 'center', gap: '2px'}}),
-            (() => {
-              const closeIcon = ui.iconFA('times', () => {
-                handleUndoMapping(newName);
-                summaryDialog.close();
-              }, 'Undo this mapping');
-              Object.assign(closeIcon.style, {
-                cursor: 'pointer', color: 'var(--red-3)', padding: '4px',
-                borderRadius: '2px', fontSize: '12px',
-              });
-              return closeIcon;
-            })(),
-          ], {
-            style: {
-              justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px',
-              backgroundColor: 'var(--green-0)', border: '1px solid var(--green-2)', borderRadius: '4px',
-            },
-          });
-          mappingsList.appendChild(mappingRow);
+      if (shouldBeMapped && !isCurrentlyMapped) {
+        // APPLY MAPPING
+        sourceMappings.forEach((oldName, newName) => {
+          const columnToRename = plateFile.plate.data.col(oldName);
+          if (columnToRename && oldName !== newName) {
+            columnToRename.name = newName;
+            plateFile.reconciliationMap.set(newName, oldName);
+          }
         });
-        content.appendChild(mappingsList);
+        platesModified++;
+      } else if (!shouldBeMapped && isCurrentlyMapped) {
+        // UNDO MAPPING
+        sourceMappings.forEach((oldName, newName) => {
+          const columnToRevert = plateFile.plate.data.col(newName);
+          // Ensure we are reverting the correct mapping
+          if (columnToRevert && plateFile.reconciliationMap.get(newName) === oldName) {
+            columnToRevert.name = oldName;
+            plateFile.reconciliationMap.delete(newName);
+          }
+        });
+        platesModified++;
       }
-      if (pendingCount > 0) {
-        if (appliedCount > 0)
-          content.appendChild(ui.divText('', {style: {borderTop: '1px solid var(--grey-2)', margin: '8px 0'}}));
-        content.appendChild(ui.h3('Pending Conflicts', {style: {color: 'var(--orange-6)', margin: '0'}}));
-        content.appendChild(ui.divText(
-          `${pendingCount} field${pendingCount > 1 ? 's' : ''} still need${pendingCount === 1 ? 's' : ''} to be mapped. Use drag & drop in the validation table to resolve.`,
-          {style: {color: 'var(--grey-6)', fontSize: '14px'}}
-        ));
-      }
-      if (appliedCount === 0 && pendingCount === 0)
-        content.appendChild(ui.divText('All fields are properly mapped!', {style: {color: 'var(--green-6)'}}));
-      summaryDialog.add(content);
-      summaryDialog.show();
     });
-    return indicator;
+
+    if (platesModified > 0)
+      grok.shell.info(`Synchronized mappings for ${platesModified} plate(s).`);
+
+    setTemplate(plateTemplate); // Refresh UI
   };
+
 
   const renderFileTabs = (template: PlateTemplate, state: TemplateState | undefined) => {
     ui.empty(tabHeaderContainer);
-
 
     if (!state || state.plates.length === 0) {
       tabHeaderContainer.style.visibility = 'hidden';
       return;
     }
-
     tabHeaderContainer.style.visibility = 'visible';
-
     tabHeaderContainer.style.display = 'flex';
 
     state.plates.forEach((plateFile, idx) => {
       const dummyTable = ui.div();
       const validation = renderValidationResults(dummyTable, plateFile.plate, template, handleMapping, plateFile.reconciliationMap, handleUndoMapping);
       const hasConflicts = validation.conflictCount > 0;
+      const hasMappings = plateFile.reconciliationMap.size > 0;
       const tabLabelText = plateFile.plate.barcode ?? `Plate ${idx + 1}`;
 
-      const labelElement = ui.divText(tabLabelText);
+      const headerItems = [];
+
+      // Add mapping indicator on the left
+      if (hasMappings) {
+        const mappedIcon = ui.iconFA('exchange-alt');
+        const pill = ui.div(mappedIcon, 'plate-file-tab__mapped-pill');
+        ui.tooltip.bind(pill, `${plateFile.reconciliationMap.size} field(s) mapped`);
+        headerItems.push(pill);
+      }
+
+      const labelElement = ui.divText(tabLabelText, 'plate-file-tab__label');
+      headerItems.push(labelElement);
+
       const controlsContainer = ui.divH([], 'plate-file-tab__controls');
+      headerItems.push(controlsContainer);
 
       if (hasConflicts) {
         const conflictDot = ui.div('', 'plate-file-tab__conflict-dot');
@@ -296,7 +401,7 @@ export function createPlatesView(): DG.View {
       clearIcon.classList.add('plate-file-tab__clear-icon');
       controlsContainer.appendChild(clearIcon);
 
-      const header = ui.divH([labelElement, controlsContainer], 'plate-file-tab__header');
+      const header = ui.divH(headerItems, 'plate-file-tab__header');
       header.classList.toggle('active', idx === state.activePlateIdx);
 
       header.onclick = (e) => {
@@ -321,63 +426,81 @@ export function createPlatesView(): DG.View {
       ui.empty(platePropertiesHost);
       ui.empty(validationHost);
       ui.empty(wellPropsHeaderHost);
-      // --- MODIFIED: Clear the DRC host on every template change ---
       ui.empty(drcAnalysisHost);
       renderFileTabs(template, state);
-      let validationResults = {conflictCount: 0};
+
       if (activeFile && activeFile.plate && activeFile.plate.data) {
         try {
           plateWidget.plate = activeFile.plate;
-
           const drcCurvesElement = PlateDrcAnalysis.createCurvesGrid(activeFile.plate, plateWidget);
-
-          if (drcCurvesElement) {
+          if (drcCurvesElement)
             drcAnalysisHost.appendChild(drcCurvesElement);
-          } else {
-            const info = ui.divText('To see dose-response curves, ensure your CSV has "SampleID", "Concentration", and "Activity" columns.', 'info-message');
-            info.style.padding = '10px';
-            drcAnalysisHost.appendChild(info);
-          }
+          else
+            drcAnalysisHost.appendChild(createAnalysisSkeleton());
 
-          validationResults = renderValidationResults(validationHost, activeFile.plate, template, handleMapping, activeFile.reconciliationMap, handleUndoMapping);
+          renderValidationResults(validationHost, activeFile.plate, template, handleMapping, activeFile.reconciliationMap, handleUndoMapping);
           const plateProperties = template.plateProperties
             .filter((p) => p && p.name && p.type)
             .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-          if (plateProperties.length > 0) {
-            const form = ui.input.form(activeFile.plate.details || {}, plateProperties);
-            platePropertiesHost.appendChild(form);
-          }
+          if (plateProperties.length > 0)
+            platePropertiesHost.appendChild(ui.input.form(activeFile.plate.details || {}, plateProperties));
         } catch (validationError) {
           console.error('Error during validation rendering:', validationError);
           validationHost.appendChild(ui.divText('Error loading validation results.', 'error-message'));
         }
       } else {
-        try {
-          plateWidget.plate = await createNewPlateForTemplate(plateType, template);
-          const templateProperties = template.plateProperties
-            .filter((p) => p && p.name && p.type)
-            .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-          if (templateProperties.length > 0) {
-            const form = ui.input.form({}, templateProperties);
-            platePropertiesHost.appendChild(form);
-          }
-          validationHost.appendChild(ui.divText(
-            'Import a CSV file to see validation results and start mapping fields.', 'info-message'
-          ));
-        } catch (plateCreationError) {
-          console.error('Error creating new plate:', plateCreationError);
-        }
+        plateWidget.plate = await createNewPlateForTemplate(plateType, template);
+        const templateProperties = template.plateProperties
+          .filter((p) => p && p.name && p.type)
+          .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
+        if (templateProperties.length > 0)
+          platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
+        validationHost.appendChild(ui.divText('Import a CSV file to see validation results.', 'info-message'));
+        drcAnalysisHost.appendChild(createAnalysisSkeleton());
       }
-      const indicator = createReconciliationSummary(activeFile, validationResults);
+
+      // --- UPDATED: Well Properties Header with Icon Button ---
+      const manageMappingsButton = ui.button(ui.divH([ui.iconFA('exchange-alt'), ui.span(['Manage Mappings'])]), () => {
+        if (state && activeFile && activeFile.reconciliationMap.size > 0)
+          showMultiPlateMappingDialog(state.plates, activeFile.reconciliationMap, syncMappingsWithSelection, handleUndoMapping);
+        else
+          grok.shell.warning('Please import a plate and define at least one mapping on the active plate first.');
+      }, 'Synchronize field mappings across multiple plates');
+      manageMappingsButton.classList.add('manage-mappings-button');
+
+
+      if (state && state.plates.length > 0) {
+        const badges = ui.divH([]);
+        let totalConflicts = 0;
+        state.plates.forEach((pf) => {
+          const validation = renderValidationResults(ui.div(), pf.plate, template, ()=>{}, pf.reconciliationMap, ()=>{});
+          totalConflicts += validation.conflictCount;
+        });
+
+        if (totalConflicts > 0) {
+          const conflictBadge = ui.span([`${totalConflicts}`], 'ui-badge-red');
+          ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved fields across all plates`);
+          badges.appendChild(conflictBadge);
+        }
+
+        const totalMappings = state.plates.reduce((sum, pf) => sum + pf.reconciliationMap.size, 0);
+        if (totalMappings > 0) {
+          const mappingBadge = ui.span([`${totalMappings}`], 'ui-badge-blue');
+          ui.tooltip.bind(mappingBadge, `${totalMappings} total mappings applied across all plates`);
+          badges.appendChild(mappingBadge);
+        }
+        if (badges.children.length > 0)
+          manageMappingsButton.prepend(badges);
+      }
+
       const header = ui.h2('Well Properties');
       const templateNameSpan = ui.span([template.name], 'well-props-header__template-name');
-      wellPropsHeaderHost.appendChild(ui.divH([header, templateNameSpan, indicator], 'space-between-center'));
-      try {
-        plateWidget.refresh();
-        plateWidget.updateRoleSummary();
-      } catch (refreshError) {
-        console.error('Error refreshing plate widget:', refreshError);
-      }
+      const headerContainer = ui.divH([header, templateNameSpan, ui.divH([manageMappingsButton], {style: {marginLeft: 'auto'}})], 'space-between-center');
+      wellPropsHeaderHost.appendChild(headerContainer);
+      // --- End of updated header section ---
+
+      plateWidget.refresh();
+      plateWidget.updateRoleSummary();
     } catch (error) {
       console.error('Critical error in setTemplate:', error);
       grok.shell.error(`Error updating template: ${error}`);
@@ -410,13 +533,6 @@ export function createPlatesView(): DG.View {
   });
   assignButton.disabled = true;
 
-  const roleAssignmentPanel = ui.divV([
-    ui.h2('Role Assignment'),
-    selectionStatusDiv,
-    roleInput.root,
-    assignButton,
-  ], 'left-panel-section');
-
   const updateAssignButtonState = () => {
     const selectionCount = plateWidget.plate.data.selection.trueCount;
     const rolesCount = roleInput.value?.length ?? 0;
@@ -447,11 +563,9 @@ export function createPlatesView(): DG.View {
       if (!file) return;
       try {
         sourceDataFrame = DG.DataFrame.fromCsv(await file.readAsString());
-
         updatePlateIdentifierControl();
         updateReplicateIdentifierControl();
-        updatePlateNumberControl(); // Update the new control
-
+        updatePlateNumberControl();
         await reprocessPlates();
       } catch (e: any) {
         grok.shell.error(`Failed to parse CSV: ${e.message}`);
@@ -474,8 +588,8 @@ export function createPlatesView(): DG.View {
     fileInput.root,
     plateIdentifierHost,
     replicateIdentifierHost,
-    plateNumberHost, // Add the new host here
-  ], 'plate-import-container'); // We'll add this class in the CSS step
+    plateNumberHost,
+  ], 'plate-import-container');
 
 
   const plateTypeSelector = ui.input.choice('Plate Type', {value: plateType.name, items: plateTypes.map((pt) => pt.name), onValueChanged: (v) => {
@@ -483,31 +597,58 @@ export function createPlatesView(): DG.View {
   }});
   const plateTemplateSelector = ui.input.choice('Template', {value: plateTemplate.name, items: plateTemplates.map((pt) => pt.name), onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)});
 
-  const templatePanel = ui.divV([
-    ui.h2('Template'),
+  // --- Left Panel with Collapsible Sections ---
+  const templateIcon = ui.iconFA('file-alt', null, 'Template-defined properties');
+  templateIcon.classList.add('legend-icon', 'legend-icon-template');
+  const templateHeader = ui.divH([templateIcon, ui.h2('Template')], {style: {alignItems: 'center', gap: '8px', flexGrow: '1'}});
+  const templateContent = ui.divV([
     plateTypeSelector.root,
     plateTemplateSelector.root,
-  ], 'left-panel-section');
+  ], 'left-panel-section-content');
+  const templatePanel = createCollapsiblePanel(templateHeader, templateContent, true);
+
+  const platePropsHeader = ui.h2('Plate Properties', {style: {flexGrow: '1'}});
+  const platePropsContent = platePropertiesHost;
+  platePropsContent.classList.add('left-panel-section-content');
+  const platePropsPanel = createCollapsiblePanel(platePropsHeader, platePropsContent, true);
+
+  const wellPropsContent = validationHost;
+  wellPropsContent.classList.add('left-panel-section-content');
+  // wellPropsHeaderHost is the complex header that is populated dynamically
+  const wellPropsPanel = createCollapsiblePanel(wellPropsHeaderHost, wellPropsContent, true);
+
+  const roleAssignmentHeader = ui.h2('Role Assignment', {style: {flexGrow: '1'}});
+  const roleAssignmentContent = ui.divV([
+    selectionStatusDiv,
+    roleInput.root,
+    assignButton,
+  ], 'left-panel-section-content');
+  const roleAssignmentPanel = createCollapsiblePanel(roleAssignmentHeader, roleAssignmentContent, true);
 
   const leftPanel = ui.divV([
     templatePanel,
-    ui.divV([ui.h2('Plate Properties'), platePropertiesHost], 'left-panel-section'),
-    ui.divV([wellPropsHeaderHost, validationHost], 'left-panel-section'),
+    platePropsPanel,
+    wellPropsPanel,
     roleAssignmentPanel,
   ], 'create-plate-view__left-panel');
+  // --- End of Left Panel ---
 
-  const rightPanel = ui.divV([
+  const rightPanelTop = ui.divV([
     importContainer,
     tabHeaderContainer,
     plateWidget.root,
-    drcAnalysisHost,
+  ]);
+  rightPanelTop.style.flexShrink = '0';
+
+  const analysisIcon = ui.iconFA('chart-line');
+  analysisIcon.classList.add('legend-icon', 'legend-icon-analysis');
+  const analysisTitle = ui.divH([analysisIcon, ui.h2('Analyses')], {style: {alignItems: 'center', gap: '8px'}});
+  const drcContainer = ui.divV([analysisTitle, drcAnalysisHost], 'drc-container');
+
+  const rightPanel = ui.divV([
+    rightPanelTop,
+    drcContainer,
   ], 'create-plate-view__right-panel');
-
-  rightPanel.style.width = '100%';
-  rightPanel.style.height = '100%';
-  rightPanel.style.display = 'flex';
-  rightPanel.style.flexDirection = 'column';
-
 
   const mainLayout = ui.divH([leftPanel, rightPanel], 'create-plate-view__main-layout');
   view.root.appendChild(mainLayout);
