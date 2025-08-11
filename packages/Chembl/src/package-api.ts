@@ -160,3 +160,44 @@ export namespace queries {
     return await grok.data.query('ChEMBL:RelationshipTypes', { sub });
   }
 }
+
+export namespace funcs {
+  export async function init(): Promise<void> {
+    return await grok.functions.call('ChEMBL:Init', {});
+  }
+
+  export async function chemblSearchWidgetLocalDb(mol: string , substructure: boolean ): Promise<any> {
+    return await grok.functions.call('ChEMBL:ChemblSearchWidgetLocalDb', { mol, substructure });
+  }
+
+  export async function chemblSubstructureSearchPanel(mol: string ): Promise<any> {
+    return await grok.functions.call('ChEMBL:ChemblSubstructureSearchPanel', { mol });
+  }
+
+  export async function chemblSimilaritySearchPanel(mol: string ): Promise<any> {
+    return await grok.functions.call('ChEMBL:ChemblSimilaritySearchPanel', { mol });
+  }
+
+  export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number , organism: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ChEMBL:GetChemblCompoundsByOrganism', { maxNumberOfMolecules, organism });
+  }
+
+  export async function getChemblCompounds(maxNumberOfMolecules: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ChEMBL:GetChemblCompounds', { maxNumberOfMolecules });
+  }
+
+  export async function chemblMolregno(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ChEMBL:ChemblMolregno', { table, molecules });
+  }
+
+  export async function chemblIdToSmilesTs(id: string ): Promise<string> {
+    return await grok.functions.call('ChEMBL:ChemblIdToSmilesTs', { id });
+  }
+
+  /**
+  Running various queries to chemical databases using convenient input forms
+  */
+  export async function demoDatabasesChembl(): Promise<void> {
+    return await grok.functions.call('ChEMBL:DemoDatabasesChembl', {});
+  }
+}

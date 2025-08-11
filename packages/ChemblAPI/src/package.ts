@@ -124,9 +124,7 @@ export async function getSmiles(molString: string): Promise<string> {
 
 export class PackageFunctions {
   @grok.decorators.func({
-    'tags': [
-    'widgets'
-    ],
+    'tags': ['widgets'],
     'name': 'ChEMBL Search Widget'
     })
   static async chemblSearchWidget(
@@ -189,9 +187,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'tags': [
-    'widgets'
-    ],
+    'tags': ['widgets'],
     'name': 'Databases | ChEMBL | Substructure Search API',
     'condition': 'true'
     })
@@ -203,9 +199,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-    'widgets'
-    ],
+    'tags': ['widgets'],
     'name': 'Databases | ChEMBL | Similarity Search API',
     'condition': 'true'
     })
@@ -216,7 +210,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.func({'name': 'GetCompoundsIds', 'outputs': [{'type': 'object', 'name': 'result'}]})
   static async getCompoundsIds(inchiKey: string): Promise<{[key: string]: string | number}[]> {
     const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
     const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
@@ -225,7 +219,7 @@ export class PackageFunctions {
     return response.status !== 200 || json.error ? {} : json;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({'name':'Chembl Get by Id'})
   static async getById(id: string): Promise<DG.DataFrame> {
     if (!id.toLowerCase().startsWith('chembl'))
       id = `CHEMBL${id}`;

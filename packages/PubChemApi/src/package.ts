@@ -46,9 +46,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
+    'tags': ['widgets'],
     'name': 'Databases | PubChem | Identity Search',
   })
   static async pubChemIdentitySearch(
@@ -60,10 +58,10 @@ export class PackageFunctions {
   @grok.decorators.func({
     'meta': {
       'role': 'converter',
-      'inputRegexp': '(^\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\s*\:\s*[0-9]+\s*$)',
+      'inputRegexp': '(^\\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\\s*\\:\\s*[0-9]+\\s*$)',
       'connection': 'PubChemApi',
     },
-    outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}]
+    'outputs': [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
   })
   static async pubChemToSmiles(
     id: string): Promise<string> {
@@ -82,7 +80,7 @@ export class PackageFunctions {
       'inputRegexp': '([A-Z]{14}-[A-Z]{10}-N)',
       'connection': 'PubChemApi',
     },
-    outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}]
+    'outputs': [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
   })
   static async inchiKeysToSmiles(
     id: string): Promise<string> {

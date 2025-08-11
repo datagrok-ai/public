@@ -153,12 +153,12 @@ export class PackageFunctions {
    * alert(b.get_pattern_fp());
    **/
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'module'}]})
   static getRdKitModule(): RDModule {
     return chemCommonRdKit.getRdKitModule();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'handler'}]})
   static getMolFileHandler(molString: string): MolfileHandlerBase {
     return MolfileHandler.getInstance(molString);
   }
@@ -271,7 +271,7 @@ export class PackageFunctions {
       options);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'canvas'}]})
   static drawMolecule(
     @grok.decorators.param({type: 'string'}) molStr: string,
     @grok.decorators.param({type: 'int', options: {optional: true}}) w?: number,
@@ -301,7 +301,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'chemCellRenderer',
     tags: ['cellRenderer', 'cellRenderer-ChemicalReaction'],
-    meta: {'cellType': 'ChemicalReaction', 'cell-renderer-sem-type': 'ChemicalReaction'},
+    meta: {'cellType': 'ChemicalReaction'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
@@ -311,7 +311,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'chemMixtureRenderer',
     tags: ['cellRenderer', 'cellRenderer-ChemicalMixture'],
-    meta: {'cellType': 'ChemicalMixture', 'cell-renderer-sem-type': 'ChemicalMixture'},
+    meta: {'cellType': 'ChemicalMixture'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
@@ -321,7 +321,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'chemCellRenderer',
     tags: ['cellRenderer', 'cellRenderer-Molecule'],
-    meta: {'cellType': 'Molecule', 'cell-renderer-sem-type': 'Molecule'},
+    meta: {'cellType': 'Molecule'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async chemCellRenderer(): Promise<DG.GridCellRenderer> {
@@ -361,7 +361,9 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    outputs: [{type: 'object', name: 'fingerprintBitset', options: {description: 'Fingerprints'}}],
+  })
   static getMorganFingerprint(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molString: string): DG.BitSet {
     const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
@@ -384,7 +386,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async getDiversities(
     molStringsColumn: DG.Column,
-    @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int'}) limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
     try {
       const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
@@ -398,8 +400,8 @@ export class PackageFunctions {
   static async findSimilar(
     molStringsColumn: DG.Column,
     molString: string,
-    @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number = Number.MAX_VALUE,
-    @grok.decorators.param({type: 'double', options: {optional: true}}) cutoff: number = 0.0): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int'}) limit: number = Number.MAX_VALUE,
+    @grok.decorators.param({type: 'int'}) cutoff: number = 0.0): Promise<DG.DataFrame> {
     assure.notNull(molStringsColumn, 'molStringsColumn');
     assure.notNull(molString, 'molString');
     assure.notNull(limit, 'limit');
@@ -484,13 +486,14 @@ export class PackageFunctions {
     await openDescriptorsDialogDocker();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
   static async chemDescriptorsTree(): Promise<object> {
     return await fetchWrapper(() => getDescriptorsTree());
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Search | Map Identifiers...',
+    'name': 'Map Identifiers',
+    'top-menu': 'Chem | Calculate | Map Identifiers...',
   })
   static async getMapIdentifiers() {
     await openMapIdentifiersDialog();
@@ -523,7 +526,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({name: 'SearchSubstructureEditor'})
   static searchSubstructureEditor(call: DG.FuncCall): void {
     if (grok.shell.tv.dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
@@ -589,6 +592,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'clusterMCS',
     friendlyName: 'Cluster MCS',
     description: 'Calculates most common substructures for each cluster',
     meta: {vectorFunc: 'true'},
@@ -651,11 +655,12 @@ export class PackageFunctions {
     name: 'Fingerprints',
     tags: ['dim-red-preprocessing-function'],
     meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto, Asymmetric, Cosine, Sokal'},
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
     @grok.decorators.param({options: {optional: true}}) _metric?: string,
-    @grok.decorators.param({options: {caption: 'Fingerprint type', optional: true, choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan) {
+    @grok.decorators.param({options: {caption: 'Fingerprint type', optional: true, choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType?: Fingerprint) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
@@ -672,6 +677,7 @@ export class PackageFunctions {
     'name': 'Chem Space',
     'description': 'Maps the dataset to 2D plot based on similarity',
     'editor': 'Chem:ChemSpaceEditor',
+    'outputs': [{type: 'viewer', name: 'result'}],
   })
   static async chemSpaceTopMenu(
     @grok.decorators.param({type: 'dataframe'}) table: DG.DataFrame,
@@ -730,14 +736,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'chemSpaceTransform',
     tags: ['Transform'],
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static async chemSpaceTransform(
     table: DG.DataFrame,
-    molecules: DG.Column,
-    methodName: DimReductionMethods,
-    @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}})molecules: DG.Column,
+    @grok.decorators.param({type: 'string'}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string'}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
     @grok.decorators.param({options: {initialValue: 'true'}}) plotEmbeddings: boolean,
     @grok.decorators.param({options: {optional: true}}) options?: string,
     @grok.decorators.param({options: {optional: true}}) clusterEmbeddings?: boolean,
@@ -750,14 +756,15 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Space Embeddings',
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async getChemSpaceEmbeddings(
-    col: DG.Column,
-    methodName: DimReductionMethods,
-    similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
+    @grok.decorators.param({type: 'string'}) col: DG.Column,
+    @grok.decorators.param({type: 'string'}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string'}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
     xAxis: string,
     yAxis: string,
-    options?: any): Promise<ISequenceSpaceResult> {
+    @grok.decorators.param({type: 'object', options: {optional: true}}) options?: any): Promise<ISequenceSpaceResult> {
     //need to create dataframe to add fingerprints column
     if (!col.dataFrame) {
       const dfForFp = DG.DataFrame.create(col.length);
@@ -776,12 +783,13 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Similarities Matrix',
+    outputs: [{name: 'result', type: 'object'}],
   })
   static async getChemSimilaritiesMatrix(
-    dim: number,
-    col: DG.Column,
-    df: DG.DataFrame,
-    colName: string,
+    @grok.decorators.param({type: 'int'}) dim: number,
+      col: DG.Column,
+      df: DG.DataFrame,
+      colName: string,
     @grok.decorators.param({type: 'object'}) simArr: DG.Column[]): Promise<(DG.Column | null)[]> {
     //need to create dataframe to add fingerprints column
     if (!col.dataFrame) {
@@ -794,7 +802,6 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Elemental Analysis...',
     'name': 'Elemental Analysis',
-    'description': 'Add a standalone radar viewer',
   })
   static async elementalAnalysis(
     table: DG.DataFrame,
@@ -844,7 +851,7 @@ export class PackageFunctions {
   })
   static runElementalAnalysis(
     table: DG.DataFrame,
-    molecules: DG.Column): string[] {
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column): string[] {
     const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
     const columnNames: string[] = [];
     if (invalid.filter((el) => el !== null).length > 0) {
@@ -883,6 +890,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     tags: ['Transform'],
+    outputs: [{name: 'result', type: 'object'}],
   })
   static async rGroupDecomposition(
     df: DG.DataFrame,
@@ -937,10 +945,10 @@ export class PackageFunctions {
     'editor': 'Chem:ActivityCliffsEditor',
   })
   static async activityCliffs(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
-    @grok.decorators.param({options: {caption: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
+    @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
     @grok.decorators.param({type: 'func', options: {optional: true}}) preprocessingFunction: DG.Func,
@@ -1046,10 +1054,10 @@ export class PackageFunctions {
     tags: ['Transform'],
   })
   static async activityCliffsTransform(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
-    @grok.decorators.param({options: {caption: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
+    @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
     @grok.decorators.param({options: {optional: true}}) options?: string,
@@ -1075,8 +1083,8 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisTopMenu(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): void {
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiCol = getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
     table.columns.add(inchiCol);
@@ -1097,8 +1105,8 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisKeysTopMenu(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): void {
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiKeyCol = getInchiKeysImpl(col);
     inchiKeyCol.name = table.columns.getUnusedName(inchiKeyCol.name);
     table.columns.add(inchiKeyCol);
@@ -1117,11 +1125,11 @@ export class PackageFunctions {
     'top-menu': 'Chem | Analyze | Structural Alerts...',
     'name': 'Structural Alerts',
     'description': 'Highlights the fragments that could lead to potential chemical hazards',
-    'outputs': [{name: 'result', type: 'dataframe'}],
+    'tags': ['HitTriageFunction'],
   })
   static async structuralAlertsTopMenu(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -1157,7 +1165,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'dataframe'}],
   })
   static async runStructuralAlerts(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
@@ -1273,6 +1281,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'getChemPropertyFunction',
     description: 'Return chem property function',
+    outputs: [{name: 'result', type: 'object'}],
   })
   static getChemPropertyFunction(
     @grok.decorators.param({type: 'string'}) name: string): null | ((smiles: string) => any) {
@@ -1345,7 +1354,7 @@ export class PackageFunctions {
   })
   static async convertMoleculeNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: DG.Column,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock']}}) targetNotation: DG.chem.Notation): Promise<DG.Column> {
+    @grok.decorators.param({type: 'string'}) targetNotation: DG.chem.Notation): Promise<DG.Column> {
     let col: DG.Column;
     let newColName = `${molecule.name}_${targetNotation}`;
     try {
@@ -1383,10 +1392,10 @@ export class PackageFunctions {
   })
   static async convertNotation(
     data: DG.DataFrame,
-    molecules: DG.Column<string>,
-    @grok.decorators.param({options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
-    @grok.decorators.param({options: {optional: true, initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {optional: true, initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
     const res = await convertNotationForColumn(molecules, targetNotation);
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
@@ -1552,7 +1561,8 @@ export class PackageFunctions {
     description: 'Opens smi file',
     ext: 'mol2',
   })
-  static importMol2(bytes: Uint8Array): DG.DataFrame[] | void {
+  static importMol2(
+    @grok.decorators.param({type: 'list'}) bytes: Uint8Array): DG.DataFrame[] | void {
     try {
       return _importTripos(Uint8Array.from(bytes));
     } catch (e:any) {
@@ -1659,7 +1669,8 @@ export class PackageFunctions {
     meta: {action: 'Copy as...'},
     tags: ['exclude-current-value-menu'],
   })
-  static copyAsAction(value: DG.SemanticValue) {
+  static copyAsAction(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
     const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
     const menu = DG.Menu.popup();
 
@@ -1680,7 +1691,8 @@ export class PackageFunctions {
     tags: ['exclude-actions-panel'],
     meta: {action: 'Copy as SMILES'},
   })
-  static copyAsSmiles(value: DG.SemanticValue): void {
+  static copyAsSmiles(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
@@ -1693,7 +1705,8 @@ export class PackageFunctions {
     tags: ['exclude-actions-panel'],
     meta: {action: 'Copy as MOLFILE V2000'},
   })
-  static copyAsMolfileV2000(value: DG.SemanticValue): void {
+  static copyAsMolfileV2000(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const molfileV2000 = DG.chem.isMolBlock(value.value) && !value.value.includes('V3000') ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(molfileV2000);
@@ -1706,7 +1719,8 @@ export class PackageFunctions {
     tags: ['exclude-actions-panel'],
     meta: {action: 'Copy as MOLFILE V3000'},
   })
-  static copyAsMolfileV3000(value: DG.SemanticValue): void {
+  static copyAsMolfileV3000(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const molfileV3000 = DG.chem.isMolBlock(value.value) && value.value.includes('V3000') ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(molfileV3000);
@@ -1719,7 +1733,8 @@ export class PackageFunctions {
     tags: ['exclude-actions-panel'],
     meta: {action: 'Copy as SMARTS'},
   })
-  static copyAsSmarts(value: DG.SemanticValue): void {
+  static copyAsSmarts(
+    @grok.decorators.param({options: {semType: 'Molecule'}})value: DG.SemanticValue): void {
     const smarts = !DG.chem.isMolBlock(value.value) && _isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smarts);
@@ -1732,7 +1747,8 @@ export class PackageFunctions {
     tags: ['exclude-actions-panel'],
     meta: {action: 'Copy as Image'},
   })
-  static copyAsImage(value: DG.SemanticValue): void {
+  static copyAsImage(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     if (!value?.value || !value?.gridCell?.bounds || !value?.gridCell?.renderer)
       return;
     const gridCellBounds = value.gridCell.bounds;
@@ -1786,10 +1802,10 @@ export class PackageFunctions {
     df: DG.DataFrame,
     col: DG.Column,
     molecule: string,
-    @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics,
-    @grok.decorators.param({type: 'string'}) fingerprint: string,
-    @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number,
-    @grok.decorators.param({type: 'double', options: {optional: true}}) minScore: number): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'string'}) metricName: BitArrayMetrics,
+    fingerprint: string,
+    @grok.decorators.param({type: 'int'}) limit: number,
+    minScore: number): Promise<DG.DataFrame> {
     const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
       fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
     return res ?? DG.DataFrame.create();
@@ -1802,14 +1818,14 @@ export class PackageFunctions {
   })
   static async callChemDiversitySearch(
     col: DG.Column,
-    @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics,
-    fingerprint: string, @grok.decorators.param({type: 'int', options: {optional: true}}) limit: number): Promise<number[]> {
+    @grok.decorators.param({type: 'string'}) metricName: BitArrayMetrics,
+    fingerprint: string, @grok.decorators.param({type: 'int'}) limit: number): Promise<number[]> {
     return await chemDiversitySearch(col, similarityMetric[metricName], limit,
       fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Chemical Properties...',
+    'top-menu': 'Chem | Calculate | Properties...',
     'name': 'Chemical Properties',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
@@ -1819,7 +1835,7 @@ export class PackageFunctions {
       'method_info.github': 'https://github.com/actelion/openchemlib',
     }})
   static async addChemPropertiesColumns(
-    @grok.decorators.param({type: 'dataframe', options: {caption: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true'}}) MW?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) HBA?: boolean,
@@ -1846,7 +1862,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'getMolProperty',
-    meta: {vectorFunc: 'true'}
+    meta: {vectorFunc: 'true'},
   })
   static async getMolProperty(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -1875,7 +1891,7 @@ export class PackageFunctions {
     'name': 'Toxicity Risks',
     'tags': ['HitTriageFunction', 'Transform']})
   static async addChemRisksColumns(
-    table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true'}}) mutagenicity?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
@@ -1929,7 +1945,6 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Matched Molecular Pairs',
-    'tags': ['top-menu'],
     'editor': 'Chem:MMPEditor',
     'top-menu': 'Chem | Analyze | Matched Molecular Pairs...'})
   static async mmpAnalysis(
@@ -1991,7 +2006,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async getScaffoldTree(data: DG.DataFrame,
     @grok.decorators.param({type: 'int', options: {description: 'Ignore molecules with # rings > N', initialValue: '10'}}) ringCutoff: number = 0,
-    @grok.decorators.param({type: 'bool', options: {description: 'Remove charges and radicals from scaffolds', initialValue: 'false'}}) dischargeAndDeradicalize: boolean = false,
+    @grok.decorators.param({options: {description: 'Remove charges and radicals from scaffolds', initialValue: 'false'}}) dischargeAndDeradicalize: boolean = false,
   ): Promise<string> {
     const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
 
@@ -2102,7 +2117,8 @@ export class PackageFunctions {
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'tags': ['Transform']})
-  static async namesToSmiles(data: DG.DataFrame, names: DG.Column<string>): Promise<void> {
+  static async namesToSmiles(data: DG.DataFrame,
+    @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
@@ -2128,7 +2144,7 @@ export class PackageFunctions {
     return oclMol(molecule).getMolecularFormula().formula;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static validateMolecule(s: string): string | null {
     let logHandle: RDLog | null = null;
     let mol: RDMol | null = null;
@@ -2215,34 +2231,57 @@ export class PackageFunctions {
     name: 'trainChemprop',
     description: 'To be added',
     meta: {mlname: 'Chemprop', mlrole: 'train'},
-    outputs: [{name: 'modelBlob', type: 'dynamic model'}],
+    outputs: [{name: 'model', type: 'dynamic'}],
   })
   static async trainChemprop(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({name: 'dataset_type', options: {category: 'General', choices: ['regression', 'classification'], initialValue: 'regression'}}) dataset_type: string,
-    @grok.decorators.param({name: 'metric', options: {category: 'General', choices: ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1'], initialValue: 'rmse'}}) metric: string,
-    @grok.decorators.param({name: 'multiclass_num_classes', type: 'int', options: {category: 'General', initialValue: '3'}}) multiclass_num_classes: number,
-    @grok.decorators.param({name: 'num_folds', type: 'int', options: {category: 'General', initialValue: '1'}}) num_folds: number,
-    @grok.decorators.param({name: 'data_seed', type: 'int', options: {category: 'General', initialValue: '0'}}) data_seed: number,
-    @grok.decorators.param({name: 'split_sizes', type: 'list', options: {category: 'General'}}) split_sizes: any,
-    @grok.decorators.param({name: 'split_type', options: {category: 'General', choices: ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles'], initialValue: 'random'}}) split_type: string,
-    @grok.decorators.param({name: 'activation', options: {category: 'Model', choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'], initialValue: 'ReLU'}}) activation: string,
-    @grok.decorators.param({name: 'atom_messages', options: {category: 'Model', initialValue: 'false'}}) atom_messages: boolean,
-    @grok.decorators.param({name: 'message_bias', options: {category: 'Model', initialValue: 'false'}}) message_bias: boolean,
-    @grok.decorators.param({name: 'ensemble_size', type: 'int', options: {category: 'Model', initialValue: '1'}}) ensemble_size: number,
-    @grok.decorators.param({name: 'message_hidden_dim', type: 'int', options: {category: 'Model', initialValue: '300'}}) message_hidden_dim: number,
-    @grok.decorators.param({name: 'depth', type: 'int', options: {category: 'Model', initialValue: '3'}}) depth: number,
-    @grok.decorators.param({name: 'dropout', options: {category: 'Model', initialValue: '0.0'}}) dropout: number,
-    @grok.decorators.param({name: 'ffn_hidden_dim', type: 'int', options: {category: 'Model', initialValue: '300'}}) ffn_hidden_dim: number,
-    @grok.decorators.param({name: 'ffn_num_layers', type: 'int', options: {category: 'Model', initialValue: '2'}}) ffn_num_layers: number,
-    @grok.decorators.param({name: 'epochs', type: 'int', options: {category: 'Training', initialValue: '50'}}) epochs: number,
-    @grok.decorators.param({name: 'batch_size', type: 'int', options: {category: 'Training', initialValue: '64'}}) batch_size: number,
-    @grok.decorators.param({name: 'warmup_epochs', options: {category: 'Training', initialValue: '2.0'}}) warmup_epochs: number,
-    @grok.decorators.param({name: 'init_lr', options: {category: 'Training', initialValue: '0.001'}}) init_lr: number,
-    @grok.decorators.param({name: 'max_lr', options: {category: 'Training', initialValue: '0.001'}}) max_lr: number,
-    @grok.decorators.param({name: 'final_lr', options: {category: 'Training', initialValue: '0.0001'}}) final_lr: number,
-    @grok.decorators.param({name: 'no_descriptor_scaling', options: {category: 'Training', initialValue: 'false'}}) no_descriptor_scaling: boolean): Promise<Uint8Array | undefined> {
+    @grok.decorators.param({options: {category: 'General', choices: ['regression', 'classification'], initialValue: 'regression', description: 'Type of dataset,e.g. classification or regression. This determines the loss function used during training.'}})
+    dataset_type: string,
+    @grok.decorators.param({options: {category: 'General', choices: ['mse', 'mae', 'rmse', 'bounded-mse', 'bounded-mae', 'bounded-rmse', 'r2', 'binary-mcc', 'multiclass-mcc', 'roc', 'prc', 'accuracy', 'f1'], initialValue: 'rmse', description: 'Metric to use during evaluation. Note:Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).'}})
+    metric: string,
+    @grok.decorators.param({type: 'int', options: {category: 'General', initialValue: '3', description: 'Number of classes when running multiclass classification'}})
+    multiclass_num_classes: number,
+    @grok.decorators.param({type: 'int', options: {category: 'General', initialValue: '1', description: 'Number of folds when performing cross validation'}})
+    num_folds: number,
+    @grok.decorators.param({type: 'int', options: {category: 'General', initialValue: '0', description: 'Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1,the first fold uses this seed and all subsequent folds add 1 to the seed.'}})
+    data_seed: number,
+    @grok.decorators.param({type: 'list', options: {category: 'General', initialValue: '[0.8,0.1,0.1]', description: 'Split proportions for train/validation/test sets'}})
+    split_sizes: any,
+    @grok.decorators.param({options: {category: 'General', choices: ['random', 'scaffold_balanced', 'cv', 'cv_no_val', 'kennard_stone', 'kmeans', 'random_with_repeated_smiles'], initialValue: 'random', description: 'Method of splitting the data into train/val/test'}})
+    split_type: string,
+    @grok.decorators.param({options: {category: 'Model', choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'], initialValue: 'ReLU', description: 'Activation function'}})
+    activation: string,
+    @grok.decorators.param({options: {category: 'Model', initialValue: 'false', description: 'Use messages on atoms instead of messages on bonds'}})
+    atom_messages: boolean,
+    @grok.decorators.param({options: {category: 'Model', initialValue: 'false', description: 'Whether to add bias to linear layers'}})
+    message_bias: boolean,
+    @grok.decorators.param({type: 'int', options: {category: 'Model', initialValue: '1', description: 'Number of models in ensemble'}})
+    ensemble_size: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Model', initialValue: '300', description: 'Dimensionality of hidden layers in MPN'}})
+    message_hidden_dim: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Model', initialValue: '3', description: 'Number of message passing step'}})
+    depth: number,
+    @grok.decorators.param({options: {category: 'Model', initialValue: '0.0', description: 'Dropout probability'}})
+    dropout: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Model', initialValue: '300', description: 'Hidden dim for higher-capacity FFN (defaults to hidden_size)'}})
+    ffn_hidden_dim: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Model', initialValue: '2', description: 'Number of layers in FFN after MPN encoding'}})
+    ffn_num_layers: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Training', initialValue: '50', description: 'Number of epochs to run'}})
+    epochs: number,
+    @grok.decorators.param({type: 'int', options: {category: 'Training', initialValue: '64', description: 'Batch size'}})
+    batch_size: number,
+    @grok.decorators.param({options: {category: 'Training', initialValue: '2.0', description: 'Number of epochs during which learning rate increases linearly from init_lr to max_lr. Afterwards,learning rate decreases exponentially from max_lr to final_lr.'}})
+    warmup_epochs: number,
+    @grok.decorators.param({options: {category: 'Training', initialValue: '0.001', description: 'Initial learning rate'}})
+    init_lr: number,
+    @grok.decorators.param({options: {category: 'Training', initialValue: '0.001', description: 'Maximum learning rate'}})
+    max_lr: number,
+    @grok.decorators.param({options: {category: 'Training', initialValue: '0.0001', description: 'Final learning rate'}})
+    final_lr: number,
+    @grok.decorators.param({options: {category: 'Training', initialValue: 'false', description: 'Turn off scaling of features'}})
+    no_descriptor_scaling: boolean): Promise<Uint8Array | undefined> {
     const parameterValues = {
       'dataset_type': dataset_type,
       'metric': metric,
@@ -2286,7 +2325,8 @@ export class PackageFunctions {
     meta: {mlname: 'Chemprop', mlrole: 'apply'},
     outputs: [{name: 'data_out', type: 'dataframe'}],
   })
-  static async applyChemprop(df: DG.DataFrame, model: Uint8Array) {
+  static async applyChemprop(df: DG.DataFrame,
+    @grok.decorators.param({type: 'dynamic'}) model: Uint8Array) {
     try {
       const column = await PackageFunctions.applyModelChemprop(model, df.toCsv());
       return DG.DataFrame.fromColumns([column]);
@@ -2326,7 +2366,7 @@ export class PackageFunctions {
     'description': 'Generates the new dataset based on the given structure',
   })
   static async deprotect(
-    @grok.decorators.param({options: {caption: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
     const module = PackageFunctions.getRdKitModule();
@@ -2347,7 +2387,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    description: 'Converts the list of molecules to V3K format using OCL'
+    description: 'Converts the list of molecules to V3K format using OCL',
   })
   static async convertToV3KViaOCL(mols: string[]): Promise<string[]> {
     const oc = new OCLService();

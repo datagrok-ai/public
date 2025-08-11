@@ -20,13 +20,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'widgets',
-    ],
-    'name': 'chemblSearchWidgetLocalDb',
+    tags: ['widgets'],
+    name: 'chemblSearchWidgetLocalDb',
   })
   static async chemblSearchWidgetLocalDb(
-    @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string,
       substructure: boolean = false): Promise<DG.Widget> {
     const headerHost = ui.div([]);
     const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
@@ -98,67 +96,57 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
-    'name': 'Databases | ChEMBL | Substructure Search (Internal)',
-    'condition': 'true',
+    tags: ['widgets'],
+    name: 'Databases | ChEMBL | Substructure Search (Internal)',
+    condition: 'true',
   })
   static async chemblSubstructureSearchPanel(
-  @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string): Promise<DG.Widget> {
+  @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string): Promise<DG.Widget> {
     return mol ? await PackageFunctions.chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
   }
 
 
-  @grok.decorators.func({
-    'tags': [
-      'widgets',
-    ],
-    'name': 'Databases | ChEMBL | Similarity Search (Internal)',
-    'condition': 'true',
+  @grok.decorators.panel({
+    tags: ['widgets'],
+    name: 'Databases | ChEMBL | Similarity Search (Internal)',
+    condition: 'true',
   })
   static async chemblSimilaritySearchPanel(
-    @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string): Promise<DG.Widget> {
+    @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string): Promise<DG.Widget> {
     return mol ? await PackageFunctions.chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
   }
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageDataSource',
-    ],
-    'name': 'Chembl targets by organism',
+    tags: ['HitTriageDataSource'],
+    name: 'Chembl targets by organism',
   })
   static async getChemblCompoundsByOrganism(
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '1000'}}) maxNumberOfMolecules: number,
-    @grok.decorators.param({'options': {'initialValue': '\'Shigella\''}}) organism: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int', options: {initialValue: '1000', description: 'Maximum number of rows to return'}}) maxNumberOfMolecules: number,
+    @grok.decorators.param({options: {initialValue: '\'Shigella\'', description: 'Organism name'}}) organism: string): Promise<DG.DataFrame> {
     const df = await grok.data.query('Chembl:StructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
     return df;
   }
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageDataSource',
-    ],
-    'name': 'Chembl Compounds',
+    tags: ['HitTriageDataSource'],
+    name: 'Chembl Compounds',
   })
   static async getChemblCompounds(
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '1000'}}) maxNumberOfMolecules: number): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int', options: {initialValue: '1000', description: 'Maximum number of rows to return'}}) maxNumberOfMolecules: number): Promise<DG.DataFrame> {
     const df = await grok.data.query('Chembl:ChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
     return df;
   }
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageFunction',
-    ],
-    'name': 'Chembl molregno',
+    tags: ['HitTriageFunction'],
+    name: 'Chembl molregno',
   })
   static async chemblMolregno(
-    @grok.decorators.param({'options': {'caption': 'Table'}}) table: DG.DataFrame,
-    @grok.decorators.param({'options': {'caption': 'Molecules', 'semType': 'Molecule'}}) molecules: DG.Column): Promise<DG.DataFrame> {
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule'}}) molecules: DG.Column): Promise<DG.DataFrame> {
     const name = table.columns.getUnusedName('CHEMBL molregno');
     table.columns.addNewInt(name);
     for (let i = 0; i < molecules.length; i++) {
@@ -178,22 +166,23 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     meta: {
-      'role': 'converter',
-      'inputRegexp': '(CHEMBL[0-9]+)',
+      role: 'converter',
+      inputRegexp: '(CHEMBL[0-9]+)',
     },
+    outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
   })
   static async chemblIdToSmilesTs(
-  @grok.decorators.param({'options': {'semType': 'CHEMBL_ID', 'initialValue': '\'CHEMBL1185\''}}) id: string): Promise<string> {
+  @grok.decorators.param({options: {semType: 'CHEMBL_ID', initialValue: '\'CHEMBL1185\''}}) id: string): Promise<string> {
     return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
   }
 
 
   @grok.decorators.func({
-    'meta': {
-      'demoPath': 'Cheminformatics | Database Queries',
+    meta: {
+      demoPath: 'Cheminformatics | Database Queries',
     },
-    'name': 'Database Queries',
-    'description': 'Running various queries to chemical databases using convenient input forms',
+    name: 'Database Queries',
+    description: 'Running various queries to chemical databases using convenient input forms',
   })
   static async demoDatabasesChembl(): Promise<void> {
     await _demoDatabasesChembl();

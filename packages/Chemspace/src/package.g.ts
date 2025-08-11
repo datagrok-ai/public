@@ -65,6 +65,6 @@ export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Colum
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function queryMultipart(path: string, formParamsStr: string, paramsStr: string) {
+export async function queryMultipart(path: string, formParamsStr: string, paramsStr?: string) {
   return PackageFunctions.queryMultipart(path, formParamsStr, paramsStr);
 }

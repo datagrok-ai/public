@@ -12,7 +12,6 @@ export async function revvitySignalsLinkApp() {
 //name: revvitySignalsLinkAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: any, browseView: DG.View) {
   return PackageFunctions.revvitySignalsLinkAppTreeBrowser(treeNode, browseView);
 }

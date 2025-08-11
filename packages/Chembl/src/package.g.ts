@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 //name: init
 //tags: autostart
-//output: dynamic result
 export function init() {
   return PackageFunctions.init();
 }
@@ -27,7 +26,7 @@ export async function chemblSubstructureSearchPanel(mol: string) {
 }
 
 //name: Databases | ChEMBL | Similarity Search (Internal)
-//tags: widgets
+//tags: panel, widgets
 //input: string mol { semType: Molecule }
 //output: widget result
 //condition: true
@@ -37,8 +36,8 @@ export async function chemblSimilaritySearchPanel(mol: string) {
 
 //name: Chembl targets by organism
 //tags: HitTriageDataSource
-//input: int maxNumberOfMolecules { default: 1000 }
-//input: string organism { default: 'Shigella' }
+//input: int maxNumberOfMolecules { default: 1000; description: Maximum number of rows to return }
+//input: string organism { default: 'Shigella'; description: Organism name }
 //output: dataframe result
 export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number, organism: string) {
   return PackageFunctions.getChemblCompoundsByOrganism(maxNumberOfMolecules, organism);
@@ -46,7 +45,7 @@ export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number,
 
 //name: Chembl Compounds
 //tags: HitTriageDataSource
-//input: int maxNumberOfMolecules { default: 1000 }
+//input: int maxNumberOfMolecules { default: 1000; description: Maximum number of rows to return }
 //output: dataframe result
 export async function getChemblCompounds(maxNumberOfMolecules: number) {
   return PackageFunctions.getChemblCompounds(maxNumberOfMolecules);
@@ -54,7 +53,7 @@ export async function getChemblCompounds(maxNumberOfMolecules: number) {
 
 //name: Chembl molregno
 //tags: HitTriageFunction
-//input: dataframe table { caption: Table }
+//input: dataframe table { caption: Table; description: Input data table }
 //input: column molecules { caption: Molecules; semType: Molecule }
 //output: dataframe result
 export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column) {
@@ -63,7 +62,7 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column) 
 
 //name: chemblIdToSmilesTs
 //input: string id { semType: CHEMBL_ID; default: 'CHEMBL1185' }
-//output: string result
+//output: string result { semType: Molecule }
 //meta.role: converter
 //meta.inputRegexp: (CHEMBL[0-9]+)
 export async function chemblIdToSmilesTs(id: string) {

@@ -9,14 +9,16 @@ export async function initHelm() {
 
 //name: getHelmService
 //description: Helm renderer service
-//output: dynamic result
+//output: object result
 export async function getHelmService() {
   return PackageFunctions.getHelmService();
 }
 
 //name: helmCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
+//meta.columnTags: quality=Macromolecule, units=helm
+//meta.cellType: helm
 export function helmCellRenderer() {
   return PackageFunctions.helmCellRenderer();
 }
@@ -47,7 +49,7 @@ export function propertiesWidget(sequence: DG.SemanticValue) {
 }
 
 //name: getMolfiles
-//input: dynamic col { semType: Macromolecule }
+//input: column col { semType: Macromolecule }
 //output: column result
 export function getMolfiles(col: any) {
   return PackageFunctions.getMolfiles(col);
@@ -57,7 +59,7 @@ export function getMolfiles(col: any) {
 //tags: valueEditor
 //input: string name { optional: true; default: undefined }
 //input: object options { optional: true; default: undefined }
-//output: dynamic result
+//output: object result
 //meta.propertyType: string
 //meta.semType: Macromolecule
 export function helmInput(name: string, options: any) {
@@ -65,7 +67,7 @@ export function helmInput(name: string, options: any) {
 }
 
 //name: getHelmHelper
-//output: dynamic result
+//output: object result
 export function getHelmHelper() {
   return PackageFunctions.getHelmHelper();
 }

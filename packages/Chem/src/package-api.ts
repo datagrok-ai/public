@@ -235,11 +235,11 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetSimilarities', { molStringsColumn, molString });
   }
 
-  export async function getDiversities(molStringsColumn: DG.Column , limit?: number ): Promise<DG.DataFrame> {
+  export async function getDiversities(molStringsColumn: DG.Column , limit: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetDiversities', { molStringsColumn, limit });
   }
 
-  export async function findSimilar(molStringsColumn: DG.Column , molString: string , limit?: number , cutoff?: number ): Promise<DG.DataFrame> {
+  export async function findSimilar(molStringsColumn: DG.Column , molString: string , limit: number , cutoff: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:FindSimilar', { molStringsColumn, molString, limit, cutoff });
   }
 
@@ -278,7 +278,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }
 
-  export async function getMapIdentifiers(): Promise<any> {
+  export async function getMapIdentifiers(): Promise<void> {
     return await grok.functions.call('Chem:GetMapIdentifiers', {});
   }
 
@@ -331,11 +331,11 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS });
   }
 
-  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: any , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
+  export async function chemSpaceTransform(table: DG.DataFrame , molecules: string , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings });
   }
 
-  export async function getChemSpaceEmbeddings(col: DG.Column , methodName: any , similarityMetric: any , xAxis: string , yAxis: string , options: any ): Promise<any> {
+  export async function getChemSpaceEmbeddings(col: string , methodName: string , similarityMetric: string , xAxis: string , yAxis: string , options?: any ): Promise<any> {
     return await grok.functions.call('Chem:GetChemSpaceEmbeddings', { col, methodName, similarityMetric, xAxis, yAxis, options });
   }
 
@@ -343,9 +343,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetChemSimilaritiesMatrix', { dim, col, df, colName, simArr });
   }
 
-  /**
-  Add a standalone radar viewer
-  */
   export async function elementalAnalysis(table: DG.DataFrame , molecules: DG.Column , radarViewer: boolean , radarGrid: boolean ): Promise<void> {
     return await grok.functions.call('Chem:ElementalAnalysis', { table, molecules, radarViewer, radarGrid });
   }
@@ -381,16 +378,16 @@ export namespace funcs {
     return await grok.functions.call('Chem:ActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo });
   }
 
-  export async function addInchisTopMenu(table: DG.DataFrame , col: DG.Column ): Promise<void> {
-    return await grok.functions.call('Chem:AddInchisTopMenu', { table, col });
+  export async function addInchisTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+    return await grok.functions.call('Chem:AddInchisTopMenu', { table, molecules });
   }
 
   export async function getInchis(molecules: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('Chem:GetInchis', { molecules });
   }
 
-  export async function addInchisKeysTopMenu(table: DG.DataFrame , col: DG.Column ): Promise<void> {
-    return await grok.functions.call('Chem:AddInchisKeysTopMenu', { table, col });
+  export async function addInchisKeysTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+    return await grok.functions.call('Chem:AddInchisKeysTopMenu', { table, molecules });
   }
 
   export async function getInchiKeys(molecules: DG.Column ): Promise<DG.Column> {
@@ -488,11 +485,11 @@ export namespace funcs {
     return await grok.functions.call('Chem:ConvertMolNotation', { molecule, sourceNotation, targetNotation });
   }
 
-  export async function convertNotation(data: DG.DataFrame , molecules: any , targetNotation: any , overwrite?: boolean , join?: boolean ): Promise<DG.Column> {
+  export async function convertNotation(data: DG.DataFrame , molecules: string , targetNotation: string , overwrite: boolean , join: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Chem:ConvertNotation', { data, molecules, targetNotation, overwrite, join });
   }
 
-  export async function convertMolNotationAction(col: DG.Column ): Promise<any> {
+  export async function convertMolNotationAction(col: DG.Column ): Promise<void> {
     return await grok.functions.call('Chem:ConvertMolNotationAction', { col });
   }
 
@@ -500,6 +497,9 @@ export namespace funcs {
     return await grok.functions.call('Chem:ConvertMixtureToSmiles', { col });
   }
 
+  /**
+  Molecule
+  */
   export async function editMoleculeCell(cell: any ): Promise<void> {
     return await grok.functions.call('Chem:EditMoleculeCell', { cell });
   }
@@ -557,7 +557,7 @@ export namespace funcs {
   /**
   Copies structure in different formats
   */
-  export async function copyAsAction(value: any ): Promise<any> {
+  export async function copyAsAction(value: any ): Promise<void> {
     return await grok.functions.call('Chem:CopyAsAction', { value });
   }
 
@@ -608,11 +608,11 @@ export namespace funcs {
     return await grok.functions.call('Chem:DetectSmiles', { col, min });
   }
 
-  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , fingerprint: string , limit?: number , minScore?: number ): Promise<DG.DataFrame> {
+  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , fingerprint: string , limit: number , minScore: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:CallChemSimilaritySearch', { df, col, molecule, metricName, fingerprint, limit, minScore });
   }
 
-  export async function callChemDiversitySearch(col: DG.Column , metricName: string , fingerprint: string , limit?: number ): Promise<DG.DataFrame> {
+  export async function callChemDiversitySearch(col: DG.Column , metricName: string , fingerprint: string , limit: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, fingerprint, limit });
   }
 
@@ -711,7 +711,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:DemoScaffold', {});
   }
 
-  export async function namesToSmiles(data: DG.DataFrame , names: any ): Promise<void> {
+  export async function namesToSmiles(data: DG.DataFrame , names: DG.Column ): Promise<void> {
     return await grok.functions.call('Chem:NamesToSmiles', { data, names });
   }
 
@@ -723,7 +723,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetMolecularFormula', { molecule });
   }
 
-  export async function validateMolecule(s: string ): Promise<string> {
+  export async function validateMolecule(s: string ): Promise<any> {
     return await grok.functions.call('Chem:ValidateMolecule', { s });
   }
 

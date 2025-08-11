@@ -29,7 +29,7 @@ export async function pubChemIdentitySearch(molString: string) {
 //input: string id 
 //output: string result { semType: Molecule }
 //meta.role: converter
-//meta.inputRegexp: (^s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]s*:s*[0-9]+s*$)
+//meta.inputRegexp: (^\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\s*\:\s*[0-9]+\s*$)
 //meta.connection: PubChemApi
 export async function pubChemToSmiles(id: string) {
   return PackageFunctions.pubChemToSmiles(id);

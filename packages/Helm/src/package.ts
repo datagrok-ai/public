@@ -103,7 +103,8 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'description': 'Helm renderer service'
+    'description': 'Helm renderer service',
+    'outputs': [{'type': 'object',  'name': 'result'}]
   })
   static async getHelmService(): Promise<HelmServiceBase> {
   
@@ -111,9 +112,12 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
-    'tags': [
-      'cellRenderer'
-    ]
+    'tags': ['cellRenderer'],
+    'meta': {
+      'columnTags': 'quality=Macromolecule, units=helm',
+      'cellType': 'helm'
+    },
+    'outputs': [{name: 'result', type: 'grid_cell_renderer'}]
   })
   static helmCellRenderer(): DG.GridCellRenderer {
   
@@ -125,12 +129,8 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      'columnTags': 'quality=Macromolecule, units=helm'
-    },
-    'tags': [
-      'cellEditor'
-    ],
+    'meta': {'columnTags': 'quality=Macromolecule, units=helm'},
+    'tags': ['cellEditor'],
     'description': 'Macromolecule'
   })
   static editMoleculeCell(
@@ -141,9 +141,7 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      'action': 'Edit Helm...'
-    },
+    'meta': {'action': 'Edit Helm...'},
     'name': 'Edit Helm...',
     'description': 'Adds editor'
   })
@@ -183,7 +181,7 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static getMolfiles(
-    @grok.decorators.param({'options':{'semType':'Macromolecule'}})  col: DG.Column<string>): DG.Column<string> {
+    @grok.decorators.param({'type': 'column', 'options':{'semType':'Macromolecule'}})  col: DG.Column<string>): DG.Column<string> {
   
     const helmStrList = col.toList();
     const molfileList = _package.helmHelper.getMolfiles(helmStrList);
@@ -198,9 +196,8 @@ export class PackageFunctions{
       'propertyType': 'string',
       'semType': 'Macromolecule'
     },
-    'tags': [
-      'valueEditor'
-    ]
+    'tags': ['valueEditor'],
+    'outputs': [{'type': 'object',  'name': 'result'}]
   })
   static helmInput(
     @grok.decorators.param({'options':{'optional':true,'initialValue':'undefined'}})  name: string,
@@ -212,7 +209,7 @@ export class PackageFunctions{
 
 
 
-  @grok.decorators.func()
+  @grok.decorators.func({'outputs': [{'type': 'object',  'name': 'result'}]})
   static getHelmHelper(): IHelmHelper {
   
     return _package.helmHelper;

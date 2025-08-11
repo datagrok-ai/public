@@ -24,11 +24,11 @@ export namespace funcs {
     return await grok.functions.call('PubChem:PubChemToSmiles', { id });
   }
 
-  export async function inchiKeysToSmiles(id: string ): Promise<any> {
+  export async function inchiKeysToSmiles(id: string ): Promise<string> {
     return await grok.functions.call('PubChem:InchiKeysToSmiles', { id });
   }
 
-  export async function getIupacName(smiles: string ): Promise<any> {
+  export async function getIupacName(smiles: string ): Promise<string> {
     return await grok.functions.call('PubChem:GetIupacName', { smiles });
   }
 }

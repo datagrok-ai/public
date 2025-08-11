@@ -145,7 +145,7 @@ export class PackageFunctions{
     'name': 'Databases | CDD Vault'
   })
   static molColumnPropertyPanel(
-    @grok.decorators.param({'options':{'semType':'Molecule'}})  molecule: string): DG.Widget { 
+    @grok.decorators.param({'name': 'mol','options':{'semType':'Molecule'}})  molecule: string): DG.Widget { 
     return DG.Widget.fromRoot(ui.wait(async () => {
       try {
         const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
@@ -350,15 +350,15 @@ export class PackageFunctions{
       'cache.invalidateOn': '0 0 * * *'
     },
     'name': 'CDD Vault Search Async',
-    'editor': 'Cddvaultlink'
+    'editor': 'Cddvaultlink:CDDVaultSearchEditor'
   })
   static async cDDVaultSearchAsync(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule'}})   structure?: string,
-    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure']}})   structure_search_type?: CDDVaultSearchType,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true}})    structure_similarity_threshold?: number,
-    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true}})   protocol?: number,
-    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true}})   run?: number): Promise<DG.DataFrame> { 
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule', 'description': 'SMILES; cxsmiles or mol string'}})   structure?: string,
+    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure'], 'description': 'SMILES; cxsmiles or mol string'}})   structure_search_type?: CDDVaultSearchType,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true, 'description': 'A number between 0 and 1'}}) structure_similarity_threshold?: number,
+    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Protocol id'}})   protocol?: number,
+    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Specific run id'}})   run?: number): Promise<DG.DataFrame> { 
     //collecting molecule ids according to protocol query params
     let molIds: number[] = [];
     if (protocol) {
@@ -409,31 +409,56 @@ export class PackageFunctions{
     'name': 'CDD Vault search'
   })
   static async cDDVaultSearch(
-    @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   molecules: string,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   names: string,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   include_original_structures: boolean,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})    only_ids: boolean,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   only_batch_ids: boolean,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   created_before: string,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   created_after: string,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})   modified_before: string,
-    @grok.decorators.param({'options':{'category':'General','nullable':true}})    modified_after: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})   batch_created_before: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})   batch_created_after: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})   batch_field_before_name: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})    batch_field_before_date: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})   batch_field_after_name: string,
-    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true}})   batch_field_after_date: string,
-    @grok.decorators.param({'options':{'category':'Projects','nullable':true}})   projects: string,
-    @grok.decorators.param({'options':{'category':'Datasets','nullable':true}})   data_sets: string,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule'}})    structure: string,
-    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure']}})   structure_search_type: CDDVaultSearchType,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true}})   structure_similarity_threshold: number,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true}})   inchikey: string,
-    @grok.decorators.param({'type':'list<string>','options':{'category':'Filelds','nullable':true}})     molecule_fields: string[],
-    @grok.decorators.param({'type':'list<string>','options':{'category':'Filelds','nullable':true}})   batch_fields: string[],
-    @grok.decorators.param({'type':'list<string>','options':{'category':'Molecules filelds search','nullable':true}})   fields_search: string[]): Promise<DG.DataFrame> { 
+    @grok.decorators.param({'type':'int','options':{'nullable':true}})  
+    vaultId: number,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'Comma separated list of ids'}})   
+    molecules: string,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'Comma separated list of names/synonyms'}})   
+    names: string,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'If true,include the original user defined structure for each molecule'}})   
+    include_original_structures: boolean,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'If true,only the Molecule IDs are returned,allowing for a smaller and faster response'}})    
+    only_ids: boolean,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'If true,the full Molecule details are still returned but the Batch-level information is left out of the JSON results. (Only the IDs of the Batches belonging to the Molecules are still included.)'}})   
+    only_batch_ids: boolean,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'ISO 8601 date'}})   
+    created_before: string,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'ISO 8601 date'}})   
+    created_after: string,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'ISO 8601 date'}})   
+    modified_before: string,
+    @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'ISO 8601 date'}})   
+    modified_after: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'ISO 8601 date. A molecule with any batch that has a creation date on or before the parameter will be included'}})   
+    batch_created_before: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'ISO 8601 date. A molecule with any batch that has a creation date on or after the parameter will be included'}})
+    batch_created_after: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'Specifes a user-defined batch field for batch_field_before_date'}})   
+    batch_field_before_name: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'ISO 8601 date. A molecule with any batch that has a batch_field_before_name value date on or before the parameter will be included'}})    
+    batch_field_before_date: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'Specifes a user-defined batch field for batch_field_after_date'}})   
+    batch_field_after_name: string,
+    @grok.decorators.param({'options':{'category':'Batch fields','nullable':true, 'description': 'ISO 8601 date. A molecule with any batch that has a batch_field_after_name value date on or after the parameter will be included'}})   
+    batch_field_after_date: string,
+    @grok.decorators.param({'options':{'category':'Projects','nullable':true, 'description': 'Comma separated list of project ids'}})   
+    projects: string,
+    @grok.decorators.param({'options':{'category':'Datasets','nullable':true, 'description': 'Comma separated list of dataset ids'}})   
+    data_sets: string,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule', 'description': 'SMILES,cxsmiles or mol string'}})    
+    structure: string,
+    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure'], 'description': 'SMILES,cxsmiles or mol string'}})   
+    structure_search_type: CDDVaultSearchType,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true, 'description': 'A number between 0 and 1'}})   
+    structure_similarity_threshold: number,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true, 'description': 'Use this parameter instead of the \'structure\' and \'structure_search_type\' parameters' }})   
+    inchikey: string,
+    @grok.decorators.param({'options':{'category':'Filelds','nullable':true, 'description': 'Use this parameter to limit the number of Molecule UDF Fields to return'}})     
+    molecule_fields: string[],
+    @grok.decorators.param({'options':{'category':'Filelds','nullable':true, 'description': 'Use this parameter to limit the number of Batch UDF Fields to return'}})   
+    batch_fields: string[],
+    @grok.decorators.param({'options':{'category':'Molecules filelds search','nullable':true, 'description': 'This parameter is used for searching across the custom user-defined Molecule fields created by your Vault Administrator'}})
+    fields_search: string[]): Promise<DG.DataFrame> { 
     const params: MoleculeQueryParams = {};
     if (molecules)
       params.molecules = molecules;
@@ -517,15 +542,20 @@ export class PackageFunctions{
       'cache.invalidateOn': '0 0 * * *'
     },
     'name': 'CDD Vault search 2',
-    'editor': 'Cddvaultlink'
+    'editor': 'Cddvaultlink:CDDVaultSearchEditor'
   })
   static async cDDVaultSearch2(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule'}})   structure?: string,
-    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure']}})   structure_search_type?: CDDVaultSearchType,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true}})    structure_similarity_threshold?: number,
-    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true}})   protocol?: number,
-    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true}})   run?: number): Promise<DG.DataFrame> { 
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule', 'description': 'SMILES,cxsmiles or mol string'}})
+    structure?: string,
+    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure'], 'description': 'SMILES,cxsmiles or mol string'}})   
+    structure_search_type?: CDDVaultSearchType,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true, 'description': 'A number between 0 and 1'}})    
+    structure_similarity_threshold?: number,
+    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Protocol id'}})   
+    protocol?: number,
+    @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Specific run id'}})   
+    run?: number): Promise<DG.DataFrame> { 
     //collecting molecule ids according to protocol query params
     const molIds: number[] = [];
     if (protocol) {

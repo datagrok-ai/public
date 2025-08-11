@@ -18,7 +18,7 @@ export async function sureChemblSubstructureSearch(molecule: string, limit: numb
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold: number) {
+export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold?: number) {
   return PackageFunctions.sureChemblSimilaritySearch(molecule, limit, similarityThreshold);
 }
 

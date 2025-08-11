@@ -12,7 +12,6 @@ export async function clinicalCaseApp() {
 //name: clinicalCaseAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function clinicalCaseAppTreeBrowser(treeNode: any, browseView: DG.View) {
   return PackageFunctions.clinicalCaseAppTreeBrowser(treeNode, browseView);
 }
@@ -21,7 +20,7 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any, browseView: DG.V
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
-//output: dynamic result
+//output: widget result
 export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) {
   return PackageFunctions.clinicalCaseFolderLauncher(folder, files);
 }
