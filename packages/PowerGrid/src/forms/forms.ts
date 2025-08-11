@@ -44,7 +44,11 @@ let scene: Scene;
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
-  if (column.type == DG.TYPE.INT) { return column.max.toString().length * 8; } else if (column.type == DG.TYPE.FLOAT || column.type == DG.TYPE.QNUM) { return 50; } else if (column.type == DG.TYPE.STRING) {
+  if (column.type === DG.TYPE.INT)
+    return column.max.toString().length * 8;
+  else if (column.type === DG.TYPE.FLOAT || column.type === DG.TYPE.QNUM)
+    return 50;
+  else if (column.type === DG.TYPE.STRING) {
     const values = column.categories;
     if (values.length < 50)
       return Math.min(...values.map((v) => v.length));
