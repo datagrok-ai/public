@@ -90,9 +90,7 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
-    this.instancesWrapper.meta$.pipe(
-      takeUntil(this.closed$),
-    ).subscribe(this.metaInfo$);
+    this.metaInfo$.next(this.instancesWrapper.meta);
 
     combineLatest([
       this.instancesWrapper.isRunning$,
@@ -119,8 +117,8 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.init({...data, initValues});
   }
 
-  changeAdapter(adapter: IFuncCallAdapter) {
-    this.instancesWrapper.change(adapter);
+  changeAdapter(adapter: IFuncCallAdapter, isNew = false) {
+    this.instancesWrapper.change(adapter, isNew);
   }
 
   setDeps(deps: (readonly [string, Observable<boolean>])[]) {
@@ -189,7 +187,7 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   clearOldMetas(currentIds: Set<string>) {
-    for (const meta$ of Object.values(this.instancesWrapper.metaStates$?.value ?? {})) {
+    for (const meta$ of Object.values(this.instancesWrapper.metaStates ?? {})) {
       if (!meta$?.value)
         continue;
       let needsUpdate = false;

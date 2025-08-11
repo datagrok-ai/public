@@ -433,7 +433,7 @@ export class StateTree {
       if (!isFuncCallNode(item) || item.instancesWrapper.isReadonly)
         throw new Error(`FuncCall writable node is expected on path ${JSON.stringify(path)}`);
       const adapter = new FuncCallAdapter(call, false);
-      item.changeAdapter(adapter);
+      item.changeAdapter(adapter, true);
       item.instancesWrapper.isOutputOutdated$.next(false);
       const details = [{
         mutationRootPath: ppath,
