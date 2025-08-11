@@ -25,11 +25,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
+    tags: [
       'widgets',
     ],
-    'name': 'Databases | DrugBank | Substructure Search',
-    'condition': 'true',
+    name: 'Databases | DrugBank | Substructure Search',
+    condition: 'true',
   })
   static async drugBankSubstructureSearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
@@ -39,11 +39,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
-    'name': 'Databases | DrugBank | Similarity Search',
-    'condition': 'true',
+    tags: ['widgets'],
+    name: 'Databases | DrugBank | Similarity Search',
+    condition: 'true',
   })
   static async drugBankSimilaritySearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
@@ -55,11 +53,12 @@ export class PackageFunctions {
   //Add after release 1.26.1
   //'connection': 'DrugBank',
   @grok.decorators.func({
-    'meta': {
-      'role': 'converter',
-      'inputRegexp': '(db\\:.+)',
+    meta: {
+      role: 'converter',
+      inputRegexp: '(db\\:.+)',
     },
-    'name': 'Drug Name Molecule',
+    name: 'Drug Name Molecule',
+    outputs: [{type: 'string', name: 'result', options: {semType: 'Molecule'}}],
   })
   static drugNameMolecule(id: string): string {
     return drugNameMoleculeConvert(id, dbdfRowCount, synonymsCol, moleculeCol);
