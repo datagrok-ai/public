@@ -231,15 +231,29 @@ export class PlateWidget extends DG.Widget {
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
+
     pw.detailsDiv = ui.divV([], 'plate-widget__details');
-    pw.wellDetailsDiv = div();
-    pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
-    pw.grid.onCurrentCellChanged.pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
-      ui.empty(pw.wellDetailsDiv!);
-      const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
-            pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
-    });
-    pw.tabsContainer.appendChild(pw.detailsDiv);
+    pw.wellDetailsDiv = ui.div();
+    pw.detailsDiv.appendChild(pw.wellDetailsDiv);
+
+    const mainContainer = ui.divH([
+      pw.tabs.root,
+      pw.detailsDiv,
+    ], 'plate-widget__main-container');
+
+    ui.empty(pw.tabsContainer);
+    pw.tabsContainer.appendChild(mainContainer);
+
+    pw.grid.onCurrentCellChanged
+      .pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0))
+      .subscribe((gc) => {
+        if (pw.wellDetailsDiv) {
+          ui.empty(pw.wellDetailsDiv);
+          const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
+          pw.wellDetailsDiv.appendChild(ui.tableFromMap(map));
+        }
+      });
+
     return pw;
   }
 

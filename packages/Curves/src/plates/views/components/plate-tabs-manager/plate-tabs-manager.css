@@ -1,0 +1,220 @@
+/* === Plate Tabs Manager Styles === */
+.plate-tabs-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* === Import Container === */
+.plate-import-container {
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.plate-import-container > .d4-div-text,
+.plate-import-container .d4-input-label {
+  font-weight: 500;
+  color: var(--grey-6);
+}
+
+.plate-import-button .d4-input-button > button {
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* === Tabs Container === */
+.plate-file-tabs-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--grey-2);
+  margin-bottom: 10px;
+  margin-left: 30px;
+  min-height: 40px;
+}
+
+/* === Tab Header === */
+.plate-file-tab__header {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--grey-6);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plate-file-tab__header:hover {
+  background-color: var(--grey-0);
+}
+
+.plate-file-tab__header.active {
+  color: var(--blue-1);
+  border-bottom-color: var(--blue-1);
+  font-weight: 500;
+}
+
+.plate-file-tab__label {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plate-file-tab__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* === Mapped Pill === */
+.plate-file-tab__mapped-pill {
+  background-color: var(--grey-1);
+  border-radius: 10px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.plate-file-tab__mapped-pill:hover {
+  background-color: var(--grey-2);
+}
+
+.plate-file-tab__mapped-pill > .grok-icon {
+  color: var(--blue-1);
+  font-size: 11px;
+  margin: 0;
+}
+
+/* === Conflict Indicator === */
+.plate-file-tab__conflict-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--red-3);
+  border-radius: 50%;
+  border: 1px solid var(--white);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.plate-file-tab__clear-icon {
+  opacity: 0.6;
+}
+
+.plate-file-tab__clear-icon:hover {
+  opacity: 1;
+}
+
+/* === Mapping Dialog Styles === */
+.mapping-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapping-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-2);
+}
+
+.mapping-summary-old-name {
+  color: var(--grey-6);
+  font-style: italic;
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-new-name {
+  font-weight: 500;
+  color: var(--grey-8);
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(1) {
+  color: var(--grey-4);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2) {
+  margin-left: auto;
+  color: var(--grey-4);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2):hover {
+  color: var(--red-3);
+  background-color: var(--grey-1);
+}
+
+/* === Plate Selection Host === */
+.plate-selection-host {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--grey-2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+}
+/* === Plate Widget Layout === */
+.plate-widget {
+  display: flex;
+  flex-direction: column;
+  min-height: 350px; 
+  flex-grow: 1;      
+  width: 100%;
+}
+
+.plate-widget__main-container {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  flex-grow: 1; 
+  min-height: 0; 
+}
+
+.plate-widget__tabs {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column; 
+  width: 100%;
+}
+
+.plate-widget__tabs > .d4-tab-contents {
+  flex-grow: 1;
+}
+
+.plate-widget__details {
+  flex-grow: 0;
+  flex-shrink: 0;
+  width: 250px; 
+  border-left: 1px solid var(--grey-2);
+  padding-left: 15px;
+  overflow-y: auto;
+}
+
+.plate-widget__well-details .d4-table {
+  width: 100%;
+}
+
+.plate-widget__role-summary {
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.role-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

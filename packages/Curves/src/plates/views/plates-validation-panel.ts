@@ -6,7 +6,6 @@ import {PlateTemplate} from '../plates-crud';
 import {fromEvent, Subscription} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
-// --- Configuration for autosuggestions ---
 const REQUIRED_ANALYSIS_FIELDS = [
   {name: 'Activity', required: true},
   {name: 'Concentration', required: true},
@@ -15,9 +14,6 @@ const REQUIRED_ANALYSIS_FIELDS = [
 
 const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
 
-/**
- * Creates a custom input that shows a dropdown with icon-based suggestions.
- */
 function createMappingInput(
   initialValue: string,
   template: PlateTemplate,
@@ -39,18 +35,34 @@ function createMappingInput(
     if (popup.parentElement)
       hideSuggestions();
 
-    popup.innerHTML = ''; // Clear previous content
+    popup.innerHTML = '';
 
-    // --- 1. Create and add the Legend ---
+    const createLegendItem = (iconName: string, text: string, color: string) => {
+      const icon = ui.iconFA(iconName);
+      icon.style.color = color;
+      icon.style.width = '14px';
+
+      const item = ui.divH([icon, ui.span([text])]);
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.gap = '6px';
+      return item;
+    };
     const legend = ui.divH([
-      ui.divH([ui.iconFA('file-alt'), ui.span(['Template'])]),
-      ui.divH([ui.iconFA('chart-line'), ui.span(['Analysis'])]),
-      ui.divH([ui.iconFA('lock'), ui.span(['Required'])]),
+      createLegendItem('file-alt', 'Template', 'var(--blue-1)'),
+      createLegendItem('chart-line', 'Analysis', 'var(--green-3)'),
+      createLegendItem('lock', 'Required', 'var(--red-3)')
     ], 'custom-suggestion-legend');
+
+    legend.style.gap = '16px';
+    legend.style.padding = '8px 12px';
+    legend.style.backgroundColor = 'var(--grey-0)';
+    legend.style.position = 'sticky';
+    legend.style.top = '0';
+
     popup.appendChild(legend);
     popup.appendChild(ui.div([], 'dg-separator'));
 
-    // --- 2. Get suggestions from different sources ---
     const templateSuggestions = template.wellProperties
       .filter((p) => p && p.name && !usedTemplateProperties.has(p.name))
       .map((p) => ({
@@ -69,7 +81,6 @@ function createMappingInput(
         isRequired: ap.required,
       }));
 
-    // --- 3. Merge and de-duplicate suggestions ---
     const suggestionMap = new Map<string, {name: string, isTemplate: boolean, isAnalysis: boolean, isRequired: boolean}>();
     [...templateSuggestions, ...analysisSuggestions].forEach((s) => {
       const existing = suggestionMap.get(s.name);
@@ -83,18 +94,16 @@ function createMappingInput(
     });
     const allAvailableSuggestions = Array.from(suggestionMap.values());
 
-    // --- 4. Filter by user input & Sort ---
     const currentVal = textInput.value.toLowerCase();
     const filtered = allAvailableSuggestions
       .filter((s) => s.name.toLowerCase().includes(currentVal))
       .sort((a, b) => {
         const scoreA = a.isRequired ? 100 : 0;
         const scoreB = b.isRequired ? 100 : 0;
-        if (scoreA !== scoreB) return scoreB - scoreA; // Required items first
-        return a.name.localeCompare(b.name); // Alphabetical tie-break
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return a.name.localeCompare(b.name);
       });
 
-    // --- 5. Render the sorted list with icons ---
     if (filtered.length === 0) {
       hideSuggestions();
       return;
@@ -104,12 +113,21 @@ function createMappingInput(
       const nameEl = ui.span([prop.name], 'custom-suggestion-name');
       const iconsHost = ui.divH([], 'custom-suggestion-icons');
 
-      if (prop.isRequired)
-        iconsHost.appendChild(ui.iconFA('lock'));
-      if (prop.isTemplate)
-        iconsHost.appendChild(ui.iconFA('file-alt'));
-      if (prop.isAnalysis)
-        iconsHost.appendChild(ui.iconFA('chart-line'));
+      if (prop.isRequired) {
+        const icon = ui.iconFA('lock');
+        icon.style.color = 'var(--red-3)';
+        iconsHost.appendChild(icon);
+      }
+      if (prop.isTemplate) {
+        const icon = ui.iconFA('file-alt');
+        icon.style.color = 'var(--blue-1)';
+        iconsHost.appendChild(icon);
+      }
+      if (prop.isAnalysis) {
+        const icon = ui.iconFA('chart-line');
+        icon.style.color = 'var(--green-3)';
+        iconsHost.appendChild(icon);
+      }
 
       const itemEl = ui.divH([nameEl, iconsHost], 'custom-suggestion-item');
 
@@ -146,9 +164,6 @@ function createMappingInput(
   return textInput;
 }
 
-/**
- * Renders a validation and mapping table, driven by the columns of the uploaded plate data.
- */
 export function renderValidationResults(
   tableElement: HTMLElement,
   plate: Plate,
@@ -170,7 +185,6 @@ export function renderValidationResults(
   const mappingData: any[] = [];
   let conflictCount = 0;
 
-  // Track which template properties have been used, either by direct match or by user mapping.
   const usedTemplateProperties = new Set<string>();
   reconciliationMap.forEach((_, mappedName) => usedTemplateProperties.add(mappedName));
 
@@ -221,7 +235,6 @@ export function renderValidationResults(
 
     const onCommit = (newValue: string) => {
       onMap(currentName, newValue);
-      // Add the newly mapped property to the used set so other inputs can update
       usedTemplateProperties.add(newValue);
     };
 

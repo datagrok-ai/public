@@ -1,7 +1,8 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {createPlatesView} from './views/plates-create-view';
+// import {createPlatesView} from './views/viewcreate';
 
 import * as crud from './plates-crud';
 import {searchWellsView} from './views/plates-search-view';
@@ -9,6 +10,7 @@ import {searchPlatesView} from './views/plates-search-view';
 import {propertySchemaView as templateView} from './views/plates-schema-view';
 import {createTemplatesView} from './views/plates-templates-view';
 import {filter} from 'rxjs/operators';
+import { createPlatesView } from './views/plates-create-view';
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
