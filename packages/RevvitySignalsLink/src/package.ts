@@ -10,8 +10,8 @@ import { queryEntities, queryEntityById, queryLibraries, queryMaterialById, quer
 import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, MOL_COL_NAME } from './compounds';
 import { RevvityFilters } from './filters';
-import { getDefaultProperties } from './properties';
-import { buildPropertyBasedQueryBuilder, ComplexCondition, ConditionRegistry, Operators, QueryBuilder } from './query-builder';
+import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
+import { buildPropertyBasedQueryBuilder, ComplexCondition, ConditionRegistry, Operators, QueryBuilder, SUGGESTIONS_FUNCTION } from './query-builder';
 import { testFilterCondition } from './const';
 import { getRevvityUsers } from './users';
 import { getRevvityLibraries } from './libraries';
@@ -45,11 +45,13 @@ let config: RevvityConfig = { libraries: undefined };
 export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
 
   const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/images/benchling.png',
+    iconPath: _package.webRoot + '/img/revvity.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
     description: '- Integrate with your Revvity account.\n' +
-      '- Analyze assay data.\n' +
-      '- Browse the tenant content.\n'
+      '- Browse the tenant content.\n' +
+      '- Perfrom searches through you tenant.' +
+      '- Find contextual information on entities like assets, batches etc.\n' +
+      '- Analyze assay data.'
   });
 
   const view = DG.View.fromRoot(appHeader);
@@ -204,9 +206,24 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     let queryBuilder: QueryBuilder | null = null;
 
 
-    const initializeQueryBuilder = (libId: string, compoundType: string) => {
+    const initializeQueryBuilder = async (libId: string, compoundType: string) => {
       ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-      queryBuilder = new QueryBuilder(getDefaultProperties());
+      const filterFields = getDefaultProperties();
+      const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
+        assetTypeId: libId,
+        type: compoundType
+      });
+      const tags: {[key: string]: string} = JSON.parse(tagsStr);
+      Object.keys(tags).forEach((tagName) => {
+        const prop = DG.Property.create(tagName, REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]], (x: any) => x, (x: any, v) => x = v);
+        prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
+          const termsStr =  await getTerms(tagName, compoundType, libId, true);
+          const terms: string[] =  JSON.parse(termsStr);
+          return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
+        }
+        filterFields.push(prop);
+      });
+      queryBuilder = new QueryBuilder(filterFields);
       const runSearchButton = ui.bigButton('RUN', async () => {
         ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
         const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);
@@ -275,7 +292,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 
   const batches = compounds.item('Batches');
   batches.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches', 'Compound', 'batch');
+    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches', 'Compounds', 'batch');
   });
 }
 
@@ -404,7 +421,7 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
         {
           "$match": {
             "field": "type",
-            "value": "batch",
+            "value": type,
             "mode": "keyword"
           }
         },
@@ -423,8 +440,68 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const tags: { [key: string]: string } = {};
   for (const tag of data) {
-    tags[tag.id] = tag.attributes.types.type;
+    tags[tag.id] = tag.attributes.types[0].type;
   }
+  return JSON.stringify(tags);
+}
+
+
+//name: Get Terms
+//input: string fieldName
+//input: string type
+//input: string assetTypeId
+//input: bool isMaterial
+//output: string terms
+export async function getTerms(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string> {
+  const innerAndConditions: any[] = [
+    {
+      "$match": {
+        "field": "assetTypeEid",
+        "value": assetTypeId,
+      }
+    },
+    {
+      "$match": {
+        "field": "type",
+        "value": type,
+        "mode": "keyword"
+      }
+    },
+  ];
+  if (isMaterial) {
+    innerAndConditions.push({
+      "$and": [
+        {
+          "$match": {
+            "field": "isMaterial",
+            "value": true
+          }
+        },
+        {
+          "$not": [
+            {
+              "$match": {
+                "field": "type",
+                "value": "assetType"
+              }
+            }
+          ]
+        }
+      ]
+    })
+  }
+  const query: SignalsSearchQuery = {
+    "query": {
+      "$and": innerAndConditions
+    },
+    field: fieldName,
+    in: "tags"
+  };
+  const response = await queryTerms(query);
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '{}';
+  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const tags = data.map((it) => it.id).filter((tag) => tag != undefined);
   return JSON.stringify(tags);
 }
 

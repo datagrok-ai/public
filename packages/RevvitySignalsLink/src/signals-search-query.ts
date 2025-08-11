@@ -3,7 +3,7 @@
 import { RevvityLibrary } from "./package";
 import { ComplexCondition, Operators } from "./query-builder";
 import { SimpleCondition } from './query-builder';
-import { PROPERTY_NAMES_TO_QUERY_MAPPING } from './properties';
+import { PROPERTY_NAMES_TO_QUERY_MAPPING, NOT_IN_TAGS } from './properties';
 
 export enum OPERATORS {
   MATCH = '$match',
@@ -46,6 +46,14 @@ const REVVITY_OPERATORS_MAPPING = {
  */
 function mapFieldName(fieldName: string, explicitMapping?: string): string {
   return explicitMapping || PROPERTY_NAMES_TO_QUERY_MAPPING[fieldName as keyof typeof PROPERTY_NAMES_TO_QUERY_MAPPING] || fieldName;
+}
+
+/**
+ * Checks if a field should include the "in": "tags" property
+ * Returns true if the field name is NOT in REVVITY_DEFAULT_FILTERS_NAMES
+ */
+function shouldIncludeTagsProperty(fieldName: string): boolean {
+  return !NOT_IN_TAGS.includes(fieldName);
 }
 
 type AsType = 'text' | 'date'
@@ -151,6 +159,8 @@ export interface SignalsSearchQuery {
     sort?: { [field: string]: 'asc' | 'desc' };
     // ...other options
   };
+  field?: string;
+  in?: string;
 } 
 
 export interface SignalsSearchParams {
@@ -320,99 +330,111 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
   }
   
   // Create the appropriate QueryOperator based on the Revvity operator
+  let result: any;
+  
   switch (revvityOperator) {
     case OPERATORS.IN:
       if (!Array.isArray(value)) {
         throw new Error(`Operator ${operator} requires an array value`);
       }
-             return {
-         $in: {
-           field: targetField,
-           values: value
-         }
-       } as QueryInOperator;
+      result = {
+        field: targetField,
+        values: value
+      };
+      break;
       
-         case OPERATORS.GT:
-       const gtResult: any = {
-         field: targetField,
-         value: convertDateValue(value)
-       };
-       if (isDateValue(value))
-         gtResult.as = 'date';
-       return { $gt: gtResult } as QueryGtOperator;
+    case OPERATORS.GT:
+      result = {
+        field: targetField,
+        value: convertDateValue(value)
+      };
+      if (isDateValue(value))
+        result.as = 'date';
+      break;
        
-     case OPERATORS.LT:
-       const ltResult: any = {
-         field: targetField,
-         value: convertDateValue(value)
-       };
-       if (isDateValue(value))
-         ltResult.as = 'date';
-       return { $lt: ltResult } as QueryLtOperator;
+    case OPERATORS.LT:
+      result = {
+        field: targetField,
+        value: convertDateValue(value)
+      };
+      if (isDateValue(value))
+        result.as = 'date';
+      break;
       
-         case OPERATORS.GTE:
-       const gteResult: any = {
-         field: targetField,
-         value: convertDateValue(value)
-       };
-       if (isDateValue(value))
-         gteResult.as = 'date';
-       return { $gte: gteResult } as QueryGteOperator;
+    case OPERATORS.GTE:
+      result = {
+        field: targetField,
+        value: convertDateValue(value)
+      };
+      if (isDateValue(value))
+        result.as = 'date';
+      break;
        
-     case OPERATORS.LTE:
-       const lteResult: any = {
-         field: targetField,
-         value: convertDateValue(value)
-       };
-       if (isDateValue(value))
-         lteResult.as = 'date';
-       return { $lte: lteResult } as QueryLteOperator;
+    case OPERATORS.LTE:
+      result = {
+        field: targetField,
+        value: convertDateValue(value)
+      };
+      if (isDateValue(value))
+        result.as = 'date';
+      break;
       
-         case OPERATORS.RANGE:
-       if (!Array.isArray(value)) {
-         throw new Error(`Operator ${operator} requires an array`);
-       }
-       const rangeResult: any = {
-         field: targetField,
-         from: convertDateValue(value[0]),
-         to: convertDateValue(value[1])
-       };
-       if (isDateValue(value[0]) || isDateValue(value[1]))
-         rangeResult.as = 'date';
-       return { $range: rangeResult } as QueryRangeOperator;
+    case OPERATORS.RANGE:
+      if (!Array.isArray(value)) {
+        throw new Error(`Operator ${operator} requires an array`);
+      }
+      result = {
+        field: targetField,
+        from: convertDateValue(value[0]),
+        to: convertDateValue(value[1])
+      };
+      if (isDateValue(value[0]) || isDateValue(value[1]))
+        result.as = 'date';
+      break;
       
     case OPERATORS.MATCH:
-             return {
-         $match: {
-           field: targetField,
-           value
-         }
-       } as QueryMatchOperator;
+      result = {
+        field: targetField,
+        value
+      };
+      break;
       
     case OPERATORS.PREFIX:
-             return {
-         $prefix: {
-           field: targetField,
-           value,
-           mode: 'keyword'
-         }
-       } as QueryPrefixOperator;
+      result = {
+        field: targetField,
+        value,
+        mode: 'keyword'
+      };
+      break;
       
     case OPERATORS.EXISTS:
-             return {
-         $exists: {
-           field: targetField
-         }
-       } as QueryExistsOperator;
+      result = {
+        field: targetField
+      };
+      break;
+
+    case OPERATORS.INTERSECT:
+      if (!Array.isArray(value)) {
+        throw new Error(`Operator ${operator} requires an array value`);
+      }
+      result = {
+        field: targetField,
+        values: value
+      };
+      break;
 
     case OPERATORS.NOT:
+      const notMatchResult = {
+        field: targetField,
+        value
+      };
+      if (shouldIncludeTagsProperty(field)) {
+        (notMatchResult as any).in = 'tags';
+      }
       return {
         $not:
           [{
-            $match: {
-              field: targetField,
-              value
-            }
+            $match: notMatchResult
           }]
       } as QueryNotOperator;
 
@@ -420,12 +442,42 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       const chemsearchResult: any = {
         molecule: value.molecule ?? value,
         mime: 'chemical/x-daylight-smiles'
-      }
-        ;
+      };
       if (value.threshold)
-        chemsearchResult.options = `full=no,similar=yes,simthreshold=${value.threshold * 100}`
+        chemsearchResult.options = `full=no,similar=yes,simthreshold=${value.threshold * 100}`;
       return { $chemsearch: chemsearchResult } as QueryChemSearchOperator;
 
+    default:
+      throw new Error(`Unsupported Revvity operator: ${revvityOperator}`);
+  }
+  
+  // Add tags property if needed (for all operators except NOT and CHEMSEARCH)
+  if (shouldIncludeTagsProperty(field)) {
+    (result as any).in = 'tags';
+  }
+  
+  // Return the appropriate operator with the result
+  switch (revvityOperator) {
+    case OPERATORS.IN:
+      return { $in: result } as QueryInOperator;
+    case OPERATORS.GT:
+      return { $gt: result } as QueryGtOperator;
+    case OPERATORS.LT:
+      return { $lt: result } as QueryLtOperator;
+    case OPERATORS.GTE:
+      return { $gte: result } as QueryGteOperator;
+    case OPERATORS.LTE:
+      return { $lte: result } as QueryLteOperator;
+    case OPERATORS.RANGE:
+      return { $range: result } as QueryRangeOperator;
+    case OPERATORS.MATCH:
+      return { $match: result } as QueryMatchOperator;
+    case OPERATORS.PREFIX:
+      return { $prefix: result } as QueryPrefixOperator;
+    case OPERATORS.EXISTS:
+      return { $exists: result } as QueryExistsOperator;
+    case OPERATORS.INTERSECT:
+      return { $intersect: result } as QueryIntersectOperator;
     default:
       throw new Error(`Unsupported Revvity operator: ${revvityOperator}`);
   }

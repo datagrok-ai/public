@@ -36,6 +36,10 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetTags', { type, assetTypeId });
   }
 
+  export async function getTerms(fieldName: string , type: string , assetTypeId: string , isMaterial: boolean ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetTerms', { fieldName, type, assetTypeId, isMaterial });
+  }
+
   export async function entityTreeWidget(id: string ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
   }
