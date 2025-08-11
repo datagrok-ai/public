@@ -3,7 +3,7 @@
 import { RevvityLibrary } from "./package";
 import { ComplexCondition, Operators } from "./query-builder";
 import { SimpleCondition } from './query-builder';
-import { PROPERTY_NAMES_TO_QUERY_MAPPING, NOT_IN_TAGS } from './properties';
+import { NOT_IN_TAGS } from './properties';
 
 export enum OPERATORS {
   MATCH = '$match',
@@ -41,12 +41,6 @@ const REVVITY_OPERATORS_MAPPING = {
   [Operators.IS_SIMILAR]: OPERATORS.CHEMSEARCH,
 }
 
-/**
- * Maps internal field names to Revvity API field names using the property mapping
- */
-function mapFieldName(fieldName: string, explicitMapping?: string): string {
-  return explicitMapping || PROPERTY_NAMES_TO_QUERY_MAPPING[fieldName as keyof typeof PROPERTY_NAMES_TO_QUERY_MAPPING] || fieldName;
-}
 
 /**
  * Checks if a field should include the "in": "tags" property
@@ -302,11 +296,9 @@ export enum SignalsEntityType {
 /**
  * Converts a SimpleCondition to the appropriate QueryOperator based on the operator mapping
  */
-export function convertSimpleConditionToQueryOperator(condition: SimpleCondition, fieldName?: string): QueryOperator | QueryNotOperator {
+export function convertSimpleConditionToQueryOperator(condition: SimpleCondition): QueryOperator | QueryNotOperator {
   const { field, operator, value } = condition;
   
-  // Apply field name mapping if applicable
-  const targetField = mapFieldName(field, fieldName);
   
   // Helper function to convert dayjs values to string
   const convertDateValue = (val: any): string => {
@@ -338,14 +330,14 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
         throw new Error(`Operator ${operator} requires an array value`);
       }
       result = {
-        field: targetField,
+        field: field,
         values: value
       };
       break;
       
     case OPERATORS.GT:
       result = {
-        field: targetField,
+        field: field,
         value: convertDateValue(value)
       };
       if (isDateValue(value))
@@ -354,7 +346,7 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
        
     case OPERATORS.LT:
       result = {
-        field: targetField,
+        field: field,
         value: convertDateValue(value)
       };
       if (isDateValue(value))
@@ -363,7 +355,7 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       
     case OPERATORS.GTE:
       result = {
-        field: targetField,
+        field: field,
         value: convertDateValue(value)
       };
       if (isDateValue(value))
@@ -372,7 +364,7 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
        
     case OPERATORS.LTE:
       result = {
-        field: targetField,
+        field: field,
         value: convertDateValue(value)
       };
       if (isDateValue(value))
@@ -384,7 +376,7 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
         throw new Error(`Operator ${operator} requires an array`);
       }
       result = {
-        field: targetField,
+        field: field,
         from: convertDateValue(value[0]),
         to: convertDateValue(value[1])
       };
@@ -394,14 +386,17 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       
     case OPERATORS.MATCH:
       result = {
-        field: targetField,
+        field: field,
         value
       };
+      if (typeof field === 'string') {
+        result.mode = 'keyword'
+      }
       break;
       
     case OPERATORS.PREFIX:
       result = {
-        field: targetField,
+        field: field,
         value,
         mode: 'keyword'
       };
@@ -409,7 +404,7 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       
     case OPERATORS.EXISTS:
       result = {
-        field: targetField
+        field: field
       };
       break;
 
@@ -418,14 +413,14 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
         throw new Error(`Operator ${operator} requires an array value`);
       }
       result = {
-        field: targetField,
+        field: field,
         values: value
       };
       break;
 
     case OPERATORS.NOT:
       const notMatchResult = {
-        field: targetField,
+        field: field,
         value
       };
       if (shouldIncludeTagsProperty(field)) {

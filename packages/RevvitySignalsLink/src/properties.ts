@@ -6,14 +6,19 @@ import { getUserIdByUserString, getUsersSuggestions, getUserStringIdById } from 
 
 export const REVVITY_USER = 'revvity_user';
 
-export const created = DG.Property.create('Created', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
-export const edited = DG.Property.create('Edited', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
-export const creator = DG.Property.create('Creator', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
+export const created = DG.Property.create('createdAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
+created.friendlyName = 'Created';
+export const edited = DG.Property.create('editedAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
+edited.friendlyName = 'Edited';
+export const creator = DG.Property.create('createdBy', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
 creator.semType = REVVITY_USER;
 creator.options[SUGGESTIONS_FUNCTION] = getUsersSuggestions;
-export const editor = DG.Property.create('Editor', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
+creator.friendlyName = 'Creator';
+export const editor = DG.Property.create('editedBy', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
 editor.semType = REVVITY_USER;
 editor.options[SUGGESTIONS_FUNCTION] = getUsersSuggestions;
+editor.friendlyName = 'Editor';
+
 export const structure = DG.Property.create('Structure', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
 //export const id = DG.Property.create('Id_float', DG.TYPE.FLOAT, (x: any) => x, (x: any, v) => x = v);
 //export const idInt = DG.Property.create('Id_int', DG.TYPE.INT, (x: any) => x, (x: any, v) => x = v);
@@ -23,12 +28,6 @@ export function getDefaultProperties(): DG.Property[] {
     return [created, edited, creator, editor, structure];
 }
 
-export const PROPERTY_NAMES_TO_QUERY_MAPPING = {
-    'Created': 'createdAt',
-    'Edited': 'editedAt',
-    'Creator': 'createdBy',
-    'Editor': 'editedBy',
-}
 
 export const NOT_IN_TAGS = [ 'Created', 'Edited', 'Creator', 'Editor', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
 
