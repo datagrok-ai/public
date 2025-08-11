@@ -15,14 +15,13 @@ export async function cddVaultApp(path: string, filter: string) {
 //name: cddVaultAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function cddVaultAppTreeBrowser(treeNode: any, browseView: DG.View) {
   return PackageFunctions.cddVaultAppTreeBrowser(treeNode, browseView);
 }
 
 //name: Databases | CDD Vault
 //tags: panel
-//input: string molecule { semType: Molecule }
+//input: string mol { semType: Molecule }
 //output: widget result
 export function molColumnPropertyPanel(molecule: string) {
   return PackageFunctions.molColumnPropertyPanel(molecule);
@@ -116,45 +115,45 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 
 //name: CDD Vault Search Async
 //input: int vaultId { nullable: true }
-//input: string structure { category: Structure; nullable: true; semType: Molecule }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure'] }
-//input: double structure_similarity_threshold { category: Structure; nullable: true }
-//input: int protocol { category: Protocol; nullable: true }
-//input: int run { category: Protocol; nullable: true }
+//input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES; cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES; cxsmiles or mol string }
+//input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
+//input: int protocol { category: Protocol; nullable: true; description: Protocol id }
+//input: int run { category: Protocol; nullable: true; description: Specific run id }
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-//editor: Cddvaultlink
-export async function cDDVaultSearchAsync(vaultId: number, structure: string, structure_search_type: any, structure_similarity_threshold: number, protocol: number, run: number) {
+//editor: Cddvaultlink:CDDVaultSearchEditor
+export async function cDDVaultSearchAsync(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) {
   return PackageFunctions.cDDVaultSearchAsync(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }
 
 //name: CDD Vault search
 //input: int vaultId { nullable: true }
-//input: string molecules { category: General; nullable: true }
-//input: string names { category: General; nullable: true }
-//input: bool include_original_structures { category: General; nullable: true }
-//input: bool only_ids { category: General; nullable: true }
-//input: bool only_batch_ids { category: General; nullable: true }
-//input: string created_before { category: General; nullable: true }
-//input: string created_after { category: General; nullable: true }
-//input: string modified_before { category: General; nullable: true }
-//input: string modified_after { category: General; nullable: true }
-//input: string batch_created_before { category: Batch fields; nullable: true }
-//input: string batch_created_after { category: Batch fields; nullable: true }
-//input: string batch_field_before_name { category: Batch fields; nullable: true }
-//input: string batch_field_before_date { category: Batch fields; nullable: true }
-//input: string batch_field_after_name { category: Batch fields; nullable: true }
-//input: string batch_field_after_date { category: Batch fields; nullable: true }
-//input: string projects { category: Projects; nullable: true }
-//input: string data_sets { category: Datasets; nullable: true }
-//input: string structure { category: Structure; nullable: true; semType: Molecule }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure'] }
-//input: double structure_similarity_threshold { category: Structure; nullable: true }
-//input: string inchikey { category: Structure; nullable: true }
-//input: list<string> molecule_fields { category: Filelds; nullable: true }
-//input: list<string> batch_fields { category: Filelds; nullable: true }
-//input: list<string> fields_search { category: Molecules filelds search; nullable: true }
+//input: string molecules { category: General; nullable: true; description: Comma separated list of ids }
+//input: string names { category: General; nullable: true; description: Comma separated list of names/synonyms }
+//input: bool include_original_structures { category: General; nullable: true; description: If true,include the original user defined structure for each molecule }
+//input: bool only_ids { category: General; nullable: true; description: If true,only the Molecule IDs are returned,allowing for a smaller and faster response }
+//input: bool only_batch_ids { category: General; nullable: true; description: If true,the full Molecule details are still returned but the Batch-level information is left out of the JSON results. (Only the IDs of the Batches belonging to the Molecules are still included.) }
+//input: string created_before { category: General; nullable: true; description: ISO 8601 date }
+//input: string created_after { category: General; nullable: true; description: ISO 8601 date }
+//input: string modified_before { category: General; nullable: true; description: ISO 8601 date }
+//input: string modified_after { category: General; nullable: true; description: ISO 8601 date }
+//input: string batch_created_before { category: Batch fields; nullable: true; description: ISO 8601 date. A molecule with any batch that has a creation date on or before the parameter will be included }
+//input: string batch_created_after { category: Batch fields; nullable: true; description: ISO 8601 date. A molecule with any batch that has a creation date on or after the parameter will be included }
+//input: string batch_field_before_name { category: Batch fields; nullable: true; description: Specifes a user-defined batch field for batch_field_before_date }
+//input: string batch_field_before_date { category: Batch fields; nullable: true; description: ISO 8601 date. A molecule with any batch that has a batch_field_before_name value date on or before the parameter will be included }
+//input: string batch_field_after_name { category: Batch fields; nullable: true; description: Specifes a user-defined batch field for batch_field_after_date }
+//input: string batch_field_after_date { category: Batch fields; nullable: true; description: ISO 8601 date. A molecule with any batch that has a batch_field_after_name value date on or after the parameter will be included }
+//input: string projects { category: Projects; nullable: true; description: Comma separated list of project ids }
+//input: string data_sets { category: Datasets; nullable: true; description: Comma separated list of dataset ids }
+//input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES,cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES,cxsmiles or mol string }
+//input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
+//input: string inchikey { category: Structure; nullable: true; description: Use this parameter instead of the 'structure' and 'structure_search_type' parameters }
+//input: list<string> molecule_fields { category: Filelds; nullable: true; description: Use this parameter to limit the number of Molecule UDF Fields to return }
+//input: list<string> batch_fields { category: Filelds; nullable: true; description: Use this parameter to limit the number of Batch UDF Fields to return }
+//input: list<string> fields_search { category: Molecules filelds search; nullable: true; description: This parameter is used for searching across the custom user-defined Molecule fields created by your Vault Administrator }
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
@@ -164,15 +163,15 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
 
 //name: CDD Vault search 2
 //input: int vaultId { nullable: true }
-//input: string structure { category: Structure; nullable: true; semType: Molecule }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure'] }
-//input: double structure_similarity_threshold { category: Structure; nullable: true }
-//input: int protocol { category: Protocol; nullable: true }
-//input: int run { category: Protocol; nullable: true }
+//input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES,cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES,cxsmiles or mol string }
+//input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
+//input: int protocol { category: Protocol; nullable: true; description: Protocol id }
+//input: int run { category: Protocol; nullable: true; description: Specific run id }
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-//editor: Cddvaultlink
-export async function cDDVaultSearch2(vaultId: number, structure: string, structure_search_type: any, structure_similarity_threshold: number, protocol: number, run: number) {
+//editor: Cddvaultlink:CDDVaultSearchEditor
+export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) {
   return PackageFunctions.cDDVaultSearch2(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }
