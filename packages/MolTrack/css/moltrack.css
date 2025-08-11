@@ -13,8 +13,17 @@
     width: 100px;
 }
 
-.ui-form {
-    height: auto !important;
-    overflow: visible !important;
-    display: block;
+.moltrack-top-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.moltrack-sketcher-root {
+  flex: 0 0 auto;
+}
+
+.moltrack-form {
+  flex: 1 1 auto;
+  min-width: 200px;
 }

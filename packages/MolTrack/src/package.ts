@@ -82,12 +82,24 @@ export async function checkMolTrackHealth(): Promise<string> {
   return await MolTrackDockerService.checkHealth();
 }
 
-//name: fetchMolTrackProperties
+//name: fetchCompoundProperties
 //description: Retrieves all properties defined for the 'compound' scope
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
 //output: string result
-export async function fetchMolTrackProperties(): Promise<string> {
+export async function fetchCompoundProperties(): Promise<string> {
   await MolTrackDockerService.init();
-  return await MolTrackDockerService.fetchProperties();
+  return await MolTrackDockerService.fetchCompoundProperties();
+}
+
+//name: fetchBatchProperties
+//description: Retrieves all properties defined for the 'batch' scope
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//output: string result
+export async function fetchBatchProperties(): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.fetchBatchProperties();
 }
 
 //name: updateMolTrackProperties

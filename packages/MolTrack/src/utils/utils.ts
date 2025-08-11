@@ -47,22 +47,3 @@ export async function registerAssayData(): Promise<void> {
   const assayPayload = await fetchSchema(`${Scope.ASSAYS}.json`);
   await registerAssays(JSON.stringify(assayPayload));
 }
-
-export function createModifiableInput(div: HTMLDivElement, modificationInputs: Map<string, any>, properties: string[]): HTMLDivElement {
-  let modificationCounter = 0;
-
-  const addModificationsButton = ui.button('Add detail record', () => {
-    ++modificationCounter;
-    const property = ui.typeAhead('Property', {
-      source: {
-        local: properties,
-      },
-    });
-    const value = ui.input.string('Value');
-
-    div.append(ui.divH([property.root, value.root]));
-    modificationInputs.set(`${property.value} ${modificationCounter}`, [property, value]);
-  });
-
-  return ui.divV([addModificationsButton]);
-}

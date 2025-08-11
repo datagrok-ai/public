@@ -25,5 +25,12 @@ export const scopeToUrl: { [key: string]: string } = {
   assay_results: '/v1/assay_results/',
 };
 
+export type MolTrackProp = {
+  name: string;
+  value_type: string;
+  description?: string;
+  pattern?: string;
+};
+
 export const GITHUB_BASE_URL =
   'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/simple/';

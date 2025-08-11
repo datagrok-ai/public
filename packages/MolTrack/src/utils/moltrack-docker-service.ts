@@ -33,8 +33,13 @@ export class MolTrackDockerService {
     return response.text();
   }
 
-  static async fetchProperties(): Promise<string> {
+  static async fetchCompoundProperties(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/compounds');
+    return response.text();
+  }
+
+  static async fetchBatchProperties(): Promise<string> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/batches');
     return response.text();
   }
 
