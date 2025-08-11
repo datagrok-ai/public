@@ -49,20 +49,20 @@ export async function registerAssayData(): Promise<void> {
 }
 
 export function createModifiableInput(div: HTMLDivElement, modificationInputs: Map<string, any>, properties: string[]): HTMLDivElement {
-    let modificationCounter = 0;
+  let modificationCounter = 0;
 
-    const addModificationsButton = ui.button('Add detail record', () => {
-      ++modificationCounter;
-      const property = ui.typeAhead('Property', {
-        source: {
-          local: properties
-        }
-      });
-      const value = ui.input.string('Value');
-
-      div.append(ui.divH([property.root, value.root]));
-      modificationInputs.set(`${property.value} ${modificationCounter}`, [property, value]);
+  const addModificationsButton = ui.button('Add detail record', () => {
+    ++modificationCounter;
+    const property = ui.typeAhead('Property', {
+      source: {
+        local: properties,
+      },
     });
+    const value = ui.input.string('Value');
 
-    return ui.divV([addModificationsButton]);
-  }
+    div.append(ui.divH([property.root, value.root]));
+    modificationInputs.set(`${property.value} ${modificationCounter}`, [property, value]);
+  });
+
+  return ui.divV([addModificationsButton]);
+}
