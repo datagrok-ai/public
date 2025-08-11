@@ -51,6 +51,15 @@ export class MolTrackDockerService {
     return this.postToEndpoint('/v1/assays', jsonPayload);
   }
 
+  static async retrieveEntity(scope: string): Promise<any> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/${scope}/`,
+      { method: 'GET'},
+    );
+    return response.json();
+  }
+
   static async registerBulk(
     csvFile: DG.FileInfo,
     scope: string,

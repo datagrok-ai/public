@@ -10,6 +10,7 @@ export abstract class EntityBaseView {
   view: DG.View;
   gridDiv: HTMLDivElement;
   sketcherInstance: grok.chem.Sketcher;
+  previewDf: DG.DataFrame | undefined;
 
   protected props: DG.Property[] = [];
   protected formBackingObject: Record<string, any> = {};
@@ -23,6 +24,9 @@ export abstract class EntityBaseView {
     this.sketcherInstance = new grok.chem.Sketcher();
     DG.chem.currentSketcherType = 'Ketcher';
     this.sketcherInstance.setSmiles(initialSmiles);
+    this.sketcherInstance.onChanged.subscribe(() => {
+      this.previewDf?.col('smiles')?.set(0, this.sketcherInstance.getSmiles());
+    });
 
     this.buildUI();
   }
@@ -53,8 +57,9 @@ export abstract class EntityBaseView {
 
   private async registerButtonHandler() {
     try {
-      const smiles = this.sketcherInstance.getSmiles();
+      ui.setUpdateIndicator(this.gridDiv, true);
 
+      const smiles = this.sketcherInstance.getSmiles();
       const filteredProps = this.props.filter((p) => {
         const value = p.get(this.formBackingObject);
         return value !== null && value !== undefined && value !== '';
@@ -81,13 +86,18 @@ export abstract class EntityBaseView {
       grok.shell.error(`Registration failed: ${err}`);
       return null;
     }
+    ui.setUpdateIndicator(this.gridDiv, false);
   }
 
   private async buildUI() {
     this.props = await this.getMolTrackDGProperties();
 
     this.formBackingObject = Object.fromEntries(this.props.map((p) => [p.name, null]));
-    const form = ui.input.form(this.formBackingObject, this.props);
+    const form = ui.input.form(this.formBackingObject, this.props, {
+      onValueChanged: (value: any, input: DG.InputBase) => {
+        this.previewDf?.col(input.property.name)?.set(0, value);
+      },
+    });
 
     const registerButton = ui.bigButton('REGISTER', async () => {
       await this.registerButtonHandler();
@@ -101,6 +111,25 @@ export abstract class EntityBaseView {
     form.classList.add('moltrack-form');
 
     this.view.root.append(ui.divV([topContainer, this.gridDiv]));
+
+    await this.createPreview();
+  }
+
+  private async createPreview() {
+    const smiles = this.sketcherInstance.getSmiles();
+
+    const rowObj: Record<string, any> = { smiles };
+    this.props.forEach((p) => {
+      rowObj[p.name] = this.formBackingObject[p.name];
+    });
+
+    this.previewDf = DG.DataFrame.fromObjects([rowObj]);
+
+    if (this.previewDf) {
+      await grok.data.detectSemanticTypes(this.previewDf);
+      ui.empty(this.gridDiv);
+      this.gridDiv.appendChild(this.previewDf.plot.grid().root);
+    }
   }
 
   show() {

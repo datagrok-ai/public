@@ -9,6 +9,7 @@ import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
 import { RegistrationAssayView } from './utils/registration-assay-tab';
+import { Scope } from './utils/constants';
 // import { RegistrationAssayRunView } from './utils/registration-assay-run-tab';
 // import { RegistrationAssayResultView } from './utils/registration-assay-results-tab';
 
@@ -71,6 +72,18 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
     const registrationView = new RegistrationView();
     registrationView.show();
   });
+
+  for (const scope of Object.values(Scope)) {
+    const formattedScope = scope
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+    const retrieveNode = appNode.getOrCreateGroup('Retrieve').item(formattedScope);
+    retrieveNode.onSelected.subscribe(async () => {
+      const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
+      grok.shell.addTablePreview(data);
+    });
+  }
 }
 
 
@@ -135,4 +148,27 @@ export async function registerBulk(
 ): Promise<DG.DataFrame> {
   await MolTrackDockerService.init();
   return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
+}
+
+//name: retrieveEntity
+//input: string scope
+//output: dataframe result
+export async function retrieveEntity(scope: string): Promise<DG.DataFrame | undefined> {
+  await MolTrackDockerService.init();
+  const resultJson = await MolTrackDockerService.retrieveEntity(scope);
+
+  const flattened = resultJson.map((item: any) => {
+    const row: any = {};
+    for (const [key, value] of Object.entries(item)) {
+      // If value is an object or array, stringify it
+      if (typeof value === 'object' && value !== null) {
+        row[key] = JSON.stringify(value);
+      } else {
+        row[key] = value;
+      }
+    }
+    return row;
+  });
+  
+  return DG.DataFrame.fromObjects(flattened);
 }
