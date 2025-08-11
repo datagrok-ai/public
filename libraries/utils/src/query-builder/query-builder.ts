@@ -432,7 +432,7 @@ export class QueryBuilder {
 
             const createFilter = () => {
                 ui.empty(operatorInputDiv);
-                const property = this.properties.find((prop: DG.Property) => prop.name === fieldChoiceInput.value!);
+                const property = getPropByFriendlyName(fieldChoiceInput.value!);
                 if (property) {
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
@@ -466,14 +466,36 @@ export class QueryBuilder {
                 criteriaDiv.append(editor.root);
             }
 
-            cond.field ??= (this.properties[0]?.name || '')
+                       const getPropByName = (name: string) => {
+                const property = this.properties.find((prop: DG.Property) => prop.name === name);
+                return property;
+            }
+
+            const getPropByFriendlyName = (friendlyName: string) => {
+                let property = this.properties.find((prop: DG.Property) => prop.friendlyName === friendlyName);
+                if (!property)
+                    property = this.properties.find((prop: DG.Property) => prop.name === friendlyName);
+                return property;
+            }
+
+            const getFieldChoiceInputVal = (name: string) => {
+                const prop = getPropByName(name);
+                return prop?.friendlyName ?? prop?.name ?? '';
+            }
+
+            const getPropNameByChoiceInputVal = (friendlyName: string) => {
+                const prop = getPropByFriendlyName(friendlyName);
+                return prop?.name ?? '';
+            }
+
+            cond.field ??= this.properties[0]?.name || '';
 
             const fieldChoiceInput = ui.input.choice('', {
-                items: this.properties.map((prop: DG.Property) => prop.name),
-                value: cond.field,
+                items: this.properties.map((prop: DG.Property) => prop.friendlyName ?? prop.name),
+                value: getFieldChoiceInputVal(cond.field),
                 nullable: false,
                 onValueChanged: () => {
-                    cond.field = fieldChoiceInput.value!;
+                    cond.field = getPropNameByChoiceInputVal(fieldChoiceInput.value!);
                     cond.value = undefined;
                     cond.operator = '';
                     createFilter();
