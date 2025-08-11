@@ -2296,6 +2296,10 @@ export interface IPcPlotSettings {
 
   labelsOrientation: keyof typeof TextOrientation;
 
+  minMaxOrientation: keyof typeof TextOrientation;
+
+  axisFont: string;
+
   linearColorScheme: Array<number>;
 
   categoricalColorScheme: Array<number>;
