@@ -51,25 +51,25 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
   //search node
-  const registerBulkNode = appNode.getOrCreateGroup('Register').item('Bulk');
-  registerBulkNode.onSelected.subscribe(() => {
-    const registrationView = new RegistrationView();
-    registrationView.show();
-  });
-  const registerCompoundNode = appNode.getOrCreateGroup('Register').item('Single Compound');
+  const registerCompoundNode = appNode.getOrCreateGroup('Register').item('Compound');
   registerCompoundNode.onSelected.subscribe(() => {
     const registrationCompoundView = new RegistrationCompoundView();
     registrationCompoundView.show();
   });
-  const registerBatchNode = appNode.getOrCreateGroup('Register').item('Single Batch');
+  const registerBatchNode = appNode.getOrCreateGroup('Register').item('Batch');
   registerBatchNode.onSelected.subscribe(() => {
     const registrationBatchView = new RegistrationBatchView();
     registrationBatchView.show();
   });
-  const registerAssayNode = appNode.getOrCreateGroup('Register').item('Single assay');
+  const registerAssayNode = appNode.getOrCreateGroup('Register').item('Assay');
   registerAssayNode.onSelected.subscribe(() => {
     const registrationAssayView = new RegistrationAssayView();
     registrationAssayView.show();
+  });
+  const registerBulkNode = appNode.getOrCreateGroup('Register').item('Bulk...');
+  registerBulkNode.onSelected.subscribe(() => {
+    const registrationView = new RegistrationView();
+    registrationView.show();
   });
 }
 
