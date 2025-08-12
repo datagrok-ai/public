@@ -55,12 +55,17 @@ const getEmptyTabToProperties = () => ({
 const DEFAULT_FLOAT_PRECISION = 4;
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
-  const precision = prop.options.precision;
-
   const scalarValue = funcCall.outputs[prop.name];
-  const formattedScalarValue = prop.propertyType === DG.TYPE.FLOAT && scalarValue ?
-    precision ? scalarValue.toPrecision(precision): scalarValue.toFixed(DEFAULT_FLOAT_PRECISION):
-    scalarValue;
+  let formattedScalarValue = undefined;
+
+  if (prop.propertyType === DG.TYPE.FLOAT && scalarValue != null) {
+    if (prop.options.format)
+      formattedScalarValue = DG.format(scalarValue, prop.options.format);
+    else if (prop.options.precision)
+      formattedScalarValue = scalarValue.toPrecision(prop.options.precision);
+    else
+      formattedScalarValue = scalarValue.toFixed(DEFAULT_FLOAT_PRECISION);
+  }
   const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
 
   return [scalarValue, formattedScalarValue, units] as const;

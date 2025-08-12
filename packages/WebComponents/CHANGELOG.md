@@ -1,6 +1,10 @@
 # WebComponents changelog
 
-## 1.2.4 (2025-07-28)
+## 1.2.6 (2025-08-28)
+
+- Compute2 related updates
+
+## 1.2.5 (2025-07-28)
 
 - API updated for 1.26.0
 

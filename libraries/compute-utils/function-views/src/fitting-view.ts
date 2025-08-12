@@ -18,7 +18,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -73,11 +73,13 @@ export type RangeDescription = {
   min?: number;
   max?: number;
   step?: number;
+  enabled?: boolean;
 }
 
 export type TargetDescription = {
   default?: any;
   argumentCol?: string;
+  enabled?: boolean;
 }
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
@@ -298,6 +300,23 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
+        const defaultValue = (this.options.targets?.[outputProp.name]?.default != null) ?
+          this.options.targets?.[outputProp.name]?.default :
+          (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : getInputValue(outputProp, 'default');
+
+        let defaultArgColName: string | null = null;
+        let defaultColNames: Array<string | null> = [null];
+        let defaultFuncCols: DG.Column[] | undefined = undefined;
+        let defaultTable: DG.DataFrame | undefined = undefined;
+
+        if ((defaultValue != null) && (defaultValue instanceof DG.DataFrame)) {
+          defaultTable = defaultValue;
+          const numericalCols = defaultTable.columns.toList().filter((col) => col.isNumerical);
+          defaultColNames = numericalCols.map((col) => col.name);
+          defaultArgColName = this.options.targets?.[outputProp.name]?.argumentCol ?? defaultColNames[0];
+          defaultFuncCols =numericalCols.filter((col) => col.name !== defaultArgColName);
+        }
+
         const validator = (_: string) => {
           const validation = getValidation(temp);
 
@@ -318,6 +337,7 @@ export class FittingView {
           return validation.msg;
         };
 
+        const isInterest = new BehaviorSubject(false);
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -325,9 +345,10 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
+            input.value = defaultValue;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
-            input.input.hidden = !this.toSetSwitched;
+            isInterest.subscribe((val) => input.input.hidden = !val);
+
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
 
@@ -375,34 +396,32 @@ export class FittingView {
               this.updateApplicabilityState();
             });
 
-
-            if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
-              (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
-
             const isInterestInput = getSwitchElement(
-              this.toSetSwitched,
+              isInterest.value,
               (v: boolean) => {
                 temp.isInterest.next(v);
                 this.updateApplicabilityState();
-                input.input.hidden = !v;
-
-                if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-                  (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                  temp.argColInput.root.hidden = !v;
-                  temp.funcColsInput.root.hidden = !v;
-                }
               },
               false,
-            ).root;
-            input.root.insertBefore(isInterestInput, input.captionLabel);
+            );
+
+            isInterest.subscribe((val) => {
+              isInterestInput.notify = false;
+              try {
+                isInterestInput.value = val;
+              } finally {
+                isInterestInput.notify = true;
+              }
+            });
+            input.root.insertBefore(isInterestInput.root, input.captionLabel);
 
             return input;
           })(),
-          argName: '_',
+          argName: defaultArgColName ?? '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
-              value: null,
-              items: [null],
+              value: defaultArgColName,
+              items: defaultColNames,
               tooltipText: 'Independent variable',
               onValueChanged: (value) => {
                 if (value !== null)
@@ -418,23 +437,24 @@ export class FittingView {
 
             const infoIcon = ui.icons.info(() => alert('Hello!'));
             infoIcon.classList.add('sa-switch-input');
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
             input.addValidator(validator);
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
 
             return input;
           })(),
-          isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
-          target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
+          isInterest,
+          target: defaultValue,
           funcColsInput: (() => {
             const input = ui.input.columns('functions', {
+              table: defaultTable,
+              value: defaultFuncCols,
               nullable: false,
               tooltipText: 'Target dependent variables',
               onValueChanged: (cols) => this.updateApplicabilityState(),
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
-            this.toSetSwitched = false;
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
             input.addValidator(validator);
 
@@ -503,8 +523,6 @@ export class FittingView {
   private gridCellChangeSubscription: any = null;
 
   private failsDF: DG.DataFrame | null = null;
-
-  private toSetSwitched = true;
 
   private samplesCount = FITTING_UI.SAMPLES;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -637,7 +655,6 @@ export class FittingView {
         this.isFittingAccepted = true;
       }
     });
-
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;
 
@@ -695,6 +712,7 @@ export class FittingView {
       this.runIcon.classList.add('fas');
 
       this.updateApplicabilityState();
+      //this.processOptionTargets();
     });
 
     this.diffGrok = options.diffGrok;
@@ -881,6 +899,12 @@ export class FittingView {
     } else
       form.append(...inputsByCategories.get('Misc')!);
 
+    // Check if isChanging is enabled
+    for (const name of Object.keys(this.store.inputs)) {
+      if (this.options.ranges?.[name]?.enabled)
+        this.store.inputs[name].isChanging.next(true);
+    }
+
     // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
@@ -912,10 +936,11 @@ export class FittingView {
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.options.targets?.[name]?.enabled)
+        this.store.outputs[name].isInterest.next(true);
+
+      if (this.store.outputs[name].isInterest.value === true)
         isAnyOutputSelectedAsOfInterest = true;
-        break;
-      }
     }
 
     if (!isAnyOutputSelectedAsOfInterest) {
@@ -1021,7 +1046,7 @@ export class FittingView {
 
         areSelectedFilled = areSelectedFilled && cur;
       } else {
-        const val = input.const.input.value;
+        const val = input.const.input.value ?? input.const.input.stringValue;
         cur = (val !== null) && (val !== undefined);
 
         if (!cur)
@@ -1352,11 +1377,13 @@ export class FittingView {
       // Add goodness of fit viewers
       const gofTables = new Array<Map<string, GoFtable>>(rowCount);
 
+      this.currentFuncCalls = [];
       for (let idx = 0; idx < rowCount; ++idx) {
         const gofDfs = new Map<string, GoFtable>();
         const scalarGoFs: GoFtable[] = [];
 
         const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+        this.currentFuncCalls.push(calledFuncCall);
 
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
@@ -1394,8 +1421,9 @@ export class FittingView {
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
+      // Check whether to use the radar viewer
       let toAddRadars = false;
-      gofTables[0].forEach((gof) => toAddRadars ||= (gof.table.columns.length >= MIN_RADAR_COLS_COUNT));
+      gofTables[0].forEach((gof) => toAddRadars ||= toUseRadar(gof.table));
 
       // Add viewers to the grid
       let toReorderCols = true;

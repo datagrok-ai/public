@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function init(): Promise<any> {
+  export async function init(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:Init', {});
   }
 
@@ -20,7 +20,7 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:PdbIdCellRenderer', {});
   }
 
-  export async function viewPdbById(pdbId: string ): Promise<any> {
+  export async function viewPdbById(pdbId: string ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:ViewPdbById', { pdbId });
   }
 
@@ -64,15 +64,15 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:ImportPdbqt', { fileContent, test });
   }
 
-  export async function previewNglStructure(file: any ): Promise<DG.View> {
+  export async function previewNglStructure(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('BiostructureViewer:PreviewNglStructure', { file });
   }
 
-  export async function previewNglSurface(file: any ): Promise<any> {
+  export async function previewNglSurface(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('BiostructureViewer:PreviewNglSurface', { file });
   }
 
-  export async function previewNglDensity(file: any ): Promise<any> {
+  export async function previewNglDensity(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('BiostructureViewer:PreviewNglDensity', { file });
   }
 
@@ -99,14 +99,14 @@ export namespace funcs {
   /**
   Example app for NGL drawing in grid cells
   */
-  export async function nglForGridTestApp(): Promise<any> {
+  export async function nglForGridTestApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:NglForGridTestApp', {});
   }
 
   /**
   Test app for NglViewer
   */
-  export async function nglViewerApp(): Promise<any> {
+  export async function nglViewerApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:NglViewerApp', {});
   }
 
@@ -168,11 +168,11 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:GetPdbHelper', {});
   }
 
-  export async function dockingDemo(): Promise<any> {
+  export async function dockingDemo(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:DockingDemo', {});
   }
 
-  export async function inGridDemo(): Promise<any> {
+  export async function inGridDemo(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:InGridDemo', {});
   }
 
@@ -184,15 +184,15 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:DownloadRawBiostructureValue', { gridCell });
   }
 
-  export async function showBiostructureViewerMenuItem(gridCell: any ): Promise<any> {
+  export async function showBiostructureViewerMenuItem(gridCell: any ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:ShowBiostructureViewerMenuItem', { gridCell });
   }
 
-  export async function showNglViewerMenuItem(gridCell: any ): Promise<any> {
+  export async function showNglViewerMenuItem(gridCell: any ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:ShowNglViewerMenuItem', { gridCell });
   }
 
-  export async function openTableResiduesMenuItem(fi: DG.FileInfo ): Promise<any> {
+  export async function openTableResiduesMenuItem(fi: any ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:OpenTableResiduesMenuItem', { fi });
   }
 
@@ -226,7 +226,7 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:ReadAsText', { file });
   }
 
-  export async function readAsTextDapi(file: string ): Promise<any> {
+  export async function readAsTextDapi(file: string ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:ReadAsTextDapi', { file });
   }
 

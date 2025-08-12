@@ -410,24 +410,30 @@ export class PackageFunctions {
       return;
     }
 
-    const pi = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-    return new Promise<DG.Viewer | undefined>((resolve, reject) => {
-      if (table.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
-        ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
-      Do you want to continue?`))
-          .onOK(async () => {
-            runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-          })
-          .onCancel(() => { resolve(undefined); })
-          .show();
-      } else
-        runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-    }).catch((err: any) => {
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-      throw err;
-    }).finally(() => { pi.close(); });
+  const pi = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+  const scRes = (await new Promise<DG.Viewer | undefined>((resolve, reject) => {
+    if (table.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
+      ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+        .onOK(async () => {
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
+        })
+        .onCancel(() => { resolve(undefined); })
+        .show();
+    } else
+      runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
+  }).catch((err: any) => {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }).finally(() => { pi.close(); })) as DG.ScatterPlotViewer | undefined;
+  if (scRes?.props?.xColumnName && scRes?.props?.yColumnName && table.col(scRes.props.xColumnName) && table.col(scRes.props.yColumnName)) {
+    table.col(scRes.props.xColumnName)!.set(0, table.col(scRes.props.xColumnName)!.get(0)); // to trigger rendering
+    table.col(scRes.props.yColumnName)!.set(0, table.col(scRes.props.yColumnName)!.get(0)); // to trigger rendering
   }
+
+  return scRes;
+}
 
   @grok.decorators.func({
     name: 'Encode Sequences',

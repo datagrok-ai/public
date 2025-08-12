@@ -4,7 +4,7 @@ const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
   
 module.exports = {
   cache: {type: 'filesystem'},
-  mode: 'development',
+  mode: 'production',
   entry: {
     package: ['./src/package.ts'],
     test: {

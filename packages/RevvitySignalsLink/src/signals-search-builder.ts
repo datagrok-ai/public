@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SignalsSearchQuery, QueryOperator, SignalsSearchParams, SignalsSearchField, SignalsEntityType } from './signalsSearchQuery';
+import { SignalsSearchQuery, QueryOperator, SignalsSearchParams, SignalsSearchField, SignalsEntityType } from './signals-search-query';
 import * as grok from 'datagrok-api/grok';
 import { loadRevvitySearchQueryAndParams, PARAMS_KEY, QUERY_KEY, STORAGE_NAME } from './utils';
 

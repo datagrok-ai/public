@@ -1,4 +1,7 @@
-from datagrok_api.datagrok_client import DatagrokClient
-from datagrok_api.group import Group, GroupMembershipRequest, GroupRelation
+from .datagrok_client import DatagrokClient
+from .models import *
+from .resources import *
+
+__all__ = ["DatagrokClient"]
 
 '''Datagrok Public API Python wrapper'''
