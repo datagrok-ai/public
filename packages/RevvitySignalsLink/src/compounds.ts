@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
-import { ComplexCondition, Operators } from './query-builder';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { OPERATORS } from './signals-search-query';
 
 export const assetsQuery = {

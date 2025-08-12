@@ -1,8 +1,7 @@
 // Signals /entities/search Query TypeScript Interfaces
 
 import { RevvityLibrary } from "./package";
-import { ComplexCondition, Operators } from "./query-builder";
-import { SimpleCondition } from './query-builder';
+import { ComplexCondition, Operators, SimpleCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { NOT_IN_TAGS } from './properties';
 
 export enum OPERATORS {

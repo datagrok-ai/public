@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { BaseConditionEditor, ConditionRegistry, Operators, SUGGESTIONS_FUNCTION } from './query-builder';
+import { BaseConditionEditor, ConditionRegistry, Operators, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { getUserIdByUserString, getUsersSuggestions, getUserStringIdById } from './users';
 
 export const REVVITY_USER = 'revvity_user';
