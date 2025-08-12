@@ -95,12 +95,11 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 } // getErrors
 
 /** Return widget for show/hide group of inputs */
-export function getCategoryWidget(category: string, roots: HTMLElement[]) {
+export function getCategoryWidget(category: string, roots: HTMLElement[], expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {
   const updateWgts = (isExpanded: boolean) => {
     chevronToOpen.hidden = isExpanded;
     chevronToClose.hidden = !isExpanded;
-
-    roots.forEach((r) => r.hidden = !isExpanded);
+    roots.forEach((r) => expandHandler ? expandHandler(r, isExpanded, category) : (r.hidden = !isExpanded));
   };
 
   const chevronToOpen = ui.iconFA('chevron-right', () => updateWgts(true), 'Open category');
