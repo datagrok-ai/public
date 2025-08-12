@@ -120,7 +120,7 @@ export namespace funcs {
   /**
   Gets a new column with sequences of the region between start and end
   */
-  export async function getRegion(sequence: DG.Column , start?: any , end?: any , name?: any ): Promise<DG.Column> {
+  export async function getRegion(sequence: DG.Column , start?: string , end?: string , name?: string ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetRegion', { sequence, start, end, name });
   }
 
@@ -132,9 +132,9 @@ export namespace funcs {
   }
 
   /**
-  Detects pairs of molecules with similar structure and significant difference in any given propert
+  Detects pairs of molecules with similar structure and significant difference in any given property
   */
-  export async function activityCliffs(table: DG.DataFrame , molecules: any , activities: DG.Column , similarity: number , methodName: any , similarityMetric: any , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
+  export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
   }
 
@@ -149,7 +149,7 @@ export namespace funcs {
   /**
   Creates 2D sequence space with projected sequences by pairwise distance
   */
-  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: any , similarityMetric: any , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
+  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
   }
 

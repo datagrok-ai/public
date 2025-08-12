@@ -613,7 +613,7 @@ export class PackageFunctions {
   static async alignSequences(
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string> | null = null,
     @grok.decorators.param({type: 'column'}) clustersCol: DG.Column | null = null,
-    @grok.decorators.param({type: 'object', options: {optional: true, initialValue: 'undefined'}}) options?: any
+    @grok.decorators.param({type: 'object', options: {optional: true}}) options?: any
   ): Promise<DG.Column<string>> {
     return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
   }
@@ -1222,7 +1222,6 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async detectMacromoleculeProbe(
     file: DG.FileInfo,
-    @grok.decorators.param({options: {initialValue: ''}})
     colName: string = '',
     @grok.decorators.param({options: {initialValue: '100'}})
     probeCount: number = 100

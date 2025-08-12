@@ -187,7 +187,7 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
 
 //name: Sequence Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
-//input: dataframe table 
+//input: dataframe table { description: Input data table }
 //input: string molecules { semType: Macromolecule; description: Input data table }
 //input: column activities 
 //input: double similarity { default: 80; description: Similarity cutoff }
@@ -293,7 +293,7 @@ export function multipleSequenceAlignmentDialog() {
 //tags: bio
 //input: column sequenceCol { semType: Macromolecule }
 //input: column clustersCol 
-//input: object options { optional: true; default: undefined }
+//input: object options { optional: true }
 //output: column result
 export async function alignSequences(sequenceCol: any, clustersCol: any, options?: any) {
   return PackageFunctions.alignSequences(sequenceCol, clustersCol, options);
@@ -607,7 +607,7 @@ export async function seqIdentity(seq: string, ref: string) {
 
 //name: detectMacromoleculeProbe
 //input: file file 
-//input: string colName { default:  }
+//input: string colName 
 //input: double probeCount { default: 100 }
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number) {
   return PackageFunctions.detectMacromoleculeProbe(file, colName, probeCount);
