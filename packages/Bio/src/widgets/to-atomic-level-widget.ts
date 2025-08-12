@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {_package, getSeqHelper, toAtomicLevel} from '../package';
+import {_package, PackageFunctions} from '../package';
 
 
 export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{mol: string, errorText: string}> {
@@ -23,7 +23,7 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       errorText = 'Unsupported sequence notation. please use Bio | Polytool | Convert';
       return {errorText, mol: ''};
     }
-    const seqHelper = await getSeqHelper();
+    const seqHelper = await PackageFunctions.getSeqHelper();
     const seqSh = seqHelper.getSeqHandler(sequence.cell.column);
     if (!seqSh) {
       errorText = 'No sequence handler found';
@@ -39,7 +39,7 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
     Object.entries(sequence.cell.column.tags).forEach(([key, value]) => {
       singleValCol.setTag(key, value as string);
     });
-    await toAtomicLevel(sDf, singleValCol, sequence.cell.column.meta.units === NOTATION.HELM, false);
+    await PackageFunctions.toAtomicLevel(sDf, singleValCol, sequence.cell.column.meta.units === NOTATION.HELM, false);
     if (sDf.columns.length < 2) {
       errorText = 'No structure generated';
       return {errorText, mol: ''};
