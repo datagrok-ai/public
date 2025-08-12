@@ -103,6 +103,7 @@
 
 .grok-gallery-grid-view-demo-app {
 	flex-direction: column;
+	flex-wrap: nowrap;
 }
 
 .d4-tree-view-root.demo-app-group-view .grok-gallery-grid > div {
