@@ -504,6 +504,7 @@ export class FittingView {
     const chosenCall = this.currentFuncCalls[chosenItem-1];
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
+    this.baseView.close();
   });
 
   private helpIcon = getHelpIcon();
@@ -622,7 +623,7 @@ export class FittingView {
 
   private constructor(
     public func: DG.Func,
-    baseView: RunComparisonView,
+    private baseView: RunComparisonView,
     public options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
