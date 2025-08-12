@@ -22,9 +22,11 @@ export const datagrokAsyncLocalStorage = new AsyncLocalStorage();
 
 // Express middleware
 export function tokenContextMiddleware(req, res, next) {
+    //@ts-ignore
     const token =
         req?.headers?.authorization ||
         req?.authorization ||
+        (req?.cookies && req.cookies['auth']) ||
         null;
 
     const store = { token };
@@ -36,11 +38,23 @@ export function withTokenContext(req, callback) {
     const token =
         req?.headers?.authorization ||
         req?.authorization ||
+        parseCookies(req.headers?.cookie)['auth'] ||
         null;
 
     const store = { token };
     return datagrokAsyncLocalStorage.run(store, () => callback());
 }
+
+function parseCookies(cookieHeader) {
+    const cookies = {};
+    if (!cookieHeader) return cookies;
+    cookieHeader.split(';').forEach(cookie => {
+        const [name, ...rest] = cookie.trim().split('=');
+        cookies[name] = decodeURIComponent(rest.join('='));
+    });
+    return cookies;
+}
+
 
 export function getContext() {
     return datagrokAsyncLocalStorage.getStore();
