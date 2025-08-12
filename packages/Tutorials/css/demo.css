@@ -118,6 +118,10 @@
 	padding: 4px 0;
 }
 
+.demo-app-group-view {
+	width: 100%;
+}
+
 .demo-breadcrumbs-home-element {
 	color: var(--steel-5) !important;
 	font-weight: 300 !important;
