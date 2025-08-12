@@ -44,19 +44,19 @@ export namespace funcs {
     return await grok.functions.call('Bio:GetBioLib', {});
   }
 
-  export async function getSeqHandler(sequence: any ): Promise<any> {
+  export async function getSeqHandler(sequence: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetSeqHandler', { sequence });
   }
 
   /**
   Creates a new column with sequences of the region between start and end
   */
-  export async function getRegionPanel(seqCol: any ): Promise<any> {
+  export async function getRegionPanel(seqCol: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetRegionPanel', { seqCol });
   }
 
-  export async function libraryPanel(_seqColumn: DG.Column ): Promise<any> {
-    return await grok.functions.call('Bio:LibraryPanel', { _seqColumn });
+  export async function libraryPanel(seqColumn: DG.Column ): Promise<any> {
+    return await grok.functions.call('Bio:LibraryPanel', { seqColumn });
   }
 
   export async function getRegionEditor(call: any ): Promise<void> {
@@ -67,11 +67,11 @@ export namespace funcs {
     return await grok.functions.call('Bio:SplitToMonomersEditor', { call });
   }
 
-  export async function sequenceSpaceEditor(call: any ): Promise<any> {
+  export async function sequenceSpaceEditor(call: any ): Promise<void> {
     return await grok.functions.call('Bio:SequenceSpaceEditor', { call });
   }
 
-  export async function seqActivityCliffsEditor(call: any ): Promise<any> {
+  export async function seqActivityCliffsEditor(call: any ): Promise<void> {
     return await grok.functions.call('Bio:SeqActivityCliffsEditor', { call });
   }
 
@@ -120,36 +120,36 @@ export namespace funcs {
   /**
   Gets a new column with sequences of the region between start and end
   */
-  export async function getRegion(sequence: any , start?: any , end?: any , name?: any ): Promise<DG.Column> {
+  export async function getRegion(sequence: DG.Column , start?: any , end?: any , name?: any ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetRegion', { sequence, start, end, name });
   }
 
   /**
   Get sequences for a region specified from a Macromolecule
   */
-  export async function getRegionTopMenu(table: DG.DataFrame , sequence: DG.Column , start?: any , end?: any , name?: any ): Promise<void> {
+  export async function getRegionTopMenu(table: DG.DataFrame , sequence: DG.Column , start?: string , end?: string , name?: string ): Promise<void> {
     return await grok.functions.call('Bio:GetRegionTopMenu', { table, sequence, start, end, name });
   }
 
   /**
   Detects pairs of molecules with similar structure and significant difference in any given propert
   */
-  export async function activityCliffs(table: DG.DataFrame , molecules: any , activities: DG.Column , similarity: number , methodName: any , similarityMetric: any , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<any> {
+  export async function activityCliffs(table: DG.DataFrame , molecules: any , activities: DG.Column , similarity: number , methodName: any , similarityMetric: any , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
   }
 
-  export async function macromoleculePreprocessingFunction(col: DG.Column , metric: any , gapOpen?: number , gapExtend?: number , fingerprintType?: string ): Promise<any> {
+  export async function macromoleculePreprocessingFunction(col: DG.Column , metric: string , gapOpen?: number , gapExtend?: number , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Bio:MacromoleculePreprocessingFunction', { col, metric, gapOpen, gapExtend, fingerprintType });
   }
 
-  export async function helmPreprocessingFunction(col: any , _metric: any ): Promise<any> {
+  export async function helmPreprocessingFunction(col: DG.Column , _metric: string ): Promise<any> {
     return await grok.functions.call('Bio:HelmPreprocessingFunction', { col, _metric });
   }
 
   /**
   Creates 2D sequence space with projected sequences by pairwise distance
   */
-  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: any , similarityMetric: any , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<any> {
+  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: any , similarityMetric: any , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
   }
 
@@ -160,7 +160,7 @@ export namespace funcs {
     return await grok.functions.call('Bio:ToAtomicLevel', { table, seqCol, nonlinear, highlight });
   }
 
-  export async function toAtomicLevelAction(seqCol: DG.Column ): Promise<any> {
+  export async function toAtomicLevelAction(seqCol: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:ToAtomicLevelAction', { seqCol });
   }
 
@@ -182,7 +182,7 @@ export namespace funcs {
   /**
   Multiple sequence alignment
   */
-  export async function alignSequences(sequenceCol: any , clustersCol: any , options?: any ): Promise<DG.Column> {
+  export async function alignSequences(sequenceCol: DG.Column , clustersCol: DG.Column , options?: any ): Promise<DG.Column> {
     return await grok.functions.call('Bio:AlignSequences', { sequenceCol, clustersCol, options });
   }
 
@@ -207,11 +207,11 @@ export namespace funcs {
     return await grok.functions.call('Bio:ImportBam', { fileContent });
   }
 
-  export async function convertDialog(): Promise<any> {
+  export async function convertDialog(): Promise<void> {
     return await grok.functions.call('Bio:ConvertDialog', {});
   }
 
-  export async function convertColumnAction(col: DG.Column ): Promise<any> {
+  export async function convertColumnAction(col: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:ConvertColumnAction', { col });
   }
 
@@ -227,7 +227,7 @@ export namespace funcs {
     return await grok.functions.call('Bio:SplitToMonomersTopMenu', { table, sequence });
   }
 
-  export async function getHelmMonomers(sequence: any ): Promise<any> {
+  export async function getHelmMonomers(sequence: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetHelmMonomers', { sequence });
   }
 
@@ -253,7 +253,7 @@ export namespace funcs {
     return await grok.functions.call('Bio:DiversitySearchTopMenu', {});
   }
 
-  export async function searchSubsequenceEditor(call: any ): Promise<any> {
+  export async function searchSubsequenceEditor(call: any ): Promise<void> {
     return await grok.functions.call('Bio:SearchSubsequenceEditor', { call });
   }
 
@@ -289,7 +289,7 @@ export namespace funcs {
   /**
   Edit and create monomers
   */
-  export async function manageMonomersView(): Promise<any> {
+  export async function manageMonomersView(): Promise<void> {
     return await grok.functions.call('Bio:ManageMonomersView', {});
   }
 
@@ -297,14 +297,14 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomerLibrariesView', {});
   }
 
-  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any , browsePanel: any ): Promise<any> {
+  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any , browsePanel: any ): Promise<void> {
     return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode, browsePanel });
   }
 
   /**
   As FASTA...
   */
-  export async function saveAsFasta(): Promise<any> {
+  export async function saveAsFasta(): Promise<void> {
     return await grok.functions.call('Bio:SaveAsFasta', {});
   }
 
@@ -382,7 +382,7 @@ export namespace funcs {
     return await grok.functions.call('Bio:DemoBioAtomicLevel', {});
   }
 
-  export async function sdfToJsonLib(table: DG.DataFrame ): Promise<any> {
+  export async function sdfToJsonLib(table: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('Bio:SdfToJsonLib', { table });
   }
 
@@ -408,7 +408,7 @@ export namespace funcs {
     return await grok.functions.call('Bio:GetSeqHelper', {});
   }
 
-  export async function getMolFromHelm(df: DG.DataFrame , helmCol: any , chiralityEngine: boolean ): Promise<DG.Column> {
+  export async function getMolFromHelm(df: DG.DataFrame , helmCol: DG.Column , chiralityEngine: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetMolFromHelm', { df, helmCol, chiralityEngine });
   }
 }

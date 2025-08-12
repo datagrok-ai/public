@@ -110,14 +110,14 @@ export class PackageFunctions {
   }
 
   // Keep for backward compatibility
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'monomerLib'}]})
   static getBioLib(): IMonomerLib {
     return _package.monomerLib;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static getSeqHandler(
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.Column<string>): ISeqHandler {
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequence: DG.Column<string>): ISeqHandler {
     return _package.seqHelper.getSeqHandler(sequence);
   }
 
@@ -125,7 +125,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({name: 'Bioinformatics | Get Region', description: 'Creates a new column with sequences of the region between start and end'})
   static getRegionPanel(
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) seqCol: DG.Column<string>): DG.Widget {
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) seqCol: DG.Column<string>): DG.Widget {
     const funcName: string = 'getRegionTopMenu';
     const funcList = DG.Func.find({package: _package.name, name: funcName});
     if (funcList.length !== 1) throw new Error(`Package '${_package.name}' func '${funcName}' not found`);
@@ -137,7 +137,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({name: 'Bioinformatics | Manage Monomer Libraries', tags: ['exclude-actions-panel']})
   static async libraryPanel(
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) _seqColumn: DG.Column): Promise<DG.Widget> {
+    @grok.decorators.param({name: 'seqColumn', options: {semType: 'Macromolecule'}}) _seqColumn: DG.Column): Promise<DG.Widget> {
     // return getLibraryPanelUI();
     return getMonomerLibraryManagerLink();
   }
@@ -215,17 +215,41 @@ export class PackageFunctions {
 
   // -- Cell renderers --
 
-  @grok.decorators.func({name: 'customSequenceCellRenderer', tags: ['cellRenderer'], meta: {cellType: 'sequence', columnTags: 'quality=Macromolecule, units=custom'}})
+  @grok.decorators.func({
+    name: 'customSequenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'sequence',
+      columnTags: 'quality=Macromolecule, units=custom'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
   static customSequenceCellRenderer(): DG.GridCellRenderer {
     return new MacromoleculeSequenceCellRenderer();
   }
 
-  @grok.decorators.func({name: 'fastaSequenceCellRenderer', tags: ['cellRenderer'], meta: {cellType: 'sequence', columnTags: 'quality=Macromolecule, units=fasta'}})
+  @grok.decorators.func({
+    name: 'fastaSequenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'sequence',
+      columnTags: 'quality=Macromolecule, units=fasta'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
   static fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
     return new MacromoleculeSequenceCellRenderer();
   }
 
-  @grok.decorators.func({name: 'separatorSequenceCellRenderer', tags: ['cellRenderer'], meta: {cellType: 'sequence', columnTags: 'quality=Macromolecule, units=separator'}})
+  @grok.decorators.func({
+    name: 'separatorSequenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'sequence',
+      columnTags: 'quality=Macromolecule, units=separator'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
   static separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
     return new MacromoleculeSequenceCellRenderer();
   }
@@ -238,18 +262,26 @@ export class PackageFunctions {
     return getMacromoleculeColumnPropertyPanel(molColumn);
   }
 
-  @grok.decorators.panel({name: 'Composition analysis'})
+  @grok.decorators.panel({name: 'Composition analysis', tags: ['bio', 'widgets']})
   static compositionAnalysisWidget(
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
     return getCompositionAnalysisWidget(sequence, _package.monomerLib, _package.seqHelper);
   }
 
-  @grok.decorators.func({name: 'MacromoleculeDifferenceCellRenderer', tags: ['cellRenderer'], meta: {cellType: 'MacromoleculeDifference', columnTags: 'quality=MacromoleculeDifference'}})
+  @grok.decorators.func({
+    name: 'MacromoleculeDifferenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'MacromoleculeDifference',
+      columnTags: 'quality=MacromoleculeDifference'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
   static macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
     return new MacromoleculeDifferenceCellRenderer();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static sequenceAlignment(
     @grok.decorators.param({options: {choices: ['Local alignment', 'Global alignment']}}) alignType: string,
     @grok.decorators.param({options: {choices: ['AUTO', 'NUCLEOTIDES', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62', 'BLOSUM80', 'BLOSUM90', 'PAM30', 'PAM70', 'PAM250', 'SCHNEIDER', 'TRANS']}}) alignTable: string,
@@ -263,12 +295,24 @@ export class PackageFunctions {
 
   // -- Viewers --
 
-  @grok.decorators.panel({name: 'WebLogo', description: 'WebLogo', tags: ['viewer'], meta: {icon: 'files/icons/weblogo-viewer.svg'}})
+  @grok.decorators.panel({
+    name: 'WebLogo',
+    description: 'WebLogo',
+    tags: ['viewer'],
+    meta: {icon: 'files/icons/weblogo-viewer.svg'},
+    outputs: [{type: 'viewer', name: 'result'}]
+  })
   static webLogoViewer() {
     return new WebLogoViewer();
   }
 
-  @grok.decorators.panel({name: 'VdRegions', description: 'V-Domain regions viewer', tags: ['viewer'], meta: {icon: 'files/icons/vdregions-viewer.svg'}})
+  @grok.decorators.panel({
+    name: 'VdRegions',
+    description: 'V-Domain regions viewer',
+    tags: ['viewer'],
+    meta: {icon: 'files/icons/vdregions-viewer.svg'},
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
   static vdRegionsViewer() {
     return new VdRegionsViewer();
   }
@@ -277,25 +321,25 @@ export class PackageFunctions {
 
   @grok.decorators.func({name: 'getRegion', description: 'Gets a new column with sequences of the region between start and end'})
   static getRegion(
-    sequence: DG.Column<string>,
-    @grok.decorators.param({options: {optional: true}}) start: string | undefined,
-    @grok.decorators.param({options: {optional: true}}) end: string | undefined,
-    @grok.decorators.param({options: {optional: true}}) name: string | undefined): DG.Column<string> {
+    @grok.decorators.param({type: 'column'})sequence: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) start: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) end: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Name of the column to be created'}}) name: string | undefined): DG.Column<string> {
     return getRegionDo(sequence,
       start ?? null, end ?? null, name ?? null);
   }
 
   @grok.decorators.func({
-    'name': 'Get Region Top Menu',
-    'description': 'Get sequences for a region specified from a Macromolecule',
+    name: 'Get Region Top Menu',
+    description: 'Get sequences for a region specified from a Macromolecule',
     'top-menu': 'Bio | Calculate | Get Region...',
-    'editor': 'Bio:GetRegionEditor'})
+    editor: 'Bio:GetRegionEditor'})
   static async getRegionTopMenu(
-    table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.Column,
-    @grok.decorators.param({options: {optional: true}}) start: string | undefined,
-    @grok.decorators.param({options: {optional: true}}) end: string | undefined,
-    @grok.decorators.param({options: {optional: true}}) name: string | undefined
+    @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequence column'}}) sequence: DG.Column,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Region start position name'}}) start: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Region end position name'}}) end: string | undefined,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Region column name'}}) name: string | undefined
   ): Promise<void> {
     const regCol = getRegionDo(sequence, start ?? null, end ?? null, name ?? null);
     sequence.dataFrame.columns.add(regCol);
@@ -303,20 +347,21 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'Sequence Activity Cliffs',
-    'description': 'Detects pairs of molecules with similar structure and significant difference in any given propert',
+    name: 'Sequence Activity Cliffs',
+    description: 'Detects pairs of molecules with similar structure and significant difference in any given property',
     'top-menu': 'Bio | Analyze | Activity Cliffs...',
-    'editor': 'Bio:SeqActivityCliffsEditor'
+    editor: 'Bio:SeqActivityCliffsEditor',
+    outputs: []
   })
   static async activityCliffs(
-    table: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({type: 'string', options: {semType: 'Macromolecule', description: 'Input data table'}}) molecules: DG.Column<string>,
     activities: DG.Column,
-    @grok.decorators.param({options: {initialValue: '80'}}) similarity: number,
-    @grok.decorators.param({options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
-    @grok.decorators.param({options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance']}}) similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
-    preprocessingFunction: DG.Func,
-    @grok.decorators.param({options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
+    @grok.decorators.param({options: {initialValue: '80', description: 'Similarity cutoff'}}) similarity: number,
+    @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string', options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance']}}) similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
+    @grok.decorators.param({type: 'func'}) preprocessingFunction: DG.Func,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
     @grok.decorators.param({options: {optional: true}}) demo?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     if (table.name !== grok.shell.tv.dataFrame.name) {
@@ -391,11 +436,12 @@ export class PackageFunctions {
       supportedSemTypes: 'Macromolecule',
       supportedTypes: 'string',
       supportedDistanceFunctions: 'Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch'
-    }
+    },
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async macromoleculePreprocessingFunction(
     @grok.decorators.param({options: {semType: 'Macromolecule'}})col: DG.Column,
-    @grok.decorators.param({}) metric: MmDistanceFunctionsNames,
+    @grok.decorators.param({type: 'string'}) metric: MmDistanceFunctionsNames,
     @grok.decorators.param({options: {initialValue: '1', caption: 'Gap open penalty', optional: true}}) gapOpen: number = 1,
     @grok.decorators.param({options: {initialValue: '0.6', caption: 'Gap extension penalty', optional: true}}) gapExtend: number = 0.6,
     @grok.decorators.param({options: {caption: 'Fingerprint type', initialValue: 'Morgan', choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], optional: true}}) fingerprintType : string = 'Morgan'): Promise<PreprocessFunctionReturnType> {
@@ -407,17 +453,17 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({name: 'Helm Fingerprints',
-    tags: ['dim-red-preprocessing-function'],
     meta: {
       supportedSemTypes: 'Macromolecule',
       supportedTypes: 'string',
       supportedUnits: 'helm',
       supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'
-    }
+    },
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async helmPreprocessingFunction(
-    @grok.decorators.param({options: {semType: 'Macromolecule'}}) col: DG.Column<string>,
-      _metric: BitArrayMetrics): Promise<PreprocessFunctionReturnType> {
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) col: DG.Column<string>,
+    @grok.decorators.param({type: 'string'})_metric: BitArrayMetrics): Promise<PreprocessFunctionReturnType> {
     if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
       await invalidateMols(col, _package.seqHelper, false);
     const molCol = col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS];
@@ -435,20 +481,21 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'Sequence Space',
-    'description': 'Creates 2D sequence space with projected sequences by pairwise distance',
+    name: 'Sequence Space',
+    description: 'Creates 2D sequence space with projected sequences by pairwise distance',
     'top-menu': 'Bio | Analyze | Sequence Space...',
-    'editor': 'Bio:SequenceSpaceEditor'
+    editor: 'Bio:SequenceSpaceEditor',
+    outputs: [],
   })
   static async sequenceSpaceTopMenu(
     table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
-    @grok.decorators.param({options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance']}}) similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
+    @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string', options: {choices: ['Hamming', 'Levenshtein', 'Monomer chemical distance']}}) similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
     @grok.decorators.param({options: {initialValue: 'true'}}) plotEmbeddings: boolean,
-    @grok.decorators.param({options: {optional: true}}) preprocessingFunction?: DG.Func,
-    @grok.decorators.param({options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
-    @grok.decorators.param({options: {optional: true}}) clusterEmbeddings?: boolean,
+    @grok.decorators.param({type: 'func', options: {optional: true}}) preprocessingFunction?: DG.Func,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
+    @grok.decorators.param({options: {optional: true, initialValue: 'true'}}) clusterEmbeddings?: boolean,
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean
   ): Promise<DG.ScatterPlotViewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
@@ -477,12 +524,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'To Atomic Level',
-    'description': 'Converts sequences to molblocks',
+    name: 'To Atomic Level',
+    description: 'Converts sequences to molblocks',
     'top-menu': 'Bio | Transform | To Atomic Level...',
   })
   static async toAtomicLevel(
-    table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false
@@ -541,7 +588,7 @@ export class PackageFunctions {
     name: 'MSA',
     description: 'Performs multiple sequence alignment',
     tags: ['bio'],
-    ['top-menu']: 'Bio | Analyze | MSA...'
+    'top-menu': 'Bio | Analyze | MSA...'
   })
   static multipleSequenceAlignmentDialog(): void {
     multipleSequenceAlignmentUI({}, _package.seqHelper)
@@ -564,15 +611,9 @@ export class PackageFunctions {
     tags: ['bio']
   })
   static async alignSequences(
-    @grok.decorators.param({
-      options: {semType: 'Macromolecule'}
-    })
-    sequenceCol: DG.Column<string> | null = null,
-    clustersCol: DG.Column | null = null,
-    @grok.decorators.param({
-      options: {optional: true}
-    })
-    options?: any
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string> | null = null,
+    @grok.decorators.param({type: 'column'}) clustersCol: DG.Column | null = null,
+    @grok.decorators.param({type: 'object', options: {optional: true, initialValue: 'undefined'}}) options?: any
   ): Promise<DG.Column<string>> {
     return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
   }
@@ -580,7 +621,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Composition Analysis',
     description: 'Visualizes sequence composition on a WebLogo plot',
-    ['top-menu']: 'Bio | Analyze | Composition',
+    'top-menu': 'Bio | Analyze | Composition',
     meta: {
       icon: 'files/icons/composition-analysis.svg'
     },
@@ -642,12 +683,7 @@ export class PackageFunctions {
 
   // -- Package settings editor --
 
-  //name: importFasta
-  //description: Opens FASTA file
-  //tags: file-handler
-  //meta.ext: fasta, fna, ffn, faa, frn, fa, fst
-  //input: string fileContent
-  //output: list tables
+
   @grok.decorators.fileHandler({
     name: 'importFasta',
     description: 'Opens FASTA file',
@@ -672,7 +708,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'convertDialog',
-    ['top-menu']: 'Bio | Transform | Convert Notation...'
+    'top-menu': 'Bio | Transform | Convert Notation...'
   })
   static convertDialog() {
     const col: DG.Column<string> | undefined = getMacromoleculeColumns()[0];
@@ -701,6 +737,7 @@ export class PackageFunctions {
       cellType: 'Monomer',
       columnTags: 'quality=Monomer'
     },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static monomerCellRenderer(): MonomerCellRenderer {
     return new MonomerCellRenderer();
@@ -764,7 +801,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Split to Monomers',
-    ['top-menu']: 'Bio | Transform | Split to Monomers...',
+    'top-menu': 'Bio | Transform | Split to Monomers...',
     editor: 'Bio:SplitToMonomersEditor',
   })
   static async splitToMonomersTopMenu(
@@ -782,9 +819,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'object'}]
   })
   static getHelmMonomers(
-    @grok.decorators.param({
-      options: {semType: 'Macromolecule'}
-    })
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}})
       sequence: DG.Column<string>
   ): string[] {
     return _package.seqHelper.getSeqMonomers(sequence);
@@ -805,7 +840,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'similaritySearch',
     description: 'Finds similar sequences',
-    ['top-menu']: 'Bio | Search | Similarity Search',
+    'top-menu': 'Bio | Search | Similarity Search',
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static similaritySearchTopMenu(): void {
@@ -829,7 +864,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'diversitySearch',
     description: 'Finds the most diverse sequences',
-    ['top-menu']: 'Bio | Search | Diversity Search',
+    'top-menu': 'Bio | Search | Diversity Search',
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static diversitySearchTopMenu() {
@@ -851,7 +886,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Subsequence Search',
-    ['top-menu']: 'Bio | Search | Subsequence Search ...',
+    'top-menu': 'Bio | Search | Subsequence Search ...',
     editor: 'Bio:SearchSubsequenceEditor'
   })
   static SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
@@ -866,15 +901,12 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Identity Scoring',
     description: 'Adds a column with fraction of matching monomers',
-    ['top-menu']: 'Bio | Calculate | Identity...',
+    'top-menu': 'Bio | Calculate | Identity...',
   })
   static async sequenceIdentityScoring(
-    table: DG.DataFrame,
-    @grok.decorators.param({
-      options: {semType: 'Macromolecule'}
-    })
-    macromolecule: DG.Column,
-    reference: string
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY, seqHelper);
@@ -884,15 +916,12 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Similarity Scoring',
     description: 'Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities',
-    ['top-menu']: 'Bio | Calculate | Similarity...',
+    'top-menu': 'Bio | Calculate | Similarity...',
   })
   static async sequenceSimilarityScoring(
-    table: DG.DataFrame,
-    @grok.decorators.param({
-      options: {semType: 'Macromolecule'}
-    })
-    macromolecule: DG.Column,
-    reference: string
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY, seqHelper);
@@ -909,7 +938,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Manage Monomer Libraries View',
-    ['top-menu']: 'Bio | Manage | Monomer Libraries'
+    'top-menu': 'Bio | Manage | Monomer Libraries'
   })
   static async manageLibrariesView(): Promise<void> {
     await showManageLibrariesView();
@@ -918,7 +947,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'manageMonomersView',
     description: 'Edit and create monomers',
-    ['top-menu']: 'Bio | Manage | Monomers'
+    'top-menu': 'Bio | Manage | Monomers'
   })
   static async manageMonomersView() {
     const monomerManager = await MonomerManager.getInstance();
@@ -958,9 +987,8 @@ export class PackageFunctions {
     name: 'Bio Substructure Filter',
     description: 'Substructure filter for macromolecules',
     tags: ['filter'],
-    meta: {
-      semType: 'Macromolecule'
-    },
+    meta: {semType: 'Macromolecule'},
+    outputs: [{type: 'filter', name: 'result'}],
   })
   static bioSubstructureFilter(): BioSubstructureFilter {
     return new BioSubstructureFilter(_package.seqHelper, _package.logger);
@@ -1056,7 +1084,9 @@ export class PackageFunctions {
   // -- Handle context menu --
 
   @grok.decorators.func()
-  static addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
+  static addCopyMenu(
+    @grok.decorators.param({type: 'object'})cell: DG.Cell,
+    @grok.decorators.param({type: 'object'}) menu: DG.Menu): void {
     addCopyMenuUI(cell, menu, _package.seqHelper);
   }
 
@@ -1113,6 +1143,7 @@ export class PackageFunctions {
   // -- Utils --
 
   @grok.decorators.func({
+    friendlyName: 'seq2atomic',
     description: 'Converts a `Macromolecule` sequence to its atomic level `Molecule` representation',
     outputs: [{name: 'molfile', type: 'string', options: {semType: 'Molecule'}}]
   })
@@ -1163,6 +1194,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'seqIdentity',
+    friendlyName: 'seqIdentity',
     description: 'Gets identity to a reference sequence',
   })
   static async seqIdentity(
@@ -1199,7 +1231,7 @@ export class PackageFunctions {
     await detectMacromoleculeProbeDo(csv, colName, probeCount);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async getSeqHelper(): Promise<ISeqHelper> {
     await PackageFunctions.initBio();
     return _package.seqHelper;
@@ -1208,7 +1240,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async getMolFromHelm(
     df: DG.DataFrame,
-    helmCol: DG.Column<string>,
+    @grok.decorators.param({type: 'column'})helmCol: DG.Column<string>,
     @grok.decorators.param({options: {initialValue: 'true'}})
     chiralityEngine: boolean = true
   ): Promise<DG.Column<string>> {

@@ -14,7 +14,6 @@ export function Peptides() {
 }
 
 //name: Bio Peptides
-//output: dynamic result
 //top-menu: Bio | Analyze | SAR...
 export function peptidesDialog() {
   return PackageFunctions.peptidesDialog();
@@ -37,7 +36,7 @@ export function peptidesPanel(col: DG.Column) {
 //name: Sequence Variability Map
 //description: Peptides Sequence Variability Map Viewer
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/peptide-sar-viewer.svg
 export function monomerPosition() {
   return PackageFunctions.monomerPosition();
@@ -46,7 +45,7 @@ export function monomerPosition() {
 //name: Most Potent Residues
 //description: Peptides Most Potent Residues Viewer
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 export function mostPotentResidues() {
   return PackageFunctions.mostPotentResidues();
@@ -54,7 +53,7 @@ export function mostPotentResidues() {
 
 //name: Logo Summary Table
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/logo-summary-viewer.svg
 export function logoSummaryTable() {
   return PackageFunctions.logoSummaryTable();
@@ -62,7 +61,7 @@ export function logoSummaryTable() {
 
 //name: Sequence Position Statistics
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/sequence-statistics-viewer.svg
 export function sequencePositionStatistics() {
   return PackageFunctions.sequencePositionStatistics();
@@ -70,7 +69,7 @@ export function sequencePositionStatistics() {
 
 //name: Active peptide selection
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 export function clusterMaxActivity() {
   return PackageFunctions.clusterMaxActivity();
 }
@@ -93,7 +92,7 @@ export async function macromoleculeSarFastaDemo() {
 
 //name: LST Pie Chart
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: lst-pie-chart
 //meta.gridChart: true
 export function lstPiechartCellRenderer() {

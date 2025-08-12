@@ -95,7 +95,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Bio | Analyze | SAR...',
-    'name': 'Bio Peptides',
+    name: 'Bio Peptides',
+    outputs: []
   })
   static peptidesDialog(): DG.Dialog | null {
     if (!grok.shell.t || !grok.shell.t.columns.bySemType('Macromolecule')?.length) {
@@ -118,7 +119,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async testInitFunctionPeptides(
     @grok.decorators.param({'type': 'viewer'}) v: DG.Viewer): Promise<void> {
     grok.shell.info('Test init function for Peptides package');
@@ -127,12 +128,9 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    'tags': [
-      'panel',
-      'widgets',
-    ],
-    'name': 'Peptides',
+  @grok.decorators.panel({
+    tags: ['widgets'],
+    name: 'Peptides',
   })
   static peptidesPanel(
     @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) col: DG.Column): DG.Widget {
@@ -144,14 +142,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'icon': 'files/icons/peptide-sar-viewer.svg',
-    },
-    'tags': [
-      'viewer',
-    ],
-    'name': 'Sequence Variability Map',
-    'description': 'Peptides Sequence Variability Map Viewer',
+    meta: {icon: 'files/icons/peptide-sar-viewer.svg'},
+    tags: ['viewer'],
+    name: 'Sequence Variability Map',
+    description: 'Peptides Sequence Variability Map Viewer',
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static monomerPosition(): MonomerPosition {
     return new MonomerPosition();
@@ -159,14 +154,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'icon': 'files/icons/peptide-sar-vertical-viewer.svg',
-    },
-    'tags': [
-      'viewer',
-    ],
-    'name': 'Most Potent Residues',
-    'description': 'Peptides Most Potent Residues Viewer',
+    meta: {icon: 'files/icons/peptide-sar-vertical-viewer.svg'},
+    tags: ['viewer'],
+    name: 'Most Potent Residues',
+    description: 'Peptides Most Potent Residues Viewer',
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static mostPotentResidues(): MostPotentResidues {
     return new MostPotentResidues();
@@ -174,13 +166,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'icon': 'files/icons/logo-summary-viewer.svg',
-    },
-    'tags': [
-      'viewer',
-    ],
-    'name': 'Logo Summary Table',
+    meta: {icon: 'files/icons/logo-summary-viewer.svg'},
+    tags: ['viewer'],
+    name: 'Logo Summary Table',
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static logoSummaryTable(): LogoSummaryTable {
     return new LogoSummaryTable();
@@ -188,13 +177,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'icon': 'files/icons/sequence-statistics-viewer.svg',
-    },
-    'tags': [
-      'viewer',
-    ],
-    'name': 'Sequence Position Statistics',
+    meta: {icon: 'files/icons/sequence-statistics-viewer.svg'},
+    tags: ['viewer'],
+    name: 'Sequence Position Statistics',
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static sequencePositionStatistics(): DG.Viewer {
     return new SequencePositionStatsViewer();
@@ -202,22 +188,18 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'viewer',
-    ],
-    'name': 'Active peptide selection',
+    tags: ['viewer'],
+    name: 'Active peptide selection',
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static clusterMaxActivity(): ClusterMaxActivityViewer {
     return new ClusterMaxActivityViewer();
   }
 
 
-  @grok.decorators.func({
-    'tags': [
-      'panel',
-      'widgets',
-    ],
-    'name': 'Manual Alignment',
+  @grok.decorators.panel({
+    tags: ['widgets'],
+    name: 'Manual Alignment',
   })
   static manualAlignment(
     @grok.decorators.param({'options': {'semType': 'Monomer'}}) _monomer: string): DG.Widget {
@@ -234,12 +216,12 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'demoPath': 'Bioinformatics | Peptide SAR',
-      'demoSkip': 'GROK-14320',
+    meta: {
+      demoPath: 'Bioinformatics | Peptide SAR',
+      demoSkip: 'GROK-14320',
     },
-    'name': 'Peptide SAR',
-    'description': 'Peptide SAR Analysis demo on peptide sequences in FASTA format',
+    name: 'Peptide SAR',
+    description: 'Peptide SAR Analysis demo on peptide sequences in FASTA format',
   })
   static async macromoleculeSarFastaDemo(): Promise<void> {
     return await macromoleculeSarFastaDemoUI();
@@ -247,14 +229,13 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'cellType': 'lst-pie-chart',
-      'gridChart': 'true',
+    meta: {
+      cellType: 'lst-pie-chart',
+      gridChart: 'true',
     },
-    'tags': [
-      'cellRenderer',
-    ],
-    'name': 'LST Pie Chart',
+    tags: ['cellRenderer'],
+    name: 'LST Pie Chart',
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
   })
   static lstPiechartCellRenderer(): LSTPieChartRenderer {
     return new LSTPieChartRenderer();

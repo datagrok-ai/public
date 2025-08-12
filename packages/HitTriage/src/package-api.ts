@@ -8,15 +8,15 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function hitTriageAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+  export async function hitTriageAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('HitTriage:HitTriageAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function hitDesignAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+  export async function hitDesignAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('HitTriage:HitDesignAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function peptiHitAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
+  export async function peptiHitAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('HitTriage:PeptiHitAppTreeBrowser', { treeNode, browseView });
   }
 

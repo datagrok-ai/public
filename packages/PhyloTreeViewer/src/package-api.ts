@@ -46,7 +46,7 @@ export namespace funcs {
   /**
   Opens Newick file
   */
-  export async function injectTreeToGrid(grid: any , newickText: string , leafColName?: string ): Promise<any> {
+  export async function injectTreeToGrid(grid: any , newickText: string , leafColName?: string ): Promise<void> {
     return await grok.functions.call('PhyloTreeViewer:InjectTreeToGrid', { grid, newickText, leafColName });
   }
 

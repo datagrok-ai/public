@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 //name: hitTriageAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function hitTriageAppTreeBrowser(treeNode: any, browsePanel: any) {
   return PackageFunctions.hitTriageAppTreeBrowser(treeNode, browsePanel);
 }
@@ -12,7 +11,6 @@ export async function hitTriageAppTreeBrowser(treeNode: any, browsePanel: any) {
 //name: hitDesignAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function hitDesignAppTreeBrowser(treeNode: any, browsePanel: any) {
   return PackageFunctions.hitDesignAppTreeBrowser(treeNode, browsePanel);
 }
@@ -20,7 +18,6 @@ export async function hitDesignAppTreeBrowser(treeNode: any, browsePanel: any) {
 //name: peptiHitAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function peptiHitAppTreeBrowser(treeNode: any, browsePanel: any) {
   return PackageFunctions.peptiHitAppTreeBrowser(treeNode, browsePanel);
 }
@@ -67,7 +64,7 @@ export async function demoFileIngest1() {
 
 //name: Demo Molecules variable
 //tags: HitTriageDataSource
-//input: int numberOfMolecules 
+//input: int numberOfMolecules { description: Molecules counts }
 //output: dataframe result
 export async function demoFileIngest2(numberOfMolecules: number) {
   return PackageFunctions.demoFileIngest2(numberOfMolecules);
@@ -75,15 +72,15 @@ export async function demoFileIngest2(numberOfMolecules: number) {
 
 //name: Demo File Submit
 //tags: HitTriageSubmitFunction
-//input: dataframe df 
-//input: string molecules 
+//input: dataframe df { description: Dataframe }
+//input: string molecules { description: Molecules column name }
 export async function demoFileSubmit(df: DG.DataFrame, molecules: string) {
   return PackageFunctions.demoFileSubmit(df, molecules);
 }
 
 //name: gasteigerRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: customGasteigerPNG
 //meta.columnTags: quality=customGasteigerPNG
 export function gasteigerCellRenderer() {
@@ -93,7 +90,7 @@ export function gasteigerCellRenderer() {
 //name: Hit Triage package settings editor
 //tags: packageSettingsEditor
 //input: object propList 
-//output: dynamic result
+//output: widget result
 export async function htPackageSettingEditor(properties: any) {
   return PackageFunctions.htPackageSettingEditor(properties);
 }

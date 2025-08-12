@@ -133,7 +133,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async hitTriageAppTreeBrowser(
     treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({'name': 'browseView', 'type': 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
     await hitAppTB(treeNode, browsePanel, 'Hit Triage');
   }
 
@@ -141,7 +141,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async hitDesignAppTreeBrowser(
     treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({'name': 'browseView', 'type': 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
     await hitAppTB(treeNode, browsePanel, 'Hit Design');
   }
 
@@ -149,14 +149,14 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async peptiHitAppTreeBrowser(
     treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({'name': 'browseView', 'type': 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
+    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
     await hitAppTB(treeNode, browsePanel, 'PeptiHit');
   }
 
 
   @grok.decorators.app({
-    'browsePath': 'Chem',
-    'name': 'Hit Triage',
+    browsePath: 'Chem',
+    name: 'Hit Triage',
   })
   static async hitTriageApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -165,9 +165,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.app({
-    'icon': 'images/icons/hit-design-icon.png',
-    'browsePath': 'Chem',
-    'name': 'Hit Design',
+    icon: 'images/icons/hit-design-icon.png',
+    browsePath: 'Chem',
+    name: 'Hit Design',
   })
   static async hitDesignApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -176,9 +176,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.app({
-    'icon': 'images/icons/pepti-hit-icon.png',
-    'browsePath': 'Peptides',
-    'name': 'PeptiHit',
+    icon: 'images/icons/pepti-hit-icon.png',
+    browsePath: 'Peptides',
+    name: 'PeptiHit',
   })
   static async peptiHitApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -188,10 +188,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageDataSource',
-    ],
-    'name': 'Demo Molecules 100',
+    tags: ['HitTriageDataSource'],
+    name: 'Demo Molecules 100',
   })
   static async demoFileIngest(): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(100);
@@ -201,10 +199,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageDataSource',
-    ],
-    'name': 'Demo Molecules 5000',
+    tags: ['HitTriageDataSource'],
+    name: 'Demo Molecules 5000',
   })
   static async demoFileIngest1(): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(5000);
@@ -214,13 +210,12 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageDataSource',
-    ],
-    'name': 'Demo Molecules variable',
+    tags: ['HitTriageDataSource'],
+    name: 'Demo Molecules variable',
   })
   static async demoFileIngest2(
-    @grok.decorators.param({'type': 'int'}) numberOfMolecules: number): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'int', options: {description: 'Molecules counts'}}) numberOfMolecules: number,
+  ): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(numberOfMolecules);
     df.name = 'Variable Molecules number';
     return df;
@@ -228,28 +223,25 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageSubmitFunction',
-    ],
-    'name': 'Demo File Submit',
+    tags: ['HitTriageSubmitFunction'],
+    name: 'Demo File Submit',
   })
   static async demoFileSubmit(
-    df: DG.DataFrame,
-    molecules: string): Promise<void> {
+    @grok.decorators.param({options: {description: 'Dataframe'}}) df: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Molecules column name'}}) molecules: string): Promise<void> {
     grok.shell.info(df.rowCount);
     grok.shell.info(molecules);
   }
 
 
   @grok.decorators.func({
-    'meta': {
-      'cellType': 'customGasteigerPNG',
-      'columnTags': 'quality=customGasteigerPNG',
+    meta: {
+      cellType: 'customGasteigerPNG',
+      columnTags: 'quality=customGasteigerPNG',
     },
-    'tags': [
-      'cellRenderer',
-    ],
-    'name': 'gasteigerRenderer',
+    tags: ['cellRenderer'],
+    name: 'gasteigerRenderer',
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static gasteigerCellRenderer(): GasteigerPngRenderer {
     return new GasteigerPngRenderer();
@@ -257,13 +249,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'packageSettingsEditor',
-    ],
-    'name': 'Hit Triage package settings editor',
+    tags: ['packageSettingsEditor'],
+    name: 'Hit Triage package settings editor',
   })
   static async htPackageSettingEditor(
-    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) {
+    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {
     return htPackageSettingsEditorWidget(properties);
   }
 }

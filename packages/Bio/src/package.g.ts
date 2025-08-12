@@ -23,14 +23,14 @@ export function sequenceTooltip(col: DG.Column) {
 }
 
 //name: getBioLib
-//output: dynamic result
+//output: object monomerLib
 export function getBioLib() {
   return PackageFunctions.getBioLib();
 }
 
 //name: getSeqHandler
-//input: dynamic sequence { semType: Macromolecule }
-//output: dynamic result
+//input: column sequence { semType: Macromolecule }
+//output: object result
 export function getSeqHandler(sequence: any) {
   return PackageFunctions.getSeqHandler(sequence);
 }
@@ -38,7 +38,7 @@ export function getSeqHandler(sequence: any) {
 //name: Bioinformatics | Get Region
 //description: Creates a new column with sequences of the region between start and end
 //tags: panel
-//input: dynamic seqCol { semType: Macromolecule }
+//input: column seqCol { semType: Macromolecule }
 //output: widget result
 export function getRegionPanel(seqCol: any) {
   return PackageFunctions.getRegionPanel(seqCol);
@@ -46,7 +46,7 @@ export function getRegionPanel(seqCol: any) {
 
 //name: Bioinformatics | Manage Monomer Libraries
 //tags: panel, exclude-actions-panel
-//input: column _seqColumn { semType: Macromolecule }
+//input: column seqColumn { semType: Macromolecule }
 //output: widget result
 export async function libraryPanel(_seqColumn: DG.Column) {
   return PackageFunctions.libraryPanel(_seqColumn);
@@ -69,7 +69,6 @@ export function SplitToMonomersEditor(call: DG.FuncCall) {
 //name: SequenceSpaceEditor
 //tags: editor
 //input: funccall call 
-//output: dynamic result
 export function SequenceSpaceEditor(call: DG.FuncCall) {
   return PackageFunctions.SequenceSpaceEditor(call);
 }
@@ -77,14 +76,13 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //name: SeqActivityCliffsEditor
 //tags: editor
 //input: funccall call 
-//output: dynamic result
 export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   return PackageFunctions.SeqActivityCliffsEditor(call);
 }
 
 //name: customSequenceCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: sequence
 //meta.columnTags: quality=Macromolecule, units=custom
 export function customSequenceCellRenderer() {
@@ -93,7 +91,7 @@ export function customSequenceCellRenderer() {
 
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: sequence
 //meta.columnTags: quality=Macromolecule, units=fasta
 export function fastaSequenceCellRenderer() {
@@ -102,7 +100,7 @@ export function fastaSequenceCellRenderer() {
 
 //name: separatorSequenceCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: sequence
 //meta.columnTags: quality=Macromolecule, units=separator
 export function separatorSequenceCellRenderer() {
@@ -118,7 +116,7 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column) {
 }
 
 //name: Composition analysis
-//tags: panel
+//tags: panel, bio, widgets
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 export function compositionAnalysisWidget(sequence: DG.SemanticValue) {
@@ -127,7 +125,7 @@ export function compositionAnalysisWidget(sequence: DG.SemanticValue) {
 
 //name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: MacromoleculeDifference
 //meta.columnTags: quality=MacromoleculeDifference
 export function macromoleculeDifferenceCellRenderer() {
@@ -140,7 +138,7 @@ export function macromoleculeDifferenceCellRenderer() {
 //input: double gap 
 //input: string seq1 
 //input: string seq2 
-//output: dynamic result
+//output: object result
 export function sequenceAlignment(alignType: string, alignTable: string, gap: number, seq1: string, seq2: string) {
   return PackageFunctions.sequenceAlignment(alignType, alignTable, gap, seq1, seq2);
 }
@@ -148,7 +146,7 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 //name: WebLogo
 //description: WebLogo
 //tags: panel, viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/weblogo-viewer.svg
 export function webLogoViewer() {
   return PackageFunctions.webLogoViewer();
@@ -157,7 +155,7 @@ export function webLogoViewer() {
 //name: VdRegions
 //description: V-Domain regions viewer
 //tags: panel, viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/vdregions-viewer.svg
 export function vdRegionsViewer() {
   return PackageFunctions.vdRegionsViewer();
@@ -165,10 +163,10 @@ export function vdRegionsViewer() {
 
 //name: getRegion
 //description: Gets a new column with sequences of the region between start and end
-//input: dynamic sequence 
-//input: dynamic start { optional: true }
-//input: dynamic end { optional: true }
-//input: dynamic name { optional: true }
+//input: column sequence 
+//input: string start { optional: true }
+//input: string end { optional: true }
+//input: string name { optional: true; description: Name of the column to be created }
 //output: column result
 export function getRegion(sequence: any, start: any, end: any, name: any) {
   return PackageFunctions.getRegion(sequence, start, end, name);
@@ -176,11 +174,11 @@ export function getRegion(sequence: any, start: any, end: any, name: any) {
 
 //name: Get Region Top Menu
 //description: Get sequences for a region specified from a Macromolecule
-//input: dataframe table 
-//input: column sequence { semType: Macromolecule }
-//input: dynamic start { optional: true }
-//input: dynamic end { optional: true }
-//input: dynamic name { optional: true }
+//input: dataframe table { description: Input data table }
+//input: column sequence { semType: Macromolecule; description: Sequence column }
+//input: string start { optional: true; description: Region start position name }
+//input: string end { optional: true; description: Region end position name }
+//input: string name { optional: true; description: Region column name }
 //top-menu: Bio | Calculate | Get Region...
 //editor: Bio:GetRegionEditor
 export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start: any, end: any, name: any) {
@@ -188,31 +186,30 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
 }
 
 //name: Sequence Activity Cliffs
-//description: Detects pairs of molecules with similar structure and significant difference in any given propert
+//description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table 
-//input: dynamic molecules { semType: Macromolecule }
+//input: string molecules { semType: Macromolecule; description: Input data table }
 //input: column activities 
-//input: double similarity { default: 80 }
-//input: dynamic methodName { choices: ['UMAP','t-SNE'] }
-//input: dynamic similarityMetric { choices: ['Hamming','Levenshtein','Monomer chemical distance'] }
-//input: dynamic preprocessingFunction 
-//input: dynamic options { optional: true }
+//input: double similarity { default: 80; description: Similarity cutoff }
+//input: string methodName { choices: ['UMAP','t-SNE'] }
+//input: string similarityMetric { choices: ['Hamming','Levenshtein','Monomer chemical distance'] }
+//input: func preprocessingFunction 
+//input: object options { optional: true }
 //input: bool demo { optional: true }
-//output: dynamic result
 //top-menu: Bio | Analyze | Activity Cliffs...
 //editor: Bio:SeqActivityCliffsEditor
-export async function activityCliffs(table: DG.DataFrame, molecules: any, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options: any, demo: boolean) {
+export async function activityCliffs(table: DG.DataFrame, molecules: any, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, demo?: boolean) {
   return PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo);
 }
 
 //name: Encode Sequences
 //tags: dim-red-preprocessing-function
 //input: column col { semType: Macromolecule }
-//input: dynamic metric 
+//input: string metric 
 //input: double gapOpen { default: 1; caption: Gap open penalty; optional: true }
 //input: double gapExtend { default: 0.6; caption: Gap extension penalty; optional: true }
 //input: string fingerprintType { caption: Fingerprint type; default: Morgan; choices: ['Morgan','RDKit','Pattern','AtomPair','MACCS','TopologicalTorsion']; optional: true }
-//output: dynamic result
+//output: object result
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
@@ -221,10 +218,9 @@ export async function macromoleculePreprocessingFunction(col: DG.Column, metric:
 }
 
 //name: Helm Fingerprints
-//tags: dim-red-preprocessing-function
-//input: dynamic col { semType: Macromolecule }
-//input: dynamic _metric 
-//output: dynamic result
+//input: column col { semType: Macromolecule }
+//input: string _metric 
+//output: object result
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: helm
@@ -237,23 +233,22 @@ export async function helmPreprocessingFunction(col: any, _metric: any) {
 //description: Creates 2D sequence space with projected sequences by pairwise distance
 //input: dataframe table 
 //input: column molecules { semType: Macromolecule }
-//input: dynamic methodName { choices: ['UMAP','t-SNE'] }
-//input: dynamic similarityMetric { choices: ['Hamming','Levenshtein','Monomer chemical distance'] }
+//input: string methodName { choices: ['UMAP','t-SNE'] }
+//input: string similarityMetric { choices: ['Hamming','Levenshtein','Monomer chemical distance'] }
 //input: bool plotEmbeddings { default: true }
-//input: dynamic preprocessingFunction { optional: true }
-//input: dynamic options { optional: true }
-//input: bool clusterEmbeddings { optional: true }
+//input: func preprocessingFunction { optional: true }
+//input: object options { optional: true }
+//input: bool clusterEmbeddings { optional: true; default: true }
 //input: bool isDemo { optional: true }
-//output: dynamic result
 //top-menu: Bio | Analyze | Sequence Space...
 //editor: Bio:SequenceSpaceEditor
-export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, preprocessingFunction: any, options: any, clusterEmbeddings: boolean, isDemo: boolean) {
+export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, preprocessingFunction?: any, options?: any, clusterEmbeddings?: boolean, isDemo?: boolean) {
   return PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
 }
 
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe table 
+//input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
 //input: bool nonlinear { default: false; caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight { default: false; caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
@@ -264,7 +259,6 @@ export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonl
 
 //name: To Atomic Level...
 //input: column seqCol { semType: Macromolecule }
-//output: dynamic result
 //meta.action: to atomic level
 export async function toAtomicLevelAction(seqCol: DG.Column) {
   return PackageFunctions.toAtomicLevelAction(seqCol);
@@ -297,11 +291,11 @@ export function multipleSequenceAlignmentDialog() {
 //name: Multiple Sequence Alignment
 //description: Multiple sequence alignment
 //tags: bio
-//input: dynamic sequenceCol { semType: Macromolecule }
-//input: dynamic clustersCol 
-//input: dynamic options { optional: true }
+//input: column sequenceCol { semType: Macromolecule }
+//input: column clustersCol 
+//input: object options { optional: true; default: undefined }
 //output: column result
-export async function alignSequences(sequenceCol: any, clustersCol: any, options: any) {
+export async function alignSequences(sequenceCol: any, clustersCol: any, options?: any) {
   return PackageFunctions.alignSequences(sequenceCol, clustersCol, options);
 }
 
@@ -318,7 +312,7 @@ export async function compositionAnalysis() {
 //description: Opens FASTA file
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: fasta, fna, ffn, faa, frn, fa, fst
 export function importFasta(fileContent: string) {
   return PackageFunctions.importFasta(fileContent);
@@ -328,14 +322,13 @@ export function importFasta(fileContent: string) {
 //description: Opens Bam file
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: bam, bai
 export function importBam(fileContent: string) {
   return PackageFunctions.importBam(fileContent);
 }
 
 //name: convertDialog
-//output: dynamic result
 //top-menu: Bio | Transform | Convert Notation...
 export function convertDialog() {
   return PackageFunctions.convertDialog();
@@ -343,7 +336,6 @@ export function convertDialog() {
 
 //name: Convert Notation...
 //input: column col { semType: Macromolecule }
-//output: dynamic result
 //meta.action: Convert Notation...
 export function convertColumnAction(col: DG.Column) {
   return PackageFunctions.convertColumnAction(col);
@@ -351,7 +343,7 @@ export function convertColumnAction(col: DG.Column) {
 
 //name: monomerCellRenderer
 //tags: cellRenderer
-//output: dynamic result
+//output: grid_cell_renderer result
 //meta.cellType: Monomer
 //meta.columnTags: quality=Monomer
 export function monomerCellRenderer() {
@@ -376,7 +368,7 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
 }
 
 //name: Bio: getHelmMonomers
-//input: dynamic sequence { semType: Macromolecule }
+//input: column sequence { semType: Macromolecule }
 //output: object result
 export function getHelmMonomers(sequence: any) {
   return PackageFunctions.getHelmMonomers(sequence);
@@ -417,7 +409,6 @@ export function diversitySearchTopMenu() {
 //name: SearchSubsequenceEditor
 //tags: editor
 //input: funccall call 
-//output: dynamic result
 export function searchSubsequenceEditor(call: DG.FuncCall) {
   return PackageFunctions.searchSubsequenceEditor(call);
 }
@@ -432,9 +423,9 @@ export function SubsequenceSearchTopMenu(macromolecules: DG.Column) {
 
 //name: Identity Scoring
 //description: Adds a column with fraction of matching monomers
-//input: dataframe table 
-//input: column macromolecule { semType: Macromolecule }
-//input: string reference 
+//input: dataframe table { description: Table containing Macromolecule column }
+//input: column macromolecule { semType: Macromolecule; description: Sequences to score }
+//input: string reference { description: Sequence,matching column format }
 //output: column result
 //top-menu: Bio | Calculate | Identity...
 export async function sequenceIdentityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string) {
@@ -443,10 +434,10 @@ export async function sequenceIdentityScoring(table: DG.DataFrame, macromolecule
 
 //name: Similarity Scoring
 //description: Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
-//input: dataframe table 
-//input: column macromolecule { semType: Macromolecule }
-//input: string reference 
-//output: column scores
+//input: dataframe table { description: Table containing Macromolecule column }
+//input: column macromolecule { semType: Macromolecule; description: Sequences to score }
+//input: string reference { description: Sequence,matching column format }
+//output: column result
 //top-menu: Bio | Calculate | Similarity...
 export async function sequenceSimilarityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string) {
   return PackageFunctions.sequenceSimilarityScoring(table, macromolecule, reference);
@@ -466,7 +457,6 @@ export async function manageLibrariesView() {
 
 //name: manageMonomersView
 //description: Edit and create monomers
-//output: dynamic result
 //top-menu: Bio | Manage | Monomers
 export async function manageMonomersView() {
   return PackageFunctions.manageMonomersView();
@@ -474,7 +464,7 @@ export async function manageMonomersView() {
 
 //name: Manage Monomer Libraries
 //tags: app
-//output: view v
+//output: view result
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
 export async function manageMonomerLibrariesView() {
@@ -484,7 +474,6 @@ export async function manageMonomerLibrariesView() {
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode 
 //input: dynamic browsePanel 
-//output: dynamic result
 export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any, browsePanel: any) {
   return PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode, browsePanel);
 }
@@ -492,7 +481,6 @@ export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any, brows
 //name: saveAsFasta
 //description: As FASTA...
 //tags: fileExporter
-//output: dynamic result
 export function saveAsFasta() {
   return PackageFunctions.saveAsFasta();
 }
@@ -500,7 +488,7 @@ export function saveAsFasta() {
 //name: Bio Substructure Filter
 //description: Substructure filter for macromolecules
 //tags: filter
-//output: dynamic result
+//output: filter result
 //meta.semType: Macromolecule
 export function bioSubstructureFilter() {
   return PackageFunctions.bioSubstructureFilter();
@@ -549,8 +537,8 @@ export function longSeqTableHelm() {
 }
 
 //name: addCopyMenu
-//input: dynamic cell 
-//input: dynamic menu 
+//input: object cell 
+//input: object menu 
 export function addCopyMenu(cell: any, menu: any) {
   return PackageFunctions.addCopyMenu(cell, menu);
 }
@@ -593,7 +581,6 @@ export async function demoBioAtomicLevel() {
 
 //name: SDF to JSON Library
 //input: dataframe table 
-//output: dynamic result
 export async function sdfToJsonLib(table: DG.DataFrame) {
   return PackageFunctions.sdfToJsonLib(table);
 }
@@ -603,6 +590,7 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 //input: string seq { semType: Macromolecule }
 //input: bool nonlinear 
 //output: string molfile { semType: Molecule }
+//friendlyName: seq2atomic
 export async function seq2atomic(seq: string, nonlinear: boolean) {
   return PackageFunctions.seq2atomic(seq, nonlinear);
 }
@@ -612,6 +600,7 @@ export async function seq2atomic(seq: string, nonlinear: boolean) {
 //input: string seq { semType: Macromolecule }
 //input: string ref { semType: Macromolecule }
 //output: double result
+//friendlyName: seqIdentity
 export async function seqIdentity(seq: string, ref: string) {
   return PackageFunctions.seqIdentity(seq, ref);
 }
@@ -625,14 +614,14 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 }
 
 //name: getSeqHelper
-//output: dynamic result
+//output: object result
 export async function getSeqHelper() {
   return PackageFunctions.getSeqHelper();
 }
 
 //name: getMolFromHelm
 //input: dataframe df 
-//input: dynamic helmCol 
+//input: column helmCol 
 //input: bool chiralityEngine { default: true }
 //output: column result
 export async function getMolFromHelm(df: DG.DataFrame, helmCol: any, chiralityEngine: boolean) {

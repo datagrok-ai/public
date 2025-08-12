@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 //name: PhylocanvasGL
 //description: Phylogenetic tree visualization
 //tags: viewer
-//output: dynamic result
+//output: viewer result
 //meta.icon: files/icons/phylocanvasgl-viewer.svg
 export function phylocanvasGlViewer() {
   return PackageFunctions.phylocanvasGlViewer();
@@ -18,7 +18,7 @@ export async function phylocanvasGlViewerApp() {
 
 //name: TreeToGrid
 //description: Test/demo app for TreeToGrid (PhylocanvasGL based)
-//output: dynamic result
+//output: object result
 export async function treeToGridApp() {
   return PackageFunctions.treeToGridApp();
 }
@@ -40,13 +40,12 @@ export async function treeInGridCellApp() {
 //input: viewer grid 
 //input: string newickText 
 //input: string leafColName { optional: true }
-//output: dynamic result
-export async function injectTreeToGrid(grid: any, newickText: string, leafColName: string) {
+export async function injectTreeToGrid(grid: any, newickText: string, leafColName?: string) {
   return PackageFunctions.injectTreeToGrid(grid, newickText, leafColName);
 }
 
 //name: getPhylocanvasGlService
-//output: dynamic result
+//output: object result
 export function getPhylocanvasGlService() {
   return PackageFunctions.getPhylocanvasGlService();
 }

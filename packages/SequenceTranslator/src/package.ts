@@ -42,9 +42,9 @@ async function initSequenceTranslatorInt(): Promise<void> {
 
 export class PackageFunctions{
   @grok.decorators.app({
-    'icon': 'img/icons/toolkit.png',
-    'browsePath': 'Peptides | Oligo Toolkit',
-    'name': 'Oligo Toolkit'
+    icon: 'img/icons/toolkit.png',
+    browsePath: 'Peptides | Oligo Toolkit',
+    name: 'Oligo Toolkit'
   })
   static async oligoToolkitApp(): Promise<DG.ViewBase> {
   
@@ -68,9 +68,9 @@ export class PackageFunctions{
   }
 
   @grok.decorators.app({
-    'icon': 'img/icons/translator.png',
-    'browsePath': 'Peptides | Oligo Toolkit',
-    'name': 'Oligo Translator'
+    icon: 'img/icons/translator.png',
+    browsePath: 'Peptides | Oligo Toolkit',
+    name: 'Oligo Translator'
   })
   static async oligoTranslatorApp(): Promise<DG.ViewBase> {
   
@@ -80,9 +80,9 @@ export class PackageFunctions{
 
 
   @grok.decorators.app({
-    'icon': 'img/icons/pattern.png',
-    'browsePath': 'Peptides | Oligo Toolkit',
-    'name': 'Oligo Pattern'
+    icon: 'img/icons/pattern.png',
+    browsePath: 'Peptides | Oligo Toolkit',
+    name: 'Oligo Pattern'
   })
   static async oligoPatternApp(): Promise<DG.ViewBase> {
   
@@ -92,9 +92,9 @@ export class PackageFunctions{
 
 
   @grok.decorators.app({
-    'icon': 'img/icons/structure.png',
-    'browsePath': 'Peptides | Oligo Toolkit',
-    'name': 'Oligo Structure'
+    icon: 'img/icons/structure.png',
+    browsePath: 'Peptides | Oligo Toolkit',
+    name: 'Oligo Structure'
   })
   static async oligoStructureApp(): Promise<DG.ViewBase> {
   
@@ -103,7 +103,7 @@ export class PackageFunctions{
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async getTranslationHelper(): Promise<ITranslationHelper> {
   
     await _package.initLibData();
@@ -111,7 +111,7 @@ export class PackageFunctions{
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static getCodeToWeightsMap(): { [key: string]: number } {
   
     const monomerLibWrapper = _package.monomerLibWrapper;
@@ -131,7 +131,7 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'name': 'validateSequence'
+    name: 'validateSequence'
   })
   static getMolfileFromGcrsSequence(
     sequence: string,
@@ -143,19 +143,19 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static linkStrands(
-    @grok.decorators.param({'type':'object'})  strands: { senseStrands: string[], antiStrands: string[] }): string {
+    @grok.decorators.param({type:'object'})  strands: { senseStrands: string[], antiStrands: string[] }): string {
     return linkStrandsV3000(strands, true);
   }
 
 
   @grok.decorators.func({
-    'meta': {
-      'demoPath': 'Bioinformatics | Oligo Toolkit | Translator',
-      'path': '/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence',
-      'demoSkip': 'GROK-14320'
+    meta: {
+      demoPath: 'Bioinformatics | Oligo Toolkit | Translator',
+      path: '/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate',
+      demoSkip: 'GROK-14320'
     },
-    'name': 'demoOligoTranslator',
-    'description': 'Translate oligonucleotide sequences across various formats accepted by different synthesizers'
+    name: 'demoOligoTranslator',
+    description: 'Translate oligonucleotide sequences across various formats accepted by different synthesizers'
   })
   static async demoTranslateSequence(): Promise<void> {
     await demoOligoTranslatorUI();
@@ -163,11 +163,11 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      'demoPath': 'Bioinformatics | Oligo Toolkit | Pattern',
-      'path': '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence'
+    meta: {
+      demoPath: 'Bioinformatics | Oligo Toolkit | Pattern',
+      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
     },
-    'description': 'Design a modification pattern for an oligonucleotide sequence'
+    description: 'Design a modification pattern for an oligonucleotide sequence'
   })
   static async demoOligoPattern(): Promise<void> {
   
@@ -176,11 +176,11 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      'demoPath': 'Bioinformatics | Oligo Toolkit | Structure',
-      'path': '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence'
+    meta: {
+      demoPath: 'Bioinformatics | Oligo Toolkit | Structure',
+      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
     },
-    'description': 'Visualize duplex and save SDF'
+    description: 'Visualize duplex and save SDF'
   })
   static async demoOligoStructure(): Promise<void> {
   
@@ -199,8 +199,8 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Convert...',
-    'name': 'polyToolConvert',
-    'description': 'Perform cyclization of polymers'
+    name: 'polyToolConvert',
+    description: 'Perform cyclization of polymers'
   })
   static async polyToolConvertTopMenu(): Promise<void> {
   
@@ -217,10 +217,14 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'editor': 'SequenceTranslator'
+    editor: 'SequenceTranslator:getPolyToolConvertEditor', 
   })
-  static async polyToolConvert2(table: DG.DataFrame,
-    seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
+  static async polyToolConvert2(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: { caption: 'Sequence'}}) seqCol: DG.Column, 
+    @grok.decorators.param({options: { initialValue: 'true'}}) generateHelm: boolean, 
+    @grok.decorators.param({options: { initialValue: 'true'}}) chiralityEngine: boolean, 
+    @grok.decorators.param({type: 'object'}) rules: string[]
   ): Promise<DG.Column<string>> {
   
     const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
@@ -231,8 +235,8 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Enumerate HELM...',
-    'name': 'polyToolEnumerateHelm',
-    'description': 'Perform cyclization of polymers'
+    name: 'polyToolEnumerateHelm',
+    description: 'Perform cyclization of polymers'
   })
   static async polyToolEnumerateHelmTopMenu(): Promise<void> {
   
@@ -242,8 +246,8 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Enumerate Chem...',
-    'name': 'polyToolEnumerateChem',
-    'description': 'Perform cyclization of polymers'
+    name: 'polyToolEnumerateChem',
+    description: 'Perform cyclization of polymers'
   })
   static async polyToolEnumerateChemTopMenu(): Promise<void> {
   
@@ -253,7 +257,7 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static async polyToolColumnChoice(
-    df: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) df: DG.DataFrame,
     macroMolecule: DG.Column): Promise<void> {
   
     _setPeptideColumn(macroMolecule);
@@ -275,19 +279,12 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      '//name': 'PolyTool Converter',
-      '//meta.icon': 'img/icons/structure.png',
-      '//meta.browsePath': 'PolyTool',
-      '//tags': 'app',
-      'export async function ptConverterApp()': 'Promise<void> {',
-      'icon': 'img/icons/structure.png',
-      'browsePath': 'Peptides | PolyTool'
+    meta: {
+      icon: 'img/icons/structure.png',
+      browsePath: 'Peptides | PolyTool'
     },
-    'tags': [
-      'app'
-    ],
-    'name': 'HELM Enumerator'
+    tags: ['app'],
+    name: 'HELM Enumerator'
   })
   static async ptEnumeratorHelmApp(): Promise<void> {
   
@@ -296,14 +293,12 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'meta': {
-      'icon': 'img/icons/structure.png',
-      'browsePath': 'Peptides | PolyTool'
+    meta: {
+      icon: 'img/icons/structure.png',
+      browsePath: 'Peptides | PolyTool'
     },
-    'tags': [
-      'app'
-    ],
-    'name': 'Chem Enumerator'
+    tags: ['app'],
+    name: 'Chem Enumerator'
   })
   static async ptEnumeratorChemApp(): Promise<void> {
   
@@ -313,27 +308,27 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'name': 'Polytool Helm Enumerator dialog'
+    name: 'Polytool Helm Enumerator dialog'
   })
   static async getPtHelmEnumeratorDialog(
-    @grok.decorators.param({'type':'object','options':{'nullable':true}})  cell?: DG.Cell) {
+    @grok.decorators.param({type:'object',options:{nullable:true}})  cell?: DG.Cell) {
   
     return polyToolEnumerateHelmUI(cell);
   }
 
 
   @grok.decorators.func({
-    'name': 'Polytool Chem Enumerator dialog'
+    name: 'Polytool Chem Enumerator dialog'
   })
   static async getPtChemEnumeratorDialog(
-    @grok.decorators.param({'type':'object','options':{'nullable':true}})  cell?: DG.Cell) {
+    @grok.decorators.param({type:'object',options:{nullable:true}})  cell?: DG.Cell) {
   
     return polyToolEnumerateChemUI(cell);
   }
 
 
   @grok.decorators.func({
-    'name': 'Combine Sequences',
+    name: 'Combine Sequences',
     'top-menu': 'Bio | PolyTool | Combine Sequences...'
   })
   static async getPolyToolCombineDialog() {
@@ -344,10 +339,10 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({
-    'name': 'applyNotationProviderForHarmonizedSequence'
+    name: 'applyNotationProviderForHarmonizedSequence'
   })
   static applyNotationProviderForCyclized(
-    col: DG.Column<string>,
+    @grok.decorators.param({type:'column'}) col: DG.Column<string>,
     separator: string) {
   
     col.setTag('aligned', 'SEQ');

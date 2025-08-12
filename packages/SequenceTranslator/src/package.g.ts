@@ -10,7 +10,6 @@ export async function oligoToolkitApp() {
   return PackageFunctions.oligoToolkitApp();
 }
 
-//name: init
 //tags: init
 export async function init() {
   return PackageFunctions.init();
@@ -44,13 +43,13 @@ export async function oligoStructureApp() {
 }
 
 //name: getTranslationHelper
-//output: dynamic result
+//output: object result
 export async function getTranslationHelper() {
   return PackageFunctions.getTranslationHelper();
 }
 
 //name: getCodeToWeightsMap
-//output: double result0
+//output: object result
 export function getCodeToWeightsMap() {
   return PackageFunctions.getCodeToWeightsMap();
 }
@@ -80,7 +79,7 @@ export function linkStrands(strands: any) {
 //name: demoOligoTranslator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 //meta.demoSkip: GROK-14320
 export async function demoTranslateSequence() {
   return PackageFunctions.demoTranslateSequence();
@@ -89,7 +88,7 @@ export async function demoTranslateSequence() {
 //name: demoOligoPattern
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence
+//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoOligoPattern() {
   return PackageFunctions.demoOligoPattern();
 }
@@ -97,7 +96,7 @@ export async function demoOligoPattern() {
 //name: demoOligoStructure
 //description: Visualize duplex and save SDF
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence
+//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoOligoStructure() {
   return PackageFunctions.demoOligoStructure();
 }
@@ -128,12 +127,12 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) {
 
 //name: polyToolConvert2
 //input: dataframe table 
-//input: column seqCol 
-//input: bool generateHelm 
-//input: bool chiralityEngine 
-//input: list<string> rules 
+//input: column seqCol { caption: Sequence }
+//input: bool generateHelm { default: true }
+//input: bool chiralityEngine { default: true }
+//input: object rules 
 //output: column result
-//editor: SequenceTranslator
+//editor: SequenceTranslator:getPolyToolConvertEditor
 export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]) {
   return PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, chiralityEngine, rules);
 }
@@ -153,7 +152,7 @@ export async function polyToolEnumerateChemTopMenu() {
 }
 
 //name: polyToolColumnChoice
-//input: dataframe df 
+//input: dataframe df { description: Input data table }
 //input: column macroMolecule 
 export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column) {
   return PackageFunctions.polyToolColumnChoice(df, macroMolecule);
@@ -161,18 +160,12 @@ export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.C
 
 //name: createMonomerLibraryForPolyTool
 //input: file file 
-//output: dynamic result
 export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
   return PackageFunctions.createMonomerLibraryForPolyTool(file);
 }
 
 //name: HELM Enumerator
 //tags: app
-//meta.//name: PolyTool Converter
-//meta.//meta.icon: img/icons/structure.png
-//meta.//meta.browsePath: PolyTool
-//meta.//tags: app
-//meta.export async function ptConverterApp(): Promise<void> {
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
 export async function ptEnumeratorHelmApp() {
@@ -189,29 +182,25 @@ export async function ptEnumeratorChemApp() {
 
 //name: Polytool Helm Enumerator dialog
 //input: object cell { nullable: true }
-//output: dynamic result
-export async function getPtHelmEnumeratorDialog(cell: any) {
+export async function getPtHelmEnumeratorDialog(cell?: any) {
   return PackageFunctions.getPtHelmEnumeratorDialog(cell);
 }
 
 //name: Polytool Chem Enumerator dialog
 //input: object cell { nullable: true }
-//output: dynamic result
-export async function getPtChemEnumeratorDialog(cell: any) {
+export async function getPtChemEnumeratorDialog(cell?: any) {
   return PackageFunctions.getPtChemEnumeratorDialog(cell);
 }
 
 //name: Combine Sequences
-//output: dynamic result
 //top-menu: Bio | PolyTool | Combine Sequences...
 export async function getPolyToolCombineDialog() {
   return PackageFunctions.getPolyToolCombineDialog();
 }
 
 //name: applyNotationProviderForHarmonizedSequence
-//input: dynamic col 
+//input: column col 
 //input: string separator 
-//output: dynamic result
 export function applyNotationProviderForCyclized(col: any, separator: string) {
   return PackageFunctions.applyNotationProviderForCyclized(col, separator);
 }

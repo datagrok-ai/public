@@ -23,24 +23,20 @@ declare const window: PtvWindowType;
 
 export class PackageFunctions {
   @grok.decorators.func({
-    'meta': {
-      'icon': 'files/icons/phylocanvasgl-viewer.svg'
-    },
-    'tags': [
-      'viewer'
-    ],
-    'name': 'PhylocanvasGL',
-    'description': 'Phylogenetic tree visualization'
+    meta: {icon: 'files/icons/phylocanvasgl-viewer.svg'},
+    tags: ['viewer'],
+    name: 'PhylocanvasGL',
+    description: 'Phylogenetic tree visualization',
+    outputs: [{type: 'viewer', name: 'result'}]
   })
-  static phylocanvasGlViewer(): PhylocanvasGlViewer {
-  
+  static phylocanvasGlViewer(): PhylocanvasGlViewer { 
     return new PhylocanvasGlViewer();
   }
 
 
 
   @grok.decorators.func({
-    'description': 'Test/demo app for PhylocanvasGlViewer'
+    description: 'Test/demo app for PhylocanvasGlViewer'
   })
   static async phylocanvasGlViewerApp(): Promise<void> {
   
@@ -60,8 +56,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'name': 'TreeToGrid',
-    'description': 'Test/demo app for TreeToGrid (PhylocanvasGL based)'
+    name: 'TreeToGrid',
+    description: 'Test/demo app for TreeToGrid (PhylocanvasGL based)',
+    outputs: [{type: 'object', name: 'result'}]
   })
   static async treeToGridApp(): Promise<TreeToGridApp> {
   
@@ -76,8 +73,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'TreeCutAsTree',
-    'description': 'Test/demo app for TreeCutAsTree'
+    name: 'TreeCutAsTree',
+    description: 'Test/demo app for TreeCutAsTree'
   })
   static async treeCutAsTreeApp(): Promise<void> {
   
@@ -92,8 +89,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'name': 'TreeInGridCell',
-    'description': 'Test/demo app for TreeInGridCell'
+    name: 'TreeInGridCell',
+    description: 'Test/demo app for TreeInGridCell'
   })
   static async treeInGridCellApp(): Promise<void> {
   
@@ -116,8 +113,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'name': 'injectTree',
-    'description': 'Opens Newick file'
+    name: 'injectTree',
+    description: 'Opens Newick file'
   })
   static async injectTreeToGrid(
     @grok.decorators.param({'type':'viewer'})  grid: DG.Grid,
@@ -136,7 +133,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static getPhylocanvasGlService(): PhylocanvasGlServiceBase {
   
     if (!(window.$phylocanvasGlService)) {

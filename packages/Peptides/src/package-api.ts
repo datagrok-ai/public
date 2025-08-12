@@ -22,7 +22,7 @@ export namespace funcs {
     return await grok.functions.call('Peptides:Peptides', {});
   }
 
-  export async function peptidesDialog(): Promise<any> {
+  export async function peptidesDialog(): Promise<void> {
     return await grok.functions.call('Peptides:PeptidesDialog', {});
   }
 

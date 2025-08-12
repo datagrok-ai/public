@@ -268,8 +268,8 @@ export class PackageFunctions {
   static async hierarchicalClustering(
     df: DG.DataFrame,
     colNameList: DG.ColumnList,
-    distance: DistanceMetric = DistanceMetric.Euclidean,
-    linkage: string,
+    @grok.decorators.param({type: 'string', options: {initialValue: 'euclidean', choices:['euclidean', 'manhattan']}}) distance: DistanceMetric = DistanceMetric.Euclidean,
+    @grok.decorators.param({options: {initialValue: 'ward', choices:['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}})linkage: string,
   ): Promise<void> {
     await hierarchicalClusteringUI(df, colNameList.names(), distance, linkage);
   }
