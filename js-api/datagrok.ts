@@ -21,7 +21,7 @@ const WebSocket = require('ws');
 export const datagrokAsyncLocalStorage = new AsyncLocalStorage();
 
 // Express middleware
-export function tokenContextMiddleware(req, res, next) {
+export function tokenContextMiddleware(req: any, res: any, next: any) {
     //@ts-ignore
     const token =
         req?.headers?.authorization ||
@@ -34,24 +34,27 @@ export function tokenContextMiddleware(req, res, next) {
 }
 
 // Generic wrapper for non-Express usage
-export function withTokenContext(req, callback) {
+export function withTokenContext(req: any, callback: any) {
+    const cookies = parseCookies(req.headers?.cookie);
     const token =
         req?.headers?.authorization ||
         req?.authorization ||
-        parseCookies(req.headers?.cookie)['auth'] ||
+        cookies["auth"] ||
         null;
 
     const store = { token };
     return datagrokAsyncLocalStorage.run(store, () => callback());
 }
 
-function parseCookies(cookieHeader) {
-    const cookies = {};
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+    const cookies: Record<string, string> = {};
     if (!cookieHeader) return cookies;
-    cookieHeader.split(';').forEach(cookie => {
-        const [name, ...rest] = cookie.trim().split('=');
-        cookies[name] = decodeURIComponent(rest.join('='));
+
+    cookieHeader.split(";").forEach((cookie: string) => {
+        const [name, ...rest] = cookie.trim().split("=");
+        cookies[name] = decodeURIComponent(rest.join("="));
     });
+
     return cookies;
 }
 
