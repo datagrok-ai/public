@@ -19,7 +19,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
@@ -570,6 +570,8 @@ export class FittingView {
     learningRate: 0.0001,
   };
 
+  private defaultsOverrides: Record<string,number> = {};
+
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
   store = this.generateInputFields(this.func);
@@ -653,12 +655,15 @@ export class FittingView {
       return;
     }
 
+    this.parseDefaultsOverrides();
+
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
         this.acceptedFitting$.next(null);
         this.isFittingAccepted = true;
       }
     });
+
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;
 
@@ -722,6 +727,10 @@ export class FittingView {
     this.diffGrok = options.diffGrok;
   } // constructor
 
+  private parseDefaultsOverrides() {
+    this.defaultsOverrides = JSON.parse(this.func.options['fittingSettings'] || '{}');
+  }
+
   /** Check fiiting applicability to the function */
   private isOptimizationApplicable(func: DG.Func): boolean {
     for (const output of func.outputs) {
@@ -740,7 +749,7 @@ export class FittingView {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: nelderMeadCaptions.get(key),
         inputType: (key !== 'maxIter') ? 'Float' : 'Int',
-        defaultValue: vals.default,
+        defaultValue: this.defaultsOverrides[key] ?? vals.default,
         min: vals.min,
         max: vals.max,
       }));
@@ -776,7 +785,7 @@ export class FittingView {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'iterations',
       inputType: 'Int',
-      defaultValue: this.gradDescentSettings.iterCount,
+      defaultValue: this.defaultsOverrides.iterCount ?? this.gradDescentSettings.iterCount,
       min: 1,
       max: 10000,
     }));
@@ -785,7 +794,7 @@ export class FittingView {
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
       inputType: 'Float',
-      defaultValue: this.gradDescentSettings.learningRate,
+      defaultValue: this.defaultsOverrides.learningRate ?? this.gradDescentSettings.learningRate,
       min: 1e-6,
       max: 1000,
     }));
