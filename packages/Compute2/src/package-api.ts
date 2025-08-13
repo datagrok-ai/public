@@ -12,19 +12,19 @@ export namespace funcs {
     return await grok.functions.call('Compute2:Init', {});
   }
 
-  export async function customFunctionViewEditor(call: any ): Promise<DG.View> {
+  export async function customFunctionViewEditor(call: any ): Promise<void> {
     return await grok.functions.call('Compute2:CustomFunctionViewEditor', { call });
   }
 
-  export async function richFunctionViewEditor(call: any ): Promise<DG.View> {
+  export async function richFunctionViewEditor(call: any ): Promise<void> {
     return await grok.functions.call('Compute2:RichFunctionViewEditor', { call });
   }
 
-  export async function treeWizardEditor(call: any ): Promise<DG.View> {
+  export async function treeWizardEditor(call: any ): Promise<void> {
     return await grok.functions.call('Compute2:TreeWizardEditor', { call });
   }
 
-  export async function startWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
+  export async function startWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<void> {
     return await grok.functions.call('Compute2:StartWorkflow', { nqName, version, instanceConfig });
   }
 
@@ -40,35 +40,35 @@ export namespace funcs {
     return await grok.functions.call('Compute2:HistoryTestApp', {});
   }
 
-  export async function mockPipeline1(params: any ): Promise<any> {
+  export async function mockPipeline1(params: any ): Promise<void> {
     return await grok.functions.call('Compute2:MockPipeline1', { params });
   }
 
-  export async function mockPipeline2(params: any ): Promise<any> {
+  export async function mockPipeline2(params: any ): Promise<void> {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
   }
 
-  export async function testAdd2(a: number , b: number ): Promise<number> {
+  export async function testAdd2(a: number , b: number ): Promise<void> {
     return await grok.functions.call('Compute2:TestAdd2', { a, b });
   }
 
-  export async function testSub2(a: number , b: number ): Promise<number> {
+  export async function testSub2(a: number , b: number ): Promise<void> {
     return await grok.functions.call('Compute2:TestSub2', { a, b });
   }
 
-  export async function testMul2(a: string , b: number ): Promise<number> {
+  export async function testMul2(a: string , b: number ): Promise<void> {
     return await grok.functions.call('Compute2:TestMul2', { a, b });
   }
 
-  export async function testDiv2(a: number , b: number ): Promise<number> {
+  export async function testDiv2(a: number , b: number ): Promise<void> {
     return await grok.functions.call('Compute2:TestDiv2', { a, b });
   }
 
-  export async function testDF1(df: DG.DataFrame ): Promise<DG.DataFrame> {
+  export async function testDF1(df: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('Compute2:TestDF1', { df });
   }
 
-  export async function testCustomView(): Promise<DG.View> {
+  export async function testCustomView(): Promise<void> {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 }

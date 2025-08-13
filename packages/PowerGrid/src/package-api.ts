@@ -8,6 +8,30 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  export async function binaryImageCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
+  }
+
+  export async function hyperlinkCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
+  }
+
+  export async function imageCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ImageCellRenderer', {});
+  }
+
+  export async function multiChoiceCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:MultiChoiceCellRenderer', {});
+  }
+
+  export async function tagsCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
+  }
+
+  export async function htmlTestCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:HtmlTestCellRenderer', {});
+  }
+
   export async function barCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:BarCellRenderer', {});
   }
@@ -92,36 +116,12 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:ScWebGPUPointHitTest', { sc, pt });
   }
 
-  export async function isWebGPUAvailable(): Promise<boolean> {
+  export async function isWebGPUAvailable(): Promise<void> {
     return await grok.functions.call('PowerGrid:IsWebGPUAvailable', {});
   }
 
   export async function isWebGPURenderValid(sc: any ): Promise<boolean> {
     return await grok.functions.call('PowerGrid:IsWebGPURenderValid', { sc });
-  }
-
-  export async function binaryImageCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
-  }
-
-  export async function hyperlinkCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
-  }
-
-  export async function imageCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:ImageCellRenderer', {});
-  }
-
-  export async function multiChoiceCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:MultiChoiceCellRenderer', {});
-  }
-
-  export async function tagsCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
-  }
-
-  export async function htmlTestCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:HtmlTestCellRenderer', {});
   }
 
   export async function scatterPlotCellRenderer(): Promise<any> {
