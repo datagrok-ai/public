@@ -169,6 +169,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       const ITEMS_LENGTH = 10;
       const itemsToShow = usedItems.slice(0, ITEMS_LENGTH);
       const list = ui.list(itemsToShow);
+      list.classList.add('power-pack-activity-widget-subwidget-list-content');
       const listChildren = Array.from(list.children);
       for (let i = 0; i < itemsToShow.length; i++) {
         const item = itemsToShow[i];
@@ -214,7 +215,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         }
       }
       return ui.divV([ui.h3(ui.span([icon, ui.span([` ${title}`])]), 'power-pack-activity-widget-spotlight-column-header'),
-        list], 'power-pack-activity-widget-spotlight-column');
+        list], title === SpotlightTabNames.ACTION_REQUIRED ? 'power-pack-activity-widget-spotlight-column-action-required' : 'power-pack-activity-widget-spotlight-column');
     };
 
     const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');

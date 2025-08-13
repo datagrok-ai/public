@@ -59,6 +59,16 @@
     grid-column: span 2;
 }
 
+div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
+    overflow: hidden !important;
+}
+
+.power-pack-activity-widget-subwidget-list-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 220px;
+}
+
 .power-pack-widget-host:has(.power-pack-activity-widget-content) {
     grid-column: 1 / -1;
 }
@@ -89,7 +99,11 @@
 }
 
 .power-pack-activity-widget-spotlight-column {
-    max-width: 170px;
+    margin-right: 13px;
+}
+
+.power-pack-activity-widget-spotlight-column-action-required {
+    max-width: 200px;
     margin-right: 13px;
 }
 
@@ -102,6 +116,10 @@
 }
 
 .power-pack-activity-widget-spotlight-column label {
+    max-width: 120px;
+}
+
+.power-pack-activity-widget-spotlight-column-action-required label {
     max-width: 150px;
 }
 
